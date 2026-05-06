@@ -75,3 +75,17 @@ $monitor.beginTask($msg, 10)
 new org.eclipse.jface.viewers.ViewerComparator()
 => new org.eclipse.jdt.ui.JavaElementComparator()
 ;;
+
+/*!id: eclipse.jdt.core.javacore.runreadonly.removewrapper*/
+/*!description: Removes the JavaCore.runReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/
+/*!severity: info*/
+org.eclipse.jdt.core.JavaCore.runReadOnly(() -> $expression$)
+=> $expression$
+;;
+
+/*!id: eclipse.jdt.core.javacore.callreadonly.removewrapper*/
+/*!description: Removes the JavaCore.callReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/
+/*!severity: info*/
+org.eclipse.jdt.core.JavaCore.callReadOnly(() -> $expression$)
+=> $expression$
+;;

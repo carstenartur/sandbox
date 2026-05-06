@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "a4af0b0e87373afd457cd9e34aa2717c521b892b",
-      "lastProcessedDate": "2026-05-05T03:31:18.981275187Z",
-      "totalProcessed": 1670,
+      "lastProcessedCommit": "ee775036487c3be42cb21a6a464db2786172aba3",
+      "lastProcessedDate": "2026-05-06T03:30:57.495603889Z",
+      "totalProcessed": 1774,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1763,6 +1763,42 @@
           "deferredAt": "2026-05-05T03:26:41.783333462Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "cbc03c25f6059c774d8766bd7b02489c9df53acf",
+          "message": "Push down javadoc code from jdt.ui to jdt.core.manipulations (#941)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:25:23.687573890Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8977b63cc9c7b4398133dbfec53db86f959b318f",
+          "message": "Refactor lambda quickfixes for headless (#958)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:26:20.222508667Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d9752ee42b5c233506b1df38e3ec8c5086e074e7",
+          "message": "Push down code related to java partition scanners, now that o.e.jface… (#1011)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:29:16.118631370Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a81e7e104cb837c05d2ad44efe181be9cfa00204",
+          "message": "Refactor string concat fixes to be used in headless mode. (#1032)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:30:09.102177787Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1772,21 +1808,21 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 129,
+        "JDT Internal Refactoring": 136,
         "Code Simplification": 10,
         "Performance": 26,
         "JDT Internal Bug Fix": 48,
-        "Clean-up Bug Fix": 74,
+        "Clean-up Bug Fix": 76,
         "Try-with-Resources": 8,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 3,
         "JFace API Modernization": 1,
         "String-API": 7,
-        "Java-Modernization": 20,
+        "Java-Modernization": 22,
         "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 15,
+        "Null-Safety": 16,
         "Lambda-Simplification": 5,
         "Architectural Refactoring": 1,
         "Collections": 9,
@@ -1797,13 +1833,13 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
         "Architecture Migration": 8,
-        "Code Style": 27,
+        "Code Style": 29,
         "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 14,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 10,
+        "Eclipse API Migration": 13,
         "JDT Internal Feature": 1,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 2,
@@ -1827,10 +1863,10 @@
         "Concurrency / Thread-Safety": 1,
         "JDT UI Feature": 1,
         "JDT UI Internal Refactoring": 1,
-        "Code Quality": 2,
+        "Code Quality": 6,
         "Architecture Refactoring": 1,
         "Dead Code Removal": 10,
-        "Quick Fix Enhancement": 4,
+        "Quick Fix Enhancement": 6,
         "Unnecessary Code": 1,
         "Correctness": 4,
         "Code Correctness": 7,
@@ -1840,7 +1876,7 @@
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 7,
+        "Eclipse API Modernization": 8,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1872,7 +1908,7 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 1,
+        "Error Handling": 2,
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
@@ -1883,7 +1919,8 @@
         "Eclipse UI Feature": 2,
         "Java Modernization": 1,
         "Internal Bug Fix / UI Refactoring": 1,
-        "UI Logic Enhancement": 1
+        "UI Logic Enhancement": 1,
+        "UI Configuration": 1
       },
       "exhaustedCategories": []
     },
@@ -1924,5 +1961,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24305
+  "globalTotalProcessed": 24409
 }

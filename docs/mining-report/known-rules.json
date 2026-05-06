@@ -3245,6 +3245,94 @@
       "sourceCommit": "159912df1830e5185138f3a431a009bd9f383cae",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "java-modernization-this-commit-removes-redundant-generic-ty",
+      "category": "Java-Modernization",
+      "dslRule": "new java.util.HashSet\u003c$E$\u003e()\n\u003d\u003e new java.util.HashSet\u003c\u003e()\n;;\n\nnew java.util.HashSet\u003c$E$\u003e($args$)\n\u003d\u003e new java.util.HashSet\u003c\u003e($args$)\n;;\n\nnew java.util.ArrayList\u003c$E$\u003e()\n\u003d\u003e new java.util.ArrayList\u003c\u003e()\n;;\n\nnew java.util.ArrayList\u003c$E$\u003e($args$)\n\u003d\u003e new java.util.ArrayList\u003c\u003e($args$)\n;;\n\nnew java.util.Hashtable\u003c$K, $V$\u003e()\n\u003d\u003e new java.util.Hashtable\u003c\u003e()\n;;\n\nnew java.util.Hashtable\u003c$K, $V$\u003e($args$)\n\u003d\u003e new java.util.Hashtable\u003c\u003e($args$)\n;;",
+      "summary": "This commit removes redundant generic type parameters in constructor invocations (e.g., `new HashSet\u003cIMember\u003e()` becomes `new HashSet\u003c\u003e()`), utilizing the diamond operator introduced in Java 7. This improves code readability and eliminates compiler warnings. The pattern is consistently applied to `HashSet`, `ArrayList`, and `Hashtable` constructors, both with and without explicit constructor arguments. This is a highly reusable, semantically safe transformation that is directly implementable as a set of GREEN TriggerPattern DSL rules. The DSL automatically handles type inference for the generic arguments and manages imports. Although some diffs include minor structural reorganizations (e.g., in `PackageExplorerPart`), the core pattern of removing redundant explicit generics is fully covered.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "284d2a1250a00bb099482c226a9db38fa63f3a24",
+      "status": "DISCOVERED",
+      "hintFile": "collections.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-modifies-an-internal-jdt-ui-c",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.generateconstructor.selectiondialog.add-allowempty-flag*/\n/*!description: Modifies the internal GenerateConstructorUsingFieldsSelectionDialog constructor call to its superclass SourceActionDialog, adding a \u0027true\u0027 argument to allow empty field lists. This enables generating constructors even when a class has no fields.*/\n/*!severity: info*/\nsuper($parent, $labelProvider, $contentProvider, $editor, $type, $isConstructor)\n:: inClass(\"org.eclipse.jdt.internal.ui.actions.GenerateConstructorUsingFieldsSelectionDialog\")\n\u003d\u003e super($parent, $labelProvider, $contentProvider, $editor, $type, $isConstructor, true)\n;;",
+      "summary": "The commit modifies an internal JDT UI constructor call within `GenerateConstructorUsingFieldsSelectionDialog` to its `SourceActionDialog` superclass. It adds a `true` boolean argument to enable a new \u0027allowEmptyTree\u0027 flag, allowing constructor generation even for classes without fields. This is a direct 1:1 constructor argument addition, which is fully supported and directly expressible as a GREEN TriggerPattern DSL rule. Other changes in the commit, such as adding a new constructor overload or removing `if` blocks, are structural and not suitable for DSL rules.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "df956193ab076f65199421c5e0ef651f3049d159",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-addresses-compiler-warnings",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.text.correction.astresolving.remove-fqn.getmethodsig*/\n/*!description: Remove redundant fully qualified name from ASTResolving.getMethodSignature calls when ASTResolving is in the current package.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.text.correction.ASTResolving.getMethodSignature($arg1, $arg2, $arg3)\n\u003d\u003e ASTResolving.getMethodSignature($arg1, $arg2, $arg3)\n;;\n\n/*!id: jdt.internal.text.correction.astresolving.remove-fqn.gettypesig*/\n/*!description: Remove redundant fully qualified name from ASTResolving.getTypeSignature calls when ASTResolving is in the current package.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.text.correction.ASTResolving.getTypeSignature($arg1)\n\u003d\u003e ASTResolving.getTypeSignature($arg1)\n;;\n\n/*!id: jdt.internal.text.correction.suppresswarningssubprocessor.rename*/\n/*!description: Renames calls to SuppressWarningsSubProcessor.hasSuppressWarningsProposal to SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessor.hasSuppressWarningsProposal($arg1, $arg2)\n\u003d\u003e org.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal($arg1, $arg2)\n;;",
+      "summary": "This commit addresses compiler warnings by performing two types of internal JDT refactorings. Firstly, it removes redundant fully qualified names (FQNs) from calls to static methods in `ASTResolving` (e.g., `org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getMethodSignature(...)` to `ASTResolving.getMethodSignature(...)`) where `ASTResolving` is in the same package. Secondly, it updates a call site for a class rename, changing `SuppressWarningsSubProcessor.hasSuppressWarningsProposal(...)` to `SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal(...)`. Both patterns are direct 1:1 expression replacements, are semantically safe, and are fully implementable as GREEN TriggerPattern DSL rules without additional DSL extensions.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "b25fd15a91e1cf7a64868982eb333ba3fa6acc54",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "code-style-this-commit-fixes-javadoc-comments-by-re",
+      "category": "Code Style",
+      "dslRule": "/*!id: javadoc.htmlentities.ampersand-all-default*/\n/*!description: Encodes \u0027\u0026\u0027 as \u0027\u0026amp;\u0027 in Javadoc for JavaElementLabels.ALL_DEFAULT.*/\n/*!severity: info*/\n\"M_APP_TYPE_PARAMETERS \u0026 T_TYPE_PARAMETERS\"\n\u003d\u003e \"M_APP_TYPE_PARAMETERS \u0026amp; T_TYPE_PARAMETERS\"\n;;\n\n/*!id: javadoc.htmlentities.ampersand-preferenceconstants*/\n/*!description: Encodes \u0027\u0026\u0027 as \u0027\u0026amp;\u0027 in Javadoc for PreferenceConstants.SPELLING_IGNORE_SINGLE_LETTERS.*/\n/*!severity: info*/\n\"A named preference that controls whether \u0027\u0026\u0027 in\"\n\u003d\u003e \"A named preference that controls whether \u0027\u0026amp;\u0027 in\"\n;;\n\n/*!id: javadoc.htmlentities.lessthan-preferenceconstants*/\n/*!description: Encodes \u0027\u003c\u0027 as \u0027\u0026lt;\u0027 in Javadoc for PreferenceConstants cycleState description.*/\n/*!severity: info*/\n\"enabled\u003d cycleState \u003c 65535\"\n\u003d\u003e \"enabled\u003d cycleState \u0026lt; 65535\"\n;;",
+      "summary": "This commit fixes Javadoc comments by replacing unencoded \u0027\u0026\u0027 and \u0027\u003c\u0027 characters with their HTML entities (\u0027\u0026amp;\u0027 and \u0027\u0026lt;\u0027). This is a stylistic change to ensure proper rendering of documentation. The transformations are direct string literal replacements, fully supported by the TriggerPattern DSL, and can be implemented as multiple GREEN rules in `code-style.sandbox-hint`.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "68f13f5fd51d53767754982475fc289a8ede65d8",
+      "status": "DISCOVERED",
+      "hintFile": "code-style.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-removes-the-javacore-runread",
+      "category": "Eclipse API Migration",
+      "dslRule": "/*!id: eclipse.jdt.core.javacore.runreadonly.removewrapper*/\n/*!description: Removes the JavaCore.runReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/\n/*!severity: info*/\norg.eclipse.jdt.core.JavaCore.runReadOnly(() -\u003e $expression$)\n\u003d\u003e $expression$\n;;",
+      "summary": "This commit removes the `JavaCore.runReadOnly()` wrapper from a method invocation (`OpenAction.run`), addressing a regression where UI operations could cause issues within the read-only block. This is a direct 1:1 replacement of a lambda-wrapped expression with the expression itself, improving runtime stability. The pattern is fully implementable as a GREEN TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "1b953e57e3ff3d651b9e05f5ac006f2c09d419fd",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-removes-the-javacore-callrea",
+      "category": "Eclipse API Migration",
+      "dslRule": "/*!id: eclipse.jdt.core.javacore.callreadonly.removewrapper*/\n/*!description: Removes the JavaCore.callReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/\n/*!severity: info*/\norg.eclipse.jdt.core.JavaCore.callReadOnly(() -\u003e $expression$)\n\u003d\u003e $expression$\n;;",
+      "summary": "This commit removes the `JavaCore.callReadOnly()` wrapper from a method invocation (`BestMatchHover.getHoverInfo2`), addressing a regression where UI operations could cause issues within the read-only block. This is a direct 1:1 replacement of a lambda-wrapped expression with the expression itself, improving runtime stability. The pattern is fully implementable as a GREEN TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "b0aad33338425e2cddbc3b064df1ecc52576842a",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-this-commit-removes-the-javacore-runread",
+      "category": "Eclipse API Migration",
+      "dslRule": "/*!id: eclipse.jdt.core.javacore.runreadonly.removewrapper*/\n/*!description: Removes the JavaCore.runReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/\n/*!severity: info*/\norg.eclipse.jdt.core.JavaCore.runReadOnly(() -\u003e $expression$)\n\u003d\u003e $expression$\n;;",
+      "summary": "This commit removes the `JavaCore.runReadOnly()` wrapper from a method invocation (`SelectionDispatchAction.dispatchRun`), addressing a regression where UI operations could cause issues within the read-only block. This is a direct 1:1 replacement of a lambda-wrapped expression with the expression itself, improving runtime stability. This pattern is identical to the one found in Commit 0 and is thus a duplicate.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "c77201584c7759025a103f8718c26865d50079bb",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-a-bug-by-replacing-jav",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.JavaCore.callReadOnly(super::open).intValue()\n\u003d\u003e super.open()\n;;",
+      "summary": "This commit fixes a bug by replacing `JavaCore.callReadOnly(super::open).intValue()` with `super.open()` within the `FilteredTypesSelectionDialog` class. This is a direct, 1:1 expression replacement that simplifies the code and removes an unnecessary wrapper, improving correctness for internal JDT UI dialogs. The transformation is fully expressible as a GREEN TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-06",
+      "discoveredInRun": 24409,
+      "sourceCommit": "ee775036487c3be42cb21a6a464db2786172aba3",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

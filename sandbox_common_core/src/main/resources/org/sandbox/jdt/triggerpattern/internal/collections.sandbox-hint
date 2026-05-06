@@ -98,3 +98,27 @@ new java.util.Hashtable($capacity) :: isAssignedToLocalVariable()
 new java.util.Hashtable($collection) :: isAssignedToLocalVariable()
 => new java.util.HashMap($collection)
 ;;
+
+new java.util.HashSet<$E$>()
+=> new java.util.HashSet<>()
+;;
+
+new java.util.HashSet<$E$>($args$)
+=> new java.util.HashSet<>($args$)
+;;
+
+new java.util.ArrayList<$E$>()
+=> new java.util.ArrayList<>()
+;;
+
+new java.util.ArrayList<$E$>($args$)
+=> new java.util.ArrayList<>($args$)
+;;
+
+new java.util.Hashtable<$K, $V$>()
+=> new java.util.Hashtable<>()
+;;
+
+new java.util.Hashtable<$K, $V$>($args$)
+=> new java.util.Hashtable<>($args$)
+;;
