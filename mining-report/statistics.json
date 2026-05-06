@@ -1,52 +1,49 @@
 {
-  "totalProcessed": 31,
-  "relevant": 24,
-  "irrelevant": 7,
-  "duplicates": 0,
-  "green": 5,
-  "yellow": 1,
+  "totalProcessed": 30,
+  "relevant": 26,
+  "irrelevant": 4,
+  "duplicates": 1,
+  "green": 8,
+  "yellow": 0,
   "red": 18,
   "irrelevantReasons": {
-    "This commit modifies the internal implementation of an Eclipse JDT quick fix by adding a new problem ID (`IProblem.EnhancedSwitchMissingDefault`) to existing `switch` statements within the `QuickFixProcessor.java` class. It is an internal architectural change to enhance an existing quick fix\u0027s applicability, not a transformation pattern that converts user code from one form to another. The TriggerPattern DSL is designed for code transformations, not for modifying internal quick-fix logic or adding `case` statements to existing `switch` blocks, which is a structural change.": 1,
-    "The commit introduces complex control flow (if/while loops), new local variable declarations, a new private helper method, and conditional code insertions specific to internal UI logic. These are structural changes and new logic implementations that are not expressible as pattern-matching and replacement rules in the TriggerPattern DSL.": 1,
-    "This commit primarily involves removing beta/early-draft disclaimers from Javadoc comments and properties files, and commenting out a specific code block. The changes are either documentation-related, involve modifications to properties files (not Java code), or are structural modifications (commenting out Java code) that are not generalizable into pattern-based DSL rules.": 1,
-    "This commit mainly adds support for Java 21 to JDT\u0027s compliance configuration. This involves adding new constants and NLS message keys, structurally modifying array literals to include the new version, and adding new cases to existing switch statements. These are structural changes (adding elements to lists, extending switch control flow) or involve properties files, and are not directly expressible as simple expression-level transformations in the current TriggerPattern DSL.": 1,
-    "The commit introduces a new cleanup plugin (`InlineDeprecatedMethodCleanUp`) and its associated UI configuration and NLS entries. It describes the *creation* of a new Java-based cleanup mechanism, rather than providing specific code transformation patterns that can be expressed as DSL rules. The DSL aims to define rules for transformations, not to implement or configure the cleanup infrastructure itself.": 1,
-    "The commit enhances the UI and configuration of an existing refactoring (\u0027Extract Local Variable\u0027) by adding an option to apply it across all methods in a file. It modifies UI components (checkboxes, layout) and internal preference handling (`fSettings.put`), along with NLS message definitions. The actual logic for performing the \u0027extract similar expression in all methods\u0027 transformation is assumed to exist within the core refactoring (`ExtractTempRefactoring`), but is not present in this diff. The DSL is designed for code transformation patterns, not UI configuration or interaction logic.": 1,
-    "The commit fixes an internal bug in the `CleanUpTabPage` of the JDT UI preferences. It addresses an issue where cleanup preferences were registered multiple times, leading to an incorrect count. This involves changing a data structure from `List` to `Set` and modifying conditional logic (`if (fCheckboxes.add(preference))`) to ensure `fCount` and `fSelectedCount` are updated correctly. These are internal code changes related to the implementation and correctness of the UI component itself, not code transformation patterns applicable to user\u0027s Java source code. The DSL is not designed to refactor the internal Java code of JDT plugins.": 1
+    "Changes are within Javadoc and regular comments, not within executable Java code structure amenable to AST-based pattern matching or transformation by the TriggerPattern DSL.": 1,
+    "Commit implements internal architectural changes and bug fixes related to UI display of JavaSource hover, involving adding new methods and modifying existing conditional logic and method overrides. These are structural changes to internal JDT UI components, not reusable code transformation patterns for end-user code, and cannot be expressed by the TriggerPattern DSL.": 1,
+    "This commit only fixes Javadoc comment formatting (unclosed \u003ccode\u003e tags). The TriggerPattern DSL is designed for transforming executable Java code, not for correcting textual documentation formatting. Such changes do not affect runtime behavior or introduce patterns for code logic transformation.": 1,
+    "This commit introduces the UI and infrastructure for a new \u0027Make Static\u0027 refactoring. It adds new classes, NLS messages, help contexts, and action definitions. It does not contain any concrete code transformation patterns that could be generalized into a TriggerPattern DSL rule for end-user code. The actual refactoring logic (transforming instance methods to static ones and adjusting call sites) would reside in the \u0027MakeStaticRefactoring\u0027 core component, which is not part of this diff.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 31,
-      "relevant": 24,
-      "green": 5,
-      "yellow": 1,
+      "totalProcessed": 30,
+      "relevant": 26,
+      "green": 8,
+      "yellow": 0,
       "red": 18
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-05",
-      "processed": 31,
-      "relevant": 24
+      "date": "2026-05-06",
+      "processed": 30,
+      "relevant": 26
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-05T03:11:26.902Z",
-    "completedAt": "2026-05-05T03:31:20.190351748Z",
-    "durationSeconds": 1193,
+    "startedAt": "2026-05-06T03:12:10.243Z",
+    "completedAt": "2026-05-06T03:30:58.738663827Z",
+    "durationSeconds": 1128,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 186,
+    "deferredCommits": 190,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-05T03:13:10.213520284Z",
-    "latestEvaluation": "2026-05-05T03:31:18.980795474Z",
-    "earliestCommitDate": "2023-08-10T02:51:42Z",
-    "latestCommitDate": "2023-09-26T06:39:26Z"
+    "earliestEvaluation": "2026-05-06T03:14:04.860297181Z",
+    "latestEvaluation": "2026-05-06T03:30:57.494948666Z",
+    "earliestCommitDate": "2023-10-12T10:15:31Z",
+    "latestCommitDate": "2024-01-08T16:19:16Z"
   }
 }
