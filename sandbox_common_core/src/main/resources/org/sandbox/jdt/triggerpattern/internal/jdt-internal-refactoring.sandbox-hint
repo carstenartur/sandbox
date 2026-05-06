@@ -1706,3 +1706,36 @@ isIgnoringJavaStrings && org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_S
 "editor_save_participant_"
 => org.eclipse.jdt.core.manipulation.SaveParticipantPreferenceConfigurationConstants.EDITOR_SAVE_PARTICIPANT_PREFIX
 ;;
+
+/*!id: jdt.internal.generateconstructor.selectiondialog.add-allowempty-flag*/
+/*!description: Modifies the internal GenerateConstructorUsingFieldsSelectionDialog constructor call to its superclass SourceActionDialog, adding a 'true' argument to allow empty field lists. This enables generating constructors even when a class has no fields.*/
+/*!severity: info*/
+super($parent, $labelProvider, $contentProvider, $editor, $type, $isConstructor)
+:: inClass("org.eclipse.jdt.internal.ui.actions.GenerateConstructorUsingFieldsSelectionDialog")
+=> super($parent, $labelProvider, $contentProvider, $editor, $type, $isConstructor, true)
+;;
+
+/*!id: jdt.internal.text.correction.astresolving.remove-fqn.getmethodsig*/
+/*!description: Remove redundant fully qualified name from ASTResolving.getMethodSignature calls when ASTResolving is in the current package.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getMethodSignature($arg1, $arg2, $arg3)
+=> ASTResolving.getMethodSignature($arg1, $arg2, $arg3)
+;;
+
+/*!id: jdt.internal.text.correction.astresolving.remove-fqn.gettypesig*/
+/*!description: Remove redundant fully qualified name from ASTResolving.getTypeSignature calls when ASTResolving is in the current package.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getTypeSignature($arg1)
+=> ASTResolving.getTypeSignature($arg1)
+;;
+
+/*!id: jdt.internal.text.correction.suppresswarningssubprocessor.rename*/
+/*!description: Renames calls to SuppressWarningsSubProcessor.hasSuppressWarningsProposal to SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessor.hasSuppressWarningsProposal($arg1, $arg2)
+=> org.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal($arg1, $arg2)
+;;
+
+org.eclipse.jdt.core.JavaCore.callReadOnly(super::open).intValue()
+=> super.open()
+;;
