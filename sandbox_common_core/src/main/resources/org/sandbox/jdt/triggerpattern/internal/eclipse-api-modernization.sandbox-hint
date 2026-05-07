@@ -89,3 +89,13 @@ org.eclipse.jdt.core.JavaCore.runReadOnly(() -> $expression$)
 org.eclipse.jdt.core.JavaCore.callReadOnly(() -> $expression$)
 => $expression$
 ;;
+
+$project.getNature(org.eclipse.jdt.core.JavaCore.NATURE_ID) != null :: instanceof($project, "org.eclipse.core.resources.IProject")
+=> $project.hasNature(org.eclipse.jdt.core.JavaCore.NATURE_ID)
+;;
+
+(org.eclipse.jdt.core.IJavaProject)$project.getNature(org.eclipse.jdt.core.JavaCore.NATURE_ID) :: instanceof($project, "org.eclipse.core.resources.IProject")
+=> org.eclipse.jdt.core.JavaCore.create($project)
+;;
+
+// Note: Removal of 'import org.eclipse.core.resources.IProjectNature;' is automatically handled by the DSL's import management.

@@ -1739,3 +1739,17 @@ org.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessor.hasSupp
 org.eclipse.jdt.core.JavaCore.callReadOnly(super::open).intValue()
 => super.open()
 ;;
+
+@id: jdt.internal.javamarkerannotation.error-annotation-type.to.problemlocation
+@severity: info
+"org.eclipse.jdt.ui.error"
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.JavaMarkerAnnotation") && hasField("ERROR_ANNOTATION_TYPE")
+=> org.eclipse.jdt.internal.ui.text.correction.ProblemLocation.ERROR_ANNOTATION_TYPE
+;;
+
+@id: jdt.internal.compliance.version21.to.version22
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_21.equals($selectedCompliance)
+:: inClass("org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock") && sourceVersionGE(22)
+=> org.eclipse.jdt.core.JavaCore.VERSION_22.equals($selectedCompliance)
+;;
