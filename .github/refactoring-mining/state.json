@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "ee775036487c3be42cb21a6a464db2786172aba3",
-      "lastProcessedDate": "2026-05-06T03:30:57.495603889Z",
-      "totalProcessed": 1774,
+      "lastProcessedCommit": "17f75231529def3c898def2d56fadf8918941611",
+      "lastProcessedDate": "2026-05-07T03:31:47.554719026Z",
+      "totalProcessed": 1859,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1799,6 +1799,69 @@
           "deferredAt": "2026-05-06T03:30:09.102177787Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "417ba9ad1af488d8b40ab87445cb45130c98550d",
+          "message": "New preferences for annotation based resource leak analysis (#1064)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:14:41.052763835Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8e28ae0210672ac240683b778206bed85263fa66",
+          "message": "Sub processor pushdown1 (#1078)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:16:41.161322810Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fca51c2a57fa4d3de0a0b496a97630bd05decc47",
+          "message": "add missing @Deprecated",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-07T03:20:42.955236084Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9cd02fe42320c3c4f0fe3af1690b692ed80968d7",
+          "message": "CallHierarchy: fix error when clicking a method that is gone #1098\n\nhttps://github.com/eclipse-jdt/eclipse.jdt.ui/issues",
+          "diffLines": 141,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-07T03:20:42.955310Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5afacf38e819114b3ed53c906b1877616c95bf20",
+          "message": "remove Exceptions not actually thrown\n\neliminates problem markers and dead code",
+          "diffLines": 174,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-07T03:20:42.955345334Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4a0adfa495da31d74cf5d2f06959402585bd8770",
+          "message": "Separate core and ui for GetterSetterCorrectionSubProcessor and VarargsWarningsSubProcessor (#1116)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:20:42.962836207Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ba75582568210776c392dcafd4a72a5830020991",
+          "message": "Incremental delete of duplicate interfaces (Delete ICleanUpCore)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:28:01.184718972Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1808,31 +1871,31 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 136,
+        "JDT Internal Refactoring": 146,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 48,
-        "Clean-up Bug Fix": 76,
+        "JDT Internal Bug Fix": 51,
+        "Clean-up Bug Fix": 78,
         "Try-with-Resources": 8,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 3,
         "JFace API Modernization": 1,
         "String-API": 7,
-        "Java-Modernization": 22,
+        "Java-Modernization": 23,
         "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 16,
+        "Null-Safety": 17,
         "Lambda-Simplification": 5,
         "Architectural Refactoring": 1,
         "Collections": 9,
-        "JDT Internal Feature Enhancement": 6,
+        "JDT Internal Feature Enhancement": 7,
         "Clean-up Enhancement": 4,
         "Internal Refactoring": 2,
         "Loop Modernization": 4,
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
-        "Architecture Migration": 8,
+        "Architecture Migration": 9,
         "Code Style": 29,
         "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
@@ -1865,18 +1928,18 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 6,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 10,
+        "Dead Code Removal": 11,
         "Quick Fix Enhancement": 6,
         "Unnecessary Code": 1,
         "Correctness": 4,
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
         "Concurrency": 3,
-        "Bug Fix": 3,
+        "Bug Fix": 4,
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 8,
+        "Eclipse API Modernization": 9,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1908,7 +1971,7 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 2,
+        "Error Handling": 3,
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
@@ -1920,7 +1983,10 @@
         "Java Modernization": 1,
         "Internal Bug Fix / UI Refactoring": 1,
         "UI Logic Enhancement": 1,
-        "UI Configuration": 1
+        "UI Configuration": 1,
+        "Deprecations": 1,
+        "JDT Internal Configuration": 1,
+        "Eclipse API Deprecation": 1
       },
       "exhaustedCategories": []
     },
@@ -1961,5 +2027,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24409
+  "globalTotalProcessed": 24494
 }

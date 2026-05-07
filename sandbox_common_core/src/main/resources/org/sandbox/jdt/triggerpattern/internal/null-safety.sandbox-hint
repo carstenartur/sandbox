@@ -47,3 +47,10 @@
 (null != $x) && ($constant.equalsIgnoreCase($x)) :: hasNoSideEffect($x) && isStringLiteral($constant)
 => $constant.equalsIgnoreCase($x)
 ;;
+
+@id: jdt.internal.semanticHighlightingReconciler.npe.fix
+@severity: error
+$document == $fSourceViewer.getDocument()
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightingReconciler")
+=> $fSourceViewer != null && $document == $fSourceViewer.getDocument()
+;;
