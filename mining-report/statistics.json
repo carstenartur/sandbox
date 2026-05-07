@@ -1,49 +1,52 @@
 {
-  "totalProcessed": 30,
+  "totalProcessed": 33,
   "relevant": 26,
-  "irrelevant": 4,
-  "duplicates": 1,
-  "green": 8,
-  "yellow": 0,
-  "red": 18,
+  "irrelevant": 7,
+  "duplicates": 2,
+  "green": 7,
+  "yellow": 1,
+  "red": 19,
   "irrelevantReasons": {
-    "Changes are within Javadoc and regular comments, not within executable Java code structure amenable to AST-based pattern matching or transformation by the TriggerPattern DSL.": 1,
-    "Commit implements internal architectural changes and bug fixes related to UI display of JavaSource hover, involving adding new methods and modifying existing conditional logic and method overrides. These are structural changes to internal JDT UI components, not reusable code transformation patterns for end-user code, and cannot be expressed by the TriggerPattern DSL.": 1,
-    "This commit only fixes Javadoc comment formatting (unclosed \u003ccode\u003e tags). The TriggerPattern DSL is designed for transforming executable Java code, not for correcting textual documentation formatting. Such changes do not affect runtime behavior or introduce patterns for code logic transformation.": 1,
-    "This commit introduces the UI and infrastructure for a new \u0027Make Static\u0027 refactoring. It adds new classes, NLS messages, help contexts, and action definitions. It does not contain any concrete code transformation patterns that could be generalized into a TriggerPattern DSL rule for end-user code. The actual refactoring logic (transforming instance methods to static ones and adjusting call sites) would reside in the \u0027MakeStaticRefactoring\u0027 core component, which is not part of this diff.": 1
+    "This commit introduces support for code completion inside text block templates by adding a new partition type to an internal set. This is an internal configuration change for JDT\u0027s own functionality (enhancing the code completion engine for a new language feature), not a code transformation pattern applicable to user Java code. The DSL is designed for rewriting existing code patterns, not for inserting new lines of configuration code into a specific location.": 1,
+    "This commit adds a new key-value pair to a .properties resource file. The TriggerPattern DSL operates on Java source code (AST-based transformations) and does not support modifications to resource files like .properties files. Therefore, this change is not applicable for a DSL rule.": 1,
+    "The commit involves structural changes like modifying field and constructor parameter types, adding new control flow (an `if` block with a new statement), and updating Javadoc. These types of transformations are explicitly not supported by the current TriggerPattern DSL for pattern-based expression replacements.": 1,
+    "This commit is a targeted code deletion to fix an internal bug (preventing a bundle from setting a preference key during shutdown). It is not a generalizable code transformation pattern that replaces one code structure with another, which is what the TriggerPattern DSL is designed for.": 1,
+    "This commit involves structural changes to Javadoc comments (deletion of specific lines, @since, @link tags) to fix \u0027cannot be resolved to a type\u0027 warnings. The TriggerPattern DSL is designed for code transformations, not for manipulating documentation blocks by deleting lines within them.": 1,
+    "The commit adds `@SuppressWarnings(\"deprecation\")` annotations at the class level to suppress warnings related to `java.util.Observable`. This is a maintenance task to quiet compiler warnings, not a code transformation pattern that modifies actual code logic or improves API usage. The DSL does not have capabilities to detect implicit dependencies (like usage of `java.util.Observable`) that trigger deprecation warnings, nor to conditionally add class-level annotations based on such warnings.": 1,
+    "The diff only contains a comment change, and the commit message describes an architectural refactoring (deletion of internal abstract classes) which does not represent a user-code transformation pattern.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 30,
+      "totalProcessed": 33,
       "relevant": 26,
-      "green": 8,
-      "yellow": 0,
-      "red": 18
+      "green": 7,
+      "yellow": 1,
+      "red": 19
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-06",
-      "processed": 30,
+      "date": "2026-05-07",
+      "processed": 33,
       "relevant": 26
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-06T03:12:10.243Z",
-    "completedAt": "2026-05-06T03:30:58.738663827Z",
-    "durationSeconds": 1128,
+    "startedAt": "2026-05-07T03:12:45.140Z",
+    "completedAt": "2026-05-07T03:31:48.284920255Z",
+    "durationSeconds": 1143,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 190,
+    "deferredCommits": 197,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-06T03:14:04.860297181Z",
-    "latestEvaluation": "2026-05-06T03:30:57.494948666Z",
-    "earliestCommitDate": "2023-10-12T10:15:31Z",
-    "latestCommitDate": "2024-01-08T16:19:16Z"
+    "earliestEvaluation": "2026-05-07T03:14:41.014938650Z",
+    "latestEvaluation": "2026-05-07T03:31:47.554270291Z",
+    "earliestCommitDate": "2023-12-28T22:18:30Z",
+    "latestCommitDate": "2024-02-14T22:31:53Z"
   }
 }
