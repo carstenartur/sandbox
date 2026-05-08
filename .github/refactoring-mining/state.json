@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "17f75231529def3c898def2d56fadf8918941611",
-      "lastProcessedDate": "2026-05-07T03:31:47.554719026Z",
-      "totalProcessed": 1859,
+      "lastProcessedCommit": "582704e184af9445965a625946f4085ccc14176d",
+      "lastProcessedDate": "2026-05-08T03:31:35.288716431Z",
+      "totalProcessed": 1964,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1862,6 +1862,33 @@
           "deferredAt": "2026-05-07T03:28:01.184718972Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "148ddd9084479170d625f7d77f21b70bdd707019",
+          "message": "Implemented Batch SelfEncapsulateField for multiple fields at once #1080 (#1124)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-08T03:14:18.625440018Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0b3382e7940eeb68a95c134c1ee90f1901b04dcd",
+          "message": "Add styling enhancements to signatures (JavaElementLinks) in Javadoc. Fixes #1073 (#1074)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-08T03:16:03.808122790Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "af7a99c24b6d7449a6eeef2b1f4f8527a21fe529",
+          "message": "Refactor UnnecessaryArrayCreation cleanup and quick-assist for jdt.ls (#1397)\n\n- move and rename UnnecessaryArrayCreatio",
+          "diffLines": 62,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-08T03:31:24.670830996Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1871,7 +1898,7 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 146,
+        "JDT Internal Refactoring": 154,
         "Code Simplification": 10,
         "Performance": 26,
         "JDT Internal Bug Fix": 51,
@@ -1896,7 +1923,7 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
         "Architecture Migration": 9,
-        "Code Style": 29,
+        "Code Style": 31,
         "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -1923,7 +1950,7 @@
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
         "Refactoring": 1,
-        "Concurrency / Thread-Safety": 1,
+        "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 1,
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 6,
@@ -1934,12 +1961,12 @@
         "Correctness": 4,
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
-        "Concurrency": 3,
+        "Concurrency": 4,
         "Bug Fix": 4,
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 9,
+        "Eclipse API Modernization": 11,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1986,7 +2013,9 @@
         "UI Configuration": 1,
         "Deprecations": 1,
         "JDT Internal Configuration": 1,
-        "Eclipse API Deprecation": 1
+        "Eclipse API Deprecation": 1,
+        "Quick Assist": 1,
+        "Logging / Exception Handling": 1
       },
       "exhaustedCategories": []
     },
@@ -2027,5 +2056,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24494
+  "globalTotalProcessed": 24599
 }
