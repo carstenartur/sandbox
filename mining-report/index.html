@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sandbox Mining Core - Dashboard</title>
+    <title>Sandbox Mining Gemini - Dashboard</title>
     <style>
         :root {
             --green: #28a745;
@@ -96,7 +96,7 @@
     </style>
 </head>
 <body>
-    <h1>Sandbox Mining Core - Dashboard</h1>
+    <h1>Sandbox Mining Gemini - Dashboard</h1>
     <p style="color:#666; font-size:0.9em; margin-bottom:15px;">
         <strong>Traffic Light:</strong>
         <span style="color:var(--green)">●</span> GREEN = Ready for DSL integration |
@@ -114,13 +114,10 @@
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary, #3498db);">
         <p style="margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
             <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Nightly Commit Mining">
+                <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main" alt="Nightly Commit Mining">
             </a>
             | <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml" style="color: #0366d6; text-decoration: none;">📋 View Workflow Runs</a>
             | <a href="https://carstenartur.github.io/sandbox/" style="color: #0366d6; text-decoration: none;">← Back to Dashboard</a>
-            | <a href="evaluations.json" style="color: #0366d6; text-decoration: none;">📄 evaluations.json</a>
-            | <a href="statistics.json" style="color: #0366d6; text-decoration: none;">📊 statistics.json</a>
-            | <a href="https://github.com/carstenartur/sandbox/tree/main/sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/" style="color: #0366d6; text-decoration: none;">📁 .sandbox-hint Sources</a>
         </p>
     </div>
 
@@ -128,8 +125,7 @@
     <div class="run-status" id="run-status">
         <div class="info-item"><span class="icon">🕐</span><span class="label">Last Run:</span><span class="val" id="rs-completed">–</span></div>
         <div class="info-item"><span class="icon">⏱</span><span class="label">Duration:</span><span class="val" id="rs-duration">–</span></div>
-        <div class="info-item"><span class="icon">📅</span><span class="label">Commit Date Range:</span><span class="val" id="rs-commit-range">–</span></div>
-        <div class="info-item"><span class="icon">⏱</span><span class="label">Evaluation Window:</span><span class="val" id="rs-window">–</span></div>
+        <div class="info-item"><span class="icon">📅</span><span class="label">Commit Date Range:</span><span class="val" id="rs-window">–</span></div>
         <div class="info-item"><span class="icon">🤖</span><span class="label">Model:</span><span class="val" id="rs-model">–</span></div>
         <div class="info-item"><span class="icon">📊</span><span class="label">API Calls:</span><span class="val" id="rs-api-calls">–</span></div>
         <div class="info-item"><span class="icon">📦</span><span class="label">Batch Config:</span><span class="val" id="rs-batch">–</span></div>
@@ -149,21 +145,21 @@
     <!-- Statistics Grid -->
     <div class="stats">
         <div class="stat-card">
-            <div class="value" id="stat-total">33</div>
+            <div class="value" id="stat-total">–</div>
             <div class="label">Total Processed</div>
         </div>
         <div class="stat-card">
-            <div class="value" id="stat-relevant">26</div>
+            <div class="value" id="stat-relevant">–</div>
             <div class="label">Relevant</div>
             <div class="percent" id="stat-relevant-pct"></div>
         </div>
         <div class="stat-card">
-            <div class="value" id="stat-irrelevant">7</div>
+            <div class="value" id="stat-irrelevant">–</div>
             <div class="label">Irrelevant</div>
             <div class="percent" id="stat-irrelevant-pct"></div>
         </div>
         <div class="stat-card">
-            <div class="value" id="stat-duplicates">2</div>
+            <div class="value" id="stat-duplicates">–</div>
             <div class="label">Duplicates</div>
         </div>
     </div>
@@ -171,14 +167,14 @@
     <!-- Traffic Light Bar with Percentages -->
     <div class="traffic-bar-container">
         <div class="traffic-bar" id="traffic-bar">
-            <div class="segment green" id="bar-green" style="width:33%">7</div>
-            <div class="segment yellow" id="bar-yellow" style="width:33%">1</div>
-            <div class="segment red" id="bar-red" style="width:34%">19</div>
+            <div class="segment green" id="bar-green" style="width:33%">–</div>
+            <div class="segment yellow" id="bar-yellow" style="width:33%">–</div>
+            <div class="segment red" id="bar-red" style="width:34%">–</div>
         </div>
         <div class="traffic-bar-legend">
-            <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">7</span></span>
-            <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">1</span></span>
-            <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">19</span></span>
+            <span><span class="dot" style="background:var(--green)"></span> Green: <span id="legend-green">–</span></span>
+            <span><span class="dot" style="background:var(--yellow)"></span> Yellow: <span id="legend-yellow">–</span></span>
+            <span><span class="dot" style="background:var(--red)"></span> Red: <span id="legend-red">–</span></span>
         </div>
     </div>
 
@@ -263,7 +259,7 @@
 
     <!-- Discovered DSL Sequences Section -->
     <h2>🔧 Discovered DSL Sequences</h2>
-    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by LLM analysis, ready for integration into <code>.sandbox-hint</code> files.
+    <p style="color:#666; margin-bottom:15px;">New DSL rules discovered by Gemini analysis, ready for integration into <code>.sandbox-hint</code> files.
         <a href="https://github.com/carstenartur/sandbox/blob/main/sandbox_common/TRIGGERPATTERN.md#sandbox-hint-dsl-file-format" style="color:#0366d6;">📖 DSL Syntax Reference</a>
     </p>
     <table id="dsl-table">
@@ -311,6 +307,13 @@
         let allEvaluations = [];
         let statistics = null;
 
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
         function updatePercentages() {
             const total = parseInt(document.getElementById('stat-total').textContent) || 0;
             if (total > 0) {
@@ -326,35 +329,13 @@
             const y = parseInt(document.getElementById('legend-yellow').textContent) || 0;
             const r = parseInt(document.getElementById('legend-red').textContent) || 0;
             const total = g + y + r;
-            const barGreen = document.getElementById('bar-green');
-            const barYellow = document.getElementById('bar-yellow');
-            const barRed = document.getElementById('bar-red');
-            if (total === 0) {
-                barGreen.style.display = 'none';
-                barYellow.style.display = 'none';
-                barRed.style.display = 'none';
-                return;
-            }
-            if (g > 0) {
-                barGreen.style.display = '';
-                barGreen.style.width = ((g / total) * 100) + '%';
-                barGreen.textContent = g + ' (' + ((g / total) * 100).toFixed(0) + '%)';
-            } else {
-                barGreen.style.display = 'none';
-            }
-            if (y > 0) {
-                barYellow.style.display = '';
-                barYellow.style.width = ((y / total) * 100) + '%';
-                barYellow.textContent = y + ' (' + ((y / total) * 100).toFixed(0) + '%)';
-            } else {
-                barYellow.style.display = 'none';
-            }
-            if (r > 0) {
-                barRed.style.display = '';
-                barRed.style.width = ((r / total) * 100) + '%';
-                barRed.textContent = r + ' (' + ((r / total) * 100).toFixed(0) + '%)';
-            } else {
-                barRed.style.display = 'none';
+            if (total > 0) {
+                document.getElementById('bar-green').style.width = ((g / total) * 100) + '%';
+                document.getElementById('bar-green').textContent = g + ' (' + ((g / total) * 100).toFixed(0) + '%)';
+                document.getElementById('bar-yellow').style.width = ((y / total) * 100) + '%';
+                document.getElementById('bar-yellow').textContent = y + ' (' + ((y / total) * 100).toFixed(0) + '%)';
+                document.getElementById('bar-red').style.width = ((r / total) * 100) + '%';
+                document.getElementById('bar-red').textContent = r + ' (' + ((r / total) * 100).toFixed(0) + '%)';
             }
         }
 
@@ -400,14 +381,17 @@
                 var tdCommit = document.createElement('td');
                 var code = document.createElement('code');
                 code.textContent = (evaluation.commitHash || '').substring(0, 8);
-                if (evaluation.repoUrl && evaluation.commitHash) {
-                    var hashLink = document.createElement('a');
-                    hashLink.href = evaluation.repoUrl + '/commit/' + evaluation.commitHash;
-                    hashLink.target = '_blank';
-                    hashLink.style.color = 'inherit';
-                    hashLink.style.textDecoration = 'none';
-                    hashLink.appendChild(code);
-                    tdCommit.appendChild(hashLink);
+                if (evaluation.repoUrl && evaluation.repoUrl.startsWith('https://github.com/')) {
+                    // Use full commitHash for URL; code.textContent shows only the short (8-char) form
+                    var commitUrl = evaluation.repoUrl.replace(/\/$/, '') + '/commit/' + evaluation.commitHash;
+                    var link = document.createElement('a');
+                    link.href = commitUrl;
+                    link.target = '_blank';
+                    link.title = 'View commit on GitHub';
+                    link.style.color = '#0366d6';
+                    link.style.textDecoration = 'none';
+                    link.appendChild(code);
+                    tdCommit.appendChild(link);
                 } else {
                     tdCommit.appendChild(code);
                 }
@@ -423,21 +407,7 @@
                 var tdDate = document.createElement('td');
                 tdDate.style.fontSize = '0.85em';
                 tdDate.style.whiteSpace = 'nowrap';
-                if (evaluation.commitDate) {
-                    try {
-                        var commitDateSpan = document.createElement('span');
-                        commitDateSpan.textContent = new Date(evaluation.commitDate).toLocaleString();
-                        tdDate.appendChild(commitDateSpan);
-                        if (evaluation.evaluatedAt) {
-                            var evalDateSpan = document.createElement('div');
-                            evalDateSpan.style.fontSize = '0.85em';
-                            evalDateSpan.style.color = '#888';
-                            try { evalDateSpan.textContent = 'eval: ' + new Date(evaluation.evaluatedAt).toLocaleString(); }
-                            catch(e) { evalDateSpan.textContent = 'eval: ' + evaluation.evaluatedAt; }
-                            tdDate.appendChild(evalDateSpan);
-                        }
-                    } catch(e) { tdDate.textContent = evaluation.commitDate; }
-                } else if (evaluation.evaluatedAt) {
+                if (evaluation.evaluatedAt) {
                     try { tdDate.textContent = new Date(evaluation.evaluatedAt).toLocaleString(); }
                     catch(e) { tdDate.textContent = evaluation.evaluatedAt; }
                 } else { tdDate.textContent = '-'; }
@@ -513,7 +483,7 @@
                         tdActions.appendChild(validIcon);
                     }
                 }
-                if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded && evaluation.relevant) {
+                if (evaluation.trafficLight === 'RED' && evaluation.languageChangeNeeded) {
                     var issueBtn = document.createElement('button');
                     issueBtn.className = 'action-btn issue';
                     issueBtn.textContent = '\uD83D\uDCCB Issue';
@@ -574,7 +544,7 @@
             if (evaluation.dslRuleAfterChange) {
                 body += '### Proposed DSL Rule (after extension)\n```\n' + evaluation.dslRuleAfterChange + '\n```\n\n';
             }
-            body += '---\n_Auto-generated from LLM Mining analysis_\n';
+            body += '---\n_Auto-generated from Gemini Mining analysis_\n';
             var params = new URLSearchParams({
                 title: title,
                 body: body,
@@ -592,7 +562,7 @@
                 var row = document.createElement('tr');
                 var td = document.createElement('td');
                 td.colSpan = 6;
-                td.textContent = 'No DSL sequences discovered yet. Run the mining workflow to analyze commits.';
+                td.textContent = 'No DSL sequences discovered yet. Run the Gemini mining workflow to analyze commits.';
                 td.style.textAlign = 'center';
                 td.style.color = '#666';
                 td.style.padding = '30px';
@@ -615,23 +585,10 @@
                 row.appendChild(tdCat);
 
                 var tdFile = document.createElement('td');
-                var targetFile = evaluation.targetHintFile || '-';
-                if (targetFile !== '-') {
-                    var link = document.createElement('a');
-                    link.href = 'https://github.com/carstenartur/sandbox/blob/main/' + targetFile;
-                    link.style.color = '#0366d6';
-                    link.style.textDecoration = 'none';
-                    var code = document.createElement('code');
-                    code.textContent = targetFile;
-                    code.style.fontSize = '0.85em';
-                    link.appendChild(code);
-                    tdFile.appendChild(link);
-                } else {
-                    var code = document.createElement('code');
-                    code.textContent = '-';
-                    code.style.fontSize = '0.85em';
-                    tdFile.appendChild(code);
-                }
+                var code = document.createElement('code');
+                code.textContent = evaluation.targetHintFile || '-';
+                code.style.fontSize = '0.85em';
+                tdFile.appendChild(code);
                 row.appendChild(tdFile);
 
                 var tdSummary = document.createElement('td');
@@ -703,17 +660,7 @@
                 var s = meta.durationSeconds % 60;
                 document.getElementById('rs-duration').textContent = m + 'm ' + s + 's';
             }
-            if (data.timeWindow) {
-                var tw = data.timeWindow;
-                if (tw.earliestCommitDate || tw.latestCommitDate) {
-                    var earlyCommit = tw.earliestCommitDate ? tw.earliestCommitDate.substring(0, 10) : '?';
-                    var lateCommit = tw.latestCommitDate ? tw.latestCommitDate.substring(0, 10) : '?';
-                    document.getElementById('rs-commit-range').textContent = earlyCommit + ' \u2192 ' + lateCommit;
-                }
-                var earlyDate = tw.earliestEvaluation ? tw.earliestEvaluation.substring(0, 10) : '?';
-                var lateDate = tw.latestEvaluation ? tw.latestEvaluation.substring(0, 10) : '?';
-                document.getElementById('rs-window').textContent = earlyDate + ' \u2192 ' + lateDate;
-            }
+            // Commit Date Range is populated from evaluations data after evaluations.json is loaded
             if (meta.llmModel) document.getElementById('rs-model').textContent = meta.llmModel;
             if (meta.apiCallsMade !== undefined) document.getElementById('rs-api-calls').textContent = meta.apiCallsMade;
             if (meta.batchSize !== undefined && meta.commitsPerRequest !== undefined)
@@ -770,10 +717,7 @@
 
         // Load data
         fetch('evaluations.json')
-            .then(function(response) {
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                return response.json();
-            })
+            .then(function(response) { return response.json(); })
             .then(function(data) {
                 allEvaluations = data;
                 populateFilters(data);
@@ -784,6 +728,7 @@
                     document.getElementById('empty-state').style.display = 'block';
                 }
                 // Show demo-data banner if all commit hashes match seed data pattern
+                var demoPattern = /^[a-f0-9]{40}$/;
                 var knownDemoHashes = [
                     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
                     'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3',
@@ -801,14 +746,23 @@
                         document.getElementById('demo-banner').style.display = 'block';
                     }
                 }
+                // Compute commit date range from evaluations
+                var dates = data.map(function(e) { return e.evaluatedAt; }).filter(Boolean).map(function(d) { return new Date(d); });
+                if (dates.length > 0) {
+                    var minDate = dates[0];
+                    var maxDate = dates[0];
+                    for (var i = 1; i < dates.length; i++) {
+                        var currentDate = dates[i];
+                        if (currentDate < minDate) { minDate = currentDate; }
+                        if (currentDate > maxDate) { maxDate = currentDate; }
+                    }
+                    document.getElementById('rs-window').textContent = minDate.toISOString().substring(0, 10) + ' \u2192 ' + maxDate.toISOString().substring(0, 10);
+                }
             })
             .catch(function(err) { console.error('Failed to load evaluations:', err); });
 
         fetch('statistics.json')
-            .then(function(response) {
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-                return response.json();
-            })
+            .then(function(response) { return response.json(); })
             .then(function(data) {
                 statistics = data;
                 // Populate irrelevant reasons table
@@ -832,12 +786,7 @@
                         var row = document.createElement('tr');
                         var repo = entry[1];
                         var tdUrl = document.createElement('td');
-                        var repoLink = document.createElement('a');
-                        repoLink.href = entry[0];
-                        repoLink.textContent = entry[0].replace('https://github.com/', '');
-                        repoLink.style.color = '#0366d6';
-                        repoLink.target = '_blank';
-                        tdUrl.appendChild(repoLink);
+                        tdUrl.textContent = entry[0];
                         row.appendChild(tdUrl);
                         var tdProc = document.createElement('td');
                         tdProc.textContent = repo.totalProcessed || 0;
