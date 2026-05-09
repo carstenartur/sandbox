@@ -3410,6 +3410,105 @@
       "sourceCommit": "b4f395ccbfe55e5a37e973eee0ff7f372c551b50",
       "status": "DISCOVERED",
       "hintFile": "null-safety.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-internal-jdt-ui-code",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.refactoring.abstractunnamedtypedec.to.abstracttypedec.type*/\n/*!description: Replaces type reference AbstractUnnamedTypeDeclaration with AbstractTypeDeclaration, reflecting JDT Core DOM AST changes.*/\n/*!severity: info*/\norg.eclipse.jdt.core.dom.AbstractUnnamedTypeDeclaration\n\u003d\u003e org.eclipse.jdt.core.dom.AbstractTypeDeclaration\n;;\n\n/*!id: jdt.internal.refactoring.abstractunnamedtypedec.to.abstracttypedec.expression*/\n/*!description: Simplifies ternary expression related to AbstractUnnamedTypeDeclaration to direct getName() call, reflecting JDT Core DOM AST changes.*/\n/*!severity: info*/\n$type instanceof org.eclipse.jdt.core.dom.AbstractTypeDeclaration named? named.getName().getIdentifier() : \"\"\n\u003d\u003e $type.getName().getIdentifier()\n;;",
+      "summary": "This commit updates internal JDT UI code to reflect changes in the JDT Core DOM AST, specifically replacing references to `AbstractUnnamedTypeDeclaration` with its supertype `AbstractTypeDeclaration`. This involves changing type declarations in generic lists, enhanced for-loops, and method parameters. Additionally, a complex ternary expression that conditionally retrieves a type name is simplified to a direct method call (`type.getName().getIdentifier()`), as the underlying API (`AbstractTypeDeclaration.getName()`) is now consistently available. These are direct 1:1 type and expression replacements, making them fully implementable as GREEN TriggerPattern DSL rules for internal JDT API modernization, applicable from the Java 8 baseline.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "9fa5766ae352ffc8a92ff38fa754bbc18dcb6da1",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-a-nullpointerexception",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.quickfixprocessor.npe.fix\n@severity: error\n!(deprecatedMethodNode instanceof org.eclipse.jdt.core.dom.MethodInvocation)\n:: inClass(\"org.eclipse.jdt.internal.ui.text.correction.QuickFixProcessor\") \u0026\u0026 inMethod(\"getProposals\")\n\u003d\u003e deprecatedMethodNode !\u003d null \u0026\u0026 !(deprecatedMethodNode instanceof org.eclipse.jdt.core.dom.MethodInvocation)\n;;",
+      "summary": "This commit fixes a NullPointerException in JDT\u0027s internal QuickFixProcessor by adding a null check to a boolean condition before attempting to access a deprecated method node. The transformation modifies a boolean expression from `!(deprecatedMethodNode instanceof MethodInvocation)` to `deprecatedMethodNode !\u003d null \u0026\u0026 !(deprecatedMethodNode instanceof MethodInvocation)`. This is a direct 1:1 expression replacement, improving runtime robustness within internal JDT UI logic. The pattern is specific to the internal `QuickFixProcessor.getProposals()` method, making it a GREEN transformation that can be fully automated by a TriggerPattern DSL rule with appropriate `inClass` and `inMethod` guards. No specific `sourceVersionGE` guard is needed beyond the Java 8 baseline, as it\u0027s an internal bug fix rather than a migration to a new Java language feature.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "1cc6fff292cf2b548ed62e16b70731fc77d82db9",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-numerous-unnecessary",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.remove-redundant-cast.table*/\n/*!description: Removes redundant (Table) casts when the expression is already a subtype of Table.*/\n/*!severity: info*/\n(org.eclipse.swt.widgets.Table) $expression :: subtypeOf($expression, \"org.eclipse.swt.widgets.Table\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.abstracttreeviewer*/\n/*!description: Removes redundant (AbstractTreeViewer) casts when the expression is already a subtype of AbstractTreeViewer.*/\n/*!severity: info*/\n(org.eclipse.jdt.internal.ui.browsing.AbstractTreeViewer) $expression :: subtypeOf($expression, \"org.eclipse.jdt.internal.ui.browsing.AbstractTreeViewer\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.icompilationunit*/\n/*!description: Removes redundant (ICompilationUnit) casts when the expression is already a subtype of ICompilationUnit.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.ICompilationUnit) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.ICompilationUnit\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.iclassfile*/\n/*!description: Removes redundant (IClassFile) casts when the expression is already a subtype of IClassFile.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.IClassFile) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.IClassFile\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.icodeassist*/\n/*!description: Removes redundant (ICodeAssist) casts when the expression is already a subtype of ICodeAssist.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.ICodeAssist) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.ICodeAssist\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.iadaptable*/\n/*!description: Removes redundant (IAdaptable) casts when the expression is already a subtype of IAdaptable.*/\n/*!severity: info*/\n(org.eclipse.core.runtime.IAdaptable) $expression :: subtypeOf($expression, \"org.eclipse.core.runtime.IAdaptable\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.simplename*/\n/*!description: Removes redundant (SimpleName) casts when the expression is already a subtype of SimpleName.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.dom.SimpleName) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.dom.SimpleName\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.variabledeclarationfragment*/\n/*!description: Removes redundant (VariableDeclarationFragment) casts when the expression is already a subtype of VariableDeclarationFragment.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.dom.VariableDeclarationFragment) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.dom.VariableDeclarationFragment\")\n\u003d\u003e $expression\n;;\n\n/*!id: jdt.internal.remove-redundant-cast.isourcereference*/\n/*!description: Removes redundant (ISourceReference) casts when the expression is already a subtype of ISourceReference.*/\n/*!severity: info*/\n(org.eclipse.jdt.core.ISourceReference) $expression :: subtypeOf($expression, \"org.eclipse.jdt.core.ISourceReference\")\n\u003d\u003e $expression\n;;",
+      "summary": "This commit removes numerous unnecessary casts across various internal JDT UI and Core classes. The pattern involves replacing `(SpecificType) expression` with `expression` when the compiler can already infer that `expression` is of `SpecificType` or a compatible subtype. This improves code readability and removes redundant type information. This change is fully implementable as multiple TriggerPattern DSL rules, one for each specific type of cast removed, using the `subtypeOf` guard to ensure semantic safety. The `ASTNode` cast removal is a duplicate of an existing rule, but 9 other specific type cast removals are new. These rules contribute to JDT internal code style and correctness, applying to Java 8+ projects.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "690340fdd53a50e5050c77a423dcc857c2b6f7ba",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-drops-support-for-older-java",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.jls.version13.to.firstsupported*/\n/*!description: Updates internal JDT UI code to replace specific JavaCore version constants with dynamic calls to getFirstJavaSourceVersionSupportedByCompiler().*/\n/*!severity: info*/\norg.eclipse.jdt.core.JavaCore.VERSION_1_3\n\u003d\u003e org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()\n;;\n\n/*!id: jdt.internal.jls.version11.to.firstsupported*/\n/*!description: Updates internal JDT UI code to replace specific JavaCore version constants with dynamic calls to getFirstJavaSourceVersionSupportedByCompiler().*/\n/*!severity: info*/\norg.eclipse.jdt.core.JavaCore.VERSION_1_1\n\u003d\u003e org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()\n;;\n\n/*!id: jdt.internal.compliance.remove-version13-check*/\n/*!description: Simplifies a boolean expression by removing a redundant check against JavaCore.VERSION_1_3, reflecting dropped support for older Java versions.*/\n/*!severity: info*/\n!org.eclipse.jdt.core.JavaCore.VERSION_1_3.equals($source) \u0026\u0026 $versionCheck\n\u003d\u003e $versionCheck\n;;\n\n/*!id: jdt.internal.javamodutil.getcompilercompliance.version14.to.firstsupported*/\n/*!description: Updates calls to JavaModelUtil.getCompilerCompliance() to use getFirstJavaSourceVersionSupportedByCompiler() instead of a hardcoded Java 1.4 version.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($vmInstall, org.eclipse.jdt.core.JavaCore.VERSION_1_4)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($vmInstall, org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler())\n;;\n\n/*!id: jdt.internal.jls.issupportedjavaversion.to.issourcesupportedbycompiler*/\n/*!description: Updates internal JavaCore API calls from isSupportedJavaVersion() to isJavaSourceVersionSupportedByCompiler() for improved precision.*/\n/*!severity: info*/\norg.eclipse.jdt.core.JavaCore.isSupportedJavaVersion($versionStr)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.isJavaSourceVersionSupportedByCompiler($versionStr)\n;;\n\n/*!id: jdt.internal.runtime.getexecutionenvironments.to.getsupported*/\n/*!description: Updates internal JavaRuntime API calls from getExecutionEnvironments() to getSupportedExecutionEnvironments() to reflect dropped support for older Java versions.*/\n/*!severity: info*/\norg.eclipse.jdt.launching.JavaRuntime.getExecutionEnvironmentsManager().getExecutionEnvironments()\n\u003d\u003e org.eclipse.jdt.launching.JavaRuntime.getExecutionEnvironmentsManager().getSupportedExecutionEnvironments()\n;;\n\n/*!id: jdt.internal.versions.addall.allversions.to.alljavasourceversions*/\n/*!description: Updates internal JavadocSpecificsWizardPage to use getAllJavaSourceVersionsSupportedByCompiler() for populating versions list.*/\n/*!severity: info*/\n$versions.addAll(org.eclipse.jdt.core.JavaCore.getAllVersions())\n\u003d\u003e $versions.addAll(org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler())\n;;",
+      "summary": "This commit drops support for older Java versions (below Java 8) across various JDT UI components. This involves numerous internal API modernizations, including replacing hardcoded `JavaCore.VERSION_1_X` constants with dynamic calls to `JavaCore.getFirstJavaSourceVersionSupportedByCompiler()`, simplifying boolean conditions (e.g., removing redundant checks against `VERSION_1_3`), and updating method calls (e.g., `JavaCore.isSupportedJavaVersion` to `isJavaSourceVersionSupportedByCompiler`, `JavaRuntime.getExecutionEnvironments` to `getSupportedExecutionEnvironments`). These are direct 1:1 expression, argument, or method call replacements. While structural changes (method deletions, removal of NLS constants, complex list initializations) are not expressible, the numerous automatable patterns classify this commit as GREEN. Multiple distinct DSL rules are generated to capture these internal JDT API modernizations, using `inClass` and `inMethod` guards for precision. All rules assume a Java 8 baseline, as they relate to internal JDT code rather than new Java language features.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "7c250b55c3b0b6de9a0ce5dd995d8d5a3fc759fa",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-a-bug-in-jdt-s-interna",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.javalinks.styling.check-to-helper\n@severity: error\n$content.contains(org.eclipse.jdt.internal.ui.viewsupport.JavaElementLinks.CHECKBOX_ID_FORMATTIG)\n\u003d\u003e org.eclipse.jdt.internal.ui.viewsupport.JavaElementLinks.isStylingPresent($content)\n;;",
+      "summary": "This commit fixes a bug in JDT\u0027s internal Javadoc styling menu where browser content checks for styling enhancements were incorrect, especially on Windows due to quote differences. It introduces a new helper method `JavaElementLinks.isStylingPresent()` and replaces a direct `String.contains()` check with a call to this helper. This is a direct 1:1 expression replacement, making it a GREEN TriggerPattern DSL rule. Other changes involve renaming internal constants and restructuring `if/else` blocks, which are not directly expressible.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "596c2ae3700a069209bc27acbecbbd591b05ff02",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-a-ui-bug-on-linux-gtk",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.javadochover.stylingmenuaction.shellargument\n@severity: info\nnew org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction($parent, $browserAccessor, $htmlSupplier, $refreshTask)\n:: inClass(\"org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover\")\n\u003d\u003e new org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction(this.iControl.getShell(), $browserAccessor, $htmlSupplier, $refreshTask)\n;;\n\n@id: jdt.internal.stylingmenuaction.nostylingenhancementsaction.supersimplification\n@severity: info\nsuper(org.eclipse.jdt.internal.ui.viewsupport.javadoc.JavadocStylingMessages.JavadocStyling_noEnhancements)\n:: inClass(\"org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction.NoStylingEnhancementsAction\")\n\u003d\u003e super()\n;;",
+      "summary": "This commit fixes a UI bug on Linux/GTK in JDT\u0027s Javadoc hover, where the enhancements menu was not functioning correctly due to an incorrect Shell being passed to UI components. It changes the first argument of the `SignatureStylingMenuToolbarAction` constructor from a `Composite` (`parent`) to a `Shell` (`iControl.getShell()`). Additionally, it simplifies the `NoStylingEnhancementsAction` constructor by removing a `super()` call argument. Both are direct 1:1 constructor argument replacements, making them GREEN TriggerPattern DSL rules. Other changes, such as introducing a new local variable with complex initialization or adding NLS entries, are not directly expressible.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "38360917d8cb0fc9d2594f736f821128e81f4658",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "code-style-this-commit-primarily-refactors-internal",
+      "category": "Code Style",
+      "dslRule": "\"Menu item action for building \u0026 presenting color preferences sub-menu of javadoc styling menu.\"\n\u003d\u003e \"Menu item action for building \u0026amp; presenting color preferences sub-menu of javadoc styling menu.\"\n;;",
+      "summary": "This commit primarily refactors internal Eclipse JDT UI logic for menu management, simplifying dynamic menu item visibility by disposing and re-creating menus. The only part generalizable to a DSL rule is a minor Javadoc correction in `SignatureStylingColorSubMenuItem.java`, which involves replacing an unencoded ampersand (`\u0026`) with its HTML entity (`\u0026amp;`) in a specific string literal. This is a direct 1:1 string replacement.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "4a918e9bab3fddbe2062edcd761eecb379189930",
+      "status": "DISCOVERED",
+      "hintFile": "code-style.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-removes-the-javacore-callrea",
+      "category": "Eclipse API Modernization",
+      "dslRule": "org.eclipse.jdt.core.JavaCore.callReadOnly(() -\u003e $expression$)\n\u003d\u003e $expression$\n;;",
+      "summary": "This commit removes the `JavaCore.callReadOnly()` wrapper around an internal method invocation (`createElementCached`). This is a workaround for an `IllegalStateException` that occurs when the Java Model is modified during a read-only action, as `IJavaElement.exists()` could trigger classpath updates. The transformation is a direct 1:1 replacement of a lambda-wrapped expression with the expression itself, improving runtime stability and correctness within Eclipse JDT UI. This pattern is already covered by an existing DSL rule in `eclipse-api-modernization.sandbox-hint` and is classified as GREEN.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "d194e09db2ac4b6e86a5681e57befdd31165d45a",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-ui-c",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "/*!id: jdt.internal.javacore.getfirstjavasourceversion-to-getalljavasourceversions.first*/\n/*!description: Replaces JavaCore.getFirstJavaSourceVersionSupportedByCompiler() with getAllJavaSourceVersionsSupportedByCompiler().first() to use updated internal API.*/\n/*!severity: info*/\n/*!minJavaVersion: 8*/\n/*!tags: jdt, internal, refactoring, api-modernization*/\norg.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()\n\u003d\u003e org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler().first()\n;;",
+      "summary": "This commit modernizes internal JDT UI code by replacing `JavaCore.getFirstJavaSourceVersionSupportedByCompiler()` with `JavaCore.getAllJavaSourceVersionsSupportedByCompiler().first()`. This is a direct 1:1 method call replacement, reflecting an update in the internal API for retrieving compiler-supported Java source versions. It is a clean and reusable pattern for internal JDT API modernization, fully expressible as a GREEN TriggerPattern DSL rule. No `sourceVersionGE` guard is needed in the rule itself, as this is an internal refactoring within JDT\u0027s own codebase, not a migration of user code to a new Java language feature. It will be added to `jdt-internal-refactoring.sandbox-hint`.",
+      "discoveredAt": "2026-05-09",
+      "discoveredInRun": 24699,
+      "sourceCommit": "11901207db25ce7aea6b339595c15a95b1ef2e51",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

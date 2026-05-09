@@ -1753,3 +1753,165 @@ org.eclipse.jdt.core.JavaCore.VERSION_21.equals($selectedCompliance)
 :: inClass("org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock") && sourceVersionGE(22)
 => org.eclipse.jdt.core.JavaCore.VERSION_22.equals($selectedCompliance)
 ;;
+
+/*!id: jdt.internal.refactoring.abstractunnamedtypedec.to.abstracttypedec.type*/
+/*!description: Replaces type reference AbstractUnnamedTypeDeclaration with AbstractTypeDeclaration, reflecting JDT Core DOM AST changes.*/
+/*!severity: info*/
+org.eclipse.jdt.core.dom.AbstractUnnamedTypeDeclaration
+=> org.eclipse.jdt.core.dom.AbstractTypeDeclaration
+;;
+
+/*!id: jdt.internal.refactoring.abstractunnamedtypedec.to.abstracttypedec.expression*/
+/*!description: Simplifies ternary expression related to AbstractUnnamedTypeDeclaration to direct getName() call, reflecting JDT Core DOM AST changes.*/
+/*!severity: info*/
+$type instanceof org.eclipse.jdt.core.dom.AbstractTypeDeclaration named? named.getName().getIdentifier() : ""
+=> $type.getName().getIdentifier()
+;;
+
+@id: jdt.internal.quickfixprocessor.npe.fix
+@severity: error
+!(deprecatedMethodNode instanceof org.eclipse.jdt.core.dom.MethodInvocation)
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickFixProcessor") && inMethod("getProposals")
+=> deprecatedMethodNode != null && !(deprecatedMethodNode instanceof org.eclipse.jdt.core.dom.MethodInvocation)
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.table*/
+/*!description: Removes redundant (Table) casts when the expression is already a subtype of Table.*/
+/*!severity: info*/
+(org.eclipse.swt.widgets.Table) $expression :: subtypeOf($expression, "org.eclipse.swt.widgets.Table")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.abstracttreeviewer*/
+/*!description: Removes redundant (AbstractTreeViewer) casts when the expression is already a subtype of AbstractTreeViewer.*/
+/*!severity: info*/
+(org.eclipse.jdt.internal.ui.browsing.AbstractTreeViewer) $expression :: subtypeOf($expression, "org.eclipse.jdt.internal.ui.browsing.AbstractTreeViewer")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.icompilationunit*/
+/*!description: Removes redundant (ICompilationUnit) casts when the expression is already a subtype of ICompilationUnit.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.ICompilationUnit) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.ICompilationUnit")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.iclassfile*/
+/*!description: Removes redundant (IClassFile) casts when the expression is already a subtype of IClassFile.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.IClassFile) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.IClassFile")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.icodeassist*/
+/*!description: Removes redundant (ICodeAssist) casts when the expression is already a subtype of ICodeAssist.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.ICodeAssist) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.ICodeAssist")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.iadaptable*/
+/*!description: Removes redundant (IAdaptable) casts when the expression is already a subtype of IAdaptable.*/
+/*!severity: info*/
+(org.eclipse.core.runtime.IAdaptable) $expression :: subtypeOf($expression, "org.eclipse.core.runtime.IAdaptable")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.simplename*/
+/*!description: Removes redundant (SimpleName) casts when the expression is already a subtype of SimpleName.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.dom.SimpleName) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.dom.SimpleName")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.variabledeclarationfragment*/
+/*!description: Removes redundant (VariableDeclarationFragment) casts when the expression is already a subtype of VariableDeclarationFragment.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.dom.VariableDeclarationFragment) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.dom.VariableDeclarationFragment")
+=> $expression
+;;
+
+/*!id: jdt.internal.remove-redundant-cast.isourcereference*/
+/*!description: Removes redundant (ISourceReference) casts when the expression is already a subtype of ISourceReference.*/
+/*!severity: info*/
+(org.eclipse.jdt.core.ISourceReference) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.ISourceReference")
+=> $expression
+;;
+
+/*!id: jdt.internal.jls.version13.to.firstsupported*/
+/*!description: Updates internal JDT UI code to replace specific JavaCore version constants with dynamic calls to getFirstJavaSourceVersionSupportedByCompiler().*/
+/*!severity: info*/
+org.eclipse.jdt.core.JavaCore.VERSION_1_3
+=> org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
+;;
+
+/*!id: jdt.internal.jls.version11.to.firstsupported*/
+/*!description: Updates internal JDT UI code to replace specific JavaCore version constants with dynamic calls to getFirstJavaSourceVersionSupportedByCompiler().*/
+/*!severity: info*/
+org.eclipse.jdt.core.JavaCore.VERSION_1_1
+=> org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
+;;
+
+/*!id: jdt.internal.compliance.remove-version13-check*/
+/*!description: Simplifies a boolean expression by removing a redundant check against JavaCore.VERSION_1_3, reflecting dropped support for older Java versions.*/
+/*!severity: info*/
+!org.eclipse.jdt.core.JavaCore.VERSION_1_3.equals($source) && $versionCheck
+=> $versionCheck
+;;
+
+/*!id: jdt.internal.javamodutil.getcompilercompliance.version14.to.firstsupported*/
+/*!description: Updates calls to JavaModelUtil.getCompilerCompliance() to use getFirstJavaSourceVersionSupportedByCompiler() instead of a hardcoded Java 1.4 version.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($vmInstall, org.eclipse.jdt.core.JavaCore.VERSION_1_4)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($vmInstall, org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler())
+;;
+
+/*!id: jdt.internal.jls.issupportedjavaversion.to.issourcesupportedbycompiler*/
+/*!description: Updates internal JavaCore API calls from isSupportedJavaVersion() to isJavaSourceVersionSupportedByCompiler() for improved precision.*/
+/*!severity: info*/
+org.eclipse.jdt.core.JavaCore.isSupportedJavaVersion($versionStr)
+=> org.eclipse.jdt.core.JavaCore.isJavaSourceVersionSupportedByCompiler($versionStr)
+;;
+
+/*!id: jdt.internal.runtime.getexecutionenvironments.to.getsupported*/
+/*!description: Updates internal JavaRuntime API calls from getExecutionEnvironments() to getSupportedExecutionEnvironments() to reflect dropped support for older Java versions.*/
+/*!severity: info*/
+org.eclipse.jdt.launching.JavaRuntime.getExecutionEnvironmentsManager().getExecutionEnvironments()
+=> org.eclipse.jdt.launching.JavaRuntime.getExecutionEnvironmentsManager().getSupportedExecutionEnvironments()
+;;
+
+/*!id: jdt.internal.versions.addall.allversions.to.alljavasourceversions*/
+/*!description: Updates internal JavadocSpecificsWizardPage to use getAllJavaSourceVersionsSupportedByCompiler() for populating versions list.*/
+/*!severity: info*/
+$versions.addAll(org.eclipse.jdt.core.JavaCore.getAllVersions())
+=> $versions.addAll(org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler())
+;;
+
+@id: jdt.internal.javalinks.styling.check-to-helper
+@severity: error
+$content.contains(org.eclipse.jdt.internal.ui.viewsupport.JavaElementLinks.CHECKBOX_ID_FORMATTIG)
+=> org.eclipse.jdt.internal.ui.viewsupport.JavaElementLinks.isStylingPresent($content)
+;;
+
+@id: jdt.internal.javadochover.stylingmenuaction.shellargument
+@severity: info
+new org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction($parent, $browserAccessor, $htmlSupplier, $refreshTask)
+:: inClass("org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover")
+=> new org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction(this.iControl.getShell(), $browserAccessor, $htmlSupplier, $refreshTask)
+;;
+
+@id: jdt.internal.stylingmenuaction.nostylingenhancementsaction.supersimplification
+@severity: info
+super(org.eclipse.jdt.internal.ui.viewsupport.javadoc.JavadocStylingMessages.JavadocStyling_noEnhancements)
+:: inClass("org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction.NoStylingEnhancementsAction")
+=> super()
+;;
+
+/*!id: jdt.internal.javacore.getfirstjavasourceversion-to-getalljavasourceversions.first*/
+/*!description: Replaces JavaCore.getFirstJavaSourceVersionSupportedByCompiler() with getAllJavaSourceVersionsSupportedByCompiler().first() to use updated internal API.*/
+/*!severity: info*/
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, api-modernization*/
+org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
+=> org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler().first()
+;;
