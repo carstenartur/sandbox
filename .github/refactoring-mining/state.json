@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "582704e184af9445965a625946f4085ccc14176d",
-      "lastProcessedDate": "2026-05-08T03:31:35.288716431Z",
-      "totalProcessed": 1964,
+      "lastProcessedCommit": "dd3a576db0017fde4087352938eb4e5cc2e13156",
+      "lastProcessedDate": "2026-05-09T03:30:44.671563141Z",
+      "totalProcessed": 2064,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1889,6 +1889,42 @@
           "deferredAt": "2026-05-08T03:31:24.670830996Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "58ae34144bcf9935f73483a7f67fbbe73dee5916",
+          "message": "Replace \"UTF8\" with StandardCharsets.UTF_8\n\nAvoids NON-NLS and possible UnsupportedEncodingException\n",
+          "diffLines": 87,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-09T03:20:08.547570147Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7bcba3bbab7de6e9986445377a3d5c268f34a2f1",
+          "message": "Refactor StaticInnerClassCleanUp to jdt.core.manipulation (#1493)\n\n* Refactor StaticInnerClassCleanUp to jdt.core.manipu",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-09T03:20:08.547994020Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "25474de92e1e364ac735959e9e31382725a5a454",
+          "message": "Refactor RedundantSemicolonsCleanUp to jdt.core.manipulation (#1495)\n\n- refactor and rename to RedundantSemicolonsCleanU",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-09T03:20:08.548039185Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d11adcfa6c819430e06e1418619e8f06c88a60d1",
+          "message": "dogfooding - if else to switch cleanup (#1567)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-09T03:26:34.396473399Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1898,14 +1934,14 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 154,
+        "JDT Internal Refactoring": 160,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 51,
+        "JDT Internal Bug Fix": 58,
         "Clean-up Bug Fix": 78,
         "Try-with-Resources": 8,
         "JDT UI Feature Implementation": 1,
-        "Resource Management": 3,
+        "Resource Management": 4,
         "JFace API Modernization": 1,
         "String-API": 7,
         "Java-Modernization": 23,
@@ -1923,14 +1959,14 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
         "Architecture Migration": 9,
-        "Code Style": 31,
+        "Code Style": 32,
         "Eclipse API Configuration": 10,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 14,
         "JDT Internal Architecture": 1,
         "Eclipse API Migration": 13,
-        "JDT Internal Feature": 1,
+        "JDT Internal Feature": 6,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 2,
         "Control Flow Modernization": 4,
@@ -1966,7 +2002,7 @@
         "New Cleanup": 1,
         "Logical Simplification": 7,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 11,
+        "Eclipse API Modernization": 13,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -1998,7 +2034,7 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 3,
+        "Error Handling": 4,
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
@@ -2015,7 +2051,8 @@
         "JDT Internal Configuration": 1,
         "Eclipse API Deprecation": 1,
         "Quick Assist": 1,
-        "Logging / Exception Handling": 1
+        "Logging / Exception Handling": 1,
+        "JDT Internal Cleanup": 2
       },
       "exhaustedCategories": []
     },
@@ -2056,5 +2093,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24599
+  "globalTotalProcessed": 24699
 }
