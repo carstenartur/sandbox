@@ -31,3 +31,22 @@ addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.
 addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVADOC, 100, 4, 20)
 => addLabelledTextField($composite, $label, org.eclipse.jdt.ui.PreferenceConstants.PREF_CODEASSIST_AUTOACTIVATION_TRIGGERS_JAVADOC, 100, 0, 20)
 ;;
+
+@id: jdt.internal.compliance.version23.to.version24
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_23.equals($selectedCompliance)
+:: inClass("org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock") && sourceVersionGE(24)
+=> org.eclipse.jdt.core.JavaCore.VERSION_24.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.codemining.parametername.skip.method
+@severity: info
+$method.getNumberOfParameters() <= 1
+=> (!org.eclipse.jdt.ui.PreferenceConstants.getPreferenceStore().getBoolean(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_PARAMETER_NAME_SINGLE_ARG) && $method.getNumberOfParameters() == 1) || $method.getNumberOfParameters() == 0
+;;
+
+@id: jdt.internal.codemining.parametername.skip.methodbinding
+@severity: info
+$methodBinding.getParameterNames().length <= 1
+=> (!org.eclipse.jdt.ui.PreferenceConstants.getPreferenceStore().getBoolean(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_PARAMETER_NAME_SINGLE_ARG) && $methodBinding.getParameterNames().length == 1) || $methodBinding.getParameterNames().length == 0
+;;

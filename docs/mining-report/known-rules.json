@@ -3509,6 +3509,94 @@
       "sourceCommit": "11901207db25ce7aea6b339595c15a95b1ef2e51",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-migration-the-commit-replaces-the-deprecated-const",
+      "category": "Eclipse API Migration",
+      "dslRule": "new org.eclipse.ui.actions.CopyProjectAction(getShell())\n\u003d\u003e new org.eclipse.ui.actions.CopyProjectAction(getSite())\n;;",
+      "summary": "The commit replaces the deprecated constructor call `new CopyProjectAction(getShell())` with `new CopyProjectAction(getSite())`. This is a direct 1:1 replacement of a constructor argument, migrating from a `Shell` argument to an `IShellProvider` (via `getSite()`). This pattern is fully supported by the TriggerPattern DSL and is classified as GREEN. The rule accurately captures the change in the constructor invocation.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "64ae4a641278cc444769d1fe0b04b89d9ba8c297",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-deprecations.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-updates-an-internal-jdt-ui-c",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: jdt.internal.compliance.version23.to.version24\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_23.equals($selectedCompliance)\n:: inClass(\"org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock\") \u0026\u0026 sourceVersionGE(24)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_24.equals($selectedCompliance)\n;;",
+      "summary": "This commit updates an internal JDT UI compiler preference to allow targeting Java 24. Specifically, it changes a conditional check from `JavaCore.VERSION_23.equals(...)` to `JavaCore.VERSION_24.equals(...)`. This is a direct 1:1 constant replacement within a boolean expression, which is fully implementable as a GREEN TriggerPattern DSL rule. The rule is guarded by `sourceVersionGE(24)` to indicate that it enables support for Java 24. Other changes (Javadoc updates, `@SuppressWarnings` removal) are not code transformations for the DSL.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "07dfd879142cb084675db08fa4614f185133de4b",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-addresses-deprecations-and-m",
+      "category": "Eclipse API Modernization",
+      "dslRule": "/*!id: jdt.internal.javaplugin.getjavacorepluginpreferences.to.new*/\n/*!description: Replace deprecated JavaPlugin.getJavaCorePluginPreferences() with JavaPlugin.getJavaCorePluginPreferencesNew().*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferences()\n\u003d\u003e org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferencesNew()\n;;\n\n/*!id: jdt.internal.text.javacodereader.singlecharreader-to-singlecharacterreader*/\n/*!description: Replace internal SingleCharReader with SingleCharacterReader (type rename).*/\n/*!severity: info*/\norg.eclipse.jface.internal.text.html.SingleCharReader\n\u003d\u003e org.eclipse.text.readers.SingleCharacterReader\n;;\n\n/*!id: jdt.internal.text.correction.proposals.fixcorrectionproposal.getimagedata.addzoom*/\n/*!description: Add zoom argument to Image.getImageData() call in FixCorrectionProposal for high-res images.*/\n/*!severity: info*/\n$image.getImageData().width\n\u003d\u003e $image.getImageData(100).width\n;;\n\n/*!id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.getaveragecharwidth.rename*/\n/*!description: Rename getAverageCharWidth() to getAverageCharacterWidth() for improved precision.*/\n/*!severity: info*/\n$gc.getFontMetrics().getAverageCharWidth()\n\u003d\u003e $gc.getFontMetrics().getAverageCharacterWidth()\n;;\n\n/*!id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.computeconstraints.addcast*/\n/*!description: Add explicit (int) cast for width calculation in SourceViewerInformationControl to handle double precision.*/\n/*!severity: info*/\n$widthInChars * $width\n:: inClass(\"org.eclipse.jdt.internal.ui.text.java.hover.SourceViewerInformationControl\") \u0026\u0026 inMethod(\"computeSizeConstraints\") \u0026\u0026 instanceof($width, \"double\")\n\u003d\u003e (int) ($widthInChars * $width)\n;;\n\n/*!id: jdt.internal.ui.viewsupport.filteredelementtreeselectiondialog.super.addarg*/\n/*!description: Add \u0027true\u0027 argument to FilteredTree super constructor for deep filtering in FilteredElementTreeSelectionDialog.*/\n/*!severity: info*/\nsuper($parent, $treeStyle, $patternFilter, true)\n:: inClass(\"org.eclipse.jdt.internal.ui.viewsupport.FilteredElementTreeSelectionDialog\")\n\u003d\u003e super($parent, $treeStyle, $patternFilter, true, true)\n;;\n\n/*!id: jface.listselectiondialog.to.fluentbuilder*/\n/*!description: Modernize ListSelectionDialog instantiation to use the fluent builder pattern.*/\n/*!severity: info*/\nnew org.eclipse.jface.dialogs.ListSelectionDialog($shell, $input, $contentProvider, $labelProvider, $message)\n\u003d\u003e org.eclipse.jface.dialogs.ListSelectionDialog.of($input).contentProvider($contentProvider).labelProvider($labelProvider).message($message).create($shell)\n;;",
+      "summary": "This commit addresses deprecations and modernizes various internal Eclipse/JDT UI API usages. Key transformations include replacing `JavaPlugin.getJavaCorePluginPreferences()` with a newer internal method, renaming `SingleCharReader` to `SingleCharacterReader`, adding a zoom argument to `Image.getImageData()`, renaming `FontMetrics.getAverageCharWidth()` to `getAverageCharacterWidth()`, adding an explicit `(int)` cast for double multiplication, adding a boolean argument to `FilteredTree`\u0027s super constructor, and migrating `ListSelectionDialog` constructor calls to a fluent builder pattern. All these patterns are direct 1:1 expression, method call, or constructor call replacements and are fully implementable as GREEN TriggerPattern DSL rules. However, the changes related to `KeyBindingService` and `IContextService` involve introducing new local variables and multiple statements, which are not supported by the current DSL (RED). Given the high number of automatable patterns, the commit is classified as GREEN overall for its extractable rules.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "e293b059fb0ebaedada9b96d166a450d8796818f",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-introduces-a-call-to-workben",
+      "category": "Eclipse API Modernization",
+      "dslRule": "$viewer.setInput($viewer)\n:: instanceof($viewer, \"org.eclipse.jdt.internal.ui.typehierarchy.TypeHierarchyViewer\")\n\u003d\u003e org.eclipse.ui.views.WorkbenchViewerSetup.setupViewer($viewer);\n   $viewer.setInput($viewer)\n;;",
+      "summary": "This commit introduces a call to `WorkbenchViewerSetup.setupViewer(viewer)` for `TypeHierarchyViewer` instances within the `TypeHierarchyViewPart`. This is an internal Eclipse JDT UI modernization to configure initial viewer limits, typically for performance or display. The pattern involves inserting a method call before an existing statement (`viewer.setInput(viewer)`). It is fully implementable as a GREEN TriggerPattern DSL rule using an `instanceof` guard to target the specific viewer type and multiline replacement to insert the new statement. No specific `sourceVersionGE` guard is needed in the rule itself as this is an internal JDT UI refactoring, not a migration to a new external Java language feature, thus Java 8 baseline is sufficient.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "20aa0b782dc10eb558952c1a066305807f5e2e56",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-ui-refactoring-this-commit-changes-the-icon-used-for-th",
+      "category": "Eclipse UI Refactoring",
+      "dslRule": "@id: jdt.internal.ui.icon.rename-to-unnamed-variable\n@severity: info\norg.eclipse.ui.PlatformUI.getWorkbench().getSharedImages().getImage(org.eclipse.ui.ISharedImages.IMG_TOOL_REDO)\n\u003d\u003e org.eclipse.jdt.internal.ui.JavaPluginImages.get(org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_CORRECTION_LINKED_RENAME)\n;;",
+      "summary": "This commit changes the icon used for the \u0027rename to unnamed variable\u0027 quick fix in JDT UI. It replaces a generic Eclipse shared image lookup (`PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_TOOL_REDO)`) with a specific JDT internal image (`JavaPluginImages.get(JavaPluginImages.IMG_CORRECTION_LINKED_RENAME)`). This is a direct 1:1 expression replacement, suitable for a GREEN TriggerPattern DSL rule, improving internal UI consistency. The rule uses fully qualified names for precision and includes an `@id` and `@severity` annotation.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "a5d69f1cd9c025818a0e296fbb9d922f99648dff",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modifies-internal-jdt-ui-cod",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "$mbinding.getDeclaringClass().isRecord()\n:: inClass(\"org.eclipse.jdt.internal.ui.javaeditor.codemining.CalleeJavaMethodParameterVisitor\") \u0026\u0026 sourceVersionGE(16)\n\u003d\u003e $mbinding.getDeclaringClass().isRecord() \u0026\u0026 !skipParameterNamesCodeMinings($mbinding)\n;;",
+      "summary": "This commit modifies internal JDT UI code mining logic to handle Record classes. It extends an existing \u0027if\u0027 condition from \u0027mbinding.getDeclaringClass().isRecord()\u0027 to \u0027mbinding.getDeclaringClass().isRecord() \u0026\u0026 !skipParameterNamesCodeMinings(mbinding)\u0027. This is a direct, 1:1 expression replacement within a boolean condition. The DSL can directly express this pattern by matching the existing boolean expression and replacing it with the extended one. The rule uses an \u0027inClass\u0027 guard for precision and \u0027sourceVersionGE(16)\u0027 as the \u0027isRecord()\u0027 method (on ITypeBinding) was introduced in Java 16. The new private helper method \u0027skipParameterNamesCodeMinings(IMethodBinding)\u0027 is assumed to exist in the target class for the rewritten code to be valid, as the DSL does not generate new methods. This is a GREEN transformation, improving internal JDT correctness for modern Java features.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "44356af0e5f7950024d00ec52a8df7a6c788178c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-modernizes-eclipse-platform",
+      "category": "Eclipse API Modernization",
+      "dslRule": "org.eclipse.core.runtime.Platform.OS_MACOSX.equals(org.eclipse.core.runtime.Platform.getOS())\n\u003d\u003e org.eclipse.core.runtime.Platform.OS.isMac()\n;;\n\norg.eclipse.core.runtime.Platform.OS_WIN32.equals(org.eclipse.core.runtime.Platform.getOS())\n\u003d\u003e org.eclipse.core.runtime.Platform.OS.isWindows()\n;;",
+      "summary": "This commit modernizes Eclipse Platform API usage by replacing comparisons like `Platform.OS_MACOSX.equals(Platform.getOS())` with the more direct and readable `Platform.OS.isMac()`, and similarly for Windows. These are direct 1:1 expression replacements that improve code clarity and leverage modern API. The transformations are semantically safe and fully expressible as two separate GREEN TriggerPattern DSL rules, one for macOS and one for Windows platform checks. No specific Java version guard is needed as these are Eclipse API changes, not new Java language features beyond the Java 8 baseline.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "4dc72d8c0d1ea3ca58656c098ecd178269a0695a",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-ui-configuration-the-commit-introduces-a-new-preference-t",
+      "category": "Eclipse UI Configuration",
+      "dslRule": "@id: jdt.internal.codemining.parametername.skip.method\n@severity: info\n$method.getNumberOfParameters() \u003c\u003d 1\n\u003d\u003e (!org.eclipse.jdt.ui.PreferenceConstants.getPreferenceStore().getBoolean(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_PARAMETER_NAME_SINGLE_ARG) \u0026\u0026 $method.getNumberOfParameters() \u003d\u003d 1) || $method.getNumberOfParameters() \u003d\u003d 0\n;;\n\n@id: jdt.internal.codemining.parametername.skip.methodbinding\n@severity: info\n$methodBinding.getParameterNames().length \u003c\u003d 1\n\u003d\u003e (!org.eclipse.jdt.ui.PreferenceConstants.getPreferenceStore().getBoolean(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_PARAMETER_NAME_SINGLE_ARG) \u0026\u0026 $methodBinding.getParameterNames().length \u003d\u003d 1) || $methodBinding.getParameterNames().length \u003d\u003d 0\n;;",
+      "summary": "The commit introduces a new preference to control code mining display for single-parameter methods. This involves adding a new preference constant, UI elements, and modifying two internal boolean expressions. While adding new constants/UI is not DSL-expressible, the two boolean expression replacements are direct, 1:1 transformations. These rules replace a simple condition with a more complex one that incorporates the new preference, making them fully implementable as GREEN TriggerPattern DSL rules. The rules are specific to internal JDT UI logic and apply from Java 8 baseline.",
+      "discoveredAt": "2026-05-10",
+      "discoveredInRun": 24787,
+      "sourceCommit": "9c980bf8c3c5777245a924fa74a86c9a262a9e9e",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
     }
   ]
 }
