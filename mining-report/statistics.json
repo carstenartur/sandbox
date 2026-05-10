@@ -1,48 +1,50 @@
 {
-  "totalProcessed": 28,
-  "relevant": 25,
-  "irrelevant": 3,
-  "duplicates": 1,
+  "totalProcessed": 26,
+  "relevant": 21,
+  "irrelevant": 5,
+  "duplicates": 0,
   "green": 9,
-  "yellow": 0,
-  "red": 16,
+  "yellow": 1,
+  "red": 12,
   "irrelevantReasons": {
-    "The commit comments out a large block of Java code, which is a temporary code disablement or removal of problematic logic. The TriggerPattern DSL is designed for pattern-based transformations (replace A with B), not for commenting out or disabling code blocks.": 1,
-    "This commit changes a string literal in a .properties file, which is an NLS (National Language Support) message. The TriggerPattern DSL is designed for Java code transformations, not for .properties file content or NLS keys.": 1,
-    "This commit adds new NLS entries and UI checkbox preferences for \u0027Java Version property\u0027 and \u0027Java Spec Version property\u0027 cleanups. It does not contain the actual code transformation patterns for these properties. The DSL can only capture code transformations, not UI/NLS additions or architectural setup for cleanups.": 1
+    "This commit primarily involves refactoring an internal UI component (FiltersDialog) to change a single checkbox filter into three radio button options. This is a significant structural refactoring, including adding/removing class fields, rewriting UI creation logic, introducing new helper methods, and modifying internal logic for updating filter states. The TriggerPattern DSL is designed for expression-level or simple statement-level transformations, not for such extensive architectural and UI-specific structural changes.": 1,
+    "This commit introduces a new UI option in JDT preferences for configuring problem severity for unused lambda parameters. It involves adding new NLS message keys, declaring new preference constants, adding these constants to an array, and adding a new UI control (combo box) to the preference page. These are additive changes related to UI feature development and configuration, not transformations of existing Java code patterns. The TriggerPattern DSL is designed for code refactoring and modernization patterns, not for generating UI elements, NLS entries, or new constant declarations in this manner.": 1,
+    "This commit primarily adds internal infrastructure and conditional logic to *offer* a new quick-fix for unused local variables and lambda parameters (introducing Java 22+ unnamed patterns/variables feature). The changes involve adding new `if` blocks, checking problem IDs, invoking internal fix creation logic, and defining a new helper method. The TriggerPattern DSL is designed for defining reusable code *transformations* (pattern -\u003e replacement), not for implementing the complex internal logic of when and how JDT quick-fixes are offered or dispatched based on problem IDs and project Java versions. These are structural and control-flow changes within the JDT UI\u0027s quick-fix processing pipeline, which are not suitable for expression-based DSL rules.": 1,
+    "The commit modifies internal JDT quick-fix logic by adding new conditional statements and calling new Java-based fix factories. This is a structural change to the quick-fix implementation itself, not a pattern-based transformation applicable to user code. The DSL cannot add new control flow or invoke complex Java-based fix functions directly.": 1,
+    "The changes are bug fixes to internal JDT UI logging/hover behavior. They involve adding conditional logic and changing behavior within catch blocks, which cannot be expressed as generic DSL pattern replacements. They are very context-specific and do not represent reusable code transformation patterns for user code. The DSL does not support inserting new \u0027if\u0027 statements or complex modifications within catch blocks that alter control flow and add multi-line comments.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 28,
-      "relevant": 25,
+      "totalProcessed": 26,
+      "relevant": 21,
       "green": 9,
-      "yellow": 0,
-      "red": 16
+      "yellow": 1,
+      "red": 12
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-09",
-      "processed": 28,
-      "relevant": 25
+      "date": "2026-05-10",
+      "processed": 26,
+      "relevant": 21
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-09T03:11:41.889Z",
-    "completedAt": "2026-05-09T03:30:45.882364272Z",
-    "durationSeconds": 1143,
+    "startedAt": "2026-05-10T03:12:11.585Z",
+    "completedAt": "2026-05-10T03:31:34.429589447Z",
+    "durationSeconds": 1162,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 204,
+    "deferredCommits": 210,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-09T03:13:56.400924990Z",
-    "latestEvaluation": "2026-05-09T03:30:44.671037367Z",
-    "earliestCommitDate": "2024-05-22T12:30:52Z",
-    "latestCommitDate": "2024-09-13T20:16:23Z"
+    "earliestEvaluation": "2026-05-10T03:14:00.947244001Z",
+    "latestEvaluation": "2026-05-10T03:31:33.168459497Z",
+    "earliestCommitDate": "2024-09-17T15:26:43Z",
+    "latestCommitDate": "2024-12-19T10:59:41Z"
   }
 }
