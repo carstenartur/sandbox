@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "dd3a576db0017fde4087352938eb4e5cc2e13156",
-      "lastProcessedDate": "2026-05-09T03:30:44.671563141Z",
-      "totalProcessed": 2064,
+      "lastProcessedCommit": "d2a6005b59316915373f68d13e7f3b0604468f38",
+      "lastProcessedDate": "2026-05-10T03:31:33.169858882Z",
+      "totalProcessed": 2152,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1925,6 +1925,60 @@
           "deferredAt": "2026-05-09T03:26:34.396473399Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "d034430c32a7358212d855b411706265368d4e9f",
+          "message": "Merge remote-tracking branch \u0027upstream/BETA_JAVA23\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:14:01.021065544Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fee4f51cec58aa36651a4986e00dffd638487204",
+          "message": "Merge pull request #1662 from noopur2507/merge-beta23-to-master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:14:01.048799461Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c223f6243a4c18085a0071bc219189fe8e84b237",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:20:17.162593089Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5e4a552522dcfe92fafd549daf0be19684243c1b",
+          "message": "Merge master into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:21:06.723305015Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d0563dcb67679ab00626ff63283f5bceb5d0ea54",
+          "message": "Semantic Tokens extension point (#1683)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:28:15.643018001Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "960a9090a1d1b351e60fde07164347022318f679",
+          "message": "Refactor LocalCorrectionsSubProcessor to jdt.core.manipulation (#1849)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:28:15.655834581Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1934,17 +1988,17 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 160,
+        "JDT Internal Refactoring": 162,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 58,
-        "Clean-up Bug Fix": 78,
+        "JDT Internal Bug Fix": 59,
+        "Clean-up Bug Fix": 79,
         "Try-with-Resources": 8,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 4,
         "JFace API Modernization": 1,
         "String-API": 7,
-        "Java-Modernization": 23,
+        "Java-Modernization": 24,
         "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
@@ -1960,15 +2014,15 @@
         "Type Inference": 2,
         "Architecture Migration": 9,
         "Code Style": 32,
-        "Eclipse API Configuration": 10,
+        "Eclipse API Configuration": 11,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 14,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 13,
+        "Eclipse API Migration": 15,
         "JDT Internal Feature": 6,
         "Type Safety": 3,
-        "Eclipse UI Refactoring": 2,
+        "Eclipse UI Refactoring": 4,
         "Control Flow Modernization": 4,
         "JDT Internal Quick Fix Implementation": 1,
         "Unnecessary Annotation Removal": 1,
@@ -1998,11 +2052,11 @@
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
         "Concurrency": 4,
-        "Bug Fix": 4,
+        "Bug Fix": 5,
         "New Cleanup": 1,
-        "Logical Simplification": 7,
+        "Logical Simplification": 8,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 13,
+        "Eclipse API Modernization": 16,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -2034,12 +2088,12 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 4,
+        "Error Handling": 5,
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
-        "Eclipse UI Configuration": 1,
-        "Eclipse UI Fix": 4,
+        "Eclipse UI Configuration": 2,
+        "Eclipse UI Fix": 5,
         "New Feature Introduction": 2,
         "Eclipse UI": 1,
         "Eclipse UI Feature": 2,
@@ -2052,7 +2106,9 @@
         "Eclipse API Deprecation": 1,
         "Quick Assist": 1,
         "Logging / Exception Handling": 1,
-        "JDT Internal Cleanup": 2
+        "JDT Internal Cleanup": 2,
+        "Clean-up Infrastructure": 2,
+        "New Quick Fix Feature": 1
       },
       "exhaustedCategories": []
     },
@@ -2093,5 +2149,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24699
+  "globalTotalProcessed": 24787
 }

@@ -1915,3 +1915,14 @@ super(org.eclipse.jdt.internal.ui.viewsupport.javadoc.JavadocStylingMessages.Jav
 org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
 => org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler().first()
 ;;
+
+@id: jdt.internal.ui.icon.rename-to-unnamed-variable
+@severity: info
+org.eclipse.ui.PlatformUI.getWorkbench().getSharedImages().getImage(org.eclipse.ui.ISharedImages.IMG_TOOL_REDO)
+=> org.eclipse.jdt.internal.ui.JavaPluginImages.get(org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_CORRECTION_LINKED_RENAME)
+;;
+
+$mbinding.getDeclaringClass().isRecord()
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.codemining.CalleeJavaMethodParameterVisitor") && sourceVersionGE(16)
+=> $mbinding.getDeclaringClass().isRecord() && !skipParameterNamesCodeMinings($mbinding)
+;;

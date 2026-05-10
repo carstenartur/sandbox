@@ -9,3 +9,7 @@ org.eclipse.jdt.core.dom.ITypeBinding.$typeBinding.getDeclaredModifiers()
 :: instanceof($typeBinding, "org.eclipse.jdt.core.dom.ITypeBinding")
 => $typeBinding.getModifiers()
 ;;
+
+new org.eclipse.ui.actions.CopyProjectAction(getShell())
+=> new org.eclipse.ui.actions.CopyProjectAction(getSite())
+;;

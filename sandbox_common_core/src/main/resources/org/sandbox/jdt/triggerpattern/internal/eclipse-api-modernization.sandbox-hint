@@ -99,3 +99,68 @@ $project.getNature(org.eclipse.jdt.core.JavaCore.NATURE_ID) != null :: instanceo
 ;;
 
 // Note: Removal of 'import org.eclipse.core.resources.IProjectNature;' is automatically handled by the DSL's import management.
+
+/*!id: jdt.internal.javaplugin.getjavacorepluginpreferences.to.new*/
+/*!description: Replace deprecated JavaPlugin.getJavaCorePluginPreferences() with JavaPlugin.getJavaCorePluginPreferencesNew().*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferences()
+=> org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferencesNew()
+;;
+
+/*!id: jdt.internal.text.javacodereader.singlecharreader-to-singlecharacterreader*/
+/*!description: Replace internal SingleCharReader with SingleCharacterReader (type rename).*/
+/*!severity: info*/
+org.eclipse.jface.internal.text.html.SingleCharReader
+=> org.eclipse.text.readers.SingleCharacterReader
+;;
+
+/*!id: jdt.internal.text.correction.proposals.fixcorrectionproposal.getimagedata.addzoom*/
+/*!description: Add zoom argument to Image.getImageData() call in FixCorrectionProposal for high-res images.*/
+/*!severity: info*/
+$image.getImageData().width
+=> $image.getImageData(100).width
+;;
+
+/*!id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.getaveragecharwidth.rename*/
+/*!description: Rename getAverageCharWidth() to getAverageCharacterWidth() for improved precision.*/
+/*!severity: info*/
+$gc.getFontMetrics().getAverageCharWidth()
+=> $gc.getFontMetrics().getAverageCharacterWidth()
+;;
+
+/*!id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.computeconstraints.addcast*/
+/*!description: Add explicit (int) cast for width calculation in SourceViewerInformationControl to handle double precision.*/
+/*!severity: info*/
+$widthInChars * $width
+:: inClass("org.eclipse.jdt.internal.ui.text.java.hover.SourceViewerInformationControl") && inMethod("computeSizeConstraints") && instanceof($width, "double")
+=> (int) ($widthInChars * $width)
+;;
+
+/*!id: jdt.internal.ui.viewsupport.filteredelementtreeselectiondialog.super.addarg*/
+/*!description: Add 'true' argument to FilteredTree super constructor for deep filtering in FilteredElementTreeSelectionDialog.*/
+/*!severity: info*/
+super($parent, $treeStyle, $patternFilter, true)
+:: inClass("org.eclipse.jdt.internal.ui.viewsupport.FilteredElementTreeSelectionDialog")
+=> super($parent, $treeStyle, $patternFilter, true, true)
+;;
+
+/*!id: jface.listselectiondialog.to.fluentbuilder*/
+/*!description: Modernize ListSelectionDialog instantiation to use the fluent builder pattern.*/
+/*!severity: info*/
+new org.eclipse.jface.dialogs.ListSelectionDialog($shell, $input, $contentProvider, $labelProvider, $message)
+=> org.eclipse.jface.dialogs.ListSelectionDialog.of($input).contentProvider($contentProvider).labelProvider($labelProvider).message($message).create($shell)
+;;
+
+$viewer.setInput($viewer)
+:: instanceof($viewer, "org.eclipse.jdt.internal.ui.typehierarchy.TypeHierarchyViewer")
+=> org.eclipse.ui.views.WorkbenchViewerSetup.setupViewer($viewer);
+   $viewer.setInput($viewer)
+;;
+
+org.eclipse.core.runtime.Platform.OS_MACOSX.equals(org.eclipse.core.runtime.Platform.getOS())
+=> org.eclipse.core.runtime.Platform.OS.isMac()
+;;
+
+org.eclipse.core.runtime.Platform.OS_WIN32.equals(org.eclipse.core.runtime.Platform.getOS())
+=> org.eclipse.core.runtime.Platform.OS.isWindows()
+;;
