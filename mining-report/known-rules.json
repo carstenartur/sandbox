@@ -3597,6 +3597,171 @@
       "sourceCommit": "9c980bf8c3c5777245a924fa74a86c9a262a9e9e",
       "status": "DISCOVERED",
       "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-ui-c",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d4OrHigher($project)\n\u003d\u003e true\n;;\n\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($project)\n\u003d\u003e true\n;;\n\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d2OrHigher($project)\n\u003d\u003e true\n;;\n\norg.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3, null)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8, null)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_5)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\njava.lang.String $defCompliance1 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_1;\n\u003d\u003e java.lang.String $defCompliance1 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_8;\n;;\n\njava.lang.String $defCompliance2 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_3;\n\u003d\u003e java.eclipse.jdt.core.JavaCore.VERSION_1_8;\n;;\n\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;",
+      "summary": "This commit modernizes internal JDT UI code by replacing hardcoded Java 1.1/1.3/1.4/1.5 version checks and validation constants with Java 1.8. This aligns internal logic with the ECJ compiler\u0027s minimum supported Java version. The transformation involves replacing boolean method calls like `JavaModelUtil.is1d4OrHigher()` with `true` (as they are always true for Java 8+) and replacing `JavaCore.VERSION_1_X` constants with `JavaCore.VERSION_1_8` in `JavaConventions.validate...` method arguments and variable initializers. These are direct 1:1 expression replacements, fully implementable as GREEN TriggerPattern DSL rules.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "a34a835aa267d3dbef854195f7c8815959e0e763",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-consistently-updates-interna",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3, null)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8, null)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_5)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\norg.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;\n\njava.lang.String $defCompliance1 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_1;\n\u003d\u003e java.lang.String $defCompliance1 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_8;\n;;\n\njava.lang.String $defCompliance2 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_3;\n\u003d\u003e java.lang.String $defCompliance2 \u003d org.eclipse.jdt.core.JavaCore.VERSION_1_8;\n;;\n\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_3)\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_8)\n;;",
+      "summary": "This commit consistently updates internal JDT UI code to standardize the default Java source/compliance version used in `JavaConventions` utility methods from Java 1.3 (and one 1.1) to Java 1.8. This ensures validation logic aligns with the ECJ compiler\u0027s minimum supported Java 1.8 requirement. The changes are direct 1:1 constant replacements within method arguments and variable initializers. This pattern is a duplicate of a significant part of the changes identified in Commit 0.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "fa3b37f368934e4ab26c0689061ca72dde3325c2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-updates-internal-jdt-ui-code",
+      "category": "Eclipse API Configuration",
+      "dslRule": "@id: jdt.internal.compliance.default-to-java8.version14-to-18\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_1_4\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_1_8\n;;\n\n@id: jdt.internal.compliance.default-to-java8.version15-to-18\n@severity: info\norg.eclipse.jdt.core.JavaCore.VERSION_1_5\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_1_8\n;;\n\n@id: jdt.internal.clipboardoperationaction.remove-old-version-check\n@severity: info\ntype.indexOf(\u0027.\u0027) !\u003d -1 || org.eclipse.jdt.internal.corext.util.JavaModelUtil.isVersionLessThan($unit.getJavaProject().getOption(org.eclipse.jdt.core.JavaCore.COMPILER_COMPLIANCE, true), org.eclipse.jdt.core.JavaCore.VERSION_1_4)\n:: inClass(\"org.eclipse.jdt.internal.ui.javaeditor.ClipboardOperationAction\") \u0026\u0026 inMethod(\"addImports\")\n\u003d\u003e type.indexOf(\u0027.\u0027) !\u003d -1\n;;",
+      "summary": "This commit updates internal JDT UI code to reflect a minimum Java 8 baseline. It replaces hardcoded Java 1.4 and 1.5 version constants with Java 1.8 in compliance checks and preference settings. Additionally, it removes a redundant version-check condition when adding imports, simplifying the boolean expression. These are direct constant and expression replacements, making them fully implementable as GREEN TriggerPattern DSL rules. The rules are added to the existing \u0027eclipse-api-configuration.sandbox-hint\u0027 file and contribute to JDT internal API modernization.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "c7858e354fc748a4a4feface57d70b11ea1eafad",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-the-commit-simplifies-a-boolean-conditio",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "!$comp1.equals($comp2) \u0026\u0026 (org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($comp1) || org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($comp2))\n\u003d\u003e !$comp1.equals($comp2)\n;;",
+      "summary": "The commit simplifies a boolean conditional expression within `NewJavaProjectWizardPageOne.java`. The original condition `!selectedCompliance.equals(jvmCompliance) \u0026\u0026 (JavaModelUtil.is50OrHigher(selectedCompliance) || JavaModelUtil.is50OrHigher(jvmCompliance))` is replaced with `!selectedCompliance.equals(jvmCompliance)`. This logical simplification is possible because `JavaModelUtil.is50OrHigher()` will always return `true` given the JDT\u0027s new Java 8 baseline. This is a direct 1:1 expression replacement, improving readability and minor performance, and is fully implementable as a TriggerPattern DSL rule.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "a27b470544757569d438ba81ffec3aa64e3242ed",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-various-internal-jav",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.javamodelutil.is1d7orhigher.to.true\n@severity: info\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)\n\u003d\u003e true\n;;\n\n@id: jdt.internal.javamodelutil.notis1d7orhigher.to.false\n@severity: info\n!org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)\n\u003d\u003e false\n;;",
+      "summary": "This commit removes various internal Java 5 compatibility checks from JDT UI, specifically targeting `JavaModelUtil.is50OrHigher` related logic and corresponding NLS messages. The core transformation is the simplification of boolean expressions involving `org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)`. Since ECJ now mandates a Java 8+ baseline, this method effectively always evaluates to true. The rules capture this by replacing `JavaModelUtil.is1d7OrHigher($project)` with `true` and its negation `!JavaModelUtil.is1d7OrHigher($project)` with `false`. These are direct, semantically equivalent expression replacements for internal JDT code, improving clarity and removing dead code paths. The remaining changes (removing NLS keys, structural `if-else` blocks) are not suitable for DSL rules.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "b9233aa235f0385a580e2fa2f0d2778ae8b9556c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-extensively-removes-java-7-c",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.javamodelutil.is1d7orhigher.to.true\n@severity: info\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)\n\u003d\u003e true\n;;\n\n@id: jdt.internal.javamodelutil.notis1d7orhigher.to.false\n@severity: info\n!org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)\n\u003d\u003e false\n;;",
+      "summary": "This commit extensively removes Java 7 compatibility checks (`org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher`) from various JDT UI components, including quick assists, cleanups (`HashCleanUp`, `ObjectsEqualsCleanUp`, `TryWithResourceCleanUp`), and refactoring actions (`SurroundWithTryMultiCatchAction`). Similar to the previous commit, this is a large-scale internal refactoring based on the Java 8+ baseline of ECJ. The core transformation is the simplification of boolean expressions where `JavaModelUtil.is1d7OrHigher($project)` effectively becomes `true` (and its negation becomes `false`). These are direct, semantically equivalent expression replacements for internal JDT code, covered by the same DSL rules as proposed in Commit 2. Therefore, this commit is classified as a duplicate of Commit 2 for its DSL-relevant patterns.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "9c3b4756d0eb9e8fc70dd21ac4b6865074c74b4c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-removes-the-icompilationunit",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "org.eclipse.jdt.internal.corext.fix.SplitTryResourceFixCore.initialConditionsCheck($cu, $coveringNode)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.SplitTryResourceFixCore.initialConditionsCheck($coveringNode)\n;;",
+      "summary": "This commit removes the `ICompilationUnit` argument (`$cu`) from calls to the `SplitTryResourceFixCore.initialConditionsCheck()` method. This is an internal JDT API modernization, likely because the `initialConditionsCheck` method\u0027s internal logic for Java 8+ version checks (which previously relied on the `ICompilationUnit`) is now redundant due to the ECJ baseline. This is a direct 1:1 method call argument removal, fully implementable as a GREEN TriggerPattern DSL rule. The rule assumes the target method\u0027s signature has been updated to remove the first parameter.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "42fac2aacf784447911ace88e2033dd8453465ea",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-updates-an-internal-jdt-ui-c",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "boolean $var \u003d org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher($target_expr);\n\u003d\u003e boolean $var \u003d true;\n;;",
+      "summary": "This commit updates an internal JDT UI class (`ComplianceConfigurationBlock`) to remove pre-Java 1.8 support. Specifically, it replaces a local variable declaration `boolean enabled \u003d JavaModelUtil.is1d8OrHigher(target);` with `boolean enabled \u003d true;`. This simplifies internal logic by eliminating a redundant version check, as the code now assumes Java 8 or higher. The pattern is a direct 1:1 replacement of a local variable declaration\u0027s initializer. Other changes in the commit involve complex structural modifications to `if` blocks, which are beyond the current DSL\u0027s capabilities (RED).",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "e1876a63c334f5424d6749bf25b925ab1cb907d2",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "java-19+-deprecation-this-commit-replaces-deprecated-new-java",
+      "category": "Java 19+ Deprecation",
+      "dslRule": "new java.util.Locale($lang) :: sourceVersionGE(19)\n\u003d\u003e java.util.Locale.of($lang)\n;;\n\nnew java.util.Locale($lang, $country) :: sourceVersionGE(19)\n\u003d\u003e java.util.Locale.of($lang, $country)\n;;\n\nnew java.util.Locale($lang, $country, $variant) :: sourceVersionGE(19)\n\u003d\u003e java.util.Locale.of($lang, $country, $variant)\n;;",
+      "summary": "This commit replaces deprecated `new java.util.Locale(...)` constructors with the recommended `java.util.Locale.of(...)` static factory method. This is a direct 1:1 API replacement, semantically safe, and improves code readability and adherence to modern API usage introduced in Java 19. The patterns cover 1, 2, and 3-argument constructors, including cases with empty string arguments. This transformation is fully supported by the TriggerPattern DSL and is a duplicate of existing rules in `java19-deprecations.sandbox-hint`.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "c1294747d392bd951d622e7e7dcc4d445ad349f0",
+      "status": "DISCOVERED",
+      "hintFile": "java19-deprecations.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-modernizes-the-quick-outline",
+      "category": "Eclipse API Modernization",
+      "dslRule": "new org.eclipse.jdt.internal.ui.viewsupport.ColoringLabelProvider($provider)\n\u003d\u003e new org.eclipse.jdt.internal.ui.viewsupport.DecoratingJavaLabelProvider($provider)\n;;",
+      "summary": "This commit modernizes the Quick Outline View\u0027s label decoration by replacing `ColoringLabelProvider` with `DecoratingJavaLabelProvider`. This change offloads decoration calculation and application to Eclipse\u0027s `DecorationManager`, ensuring asynchronous processing and respecting user configuration, thereby preventing UI blocks. The transformation is a direct constructor call replacement, enhancing performance and leveraging modern Eclipse UI architecture, and is fully expressible as a GREEN TriggerPattern DSL rule. The DSL automatically handles import changes.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "42dc611f66aa4bce8c5a69176cb29d82d6bf847e",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-fixes-a-bug-in-jdt-s-quick-f",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.quickassist.deprecated.problem.check.extend\n@severity: error\ncontainsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod)\n\u003d\u003e containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod) || containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedConstructor)\n;;",
+      "summary": "This commit fixes a bug in JDT\u0027s quick-fix proposal logic by extending a boolean condition to correctly detect deprecated constructor usage alongside deprecated method usage, preventing duplicate \"add @SuppressWarnings\" proposals. The pattern is a direct 1:1 expression replacement of a boolean condition, fully implementable as a GREEN TriggerPattern DSL rule. Other changes involve introducing new classes and abstract methods which are structural and not suitable for DSL rules.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "ada74e5165fe2c1722cebbc90970e480288c44bf",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-deprecates-the-javaplugin-ge",
+      "category": "Eclipse API Modernization",
+      "dslRule": "org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferences()\n\u003d\u003e org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferencesNew()\n;;",
+      "summary": "This commit deprecates the `JavaPlugin.getJavaCorePluginPreferences()` method by adding an `@Deprecated` annotation and updating Javadoc. The commit message indicates that unit tests were migrated to use `getJavaCorePluginPreferencesNew()`, which is the replacement API. While the provided diff only shows the API definition change, the implied code transformation for migrating call sites is a direct 1:1 method call replacement, which is fully implementable as a GREEN TriggerPattern DSL rule. This exact transformation pattern has been previously identified and exists as a DSL rule in `eclipse-api-modernization.sandbox-hint`, making this a duplicate.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "7ae92875ba5ee6cdcb052c3d92dacd3245f5e227",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-migrates-usage-of-the-deprec",
+      "category": "Eclipse API Modernization",
+      "dslRule": "/*!id: eclipse.jdt.ui.javaplugin.getpluginpreferences.to.instancescope*/\n/*!description: Replace deprecated JavaPlugin.getPluginPreferences() with InstanceScope.INSTANCE.getNode(JavaPlugin.getPluginId()) to migrate from old Preferences API.*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.JavaPlugin.getPluginPreferences() :: inClass(\"org.eclipse.jdt.internal.ui.JavaPlugin\")\n\u003d\u003e org.eclipse.core.runtime.preferences.InstanceScope.INSTANCE.getNode(org.eclipse.jdt.internal.ui.JavaPlugin.getPluginId())\n;;\n\n/*!id: eclipse.jdt.ui.preferences.setvalue.to.put*/\n/*!description: Replace Preferences.setValue() with IEclipsePreferences.put() for deprecated API migration.*/\n/*!severity: info*/\n$preferences.setValue($key, $value) :: instanceof($preferences, \"org.eclipse.core.runtime.Preferences\")\n\u003d\u003e ((org.eclipse.core.runtime.preferences.IEclipsePreferences)$preferences).put($key, $value)\n;;\n\n/*!id: eclipse.jdt.ui.preferences.getstring.to.getwithdefault*/\n/*!description: Replace Preferences.getString() with IEclipsePreferences.get() providing a default value for deprecated API migration.*/\n/*!severity: info*/\n$preferences.getString($key) :: instanceof($preferences, \"org.eclipse.core.runtime.Preferences\")\n\u003d\u003e ((org.eclipse.core.runtime.preferences.IEclipsePreferences)$preferences).get($key, \"\")\n;;",
+      "summary": "This commit migrates usage of the deprecated `org.eclipse.core.runtime.Preferences` API to `org.eclipse.core.runtime.preferences.IEclipsePreferences`. The core transformations involve replacing `JavaPlugin.getPluginPreferences()` with `InstanceScope.INSTANCE.getNode(JavaPlugin.getPluginId())`, converting `preferences.setValue(key, value)` to `((IEclipsePreferences)preferences).put(key, value)`, and changing `preferences.getString(key)` to `((IEclipsePreferences)preferences).get(key, \"\")`. These are direct 1:1 API replacements, improving adherence to modern Eclipse API practices and handling deprecation. The transformation is fully implementable as three GREEN TriggerPattern DSL rules, using `inClass` and `instanceof` guards for precision. This could partially replace functionalities related to deprecated Eclipse API usage in a plugin like `sandbox_platform_helper` by using DSL rules for simple API migration. The `sourceVersion` is 8 as `IEclipsePreferences` is not a new Java language feature.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "daaa3f321588a9227274321bf15115be6c16323f",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-this-commit-modernizes-eclipse-jdt-ui-co",
+      "category": "Eclipse API Modernization",
+      "dslRule": "/*!id: eclipse.jdt.ui.java_plugin.getactivepage*/\n/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage() calls with JavaPlugin.getActivePage().*/\n/*!severity: info*/\norg.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()\n\u003d\u003e org.eclipse.jdt.internal.ui.JavaPlugin.getActivePage()\n;;\n\n/*!id: eclipse.jdt.ui.java_plugin.getactiveworkbenchshell*/\n/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell() calls with JavaPlugin.getActiveWorkbenchShell().*/\n/*!severity: info*/\norg.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell()\n\u003d\u003e org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchShell()\n;;\n\n/*!id: eclipse.jdt.ui.java_plugin.getactiveworkbenchwindow*/\n/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow() calls with JavaPlugin.getActiveWorkbenchWindow().*/\n/*!severity: info*/\norg.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow()\n\u003d\u003e org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchWindow()\n;;",
+      "summary": "This commit modernizes Eclipse JDT UI code by replacing direct calls to `PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()`, `.getShell()`, and `.getActiveWorkbenchWindow()` with their corresponding static wrapper methods in `org.eclipse.jdt.internal.ui.JavaPlugin`. This centralizes UI access, potentially making it more robust against a non-running workbench. The transformations are direct 1:1 method call chain replacements, which are fully expressible as GREEN TriggerPattern DSL rules. The internal changes within `JavaPlugin.java` itself (inlining a private method, adding `if` guards) are structural and not directly expressible by the DSL.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "07237c8929e0f81bf2bfe6ea311375845117c27e",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "collections-this-commit-fixes-an-indexoutofboundsexc",
+      "category": "Collections",
+      "dslRule": "$coll.toArray(new $Type[0]) :: sourceVersionGE(11)\n\u003d\u003e $coll.toArray($Type[]::new)\n;;",
+      "summary": "This commit fixes an `IndexOutOfBoundsException` in `OrganizeImportsAction.doChooseImports` and includes several code modernizations. The most complex parts involve refactoring `Display.syncExec` to `Display.syncCall` with subsequent chaining and adopting Java 16\u0027s pattern matching for `instanceof`. These are deemed RED as they require complex structural rewrites or DSL extensions not currently available. However, a clearly extractable and reusable pattern is the modernization of `Collection.toArray()` usage. The pattern involves replacing `collection.toArray(new Type[0])` with `collection.toArray(Type[]::new)`. This is a standard Java 11+ idiom that improves readability and can offer minor performance benefits. This is a direct 1:1 expression replacement, fully supported by the TriggerPattern DSL, and complements existing rules in `collection-toarray.sandbox-hint`.",
+      "discoveredAt": "2026-05-11",
+      "discoveredInRun": 24879,
+      "sourceCommit": "bb205800de7ce8cb98c273f74bd004d9b51789fd",
+      "status": "DISCOVERED",
+      "hintFile": "collection-toarray.sandbox-hint"
     }
   ]
 }

@@ -1,50 +1,47 @@
 {
-  "totalProcessed": 26,
-  "relevant": 21,
-  "irrelevant": 5,
-  "duplicates": 0,
-  "green": 9,
+  "totalProcessed": 37,
+  "relevant": 34,
+  "irrelevant": 3,
+  "duplicates": 4,
+  "green": 15,
   "yellow": 1,
-  "red": 12,
+  "red": 18,
   "irrelevantReasons": {
-    "This commit primarily involves refactoring an internal UI component (FiltersDialog) to change a single checkbox filter into three radio button options. This is a significant structural refactoring, including adding/removing class fields, rewriting UI creation logic, introducing new helper methods, and modifying internal logic for updating filter states. The TriggerPattern DSL is designed for expression-level or simple statement-level transformations, not for such extensive architectural and UI-specific structural changes.": 1,
-    "This commit introduces a new UI option in JDT preferences for configuring problem severity for unused lambda parameters. It involves adding new NLS message keys, declaring new preference constants, adding these constants to an array, and adding a new UI control (combo box) to the preference page. These are additive changes related to UI feature development and configuration, not transformations of existing Java code patterns. The TriggerPattern DSL is designed for code refactoring and modernization patterns, not for generating UI elements, NLS entries, or new constant declarations in this manner.": 1,
-    "This commit primarily adds internal infrastructure and conditional logic to *offer* a new quick-fix for unused local variables and lambda parameters (introducing Java 22+ unnamed patterns/variables feature). The changes involve adding new `if` blocks, checking problem IDs, invoking internal fix creation logic, and defining a new helper method. The TriggerPattern DSL is designed for defining reusable code *transformations* (pattern -\u003e replacement), not for implementing the complex internal logic of when and how JDT quick-fixes are offered or dispatched based on problem IDs and project Java versions. These are structural and control-flow changes within the JDT UI\u0027s quick-fix processing pipeline, which are not suitable for expression-based DSL rules.": 1,
-    "The commit modifies internal JDT quick-fix logic by adding new conditional statements and calling new Java-based fix factories. This is a structural change to the quick-fix implementation itself, not a pattern-based transformation applicable to user code. The DSL cannot add new control flow or invoke complex Java-based fix functions directly.": 1,
-    "The changes are bug fixes to internal JDT UI logging/hover behavior. They involve adding conditional logic and changing behavior within catch blocks, which cannot be expressed as generic DSL pattern replacements. They are very context-specific and do not represent reusable code transformation patterns for user code. The DSL does not support inserting new \u0027if\u0027 statements or complex modifications within catch blocks that alter control flow and add multi-line comments.": 1
+    "Internal architectural change - removal of conditional logic and a helper method based on updated Java baseline support (Java 8+) in JDT. The DSL cannot express the removal of entire `if` blocks or methods, nor does it capture architectural shifts in how the IDE\u0027s features (like generics proposal) are implemented based on its own minimum Java version support.": 1,
+    "Internal dead code removal due to Java 8+ baseline. The changes involve removing conditional logic and assignments that are no longer reachable, which is a structural refactoring of the plugin\u0027s own code rather than a reusable transformation pattern for user code.": 2
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 26,
-      "relevant": 21,
-      "green": 9,
+      "totalProcessed": 37,
+      "relevant": 34,
+      "green": 15,
       "yellow": 1,
-      "red": 12
+      "red": 18
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-10",
-      "processed": 26,
-      "relevant": 21
+      "date": "2026-05-11",
+      "processed": 37,
+      "relevant": 34
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-10T03:12:11.585Z",
-    "completedAt": "2026-05-10T03:31:34.429589447Z",
-    "durationSeconds": 1162,
+    "startedAt": "2026-05-11T03:14:16.973Z",
+    "completedAt": "2026-05-11T03:35:36.659639147Z",
+    "durationSeconds": 1279,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 210,
+    "deferredCommits": 213,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-10T03:14:00.947244001Z",
-    "latestEvaluation": "2026-05-10T03:31:33.168459497Z",
-    "earliestCommitDate": "2024-09-17T15:26:43Z",
-    "latestCommitDate": "2024-12-19T10:59:41Z"
+    "earliestEvaluation": "2026-05-11T03:16:33.201376510Z",
+    "latestEvaluation": "2026-05-11T03:35:35.405048619Z",
+    "earliestCommitDate": "2024-12-21T21:03:05Z",
+    "latestCommitDate": "2025-02-04T16:26:57Z"
   }
 }
