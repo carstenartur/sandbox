@@ -1926,3 +1926,109 @@ $mbinding.getDeclaringClass().isRecord()
 :: inClass("org.eclipse.jdt.internal.ui.javaeditor.codemining.CalleeJavaMethodParameterVisitor") && sourceVersionGE(16)
 => $mbinding.getDeclaringClass().isRecord() && !skipParameterNamesCodeMinings($mbinding)
 ;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d4OrHigher($project)
+=> true
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($project)
+=> true
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d2OrHigher($project)
+=> true
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3, null)
+=> org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8, null)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_5)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_1;
+=> java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+java.lang.String $defCompliance2 = org.eclipse.jdt.core.JavaCore.VERSION_1_3;
+=> java.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3, null)
+=> org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8, null)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_5)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_1;
+=> java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+java.lang.String $defCompliance2 = org.eclipse.jdt.core.JavaCore.VERSION_1_3;
+=> java.lang.String $defCompliance2 = org.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+!$comp1.equals($comp2) && (org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($comp1) || org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($comp2))
+=> !$comp1.equals($comp2)
+;;
+
+@id: jdt.internal.javamodelutil.is1d7orhigher.to.true
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)
+=> true
+;;
+
+@id: jdt.internal.javamodelutil.notis1d7orhigher.to.false
+@severity: info
+!org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)
+=> false
+;;
+
+org.eclipse.jdt.internal.corext.fix.SplitTryResourceFixCore.initialConditionsCheck($cu, $coveringNode)
+=> org.eclipse.jdt.internal.corext.fix.SplitTryResourceFixCore.initialConditionsCheck($coveringNode)
+;;
+
+boolean $var = org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher($target_expr);
+=> boolean $var = true;
+;;
+
+@id: jdt.internal.quickassist.deprecated.problem.check.extend
+@severity: error
+containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod)
+=> containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod) || containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedConstructor)
+;;

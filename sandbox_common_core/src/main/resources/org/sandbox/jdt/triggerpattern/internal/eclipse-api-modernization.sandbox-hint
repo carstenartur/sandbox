@@ -164,3 +164,49 @@ org.eclipse.core.runtime.Platform.OS_MACOSX.equals(org.eclipse.core.runtime.Plat
 org.eclipse.core.runtime.Platform.OS_WIN32.equals(org.eclipse.core.runtime.Platform.getOS())
 => org.eclipse.core.runtime.Platform.OS.isWindows()
 ;;
+
+new org.eclipse.jdt.internal.ui.viewsupport.ColoringLabelProvider($provider)
+=> new org.eclipse.jdt.internal.ui.viewsupport.DecoratingJavaLabelProvider($provider)
+;;
+
+/*!id: eclipse.jdt.ui.javaplugin.getpluginpreferences.to.instancescope*/
+/*!description: Replace deprecated JavaPlugin.getPluginPreferences() with InstanceScope.INSTANCE.getNode(JavaPlugin.getPluginId()) to migrate from old Preferences API.*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.JavaPlugin.getPluginPreferences() :: inClass("org.eclipse.jdt.internal.ui.JavaPlugin")
+=> org.eclipse.core.runtime.preferences.InstanceScope.INSTANCE.getNode(org.eclipse.jdt.internal.ui.JavaPlugin.getPluginId())
+;;
+
+/*!id: eclipse.jdt.ui.preferences.setvalue.to.put*/
+/*!description: Replace Preferences.setValue() with IEclipsePreferences.put() for deprecated API migration.*/
+/*!severity: info*/
+$preferences.setValue($key, $value) :: instanceof($preferences, "org.eclipse.core.runtime.Preferences")
+=> ((org.eclipse.core.runtime.preferences.IEclipsePreferences)$preferences).put($key, $value)
+;;
+
+/*!id: eclipse.jdt.ui.preferences.getstring.to.getwithdefault*/
+/*!description: Replace Preferences.getString() with IEclipsePreferences.get() providing a default value for deprecated API migration.*/
+/*!severity: info*/
+$preferences.getString($key) :: instanceof($preferences, "org.eclipse.core.runtime.Preferences")
+=> ((org.eclipse.core.runtime.preferences.IEclipsePreferences)$preferences).get($key, "")
+;;
+
+/*!id: eclipse.jdt.ui.java_plugin.getactivepage*/
+/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage() calls with JavaPlugin.getActivePage().*/
+/*!severity: info*/
+org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
+=> org.eclipse.jdt.internal.ui.JavaPlugin.getActivePage()
+;;
+
+/*!id: eclipse.jdt.ui.java_plugin.getactiveworkbenchshell*/
+/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell() calls with JavaPlugin.getActiveWorkbenchShell().*/
+/*!severity: info*/
+org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell()
+=> org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchShell()
+;;
+
+/*!id: eclipse.jdt.ui.java_plugin.getactiveworkbenchwindow*/
+/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow() calls with JavaPlugin.getActiveWorkbenchWindow().*/
+/*!severity: info*/
+org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+=> org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchWindow()
+;;

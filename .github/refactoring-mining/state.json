@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "d2a6005b59316915373f68d13e7f3b0604468f38",
-      "lastProcessedDate": "2026-05-10T03:31:33.169858882Z",
-      "totalProcessed": 2152,
+      "lastProcessedCommit": "bb205800de7ce8cb98c273f74bd004d9b51789fd",
+      "lastProcessedDate": "2026-05-11T03:35:35.405794410Z",
+      "totalProcessed": 2244,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -1979,6 +1979,33 @@
           "deferredAt": "2026-05-10T03:28:15.655834581Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "251bc5f617abb0b78653d5b43348488b69cca104",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-11T03:25:15.601904963Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "76e1aaa15db619f615f49ec880f27709301d4c98",
+          "message": "Merge master with BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-11T03:25:15.614919032Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28604fa1b4e9060c7b55c03e3ce18fc109b73b4a",
+          "message": "Add folding support for while/if/for/try/catch/do-while constructs (#1562)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-11T03:33:46.464692431Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -1988,24 +2015,24 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 162,
+        "JDT Internal Refactoring": 176,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 59,
-        "Clean-up Bug Fix": 79,
-        "Try-with-Resources": 8,
+        "JDT Internal Bug Fix": 61,
+        "Clean-up Bug Fix": 80,
+        "Try-with-Resources": 9,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 4,
         "JFace API Modernization": 1,
         "String-API": 7,
-        "Java-Modernization": 24,
+        "Java-Modernization": 26,
         "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
         "Null-Safety": 17,
         "Lambda-Simplification": 5,
         "Architectural Refactoring": 1,
-        "Collections": 9,
+        "Collections": 10,
         "JDT Internal Feature Enhancement": 7,
         "Clean-up Enhancement": 4,
         "Internal Refactoring": 2,
@@ -2014,12 +2041,12 @@
         "Type Inference": 2,
         "Architecture Migration": 9,
         "Code Style": 32,
-        "Eclipse API Configuration": 11,
+        "Eclipse API Configuration": 12,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
         "JDT Internal UI Feature": 14,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 15,
+        "Eclipse API Migration": 16,
         "JDT Internal Feature": 6,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 4,
@@ -2045,7 +2072,7 @@
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 6,
         "Architecture Refactoring": 1,
-        "Dead Code Removal": 11,
+        "Dead Code Removal": 13,
         "Quick Fix Enhancement": 6,
         "Unnecessary Code": 1,
         "Correctness": 4,
@@ -2056,7 +2083,7 @@
         "New Cleanup": 1,
         "Logical Simplification": 8,
         "UI Bug Fix": 3,
-        "Eclipse API Modernization": 16,
+        "Eclipse API Modernization": 20,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -2088,7 +2115,7 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 5,
+        "Error Handling": 9,
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
@@ -2108,7 +2135,8 @@
         "Logging / Exception Handling": 1,
         "JDT Internal Cleanup": 2,
         "Clean-up Infrastructure": 2,
-        "New Quick Fix Feature": 1
+        "New Quick Fix Feature": 1,
+        "Java 19+ Deprecation": 1
       },
       "exhaustedCategories": []
     },
@@ -2149,5 +2177,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24787
+  "globalTotalProcessed": 24879
 }
