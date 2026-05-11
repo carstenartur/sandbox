@@ -50,3 +50,22 @@ $method.getNumberOfParameters() <= 1
 $methodBinding.getParameterNames().length <= 1
 => (!org.eclipse.jdt.ui.PreferenceConstants.getPreferenceStore().getBoolean(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_PARAMETER_NAME_SINGLE_ARG) && $methodBinding.getParameterNames().length == 1) || $methodBinding.getParameterNames().length == 0
 ;;
+
+@id: jdt.internal.compliance.default-to-java8.version14-to-18
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_1_4
+=> org.eclipse.jdt.core.JavaCore.VERSION_1_8
+;;
+
+@id: jdt.internal.compliance.default-to-java8.version15-to-18
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_1_5
+=> org.eclipse.jdt.core.JavaCore.VERSION_1_8
+;;
+
+@id: jdt.internal.clipboardoperationaction.remove-old-version-check
+@severity: info
+type.indexOf('.') != -1 || org.eclipse.jdt.internal.corext.util.JavaModelUtil.isVersionLessThan($unit.getJavaProject().getOption(org.eclipse.jdt.core.JavaCore.COMPILER_COMPLIANCE, true), org.eclipse.jdt.core.JavaCore.VERSION_1_4)
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.ClipboardOperationAction") && inMethod("addImports")
+=> type.indexOf('.') != -1
+;;

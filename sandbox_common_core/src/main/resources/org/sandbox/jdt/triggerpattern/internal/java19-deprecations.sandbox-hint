@@ -27,3 +27,15 @@ new java.util.Locale($lang, $country, $variant) :: sourceVersionGE(19)
 $thread.getId() :: instanceof($thread, "java.lang.Thread") && sourceVersionGE(19)
 => $thread.threadId()
 ;;
+
+new java.util.Locale($lang) :: sourceVersionGE(19)
+=> java.util.Locale.of($lang)
+;;
+
+new java.util.Locale($lang, $country) :: sourceVersionGE(19)
+=> java.util.Locale.of($lang, $country)
+;;
+
+new java.util.Locale($lang, $country, $variant) :: sourceVersionGE(19)
+=> java.util.Locale.of($lang, $country, $variant)
+;;
