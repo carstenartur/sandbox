@@ -3762,6 +3762,105 @@
       "sourceCommit": "bb205800de7ce8cb98c273f74bd004d9b51789fd",
       "status": "DISCOVERED",
       "hintFile": "collection-toarray.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-modernizes-internal-jdt-ui-c",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.typepattern.conditional-getpatternvariable\n@severity: info\n$typePattern.getPatternVariable()\n:: instanceof($typePattern, \"org.eclipse.jdt.core.dom.TypePattern\") \u0026\u0026 sourceVersionGE(22)\n\u003d\u003e $typePattern.getAST().apiLevel() \u003c org.eclipse.jdt.core.dom.AST.JLS22 ? $typePattern.getPatternVariable() : $typePattern.getPatternVariable2()\n;;",
+      "summary": "This commit modernizes internal JDT UI code for Pattern Matching in `instanceof` expressions. It replaces a direct call to `TypePattern.getPatternVariable()` with a ternary expression that conditionally calls either `getPatternVariable()` or `getPatternVariable2()` based on the AST API level (JLS22 or higher). This adapts to API changes introduced for Java 22, ensuring backward compatibility within the JDT\u0027s internal AST processing. The transformation is a direct expression replacement, fully supported by the DSL, and guarded by `sourceVersionGE(22)`.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "cb33fee3f3a0946983b418ce807b20d495066b34",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-extends-conditional-logic-in",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "@id: javadocview.partition.exclude.markdown\n@severity: info\n!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition)\n:: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\")\n\u003d\u003e !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) \u0026\u0026 !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)\n;;\n\n@id: javadocview.partition.include.markdown\n@severity: info\norg.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType())\n:: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\")\n\u003d\u003e org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())\n;;",
+      "summary": "This commit extends conditional logic in JDT\u0027s JavadocView to correctly handle Markdown comments. It modifies two boolean expressions: one to exclude Markdown partitions when checking for non-Javadoc content, and another to include Markdown partitions when identifying Javadoc-related regions. This ensures proper selection and content handling for Markdown-formatted Javadoc. These are direct 1:1 boolean expression replacements, fully implementable as two distinct GREEN TriggerPattern DSL rules, improving internal JDT UI functionality for new content types.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "2f3b85a9cac16da12a06d66330d208b60f272e80",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-ui-javadoc-fixes.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-merges-changes-from-the-beta",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "/*!id: jdt.internal.javadocview.completionpossible.markdown*/\n/*!description: Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 1 of 2)*/\n/*!severity: info*/\n!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) :: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\") \u0026\u0026 inMethod(\"isCompletionPossible\") \u0026\u0026 sourceVersionGE(18)\n\u003d\u003e !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) \u0026\u0026 !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)\n;;\n\n/*!id: jdt.internal.javadocview.getelement.markdown*/\n/*!description: Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 2 of 2)*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) :: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\") \u0026\u0026 inMethod(\"getElement\") \u0026\u0026 sourceVersionGE(18)\n\u003d\u003e org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())\n;;",
+      "summary": "This commit merges changes from the `BETA_JAVA24` branch, primarily updating internal JDT UI logic in `JavadocView.java` to recognize the `JAVA_MARKDOWN_COMMENT` partition. This involves extending two boolean conditions with an `\u0026\u0026` or `||` clause, adding a check for the new partition type. This ensures the Javadoc view\u0027s completion and element-at-offset logic correctly accounts for Markdown-formatted Javadoc, a feature that gained prominence with Java 18 (JEP 413). The change in `ComplianceConfigurationBlock.java` (modifying `@SuppressWarnings` on a method parameter and updating a comment) is not directly implementable by the DSL. The two identified boolean expression modifications are direct 1:1 replacements, making them fully implementable as GREEN TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(18)` to align with the context of Markdown in Javadoc.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "011a4872b16e1f3894782bc32025ac0133e89224",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-is-a-duplicate-of-commit-0-0",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "/*!id: jdt.internal.javadocview.completionpossible.markdown*/\n/*!description: Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 1 of 2)*/\n/*!severity: info*/\n!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) :: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\") \u0026\u0026 inMethod(\"isCompletionPossible\") \u0026\u0026 sourceVersionGE(18)\n\u003d\u003e !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) \u0026\u0026 !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)\n;;\n\n/*!id: jdt.internal.javadocview.getelement.markdown*/\n/*!description: Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 2 of 2)*/\n/*!severity: info*/\norg.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) :: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\") \u0026\u0026 inMethod(\"getElement\") \u0026\u0026 sourceVersionGE(18)\n\u003d\u003e org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())\n;;",
+      "summary": "This commit is a duplicate of Commit 0 (011a4872b16e1f3894782bc32025ac0133e89224). It merges changes from the `BETA_JAVA24` branch, primarily updating internal JDT UI logic in `JavadocView.java` to recognize the `JAVA_MARKDOWN_COMMENT` partition. This involves extending two boolean conditions with an `\u0026\u0026` or `||` clause, adding a check for the new partition type. The change in `ComplianceConfigurationBlock.java` (modifying `@SuppressWarnings` on a method parameter and updating a comment) is not directly implementable by the DSL. The two identified boolean expression modifications are direct 1:1 replacements, making them fully implementable as GREEN TriggerPattern DSL rules. The rules are guarded by `sourceVersionGE(18)` to align with the context of Markdown in Javadoc.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "a6dd739289e86ecf7be1815a8afab5e2e599f77c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-changes-the-logic-for-determ",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "@id: jdt.internal.folding.singleliner.fix\n@severity: info\n$endLine \u003e $startLine\n:: inClass(\"org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider\")\n\u003d\u003e $endLine \u003e $startLine + 1\n;;",
+      "summary": "This commit changes the logic for determining whether a code block should receive a folding button in the JDT editor. Specifically, it modifies a boolean condition `endLine \u003e startLine` to `endLine \u003e startLine + 1`. This means a folding button will only appear if a block spans at least two lines after the start line (i.e., at least three lines in total). This is a direct 1:1 expression replacement of a numerical literal within a boolean comparison. The pattern is highly specific to the internal JDT UI folding logic, so a class-specific guard is necessary. It is fully implementable as a GREEN TriggerPattern DSL rule and addresses a UI feature enhancement/fix, making the code more precise for single-line code blocks.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "18d07f82dfca5ac8497f628ec3b02296cecfa5e5",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-modernizes-internal-jdt-ui-c",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "@id: jdt.internal.completionproposal.getcompletion.to.getdisplaystring\n@severity: info\n$methodProposal.getCompletion()\n:: instanceof($methodProposal, \"org.eclipse.jdt.core.CompletionProposal\")\n\u003d\u003e $methodProposal.getDisplayString()\n;;",
+      "summary": "This commit modernizes internal JDT UI code completion logic by replacing calls to `methodProposal.getCompletion()` with `methodProposal.getDisplayString()`. This change ensures that the correct display string (which includes necessary escaping for contexts like markdown) is used for completion proposals. This is a direct 1:1 method call replacement, applicable to instances of `org.eclipse.jdt.core.CompletionProposal`. The transformation is fully implementable as a GREEN TriggerPattern DSL rule with an `instanceof` guard to ensure correct targeting. It improves the correctness and robustness of JDT\u0027s content assist feature.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "f2884fafa326b3e0d8e2f2e7967d42052aed9a7c",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-primarily-removes-dead-code",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.problem.outerlocalmustbefinally.rename\n@severity: info\norg.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeFinal\n\u003d\u003e org.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeEffectivelyFinal\n;;",
+      "summary": "This commit primarily removes dead code and old Java version-specific problem IDs from JDT\u0027s internal quick-fix processor (`QuickFixProcessor.java`, `LocalCorrectionsSubProcessor.java`, `ModifierCorrectionSubProcessor.java`, `TypeArgumentMismatchSubProcessor.java`). The most significant changes are structural (method deletions, removal of large blocks of `case` statements) which are not directly expressible as pattern-based DSL rules. However, one specific transformation involves renaming an internal `IProblem` constant from `IProblem.OuterLocalMustBeFinal` to `IProblem.OuterLocalMustBeEffectivelyFinal`. This is a direct 1:1 constant replacement, reflecting a Java 8 language concept (\u0027effectively final\u0027), and is fully implementable as a GREEN TriggerPattern DSL rule. While much of the commit is RED due to structural changes, this specific pattern is a clean, automatable refactoring for internal JDT API consistency.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "7b2a76302d1e6006b48850f021fcf48d85428de8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-changes-the-default-value-of",
+      "category": "Eclipse API Configuration",
+      "dslRule": "store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_NEW_FOLDING_ENABLED, false)\n\u003d\u003e store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_NEW_FOLDING_ENABLED, true)\n;;",
+      "summary": "This commit changes the default value of the Eclipse JDT UI preference `EDITOR_NEW_FOLDING_ENABLED` from `false` to `true`. This is a direct 1:1 replacement of a boolean literal within a method call, which is fully supported by the TriggerPattern DSL. Changes in the `.properties` file are not applicable for DSL transformation.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "2c2d352fb235e39245ce130995f86eabf5471d5f",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-this-commit-modifies-the-first-argument",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "super(java.lang.Object $messageArg, $cu, null, $relevance, org.eclipse.jdt.internal.ui.JavaPluginImages $image, org.eclipse.jdt.internal.corext.fix.InitializeFinalFieldProposalCore $delegate)\n:: inClass(\"org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal\")\n\u003d\u003e super(org.eclipse.jdt.internal.corext.util.Messages.format(\n\t\t\t\t$updateType \u003d\u003d org.eclipse.jdt.internal.corext.fix.InitializeFinalFieldProposalCore.UPDATE_CONSTRUCTOR_NEW_PARAMETER\n\t\t\t\t\t\t? org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.InitializeFieldWithConstructorParameterCorrectionProposal_description\n\t\t\t\t\t\t: org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.InitializeFieldInConstructorCorrectionProposal_description,\n\t\t\t\t$problem.getProblemArguments()[0]), $cu, null, $relevance, $image, $delegate)\n;;",
+      "summary": "This commit modifies the first argument passed to the `super` constructor in `InitializeFinalFieldProposal`. The argument, a string formatted via `Messages.format()`, is replaced with a more complex ternary expression that dynamically selects a description based on `updateType`. This is a direct expression replacement, including nested method calls and a ternary operator, which is fully supported by the TriggerPattern DSL for internal JDT UI logic refactoring.",
+      "discoveredAt": "2026-05-12",
+      "discoveredInRun": 24961,
+      "sourceCommit": "d55f79a0ea4030068f274160b23008ff823eeafe",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
     }
   ]
 }

@@ -69,3 +69,7 @@ type.indexOf('.') != -1 || org.eclipse.jdt.internal.corext.util.JavaModelUtil.is
 :: inClass("org.eclipse.jdt.internal.ui.javaeditor.ClipboardOperationAction") && inMethod("addImports")
 => type.indexOf('.') != -1
 ;;
+
+store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_NEW_FOLDING_ENABLED, false)
+=> store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_NEW_FOLDING_ENABLED, true)
+;;

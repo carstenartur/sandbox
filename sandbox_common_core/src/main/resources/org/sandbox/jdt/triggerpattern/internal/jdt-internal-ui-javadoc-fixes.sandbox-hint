@@ -1,0 +1,13 @@
+@id: javadocview.partition.exclude.markdown
+@severity: info
+!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition)
+:: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView")
+=> !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) && !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)
+;;
+
+@id: javadocview.partition.include.markdown
+@severity: info
+org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType())
+:: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView")
+=> org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())
+;;
