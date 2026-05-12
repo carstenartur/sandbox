@@ -2032,3 +2032,53 @@ boolean $var = org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher(
 containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod)
 => containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod) || containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedConstructor)
 ;;
+
+@id: jdt.internal.typepattern.conditional-getpatternvariable
+@severity: info
+$typePattern.getPatternVariable()
+:: instanceof($typePattern, "org.eclipse.jdt.core.dom.TypePattern") && sourceVersionGE(22)
+=> $typePattern.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS22 ? $typePattern.getPatternVariable() : $typePattern.getPatternVariable2()
+;;
+
+/*!id: jdt.internal.javadocview.completionpossible.markdown*/
+/*!description: Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 1 of 2)*/
+/*!severity: info*/
+!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) :: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView") && inMethod("isCompletionPossible") && sourceVersionGE(18)
+=> !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) && !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)
+;;
+
+/*!id: jdt.internal.javadocview.getelement.markdown*/
+/*!description: Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 2 of 2)*/
+/*!severity: info*/
+org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) :: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView") && inMethod("getElement") && sourceVersionGE(18)
+=> org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())
+;;
+
+@id: jdt.internal.folding.singleliner.fix
+@severity: info
+$endLine > $startLine
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
+=> $endLine > $startLine + 1
+;;
+
+@id: jdt.internal.completionproposal.getcompletion.to.getdisplaystring
+@severity: info
+$methodProposal.getCompletion()
+:: instanceof($methodProposal, "org.eclipse.jdt.core.CompletionProposal")
+=> $methodProposal.getDisplayString()
+;;
+
+@id: jdt.internal.problem.outerlocalmustbefinally.rename
+@severity: info
+org.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeFinal
+=> org.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeEffectivelyFinal
+;;
+
+super(java.lang.Object $messageArg, $cu, null, $relevance, org.eclipse.jdt.internal.ui.JavaPluginImages $image, org.eclipse.jdt.internal.corext.fix.InitializeFinalFieldProposalCore $delegate)
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal")
+=> super(org.eclipse.jdt.internal.corext.util.Messages.format(
+				$updateType == org.eclipse.jdt.internal.corext.fix.InitializeFinalFieldProposalCore.UPDATE_CONSTRUCTOR_NEW_PARAMETER
+						? org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.InitializeFieldWithConstructorParameterCorrectionProposal_description
+						: org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.InitializeFieldInConstructorCorrectionProposal_description,
+				$problem.getProblemArguments()[0]), $cu, null, $relevance, $image, $delegate)
+;;

@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "bb205800de7ce8cb98c273f74bd004d9b51789fd",
-      "lastProcessedDate": "2026-05-11T03:35:35.405794410Z",
-      "totalProcessed": 2244,
+      "lastProcessedCommit": "af9fabbec2a4402417241d5c2ce4d752dd91574c",
+      "lastProcessedDate": "2026-05-12T03:40:40.135034317Z",
+      "totalProcessed": 2326,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -2006,6 +2006,78 @@
           "deferredAt": "2026-05-11T03:33:46.464692431Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "6b4af8737dbfd5ca2c7e5217179d7a1f410bb867",
+          "message": "Fix folding of 2 consecutive methods (#2014)\n\nIf the second method starts in the same line the first one ends then\r\nther",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:14:47.196732341Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e813d376b64a7c421c7008833b9464ab041797f3",
+          "message": "Fix folding of local classes and added test case for the scenario (#2015)\n\n",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:14:47.197206668Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6d20661024f16e8d74ee5f5596af83f880d2c95c",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA24\n\nsync witch 4.35 M3\nneeded for https://github.com/eclipse-",
+          "diffLines": 268,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:14:47.197273937Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4f7c6a71d362fe6e4b735e55213b409d488801a9",
+          "message": "add custom folding regions (#1825)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-12T03:18:54.431461288Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28920b0631dde386f27504d7dded1e57fdf42b77",
+          "message": "Add project property page for folding (#1979)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-12T03:24:50.823681008Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ac95931acd1758b21eb0bccc724be39aa84ec7f5",
+          "message": "Added SwitchStatments and SwitchExpression to the new folding (#2084)\n\n",
+          "diffLines": 94,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:33:44.607554049Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ff7036ccb0e65504757d9db8422b3ba983f19af6",
+          "message": "Fix `Create new member record`: preview is missing `record` keyword (#2186)\n\nfixes #2185",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:39:54.519792378Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1f40aa1dcc8eb8f87432af15a8d6cf0e09125ff7",
+          "message": "Replace pre-generated disabled icon with on-the-fly generated ones (#2190)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-12T03:39:54.536894071Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2015,11 +2087,11 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 176,
+        "JDT Internal Refactoring": 180,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 61,
-        "Clean-up Bug Fix": 80,
+        "JDT Internal Bug Fix": 66,
+        "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
         "JDT UI Feature Implementation": 1,
         "Resource Management": 4,
@@ -2041,10 +2113,10 @@
         "Type Inference": 2,
         "Architecture Migration": 9,
         "Code Style": 32,
-        "Eclipse API Configuration": 12,
+        "Eclipse API Configuration": 13,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
-        "JDT Internal UI Feature": 14,
+        "JDT Internal UI Feature": 21,
         "JDT Internal Architecture": 1,
         "Eclipse API Migration": 16,
         "JDT Internal Feature": 6,
@@ -2052,7 +2124,7 @@
         "Eclipse UI Refactoring": 4,
         "Control Flow Modernization": 4,
         "JDT Internal Quick Fix Implementation": 1,
-        "Unnecessary Annotation Removal": 1,
+        "Unnecessary Annotation Removal": 2,
         "Eclipse JDT Internal Refactoring": 3,
         "Code Style / Redundancy": 1,
         "Performance Optimization / JDT Internal Refactoring": 1,
@@ -2068,7 +2140,7 @@
         "UI Feature Implementation": 1,
         "Refactoring": 1,
         "Concurrency / Thread-Safety": 2,
-        "JDT UI Feature": 1,
+        "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 6,
         "Architecture Refactoring": 1,
@@ -2082,8 +2154,8 @@
         "Bug Fix": 5,
         "New Cleanup": 1,
         "Logical Simplification": 8,
-        "UI Bug Fix": 3,
-        "Eclipse API Modernization": 20,
+        "UI Bug Fix": 4,
+        "Eclipse API Modernization": 22,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -2120,7 +2192,7 @@
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
         "Eclipse UI Configuration": 2,
-        "Eclipse UI Fix": 5,
+        "Eclipse UI Fix": 6,
         "New Feature Introduction": 2,
         "Eclipse UI": 1,
         "Eclipse UI Feature": 2,
@@ -2136,7 +2208,9 @@
         "JDT Internal Cleanup": 2,
         "Clean-up Infrastructure": 2,
         "New Quick Fix Feature": 1,
-        "Java 19+ Deprecation": 1
+        "Java 19+ Deprecation": 1,
+        "Clean-up Infrastructure Refactoring": 1,
+        "UI Logic Refactoring": 2
       },
       "exhaustedCategories": []
     },
@@ -2177,5 +2251,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24879
+  "globalTotalProcessed": 24961
 }
