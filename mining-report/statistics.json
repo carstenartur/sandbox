@@ -1,47 +1,46 @@
 {
-  "totalProcessed": 37,
-  "relevant": 34,
-  "irrelevant": 3,
-  "duplicates": 4,
-  "green": 15,
-  "yellow": 1,
-  "red": 18,
+  "totalProcessed": 28,
+  "relevant": 27,
+  "irrelevant": 1,
+  "duplicates": 1,
+  "green": 10,
+  "yellow": 0,
+  "red": 17,
   "irrelevantReasons": {
-    "Internal architectural change - removal of conditional logic and a helper method based on updated Java baseline support (Java 8+) in JDT. The DSL cannot express the removal of entire `if` blocks or methods, nor does it capture architectural shifts in how the IDE\u0027s features (like generics proposal) are implemented based on its own minimum Java version support.": 1,
-    "Internal dead code removal due to Java 8+ baseline. The changes involve removing conditional logic and assignments that are no longer reachable, which is a structural refactoring of the plugin\u0027s own code rather than a reusable transformation pattern for user code.": 2
+    "This commit primarily involves removing specific multi-line Javadoc disclaimers related to a BETA Java version and updating an internal method\u0027s logic to always return \u0027false\u0027 (effectively removing the beta version check). These changes are highly specific to the Eclipse JDT\u0027s internal release cycle management and documentation, rather than being generalizable, reusable code transformation patterns for user code or broadly applicable API modernizations. The removal of multi-line Javadoc comments is not a code transformation supported by the DSL, and the method logic change is too specific to the internal `isBetaVersion` method to be considered a reusable pattern.": 1
   },
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 37,
-      "relevant": 34,
-      "green": 15,
-      "yellow": 1,
-      "red": 18
+      "totalProcessed": 28,
+      "relevant": 27,
+      "green": 10,
+      "yellow": 0,
+      "red": 17
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-05-11",
-      "processed": 37,
-      "relevant": 34
+      "date": "2026-05-12",
+      "processed": 28,
+      "relevant": 27
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-05-11T03:14:16.973Z",
-    "completedAt": "2026-05-11T03:35:36.659639147Z",
-    "durationSeconds": 1279,
+    "startedAt": "2026-05-12T03:12:29.538Z",
+    "completedAt": "2026-05-12T03:40:41.424343184Z",
+    "durationSeconds": 1691,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 213,
+    "deferredCommits": 221,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-05-11T03:16:33.201376510Z",
-    "latestEvaluation": "2026-05-11T03:35:35.405048619Z",
-    "earliestCommitDate": "2024-12-21T21:03:05Z",
-    "latestCommitDate": "2025-02-04T16:26:57Z"
+    "earliestEvaluation": "2026-05-12T03:14:46.828514098Z",
+    "latestEvaluation": "2026-05-12T03:40:40.133268991Z",
+    "earliestCommitDate": "2025-02-07T05:32:26Z",
+    "latestCommitDate": "2025-04-29T16:52:28Z"
   }
 }
