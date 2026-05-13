@@ -1,46 +1,24 @@
 {
-  "totalProcessed": 28,
-  "relevant": 27,
-  "irrelevant": 1,
-  "duplicates": 1,
-  "green": 10,
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
   "yellow": 0,
-  "red": 17,
-  "irrelevantReasons": {
-    "This commit primarily involves removing specific multi-line Javadoc disclaimers related to a BETA Java version and updating an internal method\u0027s logic to always return \u0027false\u0027 (effectively removing the beta version check). These changes are highly specific to the Eclipse JDT\u0027s internal release cycle management and documentation, rather than being generalizable, reusable code transformation patterns for user code or broadly applicable API modernizations. The removal of multi-line Javadoc comments is not a code transformation supported by the DSL, and the method logic change is too specific to the internal `isBetaVersion` method to be considered a reusable pattern.": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 28,
-      "relevant": 27,
-      "green": 10,
-      "yellow": 0,
-      "red": 17
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-05-12",
-      "processed": 28,
-      "relevant": 27
-    }
-  ],
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": [],
   "runMetadata": {
-    "startedAt": "2026-05-12T03:12:29.538Z",
-    "completedAt": "2026-05-12T03:40:41.424343184Z",
-    "durationSeconds": 1691,
+    "startedAt": "2026-05-13T03:13:13.615Z",
+    "completedAt": "2026-05-13T03:18:27.411248793Z",
+    "durationSeconds": 313,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
-    "apiCallsMade": 18,
-    "deferredCommits": 221,
+    "apiCallsMade": 0,
+    "deferredCommits": 223,
     "permanentlySkipped": 0
-  },
-  "timeWindow": {
-    "earliestEvaluation": "2026-05-12T03:14:46.828514098Z",
-    "latestEvaluation": "2026-05-12T03:40:40.133268991Z",
-    "earliestCommitDate": "2025-02-07T05:32:26Z",
-    "latestCommitDate": "2025-04-29T16:52:28Z"
   }
 }
