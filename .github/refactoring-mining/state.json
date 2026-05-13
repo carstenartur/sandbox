@@ -2078,6 +2078,24 @@
           "deferredAt": "2026-05-12T03:39:54.536894071Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "b69eafb9ab6d8f46d558a26554274b486cdfd572",
+          "message": "Explicitencoding cleanup (#1631)\n\n* add explicitencoding cleanup\n- add new UseExplicitEncodingCleanUp, UseExplicitEncodi",
+          "diffLines": 152,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-13T03:18:26.139512890Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0d7c003813ce64024a4dbd16bfd1cf9a1102f6a3",
+          "message": "Replace BrowserTextAccessor with InputChangeListener for Javadoc views (#2168)\n\nBrowserTextAccessor came with Javadoc st",
+          "diffLines": 410,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-13T03:18:26.140000700Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
