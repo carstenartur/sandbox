@@ -1,13 +1,13 @@
-/*!id: jdt.internal.browser.location.aboutblank-to-dataurl*/
-/*!description: Extends the 'about:blank' location check to include 'data:' URLs for Edge browser compatibility when setText() is used. This fixes an internal JDT UI bug. (Pattern 1 of 2)*/
-/*!severity: error*/
+@id: jdt.internal.browser.location.aboutblank-to-dataurl
+@severity: error
+"Extends the 'about:blank' location check to include 'data:' URLs for Edge browser compatibility when setText() is used. This fixes an internal JDT UI bug. (Pattern 1 of 2)":
 "about:blank".equals($locVar) :: instanceof($locVar, "java.lang.String")
 => "about:blank".equals($locVar) || $locVar.startsWith("data:")
 ;;
 
-/*!id: jdt.internal.browser.location.external-link-guard*/
-/*!description: Adds a guard for 'data:' URLs when handling external links in the browser to prevent incorrect processing for Edge browser setText() calls. This fixes an internal JDT UI bug. (Pattern 2 of 2)*/
-/*!severity: error*/
+@id: jdt.internal.browser.location.external-link-guard
+@severity: error
+"Adds a guard for 'data:' URLs when handling external links in the browser to prevent incorrect processing for Edge browser setText() calls. This fixes an internal JDT UI bug. (Pattern 2 of 2)":
 $handler.handleExternalLink(new java.net.URL($locVar), $eventDisplay) :: instanceof($locVar, "java.lang.String")
 => !$locVar.startsWith("data:") && $handler.handleExternalLink(new java.net.URL($locVar), $eventDisplay)
 ;;

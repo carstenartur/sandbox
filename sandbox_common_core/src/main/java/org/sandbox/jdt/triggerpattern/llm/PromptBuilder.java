@@ -169,6 +169,7 @@ public class PromptBuilder {
 		sb.append("Each object has the same schema as before:\n\n"); //$NON-NLS-1$
 		appendJsonSchema(sb, true);
 		appendTrafficLightMeanings(sb);
+		appendDslRuleChecklist(sb);
 		return sb.toString();
 	}
 
@@ -209,12 +210,37 @@ public class PromptBuilder {
 		sb.append("## Task\n"); //$NON-NLS-1$
 		sb.append("Analyze this commit and determine whether the code change\n"); //$NON-NLS-1$
 		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n\n"); //$NON-NLS-1$
-		sb.append("IMPORTANT: The dslRule field must contain plain DSL text only.\n"); //$NON-NLS-1$
-		sb.append("Never use <trigger>, <import>, <pattern>, or any XML tags.\n"); //$NON-NLS-1$
-		sb.append("Never use isType() — use instanceof($var, \"TypeName\") instead.\n\n"); //$NON-NLS-1$
+		appendDslRuleChecklist(sb);
 		sb.append("Respond with a JSON object:\n\n"); //$NON-NLS-1$
 		appendJsonSchema(sb, false);
 		appendTrafficLightMeanings(sb);
+	}
+
+	/**
+	 * Compact MUST/MUST-NOT checklist re-emphasised at the end of every prompt
+	 * so the model does not regress on the recurring error patterns detected
+	 * by {@code scan_hints.py} and {@code HintFileResourcesValidationTest}.
+	 */
+	private static void appendDslRuleChecklist(StringBuilder sb) {
+		sb.append("### dslRule Validation Rules (MUST hold — else the build fails)\n"); //$NON-NLS-1$
+		sb.append("1. Plain DSL text only. NEVER use <trigger>, <import>, <pattern> or any XML tags.\n"); //$NON-NLS-1$
+		sb.append("2. NEVER use isType() — use instanceof($var, \"TypeName\") instead.\n"); //$NON-NLS-1$
+		sb.append("3. Every rule MUST end with `;;` on its own line.\n"); //$NON-NLS-1$
+		sb.append("4. Every quick-fix rule MUST contain exactly one `=>` between source and replacement.\n"); //$NON-NLS-1$
+		sb.append("5. Every `$placeholder` used in the replacement MUST also appear in the source pattern.\n"); //$NON-NLS-1$
+		sb.append("   If the replacement needs information not in the source, emit a HINT-ONLY rule:\n"); //$NON-NLS-1$
+		sb.append("     \"Description\":\n"); //$NON-NLS-1$
+		sb.append("     source_pattern :: optional_guard\n"); //$NON-NLS-1$
+		sb.append("     ;;\n"); //$NON-NLS-1$
+		sb.append("   (no `=>` line, no unbound placeholders).\n"); //$NON-NLS-1$
+		sb.append("6. Source and replacement MUST NOT be identical (no NOOP rules).\n"); //$NON-NLS-1$
+		sb.append("7. NEVER mix FQNs with placeholders in the same dotted chain.\n"); //$NON-NLS-1$
+		sb.append("   Bad: java.lang.String.$str.foo()  Good: $str.foo() :: instanceof($str, \"java.lang.String\")\n"); //$NON-NLS-1$
+		sb.append("8. NEVER use per-rule /*!key: value*/ directives (minJavaVersion, tags, id, severity, description).\n"); //$NON-NLS-1$
+		sb.append("   They are silently stripped. Use `@id:` / `@severity:` annotations or file-level `<!key: value>`.\n"); //$NON-NLS-1$
+		sb.append("9. At most ONE `<!id: ...>` per file. Per-rule IDs go in `@id:` annotations.\n"); //$NON-NLS-1$
+		sb.append("10. Self-check before responding: re-read each rule and verify points 1–9.\n"); //$NON-NLS-1$
+		sb.append("    Drop any rule that cannot satisfy them rather than emitting a broken rule.\n\n"); //$NON-NLS-1$
 	}
 
 	private static void appendJsonSchema(StringBuilder sb, boolean asArray) {

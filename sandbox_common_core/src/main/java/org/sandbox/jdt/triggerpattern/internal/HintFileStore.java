@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,6 +100,38 @@ public final class HintFileStore {
 	};
 
 	/**
+	 * Bundled library resource names that are shipped for maintenance and validation,
+	 * but are not loaded by default or exposed as active cleanup bundles.
+	 */
+	private static final String[] DISABLED_BUNDLED_LIBRARIES = {
+		"anonymous-to-lambda.sandbox-hint", //$NON-NLS-1$
+		"array-initialization.sandbox-hint", //$NON-NLS-1$
+		"code-style.sandbox-hint", //$NON-NLS-1$
+		"collections-immutable.sandbox-hint", //$NON-NLS-1$
+		"comparable-compareto-cleanup.sandbox-hint", //$NON-NLS-1$
+		"concurrency.sandbox-hint", //$NON-NLS-1$
+		"deprecated-api.sandbox-hint", //$NON-NLS-1$
+		"eclipse-api-configuration.sandbox-hint", //$NON-NLS-1$
+		"eclipse-api-deprecations.sandbox-hint", //$NON-NLS-1$
+		"eclipse-api-modernization.sandbox-hint", //$NON-NLS-1$
+		"eclipse-platform-ui-mined.sandbox-hint", //$NON-NLS-1$
+		"icu-migration.sandbox-hint", //$NON-NLS-1$
+		"java19-deprecations.sandbox-hint", //$NON-NLS-1$
+		"jdt-api-modernization.sandbox-hint", //$NON-NLS-1$
+		"jdt-formatter-modernization.sandbox-hint", //$NON-NLS-1$
+		"jdt-internal-refactoring.sandbox-hint", //$NON-NLS-1$
+		"jdt-internal-ui-browser-fixes.sandbox-hint", //$NON-NLS-1$
+		"jdt-internal-ui-javadoc-fixes.sandbox-hint", //$NON-NLS-1$
+		"jface-deprecations.sandbox-hint", //$NON-NLS-1$
+		"lambda-simplification.sandbox-hint", //$NON-NLS-1$
+		"logical-simplification.sandbox-hint", //$NON-NLS-1$
+		"modernize-java14.sandbox-hint", //$NON-NLS-1$
+		"null-safety.sandbox-hint", //$NON-NLS-1$
+		"string-object-compare.sandbox-hint", //$NON-NLS-1$
+		"type-safety.sandbox-hint" //$NON-NLS-1$
+	};
+
+	/**
 	 * Classpath resource prefix for bundled library files.
 	 */
 	private static final String BUNDLED_RESOURCE_PREFIX =
@@ -112,6 +145,16 @@ public final class HintFileStore {
 	private final HintFileParser parser = new HintFileParser();
 
 	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);
+
+	/**
+	 * Describes a validation problem found in a bundled hint file resource.
+	 *
+	 * @param resourceName the {@code .sandbox-hint} resource name, or {@code <registry>} for list-level errors
+	 * @param message      human-readable problem description
+	 */
+	public record HintFileValidationProblem(String resourceName, String message) {
+		// value object
+	}
 
 	/**
 	 * Creates a new, empty hint-file store.
@@ -269,7 +312,7 @@ public final class HintFileStore {
 	 * Recursively resolves includes, tracking visited IDs to prevent cycles.
 	 *
 	 * <p>Looks up included files first by registry key, then by declared
-	 * {@code <!id: ...>} so that {@code <!include:>} directives work
+	 * {@code <!id: ...>} so that {@code <!include:} directives work
 	 * consistently regardless of how the hint file was registered.</p>
 	 */
 	private void resolveIncludesRecursive(HintFile hintFile,
@@ -301,32 +344,126 @@ public final class HintFileStore {
 	}
 
 	/**
-	 * Attempts to load all bundled pattern libraries from the classpath.
-	 * Libraries that are not found are silently skipped.
+	 * Returns bundled pattern libraries that are shipped but disabled by default.
 	 *
-	 * <p>This method is idempotent&mdash;subsequent calls after a successful
-	 * first invocation return the currently registered IDs without reloading.</p>
+	 * @return array of disabled bundled library resource names
+	 */
+	public static String[] getDisabledBundledLibraryNames() {
+		return DISABLED_BUNDLED_LIBRARIES.clone();
+	}
+
+	/**
+	 * Returns all bundled pattern library resource names that should be validated.
+	 *
+	 * <p>This includes the active libraries returned by {@link #getBundledLibraryNames()}
+	 * and additional disabled libraries that are intentionally not loaded by
+	 * {@link #loadBundledLibraries(ClassLoader)}.</p>
+	 *
+	 * @return array of all bundled library resource names to validate
+	 */
+	public static String[] getAllBundledLibraryNames() {
+		String[] result = new String[BUNDLED_LIBRARIES.length + DISABLED_BUNDLED_LIBRARIES.length];
+		System.arraycopy(BUNDLED_LIBRARIES, 0, result, 0, BUNDLED_LIBRARIES.length);
+		System.arraycopy(DISABLED_BUNDLED_LIBRARIES, 0, result, BUNDLED_LIBRARIES.length,
+				DISABLED_BUNDLED_LIBRARIES.length);
+		return result;
+	}
+
+	/**
+	 * Validates all active and disabled bundled hint file resources.
+	 *
+	 * <p>The validation intentionally does not register disabled libraries in this store.
+	 * It only parses them and checks invariants that should fail PR builds when broken.</p>
 	 *
 	 * @param classLoader the class loader to use for loading resources
-	 * @return list of successfully loaded library IDs
+	 * @return validation problems; empty when all bundled resources are valid
 	 */
-	public List<String> loadBundledLibraries(ClassLoader classLoader) {
-		if (!bundledLoaded.compareAndSet(false, true)) {
-			return getRegisteredIds();
-		}
-		List<String> loaded = new ArrayList<>();
-		for (String libraryName : BUNDLED_LIBRARIES) {
-			String id = libraryName.replace(".sandbox-hint", ""); //$NON-NLS-1$ //$NON-NLS-2$
+	public List<HintFileValidationProblem> validateBundledLibraries(ClassLoader classLoader) {
+		List<HintFileValidationProblem> problems = new ArrayList<>();
+		Map<String, HintFile> parsedByResource = new LinkedHashMap<>();
+		Map<String, String> resourceByDeclaredId = new LinkedHashMap<>();
+		Set<String> resourceNames = new HashSet<>();
+		Set<String> registryIds = new HashSet<>();
+
+		for (String libraryName : getAllBundledLibraryNames()) {
+			String registryId = toLibraryId(libraryName);
+			if (!resourceNames.add(libraryName)) {
+				problems.add(new HintFileValidationProblem("<registry>", //$NON-NLS-1$
+						"Duplicate bundled hint resource: " + libraryName)); //$NON-NLS-1$
+			}
+			if (!registryIds.add(registryId)) {
+				problems.add(new HintFileValidationProblem(libraryName,
+						"Duplicate bundled hint registry ID: " + registryId)); //$NON-NLS-1$
+			}
+
 			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;
-			try {
-				if (loadFromClasspath(id, resourcePath, classLoader)) {
-					loaded.add(id);
+			try (InputStream is = classLoader.getResourceAsStream(resourcePath)) {
+				if (is == null) {
+					problems.add(new HintFileValidationProblem(libraryName,
+							"Bundled hint resource not found: " + resourcePath)); //$NON-NLS-1$
+					continue;
 				}
-			} catch (HintParseException | IOException e) {
-				// Silently skip libraries that fail to load
+				try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+					HintFile hintFile = parser.parse(reader);
+					parsedByResource.put(libraryName, hintFile);
+					validateHintFileId(libraryName, registryId, hintFile, resourceByDeclaredId, problems);
+					validateRuleIds(libraryName, hintFile, problems);
+				}
+			} catch (HintParseException e) {
+				problems.add(new HintFileValidationProblem(libraryName,
+						"Parse error: " + e.getMessage())); //$NON-NLS-1$
+			} catch (IOException e) {
+				problems.add(new HintFileValidationProblem(libraryName,
+						"I/O error: " + e.getMessage())); //$NON-NLS-1$
 			}
 		}
-		return loaded;
+
+		validateIncludes(parsedByResource, resourceByDeclaredId.keySet(), problems);
+		return Collections.unmodifiableList(problems);
+	}
+
+	private static String toLibraryId(String libraryName) {
+		return libraryName.replace(SANDBOX_HINT_EXTENSION, ""); //$NON-NLS-1$
+	}
+
+	private static void validateHintFileId(String libraryName, String registryId, HintFile hintFile,
+			Map<String, String> resourceByDeclaredId, List<HintFileValidationProblem> problems) {
+		String declaredId = hintFile.getId();
+		String effectiveId = declaredId == null || declaredId.isBlank() ? registryId : declaredId;
+		String previousResource = resourceByDeclaredId.putIfAbsent(effectiveId, libraryName);
+		if (previousResource != null) {
+			problems.add(new HintFileValidationProblem(libraryName,
+					"Duplicate hint file ID '" + effectiveId //$NON-NLS-1$
+							+ "' also used by " + previousResource)); //$NON-NLS-1$
+		}
+	}
+
+	private static void validateRuleIds(String libraryName, HintFile hintFile,
+			List<HintFileValidationProblem> problems) {
+		Set<String> ruleIds = new HashSet<>();
+		for (TransformationRule rule : hintFile.getRules()) {
+			String ruleId = rule.getRuleId();
+			if (ruleId != null && !ruleId.isBlank() && !ruleIds.add(ruleId)) {
+				problems.add(new HintFileValidationProblem(libraryName,
+						"Duplicate rule ID '" + ruleId + "'")); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+	}
+
+	private static void validateIncludes(Map<String, HintFile> parsedByResource, Set<String> declaredIds,
+			List<HintFileValidationProblem> problems) {
+		Set<String> availableIds = new HashSet<>(declaredIds);
+		for (String libraryName : parsedByResource.keySet()) {
+			availableIds.add(toLibraryId(libraryName));
+		}
+		for (Map.Entry<String, HintFile> entry : parsedByResource.entrySet()) {
+			for (String includeId : entry.getValue().getIncludes()) {
+				if (!availableIds.contains(includeId)) {
+					problems.add(new HintFileValidationProblem(entry.getKey(),
+							"Unresolved include: " + includeId)); //$NON-NLS-1$
+				}
+			}
+		}
 	}
 
 	// ------------------------------------------------------------

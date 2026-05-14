@@ -36,58 +36,57 @@ new java.lang.String()
 => org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
 ;;
 
-/*!id: java.lang.varargs.remove-redundant-class-array*/
-/*!description: Removes redundant new Class[] array creation when used as a varargs argument to Class.getConstructor().*/
-/*!severity: info*/
+@id: java.lang.varargs.remove-redundant-class-array
+@severity: info
+"Removes redundant new Class[] array creation when used as a varargs argument to Class.getConstructor().":
 new java.lang.Class[] { $arg$ }
 => $arg$
 ;;
 
-/*!id: java.lang.varargs.remove-redundant-object-array*/
-/*!description: Removes redundant new Object[] array creation when used as a varargs argument (e.g., in Constructor.newInstance(), MessageFormat.format()).*/
-/*!severity: info*/
+@id: java.lang.varargs.remove-redundant-object-array
+@severity: info
+"Removes redundant new Object[] array creation when used as a varargs argument (e.g., in Constructor.newInstance(), MessageFormat.format()).":
 new java.lang.Object[] { $arg$ }
 => $arg$
 ;;
 
-/*!id: java.lang.varargs.remove-redundant-string-array*/
-/*!description: Removes redundant new String[] array creation when used as a varargs argument (e.g., in Arrays.asList(), Combo.setItems()).*/
-/*!severity: info*/
+@id: java.lang.varargs.remove-redundant-string-array
+@severity: info
+"Removes redundant new String[] array creation when used as a varargs argument (e.g., in Arrays.asList(), Combo.setItems()).":
 new java.lang.String[] { $arg$ }
 => $arg$
 ;;
 
-/*!id: java.lang.varargs.remove-redundant-object-array-method-invoke*/
-/*!description: Removes redundant new Object[] array creation when used as a varargs argument to Method.invoke().*/
-/*!severity: info*/
-java.lang.reflect.Method.$method.invoke($obj, new java.lang.Object[] { $arg$ })
-=> $method.invoke($obj, $arg$)
-;;
+// NOTE: A harvested rule tried to remove the redundant `new Object[]{...}`
+// wrapping for `Method.invoke`. The original pattern was malformed
+// (`java.lang.reflect.Method.$method.invoke(...)` is not valid DSL — FQN
+// is only valid at type-reference positions, not at receiver positions).
+// Removed; revisit when typed-receiver placeholders are supported.
 
-/*!id: java.util.arrays.aslist.remove-redundant-string-array*/
-/*!description: Simplifies Arrays.asList(new String[] { ... }) to Arrays.asList(...) in varargs contexts.*/
-/*!severity: info*/
+@id: java.util.arrays.aslist.remove-redundant-string-array
+@severity: info
+"Simplifies Arrays.asList(new String[] { ... }) to Arrays.asList(...) in varargs contexts.":
 java.util.Arrays.asList(new java.lang.String[] { $args$ })
 => java.util.Arrays.asList($args$)
 ;;
 
-/*!id: java.text.messageformat.format.remove-redundant-object-array*/
-/*!description: Simplifies MessageFormat.format(..., new Object[] { ... }) to MessageFormat.format(..., ...) in varargs contexts.*/
-/*!severity: info*/
+@id: java.text.messageformat.format.remove-redundant-object-array
+@severity: info
+"Simplifies MessageFormat.format(..., new Object[] { ... }) to MessageFormat.format(..., ...) in varargs contexts.":
 java.text.MessageFormat.format($pattern, new java.lang.Object[] { $args$ })
 => java.text.MessageFormat.format($pattern, $args$)
 ;;
 
-/*!id: org.eclipse.jface.viewers.StructuredViewer.setinitialselections.remove-redundant-object-array*/
-/*!description: Removes redundant new Object[] array creation when used as a single argument for StructuredViewer.setInitialSelections().*/
-/*!severity: info*/
+@id: org.eclipse.jface.viewers.StructuredViewer.setinitialselections.remove-redundant-object-array
+@severity: info
+"Removes redundant new Object[] array creation when used as a single argument for StructuredViewer.setInitialSelections().":
 $viewer.setInitialSelections(new java.lang.Object[] { $selection })
 => $viewer.setInitialSelections($selection)
 ;;
 
-/*!id: org.eclipse.swt.widgets.Combo.setitems.remove-redundant-string-array*/
-/*!description: Simplifies Combo.setItems(new String[] { ... }) to Combo.setItems(...) in varargs contexts.*/
-/*!severity: info*/
+@id: org.eclipse.swt.widgets.Combo.setitems.remove-redundant-string-array
+@severity: info
+"Simplifies Combo.setItems(new String[] { ... }) to Combo.setItems(...) in varargs contexts.":
 $combo.setItems(new java.lang.String[] { $items$ })
 => $combo.setItems($items$)
 ;;
@@ -247,65 +246,65 @@ java.lang.Boolean.valueOf($b) :: instanceof($b, "boolean")
 => $b
 ;;
 
-<!id: wrapper.to.primitive.Boolean.declaration>
-<!description: Replace Boolean wrapper local variable declaration with boolean primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Boolean.declaration
+@severity: info
+"Replace Boolean wrapper local variable declaration with boolean primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Boolean $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => boolean $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Byte.declaration>
-<!description: Replace Byte wrapper local variable declaration with byte primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Byte.declaration
+@severity: info
+"Replace Byte wrapper local variable declaration with byte primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Byte $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => byte $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Short.declaration>
-<!description: Replace Short wrapper local variable declaration with short primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Short.declaration
+@severity: info
+"Replace Short wrapper local variable declaration with short primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Short $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => short $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Character.declaration>
-<!description: Replace Character wrapper local variable declaration with char primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Character.declaration
+@severity: info
+"Replace Character wrapper local variable declaration with char primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Character $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => char $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Integer.declaration>
-<!description: Replace Integer wrapper local variable declaration with int primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Integer.declaration
+@severity: info
+"Replace Integer wrapper local variable declaration with int primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Integer $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => int $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Long.declaration>
-<!description: Replace Long wrapper local variable declaration with long primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Long.declaration
+@severity: info
+"Replace Long wrapper local variable declaration with long primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Long $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => long $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Float.declaration>
-<!description: Replace Float wrapper local variable declaration with float primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Float.declaration
+@severity: info
+"Replace Float wrapper local variable declaration with float primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Float $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => float $var = $init;
 ;;
 
-<!id: wrapper.to.primitive.Double.declaration>
-<!description: Replace Double wrapper local variable declaration with double primitive type if initializer is non-null and subsequent usages are compatible.>
-<!severity: info>
+@id: wrapper.to.primitive.Double.declaration
+@severity: info
+"Replace Double wrapper local variable declaration with double primitive type if initializer is non-null and subsequent usages are compatible.":
 java.lang.Double $var = $init;
 :: isAssignedToLocalVariable() && isNonNull($init)
 => double $var = $init;
