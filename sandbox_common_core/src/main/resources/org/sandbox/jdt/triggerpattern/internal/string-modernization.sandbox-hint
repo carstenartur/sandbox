@@ -28,6 +28,6 @@ $x.length() > 0
 => !$x.isEmpty()
 ;;
 
-java.lang.String.$str.substring($start, $str.length()) :: hasNoSideEffect($str)
+$str.substring($start, $str.length()) :: hasNoSideEffect($str)
 => $str.substring($start)
 ;;

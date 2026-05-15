@@ -1,6 +1,7 @@
-org.eclipse.core.runtime.IPath.toString() :: instanceof($path, "org.eclipse.core.runtime.IPath")
-=> $path.toOSString()
-;;
+// NOTE: A previous harvested rule rewrote any `.toString()` call on an
+// IPath into `.toOSString()`. That changes semantics (path separator,
+// trailing '/' handling) and matched all `.toString()` calls before any
+// guard could filter — removed.
 
 new org.eclipse.core.runtime.SubProgressMonitor($monitor, $amount)
 => org.eclipse.core.runtime.SubMonitor.convert($monitor, $amount)
@@ -12,16 +13,16 @@ org.eclipse.jdt.core.dom.IModuleBinding.$moduleBinding.getOpenPackages() :: sour
 => $moduleBinding.getOpenedPackages()
 ;;
 
-/*!id: eclipse.ide.geteditordescriptor.file.add-allowinteractive*/
-/*!description: Updates deprecated IDE.getEditorDescriptor(IFile) to IDE.getEditorDescriptor(IFile, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.*/
-/*!severity: info*/
+@id: eclipse.ide.geteditordescriptor.file.add-allowinteractive
+@severity: info
+"Updates deprecated IDE.getEditorDescriptor(IFile) to IDE.getEditorDescriptor(IFile, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.":
 org.eclipse.ui.ide.IDE.getEditorDescriptor($file).getId()
 => org.eclipse.ui.ide.IDE.getEditorDescriptor($file, true, false).getId()
 ;;
 
-/*!id: eclipse.ide.geteditordescriptor.name.add-allowinteractive*/
-/*!description: Updates deprecated IDE.getEditorDescriptor(String name) to IDE.getEditorDescriptor(String name, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.*/
-/*!severity: info*/
+@id: eclipse.ide.geteditordescriptor.name.add-allowinteractive
+@severity: info
+"Updates deprecated IDE.getEditorDescriptor(String name) to IDE.getEditorDescriptor(String name, boolean allowUnassociated, boolean allowInteractive), passing true and false respectively.":
 org.eclipse.ui.ide.IDE.getEditorDescriptor($name).getId()
 => org.eclipse.ui.ide.IDE.getEditorDescriptor($name, true, false).getId()
 ;;
@@ -76,16 +77,16 @@ new org.eclipse.jface.viewers.ViewerComparator()
 => new org.eclipse.jdt.ui.JavaElementComparator()
 ;;
 
-/*!id: eclipse.jdt.core.javacore.runreadonly.removewrapper*/
-/*!description: Removes the JavaCore.runReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/
-/*!severity: info*/
+@id: eclipse.jdt.core.javacore.runreadonly.removewrapper
+@severity: info
+"Removes the JavaCore.runReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.":
 org.eclipse.jdt.core.JavaCore.runReadOnly(() -> $expression$)
 => $expression$
 ;;
 
-/*!id: eclipse.jdt.core.javacore.callreadonly.removewrapper*/
-/*!description: Removes the JavaCore.callReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.*/
-/*!severity: info*/
+@id: eclipse.jdt.core.javacore.callreadonly.removewrapper
+@severity: info
+"Removes the JavaCore.callReadOnly() wrapper around expressions in lambdas, addressing regressions where UI operations could conflict with read-only blocks. This partial revert improves runtime stability.":
 org.eclipse.jdt.core.JavaCore.callReadOnly(() -> $expression$)
 => $expression$
 ;;
@@ -100,53 +101,53 @@ $project.getNature(org.eclipse.jdt.core.JavaCore.NATURE_ID) != null :: instanceo
 
 // Note: Removal of 'import org.eclipse.core.resources.IProjectNature;' is automatically handled by the DSL's import management.
 
-/*!id: jdt.internal.javaplugin.getjavacorepluginpreferences.to.new*/
-/*!description: Replace deprecated JavaPlugin.getJavaCorePluginPreferences() with JavaPlugin.getJavaCorePluginPreferencesNew().*/
-/*!severity: info*/
+@id: jdt.internal.javaplugin.getjavacorepluginpreferences.to.new
+@severity: info
+"Replace deprecated JavaPlugin.getJavaCorePluginPreferences() with JavaPlugin.getJavaCorePluginPreferencesNew().":
 org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferences()
 => org.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferencesNew()
 ;;
 
-/*!id: jdt.internal.text.javacodereader.singlecharreader-to-singlecharacterreader*/
-/*!description: Replace internal SingleCharReader with SingleCharacterReader (type rename).*/
-/*!severity: info*/
+@id: jdt.internal.text.javacodereader.singlecharreader-to-singlecharacterreader
+@severity: info
+"Replace internal SingleCharReader with SingleCharacterReader (type rename).":
 org.eclipse.jface.internal.text.html.SingleCharReader
 => org.eclipse.text.readers.SingleCharacterReader
 ;;
 
-/*!id: jdt.internal.text.correction.proposals.fixcorrectionproposal.getimagedata.addzoom*/
-/*!description: Add zoom argument to Image.getImageData() call in FixCorrectionProposal for high-res images.*/
-/*!severity: info*/
+@id: jdt.internal.text.correction.proposals.fixcorrectionproposal.getimagedata.addzoom
+@severity: info
+"Add zoom argument to Image.getImageData() call in FixCorrectionProposal for high-res images.":
 $image.getImageData().width
 => $image.getImageData(100).width
 ;;
 
-/*!id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.getaveragecharwidth.rename*/
-/*!description: Rename getAverageCharWidth() to getAverageCharacterWidth() for improved precision.*/
-/*!severity: info*/
+@id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.getaveragecharwidth.rename
+@severity: info
+"Rename getAverageCharWidth() to getAverageCharacterWidth() for improved precision.":
 $gc.getFontMetrics().getAverageCharWidth()
 => $gc.getFontMetrics().getAverageCharacterWidth()
 ;;
 
-/*!id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.computeconstraints.addcast*/
-/*!description: Add explicit (int) cast for width calculation in SourceViewerInformationControl to handle double precision.*/
-/*!severity: info*/
+@id: jdt.internal.text.java.hover.sourceviewerinformationcontrol.computeconstraints.addcast
+@severity: info
+"Add explicit (int) cast for width calculation in SourceViewerInformationControl to handle double precision.":
 $widthInChars * $width
 :: inClass("org.eclipse.jdt.internal.ui.text.java.hover.SourceViewerInformationControl") && inMethod("computeSizeConstraints") && instanceof($width, "double")
 => (int) ($widthInChars * $width)
 ;;
 
-/*!id: jdt.internal.ui.viewsupport.filteredelementtreeselectiondialog.super.addarg*/
-/*!description: Add 'true' argument to FilteredTree super constructor for deep filtering in FilteredElementTreeSelectionDialog.*/
-/*!severity: info*/
+@id: jdt.internal.ui.viewsupport.filteredelementtreeselectiondialog.super.addarg
+@severity: info
+"Add 'true' argument to FilteredTree super constructor for deep filtering in FilteredElementTreeSelectionDialog.":
 super($parent, $treeStyle, $patternFilter, true)
 :: inClass("org.eclipse.jdt.internal.ui.viewsupport.FilteredElementTreeSelectionDialog")
 => super($parent, $treeStyle, $patternFilter, true, true)
 ;;
 
-/*!id: jface.listselectiondialog.to.fluentbuilder*/
-/*!description: Modernize ListSelectionDialog instantiation to use the fluent builder pattern.*/
-/*!severity: info*/
+@id: jface.listselectiondialog.to.fluentbuilder
+@severity: info
+"Modernize ListSelectionDialog instantiation to use the fluent builder pattern.":
 new org.eclipse.jface.dialogs.ListSelectionDialog($shell, $input, $contentProvider, $labelProvider, $message)
 => org.eclipse.jface.dialogs.ListSelectionDialog.of($input).contentProvider($contentProvider).labelProvider($labelProvider).message($message).create($shell)
 ;;
@@ -169,44 +170,44 @@ new org.eclipse.jdt.internal.ui.viewsupport.ColoringLabelProvider($provider)
 => new org.eclipse.jdt.internal.ui.viewsupport.DecoratingJavaLabelProvider($provider)
 ;;
 
-/*!id: eclipse.jdt.ui.javaplugin.getpluginpreferences.to.instancescope*/
-/*!description: Replace deprecated JavaPlugin.getPluginPreferences() with InstanceScope.INSTANCE.getNode(JavaPlugin.getPluginId()) to migrate from old Preferences API.*/
-/*!severity: info*/
+@id: eclipse.jdt.ui.javaplugin.getpluginpreferences.to.instancescope
+@severity: info
+"Replace deprecated JavaPlugin.getPluginPreferences() with InstanceScope.INSTANCE.getNode(JavaPlugin.getPluginId()) to migrate from old Preferences API.":
 org.eclipse.jdt.internal.ui.JavaPlugin.getPluginPreferences() :: inClass("org.eclipse.jdt.internal.ui.JavaPlugin")
 => org.eclipse.core.runtime.preferences.InstanceScope.INSTANCE.getNode(org.eclipse.jdt.internal.ui.JavaPlugin.getPluginId())
 ;;
 
-/*!id: eclipse.jdt.ui.preferences.setvalue.to.put*/
-/*!description: Replace Preferences.setValue() with IEclipsePreferences.put() for deprecated API migration.*/
-/*!severity: info*/
+@id: eclipse.jdt.ui.preferences.setvalue.to.put
+@severity: info
+"Replace Preferences.setValue() with IEclipsePreferences.put() for deprecated API migration.":
 $preferences.setValue($key, $value) :: instanceof($preferences, "org.eclipse.core.runtime.Preferences")
 => ((org.eclipse.core.runtime.preferences.IEclipsePreferences)$preferences).put($key, $value)
 ;;
 
-/*!id: eclipse.jdt.ui.preferences.getstring.to.getwithdefault*/
-/*!description: Replace Preferences.getString() with IEclipsePreferences.get() providing a default value for deprecated API migration.*/
-/*!severity: info*/
+@id: eclipse.jdt.ui.preferences.getstring.to.getwithdefault
+@severity: info
+"Replace Preferences.getString() with IEclipsePreferences.get() providing a default value for deprecated API migration.":
 $preferences.getString($key) :: instanceof($preferences, "org.eclipse.core.runtime.Preferences")
 => ((org.eclipse.core.runtime.preferences.IEclipsePreferences)$preferences).get($key, "")
 ;;
 
-/*!id: eclipse.jdt.ui.java_plugin.getactivepage*/
-/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage() calls with JavaPlugin.getActivePage().*/
-/*!severity: info*/
+@id: eclipse.jdt.ui.java_plugin.getactivepage
+@severity: info
+"Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage() calls with JavaPlugin.getActivePage().":
 org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
 => org.eclipse.jdt.internal.ui.JavaPlugin.getActivePage()
 ;;
 
-/*!id: eclipse.jdt.ui.java_plugin.getactiveworkbenchshell*/
-/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell() calls with JavaPlugin.getActiveWorkbenchShell().*/
-/*!severity: info*/
+@id: eclipse.jdt.ui.java_plugin.getactiveworkbenchshell
+@severity: info
+"Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell() calls with JavaPlugin.getActiveWorkbenchShell().":
 org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell()
 => org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchShell()
 ;;
 
-/*!id: eclipse.jdt.ui.java_plugin.getactiveworkbenchwindow*/
-/*!description: Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow() calls with JavaPlugin.getActiveWorkbenchWindow().*/
-/*!severity: info*/
+@id: eclipse.jdt.ui.java_plugin.getactiveworkbenchwindow
+@severity: info
+"Replaces direct PlatformUI.getWorkbench().getActiveWorkbenchWindow() calls with JavaPlugin.getActiveWorkbenchWindow().":
 org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 => org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchWindow()
 ;;

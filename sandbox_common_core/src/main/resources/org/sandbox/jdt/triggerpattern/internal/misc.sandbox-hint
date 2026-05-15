@@ -16,23 +16,23 @@ $x.toString()
 => String.valueOf($x)
 ;;
 
-/*!id: logical.simplification.not-equal-zero*/
-/*!description: Simplify !($expr.length() == 0) to $expr.length() != 0 for improved readability.*/
-/*!severity: info*/
+@id: logical.simplification.not-equal-zero
+@severity: info
+"Simplify !($expr.length() == 0) to $expr.length() != 0 for improved readability.":
 !($x.length() == 0)
 => $x.length() != 0
 ;;
 
-/*!id: logical.simplification.demorgan.or-negation*/
-/*!description: Apply De Morgan's law: !(A || B) to !A && !B.*/
-/*!severity: info*/
+@id: logical.simplification.demorgan.or-negation
+@severity: info
+"Apply De Morgan's law: !(A || B) to !A && !B.":
 !($a || $b)
 => !$a && !$b
 ;;
 
-/*!id: logical.simplification.demorgan.and-negation*/
-/*!description: Apply De Morgan's law: !(A && B) to !A || !B.*/
-/*!severity: info*/
+@id: logical.simplification.demorgan.and-negation
+@severity: info
+"Apply De Morgan's law: !(A && B) to !A || !B.":
 !($a && $b)
 => !$a || !$b
 ;;
