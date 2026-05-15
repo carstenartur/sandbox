@@ -370,6 +370,37 @@ public final class HintFileStore {
 	}
 
 	/**
+	 * Attempts to load all active bundled pattern libraries from the classpath.
+	 * Disabled bundled libraries are intentionally not registered by this method;
+	 * they are covered by {@link #validateBundledLibraries(ClassLoader)} instead.
+	 *
+	 * <p>This method is idempotent&mdash;subsequent calls after a successful
+	 * first invocation return the currently registered IDs without reloading.</p>
+	 *
+	 * @param classLoader the class loader to use for loading resources
+	 * @return list of successfully loaded library IDs
+	 */
+	public List<String> loadBundledLibraries(ClassLoader classLoader) {
+		if (!bundledLoaded.compareAndSet(false, true)) {
+			return getRegisteredIds();
+		}
+		List<String> loaded = new ArrayList<>();
+		for (String libraryName : BUNDLED_LIBRARIES) {
+			String id = toLibraryId(libraryName);
+			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;
+			try {
+				if (loadFromClasspath(id, resourcePath, classLoader)) {
+					loaded.add(id);
+				}
+			} catch (HintParseException | IOException e) {
+				LOGGER.log(Level.WARNING,
+						"Failed to load bundled hint library: " + libraryName, e); //$NON-NLS-1$
+			}
+		}
+		return loaded;
+	}
+
+	/**
 	 * Validates all active and disabled bundled hint file resources.
 	 *
 	 * <p>The validation intentionally does not register disabled libraries in this store.
