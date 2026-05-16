@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,7 +56,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
  */
 public final class HintFileStore {
 
-<span class="fc" id="L58">	private static final Logger LOGGER = Logger.getLogger(HintFileStore.class.getName());</span>
+<span class="fc" id="L59">	private static final Logger LOGGER = Logger.getLogger(HintFileStore.class.getName());</span>
 
 	/** ID prefix for AI-inferred hint files. */
 	static final String INFERRED_PREFIX = &quot;inferred:&quot;; //$NON-NLS-1$
@@ -72,7 +73,7 @@ public final class HintFileStore {
 	/**
 	 * Bundled library resource names.
 	 */
-<span class="fc" id="L75">	private static final String[] BUNDLED_LIBRARIES = {</span>
+<span class="fc" id="L76">	private static final String[] BUNDLED_LIBRARIES = {</span>
 		&quot;collections.sandbox-hint&quot;, //$NON-NLS-1$
 		&quot;modernize-java9.sandbox-hint&quot;, //$NON-NLS-1$
 		&quot;modernize-java11.sandbox-hint&quot;, //$NON-NLS-1$
@@ -99,26 +100,68 @@ public final class HintFileStore {
 	};
 
 	/**
+	 * Bundled library resource names that are shipped for maintenance and validation,
+	 * but are not loaded by default or exposed as active cleanup bundles.
+	 */
+<span class="fc" id="L106">	private static final String[] DISABLED_BUNDLED_LIBRARIES = {</span>
+		&quot;anonymous-to-lambda.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;array-initialization.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;code-style.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;collections-immutable.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;comparable-compareto-cleanup.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;concurrency.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;deprecated-api.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;eclipse-api-configuration.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;eclipse-api-deprecations.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;eclipse-api-modernization.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;eclipse-platform-ui-mined.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;icu-migration.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;java19-deprecations.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;jdt-api-modernization.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;jdt-formatter-modernization.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;jdt-internal-refactoring.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;jdt-internal-ui-browser-fixes.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;jdt-internal-ui-javadoc-fixes.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;jface-deprecations.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;lambda-simplification.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;logical-simplification.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;modernize-java14.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;null-safety.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;string-object-compare.sandbox-hint&quot;, //$NON-NLS-1$
+		&quot;type-safety.sandbox-hint&quot; //$NON-NLS-1$
+	};
+
+	/**
 	 * Classpath resource prefix for bundled library files.
 	 */
 	private static final String BUNDLED_RESOURCE_PREFIX =
 		&quot;org/sandbox/jdt/triggerpattern/internal/&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L107">	private final Map&lt;String, HintFile&gt; hintFiles = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L140">	private final Map&lt;String, HintFile&gt; hintFiles = new ConcurrentHashMap&lt;&gt;();</span>
 
 	/** Secondary index: declared {@code &lt;!id: ...&gt;} &amp;rarr; HintFile, for efficient include resolution. */
-<span class="fc" id="L110">	private final Map&lt;String, HintFile&gt; hintFilesByDeclaredId = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L143">	private final Map&lt;String, HintFile&gt; hintFilesByDeclaredId = new ConcurrentHashMap&lt;&gt;();</span>
 
-<span class="fc" id="L112">	private final HintFileParser parser = new HintFileParser();</span>
+<span class="fc" id="L145">	private final HintFileParser parser = new HintFileParser();</span>
 
-<span class="fc" id="L114">	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);</span>
+<span class="fc" id="L147">	private final AtomicBoolean bundledLoaded = new AtomicBoolean(false);</span>
+
+	/**
+	 * Describes a validation problem found in a bundled hint file resource.
+	 *
+	 * @param resourceName the {@code .sandbox-hint} resource name, or {@code &lt;registry&gt;} for list-level errors
+	 * @param message      human-readable problem description
+	 */
+<span class="nc" id="L155">	public record HintFileValidationProblem(String resourceName, String message) {</span>
+		// value object
+	}
 
 	/**
 	 * Creates a new, empty hint-file store.
 	 */
-<span class="fc" id="L119">	public HintFileStore() {</span>
+<span class="fc" id="L162">	public HintFileStore() {</span>
 		// public, non-singleton constructor
-<span class="fc" id="L121">	}</span>
+<span class="fc" id="L164">	}</span>
 
 	// ------------------------------------------------------------
 	// Loading
@@ -132,13 +175,13 @@ public final class HintFileStore {
 	 * @throws HintParseException if parsing fails
 	 */
 	public void loadFromString(String id, String content) throws HintParseException {
-<span class="fc" id="L135">		HintFile hintFile = parser.parse(content);</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (hintFile.getId() == null) {</span>
-<span class="fc" id="L137">			hintFile.setId(id);</span>
+<span class="fc" id="L178">		HintFile hintFile = parser.parse(content);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (hintFile.getId() == null) {</span>
+<span class="fc" id="L180">			hintFile.setId(id);</span>
 		}
-<span class="fc" id="L139">		hintFiles.put(id, hintFile);</span>
-<span class="fc" id="L140">		indexByDeclaredId(hintFile);</span>
-<span class="fc" id="L141">	}</span>
+<span class="fc" id="L182">		hintFiles.put(id, hintFile);</span>
+<span class="fc" id="L183">		indexByDeclaredId(hintFile);</span>
+<span class="fc" id="L184">	}</span>
 
 	/**
 	 * Loads and registers a hint file from a reader.
@@ -149,13 +192,13 @@ public final class HintFileStore {
 	 * @throws IOException        if an I/O error occurs
 	 */
 	public void loadFromReader(String id, Reader reader) throws HintParseException, IOException {
-<span class="fc" id="L152">		HintFile hintFile = parser.parse(reader);</span>
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (hintFile.getId() == null) {</span>
-<span class="nc" id="L154">			hintFile.setId(id);</span>
+<span class="fc" id="L195">		HintFile hintFile = parser.parse(reader);</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (hintFile.getId() == null) {</span>
+<span class="nc" id="L197">			hintFile.setId(id);</span>
 		}
-<span class="fc" id="L156">		hintFiles.put(id, hintFile);</span>
-<span class="fc" id="L157">		indexByDeclaredId(hintFile);</span>
-<span class="fc" id="L158">	}</span>
+<span class="fc" id="L199">		hintFiles.put(id, hintFile);</span>
+<span class="fc" id="L200">		indexByDeclaredId(hintFile);</span>
+<span class="fc" id="L201">	}</span>
 
 	/**
 	 * Loads and registers a hint file from a classpath resource.
@@ -169,13 +212,13 @@ public final class HintFileStore {
 	 */
 	public boolean loadFromClasspath(String id, String resourcePath, ClassLoader classLoader)
 			throws HintParseException, IOException {
-<span class="fc" id="L172">		InputStream is = classLoader.getResourceAsStream(resourcePath);</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (is == null) {</span>
-<span class="nc" id="L174">			return false;</span>
+<span class="fc" id="L215">		InputStream is = classLoader.getResourceAsStream(resourcePath);</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">		if (is == null) {</span>
+<span class="nc" id="L217">			return false;</span>
 		}
-<span class="fc" id="L176">		try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
-<span class="fc" id="L177">			loadFromReader(id, reader);</span>
-<span class="fc" id="L178">			return true;</span>
+<span class="fc" id="L219">		try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L220">			loadFromReader(id, reader);</span>
+<span class="fc" id="L221">			return true;</span>
 		}
 	}
 
@@ -190,7 +233,7 @@ public final class HintFileStore {
 	 * @return the hint file, or {@code null} if not found
 	 */
 	public HintFile getHintFile(String id) {
-<span class="fc" id="L193">		return hintFiles.get(id);</span>
+<span class="fc" id="L236">		return hintFiles.get(id);</span>
 	}
 
 	/**
@@ -199,7 +242,7 @@ public final class HintFileStore {
 	 * @return unmodifiable map of ID to hint file
 	 */
 	public Map&lt;String, HintFile&gt; getAllHintFiles() {
-<span class="fc" id="L202">		return Collections.unmodifiableMap(hintFiles);</span>
+<span class="fc" id="L245">		return Collections.unmodifiableMap(hintFiles);</span>
 	}
 
 	/**
@@ -208,7 +251,7 @@ public final class HintFileStore {
 	 * @return unmodifiable list of hint file IDs
 	 */
 	public List&lt;String&gt; getRegisteredIds() {
-<span class="fc" id="L211">		return Collections.unmodifiableList(new ArrayList&lt;&gt;(hintFiles.keySet()));</span>
+<span class="fc" id="L254">		return Collections.unmodifiableList(new ArrayList&lt;&gt;(hintFiles.keySet()));</span>
 	}
 
 	// ------------------------------------------------------------
@@ -222,21 +265,21 @@ public final class HintFileStore {
 	 * @return the removed hint file, or {@code null} if not found
 	 */
 	public HintFile unregister(String id) {
-<span class="fc" id="L225">		HintFile removed = hintFiles.remove(id);</span>
-<span class="pc bpc" id="L226" title="2 of 4 branches missed.">		if (removed != null &amp;&amp; removed.getId() != null) {</span>
-<span class="fc" id="L227">			hintFilesByDeclaredId.remove(removed.getId());</span>
+<span class="fc" id="L268">		HintFile removed = hintFiles.remove(id);</span>
+<span class="pc bpc" id="L269" title="2 of 4 branches missed.">		if (removed != null &amp;&amp; removed.getId() != null) {</span>
+<span class="fc" id="L270">			hintFilesByDeclaredId.remove(removed.getId());</span>
 		}
-<span class="fc" id="L229">		return removed;</span>
+<span class="fc" id="L272">		return removed;</span>
 	}
 
 	/**
 	 * Removes all registered hint files and resets the bundled-loaded flag.
 	 */
 	public void clear() {
-<span class="fc" id="L236">		hintFiles.clear();</span>
-<span class="fc" id="L237">		hintFilesByDeclaredId.clear();</span>
-<span class="fc" id="L238">		bundledLoaded.set(false);</span>
-<span class="fc" id="L239">	}</span>
+<span class="fc" id="L279">		hintFiles.clear();</span>
+<span class="fc" id="L280">		hintFilesByDeclaredId.clear();</span>
+<span class="fc" id="L281">		bundledLoaded.set(false);</span>
+<span class="fc" id="L282">	}</span>
 
 	// ------------------------------------------------------------
 	// Include resolution
@@ -256,36 +299,36 @@ public final class HintFileStore {
 	 * @return list of all rules including those from included files
 	 */
 	public List&lt;TransformationRule&gt; resolveIncludes(HintFile hintFile) {
-<span class="fc" id="L259">		List&lt;TransformationRule&gt; allRules = new ArrayList&lt;&gt;(hintFile.getRules());</span>
-<span class="fc" id="L260">		Set&lt;String&gt; visited = new HashSet&lt;&gt;();</span>
-<span class="pc bpc" id="L261" title="1 of 2 branches missed.">		if (hintFile.getId() != null) {</span>
-<span class="fc" id="L262">			visited.add(hintFile.getId());</span>
+<span class="fc" id="L302">		List&lt;TransformationRule&gt; allRules = new ArrayList&lt;&gt;(hintFile.getRules());</span>
+<span class="fc" id="L303">		Set&lt;String&gt; visited = new HashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">		if (hintFile.getId() != null) {</span>
+<span class="fc" id="L305">			visited.add(hintFile.getId());</span>
 		}
-<span class="fc" id="L264">		resolveIncludesRecursive(hintFile, allRules, visited);</span>
-<span class="fc" id="L265">		return Collections.unmodifiableList(allRules);</span>
+<span class="fc" id="L307">		resolveIncludesRecursive(hintFile, allRules, visited);</span>
+<span class="fc" id="L308">		return Collections.unmodifiableList(allRules);</span>
 	}
 
 	/**
 	 * Recursively resolves includes, tracking visited IDs to prevent cycles.
 	 *
 	 * &lt;p&gt;Looks up included files first by registry key, then by declared
-	 * {@code &lt;!id: ...&gt;} so that {@code &lt;!include:&gt;} directives work
+	 * {@code &lt;!id: ...&gt;} so that {@code &lt;!include:} directives work
 	 * consistently regardless of how the hint file was registered.&lt;/p&gt;
 	 */
 	private void resolveIncludesRecursive(HintFile hintFile,
 			List&lt;TransformationRule&gt; allRules, Set&lt;String&gt; visited) {
-<span class="fc bfc" id="L277" title="All 2 branches covered.">		for (String includeId : hintFile.getIncludes()) {</span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">			if (visited.contains(includeId)) {</span>
-<span class="fc" id="L279">				continue; // Break circular reference</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">		for (String includeId : hintFile.getIncludes()) {</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">			if (visited.contains(includeId)) {</span>
+<span class="fc" id="L322">				continue; // Break circular reference</span>
 			}
-<span class="fc" id="L281">			visited.add(includeId);</span>
-<span class="fc" id="L282">			HintFile included = findByKeyOrDeclaredId(includeId);</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">			if (included != null) {</span>
-<span class="fc" id="L284">				allRules.addAll(included.getRules());</span>
-<span class="fc" id="L285">				resolveIncludesRecursive(included, allRules, visited);</span>
+<span class="fc" id="L324">			visited.add(includeId);</span>
+<span class="fc" id="L325">			HintFile included = findByKeyOrDeclaredId(includeId);</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">			if (included != null) {</span>
+<span class="fc" id="L327">				allRules.addAll(included.getRules());</span>
+<span class="fc" id="L328">				resolveIncludesRecursive(included, allRules, visited);</span>
 			}
-<span class="fc" id="L287">		}</span>
-<span class="fc" id="L288">	}</span>
+<span class="fc" id="L330">		}</span>
+<span class="fc" id="L331">	}</span>
 
 	// ------------------------------------------------------------
 	// Bundled libraries
@@ -297,12 +340,39 @@ public final class HintFileStore {
 	 * @return array of bundled library resource names
 	 */
 	public static String[] getBundledLibraryNames() {
-<span class="fc" id="L300">		return BUNDLED_LIBRARIES.clone();</span>
+<span class="fc" id="L343">		return BUNDLED_LIBRARIES.clone();</span>
 	}
 
 	/**
-	 * Attempts to load all bundled pattern libraries from the classpath.
-	 * Libraries that are not found are silently skipped.
+	 * Returns bundled pattern libraries that are shipped but disabled by default.
+	 *
+	 * @return array of disabled bundled library resource names
+	 */
+	public static String[] getDisabledBundledLibraryNames() {
+<span class="fc" id="L352">		return DISABLED_BUNDLED_LIBRARIES.clone();</span>
+	}
+
+	/**
+	 * Returns all bundled pattern library resource names that should be validated.
+	 *
+	 * &lt;p&gt;This includes the active libraries returned by {@link #getBundledLibraryNames()}
+	 * and additional disabled libraries that are intentionally not loaded by
+	 * {@link #loadBundledLibraries(ClassLoader)}.&lt;/p&gt;
+	 *
+	 * @return array of all bundled library resource names to validate
+	 */
+	public static String[] getAllBundledLibraryNames() {
+<span class="fc" id="L365">		String[] result = new String[BUNDLED_LIBRARIES.length + DISABLED_BUNDLED_LIBRARIES.length];</span>
+<span class="fc" id="L366">		System.arraycopy(BUNDLED_LIBRARIES, 0, result, 0, BUNDLED_LIBRARIES.length);</span>
+<span class="fc" id="L367">		System.arraycopy(DISABLED_BUNDLED_LIBRARIES, 0, result, BUNDLED_LIBRARIES.length,</span>
+				DISABLED_BUNDLED_LIBRARIES.length);
+<span class="fc" id="L369">		return result;</span>
+	}
+
+	/**
+	 * Attempts to load all active bundled pattern libraries from the classpath.
+	 * Disabled bundled libraries are intentionally not registered by this method;
+	 * they are covered by {@link #validateBundledLibraries(ClassLoader)} instead.
 	 *
 	 * &lt;p&gt;This method is idempotent&amp;mdash;subsequent calls after a successful
 	 * first invocation return the currently registered IDs without reloading.&lt;/p&gt;
@@ -311,23 +381,121 @@ public final class HintFileStore {
 	 * @return list of successfully loaded library IDs
 	 */
 	public List&lt;String&gt; loadBundledLibraries(ClassLoader classLoader) {
-<span class="fc bfc" id="L314" title="All 2 branches covered.">		if (!bundledLoaded.compareAndSet(false, true)) {</span>
-<span class="fc" id="L315">			return getRegisteredIds();</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">		if (!bundledLoaded.compareAndSet(false, true)) {</span>
+<span class="fc" id="L385">			return getRegisteredIds();</span>
 		}
-<span class="fc" id="L317">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L318" title="All 2 branches covered.">		for (String libraryName : BUNDLED_LIBRARIES) {</span>
-<span class="fc" id="L319">			String id = libraryName.replace(&quot;.sandbox-hint&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L320">			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;</span>
+<span class="fc" id="L387">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">		for (String libraryName : BUNDLED_LIBRARIES) {</span>
+<span class="fc" id="L389">			String id = toLibraryId(libraryName);</span>
+<span class="fc" id="L390">			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;</span>
 			try {
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">				if (loadFromClasspath(id, resourcePath, classLoader)) {</span>
-<span class="fc" id="L323">					loaded.add(id);</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">				if (loadFromClasspath(id, resourcePath, classLoader)) {</span>
+<span class="fc" id="L393">					loaded.add(id);</span>
 				}
-<span class="nc" id="L325">			} catch (HintParseException | IOException e) {</span>
-				// Silently skip libraries that fail to load
-<span class="fc" id="L327">			}</span>
+<span class="nc" id="L395">			} catch (HintParseException | IOException e) {</span>
+<span class="nc" id="L396">				LOGGER.log(Level.WARNING,</span>
+						&quot;Failed to load bundled hint library: &quot; + libraryName, e); //$NON-NLS-1$
+<span class="fc" id="L398">			}</span>
 		}
-<span class="fc" id="L329">		return loaded;</span>
+<span class="fc" id="L400">		return loaded;</span>
 	}
+
+	/**
+	 * Validates all active and disabled bundled hint file resources.
+	 *
+	 * &lt;p&gt;The validation intentionally does not register disabled libraries in this store.
+	 * It only parses them and checks invariants that should fail PR builds when broken.&lt;/p&gt;
+	 *
+	 * @param classLoader the class loader to use for loading resources
+	 * @return validation problems; empty when all bundled resources are valid
+	 */
+	public List&lt;HintFileValidationProblem&gt; validateBundledLibraries(ClassLoader classLoader) {
+<span class="fc" id="L413">		List&lt;HintFileValidationProblem&gt; problems = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L414">		Map&lt;String, HintFile&gt; parsedByResource = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L415">		Map&lt;String, String&gt; resourceByDeclaredId = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L416">		Set&lt;String&gt; resourceNames = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L417">		Set&lt;String&gt; registryIds = new HashSet&lt;&gt;();</span>
+
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		for (String libraryName : getAllBundledLibraryNames()) {</span>
+<span class="fc" id="L420">			String registryId = toLibraryId(libraryName);</span>
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">			if (!resourceNames.add(libraryName)) {</span>
+<span class="nc" id="L422">				problems.add(new HintFileValidationProblem(&quot;&lt;registry&gt;&quot;, //$NON-NLS-1$</span>
+						&quot;Duplicate bundled hint resource: &quot; + libraryName)); //$NON-NLS-1$
+			}
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">			if (!registryIds.add(registryId)) {</span>
+<span class="nc" id="L426">				problems.add(new HintFileValidationProblem(libraryName,</span>
+						&quot;Duplicate bundled hint registry ID: &quot; + registryId)); //$NON-NLS-1$
+			}
+
+<span class="fc" id="L430">			String resourcePath = BUNDLED_RESOURCE_PREFIX + libraryName;</span>
+<span class="fc" id="L431">			try (InputStream is = classLoader.getResourceAsStream(resourcePath)) {</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">				if (is == null) {</span>
+<span class="nc" id="L433">					problems.add(new HintFileValidationProblem(libraryName,</span>
+							&quot;Bundled hint resource not found: &quot; + resourcePath)); //$NON-NLS-1$
+<span class="nc" id="L435">					continue;</span>
+				}
+<span class="fc" id="L437">				try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L438">					HintFile hintFile = parser.parse(reader);</span>
+<span class="fc" id="L439">					parsedByResource.put(libraryName, hintFile);</span>
+<span class="fc" id="L440">					validateHintFileId(libraryName, registryId, hintFile, resourceByDeclaredId, problems);</span>
+<span class="fc" id="L441">					validateRuleIds(libraryName, hintFile, problems);</span>
+				}
+<span class="nc bnc" id="L443" title="All 2 branches missed.">			} catch (HintParseException e) {</span>
+<span class="nc" id="L444">				problems.add(new HintFileValidationProblem(libraryName,</span>
+<span class="nc" id="L445">						&quot;Parse error: &quot; + e.getMessage())); //$NON-NLS-1$</span>
+<span class="nc" id="L446">			} catch (IOException e) {</span>
+<span class="nc" id="L447">				problems.add(new HintFileValidationProblem(libraryName,</span>
+<span class="nc" id="L448">						&quot;I/O error: &quot; + e.getMessage())); //$NON-NLS-1$</span>
+<span class="pc" id="L449">			}</span>
+		}
+
+<span class="fc" id="L452">		validateIncludes(parsedByResource, resourceByDeclaredId.keySet(), problems);</span>
+<span class="fc" id="L453">		return Collections.unmodifiableList(problems);</span>
+	}
+
+	private static String toLibraryId(String libraryName) {
+<span class="fc" id="L457">		return libraryName.replace(SANDBOX_HINT_EXTENSION, &quot;&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static void validateHintFileId(String libraryName, String registryId, HintFile hintFile,
+			Map&lt;String, String&gt; resourceByDeclaredId, List&lt;HintFileValidationProblem&gt; problems) {
+<span class="fc" id="L462">		String declaredId = hintFile.getId();</span>
+<span class="pc bpc" id="L463" title="1 of 4 branches missed.">		String effectiveId = declaredId == null || declaredId.isBlank() ? registryId : declaredId;</span>
+<span class="fc" id="L464">		String previousResource = resourceByDeclaredId.putIfAbsent(effectiveId, libraryName);</span>
+<span class="pc bpc" id="L465" title="1 of 2 branches missed.">		if (previousResource != null) {</span>
+<span class="nc" id="L466">			problems.add(new HintFileValidationProblem(libraryName,</span>
+					&quot;Duplicate hint file ID '&quot; + effectiveId //$NON-NLS-1$
+							+ &quot;' also used by &quot; + previousResource)); //$NON-NLS-1$
+		}
+<span class="fc" id="L470">	}</span>
+
+	private static void validateRuleIds(String libraryName, HintFile hintFile,
+			List&lt;HintFileValidationProblem&gt; problems) {
+<span class="fc" id="L474">		Set&lt;String&gt; ruleIds = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">		for (TransformationRule rule : hintFile.getRules()) {</span>
+<span class="fc" id="L476">			String ruleId = rule.getRuleId();</span>
+<span class="pc bpc" id="L477" title="2 of 6 branches missed.">			if (ruleId != null &amp;&amp; !ruleId.isBlank() &amp;&amp; !ruleIds.add(ruleId)) {</span>
+<span class="nc" id="L478">				problems.add(new HintFileValidationProblem(libraryName,</span>
+						&quot;Duplicate rule ID '&quot; + ruleId + &quot;'&quot;)); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+<span class="fc" id="L481">		}</span>
+<span class="fc" id="L482">	}</span>
+
+	private static void validateIncludes(Map&lt;String, HintFile&gt; parsedByResource, Set&lt;String&gt; declaredIds,
+			List&lt;HintFileValidationProblem&gt; problems) {
+<span class="fc" id="L486">		Set&lt;String&gt; availableIds = new HashSet&lt;&gt;(declaredIds);</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">		for (String libraryName : parsedByResource.keySet()) {</span>
+<span class="fc" id="L488">			availableIds.add(toLibraryId(libraryName));</span>
+<span class="fc" id="L489">		}</span>
+<span class="fc bfc" id="L490" title="All 2 branches covered.">		for (Map.Entry&lt;String, HintFile&gt; entry : parsedByResource.entrySet()) {</span>
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">			for (String includeId : entry.getValue().getIncludes()) {</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">				if (!availableIds.contains(includeId)) {</span>
+<span class="nc" id="L493">					problems.add(new HintFileValidationProblem(entry.getKey(),</span>
+							&quot;Unresolved include: &quot; + includeId)); //$NON-NLS-1$
+				}
+<span class="nc" id="L496">			}</span>
+<span class="fc" id="L497">		}</span>
+<span class="fc" id="L498">	}</span>
 
 	// ------------------------------------------------------------
 	// Inferred rules
@@ -345,14 +513,14 @@ public final class HintFileStore {
 	 * @since 1.2.6
 	 */
 	public void registerInferredRules(HintFile hintFile, String sourceCommit) {
-<span class="fc" id="L348">		String id = INFERRED_PREFIX + sourceCommit;</span>
-<span class="fc" id="L349">		hintFile.setId(id);</span>
-<span class="pc bpc" id="L350" title="2 of 4 branches missed.">		if (hintFile.getTags() == null || hintFile.getTags().isEmpty()) {</span>
-<span class="fc" id="L351">			hintFile.setTags(List.of(&quot;inferred&quot;, &quot;mining&quot;, sourceCommit)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L516">		String id = INFERRED_PREFIX + sourceCommit;</span>
+<span class="fc" id="L517">		hintFile.setId(id);</span>
+<span class="pc bpc" id="L518" title="2 of 4 branches missed.">		if (hintFile.getTags() == null || hintFile.getTags().isEmpty()) {</span>
+<span class="fc" id="L519">			hintFile.setTags(List.of(&quot;inferred&quot;, &quot;mining&quot;, sourceCommit)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L353">		hintFiles.put(id, hintFile);</span>
-<span class="fc" id="L354">		hintFilesByDeclaredId.put(id, hintFile);</span>
-<span class="fc" id="L355">	}</span>
+<span class="fc" id="L521">		hintFiles.put(id, hintFile);</span>
+<span class="fc" id="L522">		hintFilesByDeclaredId.put(id, hintFile);</span>
+<span class="fc" id="L523">	}</span>
 
 	/**
 	 * Returns all hint files that were inferred (have the {@code &quot;inferred:&quot;} key prefix).
@@ -361,13 +529,13 @@ public final class HintFileStore {
 	 * @since 1.2.6
 	 */
 	public List&lt;HintFile&gt; getInferredHintFiles() {
-<span class="fc" id="L364">		List&lt;HintFile&gt; inferred = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L365" title="All 2 branches covered.">		for (Map.Entry&lt;String, HintFile&gt; entry : hintFiles.entrySet()) {</span>
-<span class="fc bfc" id="L366" title="All 2 branches covered.">			if (entry.getKey().startsWith(INFERRED_PREFIX)) {</span>
-<span class="fc" id="L367">				inferred.add(entry.getValue());</span>
+<span class="fc" id="L532">		List&lt;HintFile&gt; inferred = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">		for (Map.Entry&lt;String, HintFile&gt; entry : hintFiles.entrySet()) {</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">			if (entry.getKey().startsWith(INFERRED_PREFIX)) {</span>
+<span class="fc" id="L535">				inferred.add(entry.getValue());</span>
 			}
-<span class="fc" id="L369">		}</span>
-<span class="fc" id="L370">		return inferred;</span>
+<span class="fc" id="L537">		}</span>
+<span class="fc" id="L538">		return inferred;</span>
 	}
 
 	/**
@@ -378,15 +546,15 @@ public final class HintFileStore {
 	 * @since 1.2.6
 	 */
 	public void promoteToManual(String hintFileId) {
-<span class="fc" id="L381">		HintFile hintFile = hintFiles.remove(hintFileId);</span>
-<span class="fc bfc" id="L382" title="All 2 branches covered.">		if (hintFile != null) {</span>
-<span class="fc" id="L383">			hintFilesByDeclaredId.remove(hintFileId);</span>
-<span class="fc" id="L384">			String newId = hintFileId.replace(INFERRED_PREFIX, &quot;manual:&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L385">			hintFile.setId(newId);</span>
-<span class="fc" id="L386">			hintFiles.put(newId, hintFile);</span>
-<span class="fc" id="L387">			hintFilesByDeclaredId.put(newId, hintFile);</span>
+<span class="fc" id="L549">		HintFile hintFile = hintFiles.remove(hintFileId);</span>
+<span class="fc bfc" id="L550" title="All 2 branches covered.">		if (hintFile != null) {</span>
+<span class="fc" id="L551">			hintFilesByDeclaredId.remove(hintFileId);</span>
+<span class="fc" id="L552">			String newId = hintFileId.replace(INFERRED_PREFIX, &quot;manual:&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L553">			hintFile.setId(newId);</span>
+<span class="fc" id="L554">			hintFiles.put(newId, hintFile);</span>
+<span class="fc" id="L555">			hintFilesByDeclaredId.put(newId, hintFile);</span>
 		}
-<span class="fc" id="L389">	}</span>
+<span class="fc" id="L557">	}</span>
 
 	/**
 	 * Registers inferred rules from a list of {@link CommitEvaluation} results.
@@ -403,44 +571,44 @@ public final class HintFileStore {
 	 * @since 1.3.2
 	 */
 	public List&lt;String&gt; registerInferredRules(List&lt;CommitEvaluation&gt; evaluations, String source) {
-<span class="fc" id="L406">		List&lt;String&gt; registered = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L407" title="All 2 branches covered.">		if (evaluations == null) {</span>
-<span class="fc" id="L408">			return registered;</span>
+<span class="fc" id="L574">		List&lt;String&gt; registered = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L575" title="All 2 branches covered.">		if (evaluations == null) {</span>
+<span class="fc" id="L576">			return registered;</span>
 		}
-<span class="fc bfc" id="L410" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
-<span class="pc bpc" id="L411" title="1 of 4 branches missed.">			if (eval == null || !eval.relevant()) {</span>
-<span class="fc" id="L412">				continue;</span>
+<span class="fc bfc" id="L578" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
+<span class="pc bpc" id="L579" title="1 of 4 branches missed.">			if (eval == null || !eval.relevant()) {</span>
+<span class="fc" id="L580">				continue;</span>
 			}
-<span class="fc" id="L414">			String dslRule = eval.dslRule();</span>
-<span class="fc bfc" id="L415" title="All 4 branches covered.">			if (dslRule == null || dslRule.isBlank()) {</span>
-<span class="fc" id="L416">				continue;</span>
+<span class="fc" id="L582">			String dslRule = eval.dslRule();</span>
+<span class="fc bfc" id="L583" title="All 4 branches covered.">			if (dslRule == null || dslRule.isBlank()) {</span>
+<span class="fc" id="L584">				continue;</span>
 			}
 			try {
-<span class="fc" id="L419">				HintFile hintFile = parser.parse(dslRule);</span>
-<span class="pc bpc" id="L420" title="2 of 4 branches missed.">				String normalizedSource = (source != null &amp;&amp; !source.isBlank()) ? source : &quot;unknown&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L421">				String commitId = eval.commitHash();</span>
-<span class="pc bpc" id="L422" title="2 of 4 branches missed.">				if (commitId == null || commitId.isBlank()) {</span>
-<span class="nc" id="L423">					commitId = normalizedSource;</span>
+<span class="fc" id="L587">				HintFile hintFile = parser.parse(dslRule);</span>
+<span class="pc bpc" id="L588" title="2 of 4 branches missed.">				String normalizedSource = (source != null &amp;&amp; !source.isBlank()) ? source : &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L589">				String commitId = eval.commitHash();</span>
+<span class="pc bpc" id="L590" title="2 of 4 branches missed.">				if (commitId == null || commitId.isBlank()) {</span>
+<span class="nc" id="L591">					commitId = normalizedSource;</span>
 				}
-<span class="fc" id="L425">				String id = INFERRED_PREFIX + commitId;</span>
-<span class="fc" id="L426">				hintFile.setId(id);</span>
-<span class="fc" id="L427">				hintFile.setTags(List.of(&quot;ai-inferred&quot;, normalizedSource, commitId)); //$NON-NLS-1$</span>
-<span class="fc" id="L428">				hintFile.setSeverity(Severity.INFO);</span>
-<span class="pc bpc" id="L429" title="1 of 2 branches missed.">				if (hintFile.getDescription() == null) {</span>
-<span class="fc" id="L430">					hintFile.setDescription(eval.summary());</span>
+<span class="fc" id="L593">				String id = INFERRED_PREFIX + commitId;</span>
+<span class="fc" id="L594">				hintFile.setId(id);</span>
+<span class="fc" id="L595">				hintFile.setTags(List.of(&quot;ai-inferred&quot;, normalizedSource, commitId)); //$NON-NLS-1$</span>
+<span class="fc" id="L596">				hintFile.setSeverity(Severity.INFO);</span>
+<span class="pc bpc" id="L597" title="1 of 2 branches missed.">				if (hintFile.getDescription() == null) {</span>
+<span class="fc" id="L598">					hintFile.setDescription(eval.summary());</span>
 				}
-<span class="fc" id="L432">				hintFiles.put(id, hintFile);</span>
-<span class="fc" id="L433">				hintFilesByDeclaredId.put(id, hintFile);</span>
-<span class="fc" id="L434">				registered.add(id);</span>
-<span class="fc" id="L435">			} catch (HintParseException e) {</span>
-<span class="fc" id="L436">				LOGGER.log(Level.WARNING,</span>
-<span class="fc" id="L437">						&quot;Failed to parse DSL rule from evaluation: &quot; + eval.commitHash(), e); //$NON-NLS-1$</span>
-<span class="nc" id="L438">			} catch (RuntimeException e) {</span>
-<span class="nc" id="L439">				LOGGER.log(Level.WARNING,</span>
-<span class="nc" id="L440">						&quot;Unexpected error while parsing DSL rule from evaluation: &quot; + eval.commitHash(), e); //$NON-NLS-1$</span>
-<span class="fc" id="L441">			}</span>
-<span class="fc" id="L442">		}</span>
-<span class="fc" id="L443">		return registered;</span>
+<span class="fc" id="L600">				hintFiles.put(id, hintFile);</span>
+<span class="fc" id="L601">				hintFilesByDeclaredId.put(id, hintFile);</span>
+<span class="fc" id="L602">				registered.add(id);</span>
+<span class="fc" id="L603">			} catch (HintParseException e) {</span>
+<span class="fc" id="L604">				LOGGER.log(Level.WARNING,</span>
+<span class="fc" id="L605">						&quot;Failed to parse DSL rule from evaluation: &quot; + eval.commitHash(), e); //$NON-NLS-1$</span>
+<span class="nc" id="L606">			} catch (RuntimeException e) {</span>
+<span class="nc" id="L607">				LOGGER.log(Level.WARNING,</span>
+<span class="nc" id="L608">						&quot;Unexpected error while parsing DSL rule from evaluation: &quot; + eval.commitHash(), e); //$NON-NLS-1$</span>
+<span class="fc" id="L609">			}</span>
+<span class="fc" id="L610">		}</span>
+<span class="fc" id="L611">		return registered;</span>
 	}
 
 	// ------------------------------------------------------------
@@ -463,27 +631,27 @@ public final class HintFileStore {
 	 * @since 1.3.2
 	 */
 	public List&lt;Path&gt; saveInferredHintFiles(Path baseDirectory) throws IOException {
-<span class="fc" id="L466">		List&lt;Path&gt; written = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L467">		Path hintsDir = baseDirectory.resolve(HINTS_DIRECTORY);</span>
-<span class="fc" id="L468">		List&lt;HintFile&gt; inferred = getInferredHintFiles();</span>
-<span class="fc bfc" id="L469" title="All 2 branches covered.">		if (inferred.isEmpty()) {</span>
-<span class="fc" id="L470">			return written;</span>
+<span class="fc" id="L634">		List&lt;Path&gt; written = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L635">		Path hintsDir = baseDirectory.resolve(HINTS_DIRECTORY);</span>
+<span class="fc" id="L636">		List&lt;HintFile&gt; inferred = getInferredHintFiles();</span>
+<span class="fc bfc" id="L637" title="All 2 branches covered.">		if (inferred.isEmpty()) {</span>
+<span class="fc" id="L638">			return written;</span>
 		}
-<span class="fc" id="L472">		Files.createDirectories(hintsDir);</span>
-<span class="fc" id="L473">		HintFileSerializer serializer = new HintFileSerializer();</span>
-<span class="fc bfc" id="L474" title="All 2 branches covered.">		for (HintFile hf : inferred) {</span>
-<span class="fc" id="L475">			String hfId = hf.getId();</span>
+<span class="fc" id="L640">		Files.createDirectories(hintsDir);</span>
+<span class="fc" id="L641">		HintFileSerializer serializer = new HintFileSerializer();</span>
+<span class="fc bfc" id="L642" title="All 2 branches covered.">		for (HintFile hf : inferred) {</span>
+<span class="fc" id="L643">			String hfId = hf.getId();</span>
 			// Strip the &quot;inferred:&quot; prefix to avoid doubled prefix on reload
-<span class="pc bpc" id="L477" title="2 of 4 branches missed.">			if (hfId != null &amp;&amp; hfId.startsWith(INFERRED_PREFIX)) {</span>
-<span class="fc" id="L478">				hfId = hfId.substring(INFERRED_PREFIX.length());</span>
+<span class="pc bpc" id="L645" title="2 of 4 branches missed.">			if (hfId != null &amp;&amp; hfId.startsWith(INFERRED_PREFIX)) {</span>
+<span class="fc" id="L646">				hfId = hfId.substring(INFERRED_PREFIX.length());</span>
 			}
-<span class="fc" id="L480">			String safeName = sanitizeFileName(hfId);</span>
-<span class="fc" id="L481">			Path target = hintsDir.resolve(AI_INFERRED_FILE_PREFIX + safeName + SANDBOX_HINT_EXTENSION);</span>
-<span class="fc" id="L482">			String content = serializer.serialize(hf);</span>
-<span class="fc" id="L483">			Files.writeString(target, content, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L484">			written.add(target);</span>
-<span class="fc" id="L485">		}</span>
-<span class="fc" id="L486">		return written;</span>
+<span class="fc" id="L648">			String safeName = sanitizeFileName(hfId);</span>
+<span class="fc" id="L649">			Path target = hintsDir.resolve(AI_INFERRED_FILE_PREFIX + safeName + SANDBOX_HINT_EXTENSION);</span>
+<span class="fc" id="L650">			String content = serializer.serialize(hf);</span>
+<span class="fc" id="L651">			Files.writeString(target, content, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L652">			written.add(target);</span>
+<span class="fc" id="L653">		}</span>
+<span class="fc" id="L654">		return written;</span>
 	}
 
 	/**
@@ -498,43 +666,43 @@ public final class HintFileStore {
 	 * @since 1.3.2
 	 */
 	public List&lt;String&gt; loadInferredHintFiles(Path baseDirectory) {
-<span class="fc" id="L501">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L502">		Path hintsDir = baseDirectory.resolve(HINTS_DIRECTORY);</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">		if (!Files.isDirectory(hintsDir)) {</span>
-<span class="fc" id="L504">			return loaded;</span>
+<span class="fc" id="L669">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L670">		Path hintsDir = baseDirectory.resolve(HINTS_DIRECTORY);</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">		if (!Files.isDirectory(hintsDir)) {</span>
+<span class="fc" id="L672">			return loaded;</span>
 		}
-<span class="fc" id="L506">		try (DirectoryStream&lt;Path&gt; stream = Files.newDirectoryStream(hintsDir,</span>
+<span class="fc" id="L674">		try (DirectoryStream&lt;Path&gt; stream = Files.newDirectoryStream(hintsDir,</span>
 				AI_INFERRED_FILE_PREFIX + &quot;*&quot; + SANDBOX_HINT_EXTENSION)) { //$NON-NLS-1$
-<span class="fc bfc" id="L508" title="All 2 branches covered.">			for (Path file : stream) {</span>
+<span class="fc bfc" id="L676" title="All 2 branches covered.">			for (Path file : stream) {</span>
 				try {
-<span class="fc" id="L510">					String content = Files.readString(file, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L511">					HintFile hintFile = parser.parse(content);</span>
-<span class="fc" id="L512">					String declaredId = hintFile.getId();</span>
-<span class="pc bpc" id="L513" title="1 of 2 branches missed.">					if (declaredId == null) {</span>
-<span class="nc" id="L514">						Path fileNamePath = file.getFileName();</span>
-<span class="nc bnc" id="L515" title="All 2 branches missed.">						if (fileNamePath == null) {</span>
-<span class="nc" id="L516">							continue;</span>
+<span class="fc" id="L678">					String content = Files.readString(file, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L679">					HintFile hintFile = parser.parse(content);</span>
+<span class="fc" id="L680">					String declaredId = hintFile.getId();</span>
+<span class="pc bpc" id="L681" title="1 of 2 branches missed.">					if (declaredId == null) {</span>
+<span class="nc" id="L682">						Path fileNamePath = file.getFileName();</span>
+<span class="nc bnc" id="L683" title="All 2 branches missed.">						if (fileNamePath == null) {</span>
+<span class="nc" id="L684">							continue;</span>
 						}
-<span class="nc" id="L518">						String fileName = fileNamePath.toString();</span>
-<span class="nc" id="L519">						String baseName = fileName</span>
-<span class="nc" id="L520">								.replace(AI_INFERRED_FILE_PREFIX, &quot;&quot;) //$NON-NLS-1$</span>
-<span class="nc" id="L521">								.replace(SANDBOX_HINT_EXTENSION, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L522">						declaredId = INFERRED_PREFIX + baseName;</span>
-<span class="nc" id="L523">						hintFile.setId(declaredId);</span>
+<span class="nc" id="L686">						String fileName = fileNamePath.toString();</span>
+<span class="nc" id="L687">						String baseName = fileName</span>
+<span class="nc" id="L688">								.replace(AI_INFERRED_FILE_PREFIX, &quot;&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L689">								.replace(SANDBOX_HINT_EXTENSION, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L690">						declaredId = INFERRED_PREFIX + baseName;</span>
+<span class="nc" id="L691">						hintFile.setId(declaredId);</span>
 					}
-<span class="fc" id="L525">					hintFiles.put(declaredId, hintFile);</span>
-<span class="fc" id="L526">					indexByDeclaredId(hintFile);</span>
-<span class="fc" id="L527">					loaded.add(declaredId);</span>
-<span class="nc" id="L528">				} catch (HintParseException | IOException | RuntimeException e) {</span>
-<span class="nc" id="L529">					LOGGER.log(Level.WARNING,</span>
+<span class="fc" id="L693">					hintFiles.put(declaredId, hintFile);</span>
+<span class="fc" id="L694">					indexByDeclaredId(hintFile);</span>
+<span class="fc" id="L695">					loaded.add(declaredId);</span>
+<span class="nc" id="L696">				} catch (HintParseException | IOException | RuntimeException e) {</span>
+<span class="nc" id="L697">					LOGGER.log(Level.WARNING,</span>
 							&quot;Failed to load inferred hint file: &quot; + file, e); //$NON-NLS-1$
-<span class="fc" id="L531">				}</span>
-<span class="fc" id="L532">			}</span>
-<span class="nc" id="L533">		} catch (IOException e) {</span>
-<span class="nc" id="L534">			LOGGER.log(Level.WARNING,</span>
+<span class="fc" id="L699">				}</span>
+<span class="fc" id="L700">			}</span>
+<span class="nc" id="L701">		} catch (IOException e) {</span>
+<span class="nc" id="L702">			LOGGER.log(Level.WARNING,</span>
 					&quot;Failed to scan .hints directory: &quot; + hintsDir, e); //$NON-NLS-1$
-<span class="fc" id="L536">		}</span>
-<span class="fc" id="L537">		return loaded;</span>
+<span class="fc" id="L704">		}</span>
+<span class="fc" id="L705">		return loaded;</span>
 	}
 
 	// ------------------------------------------------------------
@@ -546,20 +714,20 @@ public final class HintFileStore {
 	 * Replaces characters that are unsafe in file names.
 	 */
 	private static String sanitizeFileName(String id) {
-<span class="pc bpc" id="L549" title="1 of 2 branches missed.">		if (id == null) {</span>
-<span class="nc" id="L550">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L717" title="1 of 2 branches missed.">		if (id == null) {</span>
+<span class="nc" id="L718">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L552">		return id.replaceAll(&quot;[^a-zA-Z0-9._-]&quot;, &quot;_&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L720">		return id.replaceAll(&quot;[^a-zA-Z0-9._-]&quot;, &quot;_&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	/**
 	 * Updates the secondary index for declared IDs.
 	 */
 	private void indexByDeclaredId(HintFile hintFile) {
-<span class="pc bpc" id="L559" title="1 of 2 branches missed.">		if (hintFile.getId() != null) {</span>
-<span class="fc" id="L560">			hintFilesByDeclaredId.put(hintFile.getId(), hintFile);</span>
+<span class="pc bpc" id="L727" title="1 of 2 branches missed.">		if (hintFile.getId() != null) {</span>
+<span class="fc" id="L728">			hintFilesByDeclaredId.put(hintFile.getId(), hintFile);</span>
 		}
-<span class="fc" id="L562">	}</span>
+<span class="fc" id="L730">	}</span>
 
 	/**
 	 * Finds a hint file by registry key first, then falls back to the
@@ -569,12 +737,12 @@ public final class HintFileStore {
 	 * @return the matching hint file, or {@code null} if not found
 	 */
 	private HintFile findByKeyOrDeclaredId(String id) {
-<span class="fc" id="L572">		HintFile result = hintFiles.get(id);</span>
-<span class="fc bfc" id="L573" title="All 2 branches covered.">		if (result != null) {</span>
-<span class="fc" id="L574">			return result;</span>
+<span class="fc" id="L740">		HintFile result = hintFiles.get(id);</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">		if (result != null) {</span>
+<span class="fc" id="L742">			return result;</span>
 		}
 		// Fall back: lookup by declared &lt;!id: ...&gt; via secondary index
-<span class="fc" id="L577">		return hintFilesByDeclaredId.get(id);</span>
+<span class="fc" id="L745">		return hintFilesByDeclaredId.get(id);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

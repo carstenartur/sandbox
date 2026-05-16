@@ -611,10 +611,10 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L611">			String entryKey = entry.substring(0, arrowIdx).trim();</span>
 <span class="fc" id="L612">			String entryValue = entry.substring(arrowIdx + 2).trim();</span>
 			// Strip quotes from key and value if present
-<span class="pc bpc" id="L614" title="2 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L614" title="1 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L615">				entryKey = entryKey.substring(1, entryKey.length() - 1);</span>
 			}
-<span class="pc bpc" id="L617" title="2 of 4 branches missed.">			if (entryValue.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryValue.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L617" title="All 4 branches covered.">			if (entryValue.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryValue.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L618">				entryValue = entryValue.substring(1, entryValue.length() - 1);</span>
 			}
 <span class="fc" id="L620">			mappings.put(entryKey, entryValue);</span>
@@ -1021,7 +1021,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L1021">			return PatternKind.METHOD_DECLARATION;</span>
 		}
 		// Method call: contains '(' and '.' or is a simple name with parens
-<span class="pc bpc" id="L1024" title="2 of 6 branches missed.">		if (trimmed.contains(&quot;(&quot;) &amp;&amp; trimmed.contains(&quot;)&quot;) &amp;&amp; !trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc bfc" id="L1024" title="All 6 branches covered.">		if (trimmed.contains(&quot;(&quot;) &amp;&amp; trimmed.contains(&quot;)&quot;) &amp;&amp; !trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 <span class="fc" id="L1025">			return PatternKind.METHOD_CALL;</span>
 		}
 		// Variable declaration: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
@@ -1054,7 +1054,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private static boolean looksLikeMethodDeclaration(String trimmed) {
 		// Must contain parens
-<span class="pc bpc" id="L1057" title="1 of 4 branches missed.">		if (!trimmed.contains(&quot;(&quot;) || !trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L1057" title="All 4 branches covered.">		if (!trimmed.contains(&quot;(&quot;) || !trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L1058">			return false;</span>
 		}
 		// Must not contain '.' (method calls have receiver.method())
@@ -1079,7 +1079,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		// Heuristic: if the second-to-last token looks like a type (starts with uppercase
 		// or is a placeholder) and the last token looks like a name, treat as declaration
 <span class="fc" id="L1081">		String possibleType = tokens[tokens.length - 2];</span>
-<span class="pc bpc" id="L1082" title="1 of 4 branches missed.">		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L1082" title="All 4 branches covered.">		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L1083">			return true;</span>
 		}
 <span class="fc" id="L1085">		return false;</span>
@@ -1108,8 +1108,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L1108">			return false;</span>
 		}
 		// Must NOT contain parens (those are method calls/declarations)
-<span class="pc bpc" id="L1111" title="2 of 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L1112">			return false;</span>
+<span class="pc bpc" id="L1111" title="1 of 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1112">			return false;</span>
 		}
 		// Check for &quot;= &quot; indicating an initializer
 		// Pattern: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
@@ -1133,8 +1133,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="pc bpc" id="L1133" title="2 of 4 branches missed.">		boolean typeIsUppercase = !typeToken.isEmpty() &amp;&amp; Character.isUpperCase(typeToken.charAt(0));</span>
 <span class="fc" id="L1134">		boolean typeIsFqn = typeToken.contains(&quot;.&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L1135">		boolean nameIsPlaceholder = nameToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1136" title="3 of 8 branches missed.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
-<span class="pc bnc" id="L1137" title="All 2 branches missed.">				&amp;&amp; (nameIsPlaceholder || !nameToken.isEmpty());</span>
+<span class="pc bpc" id="L1136" title="1 of 8 branches missed.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
+<span class="pc bpc" id="L1137" title="1 of 2 branches missed.">				&amp;&amp; (nameIsPlaceholder || !nameToken.isEmpty());</span>
 	}
 	
 	/**
