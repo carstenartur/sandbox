@@ -73,3 +73,8 @@ type.indexOf('.') != -1 || org.eclipse.jdt.internal.corext.util.JavaModelUtil.is
 store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_NEW_FOLDING_ENABLED, false)
 => store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_NEW_FOLDING_ENABLED, true)
 ;;
+
+org.eclipse.jdt.core.JavaCore.VERSION_24.equals($selectedCompliance)
+:: inClass("org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock") && sourceVersionGE(25)
+=> org.eclipse.jdt.core.JavaCore.VERSION_25.equals($selectedCompliance)
+;;

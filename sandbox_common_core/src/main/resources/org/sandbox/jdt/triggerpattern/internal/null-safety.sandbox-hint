@@ -54,3 +54,10 @@ $document == $fSourceViewer.getDocument()
 :: inClass("org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightingReconciler")
 => $fSourceViewer != null && $document == $fSourceViewer.getDocument()
 ;;
+
+@id: jdt.internal.ui.javaoutlinepage.matches.npe.fix
+@severity: error
+$element.getElementType() == org.eclipse.jdt.core.IJavaElement.METHOD
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.JavaOutlinePage")
+=> $element != null && $element.getElementType() == org.eclipse.jdt.core.IJavaElement.METHOD
+;;

@@ -2073,3 +2073,10 @@ org.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeFinal
 super(java.lang.Object $messageArg, $cu, null, $relevance, org.eclipse.jdt.internal.ui.JavaPluginImages $image, org.eclipse.jdt.internal.corext.fix.InitializeFinalFieldProposalCore $delegate)
 :: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal")
 ;;
+
+@id: jdt.internal.folding.skiplws.boundscheck
+@severity: info
+Character.isWhitespace(source[start])
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider") && inMethod("skipLeadingWhitespace")
+=> start < source.length && Character.isWhitespace(source[start])
+;;

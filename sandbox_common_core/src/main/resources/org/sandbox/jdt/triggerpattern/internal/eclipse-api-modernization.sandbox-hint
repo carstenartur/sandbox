@@ -211,3 +211,41 @@ org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell()
 org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 => org.eclipse.jdt.internal.ui.JavaPlugin.getActiveWorkbenchWindow()
 ;;
+
+@id: jdt.folding.anonymousclass.collapsemembers-to-collapseinnertypes
+@severity: info
+$ctx.collapseMembers()
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider") && inMethod("visit")
+=> $ctx.collapseInnerTypes()
+;;
+
+@id: jdt.folding.imports.collapsemembers-to-collapseimportcontainer
+@severity: info
+createFoldingRegion($start, $length, $ctx.collapseMembers())
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider") && inMethod("visit", "org.eclipse.jdt.core.dom.CompilationUnit")
+=> createFoldingRegion($start, $length, $ctx.collapseImportContainer())
+;;
+
+@id: jdt.internal.ui.images.png-to-svg.move-up
+@severity: info
+createUnManaged($type, "move_up.png")
+=> createUnManaged($type, "move_up.svg")
+;;
+
+@id: jdt.internal.ui.images.png-to-svg.newrecord-wiz
+@severity: info
+createUnManaged($type, "newrecord_wiz.png")
+=> createUnManaged($type, "newrecord_wiz.svg")
+;;
+
+@id: jdt.internal.ui.viewsupport.javaelementimageprovider.add-record-static-adornment
+@severity: info
+org.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) :: sourceVersionGE(16)
+=> org.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) || org.eclipse.jdt.core.Flags.isRecord($modifiers)
+;;
+
+@id: eclipse.job.priority.decorate-to-interactive
+@severity: info
+$fCurrentJob.setPriority(org.eclipse.core.runtime.jobs.Job.DECORATE)
+=> $fCurrentJob.setPriority(org.eclipse.core.runtime.jobs.Job.INTERACTIVE)
+;;
