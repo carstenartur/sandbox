@@ -3861,6 +3861,105 @@
       "sourceCommit": "d55f79a0ea4030068f274160b23008ff823eeafe",
       "status": "DISCOVERED",
       "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-configuration-this-commit-updates-internal-jdt-ui-comp",
+      "category": "Eclipse API Configuration",
+      "dslRule": "org.eclipse.jdt.core.JavaCore.VERSION_24.equals($selectedCompliance)\n:: inClass(\"org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock\") \u0026\u0026 sourceVersionGE(25)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_25.equals($selectedCompliance)\n;;",
+      "summary": "This commit updates internal JDT UI compiler preferences to allow targeting Java 25. Specifically, it changes a conditional check from `JavaCore.VERSION_24.equals(...)` to `JavaCore.VERSION_25.equals(...)`. This is a direct, automatable constant replacement within an expression, fitting existing internal JDT API modernization patterns.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "2dde0c76e6b62534fe3d8ff1121a0df5146a94fa",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "null-safety-this-commit-fixes-a-nullpointerexception",
+      "category": "Null-Safety",
+      "dslRule": "@id: jdt.internal.ui.javaoutlinepage.matches.npe.fix\n@severity: error\n$element.getElementType() \u003d\u003d org.eclipse.jdt.core.IJavaElement.METHOD\n:: inClass(\"org.eclipse.jdt.internal.ui.javaeditor.JavaOutlinePage\")\n\u003d\u003e $element !\u003d null \u0026\u0026 $element.getElementType() \u003d\u003d org.eclipse.jdt.core.IJavaElement.METHOD\n;;",
+      "summary": "This commit fixes a NullPointerException in `JavaOutlinePage.matches()` by adding a null check for the `element` variable before calling `getElementType()`. This is a direct boolean expression replacement that improves null safety and runtime stability. The pattern is a common fix for NPEs in conditional logic and is directly implementable as a GREEN TriggerPattern DSL rule, guarded by `inClass` to ensure it targets the specific internal JDT UI component.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "b356cbcbcdce19ab21ecd26e9d2bf81af4fdf606",
+      "status": "DISCOVERED",
+      "hintFile": "null-safety.sandbox-hint"
+    },
+    {
+      "id": "ui-bug-fix-this-commit-extends-the-conditional-logi",
+      "category": "UI Bug Fix",
+      "dslRule": "@id: jdt.internal.semanticHighlightings.typeArgumentHighlighting.generics-fix\n@severity: info\n$locationInParent \u003d\u003d org.eclipse.jdt.core.dom.ParameterizedType.TYPE_ARGUMENTS_PROPERTY\n:: inClass(\"org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings\") \u0026\u0026 inMethod(\"consumes\")\n\u003d\u003e $locationInParent \u003d\u003d org.eclipse.jdt.core.dom.ParameterizedType.TYPE_ARGUMENTS_PROPERTY || $locationInParent \u003d\u003d org.eclipse.jdt.core.dom.WildcardType.BOUND_PROPERTY || $locationInParent \u003d\u003d org.eclipse.jdt.core.dom.TypeParameter.TYPE_BOUNDS_PROPERTY || $locationInParent \u003d\u003d org.eclipse.jdt.core.dom.WildcardType.UPPER_BOUND_PROPERTY\n;;",
+      "summary": "This commit extends the conditional logic in JDT\u0027s `SemanticHighlightings.consumes()` method to correctly identify and highlight wildcard type bounds and generic type parameter bounds. It modifies a boolean expression by adding `OR` clauses to include `WildcardType.BOUND_PROPERTY`, `TypeParameter.TYPE_BOUNDS_PROPERTY`, and `WildcardType.UPPER_BOUND_PROPERTY`. This is a direct 1:1 expression replacement, improving the correctness of semantic highlighting for modern Java generics in the UI. The transformation is fully supported by the TriggerPattern DSL and is classified as GREEN. It\u0027s suitable for an internal JDT UI hint file, as it fixes a bug in how JDT processes AST properties for highlighting.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "e25880c065ecc1534a94da98dd10f7c957b73719",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-ui-javadoc-fixes.sandbox-hint"
+    },
+    {
+      "id": "ui-enhancement-this-commit-changes-the-folding-behavior",
+      "category": "UI Enhancement",
+      "dslRule": "@id: jdt.folding.anonymousclass.collapsemembers-to-collapseinnertypes\n@severity: info\n$ctx.collapseMembers()\n:: inClass(\"org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider\") \u0026\u0026 inMethod(\"visit\")\n\u003d\u003e $ctx.collapseInnerTypes()\n;;",
+      "summary": "This commit changes the folding behavior for anonymous classes in JDT UI. Specifically, it replaces `ctx.collapseMembers()` with `ctx.collapseInnerTypes()` when deciding whether to initially fold an `AnonymousClassDeclaration`. This is a direct 1:1 method call replacement on an internal context object (`FoldingContext`), improving the precision of folding preferences. The transformation is fully expressible as a GREEN TriggerPattern DSL rule, guarded by `inClass` and `inMethod` to ensure it applies to the specific internal context. This enhances the UI functionality of code folding.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "8276fd40db796b108b6636d159723f243e5e0b90",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "ui-enhancement-this-commit-changes-the-folding-behavior",
+      "category": "UI Enhancement",
+      "dslRule": "@id: jdt.folding.imports.collapsemembers-to-collapseimportcontainer\n@severity: info\ncreateFoldingRegion($start, $length, $ctx.collapseMembers())\n:: inClass(\"org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider\") \u0026\u0026 inMethod(\"visit\", \"org.eclipse.jdt.core.dom.CompilationUnit\")\n\u003d\u003e createFoldingRegion($start, $length, $ctx.collapseImportContainer())\n;;",
+      "summary": "This commit changes the folding behavior for import statements in JDT UI. It replaces `ctx.collapseMembers()` with `ctx.collapseImportContainer()` as an argument to the `createFoldingRegion` method, ensuring that folding preferences for import blocks are applied correctly. This is a direct 1:1 replacement of a method argument, improving the precision of folding preferences for imports. The transformation is fully expressible as a GREEN TriggerPattern DSL rule, guarded by `inClass` and `inMethod` to ensure it applies to the specific internal context of visiting a `CompilationUnit`. This enhances the UI functionality of code folding.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "f9dd240f40428769b922725156acc2a4259244e2",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-bug-fix-this-commit-includes-numerous-internal-j",
+      "category": "JDT Internal Bug Fix",
+      "dslRule": "@id: jdt.internal.folding.skiplws.boundscheck\n@severity: info\nCharacter.isWhitespace(source[start])\n:: inClass(\"org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider\") \u0026\u0026 inMethod(\"skipLeadingWhitespace\")\n\u003d\u003e start \u003c source.length \u0026\u0026 Character.isWhitespace(source[start])\n;;",
+      "summary": "This commit includes numerous internal JDT UI refactorings related to custom folding regions. One specific, generalizable pattern is adding a bounds check to a `while` loop condition in `skipLeadingWhitespace` to prevent an `ArrayIndexOutOfBoundsException`. This is a direct 1:1 boolean expression replacement, fully supported by the TriggerPattern DSL, and is classified as GREEN. Other changes, such as adding new fields, modifying method signatures, or inserting complex control flow, are not expressible by the current DSL.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "23f43bab92971f2cd26ecae8301ced38e2040f6d",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "code-style-the-commit-updates-image-file-extensions",
+      "category": "Code Style",
+      "dslRule": "@id: jdt.internal.ui.images.png-to-svg.move-up\n@severity: info\ncreateUnManaged($type, \"move_up.png\")\n\u003d\u003e createUnManaged($type, \"move_up.svg\")\n;;\n\n@id: jdt.internal.ui.images.png-to-svg.newrecord-wiz\n@severity: info\ncreateUnManaged($type, \"newrecord_wiz.png\")\n\u003d\u003e createUnManaged($type, \"newrecord_wiz.svg\")\n;;",
+      "summary": "The commit updates image file extensions from `.png` to `.svg` in `JavaPluginImages.java`. Specifically, it changes `DESC_BUTTON_MOVE_UP` and `DESC_WIZBAN_NEWRECORD` from referencing `.png` files to `.svg` files. This is a direct 1:1 string literal replacement within method arguments. A third change in `NewTypeDropDownAction.java` is in an XML snippet, which is not applicable for DSL transformation. Two DSL rules are generated to cover the Java code changes.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "411e146c4c437cfaa126469689da9e7f309664de",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-ui-feature-updates-a-boolean-condition-in-javaeleme",
+      "category": "JDT Internal UI Feature",
+      "dslRule": "@id: jdt.internal.ui.viewsupport.javaelementimageprovider.add-record-static-adornment\n@severity: info\norg.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) :: sourceVersionGE(16)\n\u003d\u003e org.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) || org.eclipse.jdt.core.Flags.isRecord($modifiers)\n;;",
+      "summary": "Updates a boolean condition in `JavaElementImageProvider` to correctly apply static adornment to record members in the Outline View. The rule replaces `JdtFlags.isStatic(member)` with an `OR` condition including `Flags.isRecord(modifiers)`, guarded by `sourceVersionGE(16)` as `Flags.isRecord()` was introduced in Java 16. The original commit added a private helper method `isRecord(modifiers)`, which is inlined with its public API equivalent `org.eclipse.jdt.core.Flags.isRecord(modifiers)` in the DSL rule for direct implementation.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "0c60a3c1632936461be9e39f09d6956873ff6a38",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-api-modernization-changes-the-priority-of-an-eclipse-job-f",
+      "category": "Eclipse API Modernization",
+      "dslRule": "@id: eclipse.job.priority.decorate-to-interactive\n@severity: info\n$fCurrentJob.setPriority(org.eclipse.core.runtime.jobs.Job.DECORATE)\n\u003d\u003e $fCurrentJob.setPriority(org.eclipse.core.runtime.jobs.Job.INTERACTIVE)\n;;",
+      "summary": "Changes the priority of an Eclipse `Job` from `Job.DECORATE` to `Job.INTERACTIVE` within `SelectionListenerWithASTManager`. This is a direct 1:1 constant replacement in a method argument, aiming to improve the responsiveness of the \u0027Mark Occurrence\u0027 feature. No `sourceVersionGE` guard is needed as these Eclipse APIs predate Java 8.",
+      "discoveredAt": "2026-05-31",
+      "discoveredInRun": 25044,
+      "sourceCommit": "b66e1d4cd08ac520157780a010047c2cd6fc6d97",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
     }
   ]
 }

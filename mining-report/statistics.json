@@ -1,24 +1,49 @@
 {
-  "totalProcessed": 0,
-  "relevant": 0,
-  "irrelevant": 0,
+  "totalProcessed": 34,
+  "relevant": 30,
+  "irrelevant": 4,
   "duplicates": 0,
-  "green": 0,
-  "yellow": 0,
-  "red": 0,
-  "irrelevantReasons": {},
-  "perRepository": {},
-  "dailyProgress": [],
+  "green": 9,
+  "yellow": 1,
+  "red": 20,
+  "irrelevantReasons": {
+    "This commit is a revert, deleting an entire cleanup implementation and associated NLS entries. It does not introduce a new generalizable code transformation pattern suitable for a DSL rule.": 1,
+    "This commit modifies the internal JavaCodeScanner to remove token-level styling for contextual keywords (record, sealed, permits, non-sealed). This is an internal architectural change to the Eclipse JDT editor\u0027s syntax highlighting engine, not a transformation of user-written Java code. The TriggerPattern DSL is designed for code transformations based on AST patterns, not for modifying the internal configuration or logic of the editor\u0027s lexer/highlighter.": 1,
+    "This commit changes a string literal in a \u0027.properties\u0027 file (JavaUIMessages.properties). The TriggerPattern DSL is designed for transforming Java source code based on its Abstract Syntax Tree (AST), not for editing external resource files like properties files.": 1,
+    "The commit is a revert removing a specific integration block of code (a `try-catch` statement with `Job.getJobManager().join()`) that became obsolete due to external API changes in PDE. This is not a generalizable code transformation pattern suitable for a DSL rule.": 1
+  },
+  "perRepository": {
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "totalProcessed": 34,
+      "relevant": 30,
+      "green": 9,
+      "yellow": 1,
+      "red": 20
+    }
+  },
+  "dailyProgress": [
+    {
+      "date": "2026-05-31",
+      "processed": 34,
+      "relevant": 30
+    }
+  ],
   "runMetadata": {
-    "startedAt": "2026-05-30T03:12:27.814Z",
-    "completedAt": "2026-05-30T03:17:47.644151407Z",
-    "durationSeconds": 319,
+    "startedAt": "2026-05-31T03:14:44.903Z",
+    "completedAt": "2026-05-31T03:51:32.409550031Z",
+    "durationSeconds": 2207,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
-    "apiCallsMade": 0,
-    "deferredCommits": 223,
+    "apiCallsMade": 17,
+    "deferredCommits": 238,
     "permanentlySkipped": 0
+  },
+  "timeWindow": {
+    "earliestEvaluation": "2026-05-31T03:20:11.305259679Z",
+    "latestEvaluation": "2026-05-31T03:44:17.498401689Z",
+    "earliestCommitDate": "2025-05-02T20:50:17Z",
+    "latestCommitDate": "2025-08-01T17:32:19Z"
   }
 }
