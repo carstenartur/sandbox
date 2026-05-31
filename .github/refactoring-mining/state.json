@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "af9fabbec2a4402417241d5c2ce4d752dd91574c",
-      "lastProcessedDate": "2026-05-12T03:40:40.135034317Z",
-      "totalProcessed": 2326,
+      "lastProcessedCommit": "4b92e71beb734fb72528295aa05083c86aadfa81",
+      "lastProcessedDate": "2026-05-31T03:51:31.398426906Z",
+      "totalProcessed": 2409,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -2096,6 +2096,141 @@
           "deferredAt": "2026-05-13T03:18:26.140000700Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "00da872c08deafe73bd86771773d8e94dd73166f",
+          "message": "Move methods from ModifierCorrectionSubProcessor into core class.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:25:24.335326870Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "905eb1c610c23fe8350e9339c8282f1b428be7b3",
+          "message": "Add new quick-fix/clean-up to replace deprecated fields if possible (#2254)\n\n* Add new quick-fix/clean-up to replace dep",
+          "diffLines": 236,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:29:01.299931919Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "51a745491eee50750c9eaed215c5c903e6aa3498",
+          "message": "Stickylines (#2149)\n\n* StickyLines implementation using AST\n\n- substitute for #1851\n",
+          "diffLines": 360,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:29:01.300017988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f07c4ccd6afe91a3b9bfaaccea7215105466de24",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA25",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:29:11.004126828Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "44d14e5e57f4ed9d35d93760c5f476f8175bb6d3",
+          "message": "Merge pull request #2291 from stephan-herrmann/BETA_JAVA25",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:29:11.023581559Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "234052821049cde41c372eb11ffd0b7038a8c36d",
+          "message": "Merge pull request #2345 from eclipse-jdt/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:36:22.191914757Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1f01b4197f57f636144e5a5059b9af06f14d79e5",
+          "message": "Wait for deferred PDE classpath initializer before initial reconcile\n\n- This avoids the display the transient error anno",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:41:46.245065407Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c58cae5be12286a049583c26c9dbc893e66be3eb",
+          "message": "Fix SingleUsedFieldCleanUp to remove volatile modifier if field moved (#2375)\n\n- add new test to CleanUpTest\n- fixes #23",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:41:46.245141882Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f7b34ef2f247ca70b5c3fa6b343d2e14cd102058",
+          "message": "Protect access to AbstractSpellDictionary.fHashBuckets to avoid CME (#2378)\n\n* Protect access to AbstractSpellDictionary",
+          "diffLines": 239,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:41:46.245157265Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bcc2a1da9d859fb4c553a76fb4949a11b76dcaed",
+          "message": "Support configuration of the release for a a source folder (#2260)\n\nThis allows the user to set the new \u0027release\u0027 option",
+          "diffLines": 252,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.448987988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3a6d9228ceaa45137f34283c663d8ab28ec18605",
+          "message": "Revert \"Show progress when calculating AST for ClipboardOperationAction #2028 (#2382)\" (#2405)\n\nThis reverts commit 5e09",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.449067477Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "56e76d732d10f7dc5ff9897601a3b80cd6080377",
+          "message": "Remove extraneous println in ReduceIndentationCleanUp (#2401)\n\n",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.449085925Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ef74c4430d96c065c7785c7eb4b6835517a080b2",
+          "message": "Fix type filtering in CallHierarchy view (#2400)\n\n- fix CallSearchResultCollector.isIgnored() method to not return\n  fal",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.449097432Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "78dac5b6fab4336282c1fdade4e3ffcc85a359a0",
+          "message": "Support configuration of the release for a a source folder (#2422)\n\nalternative icon\n\nSee https://github.com/eclipse-jdt",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:51:31.398303652Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d352387e2ce015450f24c5cd78b4270c3d57c5c7",
+          "message": "Do not wait for AST when copying code in ClipboarOperationAction (#2406)\n\nSince waiting for the AST could end up blockin",
+          "diffLines": 18,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:51:31.398381949Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2105,10 +2240,10 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 180,
+        "JDT Internal Refactoring": 182,
         "Code Simplification": 10,
         "Performance": 26,
-        "JDT Internal Bug Fix": 66,
+        "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
         "JDT UI Feature Implementation": 1,
@@ -2119,7 +2254,7 @@
         "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 17,
+        "Null-Safety": 20,
         "Lambda-Simplification": 5,
         "Architectural Refactoring": 1,
         "Collections": 10,
@@ -2130,13 +2265,13 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
         "Architecture Migration": 9,
-        "Code Style": 32,
-        "Eclipse API Configuration": 13,
+        "Code Style": 34,
+        "Eclipse API Configuration": 14,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
-        "JDT Internal UI Feature": 21,
+        "JDT Internal UI Feature": 22,
         "JDT Internal Architecture": 1,
-        "Eclipse API Migration": 16,
+        "Eclipse API Migration": 17,
         "JDT Internal Feature": 6,
         "Type Safety": 3,
         "Eclipse UI Refactoring": 4,
@@ -2161,7 +2296,7 @@
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
         "Code Quality": 6,
-        "Architecture Refactoring": 1,
+        "Architecture Refactoring": 4,
         "Dead Code Removal": 13,
         "Quick Fix Enhancement": 6,
         "Unnecessary Code": 1,
@@ -2172,8 +2307,8 @@
         "Bug Fix": 5,
         "New Cleanup": 1,
         "Logical Simplification": 8,
-        "UI Bug Fix": 4,
-        "Eclipse API Modernization": 22,
+        "UI Bug Fix": 9,
+        "Eclipse API Modernization": 24,
         "Eclipse API Evolution": 1,
         "Control Flow Simplification": 3,
         "Lambda Simplification": 2,
@@ -2192,7 +2327,7 @@
         "Javadoc/Code Generation": 1,
         "New Feature / Extension": 1,
         "Internal Bug Fix": 3,
-        "UI Enhancement": 3,
+        "UI Enhancement": 5,
         "Javadoc API Enhancement": 2,
         "Code Clean-Up": 1,
         "UI Performance": 1,
@@ -2228,7 +2363,10 @@
         "New Quick Fix Feature": 1,
         "Java 19+ Deprecation": 1,
         "Clean-up Infrastructure Refactoring": 1,
-        "UI Logic Refactoring": 2
+        "UI Logic Refactoring": 2,
+        "JDT Internal Quick Fix": 2,
+        "UI Feature Enhancement": 2,
+        "Boilerplate Generation": 1
       },
       "exhaustedCategories": []
     },
@@ -2269,5 +2407,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 24961
+  "globalTotalProcessed": 25044
 }
