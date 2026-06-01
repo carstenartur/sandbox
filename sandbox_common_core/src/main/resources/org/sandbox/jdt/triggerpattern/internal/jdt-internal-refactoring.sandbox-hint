@@ -2080,3 +2080,20 @@ Character.isWhitespace(source[start])
 :: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider") && inMethod("skipLeadingWhitespace")
 => start < source.length && Character.isWhitespace(source[start])
 ;;
+
+@id: jdt.internal.ui.javaeditor.sharedastprovidercore.wait_active_only.to.wait_no
+@severity: info
+org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.getAST($inputElement, org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_ACTIVE_ONLY, $monitor)
+=> org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.getAST($inputElement, org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO, $monitor)
+;;
+
+new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().createMissingCaseProposalsBase($context, $parent, $enumConstNames, $proposals)
+=> new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().createMissingCaseProposalsBase($context, $parent, null, $enumConstNames, $proposals)
+;;
+
+@id: jdt.internal.folding.includelastline.fix
+@severity: info
+$collapseCodeVar = $booleanExpr
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
+=> $collapseCodeVar = $includelastLineVar = $booleanExpr
+;;

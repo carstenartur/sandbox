@@ -3960,6 +3960,72 @@
       "sourceCommit": "b66e1d4cd08ac520157780a010047c2cd6fc6d97",
       "status": "DISCOVERED",
       "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "eclipse-ui-refactoring-replaces-the-icon-resource-name-from-rel",
+      "category": "Eclipse UI Refactoring",
+      "dslRule": "createUnManaged($type, \"release_option.svg\")\n\u003d\u003e createUnManaged($type, \"jar_mr_obj.svg\")\n;;",
+      "summary": "Replaces the icon resource name from \u0027release_option.svg\u0027 to \u0027jar_mr_obj.svg\u0027 for the \u0027DESC_OBJ_RELEASE\u0027 image descriptor in `JavaPluginImages.java`. This is a direct 1:1 string literal replacement within a method argument, improving internal Eclipse UI consistency and is easily automatable.",
+      "discoveredAt": "2026-06-01",
+      "discoveredInRun": 25097,
+      "sourceCommit": "78dac5b6fab4336282c1fdade4e3ffcc85a359a0",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-modernization.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-replaces-sharedastprovidercore-wait-acti",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.ui.javaeditor.sharedastprovidercore.wait_active_only.to.wait_no\n@severity: info\norg.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.getAST($inputElement, org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_ACTIVE_ONLY, $monitor)\n\u003d\u003e org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.getAST($inputElement, org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO, $monitor)\n;;",
+      "summary": "Replaces `SharedASTProviderCore.WAIT_ACTIVE_ONLY` with `SharedASTProviderCore.WAIT_NO` as an argument to `SharedASTProviderCore.getAST()` in `ClipboardOperationAction.java`. This internal JDT UI refactoring prevents UI freezes by ensuring AST retrieval does not block the UI thread. It is a direct 1:1 constant replacement in a method argument and is fully automatable.",
+      "discoveredAt": "2026-06-01",
+      "discoveredInRun": 25097,
+      "sourceCommit": "d352387e2ce015450f24c5cd78b4270c3d57c5c7",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "eclipse-ui-configuration-this-commit-is-a-merge-the-only-generali",
+      "category": "Eclipse UI Configuration",
+      "dslRule": "@id: jdt.internal.callhierarchy.filtersdialog.widthhint.change\n@severity: info\nconvertWidthInCharsToPixels(60) :: inClass(\"org.eclipse.jdt.internal.ui.callhierarchy.FiltersDialog\")\n\u003d\u003e convertWidthInCharsToPixels(80)\n;;",
+      "summary": "This commit is a merge. The only generalizable and automatable code transformation pattern is a minor UI layout fix in `FiltersDialog.java`, specifically changing a hardcoded width hint from 60 to 80 pixels. This is a direct literal replacement within a method argument, enhancing UI display. All other changes in this commit involve complex statement reordering and adding potentially redundant method calls (`ExtractMethodInputPage.java`), or structural refactoring of control flow (adding local variables, if blocks, lambda listeners, new fields/methods in `FiltersDialog.java`), which are beyond the current capabilities of the TriggerPattern DSL. This specific rule replaces a literal constant in a method call, similar to existing UI configuration rules, and is therefore classified as GREEN.",
+      "discoveredAt": "2026-06-01",
+      "discoveredInRun": 25097,
+      "sourceCommit": "5d548df4feab84b5238ec6253b9dcb97c9788000",
+      "status": "DISCOVERED",
+      "hintFile": "eclipse-api-configuration.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-handling-of-enum-switc",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().createMissingCaseProposalsBase($context, $parent, $enumConstNames, $proposals)\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().createMissingCaseProposalsBase($context, $parent, null, $enumConstNames, $proposals)\n;;",
+      "summary": "This commit fixes handling of enum switch expressions within JDT UI quick fixes by modifying a specific internal method call, `LocalCorrectionsSubProcessor().createMissingCaseProposalsBase(...)`. It inserts a `null` argument into the method call to correctly implement a new problem ID related to missing enum constants in switch expressions. This is a direct 1:1 method call argument addition, improving internal JDT correctness for Java 14+ switch expressions with enum constants. The addition of problem IDs to switch statements in `QuickFixProcessor.java` is a structural change to internal data, not a generalizable code transformation pattern.",
+      "discoveredAt": "2026-06-01",
+      "discoveredInRun": 25097,
+      "sourceCommit": "6ae4ee7f4f9cb880f70c42e392865ee04b656a66",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "jdt-internal-refactoring-this-commit-fixes-bug-2207-by-modifying",
+      "category": "JDT Internal Refactoring",
+      "dslRule": "@id: jdt.internal.folding.includelastline.fix\n@severity: info\n$collapseCodeVar \u003d $booleanExpr\n:: inClass(\"org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider\")\n\u003d\u003e $collapseCodeVar \u003d $includelastLineVar \u003d $booleanExpr\n;;",
+      "summary": "This commit fixes bug #2207 by modifying internal JDT UI code for Java folding. It extends an assignment to `collapseCode` to also assign the boolean expression\u0027s value to `includelastLine` for `IJavaElement.TYPE`s, ensuring the last line of classes/interfaces is considered for folding. This is a direct 1:1 expression replacement (a chained assignment), fully implementable as a GREEN TriggerPattern DSL rule, and applicable from the Java 8 baseline.",
+      "discoveredAt": "2026-06-01",
+      "discoveredInRun": 25097,
+      "sourceCommit": "9fbdd21277b2164317b2a04ce29a3edf450835b8",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-refactoring.sandbox-hint"
+    },
+    {
+      "id": "ui-logic-refactoring-this-commit-extends-an-existing-boolean",
+      "category": "UI Logic Refactoring",
+      "dslRule": "@id: jdt.internal.folding.markdown.comments.support\n@severity: info\ntoken \u003d\u003d org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_BLOCK || token \u003d\u003d org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_JAVADOC\n:: inClass(\"org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider\")\n\u003d\u003e token \u003d\u003d org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_BLOCK || token \u003d\u003d org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_JAVADOC || token \u003d\u003d org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_MARKDOWN\n;;",
+      "summary": "This commit extends an existing boolean condition to include `ITerminalSymbols.TokenNameCOMMENT_MARKDOWN` when checking for comment tokens to fold. This change enables Markdown-formatted Javadoc comments to be folded, improving JDT\u0027s UI functionality. This is a direct 1:1 boolean expression replacement, fully supported by the TriggerPattern DSL with an `inClass` guard for precision. It\u0027s classified as GREEN and complements existing rules for Markdown in Javadoc.",
+      "discoveredAt": "2026-06-01",
+      "discoveredInRun": 25097,
+      "sourceCommit": "f79e5b8f44b039f3e3d74b22459993e0cc10594a",
+      "status": "DISCOVERED",
+      "hintFile": "jdt-internal-ui-javadoc-fixes.sandbox-hint"
     }
   ]
 }

@@ -18,3 +18,10 @@ $locationInParent == org.eclipse.jdt.core.dom.ParameterizedType.TYPE_ARGUMENTS_P
 :: inClass("org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings") && inMethod("consumes")
 => $locationInParent == org.eclipse.jdt.core.dom.ParameterizedType.TYPE_ARGUMENTS_PROPERTY || $locationInParent == org.eclipse.jdt.core.dom.WildcardType.BOUND_PROPERTY || $locationInParent == org.eclipse.jdt.core.dom.TypeParameter.TYPE_BOUNDS_PROPERTY || $locationInParent == org.eclipse.jdt.core.dom.WildcardType.UPPER_BOUND_PROPERTY
 ;;
+
+@id: jdt.internal.folding.markdown.comments.support
+@severity: info
+token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_BLOCK || token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_JAVADOC
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
+=> token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_BLOCK || token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_JAVADOC || token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_MARKDOWN
+;;
