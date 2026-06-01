@@ -78,3 +78,9 @@ org.eclipse.jdt.core.JavaCore.VERSION_24.equals($selectedCompliance)
 :: inClass("org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock") && sourceVersionGE(25)
 => org.eclipse.jdt.core.JavaCore.VERSION_25.equals($selectedCompliance)
 ;;
+
+@id: jdt.internal.callhierarchy.filtersdialog.widthhint.change
+@severity: info
+convertWidthInCharsToPixels(60) :: inClass("org.eclipse.jdt.internal.ui.callhierarchy.FiltersDialog")
+=> convertWidthInCharsToPixels(80)
+;;

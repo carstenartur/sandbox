@@ -1201,9 +1201,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "4b92e71beb734fb72528295aa05083c86aadfa81",
-      "lastProcessedDate": "2026-05-31T03:51:31.398426906Z",
-      "totalProcessed": 2409,
+      "lastProcessedCommit": "71493e4c0ede28c1cbb79c62a661c684c7c016d0",
+      "lastProcessedDate": "2026-06-01T03:37:49.301689482Z",
+      "totalProcessed": 2462,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -2215,20 +2215,146 @@
           "maxRetries": 3
         },
         {
-          "hash": "78dac5b6fab4336282c1fdade4e3ffcc85a359a0",
-          "message": "Support configuration of the release for a a source folder (#2422)\n\nalternative icon\n\nSee https://github.com/eclipse-jdt",
-          "diffLines": 14,
+          "hash": "c6938dcc12c5cc4b2a9cf6b4aa27843affe9f0e0",
+          "message": "preserve contextual information with enhanced folding (#2410)\n\n",
+          "diffLines": 142,
           "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-05-31T03:51:31.398303652Z",
+          "deferredAt": "2026-06-01T03:21:54.749606091Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "d352387e2ce015450f24c5cd78b4270c3d57c5c7",
-          "message": "Do not wait for AST when copying code in ClipboarOperationAction (#2406)\n\nSince waiting for the AST could end up blockin",
-          "diffLines": 18,
+          "hash": "fb7b017e4721824f1a2c070c0c20d936b0c761c3",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA25",
+          "diffLines": 172,
           "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-05-31T03:51:31.398381949Z",
+          "deferredAt": "2026-06-01T03:21:54.750040915Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b09178ebefdc1f8b04713aa6b50eee54744acf92",
+          "message": "Validate the names of the methods in the call hierarchy filter dialog (#2304)\n\nThey can only be valid java method names ",
+          "diffLines": 115,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:21:54.750086733Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5a785abb3893582fc6609391a46e99ab08fede82",
+          "message": "Fix ExtractMethodInputPage preview text to reflect accessor settings (#2445)\n\n- fix opening ExtractMethodInputPage not s",
+          "diffLines": 36,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:21:54.750119862Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "73676b064980ea4c046f2dfb12b7418550d3ab3a",
+          "message": "Do not remove lone empty commented return statement in a lambda (#2478)\n\n- change LambdaExpressionAndMethodRefFixCore to",
+          "diffLines": 27,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564626873Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a4e790ced0775023fb6ab39bd4cd63136ec15aa0",
+          "message": "Merge branch \u0027R4_37_maintenance\u0027 into BETA_JAVA25 as of R4_37\n",
+          "diffLines": 81,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564718739Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b23b384e91f60c17493f62591103b051806b5fc2",
+          "message": "New Class dialog: fix cropped Interfaces field on mixed-DPI monitors (#2460)\n\nThe Interfaces field in the New Class dial",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564757196Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "02958ce874164f2a61fcfba52e975988f3704e89",
+          "message": "Support adding default wildcard chars to camel case types in Open Types (#2420)\n\n* Support adding default wildcard chars",
+          "diffLines": 126,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564781682Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f2294e39d7cb73c4d7137681abaf50abf606dc1b",
+          "message": "Fix listener for folding preferences (#2551)\n\nThe listener was not un-subscribing because the editor had been set to\nnul",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:37:25.827993165Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e123ff19967582dfcb53a25bb7a0340515cb406f",
+          "message": "Do not calculate the folding structure for uninteresting events (#2552)\n\nOnly calculate the folding structure when:\na) T",
+          "diffLines": 341,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:37:25.828069458Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3af01829d95496bf91beb0349fb215b431b81381",
+          "message": "Cannot configure Null annotations for workspace (#2567)\n\n+ when configuring workspace preferences:\n  + search for annota",
+          "diffLines": 256,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:41:26.254298071Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "741d08e097fde002bfff10c165a4585efc1a54e5",
+          "message": "Removed unnecessary @SuppressWarnings(\"deprecation\") from jdt.ui\n\nSee https://github.com/eclipse-jdt/eclipse.jdt.core/is",
+          "diffLines": 61,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:41:26.254399992Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0e3d69a653844388b3bdf6c0ccbcc4129bb5e60e",
+          "message": "Adjust highlighting of deprecation (#2578)\n\nAfter https://github.com/eclipse-jdt/eclipse.jdt.core/pull/4564\ndeprecation ",
+          "diffLines": 22,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:45:03.285169632Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "29e17ed9d4c0ecc65df9115ee0f7684e82bf333e",
+          "message": "Fix pasting into a String to not do tabs to spaces formatting (#2576)\n\n- add new JavaTabsToSpacesConverter class which a",
+          "diffLines": 105,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:45:03.285239094Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d2abdce788f060f4021a68484867603ebdcb147a",
+          "message": "Refactor TypeParametersCleanUp to jdt.core.manipulation (#2581)\n\n- refactor to TypeParametersCleanUpCore for use by jdt.",
+          "diffLines": 90,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:45:03.285250331Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f9770112c1ae4f0989b13b02cb44896b764c8f8d",
+          "message": "Highlight deprecation of canonical record constructor (#2582)\n\nFix highlighting of canonical constructors of a deprecate",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:45:03.285259545Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -2240,7 +2366,7 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
-        "JDT Internal Refactoring": 182,
+        "JDT Internal Refactoring": 190,
         "Code Simplification": 10,
         "Performance": 26,
         "JDT Internal Bug Fix": 69,
@@ -2274,7 +2400,7 @@
         "Eclipse API Migration": 17,
         "JDT Internal Feature": 6,
         "Type Safety": 3,
-        "Eclipse UI Refactoring": 4,
+        "Eclipse UI Refactoring": 5,
         "Control Flow Modernization": 4,
         "JDT Internal Quick Fix Implementation": 1,
         "Unnecessary Annotation Removal": 2,
@@ -2344,7 +2470,7 @@
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
-        "Eclipse UI Configuration": 2,
+        "Eclipse UI Configuration": 3,
         "Eclipse UI Fix": 6,
         "New Feature Introduction": 2,
         "Eclipse UI": 1,
@@ -2363,10 +2489,14 @@
         "New Quick Fix Feature": 1,
         "Java 19+ Deprecation": 1,
         "Clean-up Infrastructure Refactoring": 1,
-        "UI Logic Refactoring": 2,
+        "UI Logic Refactoring": 8,
         "JDT Internal Quick Fix": 2,
         "UI Feature Enhancement": 2,
-        "Boilerplate Generation": 1
+        "Boilerplate Generation": 1,
+        "Bug Fix / Logging": 2,
+        "Bug Fix / Null-Safety": 1,
+        "Bug Fix / UI Logic Refactoring": 1,
+        "Bug Fix / UI Logic": 1
       },
       "exhaustedCategories": []
     },
@@ -2407,5 +2537,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25044
+  "globalTotalProcessed": 25097
 }

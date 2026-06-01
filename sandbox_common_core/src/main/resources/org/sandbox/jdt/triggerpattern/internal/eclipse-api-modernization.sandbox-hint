@@ -249,3 +249,7 @@ org.eclipse.jdt.internal.ui.viewsupport.JdtFlags.isStatic($member) :: sourceVers
 $fCurrentJob.setPriority(org.eclipse.core.runtime.jobs.Job.DECORATE)
 => $fCurrentJob.setPriority(org.eclipse.core.runtime.jobs.Job.INTERACTIVE)
 ;;
+
+createUnManaged($type, "release_option.svg")
+=> createUnManaged($type, "jar_mr_obj.svg")
+;;
