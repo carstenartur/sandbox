@@ -1,48 +1,24 @@
 {
-  "totalProcessed": 24,
-  "relevant": 21,
-  "irrelevant": 3,
-  "duplicates": 2,
-  "green": 7,
-  "yellow": 1,
-  "red": 13,
-  "irrelevantReasons": {
-    "The code change is within a commented-out line, not active code. Therefore, it does not represent an actual code transformation pattern for a DSL rule.": 1,
-    "The code change is identical to Commit 0, and is within a commented-out line, not active code. Therefore, it does not represent an actual code transformation pattern for a DSL rule.": 1,
-    "This commit introduces a new Java-based cleanup plugin and integrates its UI. It does not contain any code transformation patterns that can be expressed in the TriggerPattern DSL. The actual transformation logic for \u0027module imports\u0027 would reside in the newly added `ModuleImportsCleanUpCore` class, which is not part of this diff.": 1
-  },
-  "perRepository": {
-    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 24,
-      "relevant": 21,
-      "green": 7,
-      "yellow": 1,
-      "red": 13
-    }
-  },
-  "dailyProgress": [
-    {
-      "date": "2026-06-01",
-      "processed": 24,
-      "relevant": 21
-    }
-  ],
+  "totalProcessed": 0,
+  "relevant": 0,
+  "irrelevant": 0,
+  "duplicates": 0,
+  "green": 0,
+  "yellow": 0,
+  "red": 0,
+  "irrelevantReasons": {},
+  "perRepository": {},
+  "dailyProgress": [],
   "runMetadata": {
-    "startedAt": "2026-06-01T03:16:42.605Z",
-    "completedAt": "2026-06-01T03:45:04.329546193Z",
-    "durationSeconds": 1701,
+    "startedAt": "2026-06-02T03:16:54.364Z",
+    "completedAt": "2026-06-02T03:22:07.604693948Z",
+    "durationSeconds": 313,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
-    "apiCallsMade": 11,
+    "apiCallsMade": 0,
     "deferredCommits": 252,
     "permanentlySkipped": 0
-  },
-  "timeWindow": {
-    "earliestEvaluation": "2026-06-01T03:18:16.770519260Z",
-    "latestEvaluation": "2026-06-01T03:37:49.298715842Z",
-    "earliestCommitDate": "2025-08-09T20:55:03Z",
-    "latestCommitDate": "2025-10-23T13:11:25Z"
   }
 }
