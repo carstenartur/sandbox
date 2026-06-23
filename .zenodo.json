@@ -1,0 +1,47 @@
+{
+  "title": "Sandbox",
+  "description": "Experimental Eclipse JDT cleanup plugins, quick fixes, and related tooling for Eclipse-based Java development. The project explores automated Java source transformations, JUnit migration, encoding modernization, functional loop conversion, static analysis helpers, and Eclipse plugin infrastructure.",
+  "creators": [
+    {
+      "name": "Hammer, Carsten",
+      "orcid": "0009-0005-1047-6381"
+    }
+  ],
+  "license": "EPL-2.0",
+  "upload_type": "software",
+  "access_right": "open",
+  "keywords": [
+    "Eclipse",
+    "Eclipse JDT",
+    "Java",
+    "Java 21",
+    "Refactoring",
+    "Cleanup",
+    "Quick Fix",
+    "Static Analysis",
+    "Code Analysis",
+    "JUnit",
+    "JUnit 5",
+    "Encoding",
+    "Charset",
+    "Streams",
+    "AST",
+    "Eclipse Plugin",
+    "Developer Tools"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/carstenartur/sandbox",
+      "relation": "isSupplementTo",
+      "scheme": "url",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://carstenartur.github.io/sandbox/",
+      "relation": "isDocumentedBy",
+      "scheme": "url",
+      "resource_type": "publication-technicalnote"
+    }
+  ],
+  "communities": []
+}
