@@ -25,6 +25,10 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: release-workflow
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write
@@ -47,6 +51,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Set up JDK 21
@@ -126,12 +131,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
 
-      - name: Ensure on main branch
-        run: |
-          git checkout main
-          git pull --ff-only origin main
+      - name: Refresh main branch
+        run: git pull --ff-only origin main
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -288,8 +292,7 @@ jobs:
           VERSION="${{ needs.preflight.outputs.release_version }}"
           gh release create "v${VERSION}" \
             --title "Release ${VERSION}" \
-            --notes-file release_notes.md \
-            --generate-notes
+            --notes-file release_notes.md
 
       - name: Upload CLI distribution archives
         if: ${{ !inputs.dry_run }}
@@ -368,6 +371,13 @@ jobs:
           gh api "repos/${{ github.repository }}/git/refs/heads/main" \
             --method PATCH \
             -f sha="$COMMIT_SHA"
+
+      - name: Delete temporary release branch
+        if: ${{ always() && !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          TEMP_BRANCH="release-temp-${VERSION}"
+          git push origin ":refs/heads/${TEMP_BRANCH}" || true
 
       - name: Prepare next development iteration
         if: ${{ !inputs.dry_run }}
