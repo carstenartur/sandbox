@@ -1,31 +1,38 @@
 name: Release Workflow
-# This workflow performs a full release: version bump, build, tag, GitHub Release,
-# gh-pages deployment, and next SNAPSHOT version PR creation.
-# Trigger manually via the "Run workflow" button on the Actions tab.
+# Manual release workflow for Sandbox.
+#
+# This replaces the previous large workflow with a shorter process that is
+# easier to review and re-run safely. It validates the current SNAPSHOT version,
+# builds with Xvfb installed, creates the release tag and GitHub Release, deploys
+# the P2 update site, and opens a PR for the next development SNAPSHOT.
 
 on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Release version (e.g., 1.2.3) - check current SNAPSHOT version in pom.xml'
+        description: 'Release version matching the current SNAPSHOT without -SNAPSHOT, e.g. 1.3.1'
         required: true
         type: string
-        default: '1.2.6'
+        default: '1.3.1'
       skip_tests:
         description: 'Skip tests during release build'
         required: false
         type: boolean
         default: false
       dry_run:
-        description: 'Dry run - validate everything but do not publish'
+        description: 'Validate and build only; do not publish tags, releases, branches, gh-pages, or issues'
         required: false
         type: boolean
         default: false
 
+concurrency:
+  group: release-workflow
+  cancel-in-progress: false
+
 permissions:
-  contents: write       # Required to push to main branch, create tags, and push to gh-pages
-  issues: write         # Required to read issues for release notes and create marketplace reminder issues
-  pull-requests: write  # Required to create pull requests for next development iteration
+  contents: write
+  issues: write
+  pull-requests: write
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -33,813 +40,418 @@ env:
 jobs:
   preflight:
     name: Preflight Checks
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
-      current_version: ${{ steps.version.outputs.current }}
-      suggested_release: ${{ steps.version.outputs.suggested_release }}
-      suggested_next: ${{ steps.version.outputs.suggested_next }}
+      current_version: ${{ steps.versions.outputs.current_version }}
+      release_version: ${{ steps.versions.outputs.release_version }}
+      next_snapshot: ${{ steps.versions.outputs.next_snapshot }}
+      next_release: ${{ steps.versions.outputs.next_release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
-      
+
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
-      
-      - name: Extract current version from pom.xml
-        id: version
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        with:
+          maven-version: 3.9.14
+
+      - name: Validate versions and release state
+        id: versions
         run: |
+          set -euo pipefail
+
           CURRENT=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "current=$CURRENT" >> $GITHUB_OUTPUT
-          
-          # Berechne vorgeschlagene Versionen
-          if [[ "$CURRENT" == *-SNAPSHOT ]]; then
-            RELEASE="${CURRENT%-SNAPSHOT}"
-            echo "suggested_release=$RELEASE" >> $GITHUB_OUTPUT
-            
-            # Berechne nächste Version (patch increment)
-            IFS='.' read -r major minor patch <<< "$RELEASE"
-            NEXT_PATCH=$((patch + 1))
-            echo "suggested_next=${major}.${minor}.${NEXT_PATCH}-SNAPSHOT" >> $GITHUB_OUTPUT
-          else
-            echo "::error::Current version $CURRENT is not a SNAPSHOT version"
+          INPUT_VERSION="${{ inputs.release_version }}"
+
+          if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release version '$INPUT_VERSION'. Expected X.Y.Z."
             exit 1
-          fi
-      
-      - name: Read suggested version from release.properties
-        run: |
-          if [ -f release.properties ]; then
-            SUGGESTED_FROM_FILE=$(grep 'next.release.version' release.properties | cut -d'=' -f2 | tr -d ' ')
-            echo "Suggested release version from release.properties: $SUGGESTED_FROM_FILE"
           fi
 
-      - name: Validate release version input
-        run: |
-          INPUT_VERSION="${{ github.event.inputs.release_version }}"
-          SUGGESTED="${{ steps.version.outputs.suggested_release }}"
-          
-          # Prüfe ob Version gültig ist (semver Format)
-          if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Invalid version format: $INPUT_VERSION (expected: X.Y.Z)"
+          if [[ "$CURRENT" != *-SNAPSHOT ]]; then
+            echo "::error::Current project version '$CURRENT' is not a SNAPSHOT version."
             exit 1
           fi
-          
-          # Warnung wenn anders als vorgeschlagen
-          if [[ "$INPUT_VERSION" != "$SUGGESTED" ]]; then
-            echo "::warning::Input version $INPUT_VERSION differs from suggested $SUGGESTED"
-          fi
-      
-      - name: Check if release tag already exists
-        run: |
-          VERSION="${{ github.event.inputs.release_version }}"
-          if git ls-remote --tags origin | grep -q "refs/tags/v${VERSION}$"; then
-            echo "::error::Tag v${VERSION} already exists!"
+
+          SUGGESTED_RELEASE="${CURRENT%-SNAPSHOT}"
+          if [[ "$INPUT_VERSION" != "$SUGGESTED_RELEASE" ]]; then
+            echo "::error::Release version '$INPUT_VERSION' does not match current SNAPSHOT '$CURRENT'. Expected '$SUGGESTED_RELEASE'."
             exit 1
           fi
-      
-      - name: Check for SNAPSHOT references in codebase
-        run: |
-          echo "Checking for SNAPSHOT references..."
-          
-          # Suche nach SNAPSHOT in relevanten Dateien (außer in src/ und test/)
-          SNAPSHOT_REFS=$(grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" . \
-            | grep -v "/src/" \
-            | grep -v "/test/" \
-            | grep -v "target/" \
-            | grep -v "\.git/" \
-            || true)
-          
-          if [ -n "$SNAPSHOT_REFS" ]; then
-            echo "Found SNAPSHOT references (this is expected for current development version):"
-            echo "$SNAPSHOT_REFS"
-          fi
-      
-      - name: Check branch protection (dry-run push test)
-        run: |
-          echo "Checking if workflow can push to main..."
-          # Dieser Check informiert nur, bricht aber nicht ab
-          # Der Workflow wird später einen PR erstellen statt direkt zu pushen
-          echo "Note: This workflow will create a PR for version changes instead of pushing directly to main"
-      
-      - name: Validate Maven configuration
-        run: |
-          echo "Validating Maven configuration..."
-          mvn validate -q || {
-            echo "::error::Maven validation failed"
-            exit 1
-          }
-      
-      - name: Summary of preflight checks
-        run: |
-          # Calculate what the next SNAPSHOT version will be based on INPUT release version
-          INPUT_VERSION="${{ github.event.inputs.release_version }}"
+
           IFS='.' read -r major minor patch <<< "$INPUT_VERSION"
           NEXT_PATCH=$((patch + 1))
-          ACTUAL_NEXT="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
-          
-          echo "## Preflight Check Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Current Version | ${{ steps.version.outputs.current }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Release Version | ${{ github.event.inputs.release_version }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Next Dev Version | ${ACTUAL_NEXT} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag exists | No ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Maven valid | Yes ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dry run mode | ${{ github.event.inputs.dry_run }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Skip tests | ${{ github.event.inputs.skip_tests }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Add warning if release version differs from suggested version
-          SUGGESTED="${{ steps.version.outputs.suggested_release }}"
-          if [[ "$INPUT_VERSION" != "$SUGGESTED" ]]; then
-            echo "⚠️ **Warning:** Release version ($INPUT_VERSION) differs from suggested ($SUGGESTED)" >> $GITHUB_STEP_SUMMARY
-            echo "Next SNAPSHOT will be based on the release version: **${ACTUAL_NEXT}**" >> $GITHUB_STEP_SUMMARY
+          NEXT_SNAPSHOT="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
+          NEXT_RELEASE="${major}.${minor}.${NEXT_PATCH}"
+
+          if git ls-remote --tags origin | grep -q "refs/tags/v${INPUT_VERSION}$"; then
+            echo "::error::Tag v${INPUT_VERSION} already exists. Refusing to overwrite an existing release."
+            exit 1
           fi
+
+          echo "current_version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "release_version=$INPUT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "next_snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
+          echo "next_release=$NEXT_RELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Maven configuration
+        run: mvn --batch-mode validate
+
+      - name: Preflight summary
+        run: |
+          echo "## Release preflight" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Current version | ${{ steps.versions.outputs.current_version }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Release version | ${{ steps.versions.outputs.release_version }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Next SNAPSHOT | ${{ steps.versions.outputs.next_snapshot }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Dry run | ${{ inputs.dry_run }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Skip tests | ${{ inputs.skip_tests }} |" >> "$GITHUB_STEP_SUMMARY"
 
   release:
-    name: Build and Release
+    name: Build, Publish, and Prepare Next Version
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: preflight
     runs-on: ubuntu-latest
-    
+    env:
+      DISPLAY: :0
+      MAVEN_OPTS: -Djava.awt.headless=true
     steps:
-    # 1. Checkout with full history
-    - name: Checkout repository
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 0  # Full history required for git describe and jgit timestamp provider
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
 
-    # 2. Checkout main branch explicitly
-    - name: Ensure on main branch
-      run: |
-        git checkout main
-        echo "Checked out main branch"
+      - name: Refresh main branch
+        run: git pull --ff-only origin main
 
-    # 3. Set up JDK 21
-    - name: Set up JDK 21
-      uses: actions/setup-java@v5
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
-    # 4. Cache Maven dependencies for faster builds
-    - name: Cache Maven dependencies
-      uses: actions/cache@v5
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
-        restore-keys: ${{ runner.os }}-maven-
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        with:
+          maven-version: 3.9.14
 
-    # 5. Set release version using tycho-versions-plugin
-    - name: Set release version
-      run: |
-        TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
-        echo "Using Tycho version ${TYCHO_VERSION} from pom.xml"
-        echo "Setting version to ${{ inputs.release_version }}"
-        # Include benchmark and jacoco profiles to update all modules that inherit version from parent
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${{ inputs.release_version }} -Pbenchmark,jacoco
-        # Update standalone Maven modules not managed by Tycho
-        mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set -DnewVersion=${{ inputs.release_version }} -DgenerateBackupPoms=false
-        mvn -f sandbox-maven-plugin/pom.xml versions:set -DnewVersion=${{ inputs.release_version }} -DgenerateBackupPoms=false
+      - name: Install Xvfb and GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth \
+           libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
+           libasound2t64 libnss3 libgbm1
+          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
 
+      - name: Cache Maven dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
+          restore-keys: ${{ runner.os }}-maven-
 
-    # 6. Verify version update - fail if any SNAPSHOT versions remain
-    - name: Verify version update
-      run: |
-        echo "Checking for remaining SNAPSHOT references..."
-        # Check all version-related files for SNAPSHOT, excluding test resources
-        if grep -r "SNAPSHOT" --include="pom.xml" --include="MANIFEST.MF" --include="feature.xml" --include="*.product" \
-           --exclude-dir="src" .; then
-          echo "ERROR: Found remaining SNAPSHOT references!"
-          echo "All modules must be updated to release version."
-          exit 1
-        fi
-        echo "✓ Version verification passed - no SNAPSHOT references found"
+      - name: Set release version
+        run: |
+          set -euo pipefail
+          RELEASE_VERSION="${{ needs.preflight.outputs.release_version }}"
+          TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
+          echo "Using Tycho versions plugin ${TYCHO_VERSION}"
+          mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version \
+            -DnewVersion="${RELEASE_VERSION}" \
+            -Pbenchmark,jacoco
+          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
+            -DnewVersion="${RELEASE_VERSION}" \
+            -DgenerateBackupPoms=false
+          mvn -f sandbox-maven-plugin/pom.xml versions:set \
+            -DnewVersion="${RELEASE_VERSION}" \
+            -DgenerateBackupPoms=false
 
-    # 7. Commit version changes
-    - name: Commit version changes
-      run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-        # ':!.github/workflows/' uses Git pathspec magic to exclude workflow files,
-        # ensuring GITHUB_TOKEN can push this commit without being blocked.
-        git add -A -- ':!.github/workflows/'
-        git commit -m "Release version ${{ inputs.release_version }}"
+      - name: Verify release version update
+        run: |
+          set -euo pipefail
+          if grep -r "SNAPSHOT" \
+             --include="pom.xml" \
+             --include="MANIFEST.MF" \
+             --include="feature.xml" \
+             --include="*.product" \
+             --exclude-dir="src" \
+             --exclude-dir="tst" \
+             --exclude-dir="target" \
+             --exclude-dir=".git" .; then
+            echo "::error::Found remaining SNAPSHOT references after release version update."
+            exit 1
+          fi
 
-    # 8. Build and verify
-    - name: Build and verify
-      run: |
-        echo "Building release ${{ inputs.release_version }}..."
-        TEST_FLAG=""
-        if [[ "${{ inputs.skip_tests }}" == "true" ]]; then
-          TEST_FLAG="-DskipTests"
-          echo "Skipping tests as requested"
-        fi
-        xvfb-run --auto-servernum mvn -Pproduct,repo,cli-dist,maven-plugin,benchmark -T 1C clean verify $TEST_FLAG
+      - name: Commit release version
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A -- ':!.github/workflows/'
+          git commit -m "Release version ${{ needs.preflight.outputs.release_version }}"
 
-    # 8b. Push release commit to remote
-    - name: Push release commit to remote
-      if: ${{ !inputs.dry_run }}
-      run: |
-        set -e
-        COMMIT_SHA=$(git rev-parse HEAD)
-        echo "Pushing release commit $COMMIT_SHA to main branch..."
+      - name: Build and verify release
+        run: |
+          set -euo pipefail
+          TEST_FLAG=""
+          if [[ "${{ inputs.skip_tests }}" == "true" ]]; then
+            TEST_FLAG="-DskipTests"
+          fi
+          xvfb-run --auto-servernum mvn \
+            -Pproduct,repo,cli-dist,maven-plugin,benchmark \
+            -T 1C \
+            --batch-mode \
+            clean verify \
+            ${TEST_FLAG}
 
-        # Step 1: Push to a temporary branch to get the commit into GitHub's object store.
-        # Temporary branches are not protected, so git push works with GITHUB_TOKEN.
-        TEMP_BRANCH="release-temp-${{ inputs.release_version }}"
+      - name: Cleanup Xvfb
+        if: always()
+        uses: bcomnes/cleanup-xvfb@v1
 
-        # Register cleanup trap so the temp branch is always deleted, even if a later step fails.
-        trap 'git push origin ":refs/heads/${TEMP_BRANCH}" || true' EXIT
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "::notice::Dry run successful. No tag, release, gh-pages update, branch, or issue was created."
 
-        # Ensure reruns are idempotent: delete any existing remote temp branch (ignore errors), then push.
-        git push origin ":refs/heads/${TEMP_BRANCH}" || true
-        git push origin "HEAD:refs/heads/${TEMP_BRANCH}"
-        echo "Pushed commit to temporary branch ${TEMP_BRANCH}"
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            PREVIOUS_DATE=$(git log -1 --format=%aI "$PREVIOUS_TAG")
+            gh issue list \
+              --state closed \
+              --search "closed:>$PREVIOUS_DATE" \
+              --json number,title \
+              --jq '.[] | "- #\(.number): \(.title)"' > release_notes.md
+            if [[ ! -s release_notes.md ]]; then
+              echo "No closed issues found since $PREVIOUS_TAG" > release_notes.md
+            fi
+          else
+            echo "Initial release" > release_notes.md
+          fi
 
-        # Step 2: Fast-forward the protected main branch via the GitHub API.
-        # The REST API with GITHUB_TOKEN + contents:write can update protected branch refs.
-        gh api "repos/${{ github.repository }}/git/refs/heads/main" \
-          --method PATCH \
-          -f sha="$COMMIT_SHA"
-        echo "Fast-forwarded main branch to $COMMIT_SHA"
+      - name: Push release commit to temporary branch
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          TEMP_BRANCH="release-temp-${VERSION}"
+          git push origin ":refs/heads/${TEMP_BRANCH}" || true
+          git push origin "HEAD:refs/heads/${TEMP_BRANCH}"
 
-        echo "Successfully pushed release commit to main"
-        # Trap will clean up the temporary branch on exit.
-
-    - name: Dry run - Skip pushing release commit
-      if: ${{ inputs.dry_run }}
-      run: |
-        echo "::notice::Dry run mode - would push release commit $(git rev-parse HEAD) to main via temp branch + API fast-forward"
-
-    # 9. Create and push Git tag
-    - name: Create and push Git tag
-      if: ${{ !inputs.dry_run }}
-      run: |
-        set -e
-        COMMIT_SHA=$(git rev-parse HEAD)
-        # Use the GitHub API to create the tag object and reference.
-        # The release commit is already on the remote (pushed via git push in step 8b),
-        # so this API call succeeds because the commit SHA exists in GitHub's object store.
-
-        # Create annotated tag object
-        TAG_SHA=$(gh api "repos/${{ github.repository }}/git/tags" \
-          --method POST \
-          -f tag="v${{ inputs.release_version }}" \
-          -f message="Release version ${{ inputs.release_version }}" \
-          -f object="$COMMIT_SHA" \
-          -f type="commit" \
-          --jq '.sha')
-        if [ -z "$TAG_SHA" ]; then
-          echo "::error::Failed to create tag object via GitHub API (empty SHA returned)"
-          exit 1
-        fi
-
-        # Create tag reference
-        gh api "repos/${{ github.repository }}/git/refs" \
-          --method POST \
-          -f ref="refs/tags/v${{ inputs.release_version }}" \
-          -f sha="$TAG_SHA"
-
-        echo "Created and pushed tag v${{ inputs.release_version }}"
-    
-    - name: Dry run - Skip tag creation
-      if: ${{ inputs.dry_run }}
-      run: |
-        echo "::notice::Dry run mode - would create tag v${{ inputs.release_version }}"
-
-    # 10. Create and push maintenance branch
-    - name: Create and push maintenance branch
-      if: ${{ !inputs.dry_run }}
-      run: |
-        set -e
-        # Extract major.minor from version (e.g., 1.2.2 -> 1.2)
-        MAJOR_MINOR=$(echo "${{ inputs.release_version }}" | sed 's/\.[^.]*$//')
-        BRANCH_NAME="maintenance/${MAJOR_MINOR}.x"
-        
-        # Check if branch already exists on remote
-        if git ls-remote --exit-code --heads origin "${BRANCH_NAME}" >/dev/null 2>&1; then
-          echo "Branch ${BRANCH_NAME} already exists on remote, skipping creation"
-        else
-          echo "Creating and pushing maintenance branch: ${BRANCH_NAME}"
-          git branch "${BRANCH_NAME}"
-          # Use the GitHub API to create the branch reference.
-          # The release commit is already on the remote (pushed via git push in step 8b),
-          # so this API call succeeds because the commit SHA exists in GitHub's object store.
+      - name: Create release tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          COMMIT_SHA=$(git rev-parse HEAD)
+          TAG_SHA=$(gh api "repos/${{ github.repository }}/git/tags" \
+            --method POST \
+            -f tag="v${VERSION}" \
+            -f message="Release version ${VERSION}" \
+            -f object="$COMMIT_SHA" \
+            -f type="commit" \
+            --jq '.sha')
           gh api "repos/${{ github.repository }}/git/refs" \
             --method POST \
-            -f ref="refs/heads/${BRANCH_NAME}" \
-            -f sha="$(git rev-parse HEAD)"
-          echo "Created and pushed maintenance branch: ${BRANCH_NAME}"
-        fi
-    
-    - name: Dry run - Skip maintenance branch creation
-      if: ${{ inputs.dry_run }}
-      run: |
-        MAJOR_MINOR=$(echo "${{ inputs.release_version }}" | sed 's/\.[^.]*$//')
-        echo "::notice::Dry run mode - would create maintenance branch maintenance/${MAJOR_MINOR}.x"
+            -f ref="refs/tags/v${VERSION}" \
+            -f sha="$TAG_SHA"
 
-    # 11. Generate release notes from closed issues (before gh-pages checkout)
-    - name: Generate release notes
-      run: |
-        echo "Generating release notes from closed issues..."
-        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        
-        if [ -n "$PREVIOUS_TAG" ]; then
-          echo "Getting closed issues since $PREVIOUS_TAG"
-          PREVIOUS_DATE=$(git log -1 --format=%aI $PREVIOUS_TAG)
-          gh issue list --state closed --search "closed:>$PREVIOUS_DATE" --json number,title --jq '.[] | "- #\(.number): \(.title)"' > release_notes.md
-          GH_STATUS=$?
-          if [ $GH_STATUS -ne 0 ]; then
-            echo "Error: failed to fetch closed issues from GitHub (exit code $GH_STATUS)." >&2
-            exit $GH_STATUS
-          fi
-          if [ ! -s release_notes.md ]; then
-            echo "No closed issues found since $PREVIOUS_TAG" > release_notes.md
-          fi
-        else
-          echo "No previous tag found - first release"
-          echo "Initial release" > release_notes.md
-        fi
-        
-        echo "Release notes generated:"
-        cat release_notes.md
-
-    # 12. Create GitHub Release (now that tag exists on remote)
-    - name: Create GitHub Release
-      if: ${{ !inputs.dry_run }}
-      run: |
-        echo "Creating GitHub release for v${{ inputs.release_version }}..."
-        gh release create "v${{ inputs.release_version }}" \
-          --title "Release ${{ inputs.release_version }}" \
-          --notes-file release_notes.md \
-          --generate-notes
-    
-    - name: Dry run - Skip GitHub Release
-      if: ${{ inputs.dry_run }}
-      run: |
-        echo "::notice::Dry run mode - would create GitHub release v${{ inputs.release_version }}"
-        echo "Release notes preview:"
-        cat release_notes.md
-
-    # 12b. Upload CLI distribution archives to GitHub Release
-    - name: Upload CLI distribution archives
-      if: ${{ !inputs.dry_run }}
-      run: |
-        CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
-        for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
-          if [ -f "$archive" ]; then
-            echo "Uploading $(basename $archive) to release..."
-            gh release upload "v${{ inputs.release_version }}" "$archive" --clobber
-          fi
-        done
-
-    - name: Dry run - Show CLI distribution archives that would be uploaded
-      if: ${{ inputs.dry_run }}
-      run: |
-        CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
-        for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
-          if [ -f "$archive" ]; then
-            echo "::notice::Dry run mode - would upload $(basename $archive) to release v${{ inputs.release_version }}"
-          fi
-        done
-
-    # 13. Deploy release to gh-pages
-    - name: Checkout gh-pages branch
-      if: ${{ !inputs.dry_run }}
-      uses: actions/checkout@v6
-      with:
-        ref: gh-pages
-        path: gh-pages-repo
-
-    - name: Prepare release directory
-      if: ${{ !inputs.dry_run }}
-      run: |
-        mkdir -p gh-pages-repo/releases/${{ inputs.release_version }}
-        cp -r sandbox_updatesite/target/repository/* gh-pages-repo/releases/${{ inputs.release_version }}/
-
-    - name: Update composite metadata
-      if: ${{ !inputs.dry_run }}
-      run: |
-        cd gh-pages-repo/releases
-        
-        # Get list of all release versions
-        VERSIONS=$(find . -maxdepth 1 -type d ! -name '.' ! -name '..' -exec basename {} \; | sort -V)
-        VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
-        
-        # Generate children elements for composite metadata
-        CHILDREN_XML=""
-        for ver in $VERSIONS; do
-          CHILDREN_XML="$CHILDREN_XML    <child location='$ver'/>\n"
-        done
-        
-        # Create compositeContent.xml
-        cat > compositeContent.xml << EOF
-        <?xml version='1.0' encoding='UTF-8'?>
-        <?compositeMetadataRepository version='1.0.0'?>
-        <repository name='Sandbox Releases'
-                    type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
-                    version='1.0.0'>
-          <properties size='1'>
-            <property name='p2.timestamp' value='$(date +%s)000'/>
-          </properties>
-          <children size='$VERSION_COUNT'>
-        $(echo -e "$CHILDREN_XML")  </children>
-        </repository>
-        EOF
-        
-        # Create compositeArtifacts.xml
-        cat > compositeArtifacts.xml << EOF
-        <?xml version='1.0' encoding='UTF-8'?>
-        <?compositeArtifactRepository version='1.0.0'?>
-        <repository name='Sandbox Releases'
-                    type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
-                    version='1.0.0'>
-          <properties size='1'>
-            <property name='p2.timestamp' value='$(date +%s)000'/>
-          </properties>
-          <children size='$VERSION_COUNT'>
-        $(echo -e "$CHILDREN_XML")  </children>
-        </repository>
-        EOF
-        
-        echo "Created composite metadata for $VERSION_COUNT versions"
-
-    - name: Commit and push to gh-pages
-      if: ${{ !inputs.dry_run }}
-      run: |
-        cd gh-pages-repo
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-        git add .
-        git commit -m "Deploy release ${{ inputs.release_version }}"
-        git push origin gh-pages
-    
-    - name: Dry run - Skip gh-pages deployment
-      if: ${{ inputs.dry_run }}
-      run: |
-        echo "::notice::Dry run mode - would deploy release ${{ inputs.release_version }} to gh-pages"
-
-    # 14. Return to main repository and bump to next SNAPSHOT version
-    - name: Bump to next SNAPSHOT version
-      run: |
-        # Ensure we're in the main repository directory (not gh-pages-repo)
-        cd $GITHUB_WORKSPACE
-        
-        # Calculate next version based on the RELEASED version, not pom.xml
-        RELEASED_VERSION="${{ inputs.release_version }}"
-        IFS='.' read -r major minor patch <<< "$RELEASED_VERSION"
-        NEXT_PATCH=$((patch + 1))
-        NEXT_VERSION="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
-        echo "Bumping version to ${NEXT_VERSION} (based on released version ${RELEASED_VERSION})"
-        
-        TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
-        echo "Using Tycho versions plugin ${TYCHO_VERSION}"
-        # Include benchmark and jacoco profiles to update all modules that inherit version from parent
-        mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version -DnewVersion=${NEXT_VERSION} -Pbenchmark,jacoco
-        # Update standalone Maven modules not managed by Tycho
-        mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set -DnewVersion=${NEXT_VERSION} -DgenerateBackupPoms=false
-        mvn -f sandbox-maven-plugin/pom.xml versions:set -DnewVersion=${NEXT_VERSION} -DgenerateBackupPoms=false
-
-
-
-    # 15. Create PR for next SNAPSHOT version
-    - name: Create PR for next development iteration
-      run: |
-        # Ensure we're in the main repository directory
-        cd $GITHUB_WORKSPACE
-        
-        # Calculate next version based on the RELEASED version (same calculation as above)
-        RELEASED_VERSION="${{ inputs.release_version }}"
-        IFS='.' read -r major minor patch <<< "$RELEASED_VERSION"
-        NEXT_PATCH=$((patch + 1))
-        NEXT_VERSION="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
-        NEXT_RELEASE="${major}.${minor}.${NEXT_PATCH}"
-        
-        # Update the default release version in deploy-release.yml to the next expected release
-        sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
-        
-        # Create a branch for the next development iteration
-        NEXT_VERSION_BRANCH="release/prepare-next-${NEXT_VERSION}"
-        git checkout -b "${NEXT_VERSION_BRANCH}"
-        
-        # Commit all changes
-        # ':!.github/workflows/' uses Git pathspec magic to exclude workflow files.
-        git add -A -- ':!.github/workflows/'
-        git commit -m "Prepare for next development iteration ${NEXT_VERSION}"
-        
-        # Push the branch
-        git push origin "${NEXT_VERSION_BRANCH}"
-        
-        # Create PR body with release notes
-        cat > /tmp/pr_body.md << EOF
-        Automated PR to bump version to ${NEXT_VERSION} after release ${RELEASED_VERSION}
-        
-        ## Changes
-        - Bump version to ${NEXT_VERSION}
-        - Update all pom.xml, MANIFEST.MF, feature.xml files
-        
-        ## Release Notes
-        
-        EOF
-        cat release_notes.md >> /tmp/pr_body.md
-        
-        # Create PR
-        echo "Creating PR for next development iteration..."
-        gh pr create \
-          --title "Prepare for next development iteration ${NEXT_VERSION}" \
-          --body-file /tmp/pr_body.md \
-          --base main \
-          --head "${NEXT_VERSION_BRANCH}"
-        
-        echo "✓ PR created successfully"
-
-    # 16a. Query Eclipse Marketplace API
-    - name: Query Eclipse Marketplace API
-      id: marketplace
-      run: |
-        VERSION="${{ inputs.release_version }}"
-        echo "Querying Eclipse Marketplace API for 'sandbox' listing..."
-
-        # Try the Marketplace search API
-        SEARCH_RESPONSE=$(curl -s -o /tmp/marketplace_search.xml -w "%{http_code}" \
-          --max-time 30 \
-          "https://marketplace.eclipse.org/api/p/search?text=sandbox&max=5" || echo "000")
-
-        if [[ "$SEARCH_RESPONSE" == "200" ]]; then
-          echo "Marketplace search API returned HTTP 200"
-          cat /tmp/marketplace_search.xml > /tmp/marketplace_data.xml
-        else
-          echo "Marketplace search API returned HTTP $SEARCH_RESPONSE - trying direct listing endpoint..."
-          DIRECT_RESPONSE=$(curl -s -o /tmp/marketplace_direct.xml -w "%{http_code}" \
-            --max-time 30 \
-            "https://marketplace.eclipse.org/content/sandbox/api/p" || echo "000")
-          if [[ "$DIRECT_RESPONSE" == "200" ]]; then
-            echo "Direct listing endpoint returned HTTP 200"
-            cat /tmp/marketplace_direct.xml > /tmp/marketplace_data.xml
+      - name: Create maintenance branch
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          MAJOR_MINOR=$(echo "$VERSION" | sed 's/\.[^.]*$//')
+          BRANCH_NAME="maintenance/${MAJOR_MINOR}.x"
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Maintenance branch $BRANCH_NAME already exists."
           else
-            echo "Both Marketplace API endpoints unavailable (HTTP $SEARCH_RESPONSE / $DIRECT_RESPONSE)"
-            echo "<unavailable/>" > /tmp/marketplace_data.xml
+            gh api "repos/${{ github.repository }}/git/refs" \
+              --method POST \
+              -f ref="refs/heads/${BRANCH_NAME}" \
+              -f sha="$(git rev-parse HEAD)"
           fi
-        fi
 
-        # Extract key fields from the XML response (best-effort)
-        MARKETPLACE_XML=$(cat /tmp/marketplace_data.xml)
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          gh release create "v${VERSION}" \
+            --title "Release ${VERSION}" \
+            --notes-file release_notes.md
 
-        if echo "$MARKETPLACE_XML" | grep -qi "<unavailable"; then
-          echo "marketplace_available=false" >> $GITHUB_OUTPUT
-          echo "marketplace_summary=API unavailable - listing may not exist yet" >> $GITHUB_OUTPUT
-        else
-          echo "marketplace_available=true" >> $GITHUB_OUTPUT
-          # Extract fields with grep/sed for portability
-          LISTED_VERSION=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<version>)[^<]+' | head -1 || echo "")
-          UPDATE_URL=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<updateurl>)[^<]+' | head -1 || echo "")
-          DESCRIPTION=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<body>)[^<]+' | head -1 | cut -c1-200 || echo "")
-          CATEGORIES=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<category name=")[^"]+' | paste -sd', ' || echo "")
-          LICENSE=$(echo "$MARKETPLACE_XML" | grep -oP '(?<=<license>)[^<]+' | head -1 || echo "")
-          SCREENSHOTS=$(echo "$MARKETPLACE_XML" | grep -c '<screenshot' || echo "0")
-
-          # Sanitize values to ensure single-line GitHub outputs
-          LISTED_VERSION_CLEAN=$(printf '%s' "$LISTED_VERSION" | tr '\n' ' ' | tr '\r' ' ')
-          UPDATE_URL_CLEAN=$(printf '%s' "$UPDATE_URL" | tr '\n' ' ' | tr '\r' ' ')
-          DESCRIPTION_CLEAN=$(printf '%s' "$DESCRIPTION" | tr '\n' ' ' | tr '\r' ' ')
-          CATEGORIES_CLEAN=$(printf '%s' "$CATEGORIES" | tr '\n' ' ' | tr '\r' ' ')
-          LICENSE_CLEAN=$(printf '%s' "$LICENSE" | tr '\n' ' ' | tr '\r' ' ')
-          SCREENSHOTS_CLEAN=$(printf '%s' "$SCREENSHOTS" | tr '\n' ' ' | tr '\r' ' ')
-
-          echo "marketplace_listed_version=$LISTED_VERSION_CLEAN" >> "$GITHUB_OUTPUT"
-          echo "marketplace_update_url=$UPDATE_URL_CLEAN" >> "$GITHUB_OUTPUT"
-          echo "marketplace_description=$DESCRIPTION_CLEAN" >> "$GITHUB_OUTPUT"
-          echo "marketplace_categories=$CATEGORIES_CLEAN" >> "$GITHUB_OUTPUT"
-          echo "marketplace_license=$LICENSE_CLEAN" >> "$GITHUB_OUTPUT"
-          echo "marketplace_screenshots=$SCREENSHOTS_CLEAN" >> "$GITHUB_OUTPUT"
-
-          SUMMARY="version=${LISTED_VERSION_CLEAN:-unknown}, update_url=${UPDATE_URL_CLEAN:-unknown}, screenshots=${SCREENSHOTS_CLEAN:-0}"
-          SUMMARY_CLEAN=$(printf '%s' "$SUMMARY" | tr '\n' ' ' | tr '\r' ' ')
-          echo "marketplace_summary=$SUMMARY_CLEAN" >> "$GITHUB_OUTPUT"
-        fi
-
-        echo "Marketplace API query complete: ${SUMMARY_CLEAN:-API unavailable - listing may not exist yet}"
-
-    # 16b. Create Marketplace Update Reminder Issue
-    - name: Create Marketplace Update Reminder Issue
-      run: |
-        VERSION="${{ inputs.release_version }}"
-        UPDATE_SITE="https://carstenartur.github.io/sandbox/releases/"
-        VERSION_SPECIFIC_SITE="https://carstenartur.github.io/sandbox/releases/${VERSION}/"
-        RELEASE_URL="https://github.com/carstenartur/sandbox/releases/tag/v${VERSION}"
-        PAGES_DASHBOARD="https://carstenartur.github.io/sandbox/"
-        MARKETPLACE_EDIT_URL="https://marketplace.eclipse.org/content/sandbox/edit"
-
-        # Extract Eclipse compatibility from target file
-        ECLIPSE_COMPAT=$(grep -oP '[0-9]{4}-[0-9]{2}' sandbox_target/eclipse.target 2>/dev/null | sort -u | tail -1 || echo "2025-12")
-
-        # Extract Java version from pom.xml
-        JAVA_COMPAT=$(grep -oP '(?<=<java-version>)[^<]+' pom.xml 2>/dev/null | head -1 || echo "21")
-
-        # Extract features from category.xml and match labels from feature.xml files
-        FEATURE_TABLE=""
-        FEATURE_LABELS=""
-        FEATURE_COUNT=0
-        # Pre-build a lookup of feature.xml paths indexed by feature ID
-        declare -A FEATURE_XML_MAP
-        while IFS= read -r fxml; do
-          fid=$(basename "$(dirname "$fxml")")
-          FEATURE_XML_MAP["$fid"]="$fxml"
-        done < <(find . -maxdepth 3 -name "feature.xml" 2>/dev/null)
-        while IFS= read -r feat_line; do
-          FEATURE_ID=$(echo "$feat_line" | grep -oP '(?<=id=")[^"]+')
-          if [[ -n "$FEATURE_ID" ]]; then
-            FEATURE_XML="${FEATURE_XML_MAP[$FEATURE_ID]:-}"
-            if [[ -n "$FEATURE_XML" ]]; then
-              FEATURE_LABEL=$(grep -oP '(?<=label=")[^"]+' "$FEATURE_XML" | head -1)
-              # Resolve property references (e.g. %featureName -> feature.properties)
-              if [[ "$FEATURE_LABEL" == %* ]]; then
-                PROP_KEY="${FEATURE_LABEL#%}"
-                PROP_FILE=$(dirname "$FEATURE_XML")/feature.properties
-                FEATURE_LABEL=$(grep -oP "(?<=${PROP_KEY}=).+" "$PROP_FILE" 2>/dev/null | head -1 || echo "")
-              fi
-            else
-              FEATURE_LABEL=""
+      - name: Upload CLI distribution archives
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
+          for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
+            if [[ -f "$archive" ]]; then
+              gh release upload "v${VERSION}" "$archive" --clobber
             fi
-            FEATURE_LABEL="${FEATURE_LABEL:-$FEATURE_ID}"
-            FEATURE_TABLE="${FEATURE_TABLE}| ${FEATURE_LABEL} | \`${FEATURE_ID}\` | \`${VERSION}\` |\n"
-            FEATURE_LABELS="${FEATURE_LABELS}\n- ${FEATURE_LABEL}"
-            FEATURE_COUNT=$((FEATURE_COUNT + 1))
-          fi
-        done < <(grep '<feature' sandbox_updatesite/category.xml)
+          done
 
-        # Generate copy-paste ready description
-        DESCRIPTION_TEXT="Sandbox provides ${FEATURE_COUNT} Eclipse JDT cleanup extensions for automated code modernization:
-$(echo -e "$FEATURE_LABELS")
+      - name: Checkout gh-pages branch
+        if: ${{ !inputs.dry_run }}
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages-repo
 
-All cleanups are available via the Eclipse Clean Up dialog and can be combined freely.
-Compatible with Eclipse ${ECLIPSE_COMPAT}+ and Java ${JAVA_COMPAT}+.
-License: EPL-2.0"
+      - name: Deploy P2 update site to gh-pages
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          mkdir -p "gh-pages-repo/releases/${VERSION}"
+          cp -r sandbox_updatesite/target/repository/* "gh-pages-repo/releases/${VERSION}/"
+          cd gh-pages-repo/releases
 
-        # Build Section 2: Current Marketplace Status
-        if [[ "${{ steps.marketplace.outputs.marketplace_available }}" == "true" ]]; then
-          LISTED_VERSION="${{ steps.marketplace.outputs.marketplace_listed_version }}"
-          UPDATE_URL="${{ steps.marketplace.outputs.marketplace_update_url }}"
-          DESCRIPTION="${{ steps.marketplace.outputs.marketplace_description }}"
-          CATEGORIES="${{ steps.marketplace.outputs.marketplace_categories }}"
-          LICENSE="${{ steps.marketplace.outputs.marketplace_license }}"
-          SCREENSHOTS="${{ steps.marketplace.outputs.marketplace_screenshots }}"
+          VERSIONS=$(find . -maxdepth 1 -type d ! -name '.' ! -name '..' -exec basename {} \; | sort -V)
+          VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
+          CHILDREN_XML=""
+          for ver in $VERSIONS; do
+            CHILDREN_XML="$CHILDREN_XML    <child location='$ver'/>\n"
+          done
 
-          SECTION2=$(cat << SECTION2_EOF
-        ## 📊 Current Marketplace Status
+          cat > compositeContent.xml << EOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <?compositeMetadataRepository version='1.0.0'?>
+          <repository name='Sandbox Releases'
+                      type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
+                      version='1.0.0'>
+            <properties size='1'>
+              <property name='p2.timestamp' value='$(date +%s)000'/>
+            </properties>
+            <children size='$VERSION_COUNT'>
+          $(echo -e "$CHILDREN_XML")  </children>
+          </repository>
+          EOF
 
-        | Field | Value |
-        |-------|-------|
-        | Listed Version | ${LISTED_VERSION:-_not found_} |
-        | Update Site URL | ${UPDATE_URL:-_not found_} |
-        | Categories | ${CATEGORIES:-_not found_} |
-        | License | ${LICENSE:-_not found_} |
-        | Screenshots | ${SCREENSHOTS:-0} |
+          cat > compositeArtifacts.xml << EOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <?compositeArtifactRepository version='1.0.0'?>
+          <repository name='Sandbox Releases'
+                      type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
+                      version='1.0.0'>
+            <properties size='1'>
+              <property name='p2.timestamp' value='$(date +%s)000'/>
+            </properties>
+            <children size='$VERSION_COUNT'>
+          $(echo -e "$CHILDREN_XML")  </children>
+          </repository>
+          EOF
 
-        **Description excerpt:**
-        ${DESCRIPTION:-_No description found_}
-        SECTION2_EOF
-        )
-        else
-          SECTION2=$(cat << SECTION2_EOF
-        ## 📊 Current Marketplace Status
+          cd ..
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "Deploy release ${VERSION}" || echo "No gh-pages changes to commit"
+          git push origin gh-pages
 
-        > ⚠️ The Eclipse Marketplace API was unavailable or the listing does not exist yet.
-        > Please check manually at $MARKETPLACE_EDIT_URL
-        SECTION2_EOF
-        )
-          LISTED_VERSION=""
-          UPDATE_URL=""
-          CATEGORIES=""
-          LICENSE=""
-          SCREENSHOTS="0"
-        fi
+      - name: Fast-forward main to release commit
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          COMMIT_SHA=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
+          gh api "repos/${{ github.repository }}/git/refs/heads/main" \
+            --method PATCH \
+            -f sha="$COMMIT_SHA"
 
-        # Build Section 3: Suggestions
-        SUGGESTIONS=""
+      - name: Delete temporary release branch
+        if: ${{ always() && !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          TEMP_BRANCH="release-temp-${VERSION}"
+          git push origin ":refs/heads/${TEMP_BRANCH}" || true
 
-        if [[ -n "$LISTED_VERSION" && "$LISTED_VERSION" != "$VERSION" ]]; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🔴 **Version mismatch**: Marketplace shows \`$LISTED_VERSION\`, new release is \`$VERSION\`. Update the version."
-        fi
+      - name: Prepare next development iteration
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          NEXT_VERSION="${{ needs.preflight.outputs.next_snapshot }}"
+          NEXT_RELEASE="${{ needs.preflight.outputs.next_release }}"
+          BRANCH_NAME="release/prepare-next-${NEXT_VERSION}"
 
-        if [[ -n "$UPDATE_URL" && "$UPDATE_URL" != "$UPDATE_SITE" ]]; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🔴 **Update site URL**: Marketplace shows \`$UPDATE_URL\`, should be \`$UPDATE_SITE\` (composite URL). Update the URL."
-        elif [[ -z "$UPDATE_URL" ]]; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🟡 **Update site URL**: Not found in listing. Set to \`$UPDATE_SITE\` (composite URL — resolves to latest automatically)."
-        fi
+          TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
+          mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version \
+            -DnewVersion="${NEXT_VERSION}" \
+            -Pbenchmark,jacoco
+          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
+            -DnewVersion="${NEXT_VERSION}" \
+            -DgenerateBackupPoms=false
+          mvn -f sandbox-maven-plugin/pom.xml versions:set \
+            -DnewVersion="${NEXT_VERSION}" \
+            -DgenerateBackupPoms=false
+          sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
 
-        if [[ "${SCREENSHOTS:-0}" == "0" ]]; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🟡 **Screenshots**: No screenshots found. Add screenshots showing cleanup dialogs and before/after code transformations."
-        fi
+          git checkout -b "$BRANCH_NAME"
+          git add -A -- ':!.github/workflows/'
+          git commit -m "Prepare for next development iteration ${NEXT_VERSION}"
+          git push origin "$BRANCH_NAME"
 
-        if [[ -z "$CATEGORIES" ]]; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🟡 **Categories/Tags**: No categories found. Consider adding: _Code Quality_, _Testing_, _Refactoring_."
-        fi
+          cat > /tmp/pr_body.md << EOF
+          Automated PR to bump version to ${NEXT_VERSION} after release ${{ needs.preflight.outputs.release_version }}.
 
-        if [[ -n "$LICENSE" ]] && ! echo "$LICENSE" | grep -qi "EPL\|Eclipse Public"; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🔴 **License**: Marketplace shows \`$LICENSE\`. Should be EPL-2.0."
-        elif [[ -z "$LICENSE" ]]; then
-          SUGGESTIONS="$SUGGESTIONS
-        - 🟡 **License**: Not found in listing. Verify EPL-2.0 is set."
-        fi
+          ## Changes
+          - Bump project version to ${NEXT_VERSION}
+          - Update release.properties to ${NEXT_RELEASE}
 
-        SUGGESTIONS="$SUGGESTIONS
-        - 🟡 **Compatibility**: Verify Eclipse ${ECLIPSE_COMPAT}+ and Java ${JAVA_COMPAT}+ are listed."
+          ## Release Notes
 
-        if [[ -z "$SUGGESTIONS" ]]; then
-          SUGGESTIONS="✅ No issues found — the marketplace listing appears up to date!"
-        fi
+          EOF
+          cat release_notes.md >> /tmp/pr_body.md
 
-        # Build full issue body
-        ISSUE_BODY=$(cat << EOF
-        ## 🚀 Release Information
+          gh pr create \
+            --title "Prepare for next development iteration ${NEXT_VERSION}" \
+            --body-file /tmp/pr_body.md \
+            --base main \
+            --head "$BRANCH_NAME"
 
-        | Field | Value |
-        |-------|-------|
-        | Release Version | \`${VERSION}\` |
-        | Release Tag | [\`v${VERSION}\`]($RELEASE_URL) |
-        | Composite Update Site | \`$UPDATE_SITE\` |
-        | Version-Specific Site | \`$VERSION_SPECIFIC_SITE\` |
-        | GitHub Release | $RELEASE_URL |
-        | GitHub Pages | $PAGES_DASHBOARD |
-        | Marketplace Edit | $MARKETPLACE_EDIT_URL |
+      - name: Create Marketplace reminder issue
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          ISSUE_BODY=$(cat << EOF
+          ## Release ${VERSION}
 
-        ${SECTION2}
+          A new Sandbox release was published.
 
-        ## 📋 Marketplace Form Data (Copy-Paste Ready)
+          | Field | Value |
+          |-------|-------|
+          | Release | v${VERSION} |
+          | GitHub Release | https://github.com/${{ github.repository }}/releases/tag/v${VERSION} |
+          | Composite Update Site | https://carstenartur.github.io/sandbox/releases/ |
+          | Version-specific Update Site | https://carstenartur.github.io/sandbox/releases/${VERSION}/ |
+          | Marketplace Edit | https://marketplace.eclipse.org/content/sandbox/edit |
 
-        Open the [Marketplace Edit Page]($MARKETPLACE_EDIT_URL) and enter these values:
+          ## Checklist
 
-        | Form Field | Value |
-        |------------|-------|
-        | **Solution Version** | \`${VERSION}\` |
-        | **Update Site URL** | \`${UPDATE_SITE}\` |
-        | **Eclipse Versions** | ${ECLIPSE_COMPAT} and later |
-        | **Java Version** | Java ${JAVA_COMPAT} and later |
-        | **License** | EPL-2.0 |
-        | **Categories** | Code Quality, Testing, Refactoring |
-
-        ### Description (ready to copy)
-
-        <pre>
-        ${DESCRIPTION_TEXT}
-        </pre>
-
-        ### Features included in this release
-
-        | Feature | ID | Version |
-        |---------|----|---------|
-        $(echo -e "$FEATURE_TABLE")
-
-        ## 🔍 Completeness Analysis & Suggestions
-
-        ${SUGGESTIONS}
-
-        ## ✅ Manual Checklist
-
-        - [ ] Update version to \`${VERSION}\`
-        - [ ] Verify P2 update site URL is \`${UPDATE_SITE}\` (composite — resolves to latest automatically)
-        - [ ] Update description with latest features (use copy-paste text above)
-        - [ ] Add/update screenshots
-        - [ ] Verify categories and tags
-        - [ ] Verify license (EPL-2.0)
-        - [ ] Verify Eclipse compatibility info (${ECLIPSE_COMPAT}+, Java ${JAVA_COMPAT}+)
-        - [ ] Test installation from marketplace
-
-        ---
-        *This issue was automatically created by the [release workflow](https://github.com/carstenartur/sandbox/actions) for release \`${VERSION}\`.*
-        EOF
-        )
-
-        ISSUE_TITLE="📦 Release ${VERSION} — Update Eclipse Marketplace Listing"
-
-        if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-          echo "::notice::Dry run mode - would create GitHub issue: $ISSUE_TITLE"
-          echo "--- Issue body preview ---"
-          echo "$ISSUE_BODY"
-          echo "--- End of preview ---"
-        else
-          # Ensure the 'release' label exists (ignore errors if it already exists)
-          gh label create "release" --color "0075ca" --description "Release-related tasks" 2>/dev/null || true
-
+          - [ ] Update the Eclipse Marketplace solution version to ${VERSION}
+          - [ ] Verify the update site URL points to https://carstenartur.github.io/sandbox/releases/
+          - [ ] Verify Eclipse and Java compatibility information
+          - [ ] Update screenshots and description if needed
+          - [ ] Test installation from the Marketplace
+          EOF
+          )
           echo "$ISSUE_BODY" > /tmp/marketplace_issue_body.md
+          gh label create "release" --color "0075ca" --description "Release-related tasks" 2>/dev/null || true
           gh issue create \
-            --title "$ISSUE_TITLE" \
+            --title "📦 Release ${VERSION} — Update Eclipse Marketplace Listing" \
             --body-file /tmp/marketplace_issue_body.md \
-            --label "release" 2>/dev/null \
-          || gh issue create \
-            --title "$ISSUE_TITLE" \
-            --body-file /tmp/marketplace_issue_body.md
-          echo "✓ Marketplace reminder issue created successfully"
-        fi
+            --label "release"
