@@ -13,6 +13,10 @@
  *******************************************************************************/
 package org.sandbox.mining.core.candidate;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 /**
  * A mined cleanup candidate in the staged DSL mining pipeline.
  *
@@ -149,17 +153,41 @@ public class MiningCandidate {
 	public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 
 	/**
-	 * Returns a stable filename for this candidate based on the source commit hash.
-	 * The filename uses the first 7 characters of the commit hash.
+	 * Returns a deterministic candidate ID based on candidate-defining content.
 	 *
-	 * @return a filename like {@code abc1234-candidate.json}
+	 * @return a stable SHA-256 based candidate ID
+	 */
+	public String getCandidateId() {
+		StringBuilder seed = new StringBuilder();
+		seed.append(nullToEmpty(sourceRepo)).append('\n')
+				.append(nullToEmpty(sourceCommit)).append('\n')
+				.append(nullToEmpty(category)).append('\n')
+				.append(nullToEmpty(targetHintFile)).append('\n')
+				.append(nullToEmpty(dslRule));
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256"); //$NON-NLS-1$
+			byte[] hash = digest.digest(seed.toString().getBytes(StandardCharsets.UTF_8));
+			StringBuilder hex = new StringBuilder(hash.length * 2);
+			for (byte b : hash) {
+				hex.append(String.format("%02x", Byte.valueOf(b))); //$NON-NLS-1$
+			}
+			return hex.toString();
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 algorithm not available", e); //$NON-NLS-1$
+		}
+	}
+
+	/**
+	 * Returns a stable filename for this candidate based on {@link #getCandidateId()}.
+	 *
+	 * @return a filename like {@code <candidateId>-candidate.json}
 	 */
 	public String toFileName() {
-		String hash = (sourceCommit != null && !sourceCommit.isBlank())
-				? sourceCommit.substring(0, Math.min(7, sourceCommit.length()))
-						.replaceAll("[^a-zA-Z0-9_-]", "_") //$NON-NLS-1$ //$NON-NLS-2$
-				: "unknown"; //$NON-NLS-1$
-		return hash + "-candidate.json"; //$NON-NLS-1$
+		return getCandidateId() + "-candidate.json"; //$NON-NLS-1$
+	}
+
+	private static String nullToEmpty(String value) {
+		return value == null ? "" : value; //$NON-NLS-1$
 	}
 
 	@Override

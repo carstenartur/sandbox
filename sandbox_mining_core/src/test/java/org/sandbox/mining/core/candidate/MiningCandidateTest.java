@@ -84,32 +84,32 @@ class MiningCandidateTest {
 
 	@Test
 	void testToFileName() {
-		MiningCandidate candidate = new MiningCandidate();
-		candidate.setSourceCommit("abc1234567890");
-		assertEquals("abc1234-candidate.json", candidate.toFileName()); //$NON-NLS-1$
-	}
-
-	@Test
-	void testToFileNameNullCommit() {
-		MiningCandidate candidate = new MiningCandidate();
-		candidate.setSourceCommit(null);
-		assertEquals("unknown-candidate.json", candidate.toFileName()); //$NON-NLS-1$
-	}
-
-	@Test
-	void testToFileNameBlankCommit() {
-		MiningCandidate candidate = new MiningCandidate();
-		candidate.setSourceCommit(""); //$NON-NLS-1$
-		assertEquals("unknown-candidate.json", candidate.toFileName()); //$NON-NLS-1$
-	}
-
-	@Test
-	void testToFileNameSanitizesSpecialChars() {
-		MiningCandidate candidate = new MiningCandidate();
-		candidate.setSourceCommit("abc!@#$1234");
+		MiningCandidate candidate = createCandidate();
 		String filename = candidate.toFileName();
-		assertFalse(filename.contains("!"), "Filename should not contain special chars"); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(filename.endsWith("-candidate.json")); //$NON-NLS-1$
+		assertEquals(64 + "-candidate.json".length(), filename.length()); //$NON-NLS-1$
+	}
+
+	@Test
+	void testCandidateIdStableForSameContent() {
+		MiningCandidate first = createCandidate();
+		MiningCandidate second = createCandidate();
+		assertEquals(first.getCandidateId(), second.getCandidateId());
+	}
+
+	@Test
+	void testCandidateIdChangesForDifferentRule() {
+		MiningCandidate first = createCandidate();
+		MiningCandidate second = createCandidate();
+		second.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+		assertFalse(first.getCandidateId().equals(second.getCandidateId())); //$NON-NLS-1$
+	}
+
+	@Test
+	void testCandidateIdGeneratedWhenFieldsMissing() {
+		MiningCandidate candidate = new MiningCandidate();
+		assertEquals(64, candidate.getCandidateId().length());
+		assertTrue(candidate.toFileName().endsWith("-candidate.json")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -134,5 +134,19 @@ class MiningCandidateTest {
 			candidate.setStatus(status);
 			assertEquals(status, candidate.getStatus());
 		}
+	}
+
+	private static MiningCandidate createCandidate() {
+		return new MiningCandidate(
+				"$x + 0\n=> $x\n;;", //$NON-NLS-1$
+				"class T { int m() { return 1 + 0; } }", //$NON-NLS-1$
+				"class T { int m() { return 1; } }", //$NON-NLS-1$
+				"class T { int m() { return 1 + 2; } }", //$NON-NLS-1$
+				"performance.sandbox-hint", //$NON-NLS-1$
+				"abc1234567890", //$NON-NLS-1$
+				"https://github.com/example/repo", //$NON-NLS-1$
+				"arithmetic-simplification", //$NON-NLS-1$
+				"Remove addition of zero", //$NON-NLS-1$
+				"2026-01-01T00:00:00Z"); //$NON-NLS-1$
 	}
 }

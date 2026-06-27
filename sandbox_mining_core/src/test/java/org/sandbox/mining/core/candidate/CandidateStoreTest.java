@@ -105,20 +105,33 @@ class CandidateStoreTest {
 	}
 
 	@Test
-	void testContainsCommit() throws IOException {
+	void testContainsCandidate() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
-		store.save(createCandidate("abc1234567890", CandidateStatus.DISCOVERED));
+		MiningCandidate candidate = createCandidate("abc1234567890", CandidateStatus.DISCOVERED);
+		store.save(candidate);
 
-		assertTrue(store.containsCommit("abc1234567890")); //$NON-NLS-1$
-		assertFalse(store.containsCommit("def5678901234")); //$NON-NLS-1$
+		assertTrue(store.containsCandidate(candidate));
+		assertFalse(store.containsCandidate(createCandidate("def5678901234", CandidateStatus.DISCOVERED))); //$NON-NLS-1$
 	}
 
 	@Test
-	void testContainsCommitNullAndBlank() throws IOException {
+	void testContainsCandidateNull() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
-		assertFalse(store.containsCommit(null));
-		assertFalse(store.containsCommit("")); //$NON-NLS-1$
-		assertFalse(store.containsCommit("   ")); //$NON-NLS-1$
+		assertFalse(store.containsCandidate(null));
+	}
+
+	@Test
+	void testSaveAllowsMultipleCandidatesFromSameCommit() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate first = createCandidate("abc1234567890", CandidateStatus.DSL_VALID); //$NON-NLS-1$
+		MiningCandidate second = createCandidate("abc1234567890", CandidateStatus.DSL_VALID); //$NON-NLS-1$
+		second.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+
+		store.save(first);
+		store.save(second);
+
+		List<MiningCandidate> loaded = store.loadAll();
+		assertEquals(2, loaded.size(), "Different rules from same commit should produce distinct candidate files"); //$NON-NLS-1$
 	}
 
 	@Test

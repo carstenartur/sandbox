@@ -422,4 +422,29 @@ class MiningCliTest {
 
 		assertTrue(secondSave.isEmpty(), "Should skip already-saved candidates"); //$NON-NLS-1$
 	}
+
+	@Test
+	void testSaveCandidatesAllowsMultipleFromSameCommit() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir.resolve("candidates6")); //$NON-NLS-1$
+		String firstDsl = "java.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n"; //$NON-NLS-1$
+		String secondDsl = "$x + 0\n=> $x\n;;\n"; //$NON-NLS-1$
+		CommitEvaluation first = new CommitEvaluation(
+				"abc1234567890", "Replace emptyList", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), null, true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Collections",
+				false, null, true, firstDsl, "performance.sandbox-hint", null, null, //$NON-NLS-1$
+				"Summary 1", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+		CommitEvaluation second = new CommitEvaluation(
+				"abc1234567890", "Remove add zero", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), null, true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Math",
+				false, null, true, secondDsl, "math.sandbox-hint", null, null, //$NON-NLS-1$
+				"Summary 2", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+
+		List<MiningCandidate> saved = MiningCli.saveCandidates(
+				List.of(first, second), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+
+		assertEquals(2, saved.size(), "Should stage distinct candidates from the same commit"); //$NON-NLS-1$
+	}
 }

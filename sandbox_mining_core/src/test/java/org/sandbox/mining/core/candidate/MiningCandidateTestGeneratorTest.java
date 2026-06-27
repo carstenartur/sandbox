@@ -129,6 +129,18 @@ class MiningCandidateTestGeneratorTest {
 	}
 
 	@Test
+	void testGeneratedTestContainsAfterExampleReplacementTest() throws IOException {
+		MiningCandidateTestGenerator generator = new MiningCandidateTestGenerator();
+		MiningCandidate candidate = createCandidate("abc1234567890"); //$NON-NLS-1$
+
+		Path generated = generator.generateTest(candidate, tempDir);
+		String content = Files.readString(generated, StandardCharsets.UTF_8);
+
+		assertTrue(content.contains("testAfterExampleReplacementMatches"), //$NON-NLS-1$
+				"Should contain after example replacement test"); //$NON-NLS-1$
+	}
+
+	@Test
 	void testGeneratedTestSkipsBeforeExampleWhenBlank() throws IOException {
 		MiningCandidateTestGenerator generator = new MiningCandidateTestGenerator();
 		MiningCandidate candidate = new MiningCandidate();
@@ -161,6 +173,8 @@ class MiningCandidateTestGeneratorTest {
 
 		assertTrue(content.contains("testBeforeExampleMatches"), //$NON-NLS-1$
 				"Should include before example test when beforeExample is set"); //$NON-NLS-1$
+		assertFalse(content.contains("testAfterExampleReplacementMatches"), //$NON-NLS-1$
+				"Should skip after example replacement test when afterExample is blank"); //$NON-NLS-1$
 	}
 
 	@Test
