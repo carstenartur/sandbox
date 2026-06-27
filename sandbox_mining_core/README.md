@@ -17,7 +17,7 @@ A candidate is a staged mining result (`MiningCandidate`) with:
 
 Each candidate is persisted as `<candidateId>-candidate.json`, where `candidateId` is a deterministic SHA-256 hash over:
 
-`repoUrl + commitHash + category + targetHintFile + dslRule`
+`sourceRepo + sourceCommit + category + targetHintFile + dslRule`
 
 This avoids collisions and allows multiple candidates from the same commit.
 

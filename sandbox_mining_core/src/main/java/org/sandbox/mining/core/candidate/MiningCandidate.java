@@ -169,7 +169,9 @@ public class MiningCandidate {
 			byte[] hash = digest.digest(seed.toString().getBytes(StandardCharsets.UTF_8));
 			StringBuilder hex = new StringBuilder(hash.length * 2);
 			for (byte b : hash) {
-				hex.append(String.format("%02x", Byte.valueOf(b))); //$NON-NLS-1$
+				int value = b & 0xff;
+				hex.append(Character.forDigit((value >>> 4) & 0x0f, 16));
+				hex.append(Character.forDigit(value & 0x0f, 16));
 			}
 			return hex.toString();
 		} catch (NoSuchAlgorithmException e) {

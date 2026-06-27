@@ -15,6 +15,7 @@ package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -102,7 +103,7 @@ class MiningCandidateTest {
 		MiningCandidate first = createCandidate();
 		MiningCandidate second = createCandidate();
 		second.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
-		assertFalse(first.getCandidateId().equals(second.getCandidateId())); //$NON-NLS-1$
+		assertNotEquals(first.getCandidateId(), second.getCandidateId());
 	}
 
 	@Test
