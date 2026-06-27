@@ -12,7 +12,7 @@ The plugin resolves the `sandbox-cleanup-cli` tool distribution (from GitHub Rel
 
 | Goal | Phase | Description |
 |------|-------|-------------|
-| `sandbox:apply` | `process-sources` | Apply configured cleanups to source files in-place |
+| `sandbox:apply` | — | Apply configured cleanups to source files in-place |
 | `sandbox:check` | `verify` | Check whether any cleanups are needed; fails the build if so |
 | `sandbox:diff` | — | Generate a diff of pending cleanup changes without modifying files |
 

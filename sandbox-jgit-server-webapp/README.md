@@ -25,7 +25,6 @@
 | `GET` | `/api/analytics/authors?repo=...` | Author commit statistics |
 | `GET` | `/api/analytics/objects?repo=...` | Object type counts |
 | `GET` | `/api/analytics/packs?repo=...` | Pack file statistics |
-| `POST` | `/api/admin/reindex` | Trigger full re-indexing of all repositories |
 
 ## Docker
 
