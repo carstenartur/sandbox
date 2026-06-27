@@ -30,7 +30,7 @@ package org.sandbox.mining.core.candidate;
  *   "negativeExample": "...",
  *   "targetHintFile": "performance.sandbox-hint",
  *   "sourceCommit": "abc1234",
- *   "sourceRepo": "eclipse.jdt.ui",
+ *   "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
  *   "category": "string-modernization",
  *   "summary": "Replace StringBuffer with StringBuilder",
  *   "status": "DISCOVERED",

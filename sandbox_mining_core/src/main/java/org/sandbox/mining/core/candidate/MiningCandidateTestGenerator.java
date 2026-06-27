@@ -27,7 +27,6 @@ import java.nio.file.Path;
  * <ol>
  *   <li>The DSL rule parses successfully</li>
  *   <li>The {@code beforeExample} matches the rule</li>
- *   <li>The replacement equals the {@code afterExample}</li>
  *   <li>The {@code negativeExample} does NOT match the rule</li>
  * </ol>
  *
@@ -89,7 +88,6 @@ public class MiningCandidateTestGenerator {
 	private String buildTestSource(MiningCandidate candidate, String className) {
 		String dslRule = candidate.getDslRule() != null ? candidate.getDslRule() : ""; //$NON-NLS-1$
 		String beforeExample = candidate.getBeforeExample() != null ? candidate.getBeforeExample() : ""; //$NON-NLS-1$
-		String afterExample = candidate.getAfterExample() != null ? candidate.getAfterExample() : ""; //$NON-NLS-1$
 		String negativeExample = candidate.getNegativeExample() != null ? candidate.getNegativeExample() : ""; //$NON-NLS-1$
 		String summary = candidate.getSummary() != null ? candidate.getSummary() : "(no summary)"; //$NON-NLS-1$
 		String sourceCommit = candidate.getSourceCommit() != null ? candidate.getSourceCommit() : "unknown"; //$NON-NLS-1$
@@ -136,7 +134,7 @@ public class MiningCandidateTestGenerator {
 		sb.append("    }\n\n"); //$NON-NLS-1$
 
 		// Test 2: beforeExample matches (only if provided)
-		if (!beforeExample.isBlank() && !afterExample.isBlank()) {
+		if (!beforeExample.isBlank()) {
 			sb.append("    @Test\n"); //$NON-NLS-1$
 			sb.append("    public void testBeforeExampleMatches() throws Exception {\n"); //$NON-NLS-1$
 			sb.append("        HintFileParser parser = new HintFileParser();\n"); //$NON-NLS-1$

@@ -821,6 +821,12 @@ static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
 		if (dslRule == null || dslRule.isBlank()) {
 			continue;
 		}
+		var validation = validator.validate(dslRule);
+		if (!validation.valid()) {
+			log.println("  Skipped candidate due to invalid DSL during final validation: " //$NON-NLS-1$
+					+ eval.commitHash());
+			continue;
+		}
 		if (candidateStore.containsCommit(eval.commitHash())) {
 			continue;
 		}

@@ -384,6 +384,23 @@ class MiningCliTest {
 	}
 
 	@Test
+	void testSaveCandidatesSkipsStaleValidDslMarker() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir.resolve("candidates5")); //$NON-NLS-1$
+		CommitEvaluation staleValid = new CommitEvaluation(
+				"abc1234567890", "Some commit", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), null, true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Cat",
+				false, null, true, "<!id:>\n=>\n", null, null, null, //$NON-NLS-1$
+				"Summary", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+
+		List<MiningCandidate> saved = MiningCli.saveCandidates(
+				List.of(staleValid), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+
+		assertTrue(saved.isEmpty(), "Should skip stale VALID markers when DSL is invalid"); //$NON-NLS-1$
+	}
+
+	@Test
 	void testSaveCandidatesSkipsDuplicates() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir.resolve("candidates4")); //$NON-NLS-1$
 		String dslRule = "java.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n"; //$NON-NLS-1$

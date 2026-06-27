@@ -135,7 +135,7 @@ class MiningCandidateTestGeneratorTest {
 		candidate.setSourceCommit("abc1234567890"); //$NON-NLS-1$
 		candidate.setCategory("test"); //$NON-NLS-1$
 		candidate.setDslRule("$x + 0\n=> $x\n;;"); //$NON-NLS-1$
-		// No beforeExample/afterExample set
+		// No beforeExample set
 
 		Path generated = generator.generateTest(candidate, tempDir);
 		String content = Files.readString(generated, StandardCharsets.UTF_8);
@@ -144,6 +144,23 @@ class MiningCandidateTestGeneratorTest {
 				"Should not include before example test when blank"); //$NON-NLS-1$
 		// Should still have the parse test
 		assertTrue(content.contains("testDslParsesSuccessfully")); //$NON-NLS-1$
+	}
+
+	@Test
+	void testGeneratedTestContainsBeforeExampleWhenAfterExampleBlank() throws IOException {
+		MiningCandidateTestGenerator generator = new MiningCandidateTestGenerator();
+		MiningCandidate candidate = new MiningCandidate();
+		candidate.setSourceCommit("abc1234567890"); //$NON-NLS-1$
+		candidate.setCategory("test"); //$NON-NLS-1$
+		candidate.setDslRule("$x + 0\n=> $x\n;;"); //$NON-NLS-1$
+		candidate.setBeforeExample("class T { int m() { return 1 + 0; } }"); //$NON-NLS-1$
+		candidate.setAfterExample("   "); //$NON-NLS-1$
+
+		Path generated = generator.generateTest(candidate, tempDir);
+		String content = Files.readString(generated, StandardCharsets.UTF_8);
+
+		assertTrue(content.contains("testBeforeExampleMatches"), //$NON-NLS-1$
+				"Should include before example test when beforeExample is set"); //$NON-NLS-1$
 	}
 
 	@Test
