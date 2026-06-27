@@ -13,7 +13,9 @@
  *******************************************************************************/
 package org.sandbox.mining.core.budget;
 
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Preset budget profiles for LLM-backed mining runs.
@@ -77,17 +79,30 @@ public enum BudgetProfile {
 
 	/**
 	 * Parse a profile name from CLI/configuration text.
+	 * <p>
+	 * Matching is case-insensitive; hyphens are treated as underscores so that
+	 * {@code "free"} and {@code "FREE"} are both valid.
+	 * </p>
 	 *
 	 * @param value the profile name
 	 * @return the parsed profile
-	 * @throws IllegalArgumentException if the profile is unknown
+	 * @throws IllegalArgumentException if the profile is unknown, with a message
+	 *                                  that lists the supported profile names
 	 */
 	public static BudgetProfile parse(String value) {
 		if (value == null || value.isBlank()) {
 			return BALANCED;
 		}
 		String normalized = value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
-		return BudgetProfile.valueOf(normalized);
+		try {
+			return BudgetProfile.valueOf(normalized);
+		} catch (IllegalArgumentException e) {
+			String supported = Arrays.stream(BudgetProfile.values())
+					.map(Enum::name)
+					.collect(Collectors.joining(", ")); //$NON-NLS-1$
+			throw new IllegalArgumentException(
+					"Unknown budget profile: '" + value + "'. Supported profiles: " + supported); //$NON-NLS-1$ //$NON-NLS-2$
+		}
 	}
 
 	/**

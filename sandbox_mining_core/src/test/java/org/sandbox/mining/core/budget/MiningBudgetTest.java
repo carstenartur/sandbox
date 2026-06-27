@@ -27,7 +27,7 @@ class MiningBudgetTest {
 
 	@Test
 	void testFreeProfileDefaultsAreConservative() {
-		MiningBudget budget = MiningBudget.from(BudgetProfile.FREE, 0, 0);
+		MiningBudget budget = MiningBudget.from(BudgetProfile.FREE, -1, -1);
 
 		assertEquals(50, budget.getMaxRequests());
 		assertEquals(100, budget.getMaxCommits());
@@ -72,15 +72,36 @@ class MiningBudgetTest {
 	}
 
 	@Test
-	void testBudgetProfileParsingAcceptsHyphenatedNames() {
+	void testBudgetProfileParsingAcceptsCaseInsensitiveAndHyphenatedNames() {
 		assertEquals(BudgetProfile.FREE, BudgetProfile.parse("free")); //$NON-NLS-1$
 		assertEquals(BudgetProfile.BALANCED, BudgetProfile.parse("balanced")); //$NON-NLS-1$
 		assertEquals(BudgetProfile.THOROUGH, BudgetProfile.parse("thorough")); //$NON-NLS-1$
+		assertEquals(BudgetProfile.FREE, BudgetProfile.parse("FREE")); //$NON-NLS-1$
+		assertEquals(BudgetProfile.BALANCED, BudgetProfile.parse("Balanced")); //$NON-NLS-1$
+	}
+
+	@Test
+	void testBudgetProfileParsingRejectsUnknownProfiles() {
+		IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+				() -> BudgetProfile.parse("unknown")); //$NON-NLS-1$
+		assertTrue(ex.getMessage().contains("unknown")); //$NON-NLS-1$
+		assertTrue(ex.getMessage().contains("FREE")); //$NON-NLS-1$
 	}
 
 	@Test
 	void testNegativeLimitsRejected() {
 		assertThrows(IllegalArgumentException.class, () -> new MiningBudget(-1, 0));
 		assertThrows(IllegalArgumentException.class, () -> new MiningBudget(0, -1));
+		assertThrows(IllegalArgumentException.class, () -> MiningBudget.from(BudgetProfile.FREE, -2, -1));
+		assertThrows(IllegalArgumentException.class, () -> MiningBudget.from(BudgetProfile.FREE, -1, -2));
+	}
+
+	@Test
+	void testExplicitZeroMeansUnlimitedOverride() {
+		MiningBudget budget = MiningBudget.from(BudgetProfile.FREE, 0, 0);
+
+		assertEquals(0, budget.getMaxRequests());
+		assertEquals(0, budget.getMaxCommits());
+		assertFalse(budget.isExhausted());
 	}
 }

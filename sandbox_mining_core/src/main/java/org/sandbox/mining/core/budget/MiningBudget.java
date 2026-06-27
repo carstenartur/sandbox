@@ -50,19 +50,31 @@ public final class MiningBudget {
 
 	/**
 	 * Build a budget from a profile plus optional explicit overrides.
+	 * <p>
+	 * Pass {@code -1} for either override to use the profile default.
+	 * Pass {@code 0} to explicitly request an unlimited budget for that dimension.
+	 * Any value lower than {@code -1} is rejected as invalid.
+	 * </p>
 	 *
 	 * @param profile the budget profile
-	 * @param explicitMaxRequests explicit request limit, or {@code 0} for profile default
-	 * @param explicitMaxCommits explicit commit limit, or {@code 0} for profile default
+	 * @param explicitMaxRequests explicit request limit, {@code 0} for unlimited, or {@code -1} for profile default
+	 * @param explicitMaxCommits explicit commit limit, {@code 0} for unlimited, or {@code -1} for profile default
 	 * @return budget instance
+	 * @throws IllegalArgumentException if either explicit value is less than {@code -1}
 	 */
 	public static MiningBudget from(BudgetProfile profile, int explicitMaxRequests,
 			int explicitMaxCommits) {
+		if (explicitMaxRequests < -1) {
+			throw new IllegalArgumentException("explicitMaxRequests must be >= -1"); //$NON-NLS-1$
+		}
+		if (explicitMaxCommits < -1) {
+			throw new IllegalArgumentException("explicitMaxCommits must be >= -1"); //$NON-NLS-1$
+		}
 		BudgetProfile effectiveProfile = profile == null ? BudgetProfile.BALANCED : profile;
-		int requestLimit = explicitMaxRequests > 0
+		int requestLimit = explicitMaxRequests >= 0
 				? explicitMaxRequests
 				: effectiveProfile.defaultMaxRequests();
-		int commitLimit = explicitMaxCommits > 0
+		int commitLimit = explicitMaxCommits >= 0
 				? explicitMaxCommits
 				: effectiveProfile.defaultMaxCommits();
 		return new MiningBudget(requestLimit, commitLimit);
