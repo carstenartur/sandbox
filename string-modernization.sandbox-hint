@@ -1,0 +1,22 @@
+<!id: string-modernization>
+<!description: String API modernization patterns>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: string, modernization>
+
+
+$str.indexOf($sub) != -1
+=> $str.contains($sub)
+;;
+
+$str.indexOf($sub) == -1
+=> !$str.contains($sub)
+;;
+
+$str.indexOf($sub) >= 0
+=> $str.contains($sub)
+;;
+
+$str.indexOf($sub) < 0
+=> !$str.contains($sub)
+;;

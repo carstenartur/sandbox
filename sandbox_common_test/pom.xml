@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.sandbox</groupId>
 		<artifactId>central</artifactId>
-		<version>1.3.1-SNAPSHOT</version>
+		<version>1.3.2-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<artifactId>sandbox_common_test</artifactId>
@@ -45,14 +45,14 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>3.44.0</version>
+			<version>3.46.0</version>
 		</dependency>
 		
 		<!-- Eclipse JDT UI for helper classes like ASTNodes, ScopeAnalyzer -->
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.ui</artifactId>
-			<version>3.36.0</version>
+			<version>3.38.0</version>
 		</dependency>
 		
 		<!-- We don't need Eclipse Platform dependencies for standalone ASTParser tests -->
@@ -75,7 +75,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.5</version>
+				<version>3.5.6</version>
 				<configuration>
 					<includes>
 						<include>**/*Test.java</include>

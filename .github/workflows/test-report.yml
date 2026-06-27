@@ -42,7 +42,7 @@ jobs:
         path: |
           test-report.md
           test-report.json
-        retention-days: 90
+        retention-days: 9
         
     - name: Display report summary
       run: |

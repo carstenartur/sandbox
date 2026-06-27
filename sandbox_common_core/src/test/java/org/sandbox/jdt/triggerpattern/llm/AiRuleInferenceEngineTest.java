@@ -201,7 +201,7 @@ class AiRuleInferenceEngineTest {
 				5, 5, 3, trafficLight,
 				"TestCategory", false, null, //$NON-NLS-1$
 				dslRule != null, dslRule, null,
-				null, null, "Test summary", null); //$NON-NLS-1$
+				null, null, "Test summary", null, null, null, null); //$NON-NLS-1$
 	}
 
 	/**

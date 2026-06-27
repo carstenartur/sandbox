@@ -35,16 +35,16 @@ mining:
         - bundles/org.eclipse.ui.workbench/eclipseuieditorsupport
 
     - url: https://github.com/eclipse-platform/eclipse.platform
-      branch: main
+      branch: master
       paths:
         - runtime/bundles/org.eclipse.core.runtime
         - resources/bundles/org.eclipse.core.resources
 
     - url: https://github.com/eclipse-platform/eclipse.platform.text
-      branch: main
+      branch: master
 
     - url: https://github.com/eclipse-platform/eclipse.platform.debug
-      branch: main
+      branch: master
 
     - url: https://github.com/carstenartur/sandbox
       branch: main

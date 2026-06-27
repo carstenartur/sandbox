@@ -3,6 +3,45 @@
 The TriggerPattern DSL is a domain-specific language for describing Java code transformations.
 Each `.sandbox-hint` file contains one or more transformation rules.
 
+## MUST / MUST-NOT Checklist (READ FIRST)
+
+Every rule you generate is validated by `scan_hints.py` and a JUnit test
+(`HintFileResourcesValidationTest`). Violations FAIL the build, so before you
+emit a rule, verify ALL of the following:
+
+1. **MUST** terminate every rule with `;;` on its own line.
+2. **MUST** put exactly one `=>` between source and replacement (unless the
+   rule is a hint-only rule — see rule 8).
+3. **MUST** ensure that every `$placeholder` used in the replacement is also
+   present in the source pattern. Unbound placeholders are rejected.
+   (If the replacement needs information that is not in the source, write a
+   hint-only rule instead — see rule 8.)
+4. **MUST NOT** make `source == replacement` (NOOP rules are rejected).
+5. **MUST NOT** mix fully qualified names with placeholders inside the same
+   dotted chain. ❌ `java.lang.String.$str.foo()`. ✅ `$str.foo() :: instanceof($str, "java.lang.String")`.
+6. **MUST NOT** use per-rule directives of the form `/*!key: value*/`
+   (`/*!minJavaVersion: …*/`, `/*!tags: …*/`, `/*!id: …*/`,
+   `/*!description: …*/`, `/*!severity: …*/`). The parser **silently strips**
+   them, so they are dead text. Per-rule metadata MUST use the
+   `@id:` / `@severity:` annotations (see "Per-Rule Annotations" below) and
+   file-level metadata MUST use the `<!key: value>` directives.
+7. **MUST** declare at most one `<!id: …>` per file. Per-rule IDs go into
+   `@id:` annotations. Multiple `<!id:>` lines silently overwrite each other.
+8. **MUST** use the **hint-only form** for rules whose replacement cannot be
+   expressed from the source pattern alone:
+   ```
+   "Description shown to the user":
+   source_pattern :: optional_guard
+   ;;
+   ```
+   No `=>` line. No unbound placeholders.
+9. **MUST NOT** wrap rule text in XML tags. `<trigger>`, `<import>`,
+   `<pattern>` are **always rejected** by the parser.
+10. **MUST NOT** call `isType(...)`. It does not exist. Use
+    `instanceof($var, "TypeName")`.
+11. **Self-check before responding**: re-read each generated rule and confirm
+    rules 1–10 hold. If any rule cannot satisfy them, drop it from the output.
+
 ## CRITICAL: Output Format for dslRule field
 
 The `dslRule` field in your JSON response must contain ONLY raw `.sandbox-hint` DSL text.

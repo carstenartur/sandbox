@@ -71,7 +71,7 @@ class HintFileUpdaterTest {
 				Instant.now(), Instant.now(), true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Collections",
 				false, null, true, dslRule, null, null, null,
-				"Test summary", "VALID");
+				"Test summary", "VALID", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertEquals(1, created.size());
 		assertTrue(Files.exists(created.get(0)));
@@ -87,7 +87,7 @@ class HintFileUpdaterTest {
 				Instant.now(), Instant.now(), true, null, false, null,
 				5, 5, 5, TrafficLight.YELLOW, "Category",
 				false, null, false, "some rule", null, null, null,
-				"Summary", "VALID");
+				"Summary", "VALID", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertTrue(created.isEmpty(), "Should not create files for non-GREEN evaluations");
 	}
@@ -100,7 +100,7 @@ class HintFileUpdaterTest {
 				Instant.now(), Instant.now(), true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Category",
 				false, null, true, "some rule", null, null, null,
-				"Summary", "INVALID: parse error");
+				"Summary", "INVALID: parse error", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertTrue(created.isEmpty(), "Should not create files for non-VALID evaluations");
 	}
@@ -114,7 +114,7 @@ class HintFileUpdaterTest {
 				Instant.now(), Instant.now(), true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Collections",
 				false, null, true, dslRule, "custom-collections", null, null,
-				"Summary", "VALID");
+				"Summary", "VALID", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertEquals(1, created.size());
 		assertEquals("custom-collections.sandbox-hint", created.get(0).getFileName().toString());
@@ -128,7 +128,7 @@ class HintFileUpdaterTest {
 				Instant.now(), Instant.now(), true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Category",
 				false, null, true, null, null, null, null,
-				"Summary", "VALID");
+				"Summary", "VALID", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertTrue(created.isEmpty(), "Should not create files when dslRule is null");
 	}
@@ -142,17 +142,17 @@ class HintFileUpdaterTest {
 				"aaa1111", "commit 1", "repo", Instant.now(), Instant.now(),
 				true, null, false, null, 8, 7, 3, TrafficLight.GREEN,
 				"Cat1", false, null, true, dslRule1, null, null, null,
-				"Sum1", "VALID");
+				"Sum1", "VALID", null, null, null);
 		CommitEvaluation yellow = new CommitEvaluation(
 				"bbb2222", "commit 2", "repo", Instant.now(), Instant.now(),
 				true, null, false, null, 5, 5, 5, TrafficLight.YELLOW,
 				"Cat2", false, null, false, "some", null, null, null,
-				"Sum2", "VALID");
+				"Sum2", "VALID", null, null, null);
 		CommitEvaluation green2 = new CommitEvaluation(
 				"ccc3333", "commit 3", "repo", Instant.now(), Instant.now(),
 				true, null, false, null, 9, 8, 2, TrafficLight.GREEN,
 				"Cat3", false, null, true, dslRule2, null, null, null,
-				"Sum3", "VALID");
+				"Sum3", "VALID", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(green1, yellow, green2), tempDir);
 		assertEquals(2, created.size(), "Should create 2 files (skipping YELLOW)");
 		assertFalse(created.stream().anyMatch(p -> p.getFileName().toString().contains("bbb")),
@@ -169,7 +169,7 @@ class HintFileUpdaterTest {
 				Instant.now(), Instant.now(), true, null, false, null,
 				8, 7, 3, TrafficLight.GREEN, "Collections",
 				false, null, true, dslRule, "../../../etc/malicious", null, null,
-				"Summary", "VALID");
+				"Summary", "VALID", null, null, null);
 		List<Path> created = updater.writeHintFiles(List.of(eval), tempDir);
 		assertEquals(1, created.size());
 		// The file must be inside the output directory, not outside it

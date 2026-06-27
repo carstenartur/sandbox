@@ -1,0 +1,34 @@
+@id: anonymous.runnable.to.lambda
+@severity: info
+"Convert anonymous Runnable to lambda expression.":
+new java.lang.Runnable() { @java.lang.Override public void run() { $body$ } }
+=> () -> { $body$ }
+;;
+
+@id: anonymous.ipreferencechangelistener.to.lambda
+@severity: info
+"Convert anonymous IPreferenceChangeListener to lambda expression.":
+new org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener() { @java.lang.Override public void preferenceChange(org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent $event) { $body$ } }
+=> $event -> { $body$ }
+;;
+
+@id: anonymous.imenulistener.to.lambda
+@severity: info
+"Convert anonymous IMenuListener to lambda expression.":
+new org.eclipse.jface.action.IMenuListener() { @java.lang.Override public void menuAboutToShow(org.eclipse.jface.action.IMenuManager $manager) { $body$ } }
+=> $manager -> { $body$ }
+;;
+
+@id: anonymous.iresultcollector.to.lambda
+@severity: info
+"Convert anonymous IResultCollector to lambda expression.":
+new org.eclipse.jdt.internal.ui.actions.CategoryFilterActionGroup.IResultCollector() { @java.lang.Override public boolean accept(java.lang.String[] $cats) { $body$ } }
+=> $cats -> { $body$ }
+;;
+
+@id: anonymous.irunnablewithprogress.to.lambda
+@severity: info
+"Convert anonymous IRunnableWithProgress to lambda expression.":
+new org.eclipse.jface.operation.IRunnableWithProgress() { @java.lang.Override public void run(org.eclipse.core.runtime.IProgressMonitor $monitor) { $body$ } }
+=> $monitor -> { $body$ }
+;;

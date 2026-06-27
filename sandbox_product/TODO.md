@@ -2,7 +2,7 @@
 
 ## Status Summary
 
-**Current State**: Stable product configuration for Eclipse 2025-09
+**Current State**: Stable product configuration for Eclipse 2025-12
 
 ### Completed
 - ✅ Eclipse product definition (sandbox.product)

@@ -59,3 +59,70 @@ new java.util.Vector($capacity) :: isAssignedToLocalVariable()
 new java.util.Vector($collection) :: isAssignedToLocalVariable()
 => new java.util.ArrayList<>($collection)
 ;;
+
+$v.addElement($child) :: instanceof($v, "java.util.Vector") && elementKindMatches("", "EXPRESSION_STATEMENT")
+=> $v.add($child)
+;;
+
+@id: collections.modernize.hashtable-to-map-generic
+@severity: info
+"Widens Hashtable type reference to Map interface (e.g., in declarations, casts).":
+java.util.Hashtable<$K, $V>
+=> java.util.Map<$K, $V>
+;;
+
+@id: collections.modernize.hashtable-to-map-raw
+@severity: info
+"Widens raw Hashtable type reference to Map interface (e.g., in declarations, casts).":
+java.util.Hashtable
+=> java.util.Map
+;;
+
+@id: collections.modernize.new-hashtable-to-hashmap-noarg
+@severity: info
+"Replaces new Hashtable() with new HashMap() for local variables (performance/modernization). Guarded to preserve thread-safety semantics for non-local variables.":
+new java.util.Hashtable() :: isAssignedToLocalVariable()
+=> new java.util.HashMap()
+;;
+
+@id: collections.modernize.new-hashtable-to-hashmap-capacity
+@severity: info
+"Replaces new Hashtable(int capacity) with new HashMap(int capacity) for local variables (performance/modernization). Guarded to preserve thread-safety semantics for non-local variables.":
+new java.util.Hashtable($capacity) :: isAssignedToLocalVariable()
+=> new java.util.HashMap($capacity)
+;;
+
+@id: collections.modernize.new-hashtable-to-hashmap-collection
+@severity: info
+"Replaces new Hashtable(Collection c) with new HashMap(Collection c) for local variables (performance/modernization). Guarded to preserve thread-safety semantics for non-local variables.":
+new java.util.Hashtable($collection) :: isAssignedToLocalVariable()
+=> new java.util.HashMap($collection)
+;;
+
+new java.util.HashSet<$E$>()
+=> new java.util.HashSet<>()
+;;
+
+new java.util.HashSet<$E$>($args$)
+=> new java.util.HashSet<>($args$)
+;;
+
+new java.util.ArrayList<$E$>()
+=> new java.util.ArrayList<>()
+;;
+
+new java.util.ArrayList<$E$>($args$)
+=> new java.util.ArrayList<>($args$)
+;;
+
+new java.util.Hashtable<$K, $V$>()
+=> new java.util.Hashtable<>()
+;;
+
+new java.util.Hashtable<$K, $V$>($args$)
+=> new java.util.Hashtable<>($args$)
+;;
+
+new org.eclipse.jdt.internal.ui.preferences.formatter.FormatterModifyDialog.ModifyAll<org.eclipse.swt.widgets.ToolBar>($section, $images)
+=> new org.eclipse.jdt.internal.ui.preferences.formatter.FormatterModifyDialog.ModifyAll<>($section, $images)
+;;

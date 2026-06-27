@@ -1,3 +1,8 @@
+<!id: stringbuffer-to-stringbuilder>
+<!description: Replace StringBuffer with StringBuilder for non-shared local variables>
+<!severity: info>
+<!tags: performance, modernization>
+
 new java.lang.StringBuffer() :: isAssignedToLocalVariable()
 => new java.lang.StringBuilder()
 ;;

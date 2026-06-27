@@ -10,7 +10,7 @@
  *
  * Contributors:
  *     Carsten Hammer
- *******************************************************************************/
+ ******************************************************************************/
 package org.sandbox.mining.scanner;
 
 import java.io.IOException;
@@ -108,30 +108,30 @@ public class SourceScanner {
 	 */
 	public MiningReport scan(String repoName, Path rootDir, List<String> subPaths, List<HintFile> hintFiles)
 			throws IOException {
-		MiningReport report = new MiningReport();
-		List<Path> javaFiles = findJavaFiles(rootDir, subPaths);
-		report.addFileCount(repoName, javaFiles.size());
+			MiningReport report = new MiningReport();
+			List<Path> javaFiles = findJavaFiles(rootDir, subPaths);
+			report.addFileCount(repoName, javaFiles.size());
 
-		for (HintFile hintFile : hintFiles) {
-			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
+			for (HintFile hintFile : hintFiles) {
+				BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
 
-			for (Path javaFile : javaFiles) {
-				String source = Files.readString(javaFile, StandardCharsets.UTF_8);
-				CompilationUnit cu = parser.parse(source);
-				List<TransformationResult> results = processor.process(cu);
+				for (Path javaFile : javaFiles) {
+					String source = Files.readString(javaFile, StandardCharsets.UTF_8);
+					CompilationUnit cu = parser.parse(source);
+					List<TransformationResult> results = processor.process(cu);
 
-				for (TransformationResult result : results) {
-					String relativePath = rootDir.relativize(javaFile).toString();
-					int line = cu.getLineNumber(result.match().getOffset());
-					String hintFileName = hintFile.getId() != null ? hintFile.getId() : "unknown";
-					String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()
-							: "unnamed";
-					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),
-							result.hasReplacement() ? result.replacement() : null);
+					for (TransformationResult result : results) {
+						String relativePath = rootDir.relativize(javaFile).toString();
+						int line = cu.getLineNumber(result.match().getOffset());
+						String hintFileName = hintFile.getId() != null ? hintFile.getId() : "unknown";
+						String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()
+								: hintFileName;
+						report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),
+								result.hasReplacement() ? result.replacement() : null);
+					}
 				}
 			}
-		}
 
-		return report;
+			return report;
 	}
 }

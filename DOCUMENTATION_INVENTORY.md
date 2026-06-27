@@ -3,6 +3,12 @@
 This document provides an inventory of all documentation in the repository and tracks potential enhancements.
 
 **Last Updated:** 2026-06-27
+> **Note:** A detailed correctness audit (documentation vs. actual code) is
+> maintained separately in [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md).
+> Module counts below reflect the modules that ship the full README +
+> ARCHITECTURE + TODO documentation set; the repository contains additional
+> modules (see the root [README.md](README.md) "Projects" section) that are
+> documented primarily through the root README.
 
 ---
 

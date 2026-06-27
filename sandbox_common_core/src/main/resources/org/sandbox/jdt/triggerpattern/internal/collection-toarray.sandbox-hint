@@ -18,3 +18,7 @@ $coll.toArray(new $T[$coll.size()])
 $coll.stream().toArray($T[]::new) :: sourceVersionGE(8)
 => $coll.toArray(new $T[0])
 ;;
+
+$coll.toArray(new $Type[0]) :: sourceVersionGE(11)
+=> $coll.toArray($Type[]::new)
+;;

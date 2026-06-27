@@ -115,7 +115,7 @@ class NetBeansReporterTest {
 				4, 3, 2, null,
 				"Category", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 		String line = reporter.format(List.of(eval));
 		assertTrue(line.contains("UNKNOWN"), "Null trafficLight should render as UNKNOWN, got: " + line);
 		assertFalse(line.contains("/null/"), "Should not contain literal 'null' in brackets, got: " + line);
@@ -128,6 +128,6 @@ class NetBeansReporterTest {
 				4, 3, 2, light,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 	}
 }

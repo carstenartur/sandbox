@@ -1,39 +1,50 @@
-// misc.sandbox-hint — Miscellaneous Improvements
-// Various code simplification and improvement patterns
+// misc.sandbox-hint — Miscellaneous improvement patterns
+// Various code modernization and cleanup patterns
 
 <!id: misc>
 <!description: Miscellaneous code improvement patterns>
 <!severity: info>
 <!minJavaVersion: 8>
-<!tags: simplification, misc>
+<!tags: misc, modernization>
 
-// $bool ? true : false → $bool
-$bool ? true : false
-=> $bool
+
+System.getProperty("line.separator")
+=> System.lineSeparator()
 ;;
 
-// $bool ? false : true → !$bool
-$bool ? false : true
-=> !$bool
-;;
-
-// $enum.ordinal() == $other.ordinal() → $enum == $other
-// Enums use identity comparison; comparing ordinals is unnecessary
-$enum.ordinal() == $other.ordinal()
-=> $enum == $other
-;;
-
-// Hint-only: redundant toString() on a String
-"Redundant toString() call on a String value":
 $x.toString()
+=> String.valueOf($x)
 ;;
 
-// Hint-only: redundant String.valueOf() on a String
-"Redundant String.valueOf() on a value that is already a String":
-java.lang.String.valueOf($str)
+@id: logical.simplification.not-equal-zero
+@severity: info
+"Simplify !($expr.length() == 0) to $expr.length() != 0 for improved readability.":
+!($x.length() == 0)
+=> $x.length() != 0
 ;;
 
-// Hint-only: if/return boolean pattern
-"Consider simplifying to: return $cond":
-if ($cond) return true; else return false;
+@id: logical.simplification.demorgan.or-negation
+@severity: info
+"Apply De Morgan's law: !(A || B) to !A && !B.":
+!($a || $b)
+=> !$a && !$b
+;;
+
+@id: logical.simplification.demorgan.and-negation
+@severity: info
+"Apply De Morgan's law: !(A && B) to !A || !B.":
+!($a && $b)
+=> !$a || !$b
+;;
+
+$threadLocalVar.set(null) :: instanceof($threadLocalVar, "java.lang.ThreadLocal")
+=> $threadLocalVar.remove()
+;;
+
+System.getProperty("file.encoding")
+=> java.nio.charset.Charset.defaultCharset().displayName()
+;;
+
+$str1 + "\n\n" + $str2
+=> $str1 + System.lineSeparator()+System.lineSeparator() + $str2
 ;;

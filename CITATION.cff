@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "Sandbox"
+abstract: "Experimental Eclipse JDT cleanup plugins, quick fixes, and related tooling for Eclipse-based Java development."
+authors:
+  - family-names: "Hammer"
+    given-names: "Carsten"
+    orcid: "https://orcid.org/0009-0005-1047-6381"
+repository-code: "https://github.com/carstenartur/sandbox"
+url: "https://carstenartur.github.io/sandbox/"
+license: "EPL-2.0"
+keywords:
+  - eclipse
+  - eclipse-jdt
+  - java
+  - refactoring
+  - cleanup
+  - quickfix
+  - static-analysis
+  - code-analysis
+  - junit
+  - junit5
+  - encoding
+  - charset
+  - streams
+  - ast
+  - eclipse-plugin
+  - developer-tools

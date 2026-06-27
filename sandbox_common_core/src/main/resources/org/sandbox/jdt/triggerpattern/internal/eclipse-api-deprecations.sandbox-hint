@@ -1,10 +1,15 @@
-<!id: eclipse-api-deprecations>
-<!description: Replace deprecated Eclipse Platform API calls with modern alternatives.
-Covers patterns found in Eclipse Platform 2025 commits.>
-<!severity: warning>
-<!tags: eclipse, deprecation, migration>
+new org.eclipse.jdt.internal.compiler.problem.InvalidInputException()
+=> org.eclipse.jdt.internal.compiler.parser.Scanner.invalidInput()
+;;
 
-// Platform.run → SafeRunner.run (deprecated in Eclipse 4.x)
-org.eclipse.core.runtime.Platform.run($runnable)
-=> org.eclipse.core.runtime.SafeRunner.run($runnable)
+@id: jdt.api.deprecated.getdeclaredmodifiers
+@severity: warning
+"Replace deprecated ITypeBinding.getDeclaredModifiers() with getModifiers().":
+org.eclipse.jdt.core.dom.ITypeBinding.$typeBinding.getDeclaredModifiers()
+:: instanceof($typeBinding, "org.eclipse.jdt.core.dom.ITypeBinding")
+=> $typeBinding.getModifiers()
+;;
+
+new org.eclipse.ui.actions.CopyProjectAction(getShell())
+=> new org.eclipse.ui.actions.CopyProjectAction(getSite())
 ;;

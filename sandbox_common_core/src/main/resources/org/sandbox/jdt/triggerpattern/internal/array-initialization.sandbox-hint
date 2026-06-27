@@ -1,0 +1,11 @@
+new $Type[] { $elements$ }
+=> { $elements$ }
+;;
+
+new $Type[][] { $elements$ }
+=> { $elements$ }
+;;
+
+new $Type[][][] { $elements$ }
+=> { $elements$ }
+;;

@@ -26,3 +26,87 @@ $str.strip().isEmpty() :: sourceVersionGE(11)
 "".equals($str.trim()) :: sourceVersionGE(11)
 => $str.isBlank()
 ;;
+
+$str.stripLeading().isEmpty() :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripTrailing().isEmpty() :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+"".equals($str.stripLeading()) :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+"".equals($str.stripTrailing()) :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.strip().length() <= 0 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.strip().length() < 1 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.strip().length() != 0 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.strip().length() > 0 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.strip().length() >= 1 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.stripLeading().length() == 0 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripLeading().length() <= 0 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripLeading().length() < 1 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripTrailing().length() == 0 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripTrailing().length() <= 0 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripTrailing().length() < 1 :: sourceVersionGE(11)
+=> $str.isBlank()
+;;
+
+$str.stripLeading().length() != 0 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.stripLeading().length() > 0 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.stripLeading().length() >= 1 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.stripTrailing().length() != 0 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.stripTrailing().length() > 0 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;
+
+$str.stripTrailing().length() >= 1 :: sourceVersionGE(11)
+=> !$str.isBlank()
+;;

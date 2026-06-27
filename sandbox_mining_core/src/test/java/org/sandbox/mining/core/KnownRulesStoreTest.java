@@ -134,7 +134,7 @@ class KnownRulesStoreTest {
 				5, 5, 3, TrafficLight.GREEN,
 				"Cat", false, null,
 				true, null, null,
-				null, null, "Summary", "VALID");
+				null, null, "Summary", "VALID", null, null, null);
 
 		int added = store.registerFromEvaluations(List.of(noDsl), 1);
 
@@ -190,6 +190,6 @@ class KnownRulesStoreTest {
 				5, 5, 3, light,
 				category, false, null,
 				true, "new Boolean(true)\n=> Boolean.TRUE\n;;\n", "test.sandbox-hint",
-				null, null, summary, validationResult);
+				null, null, summary, validationResult, null, null, null);
 	}
 }

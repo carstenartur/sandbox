@@ -651,7 +651,10 @@ public class GeminiClient implements LlmClient {
 				getStringOrNull(eval, "languageChangeNeeded"), //$NON-NLS-1$
 				dslRuleAfterChange,
 				getStringOrNull(eval, "summary"), //$NON-NLS-1$
-				null);
+				null,
+				getStringOrNull(eval, "beforeExample"), //$NON-NLS-1$
+				getStringOrNull(eval, "afterExample"), //$NON-NLS-1$
+				getStringOrNull(eval, "negativeExample")); //$NON-NLS-1$
 	}
 
 	/**

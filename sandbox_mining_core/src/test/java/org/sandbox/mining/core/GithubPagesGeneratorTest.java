@@ -51,7 +51,7 @@ class GithubPagesGeneratorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "Test summary", null);
+				null, null, "Test summary", null, null, null, null);
 		stats.record(eval);
 
 		generator.generate(List.of(eval), stats, tempDir);
@@ -97,7 +97,7 @@ class GithubPagesGeneratorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "Existing summary", null);
+				null, null, "Existing summary", null, null, null, null);
 		StatisticsCollector stats1 = new StatisticsCollector();
 		stats1.record(first);
 		generator.generate(List.of(first), stats1, tempDir);
@@ -108,7 +108,7 @@ class GithubPagesGeneratorTest {
 				5, 5, 2, TrafficLight.GREEN,
 				"String-API", false, "reason",
 				true, "rule2", "file2.sandbox-hint",
-				null, null, "New summary", null);
+				null, null, "New summary", null, null, null, null);
 		StatisticsCollector stats2 = new StatisticsCollector();
 		stats2.record(second);
 		generator.generate(List.of(second), stats2, tempDir);
@@ -152,7 +152,7 @@ class GithubPagesGeneratorTest {
 				5, 5, 2, TrafficLight.GREEN,
 				"String-API", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "Real summary", null);
+				null, null, "Real summary", null, null, null, null);
 		StatisticsCollector stats = new StatisticsCollector();
 		stats.record(real);
 		generator.generate(List.of(real), stats, tempDir);
@@ -178,7 +178,7 @@ class GithubPagesGeneratorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "Summary", null);
+				null, null, "Summary", null, null, null, null);
 		StatisticsCollector stats = new StatisticsCollector();
 		stats.record(eval);
 		// First run

@@ -1,7 +1,85 @@
-new java.lang.Float($x)
+new java.lang.Integer($x)
+=> java.lang.Integer.valueOf($x)
+;;
+
+new java.lang.Byte($x)
+=> java.lang.Byte.valueOf($x)
+;;
+
+new java.lang.Short($x)
+=> java.lang.Short.valueOf($x)
+;;
+
+new java.lang.Character($x)
+=> java.lang.Character.valueOf($x)
+;;
+
+new java.lang.Long($x)
+=> java.lang.Long.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.integer
+@severity: info
+new java.lang.Integer($x)
+=> java.lang.Integer.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.byte
+@severity: info
+new java.lang.Byte($x)
+=> java.lang.Byte.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.short
+@severity: info
+new java.lang.Short($x)
+=> java.lang.Short.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.character
+@severity: info
+new java.lang.Character($x)
+=> java.lang.Character.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.long
+@severity: info
+new java.lang.Long($x)
+=> java.lang.Long.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.double.primitive
+@severity: info
+new java.lang.Double($x) :: instanceof($x, "double")
+=> java.lang.Double.valueOf($x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.float.primitive
+@severity: info
+new java.lang.Float($x) :: instanceof($x, "float")
 => java.lang.Float.valueOf($x)
 ;;
 
-new java.lang.Double($x)
-=> java.lang.Double.valueOf($x)
+@id: deprecation.wrapper.constructor.to.valueof.float.doublearg
+@severity: info
+new java.lang.Float($x) :: instanceof($x, "double")
+=> java.lang.Float.valueOf((float)$x)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.byte.string
+@severity: info
+new java.lang.Byte($str) :: isStringLiteral($str)
+=> java.lang.Byte.valueOf($str)
+;;
+
+@id: deprecation.wrapper.constructor.to.valueof.boolean.string
+@severity: info
+new java.lang.Boolean($str) :: isStringLiteral($str)
+=> java.lang.Boolean.valueOf($str)
+;;
+
+@id: deprecation.wrapper.constructor.to.primitive.byte
+@severity: info
+byte $var = new java.lang.Byte($val);
+=> byte $var = $val;
 ;;

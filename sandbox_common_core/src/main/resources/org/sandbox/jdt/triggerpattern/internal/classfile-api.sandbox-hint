@@ -17,3 +17,7 @@ java.lang.Class.forName($name).newInstance() :: sourceVersionGE(9)
 "Class.newInstance() is deprecated since Java 9 — use getDeclaredConstructor().newInstance()":
 $class.newInstance() :: sourceVersionGE(9)
 ;;
+
+$class.newInstance() :: sourceVersionGE(9)
+=> $class.getDeclaredConstructor().newInstance()
+;;
