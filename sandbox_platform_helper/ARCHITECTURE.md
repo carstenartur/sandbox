@@ -37,9 +37,9 @@ The plugin supports simplification of:
 
 ## Core Components
 
-### StatusCleanUp
+### SimplifyPlatformStatusCleanUpCore
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.StatusCleanUp`
+**Location**: `org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUpCore`
 
 **Purpose**: Main cleanup implementation for Status object simplification
 
@@ -169,7 +169,7 @@ Uses Eclipse JDT's AST framework for transformation:
 Registered as Eclipse JDT cleanup:
 
 1. **Extension Point**: `org.eclipse.jdt.ui.cleanUps`
-   - Cleanup ID defined in `MYCleanUpConstants.PLATFORM_STATUS_CLEANUP`
+   - Cleanup ID defined in `MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP`
    - Appears in Eclipse cleanup preferences
    - Can be enabled in Save Actions
 

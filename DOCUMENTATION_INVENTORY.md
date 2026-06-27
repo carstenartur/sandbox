@@ -2,7 +2,14 @@
 
 This document provides an inventory of all documentation in the repository and tracks potential enhancements.
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-06-27
+
+> **Note:** A detailed correctness audit (documentation vs. actual code) is
+> maintained separately in [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md).
+> Module counts below reflect the modules that ship the full README +
+> ARCHITECTURE + TODO documentation set; the repository contains additional
+> modules (see the root [README.md](README.md) "Projects" section) that are
+> documented primarily through the root README.
 
 ---
 
@@ -74,7 +81,6 @@ All feature modules now have complete internationalization:
 | CODE_OF_CONDUCT.md | ✅ | Community guidelines |
 | SECURITY.md | ✅ | Security policy and vulnerability reporting |
 | LICENSE.txt | ✅ | Eclipse Public License 2.0 |
-| DOCUMENTATION_VERIFICATION.md | ✅ | Documentation verification checklist |
 
 #### Specialized Documentation
 

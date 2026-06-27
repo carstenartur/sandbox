@@ -25,11 +25,14 @@ The plugin focuses on JFace-specific cleanup opportunities such as:
 
 ## Core Components
 
-### JFaceCleanUp
+### JFaceCleanUpCore (and JFaceCleanUp wrapper)
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.JFaceCleanUp`
+**Location**: `org.sandbox.jdt.internal.ui.fix.JFaceCleanUpCore`
+(the public entry point `org.sandbox.jdt.internal.ui.fix.JFaceCleanUp` is a thin
+wrapper that extends `AbstractCleanUpCoreWrapper<JFaceCleanUpCore>`)
 
 **Purpose**: Main cleanup implementation for JFace code modernization
+(`JFaceCleanUpCore` extends `AbstractCleanUp`)
 
 **Key Features**:
 - Identifies deprecated JFace API usage
