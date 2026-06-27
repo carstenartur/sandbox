@@ -24,12 +24,14 @@ Add to your `pom.xml`:
 <plugin>
   <groupId>org.sandbox</groupId>
   <artifactId>sandbox-maven-plugin</artifactId>
-  <version>1.2.6-SNAPSHOT</version>
+  <version>${project.version}</version>
   <configuration>
-    <!-- Version of sandbox-cleanup-cli to download (default: 1.2.6-SNAPSHOT) -->
+    <!-- Required: plugin config file -->
+    <configFile>${project.basedir}/.sandbox-config.yml</configFile>
+    <!-- Version of sandbox-cleanup-cli to download (default: 1.2.6-SNAPSHOT in plugin code) -->
     <toolVersion>1.2.6-SNAPSHOT</toolVersion>
     <!-- Optional: local path or URL to tool distribution archive -->
-    <!-- <toolSource>/path/to/sandbox-cleanup-cli.zip</toolSource> -->
+    <!-- <toolSource>/path/to/sandbox-cleanup-cli-1.2.6-SNAPSHOT-dist.tar.gz</toolSource> -->
   </configuration>
 </plugin>
 ```
@@ -41,7 +43,7 @@ Add to your `pom.xml`:
 mvn sandbox:apply
 
 # Check for cleanup violations (CI mode)
-mvn verify -P sandbox-check
+mvn sandbox:check
 
 # Generate a diff of pending changes
 mvn sandbox:diff

@@ -20,7 +20,7 @@ This document provides an inventory of all documentation in the repository and t
 |--------|--------|--------------|------|
 | sandbox_cleanup_application | ✅ | ✅ | ✅ |
 | sandbox_common | ✅ | ✅ | ✅ |
-| sandbox_common_core | ✅ | ✅ | ❌ |
+| sandbox_common_core *(plain JAR module)* | ✅ | ✅ | ❌ |
 | sandbox_css_cleanup | ✅ | ✅ | ✅ |
 | sandbox_encoding_quickfix | ✅ | ✅ | ✅ |
 | sandbox_extra_search | ✅ | ✅ | ✅ |

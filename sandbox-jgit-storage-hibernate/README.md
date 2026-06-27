@@ -10,7 +10,7 @@
 
 - **Commit indexing** — stores Git commits and blob contents in a relational database via Hibernate ORM
 - **Java structure extraction** — parses Java blobs with Eclipse JDT AST to extract structural information (`JavaBlobExtractor`, `JavaStructureVisitor`)
-- **Full-text and semantic search** — combines BM25 keyword search with embedding-based semantic search (rank fusion via `RankFusionUtil`)
+- **Full-text and semantic search** — combines Lucene full-text keyword search with embedding-based semantic search (rank fusion via `RankFusionUtil`)
 - **Index migration** — `IndexMigrationService` supports schema evolution and incremental re-indexing
 - **REST-accessible query service** — `GitDatabaseQueryService` exposes indexed data to the server webapp
 

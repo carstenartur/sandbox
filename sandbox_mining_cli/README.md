@@ -59,7 +59,7 @@ MiningCli (entry point)
 mvn package -pl sandbox_mining_cli
 ```
 
-The resulting JAR is at `sandbox_mining_cli/target/sandbox-mining-cli-*.jar`.
+The resulting JAR is at `sandbox_mining_cli/target/sandbox-mining-cli.jar`.
 
 ## Related Modules
 
