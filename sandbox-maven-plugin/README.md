@@ -24,12 +24,12 @@ Add to your `pom.xml`:
 <plugin>
   <groupId>org.sandbox</groupId>
   <artifactId>sandbox-maven-plugin</artifactId>
-<version>1.3.2-SNAPSHOT</version>
+  <version>1.3.2-SNAPSHOT</version>
   <configuration>
     <!-- Required: plugin config file -->
     <configFile>${project.basedir}/.sandbox-config.yml</configFile>
-  <!-- Optional: override CLI release version -->
-  <!-- <toolVersion>1.3.2-SNAPSHOT</toolVersion> -->
+    <!-- Optional: override CLI release version -->
+    <!-- <toolVersion>1.3.2-SNAPSHOT</toolVersion> -->
     <!-- Optional: local path or URL to tool distribution archive -->
     <!-- <toolSource>/path/to/sandbox-cleanup-cli-1.2.6-SNAPSHOT-dist.tar.gz</toolSource> -->
   </configuration>
