@@ -79,7 +79,7 @@ class HintFileStoreTest {
 				"commit1", "msg", "repo", Instant.now(), null,
 				false, "not relevant", false, null,
 				0, 0, 0, CommitEvaluation.TrafficLight.NOT_APPLICABLE,
-				null, false, null, false, null, null, null, null, null, null);
+				null, false, null, false, null, null, null, null, null, null, null, null, null);
 
 		List<String> ids = store.registerInferredRules(List.of(irrelevant), "src");
 
@@ -221,6 +221,6 @@ class HintFileStoreTest {
 				5, 5, 3, CommitEvaluation.TrafficLight.GREEN,
 				"TestCategory", false, null,
 				dslRule != null, dslRule, null,
-				null, null, "Test summary", "VALID");
+				null, null, "Test summary", "VALID", null, null, null);
 	}
 }

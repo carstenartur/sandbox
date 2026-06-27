@@ -270,6 +270,9 @@ public class PromptBuilder {
 		sb.append(indent).append("\"replacesPlugin\": \"name of Java plugin this would replace, or null\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"previouslyProposed\": \"summary of similar prior rule, or null\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"sourceVersion\": 11,\n"); //$NON-NLS-1$
+		sb.append(indent).append("\"beforeExample\": \"minimal self-contained Java class showing code BEFORE the fix (must compile)\",\n"); //$NON-NLS-1$
+		sb.append(indent).append("\"afterExample\": \"same class showing code AFTER the fix (must compile)\",\n"); //$NON-NLS-1$
+		sb.append(indent).append("\"negativeExample\": \"minimal Java class that looks similar but should NOT be changed by the rule\",\n"); //$NON-NLS-1$
 		sb.append(indent).append("\"summary\": \"brief summary of the analysis\"\n"); //$NON-NLS-1$
 		if (asArray) {
 			sb.append("  },\n  ...\n]\n\n"); //$NON-NLS-1$

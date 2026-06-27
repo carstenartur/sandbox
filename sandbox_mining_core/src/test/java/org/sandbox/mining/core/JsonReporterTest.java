@@ -146,6 +146,6 @@ class JsonReporterTest {
 				4, 3, 2, light,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 	}
 }
