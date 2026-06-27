@@ -50,9 +50,9 @@ A while loop can be converted to a for loop if:
 
 ### Core Component
 
-**WhileToForConverter**
+**WhileToForEach**
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.WhileToForConverter`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.WhileToForEach`
 
 **Key Methods**:
 - `canConvert()` - Checks if while loop is convertible

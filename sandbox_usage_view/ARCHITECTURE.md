@@ -129,15 +129,17 @@ The plugin identifies specific patterns where naming conflicts occur:
 - Parallel processing for large projects
 - Proper error logging using Eclipse ILog
 
-### NamingAnalyzer
+### Naming Conflict Detection
 
-**Purpose**: Analyzes code to detect naming patterns
+**Components**: `VariableBindingVisitor`, `NamingConflictFilter`, `VariableNameSuggester`
+
+**Purpose**: Detects naming conflicts — variables sharing the same name but
+with different resolved types — and suggests alternative names.
 
 **Key Features**:
-- Pattern matching for variable names
-- Convention checking
-- Similarity detection
-- Violation reporting
+- AST traversal with full binding resolution (`VariableBindingVisitor` via `AstProcessorBuilder`)
+- Filtering of the result set to naming conflicts only (`NamingConflictFilter`)
+- Type-aware variable name suggestions (`VariableNameSuggester`)
 
 ## Package Structure
 

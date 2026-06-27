@@ -167,7 +167,7 @@ Specialized search view for identifying deprecated and critical API usage during
 
 ### Usage View (`sandbox_usage_view`)
 
-Eclipse view plugin that detects **naming conflicts** in Java code — variables with the same name but different types (e.g., `String userId` vs `int userId`). Uses AST-based analysis with full binding resolution via `AstProcessorBuilder` from `sandbox_common`. Features a sortable table with columns for Name, Qualified Name, Package, Deprecated status, and Declaring Method. Automatically updates when switching between editors (`IPartListener2`), supports filtering for naming conflicts only (`NamingConflictFilter`), provides type-aware variable name suggestions (`VariableNameSuggester`), and can optionally auto-show at Eclipse startup via preferences.
+Eclipse view plugin that detects **naming conflicts** in Java code — variables with the same name but different types (e.g., `String userId` vs `int userId`). Uses AST-based analysis with full binding resolution via `AstProcessorBuilder` from `sandbox_common_core`. Features a sortable table with columns for Name, Qualified Name, Package, Deprecated status, and Declaring Method. Automatically updates when switching between editors (`IPartListener2`), supports filtering for naming conflicts only (`NamingConflictFilter`), provides type-aware variable name suggestions (`VariableNameSuggester`), and can optionally auto-show at Eclipse startup via preferences.
 
 📖 **Full Documentation**: [Plugin README](sandbox_usage_view/README.md) | [Architecture](sandbox_usage_view/ARCHITECTURE.md) | [TODO](sandbox_usage_view/TODO.md)
 

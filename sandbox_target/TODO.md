@@ -2,10 +2,10 @@
 
 ## Status Summary
 
-**Current State**: Stable configuration for Eclipse 2025-09
+**Current State**: Stable configuration for Eclipse 2025-12
 
 ### Completed
-- ✅ Eclipse 2025-09 target platform definition
+- ✅ Eclipse 2025-12 target platform definition
 - ✅ Orbit dependencies configured
 - ✅ EGit integration
 - ✅ Bouncy Castle libraries (version 1.81.0)

@@ -38,8 +38,8 @@ items.stream()
 
 #### Weitere Informationen:
 
-- Detaillierte Anleitung: [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md)
-- Beispiele: [EXAMPLES.md](EXAMPLES.md)
+- Detaillierte Anleitung: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Beispiele: [README.md](README.md)
 - Architektur: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Tests: `CommentPreservationIntegrationTest.java`
 
@@ -83,8 +83,8 @@ items.stream()
 
 #### More Information:
 
-- Detailed guide: [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md)
-- Examples: [EXAMPLES.md](EXAMPLES.md)
+- Detailed guide: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Examples: [README.md](README.md)
 - Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Tests: `CommentPreservationIntegrationTest.java`
 
@@ -217,13 +217,13 @@ The plugin captures three types of comments:
 ### Q: Wo finde ich weitere Beispiele?
 
 **A (DE)**: Siehe:
-- [EXAMPLES.md](EXAMPLES.md) - 8 vollständige Beispiele
-- [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) - Detaillierte technische Dokumentation
+- [README.md](README.md) - 8 vollständige Beispiele
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Detaillierte technische Dokumentation
 - Test-Dateien im `sandbox_functional_converter_test` Modul
 
 **A (EN)**: See:
-- [EXAMPLES.md](EXAMPLES.md) - 8 complete examples
-- [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) - Detailed technical documentation
+- [README.md](README.md) - 8 complete examples
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed technical documentation
 - Test files in the `sandbox_functional_converter_test` module
 
 ---

@@ -8,185 +8,73 @@ The **Test Commons** module provides shared test infrastructure, utilities, and 
 
 ## Key Features
 
-- 🧪 **Shared Test Base Classes** - Common base classes for test cases
-- 🔧 **Test Utilities** - Helper methods for test setup and assertions
-- 📦 **Mock Objects** - Reusable mock implementations
-- 🎯 **AST Test Helpers** - Utilities for testing AST transformations
-- 🔌 **JUnit 5 Integration** - Modern JUnit 5 test infrastructure
+- 🧪 **JUnit 5 Extension Base Class** - `AbstractEclipseJava` manages temporary Eclipse projects per test
+- 🔢 **Multi-Version Java Support** - Version-specific subclasses for Java 8, 9, 10, 17, 18 and 22
+- 🔧 **Cleanup/Refactoring Helpers** - Methods for creating compilation units and asserting refactoring results
+- 🔌 **JUnit 5 Integration** - Built on the Jupiter extension model (`BeforeEachCallback`, `AfterEachCallback`)
 
 ## Components
 
-### Base Test Classes
+All classes live in the package `org.sandbox.jdt.ui.tests.quickfix.rules`.
 
-Common base classes for different test scenarios:
+### `AbstractEclipseJava`
 
-#### `AbstractCleanUpTest`
-Base class for cleanup transformation tests:
-- Sets up Eclipse test workspace
-- Provides before/after comparison utilities
-- Handles AST parsing and rewriting
-- Manages compilation units
+The base JUnit 5 extension that provides the test infrastructure for Eclipse
+JDT cleanup and refactoring tests. It implements
+`org.junit.jupiter.api.extension.BeforeEachCallback` and `AfterEachCallback`,
+and is responsible for:
 
-#### `AbstractQuickFixTest`
-Base class for quick fix tests:
-- Sets up problem markers
-- Invokes quick fixes
-- Verifies fix results
-- Handles multiple fix scenarios
+- Creating and configuring a temporary Eclipse Java project for each test
+- Setting the Java compiler compliance level based on the target version
+- Loading the appropriate runtime stubs JAR (e.g. `testresources/rtstubs_17.jar`)
+- Providing helper methods for creating compilation units and executing/asserting refactorings
+- Cleaning up workspace resources after each test
 
-### Test Utilities
+### Version-Specific Extensions
 
-#### AST Testing
-- `ASTTestHelper` - Create and compare AST nodes
-- `ASTMatcher` - Match AST patterns in tests
-- `ASTNodeFactory` - Create test AST structures
+Concrete subclasses select the Java compliance level and matching runtime stubs:
 
-#### Workspace Setup
-- `WorkspaceHelper` - Create test projects
-- `ProjectHelper` - Configure test projects
-- `CompilationUnitHelper` - Create test Java files
+- `EclipseJava8` — Java 8 (1.8)
+- `EclipseJava9` — Java 9
+- `EclipseJava10` — Java 10
+- `EclipseJava17` — Java 17
+- `EclipseJava18` — Java 18
+- `EclipseJava22` — Java 22
 
-#### Assertions
-- `CleanUpAssertions` - Verify cleanup transformations
-- `ASTAssertions` - Assert AST structure
-- `SourceAssertions` - Compare source code
+Each subclass simply calls the `AbstractEclipseJava` constructor with its
+runtime-stubs path and the corresponding `JavaCore` version constant.
 
-### Mock Objects
+### `TestOptions`
 
-Reusable mock implementations:
-- `MockCompilationUnit` - Test compilation unit
-- `MockIFile` - Test file resource
-- `MockIProject` - Test project
-- `MockProgressMonitor` - Test progress monitoring
+Helper (ported from `org.eclipse.jdt.testplugin`) used to configure default
+compiler/JDT options for the test environment.
 
 ## Usage
 
-### Extending Base Classes
+Register the desired version extension with `@RegisterExtension` and use it to
+create compilation units and assert refactoring results:
 
 ```java
-public class MyCleanUpTest extends AbstractCleanUpTest {
-    
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+
+class MyCleanUpTest {
+
+    @RegisterExtension
+    static EclipseJava17 context = new EclipseJava17();
+
     @Test
-    void testMyTransformation() {
-        // Given
-        String input = """
-            public class Test {
-                void method() {
-                    // old code
-                }
-            }
-            """;
-        
-        String expected = """
-            public class Test {
-                void method() {
-                    // new code
-                }
-            }
-            """;
-        
-        // When
-        String actual = applyCleanUp(input, new MyCleanUp());
-        
-        // Then
-        assertEqualCode(expected, actual);
+    void testMyCleanup() throws Exception {
+        // Create a compilation unit in the temporary project, apply the
+        // cleanup under test, and assert the resulting source.
+        // (See AbstractEclipseJava for the available helper methods.)
     }
 }
 ```
 
-### Using Test Utilities
-
-```java
-public class MyTest {
-    
-    @Test
-    void testASTTransformation() {
-        // Create test AST
-        AST ast = ASTTestHelper.createAST();
-        MethodDeclaration method = ASTNodeFactory.createMethod(ast, "test");
-        
-        // Apply transformation
-        MyTransformer transformer = new MyTransformer();
-        transformer.transform(method);
-        
-        // Verify result
-        ASTAssertions.assertHasAnnotation(method, "Test");
-    }
-}
-```
-
-### Using Mock Objects
-
-```java
-public class MyWorkspaceTest {
-    
-    @Test
-    void testProjectOperation() {
-        // Setup
-        IProject project = new MockIProject("TestProject");
-        IFile file = new MockIFile(project, "Test.java");
-        
-        // Execute
-        MyOperation operation = new MyOperation();
-        operation.execute(file);
-        
-        // Verify
-        assertTrue(file.exists());
-    }
-}
-```
-
-## Test Patterns
-
-### Cleanup Test Pattern
-
-Standard pattern for testing cleanups:
-
-1. **Given** - Define input code
-2. **When** - Apply cleanup
-3. **Then** - Assert expected output
-
-```java
-@Test
-void testCleanup() {
-    String input = "...";
-    String expected = "...";
-    String actual = applyCleanUp(input);
-    assertEqualCode(expected, actual);
-}
-```
-
-### Parameterized Test Pattern
-
-Test multiple scenarios:
-
-```java
-@ParameterizedTest
-@EnumSource(TestCase.class)
-void testMultipleScenarios(TestCase testCase) {
-    String actual = applyCleanUp(testCase.input());
-    assertEqualCode(testCase.expected(), actual);
-}
-```
-
-### AST Transformation Pattern
-
-Test AST manipulations:
-
-```java
-@Test
-void testASTTransform() {
-    CompilationUnit cu = parseCode("...");
-    ASTRewrite rewrite = ASTRewrite.create(cu.getAST());
-    
-    // Apply transformation
-    myTransform(cu, rewrite);
-    
-    // Verify
-    String result = rewrite.rewriteAST().toString();
-    assertEqualCode(expected, result);
-}
-```
+> **Note**: For the exact set of available helper methods, refer to
+> [`ARCHITECTURE.md`](ARCHITECTURE.md) and the source of `AbstractEclipseJava`.
 
 ## Dependencies
 

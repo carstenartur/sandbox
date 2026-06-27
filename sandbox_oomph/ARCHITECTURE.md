@@ -38,7 +38,7 @@ This module:
 - Project import configuration
 - Target platform activation
 - Workspace preference settings
-- P2 repository configuration for Eclipse 2025-09
+- P2 repository configuration for Eclipse 2025-12
 
 ### 2. sandboxproject.setup
 
@@ -69,7 +69,7 @@ This module:
 2. Import setup file (sandbox.setup)
    ↓
 3. Oomph Installer reads configuration
-   ├─ Installs Eclipse 2025-09
+   ├─ Installs Eclipse 2025-12
    ├─ Clones sandbox repository
    ├─ Imports Maven projects
    ├─ Sets target platform
@@ -108,7 +108,7 @@ Browse to sandbox.setup
 
 ```xml
 <setupTask xsi:type="p2:P2DirectorTask">
-    <repository url="https://download.eclipse.org/releases/2025-09"/>
+    <repository url="https://download.eclipse.org/releases/2025-12"/>
 </setupTask>
 ```
 
@@ -149,7 +149,7 @@ This module integrates with Eclipse's Oomph installer framework:
    - Configures remote tracking
 
 3. **P2 Integration**: Oomph's P2DirectorTask installs Eclipse features
-   - Resolves dependencies from Eclipse 2025-09 repository
+   - Resolves dependencies from Eclipse 2025-12 repository
    - Installs required JDT, PDE, and SDK features
    - Configures target platform
 
@@ -336,4 +336,4 @@ The Oomph module provides automated development environment setup:
 - Ensures consistent developer configuration (same Eclipse version, preferences, target platform)
 - Reduces manual setup errors (eliminates common misconfigurations)
 - Improves contributor experience (productive in minutes, not hours)
-- Aligns with requirements in Root README (Java 21, Eclipse 2025-09, main branch)
+- Aligns with requirements in Root README (Java 21, Eclipse 2025-12, main branch)

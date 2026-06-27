@@ -34,7 +34,7 @@ CodeCleanupApplication (Main Logic)
 
 #### 1. CodeCleanupApplicationWrapper
 
-**Location**: `org.sandbox.jdt.cleanup.application.CodeCleanupApplicationWrapper`
+**Location**: `org.sandbox.jdt.core.cleanupapp.CodeCleanupApplicationWrapper`
 
 **Purpose**: Application entry point that validates Eclipse workspace availability before delegating to main application logic.
 
@@ -55,7 +55,7 @@ public Object start(IApplicationContext context) throws Exception {
 
 #### 2. CodeCleanupApplication
 
-**Location**: `org.sandbox.jdt.cleanup.application.CodeCleanupApplication`
+**Location**: `org.sandbox.jdt.core.cleanupapp.CodeCleanupApplication`
 
 **Purpose**: Core application logic for parsing arguments, loading configuration, and processing files.
 
@@ -319,7 +319,7 @@ The architecture supports future enhancements:
 ## Package Structure
 
 ```
-org.sandbox.jdt.cleanup.application
+org.sandbox.jdt.core.cleanupapp
 ├── CodeCleanupApplicationWrapper   # Entry point
 └── CodeCleanupApplication          # Main logic
 ```

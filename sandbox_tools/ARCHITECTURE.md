@@ -35,9 +35,9 @@ for (int i = 0; i < 10; i++) {
 
 ## Core Components
 
-### WhileToForConverter
+### WhileToForEach
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.WhileToForConverter`
+**Location**: `org.sandbox.jdt.internal.corext.fix.helper.WhileToForEach`
 
 **Purpose**: Identifies while loops that can be converted to for loops
 

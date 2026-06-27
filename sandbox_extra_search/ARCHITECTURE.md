@@ -15,17 +15,37 @@ The extra search plugin provides advanced search capabilities for critical class
 
 ## Core Components
 
-### ExtraSearchView
+### Search Pages
 
-**Location**: `org.sandbox.jdt.internal.ui.views.ExtraSearchView`
+The plugin contributes two search pages to Eclipse's **Search** dialog
+(`org.eclipse.search.searchPages` extension point):
 
-**Purpose**: Provides UI for searching and displaying results
+**`UpdateNeededSearchPage`**
 
-**Key Features**:
-- Search input for class/API names
-- Results table with file locations
-- Jump-to-definition from results
-- Filter and sort capabilities
+**Location**: `org.sandbox.jdt.internal.ui.search.UpdateNeededSearchPage`
+(implements `org.eclipse.search.ui.ISearchPage`)
+
+**Purpose**: Search page for locating class/API usages that need attention
+during Eclipse/Java version upgrades.
+
+**`SemanticCodeSearchPage`**
+
+**Location**: `org.sandbox.jdt.internal.ui.search.SemanticCodeSearchPage`
+(implements `org.eclipse.search.ui.ISearchPage`)
+
+**Purpose**: Search page for semantic code search, backed by
+`SemanticCodeSearchQuery`/`SemanticCodeSearchResult`.
+
+Both pages are opened either from the Search dialog or via the menu actions
+`OpenUpdateSearchPageAction` and `OpenSemanticSearchPageAction`.
+
+### Git Index Views (`gitindex` subpackage)
+
+An optional Git history indexing subsystem under
+`org.sandbox.jdt.internal.ui.search.gitindex` provides additional views and
+services, including `GitSearchView`, `JavaTypeHistoryView`,
+`CommitAnalyticsView`, `EmbeddedSearchService`, `IncrementalIndexer`,
+`RepositoryIndexService` and `EGitRepositoryTracker`.
 
 ### SearchEngine Integration
 
