@@ -42,6 +42,17 @@ class ScreeningPromptBuilderTest {
 	}
 
 	@Test
+	void testScreeningPromptConstrainsOrderingAndConfidenceScale() {
+		CommitData c1 = new CommitData("aaa111", "First commit", "diff1"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		CommitData c2 = new CommitData("bbb222", "Second commit", "diff2"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+		String prompt = new ScreeningPromptBuilder().buildScreeningPrompt(List.of(c1, c2));
+
+		assertTrue(prompt.contains("in the same order as presented")); //$NON-NLS-1$
+		assertTrue(prompt.contains("0.0 and 1.0")); //$NON-NLS-1$
+	}
+
+	@Test
 	void testDiffIsTruncatedForScreening() {
 		String longDiff = "x".repeat(2_000); //$NON-NLS-1$
 		CommitData commit = new CommitData("abc123", "Long diff", longDiff); //$NON-NLS-1$ //$NON-NLS-2$

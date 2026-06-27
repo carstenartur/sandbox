@@ -60,7 +60,8 @@ public class ScreeningPromptBuilder {
 		sb.append("You are screening commits for reusable Java cleanup/refactoring patterns.\n"); //$NON-NLS-1$
 		sb.append("Do not produce DSL rules. Do not produce before/after examples.\n"); //$NON-NLS-1$
 		sb.append("Only decide whether each commit is worth a later, more expensive candidate-generation request.\n\n"); //$NON-NLS-1$
-		sb.append("Return a JSON array with exactly ").append(commits.size()).append(" objects.\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		sb.append("Return a JSON array with exactly ").append(commits.size()); //$NON-NLS-1$
+		sb.append(" objects, one per commit, in the same order as presented.\n"); //$NON-NLS-1$
 		sb.append("Schema per object:\n"); //$NON-NLS-1$
 		sb.append("{\n"); //$NON-NLS-1$
 		sb.append("  \"commitHash\": \"hash\",\n"); //$NON-NLS-1$
@@ -69,7 +70,8 @@ public class ScreeningPromptBuilder {
 		sb.append("  \"category\": \"short category or null\",\n"); //$NON-NLS-1$
 		sb.append("  \"confidence\": 0.0,\n"); //$NON-NLS-1$
 		sb.append("  \"reason\": \"one short sentence\"\n"); //$NON-NLS-1$
-		sb.append("}\n\n"); //$NON-NLS-1$
+		sb.append("}\n"); //$NON-NLS-1$
+		sb.append("confidence MUST be a decimal between 0.0 and 1.0 (not 0–100).\n\n"); //$NON-NLS-1$
 		for (int i = 0; i < commits.size(); i++) {
 			CommitData commit = commits.get(i);
 			sb.append("## Commit ").append(i).append(" (").append(commit.commitHash()).append(")\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
