@@ -827,9 +827,6 @@ static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
 					+ eval.commitHash());
 			continue;
 		}
-		if (candidateStore.containsCommit(eval.commitHash())) {
-			continue;
-		}
 		MiningCandidate candidate = new MiningCandidate(
 				dslRule,
 				eval.beforeExample(),
@@ -841,6 +838,9 @@ static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
 				eval.category(),
 				eval.summary(),
 				Instant.now().toString());
+		if (candidateStore.containsCandidate(candidate)) {
+			continue;
+		}
 		candidate.setStatus(CandidateStatus.DSL_VALID);
 		try {
 			candidateStore.save(candidate);

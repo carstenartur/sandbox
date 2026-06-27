@@ -27,6 +27,7 @@ import java.nio.file.Path;
  * <ol>
  *   <li>The DSL rule parses successfully</li>
  *   <li>The {@code beforeExample} matches the rule</li>
+ *   <li>The matched replacement equals {@code afterExample} (if provided)</li>
  *   <li>The {@code negativeExample} does NOT match the rule</li>
  * </ol>
  *
@@ -88,6 +89,7 @@ public class MiningCandidateTestGenerator {
 	private String buildTestSource(MiningCandidate candidate, String className) {
 		String dslRule = candidate.getDslRule() != null ? candidate.getDslRule() : ""; //$NON-NLS-1$
 		String beforeExample = candidate.getBeforeExample() != null ? candidate.getBeforeExample() : ""; //$NON-NLS-1$
+		String afterExample = candidate.getAfterExample() != null ? candidate.getAfterExample() : ""; //$NON-NLS-1$
 		String negativeExample = candidate.getNegativeExample() != null ? candidate.getNegativeExample() : ""; //$NON-NLS-1$
 		String summary = candidate.getSummary() != null ? candidate.getSummary() : "(no summary)"; //$NON-NLS-1$
 		String sourceCommit = candidate.getSourceCommit() != null ? candidate.getSourceCommit() : "unknown"; //$NON-NLS-1$
@@ -150,7 +152,31 @@ public class MiningCandidateTestGenerator {
 			sb.append("    }\n\n"); //$NON-NLS-1$
 		}
 
-		// Test 3: negativeExample does NOT match (only if provided)
+		// Test 3: matched replacement equals afterExample (only if both are provided)
+		if (!beforeExample.isBlank() && !afterExample.isBlank()) {
+			sb.append("    @Test\n"); //$NON-NLS-1$
+			sb.append("    public void testAfterExampleReplacementMatches() throws Exception {\n"); //$NON-NLS-1$
+			sb.append("        HintFileParser parser = new HintFileParser();\n"); //$NON-NLS-1$
+			sb.append("        HintFile hintFile = parser.parse(DSL_RULE);\n"); //$NON-NLS-1$
+			sb.append("        BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);\n"); //$NON-NLS-1$
+			sb.append("        String beforeCode = \"\"\"\n"); //$NON-NLS-1$
+			sb.append("                ").append(escapeForTextBlock(beforeExample)).append("\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			sb.append("                \"\"\";\n"); //$NON-NLS-1$
+			sb.append("        CompilationUnit cu = parseCode(beforeCode);\n"); //$NON-NLS-1$
+			sb.append("        List<TransformationResult> results = processor.process(cu);\n"); //$NON-NLS-1$
+			sb.append("        assertFalse(results.isEmpty(),\n"); //$NON-NLS-1$
+			sb.append("                \"Before example should produce a replacement\"); //$NON-NLS-1$\n"); //$NON-NLS-1$
+			sb.append("        assertTrue(results.stream()\n"); //$NON-NLS-1$
+			sb.append("                .filter(TransformationResult::hasReplacement)\n"); //$NON-NLS-1$
+			sb.append("                .map(TransformationResult::replacement)\n"); //$NON-NLS-1$
+			sb.append("                .anyMatch(replacement -> replacement.equals(\"\"\"\n"); //$NON-NLS-1$
+			sb.append("                        ").append(escapeForTextBlock(afterExample)).append("\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			sb.append("                        \"\"\")),\n"); //$NON-NLS-1$
+			sb.append("                \"At least one replacement should exactly match afterExample\"); //$NON-NLS-1$\n"); //$NON-NLS-1$
+			sb.append("    }\n\n"); //$NON-NLS-1$
+		}
+
+		// Test 4: negativeExample does NOT match (only if provided)
 		if (!negativeExample.isBlank()) {
 			sb.append("    @Test\n"); //$NON-NLS-1$
 			sb.append("    public void testNegativeExampleDoesNotMatch() throws Exception {\n"); //$NON-NLS-1$

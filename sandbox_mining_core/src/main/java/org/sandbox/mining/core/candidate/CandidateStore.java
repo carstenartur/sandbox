@@ -29,8 +29,9 @@ import com.google.gson.GsonBuilder;
  * Persistent store for {@link MiningCandidate} objects in the
  * {@code mining-candidates/} directory.
  *
- * <p>Each candidate is stored as an individual JSON file named after the
- * source commit hash (e.g. {@code abc1234-candidate.json}). This allows
+ * <p>Each candidate is stored as an individual JSON file named after a stable
+ * candidate ID (SHA-256 derived from repo + commit + category + hint target + DSL).
+ * This allows
  * individual candidates to be reviewed, promoted, or rejected without
  * touching productive bundled hint files.</p>
  *
@@ -123,18 +124,16 @@ public class CandidateStore {
 	}
 
 	/**
-	 * Returns whether a candidate for the given commit hash already exists.
+	 * Returns whether this exact candidate already exists in the store.
 	 *
-	 * @param commitHash the commit hash to check
-	 * @return {@code true} if a candidate file exists for this commit
+	 * @param candidate the candidate to check
+	 * @return {@code true} if a candidate file exists for this candidate ID
 	 */
-	public boolean containsCommit(String commitHash) {
-		if (commitHash == null || commitHash.isBlank()) {
+	public boolean containsCandidate(MiningCandidate candidate) {
+		if (candidate == null) {
 			return false;
 		}
-		String prefix = commitHash.substring(0, Math.min(7, commitHash.length()))
-				.replaceAll("[^a-zA-Z0-9_-]", "_"); //$NON-NLS-1$ //$NON-NLS-2$
-		return Files.exists(storeDir.resolve(prefix + "-candidate.json")); //$NON-NLS-1$
+		return Files.exists(storeDir.resolve(candidate.toFileName()));
 	}
 
 	/**
