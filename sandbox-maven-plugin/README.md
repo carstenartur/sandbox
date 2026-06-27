@@ -24,11 +24,11 @@ Add to your `pom.xml`:
 <plugin>
   <groupId>org.sandbox</groupId>
   <artifactId>sandbox-maven-plugin</artifactId>
-  <version>${project.version}</version>
+<version>1.3.2-SNAPSHOT</version>
   <configuration>
     <!-- Required: plugin config file -->
     <configFile>${project.basedir}/.sandbox-config.yml</configFile>
-    <!-- Version of sandbox-cleanup-cli to download (default: 1.2.6-SNAPSHOT in plugin code) -->
+  <!-- Optional: omit to use the plugin default toolVersion -->
     <toolVersion>1.2.6-SNAPSHOT</toolVersion>
     <!-- Optional: local path or URL to tool distribution archive -->
     <!-- <toolSource>/path/to/sandbox-cleanup-cli-1.2.6-SNAPSHOT-dist.tar.gz</toolSource> -->
@@ -44,6 +44,9 @@ mvn sandbox:apply
 
 # Check for cleanup violations (CI mode)
 mvn sandbox:check
+
+# If sandbox:check is bound in your build, this also runs via lifecycle
+mvn verify
 
 # Generate a diff of pending changes
 mvn sandbox:diff
