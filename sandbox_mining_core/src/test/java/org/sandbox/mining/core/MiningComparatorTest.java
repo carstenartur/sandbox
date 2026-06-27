@@ -237,7 +237,7 @@ class MiningComparatorTest {
 				4, 3, 2, light,
 				category, false, "reason",
 				true, dslRule, "file.sandbox-hint",
-				null, null, "summary", validationResult);
+				null, null, "summary", validationResult, null, null, null);
 	}
 
 	private CommitEvaluation createEvalIrrelevant(String hash) {
@@ -247,6 +247,6 @@ class MiningComparatorTest {
 				0, 0, 0, TrafficLight.NOT_APPLICABLE,
 				null, false, null,
 				false, null, null,
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 	}
 }

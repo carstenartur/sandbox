@@ -15,6 +15,7 @@ package org.sandbox.mining.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,12 +26,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import java.time.Instant;
+
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sandbox.mining.core.candidate.CandidateStatus;
+import org.sandbox.mining.core.candidate.CandidateStore;
+import org.sandbox.mining.core.candidate.MiningCandidate;
 import org.sandbox.mining.core.config.RepoEntry;
 import org.sandbox.jdt.triggerpattern.git.CommitWalker;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 
 /**
  * Tests for {@link MiningCli}.
@@ -312,5 +320,89 @@ class MiningCliTest {
 		Process p = pb.start();
 		p.getInputStream().readAllBytes();
 		assertEquals(0, p.waitFor());
+	}
+
+	// --- saveCandidates tests ---
+
+	@Test
+	void testSaveCandidatesGreenValidEvaluation() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir.resolve("candidates")); //$NON-NLS-1$
+		String dslRule = "java.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n"; //$NON-NLS-1$
+		CommitEvaluation eval = new CommitEvaluation(
+				"abc1234567890", "Replace emptyList", "https://github.com/test/repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), Instant.now(), true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Collections",
+				false, null, true, dslRule, "performance", null, null,
+				"Replace emptyList with List.of", "VALID", //$NON-NLS-1$ //$NON-NLS-2$
+				"class T { void m() { return Collections.emptyList(); } }", //$NON-NLS-1$
+				"class T { void m() { return List.of(); } }", //$NON-NLS-1$
+				"class T { void m() { return Collections.emptySet(); } }"); //$NON-NLS-1$
+
+		List<MiningCandidate> saved = MiningCli.saveCandidates(
+				List.of(eval), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+
+		assertEquals(1, saved.size(), "Should save one candidate"); //$NON-NLS-1$
+		assertEquals(CandidateStatus.DSL_VALID, saved.get(0).getStatus());
+		assertEquals("abc1234567890", saved.get(0).getSourceCommit()); //$NON-NLS-1$
+		assertNotNull(saved.get(0).getBeforeExample());
+	}
+
+	@Test
+	void testSaveCandidatesSkipsNonGreen() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir.resolve("candidates2")); //$NON-NLS-1$
+		String dslRule = "java.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n"; //$NON-NLS-1$
+		CommitEvaluation yellow = new CommitEvaluation(
+				"abc1234567890", "Some commit", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), null, true, null, false, null,
+				5, 5, 5, TrafficLight.YELLOW, "Cat",
+				false, null, false, dslRule, null, null, null,
+				"Summary", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+
+		List<MiningCandidate> saved = MiningCli.saveCandidates(
+				List.of(yellow), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+
+		assertTrue(saved.isEmpty(), "Should skip non-GREEN evaluations"); //$NON-NLS-1$
+	}
+
+	@Test
+	void testSaveCandidatesSkipsInvalidDsl() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir.resolve("candidates3")); //$NON-NLS-1$
+		CommitEvaluation invalid = new CommitEvaluation(
+				"abc1234567890", "Some commit", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), null, true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Cat",
+				false, null, true, "some rule", null, null, null,
+				"Summary", "INVALID: error", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+
+		List<MiningCandidate> saved = MiningCli.saveCandidates(
+				List.of(invalid), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+
+		assertTrue(saved.isEmpty(), "Should skip evaluations with invalid DSL"); //$NON-NLS-1$
+	}
+
+	@Test
+	void testSaveCandidatesSkipsDuplicates() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir.resolve("candidates4")); //$NON-NLS-1$
+		String dslRule = "java.util.Collections.emptyList() :: sourceVersionGE(9)\n=> java.util.List.of()\n;;\n"; //$NON-NLS-1$
+		CommitEvaluation eval = new CommitEvaluation(
+				"abc1234567890", "Replace emptyList", "repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Instant.now(), null, true, null, false, null,
+				8, 7, 3, TrafficLight.GREEN, "Collections",
+				false, null, true, dslRule, null, null, null,
+				"Summary", "VALID", null, null, null); //$NON-NLS-1$ //$NON-NLS-2$
+
+		// Save once
+		MiningCli.saveCandidates(
+				List.of(eval), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+		// Save again - should be skipped (already exists)
+		List<MiningCandidate> secondSave = MiningCli.saveCandidates(
+				List.of(eval), store, new org.sandbox.jdt.triggerpattern.internal.DslValidator(),
+				System.out);
+
+		assertTrue(secondSave.isEmpty(), "Should skip already-saved candidates"); //$NON-NLS-1$
 	}
 }

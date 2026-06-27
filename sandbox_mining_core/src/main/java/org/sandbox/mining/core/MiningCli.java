@@ -29,11 +29,13 @@ import java.util.Set;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.sandbox.mining.core.candidate.CandidateStatus;
+import org.sandbox.mining.core.candidate.CandidateStore;
+import org.sandbox.mining.core.candidate.MiningCandidate;
 import org.sandbox.mining.core.category.CategoryManager;
 import org.sandbox.mining.core.comparison.DeltaReport;
 import org.sandbox.mining.core.comparison.ErrorFeedbackCollector;
 import org.sandbox.mining.core.comparison.ExternalEvaluationImporter;
-import org.sandbox.mining.core.comparison.HintFileUpdater;
 import org.sandbox.mining.core.comparison.MiningComparator;
 import org.sandbox.mining.core.config.KnownRulesStore;
 import org.sandbox.mining.core.config.MiningConfig;
@@ -358,17 +360,12 @@ jsonReporter.writeStatistics(stats, outputDir);
 GithubPagesGenerator pagesGenerator = new GithubPagesGenerator();
 pagesGenerator.generate(aggregator.getAllEvaluations(), stats, outputDir);
 
-// Write .sandbox-hint files for GREEN evaluations with VALID DSL rules
-HintFileUpdater hintUpdater = new HintFileUpdater(validator);
-Path hintOutputDir = sandboxRoot.resolve(
-"sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal"); //$NON-NLS-1$
-List<Path> createdHints = hintUpdater.writeHintFiles(aggregator.getAllEvaluations(), hintOutputDir);
-if (!createdHints.isEmpty()) {
-miningLog.println("Created " + createdHints.size() + " new .sandbox-hint files:"); //$NON-NLS-1$ //$NON-NLS-2$
-for (Path hint : createdHints) {
-miningLog.println("  " + hint); //$NON-NLS-1$
-}
-}
+// Save GREEN+VALID evaluations as staged candidates instead of writing directly
+// to productive bundled hint files. Candidates are staged in mining-candidates/
+// for review and validation before promotion.
+CandidateStore candidateStore = new CandidateStore(sandboxRoot.resolve("mining-candidates")); //$NON-NLS-1$
+List<MiningCandidate> savedCandidates = saveCandidates(
+aggregator.getAllEvaluations(), candidateStore, validator, miningLog);
 
 // NetBeans format output
 if ("netbeans".equals(outputFormat) || "both".equals(outputFormat)) { //$NON-NLS-1$ //$NON-NLS-2$
@@ -405,6 +402,7 @@ state.save(statePath);
 miningLog.println("=== Mining complete ==="); //$NON-NLS-1$
 miningLog.println("Processed: " + stats.getTotalProcessed() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("Relevant:  " + stats.getRelevant()); //$NON-NLS-1$
+miningLog.println("Candidates: " + savedCandidates.size() + " staged in mining-candidates/"); //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("Output:    " + outputDir.toAbsolutePath()); //$NON-NLS-1$
 }
 
@@ -734,7 +732,8 @@ evaluation.trafficLight(), evaluation.category(), evaluation.isNewCategory(),
 evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),
 evaluation.dslRule(), evaluation.targetHintFile(),
 evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),
-evaluation.summary(), validationResult);
+evaluation.summary(), validationResult,
+evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample());
 if (evaluation.isNewCategory() && evaluation.category() != null) {
 categoryManager.addCategory(evaluation.category());
 }
@@ -795,6 +794,61 @@ if (index >= args.length) {
 throw new IllegalArgumentException("Option " + option + " requires a value");
 }
 return args[index];
+}
+
+/**
+ * Creates {@link MiningCandidate} objects from GREEN+VALID evaluations
+ * and saves them to the candidate store. Only evaluations with GREEN traffic
+ * light and VALID DSL validation result are staged as candidates.
+ *
+ * @param evaluations    all evaluations from the current mining run
+ * @param candidateStore the store to save candidates to
+ * @param validator      the DSL validator (for final validation check)
+ * @param log            the log stream for informational output
+ * @return the list of newly saved candidates
+ */
+static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
+		CandidateStore candidateStore, DslValidator validator, PrintStream log) {
+	List<MiningCandidate> saved = new ArrayList<>();
+	for (CommitEvaluation eval : evaluations) {
+		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {
+			continue;
+		}
+		if (!"VALID".equals(eval.dslValidationResult())) { //$NON-NLS-1$
+			continue;
+		}
+		String dslRule = eval.dslRule();
+		if (dslRule == null || dslRule.isBlank()) {
+			continue;
+		}
+		if (candidateStore.containsCommit(eval.commitHash())) {
+			continue;
+		}
+		MiningCandidate candidate = new MiningCandidate(
+				dslRule,
+				eval.beforeExample(),
+				eval.afterExample(),
+				eval.negativeExample(),
+				eval.targetHintFile(),
+				eval.commitHash(),
+				eval.repoUrl(),
+				eval.category(),
+				eval.summary(),
+				Instant.now().toString());
+		candidate.setStatus(CandidateStatus.DSL_VALID);
+		try {
+			candidateStore.save(candidate);
+			saved.add(candidate);
+			log.println("  Staged candidate: " + candidate.toFileName()); //$NON-NLS-1$
+		} catch (IOException e) {
+			log.println("Warning: could not save candidate for " //$NON-NLS-1$
+					+ eval.commitHash() + ": " + e.getMessage()); //$NON-NLS-1$
+		}
+	}
+	if (!saved.isEmpty()) {
+		log.println("Staged " + saved.size() + " new candidates in mining-candidates/"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+	return saved;
 }
 
 private static void deleteDirectory(Path dir) throws IOException {

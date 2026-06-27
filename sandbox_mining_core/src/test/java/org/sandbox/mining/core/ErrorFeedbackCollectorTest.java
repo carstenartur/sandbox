@@ -83,6 +83,6 @@ class ErrorFeedbackCollectorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule text", "file.sandbox-hint",
-				null, null, "summary", validationResult);
+				null, null, "summary", validationResult, null, null, null);
 	}
 }
