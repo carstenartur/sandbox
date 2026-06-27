@@ -26,7 +26,13 @@
 | `GET` | `/api/analytics/objects?repo=...` | Object type counts |
 | `GET` | `/api/analytics/packs?repo=...` | Pack file statistics |
 
-This table is a quick orientation only, not a full API reference. The server also exposes versioned routes under `/api/v1/*`, additional `/api/search/*` endpoints (for example `annotations`, `docs`, `fqn`, `filehistory`, `migration/*`), and an admin reindex endpoint (`POST /api/admin/reindex`, Bearer-token protected).
+This table is a quick orientation only, not a full API reference.
+
+Additional routes include:
+
+- Versioned routes under `/api/v1/*`
+- Additional `/api/search/*` endpoints (for example `annotations`, `docs`, `fqn`, `filehistory`, `migration/*`)
+- Admin reindex endpoint: `POST /api/admin/reindex` (Bearer-token protected)
 
 ## Docker
 
