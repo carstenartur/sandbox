@@ -31,7 +31,7 @@ This table is a quick orientation only, not a full API reference.
 Additional routes include:
 
 - Versioned routes under `/api/v1/*`
-- Additional `/api/search/*` endpoints (for example `annotations`, `docs`, `fqn`, `filehistory`, `migration/*`)
+- Additional `/api/search/*` endpoints such as `annotations`, `docs`, `fqn`, and `filehistory`, plus `migration/*` sub-routes
 - Admin reindex endpoint: `POST /api/admin/reindex` (Bearer-token protected)
 
 ## Docker
