@@ -38,6 +38,14 @@ jobs:
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn package -pl sandbox_mining_core -DskipTests -q
 
+      - name: Snapshot known rules before mining
+        run: |
+          if [ -f docs/mining-report/known-rules.json ]; then
+            cp docs/mining-report/known-rules.json "$RUNNER_TEMP/known-rules-before.json"
+          else
+            printf '{"version":1,"rules":[]}' > "$RUNNER_TEMP/known-rules-before.json"
+          fi
+
       - name: Run Commit Mining
         continue-on-error: true
         env:
@@ -63,6 +71,71 @@ jobs:
             --commits-per-request 4 \
             --output docs/mining-report/ \
             ${{ github.event.inputs.llm_provider != '' && format('--llm-provider {0}', github.event.inputs.llm_provider) || '' }}
+
+      - name: Reconcile staged mining candidates
+        if: always()
+        run: |
+          BEFORE_KNOWN="$RUNNER_TEMP/known-rules-before.json"
+          CURRENT_KNOWN="docs/mining-report/known-rules.json"
+          CANDIDATE_DIR="mining-candidates"
+          if [ ! -f "$CURRENT_KNOWN" ]; then
+            echo "No known-rules.json found after mining; skipping candidate reconciliation."
+            exit 0
+          fi
+          python3 - "$BEFORE_KNOWN" "$CURRENT_KNOWN" "$CANDIDATE_DIR" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          before_path = pathlib.Path(sys.argv[1])
+          known_path = pathlib.Path(sys.argv[2])
+          candidate_dir = pathlib.Path(sys.argv[3])
+
+          def load_rules(path):
+              if not path.exists():
+                  return {"version": 1, "rules": []}
+              with path.open(encoding="utf-8") as handle:
+                  return json.load(handle)
+
+          before = load_rules(before_path)
+          current = load_rules(known_path)
+          before_commits = {
+              rule.get("sourceCommit")
+              for rule in before.get("rules", [])
+              if rule.get("sourceCommit")
+          }
+
+          candidate_commits = set()
+          if candidate_dir.exists():
+              for candidate_path in candidate_dir.glob("*-candidate.json"):
+                  try:
+                      with candidate_path.open(encoding="utf-8") as handle:
+                          candidate = json.load(handle)
+                      commit = candidate.get("sourceCommit")
+                      if commit:
+                          candidate_commits.add(commit)
+                  except Exception as exc:
+                      print(f"Warning: could not read candidate {candidate_path}: {exc}", file=sys.stderr)
+
+          rules = current.get("rules", [])
+          kept = [
+              rule for rule in rules
+              if rule.get("sourceCommit") in before_commits
+              or rule.get("sourceCommit") in candidate_commits
+          ]
+          removed = len(rules) - len(kept)
+          if removed:
+              current["rules"] = kept
+              with known_path.open("w", encoding="utf-8") as handle:
+                  json.dump(current, handle, indent=2)
+                  handle.write("\n")
+          print(
+              "Candidate reconciliation: "
+              f"kept {len(kept)} known rules, "
+              f"removed {removed} non-staged new rules, "
+              f"candidate commits {len(candidate_commits)}"
+          )
+          PY
 
       - name: Post-run diagnostics
         if: always()
@@ -99,6 +172,11 @@ jobs:
           if [ -f docs/mining-report/known-rules.json ]; then
             git add docs/mining-report/known-rules.json
           fi
+          # Include staged mining candidates if they were created/updated
+          CANDIDATE_DIR="mining-candidates"
+          if [ -d "$CANDIDATE_DIR" ]; then
+            git add "$CANDIDATE_DIR"/*.json 2>/dev/null || true
+          fi
           # Include auto-generated .sandbox-hint files from HintFileUpdater
           HINT_DIR="sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal"
           if [ -d "$HINT_DIR" ]; then
@@ -129,11 +207,15 @@ jobs:
           if [ -f docs/mining-report/known-rules.json ]; then
             git add docs/mining-report/known-rules.json
           fi
+          # Re-add staged mining candidates after stash pop
+          if [ -d "$CANDIDATE_DIR" ]; then
+            git add "$CANDIDATE_DIR"/*.json 2>/dev/null || true
+          fi
           # Re-add hint files after stash pop
           if [ -d "$HINT_DIR" ]; then
             git add $HINT_DIR/*.sandbox-hint 2>/dev/null || true
           fi
-          git commit -m "mining: Update state + known rules + hints $(date +%Y-%m-%d)"
+          git commit -m "mining: Update state + known rules + candidates $(date +%Y-%m-%d)"
           git push origin "$BRANCH" --force
           echo "state_updated=true" >> "$GITHUB_OUTPUT"
 
@@ -298,4 +380,7 @@ jobs:
         if: always()
         with:
           name: mining-report-${{ github.run_number }}
-          path: docs/mining-report/
+          path: |
+            docs/mining-report/
+            mining-candidates/
+          if-no-files-found: ignore
