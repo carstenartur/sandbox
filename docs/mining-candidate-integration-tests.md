@@ -16,6 +16,14 @@ A useful integration test should verify the complete path for a small, known com
 6. stage a `MiningCandidate`,
 7. assert that `known-rules.json` is only updated for the persisted candidate.
 
+## FQN-aware DSL style
+
+Candidate rules should normally express concrete APIs with fully qualified names. The matcher should accept target code that uses imports or simple names when imports or bindings prove that the code refers to the same API.
+
+For example, a rule written for `java.util.Collections.emptyList()` should also match source code that imports `java.util.Collections` and calls `Collections.emptyList()`.
+
+The same principle should apply to constructors, type references, method receivers, argument types, return types and overload-sensitive API migrations wherever the equivalence is knowable. This keeps mined rules readable and avoids duplicating rules for different source-code presentation forms.
+
 ## Suggested execution model
 
 Use a JUnit 5 tag such as `@Tag("gemini-integration")` and gate the test with environment variables:
