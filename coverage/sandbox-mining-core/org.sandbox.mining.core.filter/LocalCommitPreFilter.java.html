@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LocalCommitPreFilter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.filter</a> &gt; <span class="el_source">LocalCommitPreFilter.java</span></div><h1>LocalCommitPreFilter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.filter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+/**
+ * Cheap local pre-filter for commits before sending a diff to an LLM.
+ * &lt;p&gt;
+ * The filter is intentionally conservative: it skips obvious documentation,
+ * workflow, metadata, and release-only changes, but keeps Java changes because
+ * those may contain reusable cleanup patterns.
+ * &lt;/p&gt;
+ */
+<span class="fc" id="L29">public class LocalCommitPreFilter {</span>
+
+<span class="fc" id="L31">	private static final Set&lt;String&gt; DOCUMENTATION_EXTENSIONS = Set.of(</span>
+			&quot;.md&quot;, &quot;.adoc&quot;, &quot;.txt&quot;, &quot;.png&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;, &quot;.gif&quot;, &quot;.svg&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+
+	/**
+	 * Local pre-filter decision.
+	 *
+	 * @param process whether the commit should still be sent to the LLM
+	 * @param reason  human-readable reason for logging/reporting
+	 */
+<span class="fc" id="L40">	public record FilterDecision(boolean process, String reason) {</span>
+	}
+
+	/**
+	 * Evaluate a commit using only its message and unified diff.
+	 *
+	 * @param commitMessage commit message
+	 * @param unifiedDiff   unified diff text
+	 * @return filter decision
+	 */
+	public FilterDecision evaluate(String commitMessage, String unifiedDiff) {
+<span class="fc" id="L51">		List&lt;String&gt; paths = extractChangedPaths(unifiedDiff);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		if (paths.isEmpty()) {</span>
+<span class="nc" id="L53">			return new FilterDecision(true, &quot;no path information&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L55">		boolean hasJava = paths.stream().anyMatch(p -&gt; p.endsWith(&quot;.java&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		if (hasJava) {</span>
+<span class="fc" id="L57">			return new FilterDecision(true, &quot;contains Java changes&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (paths.stream().allMatch(LocalCommitPreFilter::isDocumentationOrMetadataPath)) {</span>
+<span class="fc" id="L60">			return new FilterDecision(false, &quot;documentation/metadata only&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (looksLikeReleaseOnlyChange(commitMessage)) {</span>
+<span class="fc" id="L63">			return new FilterDecision(false, &quot;release/version-only change without Java files&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L65">		return new FilterDecision(true, &quot;non-Java change retained for review&quot;); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Extract changed paths from a unified diff.
+	 *
+	 * @param unifiedDiff unified diff text
+	 * @return changed paths from {@code +++ b/...} headers
+	 */
+	public static List&lt;String&gt; extractChangedPaths(String unifiedDiff) {
+<span class="fc" id="L75">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">		if (unifiedDiff == null || unifiedDiff.isBlank()) {</span>
+<span class="nc" id="L77">			return result;</span>
+		}
+<span class="fc" id="L79">		String[] lines = unifiedDiff.split(&quot;\\R&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		for (String line : lines) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">			if (line.startsWith(&quot;+++ b/&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L82">				String path = line.substring(&quot;+++ b/&quot;.length()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">				if (!&quot;/dev/null&quot;.equals(path)) { //$NON-NLS-1$</span>
+<span class="fc" id="L84">					result.add(path);</span>
+				}
+			}
+		}
+<span class="fc" id="L88">		return result;</span>
+	}
+
+	private static boolean isDocumentationOrMetadataPath(String path) {
+<span class="fc" id="L92">		String lower = path.toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">		if (lower.startsWith(&quot;.github/&quot;) || lower.startsWith(&quot;docs/&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L94">			return true;</span>
+		}
+<span class="pc bpc" id="L96" title="2 of 4 branches missed.">		if (lower.equals(&quot;pom.xml&quot;) || lower.endsWith(&quot;/pom.xml&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L97">			return true;</span>
+		}
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">		if (lower.equals(&quot;readme.md&quot;) || lower.equals(&quot;license&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L100" title="2 of 4 branches missed.">				|| lower.equals(&quot;notice&quot;) || lower.equals(&quot;citation.cff&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L101">			return true;</span>
+		}
+<span class="fc" id="L103">		return DOCUMENTATION_EXTENSIONS.stream().anyMatch(lower::endsWith);</span>
+	}
+
+	private static boolean looksLikeReleaseOnlyChange(String commitMessage) {
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (commitMessage == null) {</span>
+<span class="nc" id="L108">			return false;</span>
+		}
+<span class="fc" id="L110">		String lower = commitMessage.toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		return lower.contains(&quot;release version&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				|| lower.contains(&quot;prepare for next development iteration&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				|| lower.contains(&quot;bump version&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				|| lower.contains(&quot;update dependency&quot;); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

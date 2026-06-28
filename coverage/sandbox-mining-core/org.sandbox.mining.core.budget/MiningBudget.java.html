@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MiningBudget.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.budget</a> &gt; <span class="el_source">MiningBudget.java</span></div><h1>MiningBudget.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.budget;
+
+/**
+ * Tracks request and commit budgets for LLM mining runs.
+ * &lt;p&gt;
+ * A value of {@code 0} for a maximum means unlimited. The class intentionally
+ * does not depend on a concrete LLM client so it can be tested and reused by
+ * the CLI, scheduled jobs, and dry-run tooling.
+ * &lt;/p&gt;
+ */
+public final class MiningBudget {
+
+	private final int maxRequests;
+
+	private final int maxCommits;
+
+	private int requestsUsed;
+
+	private int commitsSent;
+
+	/**
+	 * Create a new budget.
+	 *
+	 * @param maxRequests maximum number of LLM requests; {@code 0} means unlimited
+	 * @param maxCommits maximum number of commits sent to the LLM; {@code 0} means unlimited
+	 */
+<span class="fc" id="L40">	public MiningBudget(int maxRequests, int maxCommits) {</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">		if (maxRequests &lt; 0) {</span>
+<span class="fc" id="L42">			throw new IllegalArgumentException(&quot;maxRequests must be &gt;= 0&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		if (maxCommits &lt; 0) {</span>
+<span class="fc" id="L45">			throw new IllegalArgumentException(&quot;maxCommits must be &gt;= 0&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L47">		this.maxRequests = maxRequests;</span>
+<span class="fc" id="L48">		this.maxCommits = maxCommits;</span>
+<span class="fc" id="L49">	}</span>
+
+	/**
+	 * Build a budget from a profile plus optional explicit overrides.
+	 * &lt;p&gt;
+	 * Pass {@code -1} for either override to use the profile default.
+	 * Pass {@code 0} to explicitly request an unlimited budget for that dimension.
+	 * Any value lower than {@code -1} is rejected as invalid.
+	 * &lt;/p&gt;
+	 *
+	 * @param profile the budget profile
+	 * @param explicitMaxRequests explicit request limit, {@code 0} for unlimited, or {@code -1} for profile default
+	 * @param explicitMaxCommits explicit commit limit, {@code 0} for unlimited, or {@code -1} for profile default
+	 * @return budget instance
+	 * @throws IllegalArgumentException if either explicit value is less than {@code -1}
+	 */
+	public static MiningBudget from(BudgetProfile profile, int explicitMaxRequests,
+			int explicitMaxCommits) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (explicitMaxRequests &lt; -1) {</span>
+<span class="fc" id="L68">			throw new IllegalArgumentException(&quot;explicitMaxRequests must be &gt;= -1&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (explicitMaxCommits &lt; -1) {</span>
+<span class="fc" id="L71">			throw new IllegalArgumentException(&quot;explicitMaxCommits must be &gt;= -1&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		BudgetProfile effectiveProfile = profile == null ? BudgetProfile.BALANCED : profile;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		int requestLimit = explicitMaxRequests &gt;= 0</span>
+<span class="fc" id="L75">				? explicitMaxRequests</span>
+<span class="fc" id="L76">				: effectiveProfile.defaultMaxRequests();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		int commitLimit = explicitMaxCommits &gt;= 0</span>
+<span class="fc" id="L78">				? explicitMaxCommits</span>
+<span class="fc" id="L79">				: effectiveProfile.defaultMaxCommits();</span>
+<span class="fc" id="L80">		return new MiningBudget(requestLimit, commitLimit);</span>
+	}
+
+	/**
+	 * @return whether another LLM request may be started
+	 */
+	public boolean hasRequestCapacity() {
+<span class="fc bfc" id="L87" title="All 4 branches covered.">		return maxRequests == 0 || requestsUsed &lt; maxRequests;</span>
+	}
+
+	/**
+	 * Returns how many commits may be included in the next LLM request.
+	 *
+	 * @param proposedCommitCount requested number of commits
+	 * @return allowed number of commits, possibly {@code 0}
+	 */
+	public int allowedCommitsForNextRequest(int proposedCommitCount) {
+<span class="pc bpc" id="L97" title="1 of 4 branches missed.">		if (proposedCommitCount &lt;= 0 || !hasRequestCapacity()) {</span>
+<span class="fc" id="L98">			return 0;</span>
+		}
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (maxCommits == 0) {</span>
+<span class="fc" id="L101">			return proposedCommitCount;</span>
+		}
+<span class="fc" id="L103">		int remaining = maxCommits - commitsSent;</span>
+<span class="fc" id="L104">		return Math.max(0, Math.min(proposedCommitCount, remaining));</span>
+	}
+
+	/**
+	 * Records an LLM request after the caller has decided to send one.
+	 *
+	 * @param commitCount number of commits included in the request
+	 */
+	public void recordRequest(int commitCount) {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (commitCount &lt; 0) {</span>
+<span class="nc" id="L114">			throw new IllegalArgumentException(&quot;commitCount must be &gt;= 0&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L116">		requestsUsed++;</span>
+<span class="fc" id="L117">		commitsSent += commitCount;</span>
+<span class="fc" id="L118">	}</span>
+
+	/**
+	 * @return whether either configured limit has been exhausted
+	 */
+	public boolean isExhausted() {
+<span class="pc bpc" id="L124" title="1 of 4 branches missed.">		boolean requestsExhausted = maxRequests &gt; 0 &amp;&amp; requestsUsed &gt;= maxRequests;</span>
+<span class="pc bpc" id="L125" title="3 of 4 branches missed.">		boolean commitsExhausted = maxCommits &gt; 0 &amp;&amp; commitsSent &gt;= maxCommits;</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">		return requestsExhausted || commitsExhausted;</span>
+	}
+
+	public int getMaxRequests() {
+<span class="fc" id="L130">		return maxRequests;</span>
+	}
+
+	public int getMaxCommits() {
+<span class="fc" id="L134">		return maxCommits;</span>
+	}
+
+	public int getRequestsUsed() {
+<span class="nc" id="L138">		return requestsUsed;</span>
+	}
+
+	public int getCommitsSent() {
+<span class="nc" id="L142">		return commitsSent;</span>
+	}
+
+	/**
+	 * @return human-readable budget summary for logs and reports
+	 */
+	public String formatSummary() {
+<span class="nc" id="L149">		return &quot;LLM budget: requests &quot; + requestsUsed + '/' //$NON-NLS-1$</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">				+ (maxRequests == 0 ? &quot;unlimited&quot; : Integer.toString(maxRequests)) //$NON-NLS-1$</span>
+				+ &quot;, commits &quot; + commitsSent + '/' //$NON-NLS-1$
+<span class="nc bnc" id="L152" title="All 2 branches missed.">				+ (maxCommits == 0 ? &quot;unlimited&quot; : Integer.toString(maxCommits)); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

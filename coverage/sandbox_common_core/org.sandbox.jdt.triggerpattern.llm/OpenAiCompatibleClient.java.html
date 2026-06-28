@@ -412,27 +412,30 @@ category,
 <span class="fc" id="L412">getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
 <span class="fc" id="L413">getStringOrNull(eval, &quot;dslRuleAfterChange&quot;), //$NON-NLS-1$</span>
 <span class="fc" id="L414">getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
-null);
+null,
+<span class="fc" id="L416">getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L417">getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L418">getStringOrNull(eval, &quot;negativeExample&quot;)); //$NON-NLS-1$</span>
 }
 
 static String getStringOrNull(JsonObject obj, String key) {
-<span class="fc" id="L419">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L420" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
+<span class="fc" id="L422">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L423" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
 }
 
 static boolean getBooleanOrDefault(JsonObject obj, String key, boolean defaultValue) {
-<span class="fc" id="L424">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L425" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
+<span class="fc" id="L427">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L428" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
 }
 
 static int getIntOrDefault(JsonObject obj, String key, int defaultValue) {
-<span class="fc" id="L429">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L430" title="2 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
+<span class="fc" id="L432">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L433" title="2 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
 }
 
 @Override
 public void close() {
-<span class="nc" id="L435">httpClient.close();</span>
-<span class="nc" id="L436">}</span>
+<span class="nc" id="L438">httpClient.close();</span>
+<span class="nc" id="L439">}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

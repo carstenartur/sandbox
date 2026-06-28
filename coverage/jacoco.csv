@@ -691,19 +691,21 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.nullability,
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.nullability,MatchSeverity,0,33,0,0,0,6,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.nullability,ScoredJsonReporter,48,248,9,15,14,41,9,8,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,DslContextCollector.new SimpleFileVisitor() {...},25,0,4,0,6,0,5,0,3,0
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,ScreeningPromptBuilder,7,147,2,6,2,33,2,6,0,4
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,QwenClient,27,18,4,2,7,6,6,3,3,3
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBuilder,56,629,14,26,11,139,14,21,2,13
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBuilder,56,647,14,26,11,142,14,21,2,13
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlamaClient,27,18,4,2,7,6,6,3,3,3
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,AiRuleInferenceEngine,0,251,1,25,0,53,1,18,0,6
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,AiRuleInferenceEngine,0,257,1,25,0,54,1,18,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,DeepSeekClient,27,18,4,2,7,6,6,3,3,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,CommitEvaluation.TrafficLight,0,27,0,0,0,5,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,DslContextCollector,75,0,6,0,18,0,6,0,3,0
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,OpenAiClient,27,18,4,2,7,6,6,3,3,3
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,OpenAiCompatibleClient,264,463,36,34,74,119,28,29,2,20
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,CommitEvaluation,0,72,0,0,0,1,0,1,0,1
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,OpenAiCompatibleClient,264,472,36,34,74,122,28,29,2,20
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,CommitEvaluation,0,81,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmProvider,0,76,0,6,0,13,0,5,0,2
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,CommitScreening,0,37,1,5,0,2,1,4,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmClientFactory,162,0,48,0,40,0,31,0,3,0
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,GeminiClient,407,753,67,87,111,191,53,53,4,25
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,GeminiClient,407,762,67,87,111,194,53,53,4,25
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBuilder.CommitData,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,MistralClient,27,18,4,2,7,6,6,3,3,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileStore,158,1040,33,77,37,201,30,55,0,30
@@ -764,47 +766,55 @@ sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.scanner,StandaloneAstPars
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.git,RepoCloner,23,0,0,0,5,0,2,0,2,0
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,RepoEntry,23,33,3,1,5,13,3,7,1,7
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,MiningConfig,46,182,9,17,13,45,12,15,5,9
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapEntry,0,18,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,HintFileUpdater,189,176,48,30,45,43,32,14,2,5
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,DeltaReport,3,430,6,24,1,87,6,20,0,11
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapCategory,10,108,5,9,5,25,5,10,0,2
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter,57,0,4,0,12,0,5,0,3,0
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeAdapter() {...},31,0,6,0,8,0,6,0,3,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ErrorFeedbackCollector,17,143,6,18,2,32,6,12,1,5
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapEntry,0,18,0,0,0,1,0,1,0,1
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,HintFileUpdater,189,176,48,30,45,43,32,14,2,5
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeAdapter() {...},31,0,6,0,8,0,6,0,3,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,MiningComparator,7,248,18,40,1,47,20,17,2,6
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.filter,CommitKeywordFilter,0,249,4,18,0,28,4,15,0,8
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.filter,LocalCommitPreFilter,14,184,14,30,5,34,14,15,0,7
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.filter,LocalCommitPreFilter.FilterDecision,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.enrichment,TypeContextEnricher,0,161,0,12,0,37,0,10,0,4
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,KnownRulesStore.RuleStatus,0,27,0,0,0,5,0,1,0,1
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningState.RepoState,56,169,11,5,12,48,13,29,7,27
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningState,43,145,6,4,8,29,9,9,4,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningState.DeferredCommit,28,54,0,0,7,19,7,9,7,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningConfig,157,220,23,21,41,59,31,17,14,12
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,KnownRulesStore,31,359,13,31,6,85,13,24,0,15
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,RepoEntry,32,24,3,1,10,8,8,2,6,2
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningState.RepoState,56,169,11,5,12,48,13,29,7,27
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningState,43,145,6,4,8,29,9,9,4,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,KnownRulesStore.KnownRule,48,48,0,0,13,18,13,7,13,7
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,MiningConfig.EpochEntry,15,17,0,0,5,6,2,5,2,5
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,KnownRulesStore,31,359,13,31,6,85,13,24,0,15
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,KnownRulesStore.KnownRulesData,0,11,0,0,0,3,0,1,0,1
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.config,RepoEntry,32,24,3,1,10,8,8,2,6,2
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.budget,MiningBudget,42,145,12,30,6,36,12,20,3,8
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.budget,BudgetProfile,11,86,4,2,4,20,4,6,1,6
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,JsonReporter,26,125,1,7,5,30,3,7,2,4
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector.RepoStatistics,15,46,0,6,5,9,5,6,5,2
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,JsonReporter.new TypeAdapter() {...},0,17,0,2,0,4,0,4,0,3
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,JsonReporter.new TypeToken() {...},0,3,0,0,0,1,0,1,0,1
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,GithubPagesGenerator,16,223,4,10,5,50,4,11,1,7
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,ReportAggregator,66,0,4,0,19,0,10,0,8,0
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector,28,326,17,33,5,85,14,33,1,20
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,DslEnhancementReporter.IssueDescriptor,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,NetBeansReporter,4,178,5,19,0,42,5,16,0,8
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,JsonReporter.new TypeAdapter() {...},0,17,0,2,0,4,0,4,0,3
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector.RunMetadata,9,24,0,0,3,8,3,8,3,8
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,JsonReporter.new TypeToken() {...},0,3,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector.TimeWindow,6,21,0,0,2,8,2,3,2,3
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,GithubPagesGenerator,16,223,4,10,5,50,4,11,1,7
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,GithubPagesGenerator.new TypeToken() {...},0,3,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,GithubPagesGenerator.new TypeAdapter() {...},0,17,0,2,0,4,0,4,0,3
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,DslEnhancementReporter.DslLimitationGroup,0,20,0,0,0,7,0,4,0,4
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector.DailyProgress,6,9,0,0,2,4,2,2,2,2
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,ReportAggregator,66,0,4,0,19,0,10,0,8,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,DslEnhancementReporter,8,436,19,39,2,79,19,19,0,9
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.report,StatisticsCollector,28,326,17,33,5,85,14,33,1,20
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,AutoCommitter,79,0,2,0,16,0,3,0,2,0
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateStatus,0,45,0,0,0,8,0,1,0,1
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,MiningCandidateTestGenerator,2,567,5,27,0,121,5,16,0,5
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,MiningCandidate,19,228,0,4,5,54,3,29,3,27
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.candidate,CandidateStore,8,153,1,9,2,37,1,13,0,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,PullRequestCreator,90,0,2,0,18,0,3,0,2,0
-sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core,MiningCli,2006,296,204,31,445,80,121,25,12,8
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,AutoCommitter,79,0,2,0,16,0,3,0,2,0
+sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core,MiningCli,2001,397,202,45,446,114,121,32,12,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.category,CategoryManager,126,0,12,0,26,0,14,0,8,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.category,CategoryManager.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.config,HibernateSessionFactoryProvider,9,188,17,19,3,49,17,5,1,3

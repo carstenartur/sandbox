@@ -270,30 +270,33 @@ public class PromptBuilder {
 <span class="fc" id="L270">		sb.append(indent).append(&quot;\&quot;replacesPlugin\&quot;: \&quot;name of Java plugin this would replace, or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L271">		sb.append(indent).append(&quot;\&quot;previouslyProposed\&quot;: \&quot;summary of similar prior rule, or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L272">		sb.append(indent).append(&quot;\&quot;sourceVersion\&quot;: 11,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L273">		sb.append(indent).append(&quot;\&quot;summary\&quot;: \&quot;brief summary of the analysis\&quot;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L274" title="All 2 branches covered.">		if (asArray) {</span>
-<span class="fc" id="L275">			sb.append(&quot;  },\n  ...\n]\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L273">		sb.append(indent).append(&quot;\&quot;beforeExample\&quot;: \&quot;minimal self-contained Java class showing code BEFORE the fix (must compile)\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L274">		sb.append(indent).append(&quot;\&quot;afterExample\&quot;: \&quot;same class showing code AFTER the fix (must compile)\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L275">		sb.append(indent).append(&quot;\&quot;negativeExample\&quot;: \&quot;minimal Java class that looks similar but should NOT be changed by the rule\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L276">		sb.append(indent).append(&quot;\&quot;summary\&quot;: \&quot;brief summary of the analysis\&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">		if (asArray) {</span>
+<span class="fc" id="L278">			sb.append(&quot;  },\n  ...\n]\n\n&quot;); //$NON-NLS-1$</span>
 		} else {
-<span class="fc" id="L277">			sb.append(&quot;}\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L280">			sb.append(&quot;}\n\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L279">	}</span>
+<span class="fc" id="L282">	}</span>
 
 	private static void appendTrafficLightMeanings(StringBuilder sb) {
-<span class="fc" id="L282">		sb.append(&quot;Traffic light meanings:\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L283">		sb.append(&quot;- GREEN: Directly implementable as a DSL rule\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L284">		sb.append(&quot;- YELLOW: Implementable with minor DSL extensions\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L285">		sb.append(&quot;- RED: Requires DSL extensions not yet available (may be supported in future DSL versions)\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L286">		sb.append(&quot;- NOT_APPLICABLE: Commit is not relevant for DSL mining\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L287">	}</span>
+<span class="fc" id="L285">		sb.append(&quot;Traffic light meanings:\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L286">		sb.append(&quot;- GREEN: Directly implementable as a DSL rule\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L287">		sb.append(&quot;- YELLOW: Implementable with minor DSL extensions\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L288">		sb.append(&quot;- RED: Requires DSL extensions not yet available (may be supported in future DSL versions)\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L289">		sb.append(&quot;- NOT_APPLICABLE: Commit is not relevant for DSL mining\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L290">	}</span>
 
 	private static String loadResource(String resourcePath) {
-<span class="fc" id="L290">		try (InputStream is = PromptBuilder.class.getResourceAsStream(resourcePath)) {</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">			if (is == null) {</span>
-<span class="fc" id="L292">				return &quot;(Resource not available: &quot; + resourcePath + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L293">		try (InputStream is = PromptBuilder.class.getResourceAsStream(resourcePath)) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">			if (is == null) {</span>
+<span class="fc" id="L295">				return &quot;(Resource not available: &quot; + resourcePath + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
-<span class="fc" id="L294">			return new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
-<span class="pc bpc" id="L295" title="1 of 2 branches missed.">		} catch (IOException e) {</span>
-<span class="nc" id="L296">			return &quot;(Failed to load resource: &quot; + resourcePath + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L297">			return new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		} catch (IOException e) {</span>
+<span class="nc" id="L299">			return &quot;(Failed to load resource: &quot; + resourcePath + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
 	}
 }

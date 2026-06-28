@@ -651,7 +651,10 @@ public class GeminiClient implements LlmClient {
 <span class="fc" id="L651">				getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
 				dslRuleAfterChange,
 <span class="fc" id="L653">				getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
-				null);
+				null,
+<span class="fc" id="L655">				getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L656">				getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L657">				getStringOrNull(eval, &quot;negativeExample&quot;)); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -664,48 +667,48 @@ public class GeminiClient implements LlmClient {
 	 *         or if the sanitized result is empty after stripping tags and trimming
 	 */
 	static String sanitizeDslRule(String dslRule) {
-<span class="fc bfc" id="L667" title="All 2 branches covered.">		if (dslRule == null) {</span>
-<span class="fc" id="L668">			return null;</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">		if (dslRule == null) {</span>
+<span class="fc" id="L671">			return null;</span>
 		}
-<span class="fc" id="L670">		String result = dslRule;</span>
-<span class="fc" id="L671">		result = result.replaceAll(&quot;&lt;/?trigger&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L672">		result = result.replaceAll(&quot;&lt;/?pattern&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L673">		result = result.replaceAll(&quot;&lt;import&gt;[^&lt;]*&lt;/import&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L674" title="1 of 2 branches missed.">		return result.isEmpty() ? null : result;</span>
+<span class="fc" id="L673">		String result = dslRule;</span>
+<span class="fc" id="L674">		result = result.replaceAll(&quot;&lt;/?trigger&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L675">		result = result.replaceAll(&quot;&lt;/?pattern&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L676">		result = result.replaceAll(&quot;&lt;import&gt;[^&lt;]*&lt;/import&gt;&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L677" title="1 of 2 branches missed.">		return result.isEmpty() ? null : result;</span>
 	}
 
 	private static String getStringOrNull(JsonObject obj, String key) {
-<span class="fc" id="L678">		JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L679" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
+<span class="fc" id="L681">		JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L682" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
 	}
 
 	private static boolean getBooleanOrDefault(JsonObject obj, String key, boolean defaultValue) {
-<span class="fc" id="L683">		JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L684" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
+<span class="fc" id="L686">		JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L687" title="1 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
 	}
 
 	private static int getIntOrDefault(JsonObject obj, String key, int defaultValue) {
-<span class="fc" id="L688">		JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L689" title="2 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
+<span class="fc" id="L691">		JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L692" title="2 of 4 branches missed.">		return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
 	}
 
 	private void rateLimit() {
-<span class="nc" id="L693">		long now = System.currentTimeMillis();</span>
-<span class="nc" id="L694">		long elapsed = now - lastRequestTime;</span>
-<span class="nc bnc" id="L695" title="All 4 branches missed.">		if (elapsed &lt; rateLimitDelayMs &amp;&amp; lastRequestTime &gt; 0) {</span>
+<span class="nc" id="L696">		long now = System.currentTimeMillis();</span>
+<span class="nc" id="L697">		long elapsed = now - lastRequestTime;</span>
+<span class="nc bnc" id="L698" title="All 4 branches missed.">		if (elapsed &lt; rateLimitDelayMs &amp;&amp; lastRequestTime &gt; 0) {</span>
 			try {
-<span class="nc" id="L697">				Thread.sleep(rateLimitDelayMs - elapsed);</span>
-<span class="nc" id="L698">			} catch (InterruptedException e) {</span>
-<span class="nc" id="L699">				Thread.currentThread().interrupt();</span>
-<span class="nc" id="L700">			}</span>
+<span class="nc" id="L700">				Thread.sleep(rateLimitDelayMs - elapsed);</span>
+<span class="nc" id="L701">			} catch (InterruptedException e) {</span>
+<span class="nc" id="L702">				Thread.currentThread().interrupt();</span>
+<span class="nc" id="L703">			}</span>
 		}
-<span class="nc" id="L702">		lastRequestTime = System.currentTimeMillis();</span>
-<span class="nc" id="L703">	}</span>
+<span class="nc" id="L705">		lastRequestTime = System.currentTimeMillis();</span>
+<span class="nc" id="L706">	}</span>
 
 	@Override
 
 	public void close() {
-<span class="nc" id="L708">		httpClient.close();</span>
-<span class="nc" id="L709">	}</span>
+<span class="nc" id="L711">		httpClient.close();</span>
+<span class="nc" id="L712">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

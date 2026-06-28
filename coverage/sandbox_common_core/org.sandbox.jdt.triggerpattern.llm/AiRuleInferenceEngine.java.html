@@ -162,9 +162,10 @@ public class AiRuleInferenceEngine {
 <span class="fc" id="L162">				evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),</span>
 <span class="fc" id="L163">				evaluation.dslRule(), evaluation.targetHintFile(),</span>
 <span class="fc" id="L164">				evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),</span>
-<span class="fc" id="L165">				evaluation.summary(), validationResult);</span>
+<span class="fc" id="L165">				evaluation.summary(), validationResult,</span>
+<span class="fc" id="L166">				evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample());</span>
 
-<span class="fc" id="L167">		return Optional.of(enriched);</span>
+<span class="fc" id="L168">		return Optional.of(enriched);</span>
 	}
 
 	/**
@@ -175,23 +176,23 @@ public class AiRuleInferenceEngine {
 	 * @return a unified diff string
 	 */
 	static String buildSimpleDiff(String before, String after) {
-<span class="fc" id="L178">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L179">		sb.append(&quot;--- a/snippet.java\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L180">		sb.append(&quot;+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L179">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L180">		sb.append(&quot;--- a/snippet.java\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L181">		sb.append(&quot;+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L182">		String[] beforeLines = before.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
-<span class="fc" id="L183">		String[] afterLines = after.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="fc" id="L183">		String[] beforeLines = before.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="fc" id="L184">		String[] afterLines = after.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
 
-<span class="fc" id="L185">		sb.append(&quot;@@ -1,&quot;).append(beforeLines.length); //$NON-NLS-1$</span>
-<span class="fc" id="L186">		sb.append(&quot; +1,&quot;).append(afterLines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L186">		sb.append(&quot;@@ -1,&quot;).append(beforeLines.length); //$NON-NLS-1$</span>
+<span class="fc" id="L187">		sb.append(&quot; +1,&quot;).append(afterLines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
-<span class="fc bfc" id="L188" title="All 2 branches covered.">		for (String line : beforeLines) {</span>
-<span class="fc" id="L189">			sb.append('-').append(line).append('\n');</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">		for (String line : beforeLines) {</span>
+<span class="fc" id="L190">			sb.append('-').append(line).append('\n');</span>
 		}
-<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (String line : afterLines) {</span>
-<span class="fc" id="L192">			sb.append('+').append(line).append('\n');</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		for (String line : afterLines) {</span>
+<span class="fc" id="L193">			sb.append('+').append(line).append('\n');</span>
 		}
-<span class="fc" id="L194">		return sb.toString();</span>
+<span class="fc" id="L195">		return sb.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

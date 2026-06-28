@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ScreeningPromptBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.llm</a> &gt; <span class="el_source">ScreeningPromptBuilder.java</span></div><h1>ScreeningPromptBuilder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.llm;
+
+import java.util.List;
+
+import org.sandbox.jdt.triggerpattern.llm.PromptBuilder.CommitData;
+
+/**
+ * Builds compact first-stage prompts for cheap commit screening.
+ * &lt;p&gt;
+ * The screening prompt intentionally avoids full DSL context and does not ask
+ * for DSL rules or code examples. It is intended for Gemini free-tier friendly
+ * mining runs where only promising commits should continue to the expensive
+ * candidate-generation stage.
+ * &lt;/p&gt;
+ */
+public class ScreeningPromptBuilder {
+
+	private static final int DEFAULT_MAX_DIFF_CHARS = 4_000;
+
+	private final int maxDiffChars;
+
+	/** Create a builder with the default diff truncation limit. */
+	public ScreeningPromptBuilder() {
+<span class="fc" id="L37">		this(DEFAULT_MAX_DIFF_CHARS);</span>
+<span class="fc" id="L38">	}</span>
+
+	/**
+	 * Create a builder with an explicit diff truncation limit.
+	 *
+	 * @param maxDiffChars maximum characters of each diff included in the prompt
+	 */
+<span class="fc" id="L45">	public ScreeningPromptBuilder(int maxDiffChars) {</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		if (maxDiffChars &lt; 500) {</span>
+<span class="nc" id="L47">			throw new IllegalArgumentException(&quot;maxDiffChars must be at least 500&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L49">		this.maxDiffChars = maxDiffChars;</span>
+<span class="fc" id="L50">	}</span>
+
+	/**
+	 * Builds a compact batch prompt for first-stage screening.
+	 *
+	 * @param commits commits to screen
+	 * @return prompt text
+	 */
+	public String buildScreeningPrompt(List&lt;CommitData&gt; commits) {
+<span class="fc" id="L59">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L60">		sb.append(&quot;You are screening commits for reusable Java cleanup/refactoring patterns.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		sb.append(&quot;Do not produce DSL rules. Do not produce before/after examples.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		sb.append(&quot;Only decide whether each commit is worth a later, more expensive candidate-generation request.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		sb.append(&quot;Return a JSON array with exactly &quot;).append(commits.size()); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		sb.append(&quot; objects, one per commit, in the same order as presented.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		sb.append(&quot;Schema per object:\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L66">		sb.append(&quot;{\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">		sb.append(&quot;  \&quot;commitHash\&quot;: \&quot;hash\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		sb.append(&quot;  \&quot;relevant\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		sb.append(&quot;  \&quot;trafficLight\&quot;: \&quot;GREEN|YELLOW|RED|NOT_APPLICABLE\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L70">		sb.append(&quot;  \&quot;category\&quot;: \&quot;short category or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L71">		sb.append(&quot;  \&quot;confidence\&quot;: 0.0,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L72">		sb.append(&quot;  \&quot;reason\&quot;: \&quot;one short sentence\&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L73">		sb.append(&quot;}\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		sb.append(&quot;confidence MUST be a decimal between 0.0 and 1.0 (not 0–100).\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (int i = 0; i &lt; commits.size(); i++) {</span>
+<span class="fc" id="L76">			CommitData commit = commits.get(i);</span>
+<span class="fc" id="L77">			sb.append(&quot;## Commit &quot;).append(i).append(&quot; (&quot;).append(commit.commitHash()).append(&quot;)\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L78">			sb.append(&quot;Message:\n&quot;).append(commit.commitMessage()).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L79">			sb.append(&quot;Diff:\n```\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L80">			sb.append(truncate(commit.diff())).append(&quot;\n```\n\n&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L82">		return sb.toString();</span>
+	}
+
+	private String truncate(String diff) {
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">		if (diff == null) {</span>
+<span class="nc" id="L87">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (diff.length() &lt;= maxDiffChars) {</span>
+<span class="fc" id="L90">			return diff;</span>
+		}
+<span class="fc" id="L92">		return diff.substring(0, maxDiffChars) + &quot;\n... [diff truncated for screening]&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
