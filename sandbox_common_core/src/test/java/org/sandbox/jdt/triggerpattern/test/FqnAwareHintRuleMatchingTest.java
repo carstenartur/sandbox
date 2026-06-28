@@ -71,23 +71,109 @@ class FqnAwareHintRuleMatchingTest extends HintRuleTestSupport {
 	}
 
 	@Test
-	void fqnConstructorMatchesImportedSimpleName() throws Exception {
+	void fqnConstructorMatchesImportedSimpleNameWithDiamond() throws Exception {
 		HintFile hintFile = parseHint("""
 				<!id: fqn-constructor>
 
-				new java.util.ArrayList()
-				=> new java.util.LinkedList()
+				new java.util.ArrayList<>()
+				=> new java.util.LinkedList<>()
 				;;
 				"""); //$NON-NLS-1$
 
 		assertFullReplacement(hintFile,
 				"""
 				import java.util.ArrayList;
-				class Test { Object m() { return new ArrayList(); } }
+				class Test { Object m() { return new ArrayList<>(); } }
 				""", //$NON-NLS-1$
 				"""
 				import java.util.ArrayList;
-				class Test { Object m() { return new java.util.LinkedList(); } }
+				class Test { Object m() { return new java.util.LinkedList<>(); } }
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void fqnFieldTypeMatchesImportedSimpleName() throws Exception {
+		HintFile hintFile = parseHint("""
+				<!id: fqn-field-type>
+
+				java.util.List $items;
+				=> java.util.Collection $items;
+				;;
+				"""); //$NON-NLS-1$
+
+		assertFullReplacement(hintFile,
+				"""
+				import java.util.List;
+				class Test { List items; }
+				""", //$NON-NLS-1$
+				"""
+				import java.util.List;
+				class Test { java.util.Collection items; }
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void fqnLocalVariableTypeMatchesImportedSimpleName() throws Exception {
+		HintFile hintFile = parseHint("""
+				<!id: fqn-local-type>
+
+				java.util.List $items = $init;
+				=> java.util.Collection $items = $init;
+				;;
+				"""); //$NON-NLS-1$
+
+		assertFullReplacement(hintFile,
+				"""
+				import java.util.List;
+				class Test { void m(List source) { List items = source; } }
+				""", //$NON-NLS-1$
+				"""
+				import java.util.List;
+				class Test { void m(List source) { java.util.Collection items = source; } }
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void fqnReturnAndParameterTypesMatchImportedSimpleNames() throws Exception {
+		HintFile hintFile = parseHint("""
+				<!id: fqn-method-signature>
+
+				java.util.List convert(java.util.Set input)
+				=> java.util.Collection convert(java.util.Collection input)
+				;;
+				"""); //$NON-NLS-1$
+
+		assertFullReplacement(hintFile,
+				"""
+				import java.util.List;
+				import java.util.Set;
+				class Test { List convert(Set input) { return null; } }
+				""", //$NON-NLS-1$
+				"""
+				import java.util.List;
+				import java.util.Set;
+				class Test { java.util.Collection convert(java.util.Collection input) { return null; } }
+				"""); //$NON-NLS-1$
+	}
+
+	@Test
+	void fqnCastTypeMatchesImportedSimpleName() throws Exception {
+		HintFile hintFile = parseHint("""
+				<!id: fqn-cast-type>
+
+				(java.util.List) $value
+				=> (java.util.Collection) $value
+				;;
+				"""); //$NON-NLS-1$
+
+		assertFullReplacement(hintFile,
+				"""
+				import java.util.List;
+				class Test { Object m(Object value) { return (List) value; } }
+				""", //$NON-NLS-1$
+				"""
+				import java.util.List;
+				class Test { Object m(Object value) { return (java.util.Collection) value; } }
 				"""); //$NON-NLS-1$
 	}
 }
