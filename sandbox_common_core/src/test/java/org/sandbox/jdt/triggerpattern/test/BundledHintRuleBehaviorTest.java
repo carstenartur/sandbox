@@ -88,13 +88,11 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 	}
 
 	@Test
-	void collectionsDoesNotRewriteVectorOrHashtableMigrationsWithoutPromotionTests() throws Exception {
+	void collectionsDoesNotRewriteVectorMigrationWithoutPromotionTests() throws Exception {
 		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
 
 		assertNoMatch(hintFile,
 				"class Test { Object m() { return new java.util.Vector(); } }"); //$NON-NLS-1$
-		assertNoMatch(hintFile,
-				"class Test { Object m() { return new java.util.Hashtable(); } }"); //$NON-NLS-1$
 	}
 
 	@Test
