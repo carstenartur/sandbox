@@ -1,12 +1,15 @@
 // performance.sandbox-hint — Performance improvement patterns
-// Replaces verbose constructs with more efficient alternatives
+// Replaces verbose constructs with more efficient alternatives.
+//
+// Keep this bundled library conservative. Broad harvested rules that depend on
+// receiver type, overload selection, or call context belong in staged candidates
+// until they have targeted guards and tests.
 
 <!id: performance>
 <!description: Performance improvement patterns>
 <!severity: info>
 <!minJavaVersion: 8>
 <!tags: performance>
-
 
 java.lang.Boolean.valueOf(true)
 => java.lang.Boolean.TRUE
@@ -16,296 +19,16 @@ java.lang.Boolean.valueOf(false)
 => java.lang.Boolean.FALSE
 ;;
 
-java.lang.Integer.valueOf(0)
-=> java.lang.Integer.ZERO
-;;
-
-java.lang.Integer.parseInt($str)
-=> java.lang.Integer.valueOf($str)
-;;
-
-new java.lang.String($str)
-=> $str
-;;
-
-org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
-=> new java.lang.String()
-;;
-
-new java.lang.String()
-=> org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
-;;
-
-@id: java.lang.varargs.remove-redundant-class-array
-@severity: info
-"Removes redundant new Class[] array creation when used as a varargs argument to Class.getConstructor().":
-new java.lang.Class[] { $arg$ }
-=> $arg$
-;;
-
-@id: java.lang.varargs.remove-redundant-object-array
-@severity: info
-"Removes redundant new Object[] array creation when used as a varargs argument (e.g., in Constructor.newInstance(), MessageFormat.format()).":
-new java.lang.Object[] { $arg$ }
-=> $arg$
-;;
-
-@id: java.lang.varargs.remove-redundant-string-array
-@severity: info
-"Removes redundant new String[] array creation when used as a varargs argument (e.g., in Arrays.asList(), Combo.setItems()).":
-new java.lang.String[] { $arg$ }
-=> $arg$
-;;
-
-// NOTE: A harvested rule tried to remove the redundant `new Object[]{...}`
-// wrapping for `Method.invoke`. The original pattern was malformed
-// (`java.lang.reflect.Method.$method.invoke(...)` is not valid DSL — FQN
-// is only valid at type-reference positions, not at receiver positions).
-// Removed; revisit when typed-receiver placeholders are supported.
-
 @id: java.util.arrays.aslist.remove-redundant-string-array
 @severity: info
-"Simplifies Arrays.asList(new String[] { ... }) to Arrays.asList(...) in varargs contexts.":
+"Simplifies Arrays.asList with an explicit String array in the known varargs context.":
 java.util.Arrays.asList(new java.lang.String[] { $args$ })
 => java.util.Arrays.asList($args$)
 ;;
 
 @id: java.text.messageformat.format.remove-redundant-object-array
 @severity: info
-"Simplifies MessageFormat.format(..., new Object[] { ... }) to MessageFormat.format(..., ...) in varargs contexts.":
+"Simplifies MessageFormat.format with an explicit Object array in the known varargs context.":
 java.text.MessageFormat.format($pattern, new java.lang.Object[] { $args$ })
 => java.text.MessageFormat.format($pattern, $args$)
-;;
-
-@id: org.eclipse.jface.viewers.StructuredViewer.setinitialselections.remove-redundant-object-array
-@severity: info
-"Removes redundant new Object[] array creation when used as a single argument for StructuredViewer.setInitialSelections().":
-$viewer.setInitialSelections(new java.lang.Object[] { $selection })
-=> $viewer.setInitialSelections($selection)
-;;
-
-@id: org.eclipse.swt.widgets.Combo.setitems.remove-redundant-string-array
-@severity: info
-"Simplifies Combo.setItems(new String[] { ... }) to Combo.setItems(...) in varargs contexts.":
-$combo.setItems(new java.lang.String[] { $items$ })
-=> $combo.setItems($items$)
-;;
-
-java.lang.Integer.valueOf($int_expr).toString()
-=> java.lang.Integer.toString($int_expr)
-;;
-
-new java.lang.String()
-=> ""
-;;
-
-java.lang.Boolean.TRUE
-=> true
-;;
-
-java.lang.Boolean.FALSE
-=> false
-;;
-
-new java.lang.Integer($number).toString()
-=> java.lang.Integer.toString($number)
-;;
-
-((java.lang.Integer) $number).toString()
-=> java.lang.Integer.toString($number)
-;;
-
-new java.lang.Boolean($bool).toString()
-=> java.lang.Boolean.toString($bool)
-;;
-
-((java.lang.Boolean) $bool).toString()
-=> java.lang.Boolean.toString($bool)
-;;
-
-new java.lang.Long($number).toString()
-=> java.lang.Long.toString($number)
-;;
-
-((java.lang.Long) $number).toString()
-=> java.lang.Long.toString($number)
-;;
-
-new java.lang.Double($number).toString()
-=> java.lang.Double.toString($number)
-;;
-
-((java.lang.Double) $number).toString()
-=> java.lang.Double.toString($number)
-;;
-
-new java.lang.Character($char).toString()
-=> java.lang.Character.toString($char)
-;;
-
-((java.lang.Character) $char).toString()
-=> java.lang.Character.toString($char)
-;;
-
-new java.lang.Float($number).toString()
-=> java.lang.Float.toString($number)
-;;
-
-((java.lang.Float) $number).toString()
-=> java.lang.Float.toString($number)
-;;
-
-new java.lang.Short($number).toString()
-=> java.lang.Short.toString($number)
-;;
-
-((java.lang.Short) $number).toString()
-=> java.lang.Short.toString($number)
-;;
-
-new java.lang.Byte($number).toString()
-=> java.lang.Byte.toString($number)
-;;
-
-((java.lang.Byte) $number).toString()
-=> java.lang.Byte.toString($number)
-;;
-
-@id: performance.primitive.valueofstring.to.parseint
-java.lang.Integer.valueOf($str)
-=> java.lang.Integer.parseInt($str)
-;;
-
-@id: performance.primitive.valueofstring.to.parselong
-java.lang.Long.valueOf($str)
-=> java.lang.Long.parseLong($str)
-;;
-
-@id: performance.primitive.valueofstring.to.parseshort
-java.lang.Short.valueOf($str)
-=> java.lang.Short.parseShort($str)
-;;
-
-@id: performance.primitive.valueofstring.to.parsebyte
-java.lang.Byte.valueOf($str)
-=> java.lang.Byte.parseByte($str)
-;;
-
-@id: performance.primitive.valueofstring.to.parsefloat
-java.lang.Float.valueOf($str)
-=> java.lang.Float.parseFloat($str)
-;;
-
-@id: performance.primitive.valueofstring.to.parsedouble
-java.lang.Double.valueOf($str)
-=> java.lang.Double.parseDouble($str)
-;;
-
-@id: performance.primitive.valueofstring.to.parseboolean
-java.lang.Boolean.valueOf($str)
-=> java.lang.Boolean.parseBoolean($str)
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.int
-java.lang.Integer.valueOf($i) :: instanceof($i, "int")
-=> $i
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.long
-java.lang.Long.valueOf($l) :: instanceof($l, "long")
-=> $l
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.short
-java.lang.Short.valueOf($s) :: instanceof($s, "short")
-=> $s
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.byte
-java.lang.Byte.valueOf($b) :: instanceof($b, "byte")
-=> $b
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.float
-java.lang.Float.valueOf($f) :: instanceof($f, "float")
-=> $f
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.double
-java.lang.Double.valueOf($d) :: instanceof($d, "double")
-=> $d
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.char
-java.lang.Character.valueOf($c) :: instanceof($c, "char")
-=> $c
-;;
-
-@id: performance.primitive.valueofprimitive.to.primitive.boolean
-java.lang.Boolean.valueOf($b) :: instanceof($b, "boolean")
-=> $b
-;;
-
-@id: wrapper.to.primitive.Boolean.declaration
-@severity: info
-"Replace Boolean wrapper local variable declaration with boolean primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Boolean $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> boolean $var = $init;
-;;
-
-@id: wrapper.to.primitive.Byte.declaration
-@severity: info
-"Replace Byte wrapper local variable declaration with byte primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Byte $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> byte $var = $init;
-;;
-
-@id: wrapper.to.primitive.Short.declaration
-@severity: info
-"Replace Short wrapper local variable declaration with short primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Short $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> short $var = $init;
-;;
-
-@id: wrapper.to.primitive.Character.declaration
-@severity: info
-"Replace Character wrapper local variable declaration with char primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Character $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> char $var = $init;
-;;
-
-@id: wrapper.to.primitive.Integer.declaration
-@severity: info
-"Replace Integer wrapper local variable declaration with int primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Integer $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> int $var = $init;
-;;
-
-@id: wrapper.to.primitive.Long.declaration
-@severity: info
-"Replace Long wrapper local variable declaration with long primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Long $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> long $var = $init;
-;;
-
-@id: wrapper.to.primitive.Float.declaration
-@severity: info
-"Replace Float wrapper local variable declaration with float primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Float $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> float $var = $init;
-;;
-
-@id: wrapper.to.primitive.Double.declaration
-@severity: info
-"Replace Double wrapper local variable declaration with double primitive type if initializer is non-null and subsequent usages are compatible.":
-java.lang.Double $var = $init;
-:: isAssignedToLocalVariable() && isNonNull($init)
-=> double $var = $init;
 ;;
