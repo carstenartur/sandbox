@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.mining.report.MiningReport;
 
 /**
@@ -124,8 +125,15 @@ public class SourceScanner {
 						String relativePath = rootDir.relativize(javaFile).toString();
 						int line = cu.getLineNumber(result.match().getOffset());
 						String hintFileName = hintFile.getId() != null ? hintFile.getId() : "unknown";
-						String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()
-								: hintFileName;
+						TransformationRule rule = result.rule();
+						String ruleName = rule.getDescription();
+						if (ruleName == null) {
+							ruleName = rule.getRuleId();
+						}
+						if (ruleName == null) {
+							int ruleIndex = hintFile.getRules().indexOf(rule);
+							ruleName = ruleIndex >= 0 ? hintFileName + (ruleIndex + 1) : hintFileName;
+						}
 						report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),
 								result.hasReplacement() ? result.replacement() : null);
 					}
