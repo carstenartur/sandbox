@@ -13,17 +13,17 @@
 <!tags: collections, modernization>
 
 // Collections.emptyList() → List.of()
-java.util.Collections.emptyList() :: sourceVersionGE(9)
+java.util.Collections.emptyList()
 => java.util.List.of()
 ;;
 
 // Collections.emptyMap() → Map.of()
-java.util.Collections.emptyMap() :: sourceVersionGE(9)
+java.util.Collections.emptyMap()
 => java.util.Map.of()
 ;;
 
 // Collections.emptySet() → Set.of()
-java.util.Collections.emptySet() :: sourceVersionGE(9)
+java.util.Collections.emptySet()
 => java.util.Set.of()
 ;;
 
