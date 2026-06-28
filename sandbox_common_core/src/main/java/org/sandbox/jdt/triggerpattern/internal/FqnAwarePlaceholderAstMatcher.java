@@ -109,6 +109,9 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
 	@Override
 	public boolean match(ClassInstanceCreation patternNode, Object other) {
+		if (super.match(patternNode, other)) {
+			return true;
+		}
 		if (!(other instanceof ClassInstanceCreation otherCreation)) {
 			return false;
 		}
@@ -134,6 +137,9 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
 	@Override
 	public boolean match(MethodInvocation patternNode, Object other) {
+		if (super.match(patternNode, other)) {
+			return true;
+		}
 		if (!(other instanceof MethodInvocation otherInvocation)) {
 			return false;
 		}
