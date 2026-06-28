@@ -24,7 +24,8 @@ import org.sandbox.jdt.triggerpattern.api.HintFile;
  *
  * <p>When a mined candidate is promoted into a bundled hint file, a test like
  * these should be added at the same time. The test should contain at least one
- * positive before/after example and one negative example for known risky cases.</p>
+ * positive before/after full-source example and one negative example for known
+ * risky cases.</p>
  */
 class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 
@@ -37,12 +38,12 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 	void performanceKeepsSafeBooleanValueOfReplacement() throws Exception {
 		HintFile hintFile = loadBundledHint("performance.sandbox-hint"); //$NON-NLS-1$
 
-		assertReplacement(hintFile,
+		assertFullReplacement(hintFile,
 				"class Test { Object m() { return java.lang.Boolean.valueOf(true); } }", //$NON-NLS-1$
-				"java.lang.Boolean.TRUE"); //$NON-NLS-1$
-		assertReplacement(hintFile,
+				"class Test { Object m() { return java.lang.Boolean.TRUE; } }"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
 				"class Test { Object m() { return java.lang.Boolean.valueOf(false); } }", //$NON-NLS-1$
-				"java.lang.Boolean.FALSE"); //$NON-NLS-1$
+				"class Test { Object m() { return java.lang.Boolean.FALSE; } }"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -65,15 +66,15 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 	void collectionsKeepsSafeEmptyCollectionFactoryReplacements() throws Exception {
 		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
 
-		assertReplacement(hintFile,
+		assertFullReplacement(hintFile,
 				"class Test { Object m() { return java.util.Collections.emptyList(); } }", //$NON-NLS-1$
-				"java.util.List.of()"); //$NON-NLS-1$
-		assertReplacement(hintFile,
+				"class Test { Object m() { return java.util.List.of(); } }"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
 				"class Test { Object m() { return java.util.Collections.emptyMap(); } }", //$NON-NLS-1$
-				"java.util.Map.of()"); //$NON-NLS-1$
-		assertReplacement(hintFile,
+				"class Test { Object m() { return java.util.Map.of(); } }"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
 				"class Test { Object m() { return java.util.Collections.emptySet(); } }", //$NON-NLS-1$
-				"java.util.Set.of()"); //$NON-NLS-1$
+				"class Test { Object m() { return java.util.Set.of(); } }"); //$NON-NLS-1$
 	}
 
 	@Test
