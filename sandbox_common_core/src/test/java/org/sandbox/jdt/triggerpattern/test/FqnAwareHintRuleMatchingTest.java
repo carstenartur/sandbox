@@ -75,19 +75,19 @@ class FqnAwareHintRuleMatchingTest extends HintRuleTestSupport {
 		HintFile hintFile = parseHint("""
 				<!id: fqn-constructor>
 
-				new java.util.ArrayList<>()
-				=> new java.util.LinkedList<>()
+				new java.util.ArrayList()
+				=> new java.util.LinkedList()
 				;;
 				"""); //$NON-NLS-1$
 
 		assertFullReplacement(hintFile,
 				"""
 				import java.util.ArrayList;
-				class Test { Object m() { return new ArrayList<>(); } }
+				class Test { Object m() { return new ArrayList(); } }
 				""", //$NON-NLS-1$
 				"""
 				import java.util.ArrayList;
-				class Test { Object m() { return new java.util.LinkedList<>(); } }
+				class Test { Object m() { return new java.util.LinkedList(); } }
 				"""); //$NON-NLS-1$
 	}
 }
