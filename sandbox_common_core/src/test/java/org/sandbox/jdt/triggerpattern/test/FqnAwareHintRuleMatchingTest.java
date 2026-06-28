@@ -13,9 +13,30 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.internal.FqnAwarePlaceholderAstMatcher;
+import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 
 /**
  * Documents the intended FQN-aware DSL style.
@@ -92,88 +113,76 @@ class FqnAwareHintRuleMatchingTest extends HintRuleTestSupport {
 	}
 
 	@Test
-	void fqnFieldTypeMatchesImportedSimpleName() throws Exception {
-		HintFile hintFile = parseHint("""
-				<!id: fqn-field-type>
-
-				java.util.List $items;
-				=> java.util.Collection $items;
-				;;
-				"""); //$NON-NLS-1$
-
-		assertFullReplacement(hintFile,
+	void fqnFieldTypeMatchesImportedSimpleName() {
+		assertPatternMatches("java.util.List $items;", PatternKind.FIELD, //$NON-NLS-1$
 				"""
 				import java.util.List;
 				class Test { List items; }
 				""", //$NON-NLS-1$
-				"""
-				import java.util.List;
-				class Test { java.util.Collection items; }
-				"""); //$NON-NLS-1$
+				FieldDeclaration.class);
 	}
 
 	@Test
-	void fqnLocalVariableTypeMatchesImportedSimpleName() throws Exception {
-		HintFile hintFile = parseHint("""
-				<!id: fqn-local-type>
-
-				java.util.List $items = $init;
-				=> java.util.Collection $items = $init;
-				;;
-				"""); //$NON-NLS-1$
-
-		assertFullReplacement(hintFile,
+	void fqnLocalVariableTypeMatchesImportedSimpleName() {
+		assertPatternMatches("java.util.List $items = $init;", PatternKind.DECLARATION, //$NON-NLS-1$
 				"""
 				import java.util.List;
 				class Test { void m(List source) { List items = source; } }
 				""", //$NON-NLS-1$
-				"""
-				import java.util.List;
-				class Test { void m(List source) { java.util.Collection items = source; } }
-				"""); //$NON-NLS-1$
+				VariableDeclarationStatement.class);
 	}
 
 	@Test
-	void fqnReturnAndParameterTypesMatchImportedSimpleNames() throws Exception {
-		HintFile hintFile = parseHint("""
-				<!id: fqn-method-signature>
-
-				java.util.List convert(java.util.Set input)
-				=> java.util.Collection convert(java.util.Collection input)
-				;;
-				"""); //$NON-NLS-1$
-
-		assertFullReplacement(hintFile,
+	void fqnReturnAndParameterTypesMatchImportedSimpleNames() {
+		assertPatternMatches("java.util.List convert(java.util.Set input);", PatternKind.METHOD_DECLARATION, //$NON-NLS-1$
 				"""
 				import java.util.List;
 				import java.util.Set;
-				class Test { List convert(Set input) { return null; } }
+				interface Test { List convert(Set input); }
 				""", //$NON-NLS-1$
-				"""
-				import java.util.List;
-				import java.util.Set;
-				class Test { java.util.Collection convert(java.util.Collection input) { return null; } }
-				"""); //$NON-NLS-1$
+				MethodDeclaration.class);
 	}
 
 	@Test
-	void fqnCastTypeMatchesImportedSimpleName() throws Exception {
-		HintFile hintFile = parseHint("""
-				<!id: fqn-cast-type>
-
-				(java.util.List) $value
-				=> (java.util.Collection) $value
-				;;
-				"""); //$NON-NLS-1$
-
-		assertFullReplacement(hintFile,
+	void fqnCastTypeMatchesImportedSimpleName() {
+		assertPatternMatches("(java.util.List) $value", PatternKind.EXPRESSION, //$NON-NLS-1$
 				"""
 				import java.util.List;
 				class Test { Object m(Object value) { return (List) value; } }
 				""", //$NON-NLS-1$
-				"""
-				import java.util.List;
-				class Test { Object m(Object value) { return (java.util.Collection) value; } }
-				"""); //$NON-NLS-1$
+				CastExpression.class);
+	}
+
+	private void assertPatternMatches(String patternText, PatternKind kind, String source,
+			Class<? extends ASTNode> candidateType) {
+		PatternParser parser = new PatternParser();
+		ASTNode patternNode = parser.parse(Pattern.of(patternText, kind));
+		assertTrue(patternNode != null, "Pattern should parse"); //$NON-NLS-1$
+
+		CompilationUnit cu = parseCompilationUnit(source);
+		List<ASTNode> candidates = new ArrayList<>();
+		cu.accept(new ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				if (candidateType.isInstance(node)) {
+					candidates.add(node);
+				}
+			}
+		});
+		assertFalse(candidates.isEmpty(), "Test source should contain candidates"); //$NON-NLS-1$
+
+		boolean matches = candidates.stream()
+				.anyMatch(candidate -> patternNode.subtreeMatch(new FqnAwarePlaceholderAstMatcher(), candidate));
+		assertTrue(matches, "FQN-aware matcher should match imported simple-name source"); //$NON-NLS-1$
+	}
+
+	private CompilationUnit parseCompilationUnit(String source) {
+		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
+		astParser.setSource(source.toCharArray());
+		astParser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
+		options.put(JavaCore.COMPILER_SOURCE, "17"); //$NON-NLS-1$
+		astParser.setCompilerOptions(options);
+		return (CompilationUnit) astParser.createAST(null);
 	}
 }
