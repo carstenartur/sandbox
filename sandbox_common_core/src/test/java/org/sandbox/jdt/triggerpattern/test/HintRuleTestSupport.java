@@ -13,10 +13,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -39,7 +39,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
  *
  * <p>The goal is to keep tests for promoted mining candidates nearly as compact
  * as the hint rules themselves: load a rule file, provide before/after snippets,
- * and assert either a replacement or no match.</p>
+ * and assert either a full-source replacement or no match.</p>
  */
 abstract class HintRuleTestSupport {
 
@@ -65,7 +65,11 @@ abstract class HintRuleTestSupport {
 		return processor.process(parseCode(code));
 	}
 
-	protected void assertReplacement(HintFile hintFile, String beforeCode, String expectedReplacement) {
+	/**
+	 * Low-level assertion for the raw replacement fragment returned by the processor.
+	 * Promotion tests should normally prefer {@link #assertFullReplacement}.
+	 */
+	protected void assertReplacementFragment(HintFile hintFile, String beforeCode, String expectedReplacement) {
 		List<TransformationResult> results = process(hintFile, beforeCode);
 		assertFalse(results.isEmpty(), "Expected at least one match"); //$NON-NLS-1$
 		assertTrue(results.stream()
@@ -73,6 +77,23 @@ abstract class HintRuleTestSupport {
 				.map(TransformationResult::replacement)
 				.anyMatch(expectedReplacement::equals),
 				"Expected replacement not produced: " + expectedReplacement); //$NON-NLS-1$
+	}
+
+	/**
+	 * Asserts that the first replacement can be embedded back into the original
+	 * source and produce the expected full source. This avoids misleading tests
+	 * where a complete class snippet is compared only with an expression-level
+	 * replacement fragment.
+	 */
+	protected void assertFullReplacement(HintFile hintFile, String beforeCode, String expectedCode) {
+		List<TransformationResult> results = process(hintFile, beforeCode);
+		assertFalse(results.isEmpty(), "Expected at least one match"); //$NON-NLS-1$
+		TransformationResult result = results.stream()
+				.filter(TransformationResult::hasReplacement)
+				.findFirst()
+				.orElseThrow(() -> new AssertionError("Expected at least one replacement")); //$NON-NLS-1$
+		String actualCode = replaceFirstLiteral(beforeCode, result.matchedText(), result.replacement());
+		assertEquals(normalizeSource(expectedCode), normalizeSource(actualCode));
 	}
 
 	protected void assertNoMatch(HintFile hintFile, String code) {
@@ -84,6 +105,16 @@ abstract class HintRuleTestSupport {
 		java.util.HashMap<String, GuardFunction> guards = new java.util.HashMap<>();
 		BuiltInGuards.registerAll(guards);
 		GuardFunctionResolverHolder.setResolver(guards::get);
+	}
+
+	private String replaceFirstLiteral(String source, String matchedText, String replacement) {
+		int index = source.indexOf(matchedText);
+		assertTrue(index >= 0, "Matched text not found in source: " + matchedText); //$NON-NLS-1$
+		return source.substring(0, index) + replacement + source.substring(index + matchedText.length());
+	}
+
+	private String normalizeSource(String source) {
+		return source.replaceAll("\\s+", " ").trim(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private CompilationUnit parseCode(String code) {
