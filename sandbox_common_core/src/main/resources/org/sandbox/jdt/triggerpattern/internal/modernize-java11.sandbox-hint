@@ -1,12 +1,31 @@
 // modernize-java11.sandbox-hint — Java 11+ API modernization
 //
-// This active bundled file is intentionally empty for now. The previously
-// harvested String rules were too broad without reliable type and side-effect
-// guards. They should be reintroduced only with focused tests and binding-aware
-// validation.
+// Keep this active bundled file conservative. Broad harvested String rules were
+// removed because they need reliable type and side-effect guards. The remaining
+// rules are intentionally narrow literal cases.
 
 <!id: modernize-java11>
 <!description: Java 11+ API modernization patterns>
 <!severity: info>
 <!minJavaVersion: 11>
 <!tags: modernization, java11>
+
+"".isBlank()
+=> true
+;;
+
+" ".isBlank()
+=> true
+;;
+
+"a".isBlank()
+=> false
+;;
+
+"abc".isBlank()
+=> false
+;;
+
+"0".isBlank()
+=> false
+;;
