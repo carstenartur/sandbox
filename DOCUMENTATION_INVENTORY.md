@@ -2,37 +2,57 @@
 
 This document provides an inventory of all documentation in the repository and tracks potential enhancements.
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-06-27
+> **Note:** A detailed correctness audit (documentation vs. actual code) is
+> maintained separately in [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md).
+> Module counts below reflect the modules that ship the full README +
+> ARCHITECTURE + TODO documentation set; the repository contains additional
+> modules (see the root [README.md](README.md) "Projects" section) that are
+> documented primarily through the root README.
 
 ---
 
 ## Documentation Completeness Summary
 
-### ✅ Complete Documentation
-
-All major documentation requirements are met:
-
-#### Plugin Modules (14 total)
-All plugin modules have complete documentation:
+### Eclipse Plugin Modules
 
 | Plugin | README | ARCHITECTURE | TODO |
 |--------|--------|--------------|------|
 | sandbox_cleanup_application | ✅ | ✅ | ✅ |
 | sandbox_common | ✅ | ✅ | ✅ |
+| sandbox_common_core *(plain JAR module)* | ✅ | ✅ | ❌ |
+| sandbox_css_cleanup | ✅ | ✅ | ✅ |
 | sandbox_encoding_quickfix | ✅ | ✅ | ✅ |
 | sandbox_extra_search | ✅ | ✅ | ✅ |
 | sandbox_functional_converter | ✅ | ✅ | ✅ |
+| sandbox_int_to_enum | ✅ | ✅ | ✅ |
 | sandbox_jface_cleanup | ✅ | ✅ | ✅ |
 | sandbox_junit_cleanup | ✅ | ✅ | ✅ |
 | sandbox_method_reuse | ✅ | ✅ | ✅ |
 | sandbox_oomph | ✅ | ✅ | ✅ |
 | sandbox_platform_helper | ✅ | ✅ | ✅ |
+| sandbox_test_commons | ✅ | ✅ | ✅ |
 | sandbox_tools | ✅ | ✅ | ✅ |
 | sandbox_triggerpattern | ✅ | ✅ | ✅ |
 | sandbox_usage_view | ✅ | ✅ | ✅ |
+| sandbox_use_general_type | ✅ | ✅ | ✅ |
 | sandbox_xml_cleanup | ✅ | ✅ | ✅ |
 
-#### Infrastructure Modules (4 total)
+### Plain Maven Modules
+
+| Module | README | ARCHITECTURE | TODO |
+|--------|--------|--------------|------|
+| sandbox-ast-api | ✅ | ❌ | ✅ |
+| sandbox-ast-api-jdt | ✅ | ❌ | ❌ |
+| sandbox-benchmarks | ✅ | ❌ | ❌ |
+| sandbox-functional-converter-core | ✅ | ❌ | ❌ |
+| sandbox-jgit-server-webapp | ✅ | ❌ | ❌ |
+| sandbox-jgit-storage-hibernate | ✅ | ❌ | ❌ |
+| sandbox-maven-plugin | ✅ | ❌ | ❌ |
+| sandbox_mining_cli | ✅ | ❌ | ❌ |
+| sandbox_mining_core | ✅ | ❌ | ✅ |
+
+### Infrastructure Modules
 
 | Module | README | ARCHITECTURE | TODO |
 |--------|--------|--------------|------|
@@ -41,22 +61,35 @@ All plugin modules have complete documentation:
 | sandbox_target | ✅ | ✅ | ✅ |
 | sandbox_web | ✅ | ✅ | ✅ |
 
-#### Test Modules (with TESTING.md)
+### Distribution / Packaging Modules
+
+| Module | README | Notes |
+|--------|--------|-------|
+| sandbox_cleanup_cli_dist | ✅ | Distribution packaging for cleanup CLI |
+| sandbox_cleanup_docker | ✅ | Docker packaging for cleanup CLI |
+
+### Test Modules
+
+Test modules (`sandbox_*_test`) intentionally do not carry their own `README.md` — they are
+companion modules to the corresponding plugin. The following have dedicated test documentation:
 
 | Module | TESTING.md | TODO_TESTING.md |
 |--------|------------|-----------------|
 | sandbox_common_test | ✅ | N/A |
 | sandbox_junit_cleanup_test | ✅ | ✅ |
 
-#### Feature Modules (12 total)
-All feature modules now have complete internationalization:
+### Feature Modules
+
+All feature modules have complete internationalization (English + German):
 
 | Feature Module | feature.properties | feature_de.properties |
 |----------------|-------------------|----------------------|
 | sandbox_cleanup_application_feature | ✅ | ✅ |
+| sandbox_css_cleanup_feature | ✅ | ✅ |
 | sandbox_encoding_quickfix_feature | ✅ | ✅ |
 | sandbox_extra_search_feature | ✅ | ✅ |
 | sandbox_functional_converter_feature | ✅ | ✅ |
+| sandbox_int_to_enum_feature | ✅ | ✅ |
 | sandbox_jface_cleanup_feature | ✅ | ✅ |
 | sandbox_junit_cleanup_feature | ✅ | ✅ |
 | sandbox_method_reuse_feature | ✅ | ✅ |
@@ -64,19 +97,22 @@ All feature modules now have complete internationalization:
 | sandbox_tools_feature | ✅ | ✅ |
 | sandbox_triggerpattern_feature | ✅ | ✅ |
 | sandbox_usage_view_feature | ✅ | ✅ |
+| sandbox_use_general_type_feature | ✅ | ✅ |
 | sandbox_xml_cleanup_feature | ✅ | ✅ |
 
-#### Root-Level Documentation
+### Root-Level Documentation
 
 | File | Status | Purpose |
 |------|--------|---------|
 | README.md | ✅ | Main project documentation with comprehensive index |
+| CONTRIBUTING.md | ✅ | Contribution guidelines, build instructions, release process |
 | CODE_OF_CONDUCT.md | ✅ | Community guidelines |
 | SECURITY.md | ✅ | Security policy and vulnerability reporting |
 | LICENSE.txt | ✅ | Eclipse Public License 2.0 |
-| DOCUMENTATION_VERIFICATION.md | ✅ | Documentation verification checklist |
+| BUILD_ACCELERATION.md | ✅ | Maven profile and parallel build documentation |
+| GITHUB_ACTIONS.md | ✅ | GitHub Actions workflow documentation |
 
-#### Specialized Documentation
+### Specialized Documentation
 
 | File | Location | Purpose |
 |------|----------|---------|
@@ -84,103 +120,31 @@ All feature modules now have complete internationalization:
 | TESTING.md | sandbox_common_test/ | HelperVisitor API test suite guide |
 | TESTING.md | sandbox_junit_cleanup_test/ | JUnit migration test organization |
 | TODO_TESTING.md | sandbox_junit_cleanup_test/ | Implementation tracking for JUnit migration |
+| COMPARISON-PROCESS.md | docs/ | Mining pipeline comparison workflow |
+| cleanup-cli.md | docs/ | Cleanup CLI usage guide |
+| docker.md | docs/ | Docker deployment guide |
+| maven-plugin.md | docs/ | Maven plugin usage guide |
 
 ---
 
-## Link Verification
+## Known Gaps
 
-### Main README Links Status
+The following modules have a README but are missing ARCHITECTURE.md or TODO.md. These are primarily
+plain Maven modules or bridges where a full ARCHITECTURE document is less critical, but could be
+added as the modules mature:
 
-All links in the main README.md have been verified:
-
-- ✅ All plugin README links are valid
-- ✅ All plugin ARCHITECTURE.md links are valid
-- ✅ All plugin TODO.md links are valid
-- ✅ All TESTING.md links are valid
-- ✅ Special documentation links (TRIGGERPATTERN.md, TODO_TESTING.md) are valid
-- ✅ Internal section links (anchors) are properly formatted
-- ✅ External links to Eclipse documentation use HTTPS
-
-### Documentation Navigation
-
-All plugin documentation files include proper navigation headers linking to:
-- Main README
-- Plugin's own README (for ARCHITECTURE and TODO files)
-- Sibling documentation files within the plugin
-
----
-
-## Potential Enhancements (Optional)
-
-These are optional enhancements that could be considered for future improvements:
-
-### 1. Standalone CONTRIBUTING.md (Optional)
-
-**Status:** Currently integrated in README.md (lines 2464-2504)
-
-**Consideration:** The Contributing section could be extracted into a standalone CONTRIBUTING.md file for easier discovery on GitHub. However, this is optional as the current inline documentation is comprehensive and well-organized.
-
-**Pros:**
-- GitHub automatically displays CONTRIBUTING.md in PR/Issue creation flow
-- Easier to find for new contributors
-- Standard practice in many open-source projects
-
-**Cons:**
-- Would duplicate some content from README
-- Current integration in README is well-structured
-- Not strictly necessary for this project's scope
-
-**Recommendation:** Low priority - Current approach is adequate.
-
-### 2. Additional Language Translations (Future)
-
-**Status:** Currently supports English and German (de)
-
-**Consideration:** Additional language translations for feature.properties files could be added in the future if there's demand from international contributors.
-
-**Languages to consider:**
-- French (feature_fr.properties)
-- Spanish (feature_es.properties)
-- Japanese (feature_ja.properties)
-
-**Recommendation:** Only add if there's specific demand from the community.
-
-### 3. Architecture Decision Records (ADRs)
-
-**Status:** Not currently used
-
-**Consideration:** For significant architectural decisions, ADRs could be added to document the reasoning behind design choices.
-
-**Recommendation:** Low priority - ARCHITECTURE.md files in each plugin serve a similar purpose.
-
-### 4. API Documentation
-
-**Status:** Javadoc exists in source code
-
-**Consideration:** Published Javadoc site could be generated and hosted (e.g., via GitHub Pages).
-
-**Recommendation:** Low priority - Code is well-documented inline, and this is primarily an experimental sandbox.
-
----
-
-## Documentation Quality Metrics
-
-### Coverage
-- **Plugin Documentation:** 100% (18/18 modules have README, ARCHITECTURE, TODO)
-- **Feature Internationalization:** 100% (12/12 features have EN and DE properties)
-- **Test Documentation:** 100% (2/2 test modules with significant tests have TESTING.md)
-- **Root Documentation:** 100% (All required governance files present)
-
-### Link Integrity
-- **Internal Links:** 100% valid
-- **Navigation Headers:** Present in all plugin documentation
-- **Cross-references:** Consistent and accurate
-
-### Consistency
-- **File Naming:** Consistent (uppercase for ARCHITECTURE.md, TODO.md, etc.)
-- **Header Format:** Consistent across all plugin documentation
-- **License Headers:** Present in all feature.properties files
-- **Copyright Years:** Up to date (2025)
+| Module | Missing |
+|--------|---------|
+| sandbox_common_core | TODO.md |
+| sandbox-ast-api | ARCHITECTURE.md |
+| sandbox-ast-api-jdt | ARCHITECTURE.md, TODO.md |
+| sandbox-benchmarks | ARCHITECTURE.md, TODO.md |
+| sandbox-functional-converter-core | ARCHITECTURE.md, TODO.md |
+| sandbox-jgit-server-webapp | ARCHITECTURE.md, TODO.md |
+| sandbox-jgit-storage-hibernate | ARCHITECTURE.md, TODO.md |
+| sandbox-maven-plugin | ARCHITECTURE.md, TODO.md |
+| sandbox_mining_cli | ARCHITECTURE.md, TODO.md |
+| sandbox_mining_core | ARCHITECTURE.md |
 
 ---
 
@@ -202,12 +166,13 @@ These are optional enhancements that could be considered for future improvements
 
 3. **Update Main README:**
    - Add plugin to the Projects section
-   - Add entry in the Documentation Index table
    - Include plugin in the Table of Contents
+
+4. **Update this inventory** to reflect the new module.
 
 ### When Updating Documentation
 
-1. **Update timestamps** in this inventory when making significant changes
+1. **Update the "Last Updated" date** at the top of this file
 2. **Verify links** after restructuring or moving files
 3. **Update both EN and DE** feature.properties when changing feature descriptions
 4. **Keep TODO.md current** by moving completed items to ARCHITECTURE.md or removing them
@@ -216,26 +181,36 @@ These are optional enhancements that could be considered for future improvements
 
 ## Recent Changes
 
-### 2026-01-11: Documentation Audit and Completion
+### 2026-06-27: Documentation Audit
+
+**Added:**
+- Created `sandbox_mining_core/README.md`
+- Created `sandbox_mining_cli/README.md`
+- Created `sandbox-maven-plugin/README.md`
+- Created `sandbox-ast-api-jdt/README.md`
+- Created `sandbox-jgit-storage-hibernate/README.md`
+- Created `sandbox-jgit-server-webapp/README.md`
+- Fixed outdated Tycho version reference in `pom.xml` (5.0.1 → 5.0.2)
+- Updated this inventory to include all modules added since 2026-01-11
+
+**Modules added to inventory (not previously tracked):**
+- sandbox_css_cleanup (with feature and test counterparts)
+- sandbox_int_to_enum (with feature and test counterparts)
+- sandbox_use_general_type (with feature and test counterparts)
+- sandbox_common_core
+- sandbox_test_commons
+- sandbox-ast-api, sandbox-ast-api-jdt
+- sandbox-benchmarks
+- sandbox-functional-converter-core
+- sandbox-jgit-server-webapp, sandbox-jgit-storage-hibernate
+- sandbox-maven-plugin
+- sandbox_mining_cli, sandbox_mining_core
+- sandbox_cleanup_cli_dist, sandbox_cleanup_docker
+
+### 2026-01-11: Initial Documentation Audit and Completion
 
 **Added:**
 - Created `sandbox_method_reuse_feature/feature.properties`
 - Created `sandbox_method_reuse_feature/feature_de.properties`
 - Updated `sandbox_method_reuse_feature/build.properties`
 - Created this inventory document (DOCUMENTATION_INVENTORY.md)
-
-**Verified:**
-- All 18 plugin modules have complete documentation
-- All 12 feature modules have complete internationalization
-- All links in main README.md are valid
-- All specialized documentation files exist
-
-**Status:** Documentation is complete and comprehensive. No critical gaps identified.
-
----
-
-## Conclusion
-
-The carstenartur/sandbox repository has **excellent documentation coverage**. All plugins have comprehensive documentation, all feature modules have proper internationalization, and all links are valid. The repository follows best practices for open-source project documentation.
-
-The only missing piece identified was the feature.properties files for `sandbox_method_reuse_feature`, which has now been added. The repository is now at 100% documentation completeness for all defined requirements.

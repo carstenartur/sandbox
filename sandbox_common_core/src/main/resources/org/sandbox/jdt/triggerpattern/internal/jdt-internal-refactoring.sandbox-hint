@@ -1,48 +1,39 @@
-/*!id: jdt.internal.importname.simple-name-extraction*/
-/*!description: Replaces manual simple name extraction from a qualified name with Signature.getSimpleName() for robustness.*/
-/*!severity: info*/
+@id: jdt.internal.importname.simple-name-extraction
+@severity: info
+"Replaces manual simple name extraction from a qualified name with Signature.getSimpleName() for robustness.":
 /*!minJavaVersion: 8*/
 /*!tags: jdt, internal, refactoring*/
 $qualifiedName.substring($containerName.length() + 1)
 => org.eclipse.jdt.core.Signature.getSimpleName($qualifiedName)
 ;;
 
-/*!id: jdt.internal.importname.qualified-name-construction*/
-/*!description: Adjusts qualified name construction in ImportName to correctly handle types from the default package (empty container name).*/
-/*!severity: info*/
-/*!minJavaVersion: 8*/
-/*!tags: jdt, internal, refactoring*/
+@id: jdt.internal.importname.qualified-name-construction
+@severity: info
+"Adjusts qualified name construction in ImportName to correctly handle types from the default package (empty container name). Hint only: rewrite needs the local containerName/simpleName values, which the engine cannot rebind from the source pattern.":
 this.qualifiedName = this.containerName + "." + this.simpleName
-=> this.qualifiedName = $containerName.isEmpty() ? $simpleName : $containerName + "." + $simpleName
 ;;
 
-/*!id: jdt.internal.nameenvironment.super.findtype.modules.chararr-chararr*/
-/*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
-/*!severity: info*/
-/*!minJavaVersion: 9*/
+@id: jdt.internal.nameenvironment.super.findtype.modules.chararr-chararr
+@severity: info
+"Add IModule[] modules argument to internal JDT NameEnvironmentWithProgress.super.findType(typeName, packageName) for Java 9+ module support. Hint only: the new $modules argument cannot be bound from the source pattern; an enclosing-method signature change is required first.":
 super.findType($typeName, $packageName) :: sourceVersionGE(9)
-=> super.findType($typeName, $packageName, $modules)
 ;;
 
-/*!id: jdt.internal.nameenvironment.super.findtype.modules.chararrarr*/
-/*!description: Updates internal JDT NameEnvironmentWithProgress.super.findType method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
-/*!severity: info*/
-/*!minJavaVersion: 9*/
+@id: jdt.internal.nameenvironment.super.findtype.modules.chararrarr
+@severity: info
+"Add IModule[] modules argument to internal JDT NameEnvironmentWithProgress.super.findType(compoundName) for Java 9+ module support. Hint only: the new $modules argument cannot be bound from the source pattern.":
 super.findType($compoundName) :: sourceVersionGE(9)
-=> super.findType($compoundName, $modules)
 ;;
 
-/*!id: jdt.internal.nameenvironment.super.ispackage.modules*/
-/*!description: Updates internal JDT NameEnvironmentWithProgress.super.isPackage method call to include the IModule[] modules argument for Java 9+ module system support. Assumes the enclosing method's signature has already been updated to include the $modules parameter.*/
-/*!severity: info*/
-/*!minJavaVersion: 9*/
+@id: jdt.internal.nameenvironment.super.ispackage.modules
+@severity: info
+"Add IModule[] modules argument to internal JDT NameEnvironmentWithProgress.super.isPackage for Java 9+ module support. Hint only: the new $modules argument cannot be bound from the source pattern.":
 super.isPackage($compoundName, $packageName) :: sourceVersionGE(9)
-=> super.isPackage($compoundName, $packageName, $modules)
 ;;
 
-/*!id: jdt.internal.packagebinding.findtype.nullmodules*/
-/*!description: Updates internal JDT PackageBinding.nameEnvironment.findType call to explicitly pass null for the new IModule[] modules argument.*/
-/*!severity: info*/
+@id: jdt.internal.packagebinding.findtype.nullmodules
+@severity: info
+"Updates internal JDT PackageBinding.nameEnvironment.findType call to explicitly pass null for the new IModule[] modules argument.":
 /*!minJavaVersion: 9*/
 nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName) :: sourceVersionGE(9)
 => nameEnvironment.findType(org.eclipse.jdt.internal.compiler.lookup.TypeConstants.PACKAGE_INFO_NAME, this.binding.compoundName, null)
@@ -64,42 +55,42 @@ $pStmt.declarationEnd - $pStmt.declarationSourceStart + 1 :: instanceof($pStmt, 
 => $pStmt.declarationSourceEnd - $pStmt.declarationSourceStart + 1
 ;;
 
-/*!id: jdt.internal.importrewrite.addimport.2arg-to-4arg-delegation*/
-/*!description: Updates internal delegation for 2-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the 'return addImport(binding, ast, this.defaultContext);' line inside the 2-arg public method.*/
+@id: jdt.internal.importrewrite.addimport.2arg-to-4arg-delegation
 @severity: info
+"Updates internal delegation for 2-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the 'return addImport(binding, ast, this.defaultContext);' line inside the 2-arg public method.":
 org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($binding, $ast, this.defaultContext)
 :: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("addImport") && paramCount(2)
 => $this.addImport($binding, $ast, this.defaultContext, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.UNKNOWN)
 ;;
 
-/*!id: jdt.internal.importrewrite.addimport.3arg-to-4arg-delegation*/
-/*!description: Updates internal delegation for 3-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the 'return addImport(binding, ast, context);' line inside the 3-arg public method.*/
+@id: jdt.internal.importrewrite.addimport.3arg-to-4arg-delegation
 @severity: info
+"Updates internal delegation for 3-argument ImportRewrite.addImport to use new 4-argument overload, passing TypeLocation.UNKNOWN. This rule targets the 'return addImport(binding, ast, context);' line inside the 3-arg public method.":
 org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($binding, $ast, $context)
 :: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("addImport") && paramCount(3)
 => $this.addImport($binding, $ast, $context, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.UNKNOWN)
 ;;
 
-/*!id: jdt.internal.importrewrite.addimport.callsite.addannotation*/
-/*!description: Adds TypeLocation.OTHER argument to the internal addImport call within ImportRewrite.addAnnotation. This rule targets the specific addImport invocation inside the addAnnotation method.*/
+@id: jdt.internal.importrewrite.addimport.callsite.addannotation
 @severity: info
+"Adds TypeLocation.OTHER argument to the internal addImport call within ImportRewrite.addAnnotation. This rule targets the specific addImport invocation inside the addAnnotation method.":
 org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.addImport($annotation.getAnnotationType(), $ast, $context)
 :: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("addAnnotation")
 => $this.addImport($annotation.getAnnotationType(), $ast, $context, org.eclipse.jdt.core.dom.rewrite.ImportRewrite.TypeLocation.OTHER)
 ;;
 
-/*!id: jdt.internal.moduledeclaration.modifiers-to-annotations-method*/
-/*!description: Updates internal JDT AST consumers to use ModuleDeclaration.annotations() instead of the deprecated ModuleDeclaration.modifiers().*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.modifiers-to-annotations-method
+@severity: info
+"Updates internal JDT AST consumers to use ModuleDeclaration.annotations() instead of the deprecated ModuleDeclaration.modifiers().":
 /*!minJavaVersion: 9*/
 /*!tags: jdt, internal, refactoring, java9*/
 org.eclipse.jdt.core.dom.ModuleDeclaration.$node.modifiers() :: sourceVersionGE(9)
 => org.eclipse.jdt.core.dom.ModuleDeclaration.$node.annotations()
 ;;
 
-/*!id: jdt.internal.moduledeclaration.modifiers-property-to-annotations-property*/
-/*!description: Updates internal JDT AST consumers to use ModuleDeclaration.ANNOTATIONS_PROPERTY instead of the deprecated ModuleDeclaration.MODIFIERS_PROPERTY.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.modifiers-property-to-annotations-property
+@severity: info
+"Updates internal JDT AST consumers to use ModuleDeclaration.ANNOTATIONS_PROPERTY instead of the deprecated ModuleDeclaration.MODIFIERS_PROPERTY.":
 /*!minJavaVersion: 9*/
 /*!tags: jdt, internal, refactoring, java9*/
 org.eclipse.jdt.core.dom.ModuleDeclaration.MODIFIERS_PROPERTY :: sourceVersionGE(9)
@@ -118,51 +109,51 @@ this.scanner.sourceLevel < org.eclipse.jdt.internal.compiler.classfmt.ClassFileC
 => this.scanner.sourceLevel < org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK9 || this.ast.apiLevel < org.eclipse.jdt.core.dom.AST.JLS9_INTERNAL
 ;;
 
-/*!id: jdt.internal.moduledeclaration.astconverter.settype-to-setname*/
-/*!description: Updates internal JDT DOM ASTConverter logic to use name-based setters for ModuleDirective nodes, replacing type-based setters.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.astconverter.settype-to-setname
+@severity: info
+"Updates internal JDT DOM ASTConverter logic to use name-based setters for ModuleDirective nodes, replacing type-based setters.":
 $moduleDirective.setType(this.convertType($typeRef)) :: (instanceof($moduleDirective, "org.eclipse.jdt.core.dom.UsesDirective") || instanceof($moduleDirective, "org.eclipse.jdt.core.dom.ProvidesDirective"))
 => $moduleDirective.setName(this.convert($typeRef))
 ;;
 
-/*!id: jdt.internal.moduledeclaration.astconverter.implementations-addtype-to-addname*/
-/*!description: Updates internal JDT DOM ASTConverter logic for ProvidesDirective to use name-based additions for implementations, replacing type-based additions.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.astconverter.implementations-addtype-to-addname
+@severity: info
+"Updates internal JDT DOM ASTConverter logic for ProvidesDirective to use name-based additions for implementations, replacing type-based additions.":
 $providesDirective.implementations().add(this.convertType($typeRef)) :: instanceof($providesDirective, "org.eclipse.jdt.core.dom.ProvidesDirective")
 => $providesDirective.implementations().add(this.convert($typeRef))
 ;;
 
-/*!id: jdt.internal.moduledeclaration.astmatcher.gettype-to-getname*/
-/*!description: Updates internal JDT DOM ASTMatcher logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.astmatcher.gettype-to-getname
+@severity: info
+"Updates internal JDT DOM ASTMatcher logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.":
 $node.getType() :: (instanceof($node, "org.eclipse.jdt.core.dom.UsesDirective") || instanceof($node, "org.eclipse.jdt.core.dom.ProvidesDirective"))
 => $node.getName()
 ;;
 
-/*!id: jdt.internal.moduledeclaration.naiveastflattener.gettype-to-getname*/
-/*!description: Updates internal JDT DOM NaiveASTFlattener logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.naiveastflattener.gettype-to-getname
+@severity: info
+"Updates internal JDT DOM NaiveASTFlattener logic to use name-based getters for ModuleDirective nodes, replacing type-based getters.":
 $node.getType().accept($this)
 => $node.getName().accept($this)
 ;;
 
-/*!id: jdt.internal.moduledeclaration.providesdirective.type-property-to-services-property*/
-/*!description: Updates internal JDT DOM ProvidesDirective.TYPE_PROPERTY to ProvidesDirective.SERVICES_PROPERTY.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.providesdirective.type-property-to-services-property
+@severity: info
+"Updates internal JDT DOM ProvidesDirective.TYPE_PROPERTY to ProvidesDirective.SERVICES_PROPERTY.":
 org.eclipse.jdt.core.dom.ProvidesDirective.TYPE_PROPERTY
 => org.eclipse.jdt.core.dom.ProvidesDirective.SERVICES_PROPERTY
 ;;
 
-/*!id: jdt.internal.moduledeclaration.usesdirective.type-property-to-name-property*/
-/*!description: Updates internal JDT DOM UsesDirective.TYPE_PROPERTY to UsesDirective.NAME_PROPERTY.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.usesdirective.type-property-to-name-property
+@severity: info
+"Updates internal JDT DOM UsesDirective.TYPE_PROPERTY to UsesDirective.NAME_PROPERTY.":
 org.eclipse.jdt.core.dom.UsesDirective.TYPE_PROPERTY
 => org.eclipse.jdt.core.dom.UsesDirective.NAME_PROPERTY
 ;;
 
-/*!id: jdt.internal.moduledeclaration.providesdirective.services-property-to-name-property*/
-/*!description: Aligns internal JDT DOM ProvidesDirective.SERVICES_PROPERTY to ProvidesDirective.NAME_PROPERTY after a previous refactoring.*/
-/*!severity: info*/
+@id: jdt.internal.moduledeclaration.providesdirective.services-property-to-name-property
+@severity: info
+"Aligns internal JDT DOM ProvidesDirective.SERVICES_PROPERTY to ProvidesDirective.NAME_PROPERTY after a previous refactoring.":
 org.eclipse.jdt.core.dom.ProvidesDirective.SERVICES_PROPERTY
 => org.eclipse.jdt.core.dom.ProvidesDirective.NAME_PROPERTY
 ;;
@@ -179,38 +170,1930 @@ $cu.postReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUni
 => $cu.postReplaceChild($oldChild, $module, org.eclipse.jdt.core.dom.CompilationUnit.MODULE_PROPERTY)
 ;;
 
-/*!id: jdt.internal.modulebinding.compilerbinding.field.rename*/
-/*!description: Replaces moduleDeclaration.moduleBinding with moduleDeclaration.binding for consistency in JDT internal compiler AST.*/
-/*!severity: info*/
+@id: jdt.internal.modulebinding.compilerbinding.field.rename
+@severity: info
+"Replaces moduleDeclaration.moduleBinding with moduleDeclaration.binding for consistency in JDT internal compiler AST.":
 /*!minJavaVersion: 9*/
 /*!tags: jdt, internal, refactoring*/
 $moduleDeclaration.moduleBinding :: instanceof($moduleDeclaration, "org.eclipse.jdt.internal.compiler.ast.ModuleDeclaration")
 => $moduleDeclaration.binding
 ;;
 
-/*!id: jdt.internal.modulebinding.isopen.field.to.method*/
-/*!description: Converts direct field access to isOpen to method call binding.isOpen() for encapsulation in JDT internal ModuleBinding.*/
-/*!severity: info*/
+@id: jdt.internal.modulebinding.isopen.field.to.method
+@severity: info
+"Converts direct field access to isOpen to method call binding.isOpen() for encapsulation in JDT internal ModuleBinding.":
 /*!minJavaVersion: 9*/
 /*!tags: jdt, internal, refactoring*/
 $binding.isOpen :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.ModuleBinding")
 => $binding.isOpen()
 ;;
 
-/*!id: jdt.internal.namelookup.findmodule.add.tochararray*/
-/*!description: Modifies NameLookup.findModule() call to pass module name as char array for internal JDT module system lookup.*/
-/*!severity: info*/
+@id: jdt.internal.namelookup.findmodule.add.tochararray
+@severity: info
+"Modifies NameLookup.findModule() call to pass module name as char array for internal JDT module system lookup.":
 /*!minJavaVersion: 9*/
 /*!tags: jdt, internal, refactoring*/
 $nameLookup.findModule($name) :: instanceof($nameLookup, "org.eclipse.jdt.internal.core.NameLookup")
 => $nameLookup.findModule($name.toCharArray())
 ;;
 
-/*!id: jdt.internal.modulebinding.getallrequiredmodules.to.getrequires*/
-/*!description: Renames internal JDT ModuleBinding.getAllRequiredModules() to getRequires() for API consistency with JLS9.*/
-/*!severity: info*/
+@id: jdt.internal.modulebinding.getallrequiredmodules.to.getrequires
+@severity: info
+"Renames internal JDT ModuleBinding.getAllRequiredModules() to getRequires() for API consistency with JLS9.":
 /*!minJavaVersion: 9*/
 /*!tags: jdt, internal, refactoring*/
 $binding.getAllRequiredModules() :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.ModuleBinding")
 => $binding.getRequires()
+;;
+
+@id: jdt.internal.modulebinding.services.to.getservices
+@severity: info
+this.binding.services :: sourceVersionGE(9)
+=> this.binding.getServices()
+;;
+
+new org.eclipse.jdt.internal.compiler.batch.BasicCompilationUnit($source, $names, $fileName, this.project) :: sourceVersionGE(9)
+=> new org.eclipse.jdt.internal.compiler.batch.BasicCompilationUnit($source, $names, $fileName, this.typeRoot)
+;;
+
+$packageBinding == null :: sourceVersionGE(9)
+=> $packageBinding == null || $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding
+;;
+
+$packageBinding == null
+=> $packageBinding == null || $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding
+;;
+
+@id: jdt.internal.astrewriteanalyzer.requiresdirective.extra-space-fix
+@severity: info
+rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(' '), java.lang.String.valueOf(' '), java.lang.String.valueOf(' ')) :: sourceVersionGE(9)
+=> rewriteNodeList($node, org.eclipse.jdt.core.dom.RequiresDirective.MODIFIERS_PROPERTY, $pos, java.lang.String.valueOf(' '), java.lang.String.valueOf(' '))
+;;
+
+new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)
+=> $packageBinding instanceof org.eclipse.jdt.internal.compiler.lookup.ProblemPackageBinding ? new org.eclipse.jdt.core.dom.RecoveredPackageBinding($packageBinding, this) : new org.eclipse.jdt.core.dom.PackageBinding($packageBinding, this)
+;;
+
+@id: jdt.internal.astmatcher.match-usesdirective-typefix
+@severity: error
+!(other instanceof org.eclipse.jdt.core.dom.UnionType) :: sourceVersionGE(9)
+=> !(other instanceof org.eclipse.jdt.core.dom.UsesDirective)
+;;
+
+@id: jdt.internal.requiresdirective.modulemodifier-cast-fix
+@severity: error
+((org.eclipse.jdt.core.dom.Modifier) $x).getKeyword().toFlagValue() :: sourceVersionGE(9)
+=> ((org.eclipse.jdt.core.dom.ModuleModifier) $x).getKeyword().toFlagValue()
+;;
+
+@id: jdt.internal.astparser.jls9.to.jls10
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS9) :: sourceVersionGE(10)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10)
+;;
+
+@id: jdt.internal.simplename.var-clone-jls10-compliance-fix
+@severity: info
+this.ast.apiLevel >= org.eclipse.jdt.core.dom.AST.JLS10_INTERNAL
+=> this.ast.apiLevel >= org.eclipse.jdt.core.dom.AST.JLS10_INTERNAL && Long.compare(this.ast.scanner.complianceLevel, 10) >= 0
+;;
+
+@id: jdt.internal.astparser.jls10.to.jls11
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS10) :: sourceVersionGE(11)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS11)
+;;
+
+@id: jdt.internal.compiler.classfileconstants.jdk11.to.getcompliancelevel
+@severity: info
+org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.JDK11
+=> org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.getComplianceLevelForJavaVersion(org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants.MAJOR_VERSION_11)
+;;
+
+@id: jdt.internal.switchcase.getexpression2.to.getexpressions
+@severity: info
+"Updates internal JDT DOM AST accessors for SwitchCase, renaming getExpression2() to getExpressions() for Java 12+ Switch Expressions support.":
+/*!minJavaVersion: 12*/
+org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression2() :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.SwitchCase.$node.getExpressions()
+;;
+
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY
+;;
+
+@id: jdt.internal.switchcase.setisexpr.to.setswitchlabeledrule
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.$switchCase.setIsExpr($expression)
+:: sourceVersionGE(12)
+=> $switchCase.setSwitchLabeledRule($expression)
+;;
+
+@id: jdt.internal.switchcase.isexpr.to.isswitchlabeledrule
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.$node.isExpr()
+:: sourceVersionGE(12)
+=> $node.isSwitchLabeledRule()
+;;
+
+@id: jdt.internal.switchcase.expression2property.to.expressions2property
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY
+:: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY
+;;
+
+@id: jdt.internal.switchcase.expressions.nodelist.constructor.arg.update
+@severity: info
+new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY)
+:: sourceVersionGE(12)
+=> new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY)
+;;
+
+@id: jdt.internal.switchcase.property.comparison.update
+@severity: info
+$property == org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_2_PROPERTY
+:: sourceVersionGE(12)
+=> $property == org.eclipse.jdt.core.dom.SwitchCase.EXPRESSIONS2_PROPERTY
+;;
+
+@id: jdt.internal.switchcase.setexpression.to.internalsetexpression
+@severity: info
+"Replaces direct calls to deprecated SwitchCase.setExpression() with the internal helper to manage deprecation warnings.":
+org.eclipse.jdt.core.dom.SwitchCase.$switchCase.setExpression($exp) :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.ASTConverter.internalSetExpression($switchCase, $exp)
+;;
+
+@id: jdt.internal.astmatcher.deprecatedswitchexpression.to.helper
+@severity: info
+"Replaces direct usage of SwitchCase.getExpression() within ASTMatcher's subtree match with an internal helper method to manage deprecation warnings.":
+safeSubtreeMatch(org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression(), org.eclipse.jdt.core.dom.SwitchCase.$o.getExpression()) :: sourceVersionGE(12)
+=> org.eclipse.jdt.core.dom.ASTMatcher.compareDeprecatedSwitchExpression($node, $o)
+;;
+
+@id: jdt.internal.naiveastflattener.switchexpression.to.helper
+@severity: info
+"Replaces direct usage of SwitchCase.getExpression() with an internal helper method in NaiveASTFlattener to manage deprecation warnings.":
+org.eclipse.jdt.core.dom.SwitchCase.$node.getExpression().accept($this) :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.NaiveASTFlattener.getSwitchExpression($node).accept($this)
+;;
+
+@id: jdt.internal.astrewriteanalyzer.switchexpression_property.to.internal
+@severity: info
+"Replaces direct reference to deprecated SwitchCase.EXPRESSION_PROPERTY with the internal static field to manage deprecation warnings.":
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+@id: jdt.internal.astrewriteflattener.switchexpression_property.to.internal
+@severity: info
+"Replaces direct reference to deprecated SwitchCase.EXPRESSION_PROPERTY with the internal static field in ASTRewriteFlattener to manage deprecation warnings.":
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+@id: jdt.internal.switchcase.getexpressions-to-expressions
+@severity: info
+"Updates internal JDT DOM API calls from SwitchCase.getExpressions() to SwitchCase.expressions() for Java 12 Switch Expressions support.":
+org.eclipse.jdt.core.dom.SwitchCase.$switchCase.getExpressions() :: sourceVersionGE(12)
+=> $switchCase.expressions()
+;;
+
+@id: jdt.internal.astmatcher.breakstatement.implicit
+@severity: info
+return ( $node.getAST().apiLevel >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL && $node.getExpression() != null ? safeSubtreeMatch($node.getExpression(), $o.getExpression()) : safeSubtreeMatch($node.getLabel(), $o.getLabel()));
+:: inClass("org.eclipse.jdt.core.dom.ASTMatcher") && inMethod("match") && sourceVersionGE(12)
+=> return ( $node.getAST().apiLevel >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL && $node.getExpression() != null ? safeSubtreeMatch($node.getExpression(), $o.getExpression()) && $node.isImplicit() == $o.isImplicit() : safeSubtreeMatch($node.getLabel(), $o.getLabel()));
+;;
+
+$expr instanceof org.eclipse.jdt.internal.compiler.ast.Expression :: sourceVersionGE(12)
+=> $expr instanceof org.eclipse.jdt.internal.compiler.ast.Expression && ((org.eclipse.jdt.internal.compiler.ast.Expression) $expr).isTrulyExpression()
+;;
+
+@id: jdt.internal.astrewriteanalyzer.switchcase.property.update.1
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+@id: jdt.internal.astrewriteanalyzer.switchcase.property.update.2
+@severity: info
+org.eclipse.jdt.core.dom.SwitchCase.EXPRESSION_PROPERTY :: sourceVersionGE(12)
+=> org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener.INTERNAL_SWITCH_EXPRESSION_PROPERTY
+;;
+
+@id: jdt.internal.naiveastflattener.switchrule.arrow-space
+@severity: info
+"Adds a space before the '->' in switch labeled rules within NaiveASTFlattener for JLS12+ to align with formatter settings.":
+$node.isSwitchLabeledRule() ? "->" : ":" :: sourceVersionGE(12)
+=> $node.isSwitchLabeledRule() ? " ->" : ":"
+;;
+
+@id: jdt.internal.astrewriteflattener.switchrule.arrow-space
+@severity: info
+"Adds a space before the '->' in switch labeled rules within ASTRewriteFlattener for JLS12+ to align with formatter settings.":
+getBooleanAttribute($node, org.eclipse.jdt.core.dom.SwitchCase.SWITCH_LABELED_RULE_PROPERTY) ? "->" : ":" :: sourceVersionGE(12)
+=> getBooleanAttribute($node, org.eclipse.jdt.core.dom.SwitchCase.SWITCH_LABELED_RULE_PROPERTY) ? " ->" : ":"
+;;
+
+@id: jdt.internal.astrewriteanalyzer.switchlistrewriter.to.labeledrule
+@severity: info
+"Replaces the instantiation of SwitchListRewriter with SwitchListLabeledRuleRewriter for JLS12+ switch expression formatting within ASTRewriteAnalyzer.":
+new org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.SwitchListRewriter($insertIndent) :: sourceVersionGE(12)
+=> new org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer.SwitchListLabeledRuleRewriter($insertIndent)
+;;
+
+@id: jdt.internal.breakstatement.clone.label-to-expression
+@severity: info
+(org.eclipse.jdt.core.dom.Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree($target, $this.getLabel()) :: sourceVersionGE(12)
+=> (org.eclipse.jdt.core.dom.Expression) org.eclipse.jdt.core.dom.ASTNode.copySubtree($target, $this.getExpression())
+;;
+
+@id: jdt.internal.ast.newast.add.previewflag.default
+@severity: info
+"Modernizes AST.newAST(int) calls to include the new 'previewEnabled' flag, defaulting to false as per the API deprecation and replacement. This rule handles the direct deprecation of AST.newAST(int) by explicitly calling AST.newAST(int, boolean).":
+org.eclipse.jdt.core.dom.AST.newAST($level)
+=> org.eclipse.jdt.core.dom.AST.newAST($level, false)
+;;
+
+@id: jdt.internal.ast.jls13.to.jls12
+@severity: info
+"Updates internal JDT AST API references from JLS13 to JLS12, correcting the recommended AST level for certain operations.":
+org.eclipse.jdt.core.dom.AST.JLS13
+=> org.eclipse.jdt.core.dom.AST.JLS12
+;;
+
+@id: jdt.internal.ast.add-previewenabled-jls12
+@severity: info
+"Updates internal JDT AST traversal logic for Java 12+ features by adding a check for AST.isPreviewEnabled(). Targets AST.JLS12 API level checks.":
+$node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12
+:: sourceVersionGE(12) && (instanceof($node, "org.eclipse.jdt.core.dom.BreakStatement") || instanceof($node, "org.eclipse.jdt.core.dom.SwitchCase"))
+=> $node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12 && $node.getAST().isPreviewEnabled()
+;;
+
+@id: jdt.internal.ast.add-previewenabled-jls12-internal
+@severity: info
+"Updates internal JDT AST traversal logic for Java 12+ features by adding a check for AST.isPreviewEnabled(). Targets AST.JLS12_INTERNAL API level checks.":
+$node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL
+:: sourceVersionGE(12) && (instanceof($node, "org.eclipse.jdt.core.dom.BreakStatement") || instanceof($node, "org.eclipse.jdt.core.dom.SwitchCase"))
+=> $node.getAST().apiLevel() >= org.eclipse.jdt.core.dom.AST.JLS12_INTERNAL && $node.getAST().isPreviewEnabled()
+;;
+
+@id: jdt.internal.ast.remove-ispreviewenabled-check
+@severity: info
+"Removes explicit checks for AST.isPreviewEnabled() from internal JDT Core DOM conditional logic. This effectively makes handling of Java 12+ features, previously guarded by the preview flag, unconditional, reflecting a revert of previous behavior.":
+/*!minJavaVersion: 12*/
+/*!tags: jdt, internal, refactoring, java12, preview*/
+org.eclipse.jdt.core.dom.AST.$astVar.isPreviewEnabled()
+=> true
+;;
+
+@id: jdt.internal.astconverter.yieldstatement.previewcheck
+@severity: info
+this.ast.apiLevel != org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL
+=> !this.ast.isPreviewEnabled()
+;;
+
+@id: jdt.internal.ast.ispreviewenabled.jls13.to.jls14
+@severity: info
+this.apiLevel == org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL && this.previewEnabled
+=> this.apiLevel == org.eclipse.jdt.core.dom.AST.JLS14_INTERNAL && this.previewEnabled
+;;
+
+@id: jdt.internal.textblock.jls13-to-jls14
+@severity: info
+org.eclipse.jdt.core.dom.AST.JLS13_INTERNAL :: sourceVersionGE(14)
+=> org.eclipse.jdt.core.dom.AST.JLS14_INTERNAL
+;;
+
+@id: jdt.internal.textblock.supportedonlyin13-to-14
+@severity: info
+supportedOnlyIn13() :: sourceVersionGE(14)
+=> supportedOnlyIn14()
+;;
+
+@id: jdt.internal.performance.empty-string-constructor-to-constant
+@severity: info
+"Replaces the no-argument String constructor with the internal Util.EMPTY_STRING constant for performance and consistency.":
+new java.lang.String()
+=> org.eclipse.jdt.internal.compiler.util.Util.EMPTY_STRING
+;;
+
+@id: jdt.internal.importrewrite.concatenate-name-to-util
+@severity: info
+"Replaces internal concatenateName helper with Util.concatenateName to standardize name concatenation in ImportRewrite.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+concatenateName($arg1, $arg2)
+=> org.eclipse.jdt.internal.core.util.Util.concatenateName($arg1, $arg2, '.')
+;;
+
+new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports)
+=> new org.eclipse.jdt.internal.core.dom.rewrite.ImportRewriteAnalyzer($cu, $root, $importOrder, $threshold, $staticThreshold, $restoreExistingImports, this.useContextToFilterImplicitImports)
+;;
+
+@id: jdt.internal.typo.nameenviroment.to.nameenvironment
+@severity: info
+"Fixes a typo in internal JDT API names, replacing 'Enviroment' with 'Environment' for both the interface and class. Improves code correctness and consistency.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, typo*/
+org.eclipse.jdt.internal.core.INameEnviromentWithProgress
+=> org.eclipse.jdt.internal.core.INameEnvironmentWithProgress
+;;
+
+org.eclipse.jdt.core.dom.NameEnviromentWithProgress
+=> org.eclipse.jdt.core.dom.NameEnvironmentWithProgress
+;;
+
+@id: jdt.internal.astnode.hashmap.capacity-and-type-update
+@severity: info
+"Updates internal ASTNode property storage, changing HashMap constructor capacity and widening local variable type.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+java.util.HashMap $m = new java.util.HashMap(2)
+=> java.util.Map $m = new java.util.HashMap(3)
+;;
+
+@id: jdt.internal.astnode.hashmap.cast-widening
+@severity: info
+"Widens an internal cast from (HashMap) to (Map) for ASTNode properties.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+(java.util.HashMap) $expr
+=> (java.util.Map) $expr
+;;
+
+@id: jdt.internal.rewritemodifiers.packagenode-annotations
+@severity: info
+"Updates internal JDT ASTRewriteAnalyzer to use rewriteModifiers2 for PackageDeclaration annotations, simplifying the rewriteNodeList call by removing redundant string arguments.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+rewriteNodeList($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos, "", " ")
+=> rewriteModifiers2($node, org.eclipse.jdt.core.dom.PackageDeclaration.ANNOTATIONS_PROPERTY, $pos)
+;;
+
+@id: jdt.internal.recoveredtypebinding.getcompilationunit.to.gettype
+@severity: info
+"Refines internal JDT RecoveredTypeBinding logic by getting the specific IType from the ICompilationUnit.":
+((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(getInternalName() + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java)
+:: inClass("org.eclipse.jdt.core.dom.RecoveredTypeBinding")
+=> ((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(getInternalName() + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java).getType(getName())
+;;
+
+@id: jdt.internal.typebinding.getcompilationunit.to.gettype
+@severity: info
+"Refines internal JDT TypeBinding logic by getting the specific IType from the ICompilationUnit.":
+((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(new java.lang.String(this.binding.sourceName()) + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java)
+:: inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> ((org.eclipse.jdt.internal.core.PackageFragment) $javaElement).getCompilationUnit(new java.lang.String(this.binding.sourceName()) + org.eclipse.jdt.internal.compiler.codegen.ConstantPool.SUFFIX_STRING_java).getType(getName())
+;;
+
+org.eclipse.jdt.internal.compiler.ast.Expression type = $expression.type;
+=> org.eclipse.jdt.internal.compiler.ast.TypeReference type = $expression.type;
+;;
+
+@id: jdt.internal.ast.newarraytype.allow-array-elementtype
+@severity: info
+"Corrects the AST.newArrayType(Type, int) method to allow array types as the element type, fixing an internal validation bug.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, bugfix, refactoring*/
+org.eclipse.jdt.core.dom.Type.$elementType == null || org.eclipse.jdt.core.dom.Type.$elementType.isArrayType()
+=> org.eclipse.jdt.core.dom.Type.$elementType == null
+;;
+
+@id: jdt.internal.ast.remove-cycle-creation-javadoc
+@severity: info
+"Removes redundant 'a cycle in would be created' Javadoc comments from various AST node creation methods, as these checks are handled internally or not applicable.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, documentation*/
+"<li>a cycle in would be created</li>"
+=> ""
+;;
+
+@id: jdt.internal.ast.remove-elementtype-is-arraytype-javadoc
+@severity: info
+"Removes specific 'element type is an array type' constraint from ArrayType Javadoc, reflecting the corrected API behavior.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, documentation*/
+"<li>the element type is an array type</li>"
+=> ""
+;;
+
+@id: jdt.internal.bindingresolver.gettypeorpackage.to.getonlypackage
+@severity: info
+this.scope.getTypeOrPackage(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length))
+=> this.scope.getOnlyPackage(org.eclipse.jdt.internal.compiler.util.CharOperation.subarray($importReference.tokens, 0, $importReference.tokens.length))
+;;
+
+org.eclipse.jdt.core.dom.AST.JLS3_INTERNAL
+=> org.eclipse.jdt.core.dom.AST.JLS3
+;;
+
+@id: jdt.internal.typebinding.gettypearguments-to-gettypecount
+@severity: info
+this.getTypeArguments($typeReference)
+=> this.getTypeCount($typeReference)
+;;
+
+@id: jdt.internal.methoddecl.thrownexceptions.property.ischanged
+@severity: info
+"Updates internal JDT ASTRewriteAnalyzer's usage of MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY to conditionally use THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, improving AST consistency for method throws clauses.":
+isChanged($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY)
+=> isChanged($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY)
+;;
+
+@id: jdt.internal.methoddecl.thrownexceptions.property.rewritenodelist
+@severity: info
+"Updates internal JDT ASTRewriteAnalyzer's usage in rewriteNodeList to conditionally use MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, ensuring correct rewriting of method throws clauses.":
+rewriteNodeList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, $pos, " throws ", ", ")
+=> rewriteNodeList($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, $pos, " throws ", ", ")
+;;
+
+@id: jdt.internal.methoddecl.thrownexceptions.property.visitlist
+@severity: info
+"Updates internal JDT ASTRewriteFlattener's usage in visitList to conditionally use MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY for JLS8+ API levels, ensuring correct flattening of method throws clauses.":
+visitList($node, org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY, java.lang.String.valueOf(','), " throws ", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+=> visitList($node, $node.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS8 ? org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTIONS_PROPERTY : org.eclipse.jdt.core.dom.MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY, java.lang.String.valueOf(','), " throws ", org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+;;
+
+@id: jdt.internal.methoddecl.extraDimensions.property.rename
+@severity: info
+"Updates internal JDT DOM API, renaming MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY to MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY to reflect JLS8 AST structure review.":
+org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY
+;;
+
+@id: jdt.internal.methoddecl.extraDimensions.nodelist.constructor.update
+@severity: info
+"Updates internal JDT DOM ASTNode.NodeList constructor calls to use the new MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY.":
+new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSION_INFOS_PROPERTY) :: sourceVersionGE(8)
+=> new org.eclipse.jdt.core.dom.ASTNode.NodeList(org.eclipse.jdt.core.dom.MethodDeclaration.EXTRA_DIMENSIONS2_PROPERTY)
+;;
+
+@id: jdt.internal.variabledecl.extradimensions2.stringliteral.update
+@severity: info
+"Updates internal JDT DOM, renaming the string literal 'extraDimensions' to 'extraDimensions2' within the ChildListPropertyDescriptor constructor call in internalExtraDimensions2PropertyFactory for VariableDeclaration.":
+new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor($nodeClass, "extraDimensions", org.eclipse.jdt.core.dom.ExtraDimension.class, $cycleRisk) :: inClass("org.eclipse.jdt.core.dom.VariableDeclaration") && inMethod("internalExtraDimensions2PropertyFactory") && sourceVersionGE(8)
+=> new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor($nodeClass, "extraDimensions2", org.eclipse.jdt.core.dom.ExtraDimension.class, $cycleRisk)
+;;
+
+@id: jdt.internal.variabledeclfragment.extradimensions.tomanufactory
+@severity: info
+"Replaces the direct SimplePropertyDescriptor instantiation for VariableDeclarationFragment.EXTRA_DIMENSIONS_PROPERTY with a call to the internal factory method internalExtraDimensionsPropertyFactory.":
+new org.eclipse.jdt.core.dom.SimplePropertyDescriptor(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class, "extraDimensions", int.class, org.eclipse.jdt.core.dom.ASTNode.MANDATORY) :: inClass("org.eclipse.jdt.core.dom.VariableDeclarationFragment") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.VariableDeclarationFragment.internalExtraDimensionsPropertyFactory(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class)
+;;
+
+@id: jdt.internal.variabledeclfragment.extradimensions2.tomanufactory
+@severity: info
+"Replaces the direct ChildListPropertyDescriptor instantiation for VariableDeclarationFragment.EXTRA_DIMENSIONS2_PROPERTY with a call to the internal factory method internalExtraDimensions2PropertyFactory.":
+new org.eclipse.jdt.core.dom.ChildListPropertyDescriptor(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class, "extraDimensions", org.eclipse.jdt.core.dom.ExtraDimension.class, org.eclipse.jdt.core.dom.ASTNode.NO_CYCLE_RISK) :: inClass("org.eclipse.jdt.core.dom.VariableDeclarationFragment") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.VariableDeclarationFragment.internalExtraDimensions2PropertyFactory(org.eclipse.jdt.core.dom.VariableDeclarationFragment.class)
+;;
+
+@id: jdt.internal.methoddecl.thrownexceptions.to.helper
+@severity: info
+$node.thrownExceptions() :: instanceof($node, "org.eclipse.jdt.core.dom.MethodDeclaration") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.ASTConverter.internalThownExceptions($node)
+;;
+
+@id: jdt.internal.astparser.jls4.to.jls8
+@severity: info
+org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS4) :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.ASTParser.newParser(org.eclipse.jdt.core.dom.AST.JLS8)
+;;
+
+@id: jdt.internal.ast.jls4.to.jls4_internal
+@severity: info
+org.eclipse.jdt.core.dom.AST.JLS4 :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.AST.JLS4_INTERNAL
+;;
+
+@id: jdt.internal.modifier.isdefaultmethod-to-isdefault.static
+@severity: info
+org.eclipse.jdt.core.dom.Modifier.isDefaultMethod($flags) :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.Modifier.isDefault($flags)
+;;
+
+@id: jdt.internal.modifier.isdefaultmethod-to-isdefault.instance
+@severity: info
+$modifier.isDefaultMethod() :: instanceof($modifier, "org.eclipse.jdt.core.dom.Modifier") && sourceVersionGE(8)
+=> $modifier.isDefault()
+;;
+
+@id: jdt.internal.typebinding.add.intersectioncasttype.condition
+@severity: info
+"Extends a boolean condition in TypeBinding to include 'isIntersectionCastType()' when handling new Java 8 intersection types.":
+isAnonymous() || this.binding.isLocalType() :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> isAnonymous() || this.binding.isLocalType() || this.binding.isIntersectionCastType()
+;;
+
+@id: jdt.internal.bindingresolver.lambda-refexpr-binding-to-methodbinding
+@severity: info
+"Updates internal JDT DefaultBindingResolver to use getMethodBinding() instead of direct 'binding' field access for LambdaExpression and ReferenceExpression, improving encapsulation and correctness for resolved method parameters.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, bugfix*/
+org.eclipse.jdt.internal.compiler.ast.LambdaExpression.$lambdaExpression.binding
+:: instanceof($lambdaExpression, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
+=> $lambdaExpression.getMethodBinding()
+;;
+
+org.eclipse.jdt.internal.compiler.ast.ReferenceExpression.$referenceExpression.binding
+:: instanceof($referenceExpression, "org.eclipse.jdt.internal.compiler.ast.ReferenceExpression")
+=> $referenceExpression.getMethodBinding()
+;;
+
+org.eclipse.jdt.internal.compiler.lookup.TypeBinding $x == org.eclipse.jdt.internal.compiler.lookup.TypeBinding $y :: sourceVersionGE(8)
+=> org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals($x, $y)
+;;
+
+org.eclipse.jdt.internal.compiler.lookup.TypeBinding $x != org.eclipse.jdt.internal.compiler.lookup.TypeBinding $y :: sourceVersionGE(8)
+=> !org.eclipse.jdt.internal.compiler.lookup.TypeBinding.equalsEquals($x, $y)
+;;
+
+@id: jdt.internal.methoddecl.receivertype.propertydescriptor.type
+@severity: info
+"Updates the type of the 'receiverType' property descriptor in MethodDeclaration from AnnotatableType.class to Type.class, aligning with JLS8 AST structure.":
+new org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.MethodDeclaration.class, "receiverType", org.eclipse.jdt.core.dom.AnnotatableType.class, $optional, $noCycleRisk) :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.MethodDeclaration")
+=> new org.eclipse.jdt.core.dom.ChildPropertyDescriptor(org.eclipse.jdt.core.dom.MethodDeclaration.class, "receiverType", org.eclipse.jdt.core.dom.Type.class, $optional, $noCycleRisk)
+;;
+
+@id: jdt.internal.methoddecl.receivertype.cast
+@severity: info
+"Replaces casts to (AnnotatableType) with (Type) for receiver types in MethodDeclaration, aligning with JLS8 AST structure and removing a redundant internal type.":
+(org.eclipse.jdt.core.dom.AnnotatableType) $expression :: sourceVersionGE(8) && inClass("org.eclipse.jdt.core.dom.MethodDeclaration")
+=> (org.eclipse.jdt.core.dom.Type) $expression
+;;
+
+@id: jdt.internal.methodbinding.add-default-modifier
+@severity: info
+org.eclipse.jdt.core.dom.Modifier.STRICTFP :: inClass("org.eclipse.jdt.core.dom.MethodBinding") && sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.Modifier.STRICTFP | org.eclipse.jdt.core.dom.Modifier.DEFAULT
+;;
+
+@id: jdt.internal.astrewriteanalyzer.rewriteextradimensionsinfo.whitespace
+@severity: info
+rewriteNodeList($node, $property, $pos, " ", " ")
+=> rewriteNodeList($node, $property, $pos, " ", "")
+;;
+
+@id: jdt.internal.astrewriteanalyzer.arraytype.visit.to.helper
+@severity: info
+rewriteNodeList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, $pos, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, " ")
+:: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteAnalyzer") && inMethod("visit")
+=> rewriteArrayTypeDimensions($node, $pos)
+;;
+
+@id: jdt.internal.astrewriteflattener.arraytype.visitlist.whitespace
+@severity: info
+visitList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, java.lang.String.valueOf(' '), org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, java.lang.String.valueOf(' '))
+:: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFlattener")
+=> visitList($node, org.eclipse.jdt.core.dom.ArrayType.DIMENSIONS_PROPERTY, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING, org.eclipse.jdt.internal.core.dom.rewrite.Util.EMPTY_STRING)
+;;
+
+@id: jdt.internal.compiler.lambdaexpression.arguments-to-method
+@severity: info
+"Updates internal JDT ASTConverter to use lambda.arguments() method instead of direct field access on LambdaExpression.":
+/*!tags: jdt, internal, refactoring*/
+$lambda.arguments :: instanceof($lambda, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
+=> $lambda.arguments()
+;;
+
+@id: jdt.internal.compiler.lambdaexpression.body-to-method
+@severity: info
+"Updates internal JDT ASTConverter to use lambda.body() method instead of direct field access on LambdaExpression.":
+/*!tags: jdt, internal, refactoring*/
+$lambda.body :: instanceof($lambda, "org.eclipse.jdt.internal.compiler.ast.LambdaExpression")
+=> $lambda.body()
+;;
+
+@id: jdt.internal.importrewrite.newannotation.createtype-to-addimport.annotationtype
+@severity: info
+"Updates internal ImportRewrite.newAnnotation to use addImport for annotation types, replacing calls to a removed private createType helper.":
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $annotationType, $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("newAnnotation") && sourceVersionGE(8)
+=> $this.addImport($annotationType, $ast, $context)
+;;
+
+@id: jdt.internal.importrewrite.createannotationvalue.createtype-to-addimport.typebinding
+@severity: info
+"Updates internal ImportRewrite.createAnnotationValue to use addImport for type bindings, replacing calls to a removed private createType helper.":
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $typeBinding, $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("createAnnotationValue") && instanceof($typeBinding, "org.eclipse.jdt.core.dom.ITypeBinding") && sourceVersionGE(8)
+=> $this.addImport($typeBinding, $ast, $context)
+;;
+
+@id: jdt.internal.importrewrite.createannotationvalue.createtype-to-addimport.variabletype
+@severity: info
+"Updates internal ImportRewrite.createAnnotationValue to use addImport for variable types, replacing calls to a removed private createType helper.":
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.createType(null, $variable.getType(), $ast, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && inMethod("createAnnotationValue") && sourceVersionGE(8)
+=> $this.addImport($variable.getType(), $ast, $context)
+;;
+
+@id: jdt.internal.typeparameter.annotations-to-modifiers-method
+@severity: info
+"Updates internal JDT TypeParameter API calls from annotations() to modifiers() to align with JLS8 AST structure for type annotations.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$typeParameter.annotations() :: instanceof($typeParameter, "org.eclipse.jdt.core.dom.TypeParameter") && sourceVersionGE(8)
+=> $typeParameter.modifiers()
+;;
+
+@id: jdt.internal.typeparameter.annotations-to-modifiers-property
+@severity: info
+"Updates internal JDT TypeParameter API constant from ANNOTATIONS_PROPERTY to MODIFIERS_PROPERTY to align with JLS8 AST structure for type annotations.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.core.dom.TypeParameter.ANNOTATIONS_PROPERTY :: sourceVersionGE(8)
+=> org.eclipse.jdt.core.dom.TypeParameter.MODIFIERS_PROPERTY
+;;
+
+@id: jdt.internal.importrewrite.newannotation.to.addannotation.ibinding
+@severity: info
+"Updates internal calls from newAnnotation to addAnnotation in ImportRewrite, reordering arguments for the new public API.":
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotation($ast, $annotationBinding, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && sourceVersionGE(8)
+=> $this.addAnnotation($annotationBinding, $ast, $context)
+;;
+
+@id: jdt.internal.importrewrite.newannotationvalue.to.addannotation.value
+@severity: info
+"Updates internal calls from newAnnotationValue to addAnnotation in ImportRewrite, for consistent internal helper naming.":
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$this.newAnnotationValue($ast, $value, $context)
+:: inClass("org.eclipse.jdt.core.dom.rewrite.ImportRewrite") && sourceVersionGE(8)
+=> $this.addAnnotation($ast, $value, $context)
+;;
+
+"void m(" :: inClass("org.eclipse.jdt.internal.core.dom.rewrite.ASTRewriteFormatter")
+=> "void m(final "
+;;
+
+@id: jdt.internal.methodbinding.annotation-target-fix
+@severity: info
+$isConstructor && ($metaTagBits & org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationForConstructor) == 0
+:: inClass("org.eclipse.jdt.core.dom.MethodBinding")
+=> $isConstructor && ($metaTagBits & org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationForConstructor) == 0 && (($metaTagBits & org.eclipse.jdt.internal.compiler.lookup.TagBits.AnnotationTargetMASK) != 0)
+;;
+
+@id: jdt.internal.astconverter.typedec.cce.fix
+@severity: error
+$result == null
+:: inClass("org.eclipse.jdt.core.dom.ASTConverter")
+=> $result == null || !($result instanceof org.eclipse.jdt.core.dom.TypeDeclaration)
+;;
+
+@id: jdt.internal.typebinding.unannotated-boolean
+@severity: info
+"Updates internal TypeBinding.unannotated() calls to include a boolean argument for handling null type annotations, reflecting JLS8 API changes.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, null-annotations, java8*/
+$typeBinding.unannotated() :: instanceof($typeBinding, "org.eclipse.jdt.internal.compiler.lookup.TypeBinding") && sourceVersionGE(8)
+=> $typeBinding.unannotated(false)
+;;
+
+@id: jdt.internal.typebinding.unannotated.remove-boolean-arg
+@severity: info
+"Modernizes internal JDT TypeBinding.unannotated() method calls by removing the now-redundant boolean argument, aligning with internal API simplification for Java 8+ type annotations.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, java8*/
+$typeBinding.unannotated(false) :: instanceof($typeBinding, "org.eclipse.jdt.internal.compiler.lookup.TypeBinding") && sourceVersionGE(8)
+=> $typeBinding.unannotated()
+;;
+
+@id: jdt.internal.astconverter.retrieverightbrace.adjust-bodyend
+@severity: info
+retrieveRightBrace($expr.bodyEnd, $declarationSourceEnd)
+:: inClass("org.eclipse.jdt.core.dom.ASTConverter") && (instanceof($expr, "org.eclipse.jdt.internal.compiler.ast.MethodDeclaration") || instanceof($expr, "org.eclipse.jdt.internal.compiler.ast.AnonymousTypeDeclaration"))
+=> retrieveRightBrace($expr.bodyEnd + 1, $declarationSourceEnd)
+;;
+
+@id: jdt.internal.refactoring.rename-intersectiontypebinding.type
+org.eclipse.jdt.internal.compiler.lookup.IntersectionCastTypeBinding
+=> org.eclipse.jdt.internal.compiler.lookup.IntersectionTypeBinding18
+;;
+
+@id: jdt.internal.refactoring.rename-intersectiontypebinding.constant
+org.eclipse.jdt.internal.compiler.lookup.Binding.INTERSECTION_CAST_TYPE
+=> org.eclipse.jdt.internal.compiler.lookup.Binding.INTERSECTION_TYPE18
+;;
+
+@id: jdt.internal.refactoring.rename-intersectiontypebinding.method
+$binding.isIntersectionCastType() :: instanceof($binding, "org.eclipse.jdt.internal.compiler.lookup.Binding") && inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> $binding.isIntersectionType18()
+;;
+
+@id: jdt.internal.bindingcomparator.capturebinding.position-to-end
+@severity: info
+"Updates internal JDT BindingComparator logic to compare 'end' property instead of 'position' for CaptureBinding, enhancing robustness of wildcard capture handling.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, bugfix*/
+$captureBinding.position == $captureBinding2.position :: inClass("org.eclipse.jdt.core.dom.BindingComparator")
+=> $captureBinding.end == $captureBinding2.end
+;;
+
+@id: jdt.internal.typebinding.capture.add-argument
+@severity: info
+"Adds a new integer argument to the internal TypeBinding.capture() method call, enhancing robustness for wildcard captures.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, bugfix*/
+$expressionType.capture($scope, 0) :: inClass("org.eclipse.jdt.core.dom.TypeBinding")
+=> $expressionType.capture($scope, 0, 0)
+;;
+
+@id: jdt.internal.checks.validatemodifiesfiles.addmonitor
+@severity: info
+org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $context)
+=> org.eclipse.jdt.internal.corext.util.Checks.validateModifiesFiles($files, $context, pm)
+;;
+
+// Note: This rule assumes 'pm' is an IProgressMonitor variable available in the scope.
+// The commit also implies similar changes for 'Checks.validateEdit()'.
+
+@id: jdt.internal.typo.fcomplierreleasecheck.to.fcompilerreleasecheck
+@severity: info
+fComplierReleaseCheck
+=> fCompilerReleaseCheck
+;;
+
+@id: jdt.internal.codeassist.substringmatch.preference.to.flag
+@severity: info
+org.eclipse.jdt.core.JavaCore.ENABLED.equals(org.eclipse.jdt.core.JavaCore.getOption(org.eclipse.jdt.core.JavaCore.CODEASSIST_SUBSTRING_MATCH))
+=> org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin.CODEASSIST_SUBSTRING_MATCH_ENABLED
+;;
+
+@id: jdt.internal.textblock.previewcheck.to.java15orhigher
+@severity: info
+org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(15)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is15OrHigher($javaProject)
+;;
+
+(org.eclipse.jdt.core.dom.TypeDeclaration) $expr
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal")
+=> (org.eclipse.jdt.core.dom.AbstractTypeDeclaration) $expr
+;;
+
+Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3
+=> Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3
+;;
+
+org.eclipse.jdt.internal.ui.text.correction.SimilarElementsRequestor.getStaticImportFavorites($cu, $name, $isMethod, $favourites)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getStaticImportFavorites($cu, $name, $isMethod, $favourites)
+;;
+
+Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? -2 : 3
+=> Util.isMac() ? -4 : org.eclipse.jdt.internal.ui.preferences.Util.isLinux() ? 4 : 3
+;;
+
+@id: jdt.internal.modifiercorrection.rename-sealedmissingmodifierproposal
+@severity: info
+org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingClassModifierProposal($context, $problem, $proposals)
+=> org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addSealedMissingModifierProposal($context, $problem, $proposals)
+;;
+
+@id: jdt.internal.ast.semanticmatching.safesubtreematch-to-astnodes-match
+@severity: info
+$matcher.safeSubtreeMatch($expr1, $expr2) :: instanceof($matcher, "org.eclipse.jdt.core.dom.ASTMatcher")
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.match($expr1, $expr2)
+;;
+
+@id: jdt.internal.ast.semanticmatching.private-match-to-astnodes-match
+@severity: info
+match($expr1, $expr2) :: inClass("org.eclipse.jdt.internal.ui.fix.MergeConditionalBlocksCleanUp")
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.match($expr1, $expr2)
+;;
+
+@id: jdt.internal.astnodes.replace.keepcomment
+@severity: info
+$rewrite.replace($node, $replacement, $group)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.replaceButKeepComment($rewrite, $node, $replacement, $group)
+;;
+
+@id: jdt.internal.astnodes.remove.keepcomment
+@severity: info
+$rewrite.remove($node, $group)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.removeButKeepComment($rewrite, $node, $group)
+;;
+
+<!map JAVADOC_CONSTANTS: "PRIVATE" => PRIVATE, "PROTECTED" => PROTECTED, "PACKAGE" => PACKAGE, "PUBLIC" => PUBLIC, "USE" => USE, "NOTREE" => NOTREE, "NOINDEX" => NOINDEX, "NONAVBAR" => NONAVBAR, "NODEPRECATED" => NODEPRECATED, "NODEPRECATEDLIST" => NODEPRECATEDLIST, "VERSION" => VERSION, "AUTHOR" => AUTHOR, "SPLITINDEX" => SPLITINDEX, "STYLESHEETFILE" => STYLESHEETFILE, "OVERVIEW" => OVERVIEW, "DOCLETNAME" => DOCLETNAME, "DOCLETPATH" => DOCLETPATH, "SOURCEPATH" => SOURCEPATH, "CLASSPATH" => CLASSPATH, "DESTINATION" => DESTINATION, "OPENINBROWSER" => OPENINBROWSER, "VISIBILITY" => VISIBILITY, "PACKAGENAMES" => PACKAGENAMES, "SOURCEFILES" => SOURCEFILES, "EXTRAOPTIONS" => EXTRAOPTIONS, "VMOPTIONS" => VMOPTIONS, "TITLE" => TITLE, "HREF" => HREF, "NAME" => NAME, "PATH" => PATH, "FROMSTANDARD" => FROMSTANDARD, "ANTPATH" => ANTPATH, "SOURCE" => SOURCE>
+
+$store.#{JAVADOC_CONSTANTS} :: instanceof($store, "org.eclipse.jdt.internal.ui.javadocexport.JavadocOptionsManager")
+=> org.eclipse.jdt.internal.ui.javadocexport.JavadocOptionsManager.#{JAVADOC_CONSTANTS_VALUE}
+;;
+
+@id: jdt.internal.astnodes.oppositeinfixoperator.to.negatedinfixoperator
+@severity: info
+org.eclipse.jdt.internal.corext.dom.ASTNodes.oppositeInfixOperator($operator)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.negatedInfixOperator($operator)
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_always.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_ALWAYS
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_ALWAYS
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_never.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_NEVER
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_NEVER
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_use_blocks_no_for_return_and_throw.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_USE_BLOCKS_NO_FOR_RETURN_AND_THROW
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_USE_BLOCKS_NO_FOR_RETURN_AND_THROW
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_convert_for_loop_to_enhanced.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_CONVERT_FOR_LOOP_TO_ENHANCED
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED
+;;
+
+@id: jdt.internal.fix.cleanupconstants.control_statments_convert_for_loop_only_if_loop_var_used.typo
+@severity: info
+org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED
+=> org.eclipse.jdt.internal.ui.fix.CleanUpConstants.CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED
+;;
+
+@id: jdt.internal.preferences.cleanup.cleanupmessages.groupname_controlstatments.typo
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.CodeStyleTabPage_GroupName_ControlStatments
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.CodeStyleTabPage_GroupName_ControlStatements
+;;
+
+@id: jdt.internal.javamodelutil.is18orhigher.to.is1d8orhigher
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is18OrHigher($project)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher($project)
+;;
+
+@id: jdt.internal.javamodelutil.is17orhigher.to.is1d7orhigher
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is17OrHigher($project)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)
+;;
+
+@id: jdt.internal.javamodelutil.is16orhigher.to.is1d6orhigher
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($compliance)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d6OrHigher($compliance)
+;;
+
+@id: jdt.internal.cleanup.vardefinitionsusesvisitor.remove-find
+@severity: info
+"Removes redundant .find() method call on VarDefinitionsUsesVisitor after its logic was inlined into the constructor.":
+new org.eclipse.jdt.internal.ui.fix.VarDefinitionsUsesVisitor($variableBinding, $scopeNode, $includeInnerScopes).find()
+=> new org.eclipse.jdt.internal.ui.fix.VarDefinitionsUsesVisitor($variableBinding, $scopeNode, $includeInnerScopes)
+;;
+
+@id: jdt.internal.cleanup.varoccurrencevisitor.rename-type
+@severity: info
+"Renames internal JDT cleanup type VarOccurrenceVisitor to VarConflictVisitor.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor
+=> org.eclipse.jdt.internal.corext.dom.VarConflictVisitor
+;;
+
+@id: jdt.internal.cleanup.varoccurrencevisitor.rename-constructor
+@severity: info
+"Updates constructor calls for internal JDT cleanup type from VarOccurrenceVisitor to VarConflictVisitor.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+new org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor($allowedVars, true)
+=> new org.eclipse.jdt.internal.corext.dom.VarConflictVisitor($allowedVars, true)
+;;
+
+@id: jdt.internal.cleanup.varoccurrencevisitor.rename-method
+@severity: info
+"Renames method call from isVarUsed() to isVarConflicting() on internal JDT cleanup visitor.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$varOccurrenceVisitor.isVarUsed() :: instanceof($varOccurrenceVisitor, "org.eclipse.jdt.internal.corext.dom.VarOccurrenceVisitor")
+=> $varOccurrenceVisitor.isVarConflicting()
+;;
+
+@id: jdt.internal.ast.jls10.to.asthelper
+@severity: info
+"Consolidates internal JDT UI AST level usage by replacing AST.JLS10 with ASTHelper.JLS10 to remove deprecation warnings.":
+org.eclipse.jdt.core.dom.AST.JLS10
+=> org.eclipse.jdt.internal.ui.util.ASTHelper.JLS10
+;;
+
+@id: jdt.internal.ast.jls8.to.asthelper
+@severity: info
+"Consolidates internal JDT UI AST level usage by replacing AST.JLS8 with ASTHelper.JLS8 to remove deprecation warnings.":
+org.eclipse.jdt.core.dom.AST.JLS8
+=> org.eclipse.jdt.internal.ui.util.ASTHelper.JLS8
+;;
+
+@id: jdt.internal.ast.jls9.to.asthelper
+@severity: info
+"Consolidates internal JDT UI AST level usage by replacing AST.JLS9 with ASTHelper.JLS9 to remove deprecation warnings.":
+org.eclipse.jdt.core.dom.AST.JLS9
+=> org.eclipse.jdt.internal.ui.util.ASTHelper.JLS9
+;;
+
+@id: jdt.internal.addunimplementedconstructorsaction.preventrecord
+@severity: info
+$type.getCompilationUnit() != null && !$type.isInterface() && !$type.isEnum() && !$type.isAnonymous() :: instanceof($type, "org.eclipse.jdt.core.IType") && sourceVersionGE(16)
+=> $type.getCompilationUnit() != null && !$type.isInterface() && !$type.isEnum() && !$type.isRecord() && !$type.isAnonymous()
+;;
+
+@id: jdt.internal.previewfeatures.ispreviewfeatureenabled.to.is16orhigher
+@severity: info
+org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor.isPreviewFeatureEnabled($javaProject) :: sourceVersionGE(16)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.is16OrHigher($javaProject)
+;;
+
+@id: jdt.internal.semantichighlighting.restrictedkeywords.to.restrictedidentifiers.type
+@severity: info
+org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings.RestrictedKeywordsHighlighting
+=> org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings.RestrictedIdentifiersHighlighting
+;;
+
+@id: jdt.internal.semantichighlighting.restrictedkeywords.to.restrictedidentifiers.nlskey
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.PreferencesMessages.JavaEditorPreferencePage_restrictedKeywords
+=> org.eclipse.jdt.internal.ui.javaeditor.JavaEditorMessages.SemanticHighlighting_restrictedIdentifiers
+;;
+
+getParent($assignment, org.eclipse.jdt.core.dom.ParenthesizedExpression.class)
+:: inClass("org.eclipse.jdt.internal.ui.fix.PullUpAssignmentCleanUp")
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getHighestCompatibleNode($assignment, org.eclipse.jdt.core.dom.ParenthesizedExpression.class)
+;;
+
+@id: jdt.internal.completionproposal.add-context-args
+@severity: info
+new org.eclipse.jdt.ui.text.java.JavaCompletionProposal($completion, $start, $length, $image, $label, $relevance)
+=> new org.eclipse.jdt.ui.text.java.JavaCompletionProposal($completion, $start, $length, $image, $label, $relevance, false, getInvocationContext())
+;;
+
+fName :: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.RemoveDeclarationCorrectionProposal")
+=> fSimpleName
+;;
+
+PACKAGE :: inClass("org.eclipse.jdt.ui.wizards.NewPackageWizardPage")
+=> PACKAGE_NAME
+;;
+
+fPackageStatus :: inClass("org.eclipse.jdt.ui.wizards.NewPackageWizardPage")
+=> fPackageNameStatus
+;;
+
+@id: jdt.internal.cleanup.staticinnerclass.nullcheck
+@severity: error
+!org.eclipse.jdt.internal.corext.dom.ASTNodes.isParent($declaration, $innerClass)
+=> $declaration == null || !org.eclipse.jdt.internal.corext.dom.ASTNodes.isParent($declaration, $innerClass)
+;;
+
+@id: jdt.internal.generatenewconstructorusingfieldsaction.preventrecord
+@severity: info
+$type.getCompilationUnit() != null && !$type.isInterface() && !$type.isAnnotation() && !$type.isAnonymous() :: instanceof($type, "org.eclipse.jdt.core.IType") && sourceVersionGE(16)
+=> $type.getCompilationUnit() != null && !$type.isInterface() && !$type.isAnnotation() && !$type.isAnonymous() && !$type.isRecord()
+;;
+
+@id: jdt.internal.compilationunit.getoptions.insteadof.javaproject.getoptions
+@severity: info
+"Modernize internal JDT API calls to retrieve options directly from ICompilationUnit instead of IJavaProject.":
+$cu.getJavaProject().getOptions($arg) :: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> $cu.getOptions($arg)
+;;
+
+@id: jdt.internal.javapreferencessettings.codegenerationsettings.cuarg
+@severity: info
+"Update JavaPreferencesSettings.getCodeGenerationSettings to accept ICompilationUnit directly instead of IJavaProject.":
+org.eclipse.jdt.internal.corext.codemanipulation.CodeGenerationSettings($cu.getJavaProject())
+:: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> org.eclipse.jdt.internal.corext.codemanipulation.CodeGenerationSettings($cu)
+;;
+
+@id: jdt.internal.strings.getindentstring.cuarg
+@severity: info
+"Update Strings.getIndentString to accept ICompilationUnit directly instead of IJavaProject for indentation calculations.":
+org.eclipse.jdt.internal.ui.java.Strings.getIndentString($lineContent, $cu.getJavaProject())
+:: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> org.eclipse.jdt.internal.ui.java.Strings.getIndentString($lineContent, $cu)
+;;
+
+@id: jdt.internal.strings.changeindent.cuarg
+@severity: info
+"Update Strings.changeIndent to accept ICompilationUnit directly instead of IJavaProject for indentation adjustments.":
+org.eclipse.jdt.internal.ui.java.Strings.changeIndent($str, $val, $cu.getJavaProject(), $indent, $delim)
+:: instanceof($cu, "org.eclipse.jdt.core.ICompilationUnit")
+=> org.eclipse.jdt.internal.ui.java.Strings.changeIndent($str, $val, $cu, $indent, $delim)
+;;
+
+@id: jdt.internal.codeformatterutil.getindentwidth.nullcast
+@severity: info
+"Add explicit (IJavaProject) cast to null argument in CodeFormatterUtil.getIndentWidth to clarify API usage.":
+org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getIndentWidth(null)
+=> org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getIndentWidth((org.eclipse.jdt.core.IJavaProject)null)
+;;
+
+@id: jdt.internal.codeformatterutil.gettabwidth.nullcast
+@severity: info
+"Add explicit (IJavaProject) cast to null argument in CodeFormatterUtil.getTabWidth to clarify API usage.":
+org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getTabWidth(null)
+=> org.eclipse.jdt.internal.ui.formatter.CodeFormatterUtil.getTabWidth((org.eclipse.jdt.core.IJavaProject)null)
+;;
+
+org.eclipse.jdt.core.dom.rewrite.ImportRewrite.$importRewrite.addImport($type)
+=> $importRewrite.addImport((($type.getBound() != null && !$type.isUpperbound()) ? $type.getBound() : $type.getErasure()))
+;;
+
+@id: jdt.internal.quickfix.unresolvedelements.binding-null-switchcase
+@severity: error
+"Guard $binding null check against being inside a SwitchCase. Hint only: the surrounding $simpleName variable cannot be bound from this source pattern.":
+$binding == null
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.UnresolvedElementsSubProcessor") && sourceVersionGE(14)
+;;
+
+@id: jdt.internal.quickfix.unresolvedelements.mustbeconst-switchcase
+@severity: error
+org.eclipse.jdt.internal.ui.text.correction.ASTResolving.isInsideModifiers($simpleName)
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.UnresolvedElementsSubProcessor") && sourceVersionGE(14)
+=> org.eclipse.jdt.internal.ui.text.correction.ASTResolving.isInsideModifiers($simpleName) || ($simpleName.getParent() instanceof org.eclipse.jdt.core.dom.SwitchCase)
+;;
+
+@id: jdt.internal.asthelper.jls10.to.ast.jls10.revert
+@severity: info
+org.eclipse.jdt.internal.ui.util.ASTHelper.JLS10
+=> org.eclipse.jdt.core.dom.AST.JLS10
+;;
+
+@id: jdt.internal.asthelper.jls8.to.ast.jls8.revert
+@severity: info
+org.eclipse.jdt.internal.ui.util.ASTHelper.JLS8
+=> org.eclipse.jdt.core.dom.AST.JLS8
+;;
+
+@id: jdt.internal.asthelper.jls9.to.ast.jls9.revert
+@severity: info
+org.eclipse.jdt.internal.ui.util.ASTHelper.JLS9
+=> org.eclipse.jdt.core.dom.AST.JLS9
+;;
+
+org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java15
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.JavaFeatureTabPage_GroupName_Java16
+;;
+
+<!map CLEANUP_TAB_NAME_MAPPING: \
+"OptimizationTabPage_GroupName_Optimization" => "PerformanceTabPage_GroupName_Performance", \
+"OptimizationTabPage_CheckboxName_SingleUsedField" => "PerformanceTabPage_CheckboxName_SingleUsedField", \
+"OptimizationTabPage_CheckboxName_BreakLoop" => "PerformanceTabPage_CheckboxName_BreakLoop", \
+"OptimizationTabPage_CheckboxName_DoWhileRatherThanWhile" => "PerformanceTabPage_CheckboxName_DoWhileRatherThanWhile", \
+"OptimizationTabPage_CheckboxName_StaticInnerClass" => "PerformanceTabPage_CheckboxName_StaticInnerClass", \
+"OptimizationTabPage_CheckboxName_StringBuilder" => "PerformanceTabPage_CheckboxName_StringBuilder", \
+"OptimizationTabPage_CheckboxName_PlainReplacement" => "PerformanceTabPage_CheckboxName_PlainReplacement", \
+"OptimizationTabPage_CheckboxName_UseStringIsBlank" => "PerformanceTabPage_CheckboxName_UseStringIsBlank", \
+"OptimizationTabPage_CheckboxName_UseLazyLogicalOperator" => "PerformanceTabPage_CheckboxName_UseLazyLogicalOperator", \
+"OptimizationTabPage_CheckboxName_ValueOfRatherThanInstantiation" => "PerformanceTabPage_CheckboxName_ValueOfRatherThanInstantiation", \
+"OptimizationTabPage_CheckboxName_PrimitiveComparison" => "PerformanceTabPage_CheckboxName_PrimitiveComparison", \
+"OptimizationTabPage_CheckboxName_PrimitiveParsing" => "PerformanceTabPage_CheckboxName_PrimitiveParsing", \
+"OptimizationTabPage_CheckboxName_PrimitiveSerialization" => "PerformanceTabPage_CheckboxName_PrimitiveSerialization", \
+"OptimizationTabPage_CheckboxName_PrimitiveRatherThanWrapper" => "PerformanceTabPage_CheckboxName_PrimitiveRatherThanWrapper", \
+"OptimizationTabPage_CheckboxName_PrecompileRegEx" => "PerformanceTabPage_CheckboxName_PrecompileRegEx", \
+"OptimizationTabPage_CheckboxName_StringBufferToStringBuilder" => "PerformanceTabPage_CheckboxName_StringBufferToStringBuilder", \
+"OptimizationTabPage_CheckboxName_StringBufferToStringBuilderLocalsOnly" => "PerformanceTabPage_CheckboxName_StringBufferToStringBuilderLocalsOnly", \
+"OptimizationTabPage_CheckboxName_NoStringCreation" => "PerformanceTabPage_CheckboxName_NoStringCreation", \
+"OptimizationTabPage_CheckboxName_BooleanLiteral" => "PerformanceTabPage_CheckboxName_BooleanLiteral"\
+>
+
+@id: jdt.internal.cleanup.optimizationtab.rename.messages.#{CLEANUP_TAB_NAME_MAPPING}
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.#{CLEANUP_TAB_NAME_MAPPING}
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.CleanUpMessages.#{CLEANUP_TAB_NAME_MAPPING_VALUE}
+;;
+
+@id: jdt.internal.cleanup.optimizationtab.rename.class
+@severity: info
+org.eclipse.jdt.internal.ui.preferences.cleanup.OptimizationTabPage
+=> org.eclipse.jdt.internal.ui.preferences.cleanup.PerformanceTabPage
+;;
+
+@id: eclipse.jdt.ui.refactoring.rename.add-istextselection-true
+@severity: info
+"Updates RefactoringAvailabilityTester.isRenameElementAvailable() calls to include the 'isTextSelection' boolean argument, setting it to 'true' in specific contexts within JDT UI refactoring actions and quick assists.":
+org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element)
+:: (inClass("org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction") && inMethod("setEnabled")) || inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor")
+=> org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element, true)
+;;
+
+@id: eclipse.jdt.ui.refactoring.rename.add-istextselection-param
+@severity: info
+"Updates RefactoringAvailabilityTester.isRenameElementAvailable() calls to include the 'isTextSelection' boolean argument, propagating it from a method parameter in specific contexts within JDT UI refactoring actions.":
+org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element)
+:: inClass("org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction") && (inMethod("doRun", true) || inMethod("canBeRenamed", true))
+=> org.eclipse.jdt.internal.corext.refactoring.RefactoringAvailabilityTester.isRenameElementAvailable($element, isTextSelection)
+;;
+
+@id: eclipse.jdt.ui.refactoring.rename.action.dorun-add-true
+@severity: info
+"Updates RenameJavaElementAction.doRun() calls to include a 'true' boolean argument when invoked from RenameRefactoringProposal, reflecting internal API changes for text selection context.":
+$renameAction.doRun()
+:: instanceof($renameAction, "org.eclipse.jdt.internal.ui.refactoring.actions.RenameJavaElementAction") && inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.RenameRefactoringProposal")
+=> $renameAction.doRun(true)
+;;
+
+@id: jdt.internal.text.spelling.spellcheckiterator.addmonitor
+@severity: info
+new org.eclipse.jdt.internal.ui.text.spelling.SpellCheckIterator($document, $region, $locale)
+=> new org.eclipse.jdt.internal.ui.text.spelling.SpellCheckIterator($document, $region, $locale, monitor)
+;;
+
+@id: jdt.internal.text.spelling.propertiesfilespellcheckiterator.addmonitor
+@severity: info
+new org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($document, $region, $locale)
+=> new org.eclipse.jdt.internal.ui.text.spelling.PropertiesFileSpellCheckIterator($document, $region, $locale, monitor)
+;;
+
+org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_YES
+=> org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO
+;;
+
+@id: jdt.internal.callhierarchy.expandwithconstructors.lambda-support
+@severity: info
+org.eclipse.jdt.core.IType.$type.isAnonymous() :: instanceof($type, "org.eclipse.jdt.core.IType")
+=> org.eclipse.jdt.core.IType.$type.isAnonymous() || org.eclipse.jdt.core.IType.$type.isLambda()
+;;
+
+getJavaEditor() :: inClass("org.eclipse.jdt.internal.ui.text.java.FilledArgumentNamesMethodProposal")
+=> org.eclipse.jdt.internal.ui.javaeditor.EditorUtility.getActiveJavaEditor()
+;;
+
+@id: jdt.internal.lambda.completion.fix-cursor-positioning
+@severity: error
+$fArgumentOffsets != null && getTextViewer() != null
+:: inClass("org.eclipse.jdt.internal.ui.text.java.JavaLambdaCompletionProposal")
+=> $fArgumentOffsets != null && $fArgumentOffsets.length > 0 && getTextViewer() != null
+;;
+
+@id: jdt.internal.quickassist.switchexpressionfix.rename
+@severity: info
+org.eclipse.jdt.internal.corext.fix.SwitchExpressionsFix.createConvertToSwitchExpressionFix($switchStatement)
+=> org.eclipse.jdt.internal.corext.fix.SwitchExpressionsFixCore.createConvertToSwitchExpressionFix($switchStatement)
+;;
+
+@id: jdt.internal.quickassist.getindex.to.util.getextractmethodproposal
+@severity: info
+getIndex($offset, $statements) :: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor") && inMethod("getExtractMethodProposal")
+=> org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessorUtil.getIndex($offset, $statements)
+;;
+
+@id: jdt.internal.quickassist.getindex.to.util.getconverttoswitchexpressionproposals
+@severity: info
+getIndex($offset, $statements) :: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor") && inMethod("getConvertToSwitchExpressionProposals")
+=> org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessorUtil.getIndex($offset, $statements)
+;;
+
+@id: jdt.internal.compliance.version17.to.version18
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_17.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.javadoc.gethighlightpropertyvalue.to.getpropertyvalue
+@severity: info
+"Renames internal JavadocContentAccess2.getHighlightPropertyValue() to getPropertyValue() and updates its call site.":
+/*!minJavaVersion: 18*/
+/*!tags: jdt, internal, refactoring*/
+$call.getHighlightPropertyValue($prop, $tagProps) :: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2")
+=> $call.getPropertyValue($prop, $tagProps)
+;;
+
+@id: jdt.internal.javadoc.stripliteral.condition.robustness
+@severity: info
+"Adjusts string length check in JavadocContentAccess2.stripQuotes() for robustness, changing > 2 to >= 2.":
+/*!minJavaVersion: 18*/
+/*!tags: jdt, internal, bugfix*/
+$str.length() > 2 :: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2") && inMethod("stripQuotes")
+=> $str.length() >= 2
+;;
+
+@id: jdt.internal.javadoc.stripquotes.singlequote-support
+@severity: info
+$str.charAt(0) == '"' && $str.charAt($length-1) == '"'
+:: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2") && inMethod("stripQuotes")
+=> ($str.charAt(0) == '"' && $str.charAt($length-1) == '"') || ($str.charAt(0) == '\'' && $str.charAt($length-1) == '\'')
+;;
+
+@id: jdt.internal.problemslabeldecorator.remove-isaccessible-check
+@severity: info
+"Remove redundant IResource.isAccessible() check from UI-thread method for performance.":
+resource == null || !resource.isAccessible()
+:: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("computeContainerAdornmentFlags")
+=> resource == null
+;;
+
+@id: jdt.internal.javadoc.tagproperty.getvalue-to-getstringvalue
+@severity: info
+"Replace TagProperty.getValue() with TagProperty.getStringValue() to support JEP 413 (DOM AST for Javadoc tags with properties) in JLS18+.":
+/*!minJavaVersion: 18*/
+/*!tags: jdt, internal, refactoring, java18*/
+$tagProp.getValue() :: instanceof($tagProp, "org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2.TagProperty") && sourceVersionGE(18)
+=> $tagProp.getStringValue()
+;;
+
+@id: jdt.internal.javadochover.getimageurl.add-zoom
+@severity: info
+org.eclipse.jdt.internal.ui.java.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element)
+=> org.eclipse.jdt.internal.ui.java.JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL($element, 200)
+;;
+
+stripQuotes($arg) :: inClass("org.eclipse.jdt.internal.ui.text.javadoc.JavaDocSnippetStringEvaluator")
+=> $arg
+;;
+
+ASTNodes.getUnparenthesedExpression(ASTNodeFactory.negate($ast, $rewrite, $visited.getExpression(), true))
+=> ASTNodeFactory.negateAndUnwrap($ast, $rewrite, $visited.getExpression(), true, true)
+;;
+
+@id: jdt.internal.refactoring.renameuserinterfacemanager.swap-starter-class
+@severity: info
+"Updates RenameUserInterfaceManager to use RenameUserInterfaceStarter instead of RenameMethodUserInterfaceStarter for method refactoring processors.":
+put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameMethodUserInterfaceStarter.class, $WizardType)
+=> put($ProcessorType, org.eclipse.jdt.internal.ui.refactoring.reorg.RenameUserInterfaceStarter.class, $WizardType)
+;;
+
+@id: jdt.internal.fix.convertloopfix.to.core.wrapped
+@severity: info
+"Updates internal JDT UI cleanup to use ConvertLoopFixCore wrapped in CleanUpFixWrapper.":
+org.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createCleanUp($compilationUnit, $convertForLoops, $convertForLoops2, $useFinal, $checkIfLoopVarUsed)
+=> org.eclipse.jdt.internal.ui.fix.CleanUpFixWrapper.create(org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createCleanUp($compilationUnit, $convertForLoops, $convertForLoops2, $useFinal, $checkIfLoopVarUsed))
+;;
+
+@id: jdt.internal.fix.convertloopfix.createconvertforloopenhanced.to.core
+@severity: info
+"Updates internal JDT UI cleanup to use ConvertLoopFixCore.createConvertForLoopToEnhancedFix.":
+org.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createConvertForLoopToEnhancedFix($context, $forStatement)
+=> org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createConvertForLoopToEnhancedFix($context, $forStatement)
+;;
+
+@id: jdt.internal.fix.convertloopfix.createconvertiterableloopenhanced.to.core
+@severity: info
+"Updates internal JDT UI cleanup to use ConvertLoopFixCore.createConvertIterableLoopToEnhancedFix.":
+org.eclipse.jdt.internal.corext.fix.ConvertLoopFix.createConvertIterableLoopToEnhancedFix($context, $forStatement)
+=> org.eclipse.jdt.internal.corext.fix.ConvertLoopFixCore.createConvertIterableLoopToEnhancedFix($context, $forStatement)
+;;
+
+@id: jdt.internal.fix.codestylefix.createindirectaccesstostatic.to.core
+@severity: info
+"Updates internal JDT UI correction to use CodeStyleFixCore.createIndirectAccessToStaticFix with an IProblemLocationCore cast.":
+org.eclipse.jdt.internal.corext.fix.CodeStyleFix.createIndirectAccessToStaticFix($astRoot, $problem)
+=> org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createIndirectAccessToStaticFix($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)
+;;
+
+@id: jdt.internal.fix.codestylefix.createnonstaticaccessfixes.to.core
+@severity: info
+"Updates internal JDT UI correction to use CodeStyleFixCore.createNonStaticAccessFixes with an IProblemLocationCore cast.":
+org.eclipse.jdt.internal.corext.fix.CodeStyleFix.createNonStaticAccessFixes($astRoot, $problem)
+=> org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createNonStaticAccessFixes($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)
+;;
+
+@id: jdt.internal.fix.codestylefix.createaddfieldqualifierfix.to.core
+@severity: info
+"Updates internal JDT UI correction to use CodeStyleFixCore.createAddFieldQualifierFix with an IProblemLocationCore cast.":
+org.eclipse.jdt.internal.corext.fix.CodeStyleFix.createAddFieldQualifierFix($astRoot, $problem)
+=> org.eclipse.jdt.internal.corext.fix.CodeStyleFixCore.createAddFieldQualifierFix($astRoot, (org.eclipse.jdt.internal.ui.text.correction.IProblemLocationCore)$problem)
+;;
+
+@id: jdt.internal.newcuusingwizardproposal.add-semantic-highlighting-flag.package
+@severity: info
+new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity) :: instanceof($typeContainer, "org.eclipse.jdt.core.IPackageFragment")
+=> new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity, true)
+;;
+
+@id: jdt.internal.newcuusingwizardproposal.add-semantic-highlighting-flag.type
+@severity: info
+new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity) :: instanceof($typeContainer, "org.eclipse.jdt.core.IType")
+=> new org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal($cu, $node, $typeKind, $typeContainer, $superType, $severity, false)
+;;
+
+@id: jdt.internal.compliance.version18.to.version19
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_18.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.newjavaprojectwizard.ee.comparison
+@severity: info
+$defaultCC.endsWith($eeCompliance)
+:: inClass("org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne") && inMethod("getDefaultExecutionEnvironmentId")
+=> $defaultCC.equals($eeCompliance)
+;;
+
+@id: jdt.internal.newjavaprojectwizard.ee.default
+@severity: info
+return "JavaSE-1.7";
+:: inClass("org.eclipse.jdt.ui.wizards.NewJavaProjectWizardPageOne") && inMethod("getDefaultExecutionEnvironmentId")
+=> return "JavaSE-11";
+;;
+
+@id: jdt.internal.javadoc.textelement-to-abstracttextelement.type-replace
+@severity: info
+"Replaces references to TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation. This is a type widening/modernization for internal AST types.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.core.dom.TextElement
+=> org.eclipse.jdt.core.dom.AbstractTextElement
+;;
+
+@id: jdt.internal.javadoc.textelement-to-abstracttextelement.instanceof-replace
+@severity: info
+"Replaces instanceof checks for TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+$fragment instanceof org.eclipse.jdt.core.dom.TextElement
+=> $fragment instanceof org.eclipse.jdt.core.dom.AbstractTextElement
+;;
+
+@id: jdt.internal.javadoc.textelement-to-abstracttextelement.cast-replace
+@severity: info
+"Replaces casts to TextElement with AbstractTextElement in JDT internal Javadoc snippet evaluation.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+(org.eclipse.jdt.core.dom.TextElement) $fragment
+=> (org.eclipse.jdt.core.dom.AbstractTextElement) $fragment
+;;
+
+@id: jdt.internal.cleanup.remove-redundant-ancestor-cast.statement
+@severity: info
+"Removes redundant (Statement) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as Statement.":
+(org.eclipse.jdt.core.dom.Statement) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Statement.class)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Statement.class)
+;;
+
+@id: jdt.internal.cleanup.remove-redundant-ancestor-cast.variabledeclarationstatement
+@severity: info
+"Removes redundant (VariableDeclarationStatement) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as VariableDeclarationStatement.":
+(org.eclipse.jdt.core.dom.VariableDeclarationStatement) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.VariableDeclarationStatement.class)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.VariableDeclarationStatement.class)
+;;
+
+@id: jdt.internal.cleanup.remove-redundant-ancestor-cast.fielddeclaration
+@severity: info
+"Removes redundant (FieldDeclaration) cast from ASTNodes.getFirstAncestorOrNull when the variable is already declared as FieldDeclaration.":
+(org.eclipse.jdt.core.dom.FieldDeclaration) org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.FieldDeclaration.class)
+=> org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.FieldDeclaration.class)
+;;
+
+@id: jdt.internal.cleanup.refine-local-variable-type.assignment
+@severity: info
+"Refines local variable declaration type from ASTNode to Assignment when the initializer is ASTNodes.getFirstAncestorOrNull(..., Assignment.class).":
+org.eclipse.jdt.core.dom.ASTNode $assignNode = org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Assignment.class);
+=> org.eclipse.jdt.core.dom.Assignment $assignNode = org.eclipse.jdt.internal.corext.dom.ASTNodes.getFirstAncestorOrNull($node, org.eclipse.jdt.core.dom.Assignment.class);
+;;
+
+@id: eclipse.jdt.ui.buildpathdialogaccess.externalannotations.addjavaprojectarg.null
+@severity: info
+org.eclipse.jdt.ui.wizards.BuildPathDialogAccess.configureExternalAnnotationsAttachment($shell, $initialEntry)
+=> org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment($shell, $initialEntry, null)
+;;
+
+@id: eclipse.jdt.ui.externalannotationsattributeconfiguration.externalannotations.addjavaprojectarg.fromattribute
+@severity: info
+"Add $attribute.getJavaProject() argument to ExternalAnnotationsAttachmentDialog.configureExternalAnnotationsAttachment. Hint only: the surrounding $attribute variable cannot be bound from this source pattern.":
+org.eclipse.jdt.ui.wizards.BuildPathDialogAccess.configureExternalAnnotationsAttachment($shell, $locationPath)
+:: inClass("org.eclipse.jdt.internal.ui.wizards.buildpaths.ExternalAnnotationsAttributeConfiguration")
+;;
+
+@id: jdt.internal.problemslabeldecorator.dont-log-closed-project-errors.handlecoreexception
+@severity: info
+$errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND
+:: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("handleCoreException")
+=> $errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN
+;;
+
+@id: jdt.internal.problemslabeldecorator.dont-log-closed-project-errors.computecontaineradornmentflags
+@severity: info
+$errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND
+:: inClass("org.eclipse.jdt.ui.ProblemsLabelDecorator") && inMethod("computeContainerAdornmentFlags")
+=> $errorCode == org.eclipse.core.runtime.IResourceStatus.MARKER_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.RESOURCE_NOT_FOUND || $errorCode == org.eclipse.core.runtime.IResourceStatus.PROJECT_NOT_OPEN
+;;
+
+<!id: jdt.internal.refactoring.static-member-move>
+<!description: Consolidates static methods and constants from various JDT UI classes into common utility classes (e.g., MembersOrderPreferenceCache to MembersOrderPreferenceCacheCommon, ToStringGenerationSettings to ToStringGenerationSettingsCore). Improves internal API consistency and organization.>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: jdt, internal, refactoring>
+
+@id: jdt.internal.membersview.is-member-order-property.to-common
+org.eclipse.jdt.internal.ui.preferences.MembersOrderPreferenceCache.isMemberOrderProperty($eventProperty)
+=> org.eclipse.jdt.internal.core.manipulation.MembersOrderPreferenceCacheCommon.isMemberOrderProperty($eventProperty)
+;;
+
+@id: jdt.internal.tostringdialog.settings.template-names.to-core
+org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_TEMPLATE_NAMES
+=> org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_TEMPLATE_NAMES
+;;
+
+@id: jdt.internal.tostringdialog.settings.templates.to-core
+org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_TEMPLATES
+=> org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_TEMPLATES
+;;
+
+@id: jdt.internal.tostringdialog.settings.selected-template.to-core
+org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.SETTINGS_SELECTED_TEMPLATE
+=> org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.SETTINGS_SELECTED_TEMPLATE
+;;
+
+@id: jdt.internal.refactoring.move-chaincompletion-static-method
+@severity: info
+"Move static utility method createChainCode from ChainCompletionTemplateBuilder to ChainElement, updating call sites.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring*/
+org.eclipse.jdt.internal.ui.text.java.ChainCompletionTemplateBuilder.createChainCode($chain, $createAsTitle, $expectedDimension)
+=> org.eclipse.jdt.internal.core.manipulation.ChainElement.createChainCode($chain, $createAsTitle, $expectedDimension)
+;;
+
+@id: jdt.internal.ui.type.effectivermodifiers.fix
+@severity: info
+$typeRef.getModifiers() :: inClass("org.eclipse.jdt.internal.ui.util.TypeNameMatchLabelProvider")
+=> org.eclipse.jdt.internal.ui.util.TypeNameMatchLabelProvider.getEffectiveModifiers($typeRef.getType(), $typeRef.getModifiers())
+;;
+
+@id: jdt.internal.compliance.version19.to.version20
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_19.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.refactoring.javatypecompletionprocessor.dummy-class-name
+@severity: info
+"$$__$$"
+=> org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessorCore.DUMMY_CLASS_NAME
+;;
+
+@id: jdt.internal.refactoring.javatypecompletionprocessor.dummy-cu-name
+@severity: info
+org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessor.DUMMY_CLASS_NAME + org.eclipse.jdt.internal.corext.util.JavaModelUtil.DEFAULT_CU_SUFFIX
+=> org.eclipse.jdt.internal.ui.refactoring.contentassist.JavaTypeCompletionProcessorCore.DUMMY_CU_NAME
+;;
+
+!$qualifiedTypeBinding.getName().equals($simpleBinding.getName()) && !isInherited($qualifiedTypeBinding, $simpleBinding) :: sourceVersionGE(16) && instanceof($qualifiedTypeBinding, "org.eclipse.jdt.core.dom.ITypeBinding")
+=> !$qualifiedTypeBinding.getName().equals($simpleBinding.getName()) && !$qualifiedTypeBinding.isGenericType() && !$qualifiedTypeBinding.isParameterizedType() && !$qualifiedTypeBinding.isWildcardType() && !$qualifiedTypeBinding.isRawType() && !$qualifiedTypeBinding.isRecord() && !$qualifiedTypeBinding.isRecovered() && !isInherited($qualifiedTypeBinding, $simpleBinding)
+;;
+
+@id: jdt.internal.buildpath.movecpelement.ioobe.fix
+@severity: error
+"Bounds-check $indexOfSelElement against $rootCPListElement.getChildren().size(). Hint only: $rootCPListElement cannot be bound from this source pattern.":
+$indexOfSelElement != -1
+:: inClass("org.eclipse.jdt.internal.ui.wizards.buildpaths.BuildPathBasePage") && inMethod("moveCPElementAcrossNode")
+;;
+
+@id: jdt.internal.completionproposalcollector.filter-to-ignore
+@severity: info
+isFiltered($proposal)
+:: inClass("org.eclipse.jdt.ui.text.java.CompletionProposalCollector")
+=> isIgnored($proposal.getKind())
+;;
+
+@id: jdt.internal.compliance.version20.to.version21
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_20.equals($selectedCompliance)
+=> org.eclipse.jdt.core.JavaCore.VERSION_21.equals($selectedCompliance)
+;;
+
+$binding != null && !$binding.isRecovered()
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.NewCUUsingWizardProposal") && inMethod("getPossibleSuperTypeBinding")
+=> $binding != null && !$binding.isRecovered() && !org.eclipse.jdt.core.dom.Modifier.isFinal($binding.getModifiers())
+;;
+
+@id: jdt.internal.codemining.skipparameternamescodeminings.add-parameternames
+@severity: info
+"Pass parameter-name list to skipParameterNamesCodeMinings. Hint only: $parameterNames cannot be bound from this source pattern.":
+skipParameterNamesCodeMinings($method)
+;;
+
+org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor.$call.getAddStaticMemberFavoritesProposals($context, $node, $collection) :: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor")
+=> $call.getAddStaticMemberFavoritesProposals($node, $collection)
+;;
+
+getExtractTempRefactoring().guessTempNames()
+=> getExtractTempRefactoring().guessTempNamesWithContext()
+;;
+
+@id: jdt.internal.codemanipulation.stubutility2.to.core
+@severity: info
+org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)
+=> org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core.createImplementationStub($arg1, $arg2, $arg3, $arg4, $arg5, $arg6, $arg7, $arg8, $arg9)
+;;
+
+org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection) :: instanceof($selection, "org.eclipse.jface.text.ITextSelection")
+=> org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection.getOffset(), $selection.getLength())
+;;
+
+org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection, $extraArg) :: instanceof($selection, "org.eclipse.jface.text.ITextSelection")
+=> org.eclipse.jdt.internal.corext.refactoring.surround.SurroundWithTryCatchRefactoring.create($cu, $selection.getOffset(), $selection.getLength(), $extraArg)
+;;
+
+isIgnoringJavaStrings && org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_STRING.equals($type)
+=> isIgnoringJavaStrings && (org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_STRING.equals($type) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MULTI_LINE_STRING.equals($type))
+;;
+
+@id: jdt.internal.move.saveparticipant.prefix.constant
+@severity: info
+"editor_save_participant_"
+=> org.eclipse.jdt.core.manipulation.SaveParticipantPreferenceConfigurationConstants.EDITOR_SAVE_PARTICIPANT_PREFIX
+;;
+
+@id: jdt.internal.generateconstructor.selectiondialog.add-allowempty-flag
+@severity: info
+"Modifies the internal GenerateConstructorUsingFieldsSelectionDialog constructor call to its superclass SourceActionDialog, adding a 'true' argument to allow empty field lists. This enables generating constructors even when a class has no fields.":
+super($parent, $labelProvider, $contentProvider, $editor, $type, $isConstructor)
+:: inClass("org.eclipse.jdt.internal.ui.actions.GenerateConstructorUsingFieldsSelectionDialog")
+=> super($parent, $labelProvider, $contentProvider, $editor, $type, $isConstructor, true)
+;;
+
+@id: jdt.internal.text.correction.astresolving.remove-fqn.getmethodsig
+@severity: info
+"Remove redundant fully qualified name from ASTResolving.getMethodSignature calls when ASTResolving is in the current package.":
+org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getMethodSignature($arg1, $arg2, $arg3)
+=> ASTResolving.getMethodSignature($arg1, $arg2, $arg3)
+;;
+
+@id: jdt.internal.text.correction.astresolving.remove-fqn.gettypesig
+@severity: info
+"Remove redundant fully qualified name from ASTResolving.getTypeSignature calls when ASTResolving is in the current package.":
+org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getTypeSignature($arg1)
+=> ASTResolving.getTypeSignature($arg1)
+;;
+
+@id: jdt.internal.text.correction.suppresswarningssubprocessor.rename
+@severity: info
+"Renames calls to SuppressWarningsSubProcessor.hasSuppressWarningsProposal to SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal.":
+org.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessor.hasSuppressWarningsProposal($arg1, $arg2)
+=> org.eclipse.jdt.internal.ui.text.correction.SuppressWarningsSubProcessorCore.hasSuppressWarningsProposal($arg1, $arg2)
+;;
+
+org.eclipse.jdt.core.JavaCore.callReadOnly(super::open).intValue()
+=> super.open()
+;;
+
+@id: jdt.internal.javamarkerannotation.error-annotation-type.to.problemlocation
+@severity: info
+"org.eclipse.jdt.ui.error"
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.JavaMarkerAnnotation") && hasField("ERROR_ANNOTATION_TYPE")
+=> org.eclipse.jdt.internal.ui.text.correction.ProblemLocation.ERROR_ANNOTATION_TYPE
+;;
+
+@id: jdt.internal.compliance.version21.to.version22
+@severity: info
+org.eclipse.jdt.core.JavaCore.VERSION_21.equals($selectedCompliance)
+:: inClass("org.eclipse.jdt.internal.ui.preferences.ComplianceConfigurationBlock") && sourceVersionGE(22)
+=> org.eclipse.jdt.core.JavaCore.VERSION_22.equals($selectedCompliance)
+;;
+
+@id: jdt.internal.refactoring.abstractunnamedtypedec.to.abstracttypedec.type
+@severity: info
+"Replaces type reference AbstractUnnamedTypeDeclaration with AbstractTypeDeclaration, reflecting JDT Core DOM AST changes.":
+org.eclipse.jdt.core.dom.AbstractUnnamedTypeDeclaration
+=> org.eclipse.jdt.core.dom.AbstractTypeDeclaration
+;;
+
+@id: jdt.internal.refactoring.abstractunnamedtypedec.to.abstracttypedec.expression
+@severity: info
+"Simplifies ternary expression related to AbstractUnnamedTypeDeclaration to direct getName() call, reflecting JDT Core DOM AST changes.":
+$type instanceof org.eclipse.jdt.core.dom.AbstractTypeDeclaration named? named.getName().getIdentifier() : ""
+=> $type.getName().getIdentifier()
+;;
+
+@id: jdt.internal.quickfixprocessor.npe.fix
+@severity: error
+!(deprecatedMethodNode instanceof org.eclipse.jdt.core.dom.MethodInvocation)
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.QuickFixProcessor") && inMethod("getProposals")
+=> deprecatedMethodNode != null && !(deprecatedMethodNode instanceof org.eclipse.jdt.core.dom.MethodInvocation)
+;;
+
+@id: jdt.internal.remove-redundant-cast.table
+@severity: info
+"Removes redundant (Table) casts when the expression is already a subtype of Table.":
+(org.eclipse.swt.widgets.Table) $expression :: subtypeOf($expression, "org.eclipse.swt.widgets.Table")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.abstracttreeviewer
+@severity: info
+"Removes redundant (AbstractTreeViewer) casts when the expression is already a subtype of AbstractTreeViewer.":
+(org.eclipse.jdt.internal.ui.browsing.AbstractTreeViewer) $expression :: subtypeOf($expression, "org.eclipse.jdt.internal.ui.browsing.AbstractTreeViewer")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.icompilationunit
+@severity: info
+"Removes redundant (ICompilationUnit) casts when the expression is already a subtype of ICompilationUnit.":
+(org.eclipse.jdt.core.ICompilationUnit) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.ICompilationUnit")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.iclassfile
+@severity: info
+"Removes redundant (IClassFile) casts when the expression is already a subtype of IClassFile.":
+(org.eclipse.jdt.core.IClassFile) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.IClassFile")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.icodeassist
+@severity: info
+"Removes redundant (ICodeAssist) casts when the expression is already a subtype of ICodeAssist.":
+(org.eclipse.jdt.core.ICodeAssist) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.ICodeAssist")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.iadaptable
+@severity: info
+"Removes redundant (IAdaptable) casts when the expression is already a subtype of IAdaptable.":
+(org.eclipse.core.runtime.IAdaptable) $expression :: subtypeOf($expression, "org.eclipse.core.runtime.IAdaptable")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.simplename
+@severity: info
+"Removes redundant (SimpleName) casts when the expression is already a subtype of SimpleName.":
+(org.eclipse.jdt.core.dom.SimpleName) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.dom.SimpleName")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.variabledeclarationfragment
+@severity: info
+"Removes redundant (VariableDeclarationFragment) casts when the expression is already a subtype of VariableDeclarationFragment.":
+(org.eclipse.jdt.core.dom.VariableDeclarationFragment) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.dom.VariableDeclarationFragment")
+=> $expression
+;;
+
+@id: jdt.internal.remove-redundant-cast.isourcereference
+@severity: info
+"Removes redundant (ISourceReference) casts when the expression is already a subtype of ISourceReference.":
+(org.eclipse.jdt.core.ISourceReference) $expression :: subtypeOf($expression, "org.eclipse.jdt.core.ISourceReference")
+=> $expression
+;;
+
+@id: jdt.internal.jls.version13.to.firstsupported
+@severity: info
+"Updates internal JDT UI code to replace specific JavaCore version constants with dynamic calls to getFirstJavaSourceVersionSupportedByCompiler().":
+org.eclipse.jdt.core.JavaCore.VERSION_1_3
+=> org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
+;;
+
+@id: jdt.internal.jls.version11.to.firstsupported
+@severity: info
+"Updates internal JDT UI code to replace specific JavaCore version constants with dynamic calls to getFirstJavaSourceVersionSupportedByCompiler().":
+org.eclipse.jdt.core.JavaCore.VERSION_1_1
+=> org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
+;;
+
+@id: jdt.internal.compliance.remove-version13-check
+@severity: info
+"Simplifies a boolean expression by removing a redundant check against JavaCore.VERSION_1_3, reflecting dropped support for older Java versions.":
+!org.eclipse.jdt.core.JavaCore.VERSION_1_3.equals($source) && $versionCheck
+=> $versionCheck
+;;
+
+@id: jdt.internal.javamodutil.getcompilercompliance.version14.to.firstsupported
+@severity: info
+"Updates calls to JavaModelUtil.getCompilerCompliance() to use getFirstJavaSourceVersionSupportedByCompiler() instead of a hardcoded Java 1.4 version.":
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($vmInstall, org.eclipse.jdt.core.JavaCore.VERSION_1_4)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($vmInstall, org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler())
+;;
+
+@id: jdt.internal.jls.issupportedjavaversion.to.issourcesupportedbycompiler
+@severity: info
+"Updates internal JavaCore API calls from isSupportedJavaVersion() to isJavaSourceVersionSupportedByCompiler() for improved precision.":
+org.eclipse.jdt.core.JavaCore.isSupportedJavaVersion($versionStr)
+=> org.eclipse.jdt.core.JavaCore.isJavaSourceVersionSupportedByCompiler($versionStr)
+;;
+
+@id: jdt.internal.runtime.getexecutionenvironments.to.getsupported
+@severity: info
+"Updates internal JavaRuntime API calls from getExecutionEnvironments() to getSupportedExecutionEnvironments() to reflect dropped support for older Java versions.":
+org.eclipse.jdt.launching.JavaRuntime.getExecutionEnvironmentsManager().getExecutionEnvironments()
+=> org.eclipse.jdt.launching.JavaRuntime.getExecutionEnvironmentsManager().getSupportedExecutionEnvironments()
+;;
+
+@id: jdt.internal.versions.addall.allversions.to.alljavasourceversions
+@severity: info
+"Updates internal JavadocSpecificsWizardPage to use getAllJavaSourceVersionsSupportedByCompiler() for populating versions list.":
+$versions.addAll(org.eclipse.jdt.core.JavaCore.getAllVersions())
+=> $versions.addAll(org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler())
+;;
+
+@id: jdt.internal.javalinks.styling.check-to-helper
+@severity: error
+$content.contains(org.eclipse.jdt.internal.ui.viewsupport.JavaElementLinks.CHECKBOX_ID_FORMATTIG)
+=> org.eclipse.jdt.internal.ui.viewsupport.JavaElementLinks.isStylingPresent($content)
+;;
+
+@id: jdt.internal.javadochover.stylingmenuaction.shellargument
+@severity: info
+new org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction($parent, $browserAccessor, $htmlSupplier, $refreshTask)
+:: inClass("org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover")
+=> new org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction(this.iControl.getShell(), $browserAccessor, $htmlSupplier, $refreshTask)
+;;
+
+@id: jdt.internal.stylingmenuaction.nostylingenhancementsaction.supersimplification
+@severity: info
+super(org.eclipse.jdt.internal.ui.viewsupport.javadoc.JavadocStylingMessages.JavadocStyling_noEnhancements)
+:: inClass("org.eclipse.jdt.internal.ui.viewsupport.javadoc.SignatureStylingMenuToolbarAction.NoStylingEnhancementsAction")
+=> super()
+;;
+
+@id: jdt.internal.javacore.getfirstjavasourceversion-to-getalljavasourceversions.first
+@severity: info
+"Replaces JavaCore.getFirstJavaSourceVersionSupportedByCompiler() with getAllJavaSourceVersionsSupportedByCompiler().first() to use updated internal API.":
+/*!minJavaVersion: 8*/
+/*!tags: jdt, internal, refactoring, api-modernization*/
+org.eclipse.jdt.core.JavaCore.getFirstJavaSourceVersionSupportedByCompiler()
+=> org.eclipse.jdt.core.JavaCore.getAllJavaSourceVersionsSupportedByCompiler().first()
+;;
+
+@id: jdt.internal.ui.icon.rename-to-unnamed-variable
+@severity: info
+org.eclipse.ui.PlatformUI.getWorkbench().getSharedImages().getImage(org.eclipse.ui.ISharedImages.IMG_TOOL_REDO)
+=> org.eclipse.jdt.internal.ui.JavaPluginImages.get(org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_CORRECTION_LINKED_RENAME)
+;;
+
+$mbinding.getDeclaringClass().isRecord()
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.codemining.CalleeJavaMethodParameterVisitor") && sourceVersionGE(16)
+=> $mbinding.getDeclaringClass().isRecord() && !skipParameterNamesCodeMinings($mbinding)
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d4OrHigher($project)
+=> true
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($project)
+=> true
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d2OrHigher($project)
+=> true
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3, null)
+=> org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8, null)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_5)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_1;
+=> java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+java.lang.String $defCompliance2 = org.eclipse.jdt.core.JavaCore.VERSION_1_3;
+=> java.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateFieldName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3, null)
+=> org.eclipse.jdt.core.JavaConventions.validateJavaTypeName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8, null)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_5)
+=> org.eclipse.jdt.core.JavaConventions.validatePackageName($text, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_3, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.core.JavaConventions.validateIdentifier($name, org.eclipse.jdt.core.JavaCore.VERSION_1_8, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_1;
+=> java.lang.String $defCompliance1 = org.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+java.lang.String $defCompliance2 = org.eclipse.jdt.core.JavaCore.VERSION_1_3;
+=> java.lang.String $defCompliance2 = org.eclipse.jdt.core.JavaCore.VERSION_1_8;
+;;
+
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_3)
+=> org.eclipse.jdt.internal.corext.util.JavaModelUtil.getCompilerCompliance($install, org.eclipse.jdt.core.JavaCore.VERSION_1_8)
+;;
+
+!$comp1.equals($comp2) && (org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($comp1) || org.eclipse.jdt.internal.corext.util.JavaModelUtil.is50OrHigher($comp2))
+=> !$comp1.equals($comp2)
+;;
+
+@id: jdt.internal.javamodelutil.is1d7orhigher.to.true
+@severity: info
+org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)
+=> true
+;;
+
+@id: jdt.internal.javamodelutil.notis1d7orhigher.to.false
+@severity: info
+!org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d7OrHigher($project)
+=> false
+;;
+
+org.eclipse.jdt.internal.corext.fix.SplitTryResourceFixCore.initialConditionsCheck($cu, $coveringNode)
+=> org.eclipse.jdt.internal.corext.fix.SplitTryResourceFixCore.initialConditionsCheck($coveringNode)
+;;
+
+boolean $var = org.eclipse.jdt.internal.corext.util.JavaModelUtil.is1d8OrHigher($target_expr);
+=> boolean $var = true;
+;;
+
+@id: jdt.internal.quickassist.deprecated.problem.check.extend
+@severity: error
+containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod)
+=> containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedMethod) || containsMatchingProblem($locations, org.eclipse.jdt.core.compiler.IProblem.UsingDeprecatedConstructor)
+;;
+
+@id: jdt.internal.typepattern.conditional-getpatternvariable
+@severity: info
+$typePattern.getPatternVariable()
+:: instanceof($typePattern, "org.eclipse.jdt.core.dom.TypePattern") && sourceVersionGE(22)
+=> $typePattern.getAST().apiLevel() < org.eclipse.jdt.core.dom.AST.JLS22 ? $typePattern.getPatternVariable() : $typePattern.getPatternVariable2()
+;;
+
+@id: jdt.internal.javadocview.completionpossible.markdown
+@severity: info
+"Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 1 of 2)":
+!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) :: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView") && inMethod("isCompletionPossible") && sourceVersionGE(18)
+=> !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) && !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)
+;;
+
+@id: jdt.internal.javadocview.getelement.markdown
+@severity: info
+"Extends content type check in JavadocView to include JAVA_MARKDOWN_COMMENT partition. (Pattern 2 of 2)":
+org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) :: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView") && inMethod("getElement") && sourceVersionGE(18)
+=> org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())
+;;
+
+@id: jdt.internal.folding.singleliner.fix
+@severity: info
+$endLine > $startLine
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
+=> $endLine > $startLine + 1
+;;
+
+@id: jdt.internal.completionproposal.getcompletion.to.getdisplaystring
+@severity: info
+$methodProposal.getCompletion()
+:: instanceof($methodProposal, "org.eclipse.jdt.core.CompletionProposal")
+=> $methodProposal.getDisplayString()
+;;
+
+@id: jdt.internal.problem.outerlocalmustbefinally.rename
+@severity: info
+org.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeFinal
+=> org.eclipse.jdt.core.compiler.IProblem.OuterLocalMustBeEffectivelyFinal
+;;
+
+@id: jdt.internal.initializefinalfieldproposal.super.use-messages-format
+@severity: info
+"Wrap $messageArg with Messages.format choosing between two CorrectionMessages keys based on $updateType. Hint only: $problem and $updateType cannot be bound from this source pattern.":
+super(java.lang.Object $messageArg, $cu, null, $relevance, org.eclipse.jdt.internal.ui.JavaPluginImages $image, org.eclipse.jdt.internal.corext.fix.InitializeFinalFieldProposalCore $delegate)
+:: inClass("org.eclipse.jdt.internal.ui.text.correction.proposals.InitializeFinalFieldProposal")
+;;
+
+@id: jdt.internal.folding.skiplws.boundscheck
+@severity: info
+Character.isWhitespace(source[start])
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider") && inMethod("skipLeadingWhitespace")
+=> start < source.length && Character.isWhitespace(source[start])
+;;
+
+@id: jdt.internal.ui.javaeditor.sharedastprovidercore.wait_active_only.to.wait_no
+@severity: info
+org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.getAST($inputElement, org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_ACTIVE_ONLY, $monitor)
+=> org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.getAST($inputElement, org.eclipse.jdt.internal.ui.javaeditor.SharedASTProviderCore.WAIT_NO, $monitor)
+;;
+
+new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().createMissingCaseProposalsBase($context, $parent, $enumConstNames, $proposals)
+=> new org.eclipse.jdt.internal.ui.text.correction.LocalCorrectionsSubProcessor().createMissingCaseProposalsBase($context, $parent, null, $enumConstNames, $proposals)
+;;
+
+@id: jdt.internal.folding.includelastline.fix
+@severity: info
+$collapseCodeVar = $booleanExpr
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
+=> $collapseCodeVar = $includelastLineVar = $booleanExpr
 ;;

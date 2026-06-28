@@ -1,0 +1,31 @@
+@id: logical.simplification.double-negation.equality-both-negated
+@severity: info
+"Simplify !!A == !!B to A == B.":
+org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x == org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
+=> $x == $y
+;;
+
+@id: logical.simplification.double-negation.inequality-both-negated
+@severity: info
+"Simplify !!A != !!B to A ^ B (logical XOR).":
+org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x != org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
+=> $x ^ $y
+;;
+
+@id: logical.simplification.double-negation.xor-left-negated
+@severity: info
+"Simplify !A ^ B to A == B.":
+org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $x ^ $y
+=> $x == $y
+;;
+
+@id: logical.simplification.double-negation.xor-right-negated
+@severity: info
+"Simplify A ^ !B to A == B.":
+$x ^ org.eclipse.jdt.core.dom.PrefixExpression.Operator.NOT $y
+=> $x == $y
+;;
+
+$a & $b :: instanceof($a, "boolean") && instanceof($b, "boolean")
+=> $a && $b
+;;

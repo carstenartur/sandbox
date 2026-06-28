@@ -1,0 +1,27 @@
+@id: javadocview.partition.exclude.markdown
+@severity: info
+!org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition)
+:: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView")
+=> !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($partition) && !org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($partition)
+;;
+
+@id: javadocview.partition.include.markdown
+@severity: info
+org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType())
+:: inClass("org.eclipse.jdt.internal.ui.infoviews.JavadocView")
+=> org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_DOC.equals($typedRegion.getType()) || org.eclipse.jdt.internal.ui.text.IJavaPartitions.JAVA_MARKDOWN_COMMENT.equals($typedRegion.getType())
+;;
+
+@id: jdt.internal.semanticHighlightings.typeArgumentHighlighting.generics-fix
+@severity: info
+$locationInParent == org.eclipse.jdt.core.dom.ParameterizedType.TYPE_ARGUMENTS_PROPERTY
+:: inClass("org.eclipse.jdt.internal.ui.javaeditor.SemanticHighlightings") && inMethod("consumes")
+=> $locationInParent == org.eclipse.jdt.core.dom.ParameterizedType.TYPE_ARGUMENTS_PROPERTY || $locationInParent == org.eclipse.jdt.core.dom.WildcardType.BOUND_PROPERTY || $locationInParent == org.eclipse.jdt.core.dom.TypeParameter.TYPE_BOUNDS_PROPERTY || $locationInParent == org.eclipse.jdt.core.dom.WildcardType.UPPER_BOUND_PROPERTY
+;;
+
+@id: jdt.internal.folding.markdown.comments.support
+@severity: info
+token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_BLOCK || token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_JAVADOC
+:: inClass("org.eclipse.jdt.ui.text.folding.DefaultJavaFoldingStructureProvider")
+=> token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_BLOCK || token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_JAVADOC || token == org.eclipse.jdt.internal.compiler.parser.ITerminalSymbols.TokenNameCOMMENT_MARKDOWN
+;;

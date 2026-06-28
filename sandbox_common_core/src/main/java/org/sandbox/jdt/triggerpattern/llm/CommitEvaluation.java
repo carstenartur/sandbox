@@ -41,6 +41,9 @@ import java.time.Instant;
  * @param dslRuleAfterChange    DSL rule that would work after language change
  * @param summary               human-readable summary
  * @param dslValidationResult   result of DSL validation ("VALID" or error message), null if not validated
+ * @param beforeExample         Java code example that should be matched by the rule (for candidate testing)
+ * @param afterExample          expected Java code after the rule is applied (for candidate testing)
+ * @param negativeExample       Java code example that should NOT match the rule (for candidate testing)
  */
 public record CommitEvaluation(
 		String commitHash,
@@ -65,7 +68,10 @@ public record CommitEvaluation(
 		String languageChangeNeeded,
 		String dslRuleAfterChange,
 		String summary,
-		String dslValidationResult) {
+		String dslValidationResult,
+		String beforeExample,
+		String afterExample,
+		String negativeExample) {
 
 	/**
 	 * Traffic light assessment for a commit evaluation.

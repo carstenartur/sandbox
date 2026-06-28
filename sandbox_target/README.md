@@ -9,7 +9,7 @@ The **Target Platform** module defines the Eclipse target platform used for buil
 ## Key Features
 
 - 🎯 **Target Platform Definition** - eclipse.target file with all dependencies
-- 📦 **Eclipse 2025-09** - Currently targets latest Eclipse release
+- 📦 **Eclipse 2025-12** - Currently targets latest Eclipse release
 - 🔒 **Version Locking** - Pinned dependencies for reproducible builds
 - 🔌 **P2 Repositories** - Configured update sites and repositories
 - 🏗️ **Maven/Tycho Integration** - Used by Tycho build
@@ -64,7 +64,7 @@ The target platform includes:
 ### P2 Repositories
 
 Configured repositories:
-- Eclipse 2025-09 release
+- Eclipse 2025-12 release
 - Eclipse Orbit latest
 - JustJ JRE repository
 - EGit/EGit GitHub Connector
@@ -75,14 +75,14 @@ The `eclipse.target` file structure:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<target name="Eclipse 2025-09">
+<target name="Eclipse 2025-12">
   <locations>
     <location includeAllPlatforms="false" includeConfigurePhase="true" 
              includeMode="planner" includeSource="true" type="InstallableUnit">
       <unit id="org.eclipse.sdk.feature.group" version="..."/>
       <unit id="org.eclipse.jdt.feature.group" version="..."/>
       <!-- ... more units ... -->
-      <repository location="https://download.eclipse.org/releases/2025-09"/>
+      <repository location="https://download.eclipse.org/releases/2025-12"/>
     </location>
     <!-- ... more locations ... -->
   </locations>
@@ -118,7 +118,7 @@ To target a different Eclipse version:
    ```
 
 2. **Update Repository URLs**
-   - Change `2025-09` to `2024-12` in repository locations
+   - Change `2025-12` to `2024-12` in repository locations
 
 3. **Update Version Numbers**
    - Update feature/plugin versions to match new Eclipse
@@ -155,9 +155,9 @@ To add new dependencies:
 
 ### Current Target
 
-- **Eclipse Version**: 2025-09
+- **Eclipse Version**: 2025-12
 - **Java Version**: Java 21 required
-- **JDT Version**: Latest from Eclipse 2025-09
+- **JDT Version**: Latest from Eclipse 2025-12
 - **Platform Version**: Eclipse Platform 4.33
 
 ### Compatibility

@@ -35,7 +35,8 @@ local.properties
 .cache-main
 .scala_dependencies
 .worksheet
-# Note: .settings/ and .project files are intentionally tracked for Eclipse plugin projects
+.settings/
+# Note: .project files are intentionally tracked for Eclipse plugin projects
 # Note: *.launch files are intentionally tracked for Eclipse launch configurations
 
 # Java build artifacts

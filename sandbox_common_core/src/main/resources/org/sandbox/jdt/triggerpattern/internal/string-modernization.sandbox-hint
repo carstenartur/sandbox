@@ -23,3 +23,11 @@ $str.indexOf($sub) >= 0
 $str.indexOf($sub) < 0
 => !$str.contains($sub)
 ;;
+
+$x.length() > 0
+=> !$x.isEmpty()
+;;
+
+$str.substring($start, $str.length()) :: hasNoSideEffect($str)
+=> $str.substring($start)
+;;

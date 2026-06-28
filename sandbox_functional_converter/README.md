@@ -65,7 +65,7 @@ items.stream()
 **Supported:** Enhanced-for loops, bidirectional transformations  
 **Coming soon:** Iterator-while and traditional for-loops
 
-For detailed examples and technical information, see [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md).
+For detailed examples and technical information, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ### Recent Improvements (December 2025 - February 2026)
 ✅ **Code Cleanup**: Removed ~366 lines of dead code (78% reduction in Refactorer.java)
@@ -83,7 +83,7 @@ For detailed examples and technical information, see [COMMENT_PRESERVATION.md](C
   - Comments appear in generated block lambdas
   - Full support for enhanced-for loops to streams
   - Bidirectional transformations preserve loop body comments
-  - See [COMMENT_PRESERVATION.md](COMMENT_PRESERVATION.md) and [FAQ.md](FAQ.md#q-was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
+  - See [ARCHITECTURE.md](ARCHITECTURE.md) and [FAQ.md](FAQ.md#q-was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
 
 ## Target Format Selection (New!)
 
@@ -438,8 +438,8 @@ Package structure mirrors Eclipse JDT for seamless integration.
 
 ### Documentation
 - [FAQ](FAQ.md) - Frequently Asked Questions (Deutsch/English) - **Start here for quick answers!**
-- [Comment Preservation Guide](COMMENT_PRESERVATION.md) - Detailed guide on comment preservation feature
-- [Before/After Examples](EXAMPLES.md) - Real-world transformation examples with comments
+- [Comment Preservation Guide](ARCHITECTURE.md) - Detailed guide on comment preservation feature
+- [Before/After Examples](README.md) - Real-world transformation examples with comments
 - [Architecture Documentation](ARCHITECTURE.md) - Complete design and implementation details
 - [TODO and Roadmap](TODO.md) - Future enhancements and development phases
 

@@ -2,7 +2,7 @@ name: Cleanup Old Workflow Runs
 
 on:
   schedule:
-    - cron: '0 3 * * 0'  # Run every Sunday at 3 AM UTC
+    - cron: '0 * * * *'  # Run every Sunday at 3 AM UTC
   workflow_dispatch:
     inputs:
       retain_days:
@@ -24,7 +24,7 @@ on:
         description: 'Maximum number of runs to delete per execution (prevents rate limiting)'
         required: false
         type: number
-        default: 100
+        default: 300
 
 permissions:
   actions: write  # Required to delete workflow runs

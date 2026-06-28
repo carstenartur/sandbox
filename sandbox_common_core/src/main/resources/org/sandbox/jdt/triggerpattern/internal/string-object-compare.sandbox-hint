@@ -1,0 +1,19 @@
+org.eclipse.jdt.core.dom.ITypeBinding $str1 == org.eclipse.jdt.core.dom.ITypeBinding $str2 :: instanceof($str1, "java.lang.String") && instanceof($str2, "java.lang.String")
+=> java.util.Objects.equals($str1, $str2)
+;;
+
+org.eclipse.jdt.core.dom.ITypeBinding $str1 != org.eclipse.jdt.core.dom.ITypeBinding $str2 :: instanceof($str1, "java.lang.String") && instanceof($str2, "java.lang.String")
+=> !java.util.Objects.equals($str1, $str2)
+;;
+
+$obj1.equals($obj2) :: !isNullLiteral($obj1) && !isStringLiteral($obj1) && instanceof($obj1, "java.lang.Object") && instanceof($obj2, "java.lang.Object")
+=> java.util.Objects.equals($obj1, $obj2)
+;;
+
+$obj1 == $obj2 :: !instanceof($obj1, "java.lang.String") && instanceof($obj1, "java.lang.Object") && !instanceof($obj2, "java.lang.String") && instanceof($obj2, "java.lang.Object")
+=> java.util.Objects.equals($obj1, $obj2)
+;;
+
+$obj1 != $obj2 :: !instanceof($obj1, "java.lang.String") && instanceof($obj1, "java.lang.Object") && !instanceof($obj2, "java.lang.String") && instanceof($obj2, "java.lang.Object")
+=> !java.util.Objects.equals($obj1, $obj2)
+;;

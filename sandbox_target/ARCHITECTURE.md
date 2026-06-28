@@ -6,7 +6,7 @@ The **Target Platform** module (`sandbox_target`) defines the Eclipse platform v
 
 ## Purpose
 
-- Define Eclipse release version (currently 2025-09)
+- Define Eclipse release version (currently 2025-12)
 - Specify required Eclipse features (JDT, SDK, PDE)
 - Declare external dependencies from Eclipse Orbit
 - Ensure consistent build environment across all developers
@@ -39,7 +39,7 @@ The file defines multiple P2 repository locations, each providing specific compo
     <locations>
         <location includeAllPlatforms="false" includeConfigurePhase="true" 
                   includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/releases/2025-09/"/>
+            <repository location="https://download.eclipse.org/releases/2025-12/"/>
             <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
             <!-- more units -->
         </location>
@@ -49,9 +49,9 @@ The file defines multiple P2 repository locations, each providing specific compo
 
 ### Repository Locations
 
-#### 1. Eclipse 2025-09 Release
+#### 1. Eclipse 2025-12 Release
 
-**URL**: `https://download.eclipse.org/releases/2025-09/`
+**URL**: `https://download.eclipse.org/releases/2025-12/`
 
 **Components**:
 - `org.eclipse.jdt.feature.group` - Java Development Tools
@@ -64,7 +64,7 @@ The file defines multiple P2 repository locations, each providing specific compo
 
 #### 2. Eclipse Orbit (Dependencies)
 
-**URL**: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-09/`
+**URL**: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/`
 
 **Components**:
 - `org.apache.commons.commons-io` - Apache Commons IO
@@ -146,9 +146,9 @@ The target platform is consumed by Tycho Maven plugin:
 ```
 
 **Rationale**:
-- Always get the latest from specified release (2025-09)
+- Always get the latest from specified release (2025-12)
 - No need to update version numbers
-- Consistent across point releases (2025-09.1, 2025-09.2)
+- Consistent across point releases (2025-12.1, 2025-12.2)
 
 **Alternative** (for reproducible builds):
 ```xml
@@ -308,7 +308,7 @@ mvn clean verify
 Don't use "latest":
 ```xml
 <!-- Good -->
-<repository location="https://download.eclipse.org/releases/2025-09/"/>
+<repository location="https://download.eclipse.org/releases/2025-12/"/>
 
 <!-- Bad -->
 <repository location="https://download.eclipse.org/releases/latest/"/>

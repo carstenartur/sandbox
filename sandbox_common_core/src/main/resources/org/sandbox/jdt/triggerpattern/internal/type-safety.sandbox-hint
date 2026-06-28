@@ -1,0 +1,9 @@
+java.lang.Object $typeNameMatch = $init;
+:: $init instanceof org.eclipse.jdt.core.search.TypeNameMatch
+=> org.eclipse.jdt.core.search.TypeNameMatch $typeNameMatch = $init;
+;;
+
+java.lang.Object $modName = $init;
+:: $init instanceof java.lang.String
+=> java.lang.String $modName = $init;
+;;

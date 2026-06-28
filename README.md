@@ -17,6 +17,7 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 [![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
 [![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
 [![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20941684.svg)](https://doi.org/10.5281/zenodo.20941684)
 
 🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
 
@@ -167,7 +168,7 @@ Specialized search view for identifying deprecated and critical API usage during
 
 ### Usage View (`sandbox_usage_view`)
 
-Eclipse view plugin that detects **naming conflicts** in Java code — variables with the same name but different types (e.g., `String userId` vs `int userId`). Uses AST-based analysis with full binding resolution via `AstProcessorBuilder` from `sandbox_common`. Features a sortable table with columns for Name, Qualified Name, Package, Deprecated status, and Declaring Method. Automatically updates when switching between editors (`IPartListener2`), supports filtering for naming conflicts only (`NamingConflictFilter`), provides type-aware variable name suggestions (`VariableNameSuggester`), and can optionally auto-show at Eclipse startup via preferences.
+Eclipse view plugin that detects **naming conflicts** in Java code — variables with the same name but different types (e.g., `String userId` vs `int userId`). Uses AST-based analysis with full binding resolution via `AstProcessorBuilder` from `sandbox_common_core`. Features a sortable table with columns for Name, Qualified Name, Package, Deprecated status, and Declaring Method. Automatically updates when switching between editors (`IPartListener2`), supports filtering for naming conflicts only (`NamingConflictFilter`), provides type-aware variable name suggestions (`VariableNameSuggester`), and can optionally auto-show at Eclipse startup via preferences.
 
 📖 **Full Documentation**: [Plugin README](sandbox_usage_view/README.md) | [Architecture](sandbox_usage_view/ARCHITECTURE.md) | [TODO](sandbox_usage_view/TODO.md)
 

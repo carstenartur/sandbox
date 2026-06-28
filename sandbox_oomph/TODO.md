@@ -9,7 +9,7 @@
 ### Completed
 - ✅ Repository clone configuration
 - ✅ Branch selection (main)
-- ✅ P2 repository for Eclipse 2025-09
+- ✅ P2 repository for Eclipse 2025-12
 - ✅ Basic project import
 - ✅ Configurable Eclipse target version (can be updated after installation)
 - ✅ Configurable Eclipse heap size (can be updated after installation)

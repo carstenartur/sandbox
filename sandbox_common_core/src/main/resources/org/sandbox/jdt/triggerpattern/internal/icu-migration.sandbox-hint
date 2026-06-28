@@ -1,0 +1,9 @@
+<!id: icu.utf16.issurrogate-to-character.issurrogate>
+<!description: Replace com.ibm.icu.text.UTF16.isSurrogate() with java.lang.Character.isSurrogate() for platform compatibility.>
+<!severity: info>
+<!minJavaVersion: 8>
+<!tags: api-migration, icu4j>
+
+com.ibm.icu.text.UTF16.isSurrogate($c)
+=> java.lang.Character.isSurrogate($c)
+;;

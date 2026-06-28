@@ -1,3 +1,39 @@
 @java.lang.SuppressWarnings("rawtypes")
 => @java.lang.SuppressWarnings({"rawtypes"})
 ;;
+
+$_leftOperand + "}\n\n\n\n\n\n\n"
+=> $_leftOperand + "}\n\n\n\n\n\n"
+;;
+
+// NOTE: A previous harvested rule rewrote `Class.isInstance($obj)` to
+// `$obj instanceof $Type`. That is only valid when the Class reference
+// is a literal `SomeType.class` — the rule as harvested matched arbitrary
+// runtime Class values where the rewrite is invalid. Removed.
+
+
+
+@id: javadoc.htmlentities.ampersand-all-default
+@severity: info
+"Encodes '&' as '&amp;' in Javadoc for JavaElementLabels.ALL_DEFAULT.":
+"M_APP_TYPE_PARAMETERS & T_TYPE_PARAMETERS"
+=> "M_APP_TYPE_PARAMETERS &amp; T_TYPE_PARAMETERS"
+;;
+
+@id: javadoc.htmlentities.ampersand-preferenceconstants
+@severity: info
+"Encodes '&' as '&amp;' in Javadoc for PreferenceConstants.SPELLING_IGNORE_SINGLE_LETTERS.":
+"A named preference that controls whether '&' in"
+=> "A named preference that controls whether '&amp;' in"
+;;
+
+@id: javadoc.htmlentities.lessthan-preferenceconstants
+@severity: info
+"Encodes '<' as '&lt;' in Javadoc for PreferenceConstants cycleState description.":
+"enabled= cycleState < 65535"
+=> "enabled= cycleState &lt; 65535"
+;;
+
+"Menu item action for building & presenting color preferences sub-menu of javadoc styling menu."
+=> "Menu item action for building &amp; presenting color preferences sub-menu of javadoc styling menu."
+;;

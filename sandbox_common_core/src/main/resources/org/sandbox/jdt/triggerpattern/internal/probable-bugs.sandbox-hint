@@ -36,3 +36,19 @@ java.lang.Math.min($a, $a)
 "System.currentTimeMillis() may go backwards due to clock adjustments — consider System.nanoTime() for elapsed time":
 System.currentTimeMillis() - $start < 0
 ;;
+
+$x == $x :: !instanceof($x, "double") && !instanceof($x, "float")
+=> true
+;;
+
+@id: arrays.correctness.array-object-equals
+@severity: error
+!$array1.equals($array2) :: instanceof($array1, "java.lang.Object[]") && instanceof($array2, "java.lang.Object[]")
+=> !java.util.Arrays.equals($array1, $array2)
+;;
+
+@id: arrays.correctness.array-object-equals-positive
+@severity: error
+$array1.equals($array2) :: instanceof($array1, "java.lang.Object[]") && instanceof($array2, "java.lang.Object[]")
+=> java.util.Arrays.equals($array1, $array2)
+;;

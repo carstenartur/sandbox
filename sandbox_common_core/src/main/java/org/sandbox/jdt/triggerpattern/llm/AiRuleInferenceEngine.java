@@ -162,7 +162,8 @@ public class AiRuleInferenceEngine {
 				evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),
 				evaluation.dslRule(), evaluation.targetHintFile(),
 				evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),
-				evaluation.summary(), validationResult);
+				evaluation.summary(), validationResult,
+				evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample());
 
 		return Optional.of(enriched);
 	}

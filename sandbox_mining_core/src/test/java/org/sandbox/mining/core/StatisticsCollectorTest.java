@@ -39,7 +39,7 @@ class StatisticsCollectorTest {
 				4, 3, 2, TrafficLight.GREEN,
 				"Collections", false, "reason",
 				true, "rule", "file.sandbox-hint",
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 
 		stats.record(eval);
 
@@ -62,7 +62,7 @@ class StatisticsCollectorTest {
 				0, 0, 0, TrafficLight.NOT_APPLICABLE,
 				null, false, null,
 				false, null, null,
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 
 		stats.record(eval);
 
@@ -99,7 +99,7 @@ class StatisticsCollectorTest {
 				0, 0, 0, light,
 				null, false, null,
 				false, null, null,
-				null, null, "summary", null);
+				null, null, "summary", null, null, null, null);
 	}
 
 	@Test
@@ -112,13 +112,13 @@ class StatisticsCollectorTest {
 						4, 3, 2, TrafficLight.GREEN,
 						"Collections", false, "reason",
 						true, "rule", "file.hint",
-						null, null, "summary", null),
+						null, null, "summary", null, null, null, null),
 				new CommitEvaluation("h2", "msg", "url", day2, null,
 						false, "Bug-Fix", false, null,
 						0, 0, 0, TrafficLight.NOT_APPLICABLE,
 						null, false, null,
 						false, null, null,
-						null, null, "summary", null));
+						null, null, "summary", null, null, null, null));
 
 		StatisticsCollector stats = StatisticsCollector.rebuildFrom(evals);
 
@@ -155,10 +155,10 @@ class StatisticsCollectorTest {
 		List<CommitEvaluation> evals = List.of(
 				new CommitEvaluation("h1", "m", "u", late, null, true, null, false, null,
 						0, 0, 0, TrafficLight.GREEN, null, false, null,
-						false, null, null, null, null, "s", null),
+						false, null, null, null, null, "s", null, null, null, null),
 				new CommitEvaluation("h2", "m", "u", early, null, true, null, false, null,
 						0, 0, 0, TrafficLight.GREEN, null, false, null,
-						false, null, null, null, null, "s", null));
+						false, null, null, null, null, "s", null, null, null, null));
 
 		stats.computeTimeWindow(evals);
 

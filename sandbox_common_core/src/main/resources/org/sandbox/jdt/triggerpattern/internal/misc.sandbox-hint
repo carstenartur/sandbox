@@ -15,3 +15,36 @@ System.getProperty("line.separator")
 $x.toString()
 => String.valueOf($x)
 ;;
+
+@id: logical.simplification.not-equal-zero
+@severity: info
+"Simplify !($expr.length() == 0) to $expr.length() != 0 for improved readability.":
+!($x.length() == 0)
+=> $x.length() != 0
+;;
+
+@id: logical.simplification.demorgan.or-negation
+@severity: info
+"Apply De Morgan's law: !(A || B) to !A && !B.":
+!($a || $b)
+=> !$a && !$b
+;;
+
+@id: logical.simplification.demorgan.and-negation
+@severity: info
+"Apply De Morgan's law: !(A && B) to !A || !B.":
+!($a && $b)
+=> !$a || !$b
+;;
+
+$threadLocalVar.set(null) :: instanceof($threadLocalVar, "java.lang.ThreadLocal")
+=> $threadLocalVar.remove()
+;;
+
+System.getProperty("file.encoding")
+=> java.nio.charset.Charset.defaultCharset().displayName()
+;;
+
+$str1 + "\n\n" + $str2
+=> $str1 + System.lineSeparator()+System.lineSeparator() + $str2
+;;
