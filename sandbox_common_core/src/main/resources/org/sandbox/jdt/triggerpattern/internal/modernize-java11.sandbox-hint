@@ -1,45 +1,12 @@
 // modernize-java11.sandbox-hint — Java 11+ API modernization
-// Replaces older API usage with Java 11+ equivalents
+//
+// This active bundled file is intentionally empty for now. The previously
+// harvested String rules were too broad without reliable type and side-effect
+// guards. They should be reintroduced only with focused tests and binding-aware
+// validation.
 
 <!id: modernize-java11>
 <!description: Java 11+ API modernization patterns>
 <!severity: info>
 <!minJavaVersion: 11>
 <!tags: modernization, java11>
-
-// String.valueOf($x.toCharArray()) → $x (if $x is a String)
-String.valueOf($x.toCharArray())
-=> $x
-;;
-
-// new String($str.toCharArray()) → $str
-new String($str.toCharArray())
-=> $str
-;;
-
-// $str.substring(0) → $str
-$str.substring(0)
-=> $str
-;;
-
-// $str.equals("") → $str.isEmpty()
-$str.equals("")
-=> $str.isEmpty()
-;;
-
-// "".equals($str) → $str != null && $str.isEmpty()
-"".equals($str)
-=> $str != null && $str.isEmpty()
-;;
-
-// $str.length() == 0 → $str.isEmpty()
-$str.length() == 0
-=> $str.isEmpty()
-;;
-
-// $x.toString() → String.valueOf($x) (null-safe alternative)
-// Only suggests when null is a realistic possibility
-"Consider using String.valueOf() for null safety":
-$x.toString() :: sourceVersionGE(11) && isNullable($x, 5)
-=> String.valueOf($x)
-;;
