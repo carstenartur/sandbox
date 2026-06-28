@@ -19,6 +19,10 @@ java.lang.Boolean.valueOf(false)
 => java.lang.Boolean.FALSE
 ;;
 
+java.lang.String.valueOf("")
+=> ""
+;;
+
 @id: java.util.arrays.aslist.remove-redundant-string-array
 @severity: info
 "Simplifies Arrays.asList with an explicit String array in the known varargs context.":
