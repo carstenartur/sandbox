@@ -125,7 +125,7 @@ public class SourceScanner {
 					int line = cu.getLineNumber(result.match().getOffset());
 					String hintFileName = hintFile.getId() != null ? hintFile.getId() : "unknown";
 					String ruleName = result.rule().getDescription() != null ? result.rule().getDescription()
-							: "unnamed";
+							: result.rule().getRuleId() != null ? result.rule().getRuleId() : "unnamed"; //$NON-NLS-1$
 					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),
 							result.hasReplacement() ? result.replacement() : null);
 				}
