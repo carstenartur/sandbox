@@ -1,5 +1,10 @@
 // collections.sandbox-hint — Collections API improvements
-// Replaces verbose collection patterns with modern API equivalents
+// Replaces verbose collection patterns with modern API equivalents.
+//
+// Keep this active bundled library conservative. Broader migrations such as
+// Vector to ArrayList, Hashtable to HashMap, or singleton/unmodifiable factory
+// rewrites can change synchronization, null handling, or declared API types and
+// should remain staged candidates until they have stronger guards and tests.
 
 <!id: collections>
 <!description: Collection API improvements and modernization>
@@ -7,24 +12,9 @@
 <!minJavaVersion: 9>
 <!tags: collections, modernization>
 
-// Collections.unmodifiableList(Arrays.asList(...)) → List.of(...)
-java.util.Collections.unmodifiableList(java.util.Arrays.asList($args$)) :: sourceVersionGE(9)
-=> java.util.List.of($args$)
-;;
-
-// Collections.singletonList($x) → List.of($x)
-java.util.Collections.singletonList($x) :: sourceVersionGE(9)
-=> java.util.List.of($x)
-;;
-
 // Collections.emptyList() → List.of()
 java.util.Collections.emptyList() :: sourceVersionGE(9)
 => java.util.List.of()
-;;
-
-// Collections.singletonMap($k, $v) → Map.of($k, $v)
-java.util.Collections.singletonMap($k, $v) :: sourceVersionGE(9)
-=> java.util.Map.of($k, $v)
 ;;
 
 // Collections.emptyMap() → Map.of()
@@ -35,68 +25,6 @@ java.util.Collections.emptyMap() :: sourceVersionGE(9)
 // Collections.emptySet() → Set.of()
 java.util.Collections.emptySet() :: sourceVersionGE(9)
 => java.util.Set.of()
-;;
-
-// Collections.singleton($x) → Set.of($x)
-java.util.Collections.singleton($x) :: sourceVersionGE(9)
-=> java.util.Set.of($x)
-;;
-
-// Collections.unmodifiableMap(Collections.singletonMap(k,v)) → Map.of(k,v)
-java.util.Collections.unmodifiableMap(java.util.Collections.singletonMap($k, $v)) :: sourceVersionGE(9)
-=> java.util.Map.of($k, $v)
-;;
-
-// Vector → ArrayList (mined patterns)
-new java.util.Vector() :: isAssignedToLocalVariable()
-=> new java.util.ArrayList<>()
-;;
-
-new java.util.Vector($capacity) :: isAssignedToLocalVariable()
-=> new java.util.ArrayList<>($capacity)
-;;
-
-new java.util.Vector($collection) :: isAssignedToLocalVariable()
-=> new java.util.ArrayList<>($collection)
-;;
-
-$v.addElement($child) :: instanceof($v, "java.util.Vector") && elementKindMatches("", "EXPRESSION_STATEMENT")
-=> $v.add($child)
-;;
-
-@id: collections.modernize.hashtable-to-map-generic
-@severity: info
-"Widens Hashtable type reference to Map interface (e.g., in declarations, casts).":
-java.util.Hashtable<$K, $V>
-=> java.util.Map<$K, $V>
-;;
-
-@id: collections.modernize.hashtable-to-map-raw
-@severity: info
-"Widens raw Hashtable type reference to Map interface (e.g., in declarations, casts).":
-java.util.Hashtable
-=> java.util.Map
-;;
-
-@id: collections.modernize.new-hashtable-to-hashmap-noarg
-@severity: info
-"Replaces new Hashtable() with new HashMap() for local variables (performance/modernization). Guarded to preserve thread-safety semantics for non-local variables.":
-new java.util.Hashtable() :: isAssignedToLocalVariable()
-=> new java.util.HashMap()
-;;
-
-@id: collections.modernize.new-hashtable-to-hashmap-capacity
-@severity: info
-"Replaces new Hashtable(int capacity) with new HashMap(int capacity) for local variables (performance/modernization). Guarded to preserve thread-safety semantics for non-local variables.":
-new java.util.Hashtable($capacity) :: isAssignedToLocalVariable()
-=> new java.util.HashMap($capacity)
-;;
-
-@id: collections.modernize.new-hashtable-to-hashmap-collection
-@severity: info
-"Replaces new Hashtable(Collection c) with new HashMap(Collection c) for local variables (performance/modernization). Guarded to preserve thread-safety semantics for non-local variables.":
-new java.util.Hashtable($collection) :: isAssignedToLocalVariable()
-=> new java.util.HashMap($collection)
 ;;
 
 new java.util.HashSet<$E$>()
@@ -121,8 +49,4 @@ new java.util.Hashtable<$K, $V$>()
 
 new java.util.Hashtable<$K, $V$>($args$)
 => new java.util.Hashtable<>($args$)
-;;
-
-new org.eclipse.jdt.internal.ui.preferences.formatter.FormatterModifyDialog.ModifyAll<org.eclipse.swt.widgets.ToolBar>($section, $images)
-=> new org.eclipse.jdt.internal.ui.preferences.formatter.FormatterModifyDialog.ModifyAll<>($section, $images)
 ;;
