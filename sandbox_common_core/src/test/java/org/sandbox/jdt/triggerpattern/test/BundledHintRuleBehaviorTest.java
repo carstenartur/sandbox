@@ -96,10 +96,16 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 	}
 
 	@Test
-	void modernizeJava11HasNoActiveBroadStringRulesYet() throws Exception {
+	void modernizeJava11KeepsOnlyNarrowLiteralRules() throws Exception {
 		HintFile hintFile = loadBundledHint("modernize-java11.sandbox-hint"); //$NON-NLS-1$
 
-		assertTrue(hintFile.getRules().isEmpty(),
-				"Broad Java 11 string rules should stay disabled until guarded tests exist"); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 5,
+				"Java 11 library should keep only narrow tested literal rules"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
+				"class Test { boolean m() { return \"\".isBlank(); } }", //$NON-NLS-1$
+				"class Test { boolean m() { return true; } }"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
+				"class Test { boolean m() { return \"abc\".isBlank(); } }", //$NON-NLS-1$
+				"class Test { boolean m() { return false; } }"); //$NON-NLS-1$
 	}
 }
