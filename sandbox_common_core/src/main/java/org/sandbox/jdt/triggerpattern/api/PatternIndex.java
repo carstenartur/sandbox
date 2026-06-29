@@ -32,6 +32,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.sandbox.jdt.triggerpattern.internal.FqnAwarePlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 
@@ -204,7 +205,7 @@ public final class PatternIndex {
 		}
 
 		for (IndexEntry entry : entries) {
-			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
+			PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
 			matcher.setCaseInsensitive(caseInsensitive);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
 				Match match = new Match(node, matcher.getBindings(),
@@ -239,35 +240,25 @@ public final class PatternIndex {
 				continue;
 			}
 
-			// Sliding window
-			for (int i = 0; i <= statements.size() - patternSize; i++) {
-				boolean allMatch = true;
-				PlaceholderAstMatcher combinedMatcher = new PlaceholderAstMatcher();
-				combinedMatcher.setCaseInsensitive(caseInsensitive);
-				for (int j = 0; j < patternSize; j++) {
-					PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
-					matcher.setCaseInsensitive(caseInsensitive);
-					if (!patternStatements.get(j).subtreeMatch(matcher, statements.get(i + j))) {
-						allMatch = false;
-						break;
-					}
-					combinedMatcher.mergeBindings(matcher);
+			for (int start = 0; start <= statements.size() - patternSize; start++) {
+				Block syntheticBlock = block.getAST().newBlock();
+				for (int i = 0; i < patternSize; i++) {
+					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(), statements.get(start + i)));
 				}
-				if (allMatch) {
-					Statement first = statements.get(i);
-					Statement last = statements.get(i + patternSize - 1);
-					int offset = first.getStartPosition();
-					int length = (last.getStartPosition() + last.getLength()) - offset;
-					Match match = new Match(first, combinedMatcher.getBindings(), offset, length);
+
+				PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
+				matcher.setCaseInsensitive(caseInsensitive);
+				if (patternBlock.subtreeMatch(matcher, syntheticBlock)) {
+					int offset = statements.get(start).getStartPosition();
+					Statement last = statements.get(start + patternSize - 1);
+					int length = last.getStartPosition() + last.getLength() - offset;
+					Match match = new Match(block, matcher.getBindings(), offset, length);
 					results.computeIfAbsent(entry.rule(), r -> new ArrayList<>()).add(match);
 				}
 			}
 		}
 	}
 
-	/**
-	 * An entry in the pattern index, containing a rule and its pre-parsed pattern node.
-	 */
 	private record IndexEntry(TransformationRule rule, Pattern sourcePattern, ASTNode patternNode) {
 	}
 }

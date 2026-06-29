@@ -27,6 +27,7 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+import org.sandbox.mining.core.candidate.MiningCandidate;
 
 /**
  * Persistent store for known mining rules ({@code known-rules.json}).
@@ -62,6 +63,8 @@ public class KnownRulesStore {
 		private String discoveredAt;
 		private int discoveredInRun;
 		private String sourceCommit;
+		private String sourceRepo;
+		private String candidateId;
 		private RuleStatus status;
 		private String hintFile;
 
@@ -71,7 +74,7 @@ public class KnownRulesStore {
 
 		public KnownRule(String id, String category, String dslRule, String summary,
 				String discoveredAt, int discoveredInRun, String sourceCommit,
-				RuleStatus status, String hintFile) {
+				String sourceRepo, String candidateId, RuleStatus status, String hintFile) {
 			this.id = id;
 			this.category = category;
 			this.dslRule = dslRule;
@@ -79,6 +82,8 @@ public class KnownRulesStore {
 			this.discoveredAt = discoveredAt;
 			this.discoveredInRun = discoveredInRun;
 			this.sourceCommit = sourceCommit;
+			this.sourceRepo = sourceRepo;
+			this.candidateId = candidateId;
 			this.status = status;
 			this.hintFile = hintFile;
 		}
@@ -97,6 +102,10 @@ public class KnownRulesStore {
 		public void setDiscoveredInRun(int discoveredInRun) { this.discoveredInRun = discoveredInRun; }
 		public String getSourceCommit() { return sourceCommit; }
 		public void setSourceCommit(String sourceCommit) { this.sourceCommit = sourceCommit; }
+		public String getSourceRepo() { return sourceRepo; }
+		public void setSourceRepo(String sourceRepo) { this.sourceRepo = sourceRepo; }
+		public String getCandidateId() { return candidateId; }
+		public void setCandidateId(String candidateId) { this.candidateId = candidateId; }
 		public RuleStatus getStatus() { return status; }
 		public void setStatus(RuleStatus status) { this.status = status; }
 		public String getHintFile() { return hintFile; }
@@ -213,6 +222,17 @@ public class KnownRulesStore {
 				continue;
 			}
 			String ruleId = buildRuleId(eval);
+			MiningCandidate candidate = new MiningCandidate(
+					eval.dslRule(),
+					eval.beforeExample(),
+					eval.afterExample(),
+					eval.negativeExample(),
+					eval.targetHintFile(),
+					eval.commitHash(),
+					eval.repoUrl(),
+					eval.category(),
+					eval.summary(),
+					LocalDate.now().toString());
 			KnownRule rule = new KnownRule(
 					ruleId,
 					eval.category(),
@@ -221,6 +241,8 @@ public class KnownRulesStore {
 					LocalDate.now().toString(),
 					runNumber,
 					eval.commitHash(),
+					eval.repoUrl(),
+					candidate.getCandidateId(),
 					RuleStatus.DISCOVERED,
 					eval.targetHintFile());
 			data.rules.add(rule);
@@ -246,6 +268,9 @@ public class KnownRulesStore {
 				sb.append(',');
 			}
 			sb.append("\n  {\"id\":\"").append(escape(r.id)) //$NON-NLS-1$
+			  .append("\",\"candidateId\":\"").append(escape(r.candidateId)) //$NON-NLS-1$
+			  .append("\",\"sourceRepo\":\"").append(escape(r.sourceRepo)) //$NON-NLS-1$
+			  .append("\",\"sourceCommit\":\"").append(escape(r.sourceCommit)) //$NON-NLS-1$
 			  .append("\",\"category\":\"").append(escape(r.category)) //$NON-NLS-1$
 			  .append("\",\"summary\":\"").append(escape(r.summary)) //$NON-NLS-1$
 			  .append("\",\"dslRule\":\"").append(escape(r.dslRule)) //$NON-NLS-1$
