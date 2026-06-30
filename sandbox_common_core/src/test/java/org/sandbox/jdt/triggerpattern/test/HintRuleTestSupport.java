@@ -102,7 +102,7 @@ abstract class HintRuleTestSupport {
 				.filter(TransformationResult::hasReplacement)
 				.findFirst()
 				.orElseThrow(() -> new AssertionError("Expected at least one replacement")); //$NON-NLS-1$
-		String actualCode = replaceFirstLiteral(beforeCode, result.matchedText(), result.replacement());
+		String actualCode = replaceUsingOffset(beforeCode, result);
 		assertEquals(normalizeSource(expectedCode), normalizeSource(actualCode));
 	}
 
@@ -128,10 +128,12 @@ abstract class HintRuleTestSupport {
 		GuardFunctionResolverHolder.setResolver(guards::get);
 	}
 
-	private String replaceFirstLiteral(String source, String matchedText, String replacement) {
-		int index = source.indexOf(matchedText);
-		assertTrue(index >= 0, "Matched text not found in source: " + matchedText); //$NON-NLS-1$
-		return source.substring(0, index) + replacement + source.substring(index + matchedText.length());
+	private String replaceUsingOffset(String source, TransformationResult result) {
+		int offset = result.match().getOffset();
+		int length = result.match().getLength();
+		assertTrue(offset >= 0 && length >= 0 && offset + length <= source.length(),
+				"Invalid match range: offset=" + offset + ", length=" + length); //$NON-NLS-1$ //$NON-NLS-2$
+		return source.substring(0, offset) + result.replacement() + source.substring(offset + length);
 	}
 
 	private String normalizeSource(String source) {
