@@ -78,6 +78,33 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 	}
 
 	@Test
+	void collectionsRespectsJava9SourceVersionGuard() throws Exception {
+		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
+
+		assertNoMatch(hintFile,
+				"class Test { Object m() { return java.util.Collections.emptyList(); } }", //$NON-NLS-1$
+				"1.8"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
+				"class Test { Object m() { return java.util.Collections.emptyList(); } }", //$NON-NLS-1$
+				"class Test { Object m() { return java.util.List.of(); } }", //$NON-NLS-1$
+				"21"); //$NON-NLS-1$
+	}
+
+	@Test
+	void collectionsDoesNotRewriteDiamondOnlyConstructorNoise() throws Exception {
+		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
+
+		assertNoMatch(hintFile,
+				"class Test { Object m() { return new java.util.ArrayList<String>(); } }"); //$NON-NLS-1$
+		assertNoMatch(hintFile,
+				"class Test { Object m() { return new java.util.ArrayList<String>(4); } }"); //$NON-NLS-1$
+		assertNoMatch(hintFile,
+				"class Test { Object m() { return new java.util.HashSet<String>(); } }"); //$NON-NLS-1$
+		assertNoMatch(hintFile,
+				"class Test { Object m() { return new java.util.Hashtable<String, String>(); } }"); //$NON-NLS-1$
+	}
+
+	@Test
 	void collectionsDoesNotRewriteSingletonCollectionsWithDifferentNullSemantics() throws Exception {
 		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
 
@@ -93,6 +120,63 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 
 		assertNoMatch(hintFile,
 				"class Test { Object m() { return new java.util.Vector(); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void modernizeJava9KeepsRiskyListFactoryMigrationHintOnly() throws Exception {
+		HintFile hintFile = loadBundledHint("modernize-java9.sandbox-hint"); //$NON-NLS-1$
+
+		assertHintOnlyMatch(hintFile,
+				"class Test { Object m() { return java.util.Collections.unmodifiableList(java.util.Arrays.asList(\"a\")); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void modernizeJava9RewritesMapGetOrDefaultNullSafely() throws Exception {
+		HintFile hintFile = loadBundledHint("modernize-java9.sandbox-hint"); //$NON-NLS-1$
+
+		assertFullReplacement(hintFile,
+				"class Test { Object m(java.util.Map<String, String> map, String key) { return map.getOrDefault(key, null); } }", //$NON-NLS-1$
+				"class Test { Object m(java.util.Map<String, String> map, String key) { return map.get(key); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void modernizeJava9DoesNotRewriteStreamToListWhenMutabilityNeedsReview() throws Exception {
+		HintFile hintFile = loadBundledHint("modernize-java9.sandbox-hint"); //$NON-NLS-1$
+
+		assertHintOnlyMatch(hintFile,
+				"class Test { Object m(java.util.List<String> items) { return items.stream().collect(java.util.stream.Collectors.toList()); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void deprecationsUseValueOfForWrapperConstructors() throws Exception {
+		HintFile hintFile = loadBundledHint("deprecations.sandbox-hint"); //$NON-NLS-1$
+
+		assertFullReplacement(hintFile,
+				"class Test { Object m(String value) { return new java.lang.Boolean(value); } }", //$NON-NLS-1$
+				"class Test { Object m(String value) { return java.lang.Boolean.valueOf(value); } }"); //$NON-NLS-1$
+		assertFullReplacement(hintFile,
+				"class Test { Object m(String value) { return new java.lang.Integer(value); } }", //$NON-NLS-1$
+				"class Test { Object m(String value) { return java.lang.Integer.valueOf(value); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void collectionPerformanceDoesNotRewriteKeySetRemoveBecauseReturnValueDiffers() throws Exception {
+		HintFile hintFile = loadBundledHint("collection-performance.sandbox-hint"); //$NON-NLS-1$
+
+		assertNoMatch(hintFile,
+				"class Test { Object m(java.util.Map<String, String> map, String key) { return map.keySet().remove(key); } }"); //$NON-NLS-1$
+		assertNoMatch(hintFile,
+				"class Test { void m(java.util.Map<String, String> map, String key) { map.keySet().remove(key); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void stringEqualsDoesNotDuplicateReflexiveEqualsProbableBugRule() throws Exception {
+		HintFile stringEquals = loadBundledHint("string-equals.sandbox-hint"); //$NON-NLS-1$
+		HintFile probableBugs = loadBundledHint("probable-bugs.sandbox-hint"); //$NON-NLS-1$
+		String code = "class Test { boolean m(String value) { return value.equals(value); } }"; //$NON-NLS-1$
+
+		assertNoMatch(stringEquals, code);
+		assertHintOnlyMatch(probableBugs, code);
 	}
 
 	@Test
