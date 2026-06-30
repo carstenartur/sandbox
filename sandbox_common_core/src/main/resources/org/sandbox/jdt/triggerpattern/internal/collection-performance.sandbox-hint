@@ -1,5 +1,5 @@
 // collection-performance.sandbox-hint — Collection performance patterns
-// Replaces verbose collection operations with more efficient alternatives
+// Replaces collection view operations with direct collection/map operations.
 
 <!id: collection-performance>
 <!description: Collection performance improvement patterns>
@@ -7,31 +7,42 @@
 <!minJavaVersion: 8>
 <!tags: collections, performance>
 
-
+@id: collection-performance.map-keyset-size.to-map-size
+@severity: info
 $map.keySet().size()
 => $map.size()
 ;;
 
+@id: collection-performance.map-values-size.to-map-size
+@severity: info
 $map.values().size()
 => $map.size()
 ;;
 
+@id: collection-performance.map-keyset-isempty.to-map-isempty
+@severity: info
 $map.keySet().isEmpty()
 => $map.isEmpty()
 ;;
 
+@id: collection-performance.map-values-isempty.to-map-isempty
+@severity: info
 $map.values().isEmpty()
 => $map.isEmpty()
 ;;
 
+@id: collection-performance.map-keyset-clear.to-map-clear
+@severity: info
 $map.keySet().clear()
 => $map.clear()
 ;;
 
+@id: collection-performance.map-values-clear.to-map-clear
+@severity: info
 $map.values().clear()
 => $map.clear()
 ;;
 
-$map.keySet().remove($k) :: elementKindMatches("", "EXPRESSION_STATEMENT")
-=> $map.remove($k)
-;;
+// Do not add keySet().remove(k) -> map.remove(k) here without a reliable
+// expression-statement guard. As a value expression, the boolean vs previous
+// mapped value return type is observably different.
