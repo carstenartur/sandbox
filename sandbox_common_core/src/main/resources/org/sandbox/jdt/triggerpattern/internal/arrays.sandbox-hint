@@ -1,5 +1,6 @@
 // arrays.sandbox-hint — Array Utility Patterns
-// Replaces verbose array patterns with more efficient alternatives
+// Replaces verbose array patterns with more efficient alternatives where this is
+// safe without type bindings.
 
 <!id: arrays>
 <!description: Array utility patterns and modernization>
@@ -7,29 +8,31 @@
 <!minJavaVersion: 8>
 <!tags: arrays, modernization>
 
-// Arrays.asList($arr).stream() → Arrays.stream($arr)
+@id: arrays.aslist-stream.to-arrays-stream
+@severity: info
 java.util.Arrays.asList($arr).stream() :: sourceVersionGE(8)
 => java.util.Arrays.stream($arr)
 ;;
 
-// Hint-only: Arrays.asList for contains check
-"Consider using Arrays.stream($arr).anyMatch() instead of Arrays.asList().contains()":
+@id: arrays.aslist-contains.review
+@severity: info
+"Consider Arrays.stream($arr).anyMatch(...) instead of Arrays.asList($arr).contains(...) when this is an array membership check.":
 java.util.Arrays.asList($arr).contains($x) :: sourceVersionGE(8)
 ;;
 
-// Hint-only: arr.clone() could use Arrays.copyOf
-"Consider using Arrays.copyOf($arr, $arr.length) instead of clone()":
+@id: arrays.clone.review
+@severity: info
+"Consider Arrays.copyOf($arr, $arr.length) instead of clone() when a typed copy is clearer.":
 $arr.clone()
 ;;
 
-// Hint-only: System.arraycopy could use Arrays.copyOf when applicable
-"Consider using Arrays.copyOf() instead of System.arraycopy() for full-array copies":
+@id: arrays.arraycopy-full-copy.review
+@severity: info
+"Consider Arrays.copyOf() instead of System.arraycopy() for simple full-array copies.":
 System.arraycopy($src, 0, $dst, 0, $src.length)
 ;;
 
-@id: arrays.compare.object-equals-to-arrays-equals
-@severity: warning
-java.util.Objects.equals($array1, $array2)
-:: instanceof($array1, "java.lang.Object[]") && instanceof($array2, "java.lang.Object[]")
-=> java.util.Arrays.equals($array1, $array2)
-;;
+// Do not add Objects.equals(array1, array2) -> Arrays.equals(array1, array2)
+// here without reliable type bindings. With binding-less mining, an array type
+// guard currently cannot distinguish Object[] from ordinary objects, producing
+// false positives for normal equals implementations.
