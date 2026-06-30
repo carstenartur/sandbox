@@ -51,6 +51,8 @@ class SourceScannerTest {
 				StandardCharsets.UTF_8);
 		HintFile hintFile = new HintFileParser().parse("""
 				<!id: source-version-test>
+				@id: source-version-test.empty-list
+				@severity: info
 				java.util.Collections.emptyList() :: sourceVersionGE(9)
 				=> java.util.List.of()
 				;;
@@ -64,6 +66,6 @@ class SourceScannerTest {
 
 		assertEquals(0, java8Report.getMatches().size());
 		assertEquals(1, java21Report.getMatches().size());
-		assertEquals("source-version-test1", java21Report.getMatches().get(0).ruleName()); //$NON-NLS-1$
+		assertEquals("source-version-test.empty-list", java21Report.getMatches().get(0).ruleName()); //$NON-NLS-1$
 	}
 }
