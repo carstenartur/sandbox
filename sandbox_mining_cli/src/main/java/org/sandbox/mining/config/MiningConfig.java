@@ -32,6 +32,7 @@ public class MiningConfig {
 	private List<RepoEntry> repositories = Collections.emptyList();
 	private int maxFilesPerRepo = 5000;
 	private int timeoutPerRepoMinutes = 10;
+	private String sourceVersion = "1.8"; //$NON-NLS-1$
 
 	public MiningConfig() {
 	}
@@ -72,29 +73,29 @@ public class MiningConfig {
 			return config;
 		}
 
-		Map<String, Object> mining = (Map<String, Object>) root.get("mining");
+		Map<String, Object> mining = (Map<String, Object>) root.get("mining"); //$NON-NLS-1$
 		if (mining == null) {
 			return config;
 		}
 
 		// Parse hints
-		Object hintsObj = mining.get("hints");
+		Object hintsObj = mining.get("hints"); //$NON-NLS-1$
 		if (hintsObj instanceof List<?> hintsList) {
 			config.hints = hintsList.stream().map(Object::toString).toList();
 		}
 
 		// Parse repositories
-		Object reposObj = mining.get("repositories");
+		Object reposObj = mining.get("repositories"); //$NON-NLS-1$
 		if (reposObj instanceof List<?> reposList) {
 			config.repositories = reposList.stream().map(obj -> {
 				if (obj instanceof Map<?, ?> map) {
 					RepoEntry entry = new RepoEntry();
-					entry.setUrl((String) map.get("url"));
-					Object branchObj = map.get("branch");
+					entry.setUrl((String) map.get("url")); //$NON-NLS-1$
+					Object branchObj = map.get("branch"); //$NON-NLS-1$
 					if (branchObj != null) {
 						entry.setBranch(branchObj.toString());
 					}
-					Object pathsObj = map.get("paths");
+					Object pathsObj = map.get("paths"); //$NON-NLS-1$
 					if (pathsObj instanceof List<?> pathsList) {
 						entry.setPaths(pathsList.stream().map(Object::toString).toList());
 					}
@@ -105,15 +106,19 @@ public class MiningConfig {
 		}
 
 		// Parse settings
-		Object settingsObj = mining.get("settings");
+		Object settingsObj = mining.get("settings"); //$NON-NLS-1$
 		if (settingsObj instanceof Map<?, ?> settings) {
-			Object maxFiles = settings.get("max-files-per-repo");
+			Object maxFiles = settings.get("max-files-per-repo"); //$NON-NLS-1$
 			if (maxFiles instanceof Number n) {
 				config.maxFilesPerRepo = n.intValue();
 			}
-			Object timeout = settings.get("timeout-per-repo-minutes");
+			Object timeout = settings.get("timeout-per-repo-minutes"); //$NON-NLS-1$
 			if (timeout instanceof Number n) {
 				config.timeoutPerRepoMinutes = n.intValue();
+			}
+			Object source = settings.get("source-version"); //$NON-NLS-1$
+			if (source != null && !source.toString().isBlank()) {
+				config.sourceVersion = source.toString();
 			}
 		}
 
@@ -150,5 +155,13 @@ public class MiningConfig {
 
 	public void setTimeoutPerRepoMinutes(int timeoutPerRepoMinutes) {
 		this.timeoutPerRepoMinutes = timeoutPerRepoMinutes;
+	}
+
+	public String getSourceVersion() {
+		return sourceVersion;
+	}
+
+	public void setSourceVersion(String sourceVersion) {
+		this.sourceVersion = sourceVersion != null && !sourceVersion.isBlank() ? sourceVersion : "1.8"; //$NON-NLS-1$
 	}
 }
