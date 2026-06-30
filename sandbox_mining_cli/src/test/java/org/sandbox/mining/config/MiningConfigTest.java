@@ -47,4 +47,13 @@ class MiningConfigTest {
 
 		assertEquals("1.8", config.getSourceVersion()); //$NON-NLS-1$
 	}
+
+	@Test
+	void defaultsSourceVersionToJava8WhenBlank() {
+		MiningConfig config = new MiningConfig();
+
+		config.setSourceVersion(" "); //$NON-NLS-1$
+
+		assertEquals("1.8", config.getSourceVersion()); //$NON-NLS-1$
+	}
 }
