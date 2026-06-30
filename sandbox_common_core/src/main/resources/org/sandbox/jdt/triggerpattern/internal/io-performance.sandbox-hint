@@ -1,5 +1,5 @@
-// io-performance.sandbox-hint — I/O Stream Performance
-// Detects double-buffering and unnecessary buffering in I/O streams
+// io-performance.sandbox-hint — I/O stream performance
+// Detects double-buffering and unnecessary buffering in I/O streams.
 
 <!id: io-performance>
 <!description: I/O stream performance patterns — detect double-buffering>
@@ -7,32 +7,38 @@
 <!minJavaVersion: 8>
 <!tags: performance, io>
 
-// Double-buffered InputStream
+@id: io-performance.double-buffered-inputstream
+@severity: warning
 new java.io.BufferedInputStream(new java.io.BufferedInputStream($x))
 => new java.io.BufferedInputStream($x)
 ;;
 
-// Double-buffered OutputStream
+@id: io-performance.double-buffered-outputstream
+@severity: warning
 new java.io.BufferedOutputStream(new java.io.BufferedOutputStream($x))
 => new java.io.BufferedOutputStream($x)
 ;;
 
-// Double-buffered Reader
+@id: io-performance.double-buffered-reader
+@severity: warning
 new java.io.BufferedReader(new java.io.BufferedReader($x))
 => new java.io.BufferedReader($x)
 ;;
 
-// Double-buffered Writer
+@id: io-performance.double-buffered-writer
+@severity: warning
 new java.io.BufferedWriter(new java.io.BufferedWriter($x))
 => new java.io.BufferedWriter($x)
 ;;
 
-// Hint-only: DataInputStream already buffers internally
-"DataInputStream already buffers internally — outer BufferedInputStream may be unnecessary":
+@id: io-performance.datainputstream-buffered-input.review
+@severity: info
+"DataInputStream already buffers primitive reads internally — review whether the extra BufferedInputStream is useful here.":
 new java.io.DataInputStream(new java.io.BufferedInputStream($x))
 ;;
 
-// Hint-only: ObjectOutputStream already buffers internally
-"ObjectOutputStream already buffers internally — outer BufferedOutputStream may be unnecessary":
+@id: io-performance.objectoutputstream-buffered-output.review
+@severity: info
+"ObjectOutputStream has its own block buffering — review whether the extra BufferedOutputStream is useful here.":
 new java.io.ObjectOutputStream(new java.io.BufferedOutputStream($x))
 ;;
