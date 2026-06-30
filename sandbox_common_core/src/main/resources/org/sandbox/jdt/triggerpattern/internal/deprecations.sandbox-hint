@@ -1,67 +1,86 @@
-// deprecations.sandbox-hint — Deprecated API Replacements
-// Identifies deprecated API usage and suggests modern alternatives
+// deprecations.sandbox-hint — Deprecated API replacements
+// Identifies deprecated API usage and suggests behaviour-preserving alternatives.
 
 <!id: deprecations>
 <!description: Deprecated API replacement suggestions>
 <!severity: warning>
 <!minJavaVersion: 8>
-<!tags: deprecations, modernization>
+<!tags: deprecations, modernization, correctness>
 
-// Character.isSpace($c) → Character.isWhitespace($c)
+@id: deprecations.character-is-space.to-is-whitespace
+@severity: warning
 java.lang.Character.isSpace($c)
 => java.lang.Character.isWhitespace($c)
 ;;
 
-// new Boolean($str) → Boolean.parseBoolean($str)
-new java.lang.Boolean($str)
-=> java.lang.Boolean.parseBoolean($str)
+@id: deprecations.boolean-constructor.to-valueof
+@severity: warning
+new java.lang.Boolean($value)
+=> java.lang.Boolean.valueOf($value)
 ;;
 
-// new Integer($str) → Integer.parseInt($str)
-new java.lang.Integer($str)
-=> java.lang.Integer.parseInt($str)
+@id: deprecations.integer-constructor.to-valueof
+@severity: warning
+new java.lang.Integer($value)
+=> java.lang.Integer.valueOf($value)
 ;;
 
-// new Long($str) → Long.parseLong($str)
-new java.lang.Long($str)
-=> java.lang.Long.parseLong($str)
+@id: deprecations.long-constructor.to-valueof
+@severity: warning
+new java.lang.Long($value)
+=> java.lang.Long.valueOf($value)
 ;;
 
-// new Short($str) → Short.parseShort($str)
-new java.lang.Short($str)
-=> java.lang.Short.parseShort($str)
+@id: deprecations.short-constructor.to-valueof
+@severity: warning
+new java.lang.Short($value)
+=> java.lang.Short.valueOf($value)
 ;;
 
-// new Byte($str) → Byte.parseByte($str)
-new java.lang.Byte($str)
-=> java.lang.Byte.parseByte($str)
+@id: deprecations.byte-constructor.to-valueof
+@severity: warning
+new java.lang.Byte($value)
+=> java.lang.Byte.valueOf($value)
 ;;
 
-// new Float($str) → Float.parseFloat($str)
-new java.lang.Float($str)
-=> java.lang.Float.parseFloat($str)
+@id: deprecations.float-constructor.to-valueof
+@severity: warning
+new java.lang.Float($value)
+=> java.lang.Float.valueOf($value)
 ;;
 
-// new Double($str) → Double.parseDouble($str)
-new java.lang.Double($str)
-=> java.lang.Double.parseDouble($str)
+@id: deprecations.double-constructor.to-valueof
+@severity: warning
+new java.lang.Double($value)
+=> java.lang.Double.valueOf($value)
 ;;
 
-// Hint-only: new Date(y, m, d) is deprecated
-"java.util.Date constructor is deprecated — consider using java.time.LocalDate.of() (Java 8+)":
+@id: deprecations.character-constructor.to-valueof
+@severity: warning
+new java.lang.Character($value)
+=> java.lang.Character.valueOf($value)
+;;
+
+@id: deprecations.date-ymd-constructor.consider-localdate
+@severity: warning
+"java.util.Date year/month/day constructor is deprecated — consider java.time.LocalDate.of(...).":
 new java.util.Date($y, $m, $d) :: sourceVersionGE(8)
 ;;
 
-// Hint-only: Runtime.exec(String) should use ProcessBuilder
-"Runtime.exec(String) is error-prone — consider using ProcessBuilder":
+@id: deprecations.runtime-exec-string.consider-processbuilder
+@severity: warning
+"Runtime.exec(String) is error-prone — consider ProcessBuilder with explicit arguments.":
 java.lang.Runtime.getRuntime().exec($cmd)
 ;;
 
-// Class.forName($name).newInstance() is deprecated since Java 9
-"Class.newInstance() is deprecated — use Constructor.newInstance() instead":
+@id: deprecations.class-forname-newinstance.consider-constructor-newinstance
+@severity: warning
+"Class.newInstance() is deprecated — use getDeclaredConstructor().newInstance() instead.":
 java.lang.Class.forName($name).newInstance() :: sourceVersionGE(9)
 ;;
 
-java.lang.Boolean.valueOf($str).booleanValue()
-=> java.lang.Boolean.parseBoolean($str)
+@id: deprecations.boolean-valueof-booleanvalue.to-parseboolean
+@severity: warning
+java.lang.Boolean.valueOf($value).booleanValue()
+=> java.lang.Boolean.parseBoolean($value)
 ;;
