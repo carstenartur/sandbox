@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +76,21 @@ class BundledHintRuleBehaviorTest extends HintRuleTestSupport {
 		assertFullReplacement(hintFile,
 				"class Test { Object m() { return java.util.Collections.emptySet(); } }", //$NON-NLS-1$
 				"class Test { Object m() { return java.util.Set.of(); } }"); //$NON-NLS-1$
+	}
+
+	@Test
+	void collectionsUsesStableRuleIdsForEmptyCollectionFactories() throws Exception {
+		HintFile hintFile = loadBundledHint("collections.sandbox-hint"); //$NON-NLS-1$
+
+		assertEquals("collections.empty-list.to-list-of", //$NON-NLS-1$
+				process(hintFile, "class Test { Object m() { return java.util.Collections.emptyList(); } }") //$NON-NLS-1$
+						.get(0).rule().getRuleId());
+		assertEquals("collections.empty-map.to-map-of", //$NON-NLS-1$
+				process(hintFile, "class Test { Object m() { return java.util.Collections.emptyMap(); } }") //$NON-NLS-1$
+						.get(0).rule().getRuleId());
+		assertEquals("collections.empty-set.to-set-of", //$NON-NLS-1$
+				process(hintFile, "class Test { Object m() { return java.util.Collections.emptySet(); } }") //$NON-NLS-1$
+						.get(0).rule().getRuleId());
 	}
 
 	@Test
