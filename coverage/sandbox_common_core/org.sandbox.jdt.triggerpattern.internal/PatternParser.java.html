@@ -75,12 +75,12 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L75">			return parseMethodDeclaration(patternValue);</span>
 <span class="fc bfc" id="L76" title="All 2 branches covered.">		} else if (kind == PatternKind.BLOCK) {</span>
 <span class="fc" id="L77">			return parseBlock(patternValue);</span>
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		} else if (kind == PatternKind.STATEMENT_SEQUENCE) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		} else if (kind == PatternKind.STATEMENT_SEQUENCE) {</span>
 <span class="fc" id="L79">			return parseBlock(patternValue);</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">		} else if (kind == PatternKind.DECLARATION) {</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		} else if (kind == PatternKind.DECLARATION) {</span>
 			// DECLARATION is parsed as a regular statement; the pattern engine
 			// will only match it against VariableDeclarationStatement nodes.
-<span class="nc" id="L83">			return parseStatement(patternValue);</span>
+<span class="fc" id="L83">			return parseStatement(patternValue);</span>
 		}
 		
 <span class="nc" id="L86">		return null;</span>
@@ -302,7 +302,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	 */
 	private FieldDeclaration parseField(String fieldSnippet) {
 		// Ensure the field declaration ends with a semicolon
-<span class="pc bpc" id="L305" title="1 of 2 branches missed.">		String fieldStatement = fieldSnippet.endsWith(&quot;;&quot;) ? fieldSnippet : fieldSnippet + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">		String fieldStatement = fieldSnippet.endsWith(&quot;;&quot;) ? fieldSnippet : fieldSnippet + &quot;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L306">		String source = &quot;class _Pattern { &quot; + fieldStatement + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		
 <span class="fc" id="L308">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
@@ -386,7 +386,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	private MethodDeclaration parseMethodDeclaration(String methodSnippet) {
 		// Normalize the snippet: add empty body if not present
 <span class="fc" id="L388">		String normalizedSnippet = methodSnippet.trim();</span>
-<span class="pc bpc" id="L389" title="2 of 4 branches missed.">		if (!normalizedSnippet.endsWith(&quot;}&quot;) &amp;&amp; !normalizedSnippet.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L389" title="1 of 4 branches missed.">		if (!normalizedSnippet.endsWith(&quot;}&quot;) &amp;&amp; !normalizedSnippet.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L390">			normalizedSnippet = normalizedSnippet + &quot; {}&quot;; //$NON-NLS-1$</span>
 		}
 		

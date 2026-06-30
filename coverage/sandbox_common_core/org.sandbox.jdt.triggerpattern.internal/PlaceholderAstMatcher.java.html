@@ -469,7 +469,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		
 		// FQN-to-SimpleName: pattern has a QualifiedName, source has a SimpleName
 		// Resolve the SimpleName via import declarations to verify the full FQN matches
-<span class="pc bpc" id="L472" title="1 of 4 branches missed.">		if (patternExpr instanceof QualifiedName patternQN &amp;&amp; sourceExpr instanceof SimpleName sourceSN) {</span>
+<span class="fc bfc" id="L472" title="All 4 branches covered.">		if (patternExpr instanceof QualifiedName patternQN &amp;&amp; sourceExpr instanceof SimpleName sourceSN) {</span>
 <span class="fc" id="L473">			String patternFqn = patternQN.getFullyQualifiedName();</span>
 <span class="fc" id="L474">			String resolvedFqn = resolveSimpleNameViaImports(sourceSN);</span>
 <span class="fc" id="L475">			return patternFqn.equals(resolvedFqn);</span>
@@ -558,8 +558,8 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		}
 		
 		// Both must be SimpleType for FQN resolution
-<span class="pc bpc" id="L561" title="2 of 4 branches missed.">		if (!(patternType instanceof SimpleType patternST) || !(sourceType instanceof SimpleType sourceST)) {</span>
-<span class="nc" id="L562">			return false;</span>
+<span class="pc bpc" id="L561" title="1 of 4 branches missed.">		if (!(patternType instanceof SimpleType patternST) || !(sourceType instanceof SimpleType sourceST)) {</span>
+<span class="fc" id="L562">			return false;</span>
 		}
 		
 <span class="fc" id="L565">		Name patternName = patternST.getName();</span>
