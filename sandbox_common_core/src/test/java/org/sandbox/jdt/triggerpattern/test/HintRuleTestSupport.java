@@ -45,6 +45,7 @@ abstract class HintRuleTestSupport {
 
 	private static final String BUNDLED_HINT_PREFIX =
 			"org/sandbox/jdt/triggerpattern/internal/"; //$NON-NLS-1$
+	private static final String DEFAULT_SOURCE_VERSION = "21"; //$NON-NLS-1$
 
 	protected HintFile loadBundledHint(String resourceName) throws Exception {
 		String resourcePath = BUNDLED_HINT_PREFIX + resourceName;
@@ -61,8 +62,12 @@ abstract class HintRuleTestSupport {
 	}
 
 	protected List<TransformationResult> process(HintFile hintFile, String code) {
+		return process(hintFile, code, DEFAULT_SOURCE_VERSION);
+	}
+
+	protected List<TransformationResult> process(HintFile hintFile, String code, String sourceVersion) {
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
-		return processor.process(parseCode(code));
+		return processor.process(parseCode(code, sourceVersion), Map.of(JavaCore.COMPILER_SOURCE, sourceVersion));
 	}
 
 	/**
@@ -86,7 +91,12 @@ abstract class HintRuleTestSupport {
 	 * replacement fragment.
 	 */
 	protected void assertFullReplacement(HintFile hintFile, String beforeCode, String expectedCode) {
-		List<TransformationResult> results = process(hintFile, beforeCode);
+		assertFullReplacement(hintFile, beforeCode, expectedCode, DEFAULT_SOURCE_VERSION);
+	}
+
+	protected void assertFullReplacement(HintFile hintFile, String beforeCode, String expectedCode,
+			String sourceVersion) {
+		List<TransformationResult> results = process(hintFile, beforeCode, sourceVersion);
 		assertFalse(results.isEmpty(), "Expected at least one match"); //$NON-NLS-1$
 		TransformationResult result = results.stream()
 				.filter(TransformationResult::hasReplacement)
@@ -96,8 +106,19 @@ abstract class HintRuleTestSupport {
 		assertEquals(normalizeSource(expectedCode), normalizeSource(actualCode));
 	}
 
-	protected void assertNoMatch(HintFile hintFile, String code) {
+	protected void assertHintOnlyMatch(HintFile hintFile, String code) {
 		List<TransformationResult> results = process(hintFile, code);
+		assertFalse(results.isEmpty(), "Expected at least one hint-only match"); //$NON-NLS-1$
+		assertTrue(results.stream().noneMatch(TransformationResult::hasReplacement),
+				"Expected hint-only match, but at least one replacement was produced: " + results); //$NON-NLS-1$
+	}
+
+	protected void assertNoMatch(HintFile hintFile, String code) {
+		assertNoMatch(hintFile, code, DEFAULT_SOURCE_VERSION);
+	}
+
+	protected void assertNoMatch(HintFile hintFile, String code, String sourceVersion) {
+		List<TransformationResult> results = process(hintFile, code, sourceVersion);
 		assertTrue(results.isEmpty(), "Expected no match but got: " + results); //$NON-NLS-1$
 	}
 
@@ -117,12 +138,12 @@ abstract class HintRuleTestSupport {
 		return source.replaceAll("\\s+", " ").trim(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private CompilationUnit parseCode(String code) {
+	private CompilationUnit parseCode(String code, String sourceVersion) {
 		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
 		astParser.setSource(code.toCharArray());
 		astParser.setKind(ASTParser.K_COMPILATION_UNIT);
 		Map<String, String> options = JavaCore.getOptions();
-		options.put(JavaCore.COMPILER_SOURCE, "17"); //$NON-NLS-1$
+		options.put(JavaCore.COMPILER_SOURCE, sourceVersion);
 		astParser.setCompilerOptions(options);
 		return (CompilationUnit) astParser.createAST(null);
 	}
