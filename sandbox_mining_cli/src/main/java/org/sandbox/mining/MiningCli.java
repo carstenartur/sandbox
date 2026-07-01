@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
@@ -61,7 +62,6 @@ public class MiningCli {
 	private static final String FORMAT_MARKDOWN = "markdown"; //$NON-NLS-1$
 	private static final String FORMAT_JSON = "json"; //$NON-NLS-1$
 	private static final String FORMAT_BOTH = "both"; //$NON-NLS-1$
-	private static final String COMPILER_SOURCE_OPTION = "org.eclipse.jdt.core.compiler.source"; //$NON-NLS-1$
 
 	/** Map of bundled hint names to their classpath resource paths. */
 	private static final Map<String, String> BUNDLED_HINTS = Map.ofEntries(
@@ -140,7 +140,7 @@ public class MiningCli {
 		} else {
 			config = new MiningConfig();
 		}
-		Map<String, String> compilerOptions = Map.of(COMPILER_SOURCE_OPTION, config.getSourceVersion());
+		Map<String, String> compilerOptions = Map.of(JavaCore.COMPILER_SOURCE, config.getSourceVersion());
 
 		// Override with ad-hoc repo if specified
 		List<RepoEntry> repos;
@@ -340,7 +340,8 @@ public class MiningCli {
 			return;
 		}
 		try {
-			Files.walk(dir)
+			try (var stream = Files.walk(dir)) {
+				stream
 					.sorted((a, b) -> b.compareTo(a)) // delete children first
 					.forEach(p -> {
 						try {
@@ -349,6 +350,7 @@ public class MiningCli {
 							// ignore cleanup errors
 						}
 					});
+			}
 		} catch (IOException e) {
 			// ignore cleanup errors
 		}
@@ -362,5 +364,6 @@ public class MiningCli {
 		System.out.println("  --output <dir>     Output directory (default: mining-results)"); //$NON-NLS-1$
 		System.out.println("  --format <fmt>     markdown|json|both (default: both)"); //$NON-NLS-1$
 		System.out.println("  --dry-run          Only count matches"); //$NON-NLS-1$
+		System.out.println("  --help             Show this help"); //$NON-NLS-1$
 	}
 }

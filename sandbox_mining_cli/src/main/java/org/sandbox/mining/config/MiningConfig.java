@@ -117,8 +117,11 @@ public class MiningConfig {
 				config.timeoutPerRepoMinutes = n.intValue();
 			}
 			Object source = settings.get("source-version"); //$NON-NLS-1$
-			if (source != null && !source.toString().isBlank()) {
-				config.sourceVersion = source.toString();
+			if (source != null) {
+				String trimmedSource = source.toString().trim();
+				if (!trimmedSource.isBlank()) {
+					config.sourceVersion = trimmedSource;
+				}
 			}
 		}
 
@@ -162,6 +165,7 @@ public class MiningConfig {
 	}
 
 	public void setSourceVersion(String sourceVersion) {
-		this.sourceVersion = sourceVersion != null && !sourceVersion.isBlank() ? sourceVersion : "1.8"; //$NON-NLS-1$
+		String trimmedSource = sourceVersion != null ? sourceVersion.trim() : ""; //$NON-NLS-1$
+		this.sourceVersion = !trimmedSource.isBlank() ? trimmedSource : "1.8"; //$NON-NLS-1$
 	}
 }

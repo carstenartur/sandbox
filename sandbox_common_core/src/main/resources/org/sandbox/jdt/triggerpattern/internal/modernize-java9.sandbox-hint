@@ -16,7 +16,7 @@
 java.util.Collections.unmodifiableList(java.util.Arrays.asList($args$)) :: sourceVersionGE(9)
 ;;
 
-@id: modernize-java8.map-getordefault-null.to-get
+@id: modernize-java9.map-getordefault-null.to-get
 @severity: info
 $map.getOrDefault($key, null)
 => $map.get($key)

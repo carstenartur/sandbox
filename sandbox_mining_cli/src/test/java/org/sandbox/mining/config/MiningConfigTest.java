@@ -56,4 +56,26 @@ class MiningConfigTest {
 
 		assertEquals("1.8", config.getSourceVersion()); //$NON-NLS-1$
 	}
+
+	@Test
+	void trimsConfiguredSourceVersion() {
+		String yaml = """
+				mining:
+				  settings:
+				    source-version: " 21 "
+				"""; //$NON-NLS-1$
+
+		MiningConfig config = MiningConfig.parse(new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+
+		assertEquals("21", config.getSourceVersion()); //$NON-NLS-1$
+	}
+
+	@Test
+	void trimsSourceVersionSetterInput() {
+		MiningConfig config = new MiningConfig();
+
+		config.setSourceVersion(" 21 "); //$NON-NLS-1$
+
+		assertEquals("21", config.getSourceVersion()); //$NON-NLS-1$
+	}
 }
