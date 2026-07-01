@@ -1,5 +1,5 @@
-// stream-performance.sandbox-hint — Stream API Performance
-// Identifies inefficient stream usage patterns and suggests more performant alternatives
+// stream-performance.sandbox-hint — Stream API performance
+// Identifies inefficient stream usage patterns and suggests more direct alternatives.
 
 <!id: stream-performance>
 <!description: Stream API performance optimization patterns>
@@ -7,42 +7,50 @@
 <!minJavaVersion: 8>
 <!tags: performance, streams>
 
-// $stream.filter($pred).findFirst().isPresent() → $stream.anyMatch($pred)
+@id: stream-performance.filter-findfirst-ispresent.to-anymatch
+@severity: info
 $stream.filter($pred).findFirst().isPresent() :: sourceVersionGE(8)
 => $stream.anyMatch($pred)
 ;;
 
-// $stream.filter($pred).findAny().isPresent() → $stream.anyMatch($pred)
+@id: stream-performance.filter-findany-ispresent.to-anymatch
+@severity: info
 $stream.filter($pred).findAny().isPresent() :: sourceVersionGE(8)
 => $stream.anyMatch($pred)
 ;;
 
-// $stream.filter($pred).count() > 0 → $stream.anyMatch($pred)
+@id: stream-performance.filter-count-positive.to-anymatch
+@severity: info
 $stream.filter($pred).count() > 0 :: sourceVersionGE(8)
 => $stream.anyMatch($pred)
 ;;
 
-// $stream.filter($pred).count() == 0 → $stream.noneMatch($pred)
+@id: stream-performance.filter-count-zero.to-nonematch
+@severity: info
 $stream.filter($pred).count() == 0 :: sourceVersionGE(8)
 => $stream.noneMatch($pred)
 ;;
 
-// $collection.stream().forEach($action) → $collection.forEach($action)
+@id: stream-performance.collection-stream-foreach.to-collection-foreach
+@severity: info
 $collection.stream().forEach($action) :: sourceVersionGE(8)
 => $collection.forEach($action)
 ;;
 
-// Hint-only: $stream.sorted() before collect may be unnecessary
-"Unnecessary sort before collect — consider removing sorted() if order does not matter":
+@id: stream-performance.sorted-before-collect.review
+@severity: info
+"Unnecessary sorted() before collect — consider removing it if encounter order is irrelevant.":
 $stream.sorted().collect($collector) :: sourceVersionGE(8)
 ;;
 
-// Hint-only: nested flatMap may indicate overly complex pipeline
-"Nested flatMap() calls — consider simplifying the stream pipeline":
+@id: stream-performance.nested-flatmap.review
+@severity: info
+"Nested flatMap() calls — consider simplifying the stream pipeline.":
 $stream.flatMap($f).flatMap($g) :: sourceVersionGE(8)
 ;;
 
-// Hint-only: IntStream.range for array iteration can use Arrays.stream
-"Consider using Arrays.stream($arr) instead of IntStream.range with array indexing":
+@id: stream-performance.intstream-range-array-index.review
+@severity: info
+"Consider Arrays.stream(...) instead of IntStream.range(...) for simple array iteration.":
 java.util.stream.IntStream.range(0, $arr.length).mapToObj($mapper) :: sourceVersionGE(8)
 ;;

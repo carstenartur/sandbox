@@ -1,19 +1,22 @@
 mining:
-  # .sandbox-hint files to use
+  # .sandbox-hint files to use for automated mining reports.
+  #
+  # Broad style-only bundles such as collections are intentionally not part of
+  # the nightly report set. PR #1177 showed that they drown out higher-signal
+  # refactoring candidates with repeated diamond/factory-method modernization.
   hints:
-    - bundled:collections
-    - bundled:modernize-java11
-    - bundled:performance
-    - bundled:deprecated-api
+    - bundled:probable-bugs
+    - bundled:deprecations
+    - bundled:try-with-resources
+    - bundled:io-performance
     - bundled:collection-performance
     - bundled:stream-performance
+    - bundled:arrays
+    - bundled:string-equals
     - bundled:string-isblank
     - bundled:modernize-java9
-    - bundled:io-performance
-    - bundled:misc
-    - bundled:string-equals
-    - bundled:probable-bugs
-    - bundled:try-with-resources
+    - bundled:modernize-java11
+    - bundled:performance
 
   # Eclipse projects to scan
   repositories:
@@ -53,6 +56,10 @@ mining:
   settings:
     max-files-per-repo: 5000
     timeout-per-repo-minutes: 10
+    # Eclipse 2026-era projects and this sandbox build target Java 21. The CLI
+    # forwards this to guard evaluation so sourceVersionGE(...) rules behave
+    # deterministically during mining.
+    source-version: "21"
     # Gemini mining settings
     start-date: "2015-01-01"
     batch-size: 500

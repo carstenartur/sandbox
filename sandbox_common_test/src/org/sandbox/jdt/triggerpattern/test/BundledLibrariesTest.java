@@ -50,8 +50,8 @@ public class BundledLibrariesTest {
 		HintFile hintFile = loadBundledLibrary("collections.sandbox-hint"); //$NON-NLS-1$
 		assertNotNull(hintFile, "collections library should be loadable"); //$NON-NLS-1$
 		assertEquals("collections", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 5,
-				"collections library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+		assertTrue(hintFile.getRules().size() >= 3,
+				"collections library should have at least 3 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
 	}
 
 	@Test

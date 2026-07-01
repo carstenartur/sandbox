@@ -1,52 +1,40 @@
-// collections.sandbox-hint — Collections API improvements
-// Replaces verbose collection patterns with modern API equivalents.
+// collections.sandbox-hint — Collection API improvements
 //
-// Keep this active bundled library conservative. Broader migrations such as
-// Vector to ArrayList, Hashtable to HashMap, or singleton/unmodifiable factory
-// rewrites can change synchronization, null handling, or declared API types and
-// should remain staged candidates until they have stronger guards and tests.
+// Keep this active bundled library conservative. PR #1177 showed that broad
+// diamond-only constructor patterns dominate mining reports while adding little
+// actionable value:
+//   new ArrayList(...) -> new java.util.ArrayList<>(...)
+//   new HashSet(...)   -> new java.util.HashSet<>(...)
+//   new Hashtable(...) -> new java.util.Hashtable<>(...)
+//
+// Those rules are intentionally not part of the active library. They are mostly
+// style-only, duplicate between no-argument and variadic constructor patterns,
+// and produce noisy fully-qualified replacements. If such rules are needed for
+// experiments, keep them in a staged/mining candidate file with explicit tests.
 
 <!id: collections>
-<!description: Collection API improvements and modernization>
+<!description: Conservative collection API modernization>
 <!severity: info>
 <!minJavaVersion: 9>
-<!tags: collections, modernization>
+<!tags: collections, modernization, conservative>
 
-// Collections.emptyList() → List.of()
-java.util.Collections.emptyList()
+@id: collections.empty-list.to-list-of
+@severity: info
+"Use List.of() for an empty immutable list factory when Java 9+ is available.":
+java.util.Collections.emptyList() :: sourceVersionGE(9)
 => java.util.List.of()
 ;;
 
-// Collections.emptyMap() → Map.of()
-java.util.Collections.emptyMap()
+@id: collections.empty-map.to-map-of
+@severity: info
+"Use Map.of() for an empty immutable map factory when Java 9+ is available.":
+java.util.Collections.emptyMap() :: sourceVersionGE(9)
 => java.util.Map.of()
 ;;
 
-// Collections.emptySet() → Set.of()
-java.util.Collections.emptySet()
+@id: collections.empty-set.to-set-of
+@severity: info
+"Use Set.of() for an empty immutable set factory when Java 9+ is available.":
+java.util.Collections.emptySet() :: sourceVersionGE(9)
 => java.util.Set.of()
-;;
-
-new java.util.HashSet<$E$>()
-=> new java.util.HashSet<>()
-;;
-
-new java.util.HashSet<$E$>($args$)
-=> new java.util.HashSet<>($args$)
-;;
-
-new java.util.ArrayList<$E$>()
-=> new java.util.ArrayList<>()
-;;
-
-new java.util.ArrayList<$E$>($args$)
-=> new java.util.ArrayList<>($args$)
-;;
-
-new java.util.Hashtable<$K, $V$>()
-=> new java.util.Hashtable<>()
-;;
-
-new java.util.Hashtable<$K, $V$>($args$)
-=> new java.util.Hashtable<>($args$)
 ;;

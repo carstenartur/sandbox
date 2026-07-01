@@ -1,43 +1,41 @@
 // modernize-java9.sandbox-hint — Java 9+ API modernization
-// Replaces older API usage with Java 9+ equivalents
+//
+// Keep exact rewrites only where behaviour is preserved. API replacements that
+// can change null handling, mutability, evaluation order, or side effects are
+// kept as hint-only suggestions so mining reports remain actionable.
 
 <!id: modernize-java9>
-<!description: Java 9+ API modernization patterns>
+<!description: Conservative Java 9+ API modernization patterns>
 <!severity: info>
 <!minJavaVersion: 9>
-<!tags: modernization, java9>
+<!tags: modernization, java9, conservative>
 
-// Arrays.asList($args$) → List.of($args$) when unmodifiable usage
+@id: modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of
+@severity: info
+"Consider List.of(...) for unmodifiableList(Arrays.asList(...)) when null elements are impossible.":
 java.util.Collections.unmodifiableList(java.util.Arrays.asList($args$)) :: sourceVersionGE(9)
-=> java.util.List.of($args$)
 ;;
 
-// new ArrayList<>(Arrays.asList($args$)) → new ArrayList<>(List.of($args$))
-new java.util.ArrayList<>(java.util.Arrays.asList($args$)) :: sourceVersionGE(9)
-=> new java.util.ArrayList<>(java.util.List.of($args$))
-;;
-
-// $map.getOrDefault($key, null) → $map.get($key)
+@id: modernize-java9.map-getordefault-null.to-get
+@severity: info
 $map.getOrDefault($key, null)
 => $map.get($key)
 ;;
 
-// $optional.isPresent() ? $optional.get() : $default → $optional.orElse($default)
-$optional.isPresent() ? $optional.get() : $default :: sourceVersionGE(9)
+@id: modernize-java9.optional-ternary.to-orelse
+@severity: info
+$optional.isPresent() ? $optional.get() : $default :: sourceVersionGE(9) && hasNoSideEffect($default)
 => $optional.orElse($default)
 ;;
 
-// $stream.collect(Collectors.toList()) → $stream.toList()
+@id: modernize-java16.stream-collect-tolist.consider-stream-tolist
+@severity: info
+"Consider Stream.toList() only when an unmodifiable result is acceptable.":
 $stream.collect(java.util.stream.Collectors.toList()) :: sourceVersionGE(16)
-=> $stream.toList()
 ;;
 
-// $stream.collect(Collectors.toUnmodifiableList()) → $stream.toList()
+@id: modernize-java16.stream-collect-tounmodifiablelist.consider-stream-tolist
+@severity: info
+"Consider Stream.toList() only when null-element behaviour is known to be acceptable.":
 $stream.collect(java.util.stream.Collectors.toUnmodifiableList()) :: sourceVersionGE(16)
-=> $stream.toList()
-;;
-
-// Hint-only: suggest InputStream.transferTo() for stream copy patterns
-"Consider using InputStream.transferTo() for stream copying (Java 9+)":
-$in.read($buf) :: sourceVersionGE(9) && notContains("transferTo")
 ;;

@@ -1,5 +1,10 @@
 // probable-bugs.sandbox-hint — Probable Bug Patterns
-// Detects code patterns that are likely programming mistakes
+// Detects code patterns that are likely programming mistakes.
+//
+// Keep this bundled library binding-safe for mining. Rules that rely on
+// distinguishing arrays from ordinary objects must not be active until the
+// standalone mining parser provides reliable type bindings or a strict type
+// guard is available.
 
 <!id: probable-bugs>
 <!description: Probable bug detection patterns>
@@ -7,48 +12,38 @@
 <!minJavaVersion: 8>
 <!tags: bugs, correctness>
 
-// Hint-only: $x == $x on floating-point may be NaN check
-"Comparing a value to itself — use Double.isNaN() or Float.isNaN() for NaN checks":
+@id: probable-bugs.self-comparison.review
+@severity: warning
+"Comparing a value to itself — use Double.isNaN() or Float.isNaN() for intentional NaN checks.":
 $x == $x
 ;;
 
-// Hint-only: $x != $x on floating-point is NaN check
-"Value not equal to itself — use Double.isNaN() or Float.isNaN() instead":
+@id: probable-bugs.self-inequality.review
+@severity: warning
+"Value not equal to itself — use Double.isNaN() or Float.isNaN() for intentional NaN checks.":
 $x != $x
 ;;
 
-// Hint-only: $x.equals($x) is always true (reflexive)
-"Object.equals() with same argument on both sides — always true, probably a bug":
+@id: probable-bugs.reflexive-equals.review
+@severity: warning
+"Object.equals() with the same expression on both sides is always true and often indicates a copy-paste bug.":
 $x.equals($x)
 ;;
 
-// Hint-only: Math.max with identical arguments
-"Math.max() with identical arguments — probably a copy-paste bug":
+@id: probable-bugs.math-max-identical-args.review
+@severity: warning
+"Math.max() with identical arguments — probably a copy-paste bug.":
 java.lang.Math.max($a, $a)
 ;;
 
-// Hint-only: Math.min with identical arguments
-"Math.min() with identical arguments — probably a copy-paste bug":
+@id: probable-bugs.math-min-identical-args.review
+@severity: warning
+"Math.min() with identical arguments — probably a copy-paste bug.":
 java.lang.Math.min($a, $a)
 ;;
 
-// Hint-only: potential time overflow due to clock adjustments
-"System.currentTimeMillis() may go backwards due to clock adjustments — consider System.nanoTime() for elapsed time":
+@id: probable-bugs.currenttimemillis-negative-elapsed.review
+@severity: warning
+"System.currentTimeMillis() may go backwards due to clock adjustments — consider System.nanoTime() for elapsed time.":
 System.currentTimeMillis() - $start < 0
-;;
-
-$x == $x :: !instanceof($x, "double") && !instanceof($x, "float")
-=> true
-;;
-
-@id: arrays.correctness.array-object-equals
-@severity: error
-!$array1.equals($array2) :: instanceof($array1, "java.lang.Object[]") && instanceof($array2, "java.lang.Object[]")
-=> !java.util.Arrays.equals($array1, $array2)
-;;
-
-@id: arrays.correctness.array-object-equals-positive
-@severity: error
-$array1.equals($array2) :: instanceof($array1, "java.lang.Object[]") && instanceof($array2, "java.lang.Object[]")
-=> java.util.Arrays.equals($array1, $array2)
 ;;
