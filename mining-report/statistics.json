@@ -10,9 +10,9 @@
   "perRepository": {},
   "dailyProgress": [],
   "runMetadata": {
-    "startedAt": "2026-07-01T03:14:32.188Z",
-    "completedAt": "2026-07-01T03:23:08.204435396Z",
-    "durationSeconds": 516,
+    "startedAt": "2026-07-02T03:11:39.806Z",
+    "completedAt": "2026-07-02T03:16:51.095407730Z",
+    "durationSeconds": 311,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
