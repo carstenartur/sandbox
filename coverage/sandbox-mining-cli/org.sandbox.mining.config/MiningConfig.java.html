@@ -32,9 +32,10 @@ public class MiningConfig {
 <span class="fc" id="L32">	private List&lt;RepoEntry&gt; repositories = Collections.emptyList();</span>
 <span class="fc" id="L33">	private int maxFilesPerRepo = 5000;</span>
 <span class="fc" id="L34">	private int timeoutPerRepoMinutes = 10;</span>
+<span class="fc" id="L35">	private String sourceVersion = &quot;1.8&quot;; //$NON-NLS-1$</span>
 
-<span class="fc" id="L36">	public MiningConfig() {</span>
-<span class="fc" id="L37">	}</span>
+<span class="fc" id="L37">	public MiningConfig() {</span>
+<span class="fc" id="L38">	}</span>
 
 	/**
 	 * Parses a repos.yml configuration file.
@@ -45,10 +46,10 @@ public class MiningConfig {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public static MiningConfig parse(Path configPath) throws IOException {
-<span class="nc" id="L48">		Yaml yaml = new Yaml();</span>
-<span class="nc" id="L49">		try (InputStream in = Files.newInputStream(configPath)) {</span>
-<span class="nc" id="L50">			Map&lt;String, Object&gt; root = yaml.load(in);</span>
-<span class="nc" id="L51">			return fromMap(root);</span>
+<span class="nc" id="L49">		Yaml yaml = new Yaml();</span>
+<span class="nc" id="L50">		try (InputStream in = Files.newInputStream(configPath)) {</span>
+<span class="nc" id="L51">			Map&lt;String, Object&gt; root = yaml.load(in);</span>
+<span class="nc" id="L52">			return fromMap(root);</span>
 		}
 	}
 
@@ -60,96 +61,112 @@ public class MiningConfig {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public static MiningConfig parse(InputStream in) {
-<span class="fc" id="L63">		Yaml yaml = new Yaml();</span>
-<span class="fc" id="L64">		Map&lt;String, Object&gt; root = yaml.load(in);</span>
-<span class="fc" id="L65">		return fromMap(root);</span>
+<span class="fc" id="L64">		Yaml yaml = new Yaml();</span>
+<span class="fc" id="L65">		Map&lt;String, Object&gt; root = yaml.load(in);</span>
+<span class="fc" id="L66">		return fromMap(root);</span>
 	}
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static MiningConfig fromMap(Map&lt;String, Object&gt; root) {
-<span class="fc" id="L70">		MiningConfig config = new MiningConfig();</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (root == null) {</span>
-<span class="fc" id="L72">			return config;</span>
+<span class="fc" id="L71">		MiningConfig config = new MiningConfig();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (root == null) {</span>
+<span class="fc" id="L73">			return config;</span>
 		}
 
-<span class="fc" id="L75">		Map&lt;String, Object&gt; mining = (Map&lt;String, Object&gt;) root.get(&quot;mining&quot;);</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (mining == null) {</span>
-<span class="fc" id="L77">			return config;</span>
+<span class="fc" id="L76">		Map&lt;String, Object&gt; mining = (Map&lt;String, Object&gt;) root.get(&quot;mining&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (mining == null) {</span>
+<span class="fc" id="L78">			return config;</span>
 		}
 
 		// Parse hints
-<span class="fc" id="L81">		Object hintsObj = mining.get(&quot;hints&quot;);</span>
-<span class="fc bfc" id="L82" title="All 2 branches covered.">		if (hintsObj instanceof List&lt;?&gt; hintsList) {</span>
-<span class="fc" id="L83">			config.hints = hintsList.stream().map(Object::toString).toList();</span>
+<span class="fc" id="L82">		Object hintsObj = mining.get(&quot;hints&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (hintsObj instanceof List&lt;?&gt; hintsList) {</span>
+<span class="fc" id="L84">			config.hints = hintsList.stream().map(Object::toString).toList();</span>
 		}
 
 		// Parse repositories
-<span class="fc" id="L87">		Object reposObj = mining.get(&quot;repositories&quot;);</span>
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (reposObj instanceof List&lt;?&gt; reposList) {</span>
-<span class="fc" id="L89">			config.repositories = reposList.stream().map(obj -&gt; {</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				if (obj instanceof Map&lt;?, ?&gt; map) {</span>
-<span class="fc" id="L91">					RepoEntry entry = new RepoEntry();</span>
-<span class="fc" id="L92">					entry.setUrl((String) map.get(&quot;url&quot;));</span>
-<span class="fc" id="L93">					Object branchObj = map.get(&quot;branch&quot;);</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">					if (branchObj != null) {</span>
-<span class="fc" id="L95">						entry.setBranch(branchObj.toString());</span>
+<span class="fc" id="L88">		Object reposObj = mining.get(&quot;repositories&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (reposObj instanceof List&lt;?&gt; reposList) {</span>
+<span class="fc" id="L90">			config.repositories = reposList.stream().map(obj -&gt; {</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				if (obj instanceof Map&lt;?, ?&gt; map) {</span>
+<span class="fc" id="L92">					RepoEntry entry = new RepoEntry();</span>
+<span class="fc" id="L93">					entry.setUrl((String) map.get(&quot;url&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L94">					Object branchObj = map.get(&quot;branch&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">					if (branchObj != null) {</span>
+<span class="fc" id="L96">						entry.setBranch(branchObj.toString());</span>
 					}
-<span class="fc" id="L97">					Object pathsObj = map.get(&quot;paths&quot;);</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">					if (pathsObj instanceof List&lt;?&gt; pathsList) {</span>
-<span class="fc" id="L99">						entry.setPaths(pathsList.stream().map(Object::toString).toList());</span>
+<span class="fc" id="L98">					Object pathsObj = map.get(&quot;paths&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">					if (pathsObj instanceof List&lt;?&gt; pathsList) {</span>
+<span class="fc" id="L100">						entry.setPaths(pathsList.stream().map(Object::toString).toList());</span>
 					}
-<span class="fc" id="L101">					return entry;</span>
+<span class="fc" id="L102">					return entry;</span>
 				}
-<span class="nc" id="L103">				return null;</span>
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">			}).filter(e -&gt; e != null).toList();</span>
+<span class="nc" id="L104">				return null;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			}).filter(e -&gt; e != null).toList();</span>
 		}
 
 		// Parse settings
-<span class="fc" id="L108">		Object settingsObj = mining.get(&quot;settings&quot;);</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (settingsObj instanceof Map&lt;?, ?&gt; settings) {</span>
-<span class="fc" id="L110">			Object maxFiles = settings.get(&quot;max-files-per-repo&quot;);</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">			if (maxFiles instanceof Number n) {</span>
-<span class="fc" id="L112">				config.maxFilesPerRepo = n.intValue();</span>
+<span class="fc" id="L109">		Object settingsObj = mining.get(&quot;settings&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (settingsObj instanceof Map&lt;?, ?&gt; settings) {</span>
+<span class="fc" id="L111">			Object maxFiles = settings.get(&quot;max-files-per-repo&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			if (maxFiles instanceof Number n) {</span>
+<span class="fc" id="L113">				config.maxFilesPerRepo = n.intValue();</span>
 			}
-<span class="fc" id="L114">			Object timeout = settings.get(&quot;timeout-per-repo-minutes&quot;);</span>
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			if (timeout instanceof Number n) {</span>
-<span class="fc" id="L116">				config.timeoutPerRepoMinutes = n.intValue();</span>
+<span class="fc" id="L115">			Object timeout = settings.get(&quot;timeout-per-repo-minutes&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">			if (timeout instanceof Number n) {</span>
+<span class="fc" id="L117">				config.timeoutPerRepoMinutes = n.intValue();</span>
+			}
+<span class="fc" id="L119">			Object source = settings.get(&quot;source-version&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">			if (source != null) {</span>
+<span class="fc" id="L121">				String trimmedSource = source.toString().trim();</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">				if (!trimmedSource.isBlank()) {</span>
+<span class="fc" id="L123">					config.sourceVersion = trimmedSource;</span>
+				}
 			}
 		}
 
-<span class="fc" id="L120">		return config;</span>
+<span class="fc" id="L128">		return config;</span>
 	}
 
 	public List&lt;String&gt; getHints() {
-<span class="fc" id="L124">		return hints;</span>
+<span class="fc" id="L132">		return hints;</span>
 	}
 
 	public void setHints(List&lt;String&gt; hints) {
-<span class="nc bnc" id="L128" title="All 2 branches missed.">		this.hints = hints != null ? hints : Collections.emptyList();</span>
-<span class="nc" id="L129">	}</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		this.hints = hints != null ? hints : Collections.emptyList();</span>
+<span class="nc" id="L137">	}</span>
 
 	public List&lt;RepoEntry&gt; getRepositories() {
-<span class="fc" id="L132">		return repositories;</span>
+<span class="fc" id="L140">		return repositories;</span>
 	}
 
 	public void setRepositories(List&lt;RepoEntry&gt; repositories) {
-<span class="nc bnc" id="L136" title="All 2 branches missed.">		this.repositories = repositories != null ? repositories : Collections.emptyList();</span>
-<span class="nc" id="L137">	}</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">		this.repositories = repositories != null ? repositories : Collections.emptyList();</span>
+<span class="nc" id="L145">	}</span>
 
 	public int getMaxFilesPerRepo() {
-<span class="fc" id="L140">		return maxFilesPerRepo;</span>
+<span class="fc" id="L148">		return maxFilesPerRepo;</span>
 	}
 
 	public void setMaxFilesPerRepo(int maxFilesPerRepo) {
-<span class="nc" id="L144">		this.maxFilesPerRepo = maxFilesPerRepo;</span>
-<span class="nc" id="L145">	}</span>
+<span class="nc" id="L152">		this.maxFilesPerRepo = maxFilesPerRepo;</span>
+<span class="nc" id="L153">	}</span>
 
 	public int getTimeoutPerRepoMinutes() {
-<span class="fc" id="L148">		return timeoutPerRepoMinutes;</span>
+<span class="fc" id="L156">		return timeoutPerRepoMinutes;</span>
 	}
 
 	public void setTimeoutPerRepoMinutes(int timeoutPerRepoMinutes) {
-<span class="nc" id="L152">		this.timeoutPerRepoMinutes = timeoutPerRepoMinutes;</span>
-<span class="nc" id="L153">	}</span>
+<span class="nc" id="L160">		this.timeoutPerRepoMinutes = timeoutPerRepoMinutes;</span>
+<span class="nc" id="L161">	}</span>
+
+	public String getSourceVersion() {
+<span class="fc" id="L164">		return sourceVersion;</span>
+	}
+
+	public void setSourceVersion(String sourceVersion) {
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">		String trimmedSource = sourceVersion != null ? sourceVersion.trim() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		this.sourceVersion = !trimmedSource.isBlank() ? trimmedSource : &quot;1.8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L170">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

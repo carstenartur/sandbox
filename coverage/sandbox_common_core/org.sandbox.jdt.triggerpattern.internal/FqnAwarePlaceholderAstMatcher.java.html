@@ -69,7 +69,7 @@ import org.eclipse.jdt.core.dom.WildcardType;
 
 	@Override
 	public boolean match(ParameterizedType patternNode, Object other) {
-<span class="pc bpc" id="L72" title="1 of 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
+<span class="pc bpc" id="L72" title="2 of 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
 	}
 
 	@Override
@@ -179,12 +179,12 @@ import org.eclipse.jdt.core.dom.WildcardType;
 <span class="pc bpc" id="L179" title="1 of 4 branches missed.">		if (patternType instanceof SimpleType patternSimple &amp;&amp; sourceType instanceof SimpleType sourceSimple) {</span>
 <span class="fc" id="L180">			return namesEquivalent(patternSimple.getName(), sourceSimple.getName());</span>
 		}
-<span class="pc bpc" id="L182" title="1 of 4 branches missed.">		if (patternType instanceof ParameterizedType patternParam &amp;&amp; sourceType instanceof ParameterizedType sourceParam) {</span>
+<span class="pc bpc" id="L182" title="2 of 4 branches missed.">		if (patternType instanceof ParameterizedType patternParam &amp;&amp; sourceType instanceof ParameterizedType sourceParam) {</span>
 <span class="pc bpc" id="L183" title="1 of 2 branches missed.">			return typesEquivalent(patternParam.getType(), sourceParam.getType())</span>
 <span class="pc bpc" id="L184" title="1 of 2 branches missed.">					&amp;&amp; typeListsEquivalent(patternParam.typeArguments(), sourceParam.typeArguments());</span>
 		}
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (patternType instanceof ParameterizedType patternParam) {</span>
-<span class="fc" id="L187">			return typesEquivalent(patternParam.getType(), sourceType);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">		if (patternType instanceof ParameterizedType patternParam) {</span>
+<span class="nc" id="L187">			return typesEquivalent(patternParam.getType(), sourceType);</span>
 		}
 <span class="nc bnc" id="L189" title="All 2 branches missed.">		if (sourceType instanceof ParameterizedType sourceParam) {</span>
 <span class="nc" id="L190">			return typesEquivalent(patternType, sourceParam.getType());</span>

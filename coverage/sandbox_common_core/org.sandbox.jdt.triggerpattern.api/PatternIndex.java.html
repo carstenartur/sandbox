@@ -88,8 +88,8 @@ public final class PatternIndex {
 <span class="fc bfc" id="L88" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
 <span class="fc" id="L89">			Pattern sourcePattern = rule.sourcePattern();</span>
 <span class="fc" id="L90">			ASTNode patternNode = parser.parse(sourcePattern);</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">			if (patternNode == null) {</span>
-<span class="nc" id="L92">				continue;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (patternNode == null) {</span>
+<span class="fc" id="L92">				continue;</span>
 			}
 
 <span class="fc" id="L95">			PatternKind kind = sourcePattern.getKind();</span>
@@ -140,7 +140,7 @@ public final class PatternIndex {
 	 * @return map from each rule that had matches to its list of matches
 	 */
 	public Map&lt;TransformationRule, List&lt;Match&gt;&gt; findAllMatches(CompilationUnit cu) {
-<span class="pc bpc" id="L143" title="1 of 4 branches missed.">		if (cu == null || rulesByKind.isEmpty()) {</span>
+<span class="fc bfc" id="L143" title="All 4 branches covered.">		if (cu == null || rulesByKind.isEmpty()) {</span>
 <span class="fc" id="L144">			return Collections.emptyMap();</span>
 		}
 

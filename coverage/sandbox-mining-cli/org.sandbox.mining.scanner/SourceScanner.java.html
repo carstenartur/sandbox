@@ -22,6 +22,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
@@ -35,17 +36,19 @@ import org.sandbox.mining.report.MiningReport;
  */
 public class SourceScanner {
 
+<span class="fc" id="L39">	private static final Map&lt;String, String&gt; NO_COMPILER_OPTIONS = Map.of();</span>
+
 	private final StandaloneAstParser parser;
 	private final int maxFiles;
 
 	public SourceScanner() {
-<span class="fc" id="L42">		this(new StandaloneAstParser(), 5000);</span>
-<span class="fc" id="L43">	}</span>
+<span class="fc" id="L45">		this(new StandaloneAstParser(), 5000);</span>
+<span class="fc" id="L46">	}</span>
 
-<span class="fc" id="L45">	public SourceScanner(StandaloneAstParser parser, int maxFiles) {</span>
-<span class="fc" id="L46">		this.parser = parser;</span>
-<span class="fc" id="L47">		this.maxFiles = maxFiles;</span>
-<span class="fc" id="L48">	}</span>
+<span class="fc" id="L48">	public SourceScanner(StandaloneAstParser parser, int maxFiles) {</span>
+<span class="fc" id="L49">		this.parser = parser;</span>
+<span class="fc" id="L50">		this.maxFiles = maxFiles;</span>
+<span class="fc" id="L51">	}</span>
 
 	/**
 	 * Finds all Java files in the given directory tree.
@@ -57,48 +60,48 @@ public class SourceScanner {
 	 * @throws IOException if directory traversal fails
 	 */
 	public List&lt;Path&gt; findJavaFiles(Path rootDir, List&lt;String&gt; subPaths) throws IOException {
-<span class="fc" id="L60">		List&lt;Path&gt; javaFiles = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L63">		List&lt;Path&gt; javaFiles = new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L62">		List&lt;Path&gt; searchRoots = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		if (subPaths == null || subPaths.isEmpty()) {</span>
-<span class="fc" id="L64">			searchRoots.add(rootDir);</span>
+<span class="fc" id="L65">		List&lt;Path&gt; searchRoots = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">		if (subPaths == null || subPaths.isEmpty()) {</span>
+<span class="fc" id="L67">			searchRoots.add(rootDir);</span>
 		} else {
-<span class="fc bfc" id="L66" title="All 2 branches covered.">			for (String sub : subPaths) {</span>
-<span class="fc" id="L67">				Path subPath = rootDir.resolve(sub);</span>
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">				if (Files.isDirectory(subPath)) {</span>
-<span class="fc" id="L69">					searchRoots.add(subPath);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">			for (String sub : subPaths) {</span>
+<span class="fc" id="L70">				Path subPath = rootDir.resolve(sub);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">				if (Files.isDirectory(subPath)) {</span>
+<span class="fc" id="L72">					searchRoots.add(subPath);</span>
 				}
-<span class="fc" id="L71">			}</span>
+<span class="fc" id="L74">			}</span>
 		}
 
-<span class="fc bfc" id="L74" title="All 2 branches covered.">		for (Path searchRoot : searchRoots) {</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">			if (!Files.isDirectory(searchRoot)) {</span>
-<span class="nc" id="L76">				continue;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (Path searchRoot : searchRoots) {</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">			if (!Files.isDirectory(searchRoot)) {</span>
+<span class="nc" id="L79">				continue;</span>
 			}
-<span class="fc" id="L78">			Files.walkFileTree(searchRoot, new SimpleFileVisitor&lt;&gt;() {</span>
+<span class="fc" id="L81">			Files.walkFileTree(searchRoot, new SimpleFileVisitor&lt;&gt;() {</span>
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-<span class="fc bfc" id="L81" title="All 2 branches covered.">					if (javaFiles.size() &gt;= maxFiles) {</span>
-<span class="fc" id="L82">						return FileVisitResult.TERMINATE;</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">					if (javaFiles.size() &gt;= maxFiles) {</span>
+<span class="fc" id="L85">						return FileVisitResult.TERMINATE;</span>
 					}
-<span class="fc bfc" id="L84" title="All 2 branches covered.">					if (file.toString().endsWith(&quot;.java&quot;)) {</span>
-<span class="fc" id="L85">						javaFiles.add(file);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">					if (file.toString().endsWith(&quot;.java&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L88">						javaFiles.add(file);</span>
 					}
-<span class="fc" id="L87">					return FileVisitResult.CONTINUE;</span>
+<span class="fc" id="L90">					return FileVisitResult.CONTINUE;</span>
 				}
 
 				@Override
 				public FileVisitResult visitFileFailed(Path file, IOException exc) {
-<span class="nc" id="L92">					return FileVisitResult.CONTINUE;</span>
+<span class="nc" id="L95">					return FileVisitResult.CONTINUE;</span>
 				}
 			});
-<span class="fc" id="L95">		}</span>
+<span class="fc" id="L98">		}</span>
 
-<span class="fc" id="L97">		return javaFiles;</span>
+<span class="fc" id="L100">		return javaFiles;</span>
 	}
 
 	/**
-	 * Scans all Java files using the given hint file and produces a mining report.
+	 * Scans all Java files using the given hint files and produces a mining report.
 	 *
 	 * @param repoName  name of the repository being scanned
 	 * @param rootDir   the root directory of the cloned repository
@@ -109,38 +112,58 @@ public class SourceScanner {
 	 */
 	public MiningReport scan(String repoName, Path rootDir, List&lt;String&gt; subPaths, List&lt;HintFile&gt; hintFiles)
 			throws IOException {
-<span class="nc" id="L112">			MiningReport report = new MiningReport();</span>
-<span class="nc" id="L113">			List&lt;Path&gt; javaFiles = findJavaFiles(rootDir, subPaths);</span>
-<span class="nc" id="L114">			report.addFileCount(repoName, javaFiles.size());</span>
+<span class="nc" id="L115">		return scan(repoName, rootDir, subPaths, hintFiles, NO_COMPILER_OPTIONS);</span>
+	}
 
-<span class="nc bnc" id="L116" title="All 2 branches missed.">			for (HintFile hintFile : hintFiles) {</span>
-<span class="nc" id="L117">				BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
+	/**
+	 * Scans all Java files using the given hint files and compiler options, producing
+	 * a mining report. Compiler options are forwarded to guard evaluation so rules
+	 * such as {@code sourceVersionGE(11)} behave like they do in Eclipse cleanup
+	 * execution.
+	 *
+	 * @param repoName        name of the repository being scanned
+	 * @param rootDir         the root directory of the cloned repository
+	 * @param subPaths        optional sub-paths to restrict scanning to
+	 * @param hintFiles       list of parsed hint files to apply
+	 * @param compilerOptions compiler options for guard evaluation
+	 * @return the mining report with all matches
+	 * @throws IOException if file reading fails
+	 */
+	public MiningReport scan(String repoName, Path rootDir, List&lt;String&gt; subPaths, List&lt;HintFile&gt; hintFiles,
+			Map&lt;String, String&gt; compilerOptions) throws IOException {
+<span class="fc" id="L134">		MiningReport report = new MiningReport();</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		Map&lt;String, String&gt; effectiveCompilerOptions = compilerOptions != null ? compilerOptions : NO_COMPILER_OPTIONS;</span>
+<span class="fc" id="L136">		List&lt;Path&gt; javaFiles = findJavaFiles(rootDir, subPaths);</span>
+<span class="fc" id="L137">		report.addFileCount(repoName, javaFiles.size());</span>
 
-<span class="nc bnc" id="L119" title="All 2 branches missed.">				for (Path javaFile : javaFiles) {</span>
-<span class="nc" id="L120">					String source = Files.readString(javaFile, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L121">					CompilationUnit cu = parser.parse(source);</span>
-<span class="nc" id="L122">					List&lt;TransformationResult&gt; results = processor.process(cu);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		for (HintFile hintFile : hintFiles) {</span>
+<span class="fc" id="L140">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
 
-<span class="nc bnc" id="L124" title="All 2 branches missed.">					for (TransformationResult result : results) {</span>
-<span class="nc" id="L125">						String relativePath = rootDir.relativize(javaFile).toString();</span>
-<span class="nc" id="L126">						int line = cu.getLineNumber(result.match().getOffset());</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">						String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;;</span>
-<span class="nc" id="L128">						TransformationRule rule = result.rule();</span>
-<span class="nc" id="L129">						String ruleName = rule.getDescription();</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">						if (ruleName == null) {</span>
-<span class="nc" id="L131">							ruleName = rule.getRuleId();</span>
-						}
-<span class="nc bnc" id="L133" title="All 2 branches missed.">						if (ruleName == null) {</span>
-<span class="nc" id="L134">							int ruleIndex = hintFile.getRules().indexOf(rule);</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">							ruleName = ruleIndex &gt;= 0 ? hintFileName + (ruleIndex + 1) : hintFileName;</span>
-						}
-<span class="nc" id="L137">						report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
-<span class="nc bnc" id="L138" title="All 2 branches missed.">								result.hasReplacement() ? result.replacement() : null);</span>
-<span class="nc" id="L139">					}</span>
-<span class="nc" id="L140">				}</span>
-<span class="nc" id="L141">			}</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">			for (Path javaFile : javaFiles) {</span>
+<span class="fc" id="L143">				String source = Files.readString(javaFile, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L144">				CompilationUnit cu = parser.parse(source);</span>
+<span class="fc" id="L145">				List&lt;TransformationResult&gt; results = processor.process(cu, effectiveCompilerOptions);</span>
 
-<span class="nc" id="L143">			return report;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">				for (TransformationResult result : results) {</span>
+<span class="fc" id="L148">					String relativePath = rootDir.relativize(javaFile).toString();</span>
+<span class="fc" id="L149">					int line = cu.getLineNumber(result.match().getOffset());</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">					String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L151">					TransformationRule rule = result.rule();</span>
+<span class="fc" id="L152">					String ruleName = rule.getRuleId();</span>
+<span class="pc bpc" id="L153" title="2 of 4 branches missed.">					if (ruleName == null || ruleName.isBlank()) {</span>
+<span class="nc" id="L154">						ruleName = rule.getDescription();</span>
+					}
+<span class="pc bpc" id="L156" title="2 of 4 branches missed.">					if (ruleName == null || ruleName.isBlank()) {</span>
+<span class="nc" id="L157">						int ruleIndex = hintFile.getRules().indexOf(rule);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">						ruleName = ruleIndex &gt;= 0 ? hintFileName + (ruleIndex + 1) : hintFileName;</span>
+					}
+<span class="fc" id="L160">					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">							result.hasReplacement() ? result.replacement() : null);</span>
+<span class="fc" id="L162">				}</span>
+<span class="fc" id="L163">			}</span>
+<span class="fc" id="L164">		}</span>
+
+<span class="fc" id="L166">		return report;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

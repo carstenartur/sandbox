@@ -640,8 +640,8 @@ sandbox_coverage/sandbox-ast-api-jdt,org.sandbox.ast.api.jdt,FluentASTVisitor,6,
 sandbox_coverage/sandbox-ast-api-jdt,org.sandbox.ast.api.jdt,JDTConverter,86,663,18,68,16,170,19,50,1,25
 sandbox_coverage/sandbox-ast-api-jdt,org.sandbox.ast.api.jdt,JDTConverter.UnsupportedStmt,0,3,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-ast-api-jdt,org.sandbox.ast.api.jdt,JDTConverter.UnsupportedExpr,2,10,1,1,0,3,1,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PatternIndex,133,270,20,34,23,62,13,27,1,12
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,Match,97,121,19,9,15,28,16,12,5,9
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PatternIndex,132,271,18,36,22,63,11,29,1,12
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,Match,87,131,19,9,14,29,15,13,4,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PatternIndex.IndexEntry,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,PreviewGenerator.Preview,9,50,2,4,1,9,2,4,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.api,GuardExpression.FunctionCall,8,36,2,2,1,8,2,2,0,2
@@ -710,9 +710,9 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,PromptBu
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,MistralClient,27,18,4,2,7,6,6,3,3,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileStore,158,1040,33,77,37,201,30,55,0,30
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileStore.HintFileValidationProblem,9,0,0,0,1,0,1,0,1,0
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,FqnAwarePlaceholderAstMatcher,418,577,123,101,81,120,93,45,8,18
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,FqnAwarePlaceholderAstMatcher,431,564,126,98,83,118,95,43,8,18
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,DslValidator.ValidationResult,0,9,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PatternParser,59,697,39,71,28,174,39,27,0,11
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PatternParser,57,699,38,72,27,175,38,28,0,11
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileParser.GuardSplit,0,16,0,2,0,2,0,3,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,PlaceholderAstMatcher,334,1261,106,186,87,294,88,91,2,28
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintFileParser,129,2145,55,303,27,494,51,156,0,24
@@ -760,13 +760,13 @@ sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.report,MarkdownReporter,2
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.report,MiningReport.MatchEntry,0,24,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.report,MiningReport,0,156,0,6,0,26,0,19,0,16
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.report,JsonReporter,29,307,4,12,7,53,5,7,1,3
-sandbox_coverage/sandbox-mining-cli,org.sandbox.mining,MiningCli,569,104,60,7,149,31,44,6,9,4
+sandbox_coverage/sandbox-mining-cli,org.sandbox.mining,MiningCli,585,177,62,7,155,43,46,6,10,4
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.scanner,SourceScanner.new SimpleFileVisitor() {...},2,30,0,4,1,6,1,4,1,2
-sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.scanner,SourceScanner,131,84,19,9,27,20,12,6,1,3
+sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.scanner,SourceScanner,30,209,12,22,5,45,12,11,1,5
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.scanner,StandaloneAstParser,0,51,0,0,0,15,0,3,0,3
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.git,RepoCloner,23,0,0,0,5,0,2,0,2,0
 sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,RepoEntry,23,33,3,1,5,13,3,7,1,7
-sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,MiningConfig,46,182,9,17,13,45,12,15,5,9
+sandbox_coverage/sandbox-mining-cli,org.sandbox.mining.config,MiningConfig,47,219,8,26,13,55,11,22,5,11
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,DeltaReport,3,430,6,24,1,87,6,20,0,11
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,GapCategory,10,108,5,9,5,25,5,10,0,2
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.comparison,ExternalEvaluationImporter,57,0,4,0,12,0,5,0,3,0
