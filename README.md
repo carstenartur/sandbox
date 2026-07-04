@@ -18,9 +18,7 @@ A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugin
 [![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20941684.svg)](https://doi.org/10.5281/zenodo.20941684)
 [![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
-
-
-
+<br>
 🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
 
 ---
@@ -220,6 +218,7 @@ Identifies opportunities to reuse existing methods instead of duplicating logic.
 📖 **Full Documentation**: [Plugin README](sandbox_method_reuse/README.md) | [Architecture](sandbox_method_reuse/ARCHITECTURE.md) | [TODO](sandbox_method_reuse/TODO.md)
 
 ---
+
 ### PDE XML Cleanup (`sandbox_xml_cleanup`)
 
 Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whitespace and optionally converting leading spaces to tabs. Uses secure XSLT transformation, normalizes excessive empty lines, and only processes PDE-relevant files in project root, OSGI-INF, or META-INF locations. Idempotent and preserves semantic integrity.
@@ -227,6 +226,7 @@ Optimizes Eclipse PDE XML files (plugin.xml, feature.xml, etc.) by reducing whit
 📖 **Full Documentation**: [Plugin README](sandbox_xml_cleanup/README.md) | [Architecture](sandbox_xml_cleanup/ARCHITECTURE.md) | [TODO](sandbox_xml_cleanup/TODO.md)
 
 ---
+
 ### CSS Cleanup (`sandbox_css_cleanup`)
 
 Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. Provides automatic formatting, linting, right-click menu integration for .css, .scss, and .less files, and a preferences page for configuration with graceful fallback when npm tools are not installed.
@@ -234,6 +234,7 @@ Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. P
 📖 **Full Documentation**: [Plugin README](sandbox_css_cleanup/README.md) | [Architecture](sandbox_css_cleanup/ARCHITECTURE.md) | [TODO](sandbox_css_cleanup/TODO.md)
 
 ---
+
 ### Common Utilities (`sandbox_common`)
 
 Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting. Also hosts the TriggerPattern DSL engine for pattern matching, batch processing, and `.sandbox-hint` file support, along with mining infrastructure for git-based refactoring analysis.
