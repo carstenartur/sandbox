@@ -31,6 +31,7 @@ public record CandidateVerification(
 		DUPLICATE,
 		DSL_VALIDATION,
 		DSL_PARSE,
+		GUARD_RESOLUTION,
 		BEFORE_PARSE,
 		AFTER_PARSE,
 		BEFORE_MATCH,
