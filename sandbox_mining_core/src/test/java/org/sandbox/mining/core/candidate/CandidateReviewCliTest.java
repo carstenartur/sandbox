@@ -14,7 +14,7 @@
 package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -118,21 +118,19 @@ class CandidateReviewCliTest {
 	}
 
 	@Test
-	void cannotApproveCandidateWhoseContentChangedAfterVerification() throws IOException {
+	void contentChangeInvalidatesReviewReadiness() throws IOException {
 		Path candidateFile = saveReadyCandidate();
 		CandidateStore store = new CandidateStore(tempDir);
 		MiningCandidate changed = store.loadAll().get(0);
 		changed.setAfterExample("class T { int m() { return 99; } }"); //$NON-NLS-1$
 		store.save(changed);
 
+		MiningCandidate revision = store.loadAll().get(0);
+		assertEquals(CandidateStatus.DISCOVERED, revision.getStatus());
+		assertEquals(2, revision.getRevision());
+		assertNull(revision.getVerification());
 		assertThrows(IllegalStateException.class,
 				() -> apply(candidateFile, "approve", "Review completed")); //$NON-NLS-1$ //$NON-NLS-2$
-
-		MiningCandidate persisted = store.loadAll().get(0);
-		assertEquals(CandidateStatus.READY_FOR_REVIEW, persisted.getStatus());
-		assertFalse(persisted.getVerification().successful());
-		assertEquals(CandidateVerification.Stage.AFTER_REWRITE,
-				persisted.getVerification().stage());
 	}
 
 	private void apply(Path candidateFile, String action, String reason) throws IOException {
