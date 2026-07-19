@@ -26,9 +26,10 @@ package org.sandbox.mining.core.candidate;
  *                                            PROMOTED
  * </pre>
  *
- * <p>{@link #SUPERSEDED} is a terminal state for an older candidate revision.
- * Generated source files and test execution are implementation details and are
- * deliberately not represented as domain states.</p>
+ * <p>{@link #DUPLICATE} records deterministic cross-origin duplicate
+ * detection. {@link #SUPERSEDED} is a terminal state for an older proposal
+ * revision or origin. Generated source files and test execution are
+ * implementation details and are deliberately not domain states.</p>
  */
 public enum CandidateStatus {
 
@@ -50,24 +51,25 @@ public enum CandidateStatus {
 	/** The rule and its behavior test were merged into the curated rule set. */
 	PROMOTED,
 
-	/** A human reviewer rejected the candidate. */
+	/** A reviewer or deterministic policy rejected the candidate. */
 	REJECTED,
 
-	/** This revision was replaced by a newer revision of the same candidate. */
+	/** The normalized rule duplicates another staged candidate. */
+	DUPLICATE,
+
+	/** This proposal was replaced by another candidate or revision. */
 	SUPERSEDED;
 
 	/**
 	 * Returns whether a transition from this state to {@code target} is valid.
-	 *
-	 * @param target requested target state
-	 * @return {@code true} when the transition is allowed
 	 */
 	public boolean canTransitionTo(CandidateStatus target) {
 		if (target == null || target == this) {
 			return false;
 		}
-		if (target == REJECTED || target == SUPERSEDED) {
-			return this != PROMOTED && this != REJECTED && this != SUPERSEDED;
+		if (target == REJECTED || target == DUPLICATE || target == SUPERSEDED) {
+			return this != PROMOTED && this != REJECTED
+					&& this != DUPLICATE && this != SUPERSEDED;
 		}
 		return switch (this) {
 		case DISCOVERED -> target == DSL_VALID;
@@ -75,7 +77,7 @@ public enum CandidateStatus {
 		case BEHAVIOR_VALID -> target == READY_FOR_REVIEW;
 		case READY_FOR_REVIEW -> target == APPROVED;
 		case APPROVED -> target == PROMOTED;
-		case PROMOTED, REJECTED, SUPERSEDED -> false;
+		case PROMOTED, REJECTED, DUPLICATE, SUPERSEDED -> false;
 		};
 	}
 }
