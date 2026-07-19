@@ -34,15 +34,15 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 /**
  * Deterministically verifies a staged candidate without generating Java source.
  *
- * <p>The verifier parses the DSL and examples, applies exactly one replacement
- * to the positive example by AST match offset/length, compares the complete
- * transformed source with the expected after example, and proves that the
- * negative example does not match.</p>
+ * <p>The verifier parses the DSL and all examples, applies exactly one
+ * replacement to the positive example by AST match offset/length, compares the
+ * complete transformed source with the expected after example, and proves that
+ * the negative example does not match.</p>
  */
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "1"; //$NON-NLS-1$
+	public static final String VERSION = "2"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -86,6 +86,11 @@ public final class CandidateVerifier {
 		if (!beforeParse.valid()) {
 			return failure(CandidateVerification.Stage.BEFORE_PARSE,
 					beforeParse.message(), 0, 0);
+		}
+		ParseResult afterParse = parse(candidate.getAfterExample(), candidate.getSourceVersion());
+		if (!afterParse.valid()) {
+			return failure(CandidateVerification.Stage.AFTER_PARSE,
+					afterParse.message(), 0, 0);
 		}
 
 		Map<String, String> compilerOptions = compilerOptions(candidate.getSourceVersion());
