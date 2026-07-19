@@ -87,12 +87,17 @@ public class MiningCandidate {
 	}
 
 	/**
-	 * Stable ID derived from repository, source commit, and candidate ordinal.
+	 * Stable ID derived from repository, source commit, discovery category,
+	 * target rule library, and candidate ordinal. Rule text and examples are
+	 * deliberately excluded so corrections remain revisions of one candidate.
 	 */
 	public String getCandidateId() {
 		if (candidateId == null || candidateId.isBlank()) {
 			candidateId = sha256(nullToEmpty(sourceRepo) + '\n'
-					+ nullToEmpty(sourceCommit) + '\n' + candidateOrdinal);
+					+ nullToEmpty(sourceCommit) + '\n'
+					+ nullToEmpty(category) + '\n'
+					+ nullToEmpty(targetHintFile) + '\n'
+					+ candidateOrdinal);
 		}
 		return candidateId;
 	}
@@ -163,6 +168,7 @@ public class MiningCandidate {
 
 	public void setTargetHintFile(String targetHintFile) {
 		this.targetHintFile = targetHintFile;
+		this.candidateId = null;
 	}
 
 	public String getSourceCommit() {
@@ -189,6 +195,7 @@ public class MiningCandidate {
 
 	public void setCategory(String category) {
 		this.category = category;
+		this.candidateId = null;
 	}
 
 	public String getSummary() {
