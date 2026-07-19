@@ -26,11 +26,9 @@ import com.google.gson.Gson;
  * Repeating an already-applied decision is a successful no-op so interrupted
  * workflows can be retried safely.
  *
- * <p>Usage:</p>
- * <pre>
- * CandidateReviewCli --candidate file.json --action approve
- *     --actor reviewer --reason "Reviewed against source commit"
- * </pre>
+ * <p>Approval always re-runs deterministic verification with the current
+ * verifier before recording the human decision. Promotion is independently
+ * re-verified by {@link CandidatePromotionCli}.</p>
  */
 public final class CandidateReviewCli {
 
@@ -95,10 +93,7 @@ public final class CandidateReviewCli {
 		String normalizedAction = action.toLowerCase(Locale.ROOT);
 		switch (normalizedAction) {
 		case "approve": //$NON-NLS-1$
-			applyIdempotentTransition(candidate, CandidateStatus.READY_FOR_REVIEW,
-					CandidateStatus.APPROVED, actor,
-					normalizeReason(reason, "Approved after human review"), //$NON-NLS-1$
-					"Only READY_FOR_REVIEW candidates can be approved"); //$NON-NLS-1$
+			approve(candidate, actor, normalizeReason(reason, "Approved after human review")); //$NON-NLS-1$
 			break;
 		case "reject": //$NON-NLS-1$
 			applyIdempotentTransition(candidate, CandidateStatus.READY_FOR_REVIEW,
@@ -135,6 +130,22 @@ public final class CandidateReviewCli {
 		}
 		System.out.println(candidate.getCandidateId() + " -> " + candidate.getStatus()); //$NON-NLS-1$
 		return 0;
+	}
+
+	private static void approve(MiningCandidate candidate, String actor, String reason) {
+		if (candidate.getStatus() == CandidateStatus.APPROVED) {
+			return;
+		}
+		if (candidate.getStatus() != CandidateStatus.READY_FOR_REVIEW) {
+			throw new IllegalStateException("Only READY_FOR_REVIEW candidates can be approved"); //$NON-NLS-1$
+		}
+		CandidateVerification currentVerification = new CandidateVerifier().verify(candidate);
+		candidate.setVerification(currentVerification);
+		if (!currentVerification.successful()) {
+			throw new IllegalStateException("Candidate failed current deterministic verification at " //$NON-NLS-1$
+					+ currentVerification.stage() + ": " + currentVerification.message()); //$NON-NLS-1$
+		}
+		candidate.transitionTo(CandidateStatus.APPROVED, actor, reason);
 	}
 
 	private static void applyIdempotentTransition(MiningCandidate candidate,
