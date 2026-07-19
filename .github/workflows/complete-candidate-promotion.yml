@@ -52,6 +52,61 @@ jobs:
             > "mining-candidates/${CANDIDATE_ID}-candidate.json"
           echo "id=$CANDIDATE_ID" >> "$GITHUB_OUTPUT"
           echo "file=mining-candidates/${CANDIDATE_ID}-candidate.json" >> "$GITHUB_OUTPUT"
+          echo "fixture=$FIXTURE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate merged promotion integrity
+        env:
+          CANDIDATE_ID: ${{ steps.candidate.outputs.id }}
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          FIXTURE_FILE: ${{ steps.candidate.outputs.fixture }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          candidate_id = os.environ['CANDIDATE_ID']
+          candidate = json.loads(pathlib.Path(os.environ['CANDIDATE_FILE']).read_text(encoding='utf-8'))
+          fixture = json.loads(pathlib.Path(os.environ['FIXTURE_FILE']).read_text(encoding='utf-8'))
+
+          if candidate.get('candidateId') != candidate_id:
+              raise SystemExit('Candidate JSON ID does not match the promotion branch')
+          if candidate.get('status') != 'APPROVED':
+              raise SystemExit('Only an APPROVED candidate may be completed as PROMOTED')
+          verification = candidate.get('verification') or {}
+          if verification.get('successful') is not True:
+              raise SystemExit('Candidate has no successful persisted verification')
+          if fixture.get('candidateId') != candidate_id:
+              raise SystemExit('Permanent fixture ID does not match the promoted candidate')
+
+          shared_fields = (
+              'revision', 'sourceRepo', 'sourceCommit', 'targetHintFile',
+              'sourceVersion', 'dslRule', 'beforeExample', 'afterExample',
+              'negativeExample', 'ruleFingerprint', 'behaviorFingerprint'
+          )
+          for field in shared_fields:
+              if fixture.get(field) != candidate.get(field):
+                  raise SystemExit(f'Permanent fixture differs from approved candidate field: {field}')
+          if fixture.get('verifierVersion') != verification.get('verifierVersion'):
+              raise SystemExit('Permanent fixture verifier version differs from approved verification')
+
+          hint_root = pathlib.Path(
+              'sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal'
+          ).resolve()
+          target_name = fixture.get('targetHintFile')
+          if not isinstance(target_name, str) or pathlib.Path(target_name).name != target_name:
+              raise SystemExit('Fixture targetHintFile is not a simple file name')
+          target = (hint_root / target_name).resolve()
+          if target.parent != hint_root or not target.is_file():
+              raise SystemExit(f'Promoted target hint file is missing or outside the curated directory: {target}')
+          hint_source = target.read_text(encoding='utf-8')
+          if fixture.get('dslRule', '').strip() not in hint_source:
+              raise SystemExit('Merged target hint file does not contain the approved DSL rule')
+          marker = f'// Promoted mining candidate: {candidate_id}'
+          if marker not in hint_source:
+              raise SystemExit('Merged target hint file does not contain the candidate provenance marker')
+          PY
 
       - name: Build candidate tooling
         run: |
