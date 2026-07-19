@@ -45,6 +45,26 @@ class CandidateReviewCliTest {
 	}
 
 	@Test
+	void marksApprovedCandidatePromotedAfterMerge() throws IOException {
+		Path candidateFile = saveReadyCandidate();
+		CandidateReviewCli.run(new String[] {
+				"--candidate", candidateFile.toString(), //$NON-NLS-1$
+				"--action", "approve", //$NON-NLS-1$ //$NON-NLS-2$
+				"--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$
+		});
+		CandidateReviewCli.run(new String[] {
+				"--candidate", candidateFile.toString(), //$NON-NLS-1$
+				"--action", "promote", //$NON-NLS-1$ //$NON-NLS-2$
+				"--actor", "github-actions", //$NON-NLS-1$ //$NON-NLS-2$
+				"--reason", "Promotion PR #42 merged" //$NON-NLS-1$ //$NON-NLS-2$
+		});
+
+		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
+		assertEquals(CandidateStatus.PROMOTED, loaded.getStatus());
+		assertEquals("Promotion PR #42 merged", loaded.getTransitions().get(4).reason()); //$NON-NLS-1$
+	}
+
+	@Test
 	void rejectsReadyCandidateWithReason() throws IOException {
 		Path candidateFile = saveReadyCandidate();
 
