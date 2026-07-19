@@ -63,6 +63,35 @@ class CandidateVerificationCliTest {
 	}
 
 	@Test
+	void failedEarlierCandidateDoesNotSuppressLaterValidRule() throws IOException {
+		Path candidateDir = tempDir.resolve("failed-before-valid"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		MiningCandidate invalid = candidate("commit-invalid", "2026-01-01T00:00:00Z"); //$NON-NLS-1$ //$NON-NLS-2$
+		invalid.setAfterExample("class T { int m() { return 99; } }"); //$NON-NLS-1$
+		store.save(invalid);
+		store.save(candidate("commit-valid", "2026-01-02T00:00:00Z")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), //$NON-NLS-1$
+				"--report-dir", tempDir.resolve("failed-before-valid-report").toString() //$NON-NLS-1$ //$NON-NLS-2$
+		});
+
+		List<MiningCandidate> candidates = store.loadAll();
+		assertEquals(1, candidates.stream()
+				.filter(candidate -> candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW)
+				.count());
+		assertEquals(0, candidates.stream()
+				.filter(candidate -> candidate.getStatus() == CandidateStatus.DUPLICATE)
+				.count());
+		MiningCandidate failed = candidates.stream()
+				.filter(candidate -> "commit-invalid".equals(candidate.getSourceCommit())) //$NON-NLS-1$
+				.findFirst().orElseThrow();
+		assertFalse(failed.getVerification().successful());
+		assertEquals(CandidateVerification.Stage.AFTER_REWRITE,
+				failed.getVerification().stage());
+	}
+
+	@Test
 	void approvedCandidateRemainsCanonicalForLaterDuplicate() throws IOException {
 		Path candidateDir = tempDir.resolve("approved-candidates"); //$NON-NLS-1$
 		CandidateStore store = new CandidateStore(candidateDir);
