@@ -206,8 +206,16 @@ public class MiningCandidate {
 		this.summary = summary;
 	}
 
+	/**
+	 * Returns whether the serialized candidate explicitly declares a source
+	 * version instead of relying on the default returned by {@link #getSourceVersion()}.
+	 */
+	public boolean hasDeclaredSourceVersion() {
+		return sourceVersion != null && !sourceVersion.isBlank();
+	}
+
 	public String getSourceVersion() {
-		return sourceVersion == null || sourceVersion.isBlank() ? "21" : sourceVersion; //$NON-NLS-1$
+		return hasDeclaredSourceVersion() ? sourceVersion : "21"; //$NON-NLS-1$
 	}
 
 	public void setSourceVersion(String sourceVersion) {
@@ -255,9 +263,9 @@ public class MiningCandidate {
 
 	public String getBehaviorFingerprint() {
 		if (behaviorFingerprint == null || behaviorFingerprint.isBlank()) {
-			String behavior = normalizeSource(beforeExample) + '\n'
-					+ normalizeSource(afterExample) + '\n'
-					+ normalizeSource(negativeExample);
+			String behavior = normalizeSourceForFingerprint(beforeExample) + '\n'
+					+ normalizeSourceForFingerprint(afterExample) + '\n'
+					+ normalizeSourceForFingerprint(negativeExample);
 			behaviorFingerprint = "sha256:" + sha256(behavior); //$NON-NLS-1$
 		}
 		return behaviorFingerprint;
@@ -328,8 +336,12 @@ public class MiningCandidate {
 		return normalized.toString();
 	}
 
-	private static String normalizeSource(String value) {
-		return value == null ? "" : value.replaceAll("\\s+", " ").trim(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	/**
+	 * Normalizes transport-level differences only. Whitespace inside Java
+	 * literals remains part of the behavior fingerprint.
+	 */
+	private static String normalizeSourceForFingerprint(String value) {
+		return value == null ? "" : value.replace("\r\n", "\n").replace('\r', '\n').strip(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private static String nullToEmpty(String value) {
