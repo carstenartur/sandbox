@@ -19,10 +19,10 @@ A high number of scanner matches does not approve a discovered rule.
 
 The normal prompt does not request architectural analysis, plugin-replacement decisions, speculative DSL extensions, or broad numeric scoring. It requires:
 
-- one raw DSL rule;
+- exactly one raw DSL rule;
 - a target hint file and source level;
-- a complete before example;
-- the complete expected after example;
+- a complete compiling before example;
+- the complete compiling expected after example;
 - a compiling negative example;
 - confidence of at least `0.80`.
 
@@ -37,7 +37,7 @@ Git commits
   -> mining-candidates/*.json
   -> legacy-schema migration if required
   -> CandidateVerifier
-  -> normalized duplicate check
+  -> curated and staged duplicate checks
   -> READY_FOR_REVIEW
   -> explicit human decision
   -> APPROVED or REJECTED
@@ -70,14 +70,18 @@ Candidate JSON and review decisions are persisted on the dedicated `mining/candi
 
 1. required candidate fields are present;
 2. DSL parsing and `DslValidator` succeed;
-3. built-in guards are composed with the existing resolver and the previous resolver is restored afterwards;
-4. before, after, and negative Java examples parse at the declared source level;
-5. exactly one positive replacement is produced;
-6. that replacement is applied using the AST match offset and length;
-7. the transformed and expected complete Java syntax trees are structurally equal, including literal values;
-8. the negative example produces no match.
+3. the candidate contains exactly one transformation rule;
+4. every referenced guard function resolves through the production guard registry;
+5. built-in guards are composed with the existing resolver and the previous resolver is restored afterwards;
+6. before, after, and negative Java examples compile at the declared source level with binding resolution enabled;
+7. exactly one positive replacement is produced;
+8. that replacement is applied using the AST match offset and length;
+9. the transformed and expected complete Java syntax trees are structurally equal, including literal values;
+10. the negative example produces no match.
 
-Only candidates that pass behavior verification participate in canonical duplicate selection. A malformed earlier proposal therefore cannot suppress a later valid proposal containing the same normalized DSL. Cross-origin duplicates become terminal `DUPLICATE` candidates and reference the canonical candidate ID.
+Binding resolution is part of verification so type guards are evaluated against the actual receiver type rather than the matcher’s legacy unresolved-binding fallback.
+
+Only candidates that pass behavior verification participate in canonical duplicate selection. A malformed earlier proposal therefore cannot suppress a later valid proposal containing the same rule. Canonical rule fingerprints are derived from parsed individual rules, so file metadata and comments do not hide duplicates. Candidates duplicating either another verified candidate or a rule already present in the curated bundled library become terminal `DUPLICATE` candidates and reference the canonical source in their diagnostic.
 
 The verifier persists its version, final stage, message, match count, replacement count, and timestamp.
 
@@ -88,6 +92,7 @@ java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
   org.sandbox.mining.core.candidate.CandidateVerificationCli \
   --candidate-dir mining-candidates \
   --report-dir docs/mining-report \
+  --curated-hint-dir sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal \
   --source-version 21
 ```
 
@@ -152,6 +157,8 @@ The nightly discovery workflow may publish candidate artifacts and create review
 - create review issues from raw `evaluations.json`;
 - treat `known-rules.json` as approval state.
 
+Nightly discovery, review decisions, and promotion completion share one concurrency group so updates to `mining/candidates` cannot overwrite one another. Review issue generation scans beyond candidates that already have issues and limits the number of newly created issues rather than only inspecting the first five entries. Generated issue bodies use dynamic Markdown fences so candidate text cannot break the report structure.
+
 Only resumable scan state may be merged automatically. Candidate state stays on `mining/candidates`, and a productive rule reaches `main` only through a tested promotion PR after an explicit approval.
 
 ## Legacy known-rules data
@@ -164,4 +171,4 @@ Only resumable scan state may be merged automatically. Candidate state stays on 
 mvn -pl sandbox_common_core,sandbox_mining_core -am test
 ```
 
-The suite covers candidate identity, revisioning, collision-safe legacy migration, lifecycle transitions, structural positive transformation behavior, negative examples, malformed DSL and Java, ambiguous matches, duplicate selection, resolver restoration, review commands, path-safe promotion generation, and permanent promoted-candidate fixtures.
+The suite covers candidate identity, revisioning, collision-safe legacy migration, lifecycle transitions, compiling examples with binding-aware guards, structural positive transformation behavior, negative examples, malformed or multi-rule DSL, unresolved guards, malformed Java, ambiguous matches, curated and staged duplicate selection, resolver restoration, review commands, path-safe promotion generation, and permanent promoted-candidate fixtures.
