@@ -41,6 +41,7 @@ public record CandidateVerification(
 		DSL_VALIDATION,
 		DSL_PARSE,
 		BEFORE_PARSE,
+		AFTER_PARSE,
 		BEFORE_MATCH,
 		AFTER_REWRITE,
 		NEGATIVE_PARSE,
