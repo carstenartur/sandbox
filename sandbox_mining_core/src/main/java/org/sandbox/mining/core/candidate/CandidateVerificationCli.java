@@ -51,6 +51,7 @@ public final class CandidateVerificationCli {
 	static int run(String[] args) throws IOException {
 		Path candidateDir = Path.of("mining-candidates"); //$NON-NLS-1$
 		Path reportDir = Path.of("docs/mining-report"); //$NON-NLS-1$
+		Path curatedHintDir = null;
 		String defaultSourceVersion = "21"; //$NON-NLS-1$
 
 		for (int i = 0; i < args.length; i++) {
@@ -61,12 +62,22 @@ public final class CandidateVerificationCli {
 			case "--report-dir": //$NON-NLS-1$
 				reportDir = Path.of(requireValue(args, ++i, "--report-dir")); //$NON-NLS-1$
 				break;
+			case "--curated-hint-dir": //$NON-NLS-1$
+				curatedHintDir = Path.of(requireValue(args, ++i, "--curated-hint-dir")); //$NON-NLS-1$
+				break;
 			case "--source-version": //$NON-NLS-1$
 				defaultSourceVersion = requireValue(args, ++i, "--source-version"); //$NON-NLS-1$
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown option: " + args[i]); //$NON-NLS-1$
 			}
+		}
+
+		Map<String, String> curatedRuleIndex = curatedHintDir == null
+				? Map.of() : RuleFingerprintIndex.loadCurated(curatedHintDir);
+		if (!curatedRuleIndex.isEmpty()) {
+			System.out.println("Loaded " + curatedRuleIndex.size() //$NON-NLS-1$
+					+ " curated rule fingerprints from " + curatedHintDir); //$NON-NLS-1$
 		}
 
 		CandidateStore store = new CandidateStore(candidateDir);
@@ -91,17 +102,24 @@ public final class CandidateVerificationCli {
 			if (candidate.getStatus() == CandidateStatus.PROMOTED
 					|| candidate.getStatus() == CandidateStatus.APPROVED) {
 				canonicalByRuleFingerprint.putIfAbsent(
-						candidate.getRuleFingerprint(), candidate.getCandidateId());
+						semanticFingerprint(candidate), candidate.getCandidateId());
 				store.save(candidate);
 				continue;
 			}
 
 			if (candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW) {
-				String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
-						candidate.getRuleFingerprint(), candidate.getCandidateId());
-				if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())) {
-					markDuplicate(candidate, canonicalId);
+				String fingerprint = semanticFingerprint(candidate);
+				String curatedReference = curatedRuleIndex.get(fingerprint);
+				if (curatedReference != null) {
+					markDuplicate(candidate, "curated rule " + curatedReference); //$NON-NLS-1$
 					duplicates++;
+				} else {
+					String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
+							fingerprint, candidate.getCandidateId());
+					if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())) {
+						markDuplicate(candidate, "staged candidate " + canonicalId); //$NON-NLS-1$
+						duplicates++;
+					}
 				}
 				store.save(candidate);
 				continue;
@@ -117,15 +135,22 @@ public final class CandidateVerificationCli {
 				continue;
 			}
 
-			String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
-					candidate.getRuleFingerprint(), candidate.getCandidateId());
-			if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())) {
-				markDuplicate(candidate, canonicalId);
+			String fingerprint = semanticFingerprint(candidate);
+			String curatedReference = curatedRuleIndex.get(fingerprint);
+			if (curatedReference != null) {
+				markDuplicate(candidate, "curated rule " + curatedReference); //$NON-NLS-1$
 				duplicates++;
 			} else {
-				advanceToReadyForReview(candidate);
-				verified++;
-				System.out.println("Verified candidate " + candidate.getCandidateId()); //$NON-NLS-1$
+				String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
+						fingerprint, candidate.getCandidateId());
+				if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())) {
+					markDuplicate(candidate, "staged candidate " + canonicalId); //$NON-NLS-1$
+					duplicates++;
+				} else {
+					advanceToReadyForReview(candidate);
+					verified++;
+					System.out.println("Verified candidate " + candidate.getCandidateId()); //$NON-NLS-1$
+				}
 			}
 			store.save(candidate);
 		}
@@ -143,8 +168,12 @@ public final class CandidateVerificationCli {
 		return 0;
 	}
 
-	private static void markDuplicate(MiningCandidate candidate, String canonicalId) {
-		String message = "Normalized DSL duplicates staged candidate " + canonicalId; //$NON-NLS-1$
+	private static String semanticFingerprint(MiningCandidate candidate) throws IOException {
+		return RuleFingerprintIndex.fingerprintDsl(candidate.getDslRule());
+	}
+
+	private static void markDuplicate(MiningCandidate candidate, String duplicateOf) {
+		String message = "Normalized DSL duplicates " + duplicateOf; //$NON-NLS-1$
 		candidate.setVerification(CandidateVerification.failure(
 				CandidateVerification.Stage.DUPLICATE, message,
 				CandidateVerifier.VERSION, 0, 0));
