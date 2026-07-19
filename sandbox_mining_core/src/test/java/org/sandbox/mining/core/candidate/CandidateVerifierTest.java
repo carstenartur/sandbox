@@ -126,6 +126,30 @@ class CandidateVerifierTest {
 	}
 
 	@Test
+	void rejectsMultipleRulesInOneCandidate() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setDslRule("$x + 0\n=> $x\n;;\n\n$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.DSL_PARSE, result.stage());
+		assertTrue(result.message().contains("exactly one")); //$NON-NLS-1$
+	}
+
+	@Test
+	void rejectsUnknownGuardBeforeMatching() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setDslRule("$x + 0 :: definitelyUnknownGuard()\n=> $x\n;;"); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.GUARD_RESOLUTION, result.stage());
+		assertTrue(result.message().contains("definitelyUnknownGuard")); //$NON-NLS-1$
+	}
+
+	@Test
 	void rejectsJavaSyntaxErrorInPositiveExample() {
 		MiningCandidate candidate = validCandidate();
 		candidate.setBeforeExample("class Test { void m( { }"); //$NON-NLS-1$
