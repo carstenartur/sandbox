@@ -18,6 +18,7 @@ import java.util.Map;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -95,12 +96,12 @@ public final class BuiltInGuardRegistration {
 			return type.resolveBinding();
 		}
 		if (node instanceof SingleVariableDeclaration declaration) {
-			return declaration.resolveBinding() == null
-					? declaration.getType().resolveBinding()
-					: declaration.resolveBinding().getType();
+			IVariableBinding binding = declaration.resolveBinding();
+			return binding == null ? declaration.getType().resolveBinding() : binding.getType();
 		}
 		if (node instanceof VariableDeclarationFragment fragment) {
-			return fragment.resolveBinding() == null ? null : fragment.resolveBinding().getType();
+			IVariableBinding binding = fragment.resolveBinding();
+			return binding == null ? null : binding.getType();
 		}
 		return null;
 	}
