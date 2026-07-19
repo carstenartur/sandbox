@@ -32,12 +32,7 @@ class CandidateReviewCliTest {
 	void approvesReadyCandidate() throws IOException {
 		Path candidateFile = saveReadyCandidate();
 
-		CandidateReviewCli.run(new String[] {
-				"--candidate", candidateFile.toString(), //$NON-NLS-1$
-				"--action", "approve", //$NON-NLS-1$ //$NON-NLS-2$
-				"--actor", "reviewer", //$NON-NLS-1$ //$NON-NLS-2$
-				"--reason", "Source commit reviewed" //$NON-NLS-1$ //$NON-NLS-2$
-		});
+		apply(candidateFile, "approve", "Source commit reviewed"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
 		assertEquals(CandidateStatus.APPROVED, loaded.getStatus());
@@ -45,19 +40,22 @@ class CandidateReviewCliTest {
 	}
 
 	@Test
+	void repeatedApprovalIsIdempotent() throws IOException {
+		Path candidateFile = saveReadyCandidate();
+		apply(candidateFile, "approve", "Source commit reviewed"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		apply(candidateFile, "approve", "Retry after workflow interruption"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
+		assertEquals(CandidateStatus.APPROVED, loaded.getStatus());
+		assertEquals(4, loaded.getTransitions().size());
+	}
+
+	@Test
 	void marksApprovedCandidatePromotedAfterMerge() throws IOException {
 		Path candidateFile = saveReadyCandidate();
-		CandidateReviewCli.run(new String[] {
-				"--candidate", candidateFile.toString(), //$NON-NLS-1$
-				"--action", "approve", //$NON-NLS-1$ //$NON-NLS-2$
-				"--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$
-		});
-		CandidateReviewCli.run(new String[] {
-				"--candidate", candidateFile.toString(), //$NON-NLS-1$
-				"--action", "promote", //$NON-NLS-1$ //$NON-NLS-2$
-				"--actor", "github-actions", //$NON-NLS-1$ //$NON-NLS-2$
-				"--reason", "Promotion PR #42 merged" //$NON-NLS-1$ //$NON-NLS-2$
-		});
+		apply(candidateFile, "approve", null); //$NON-NLS-1$
+		apply(candidateFile, "promote", "Promotion PR #42 merged"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
 		assertEquals(CandidateStatus.PROMOTED, loaded.getStatus());
@@ -65,15 +63,23 @@ class CandidateReviewCliTest {
 	}
 
 	@Test
+	void repeatedPromotionIsIdempotent() throws IOException {
+		Path candidateFile = saveReadyCandidate();
+		apply(candidateFile, "approve", null); //$NON-NLS-1$
+		apply(candidateFile, "promote", "Promotion PR #42 merged"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		apply(candidateFile, "promote", "Retry completion workflow"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
+		assertEquals(CandidateStatus.PROMOTED, loaded.getStatus());
+		assertEquals(5, loaded.getTransitions().size());
+	}
+
+	@Test
 	void rejectsReadyCandidateWithReason() throws IOException {
 		Path candidateFile = saveReadyCandidate();
 
-		CandidateReviewCli.run(new String[] {
-				"--candidate", candidateFile.toString(), //$NON-NLS-1$
-				"--action", "reject", //$NON-NLS-1$ //$NON-NLS-2$
-				"--actor", "reviewer", //$NON-NLS-1$ //$NON-NLS-2$
-				"--reason", "Unsafe overload change" //$NON-NLS-1$ //$NON-NLS-2$
-		});
+		apply(candidateFile, "reject", "Unsafe overload change"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
 		assertEquals(CandidateStatus.REJECTED, loaded.getStatus());
@@ -98,11 +104,24 @@ class CandidateReviewCliTest {
 		store.save(candidate);
 		Path candidateFile = tempDir.resolve(candidate.toFileName());
 
-		assertThrows(IllegalStateException.class, () -> CandidateReviewCli.run(new String[] {
-				"--candidate", candidateFile.toString(), //$NON-NLS-1$
-				"--action", "approve", //$NON-NLS-1$ //$NON-NLS-2$
-				"--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$
-		}));
+		assertThrows(IllegalStateException.class, () -> apply(candidateFile, "approve", null)); //$NON-NLS-1$
+	}
+
+	private void apply(Path candidateFile, String action, String reason) throws IOException {
+		if (reason == null) {
+			CandidateReviewCli.run(new String[] {
+					"--candidate", candidateFile.toString(), //$NON-NLS-1$
+					"--action", action, //$NON-NLS-1$
+					"--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$
+			});
+		} else {
+			CandidateReviewCli.run(new String[] {
+					"--candidate", candidateFile.toString(), //$NON-NLS-1$
+					"--action", action, //$NON-NLS-1$
+					"--actor", "reviewer", //$NON-NLS-1$ //$NON-NLS-2$
+					"--reason", reason //$NON-NLS-1$
+			});
+		}
 	}
 
 	private Path saveReadyCandidate() throws IOException {
