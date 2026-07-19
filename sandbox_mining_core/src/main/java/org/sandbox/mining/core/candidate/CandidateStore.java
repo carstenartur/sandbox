@@ -19,6 +19,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -45,9 +46,12 @@ public class CandidateStore {
 	}
 
 	/**
-	 * Saves a candidate atomically. Corrected content for the same stable
-	 * candidate ID increments the revision; status-only updates do not. Legacy
-	 * filenames for the same proposal are removed after a successful write.
+	 * Saves a candidate atomically. Corrected semantic content for the same stable
+	 * candidate ID starts a new revision at {@link CandidateStatus#DISCOVERED},
+	 * clears stale verification/rejection state, and therefore requires all gates
+	 * and human review to run again. Status-only updates do not increment the
+	 * revision. Promoted provenance is immutable. Legacy filenames for the same
+	 * proposal are removed after a successful write.
 	 */
 	public void save(MiningCandidate candidate) throws IOException {
 		if (candidate == null) {
@@ -63,11 +67,10 @@ public class CandidateStore {
 		Optional<MiningCandidate> existing = load(target);
 		if (existing.isPresent()) {
 			MiningCandidate previous = existing.get();
-			boolean contentChanged = !previous.getRuleFingerprint().equals(candidate.getRuleFingerprint())
-					|| !previous.getBehaviorFingerprint().equals(candidate.getBehaviorFingerprint());
-			if (contentChanged && candidate.getRevision() <= previous.getRevision()) {
-				candidate.setRevision(previous.getRevision() + 1);
-			} else if (!contentChanged && candidate.getRevision() < previous.getRevision()) {
+			boolean contentChanged = semanticContentChanged(previous, candidate);
+			if (contentChanged) {
+				startNewRevision(previous, candidate);
+			} else if (candidate.getRevision() < previous.getRevision()) {
 				candidate.setRevision(previous.getRevision());
 			}
 		}
@@ -120,12 +123,42 @@ public class CandidateStore {
 			return false;
 		}
 		Optional<MiningCandidate> stored = findById(candidate.getCandidateId());
-		return stored.filter(existing -> existing.getRuleFingerprint().equals(candidate.getRuleFingerprint())
-				&& existing.getBehaviorFingerprint().equals(candidate.getBehaviorFingerprint())).isPresent();
+		return stored.filter(existing -> !semanticContentChanged(existing, candidate)).isPresent();
 	}
 
 	public Path getStoreDir() {
 		return storeDir;
+	}
+
+	private static boolean semanticContentChanged(MiningCandidate previous,
+			MiningCandidate candidate) {
+		return !previous.getRuleFingerprint().equals(candidate.getRuleFingerprint())
+				|| !previous.getBehaviorFingerprint().equals(candidate.getBehaviorFingerprint())
+				|| !Objects.equals(previous.getSourceVersion(), candidate.getSourceVersion());
+	}
+
+	private static void startNewRevision(MiningCandidate previous,
+			MiningCandidate candidate) {
+		if (previous.getStatus() == CandidateStatus.PROMOTED) {
+			throw new IllegalStateException(
+					"Promoted candidate content is immutable; create a new candidate origin"); //$NON-NLS-1$
+		}
+
+		int newRevision = Math.max(previous.getRevision() + 1, candidate.getRevision());
+		List<CandidateTransition> history = new ArrayList<>(previous.getTransitions());
+		history.add(new CandidateTransition(
+				previous.getStatus(), CandidateStatus.DISCOVERED,
+				"CandidateStore", //$NON-NLS-1$
+				"Semantic content changed; revision " + newRevision //$NON-NLS-1$
+						+ " requires deterministic verification and review", //$NON-NLS-1$
+				Instant.now().toString()));
+
+		candidate.setCandidateId(previous.getCandidateId());
+		candidate.setRevision(newRevision);
+		candidate.setStatus(CandidateStatus.DISCOVERED);
+		candidate.setVerification(null);
+		candidate.setRejectionReason(null);
+		candidate.setTransitions(history);
 	}
 
 	private void deleteLegacyAliases(MiningCandidate candidate, Path canonicalPath)
