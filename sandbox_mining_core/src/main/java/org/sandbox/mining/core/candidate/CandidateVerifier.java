@@ -16,10 +16,12 @@ package org.sandbox.mining.core.candidate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
@@ -36,13 +38,13 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
  *
  * <p>The verifier parses the DSL and all examples, applies exactly one
  * replacement to the positive example by AST match offset/length, compares the
- * complete transformed source with the expected after example, and proves that
- * the negative example does not match.</p>
+ * complete transformed syntax tree with the expected after example, and proves
+ * that the negative example does not match.</p>
  */
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "2"; //$NON-NLS-1$
+	public static final String VERSION = "3"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -81,7 +83,16 @@ public final class CandidateVerifier {
 					"DSL contains no transformation rule", 0, 0); //$NON-NLS-1$
 		}
 
-		registerBuiltInGuards();
+		Function<String, GuardFunction> previousResolver = GuardFunctionResolverHolder.getResolver();
+		installBuiltInGuards(previousResolver);
+		try {
+			return verifyExamples(candidate, hintFile);
+		} finally {
+			GuardFunctionResolverHolder.setResolver(previousResolver);
+		}
+	}
+
+	private CandidateVerification verifyExamples(MiningCandidate candidate, HintFile hintFile) {
 		ParseResult beforeParse = parse(candidate.getBeforeExample(), candidate.getSourceVersion());
 		if (!beforeParse.valid()) {
 			return failure(CandidateVerification.Stage.BEFORE_PARSE,
@@ -124,9 +135,16 @@ public final class CandidateVerifier {
 			return failure(CandidateVerification.Stage.AFTER_REWRITE,
 					e.getMessage(), positiveResults.size(), replacements.size());
 		}
-		if (!normalizeSource(candidate.getAfterExample()).equals(normalizeSource(transformed))) {
+		ParseResult transformedParse = parse(transformed, candidate.getSourceVersion());
+		if (!transformedParse.valid()) {
 			return failure(CandidateVerification.Stage.AFTER_REWRITE,
-					"Full transformed source does not equal afterExample", //$NON-NLS-1$
+					"Transformed source is invalid: " + transformedParse.message(), //$NON-NLS-1$
+					positiveResults.size(), replacements.size());
+		}
+		if (!transformedParse.compilationUnit().subtreeMatch(
+				new ASTMatcher(true), afterParse.compilationUnit())) {
+			return failure(CandidateVerification.Stage.AFTER_REWRITE,
+					"Transformed syntax tree does not equal afterExample", //$NON-NLS-1$
 					positiveResults.size(), replacements.size());
 		}
 
@@ -209,10 +227,14 @@ public final class CandidateVerifier {
 		return options;
 	}
 
-	private static void registerBuiltInGuards() {
+	private static void installBuiltInGuards(Function<String, GuardFunction> previousResolver) {
 		Map<String, GuardFunction> guards = new HashMap<>();
 		BuiltInGuards.registerAll(guards);
-		GuardFunctionResolverHolder.setResolver(guards::get);
+		GuardFunctionResolverHolder.setResolver(name -> {
+			GuardFunction builtIn = guards.get(name);
+			return builtIn != null || previousResolver == null
+					? builtIn : previousResolver.apply(name);
+		});
 	}
 
 	private static String applyReplacement(String source, TransformationResult result) {
@@ -224,10 +246,6 @@ public final class CandidateVerifier {
 		}
 		return source.substring(0, offset) + result.replacement()
 				+ source.substring(offset + length);
-	}
-
-	private static String normalizeSource(String source) {
-		return source == null ? "" : source.replaceAll("\\s+", " ").trim(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private static boolean isBlank(String value) {
