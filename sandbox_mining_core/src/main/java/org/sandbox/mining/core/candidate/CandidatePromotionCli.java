@@ -19,6 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import org.sandbox.jdt.triggerpattern.internal.HintFileStore;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,6 +37,8 @@ public final class CandidatePromotionCli {
 			"sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal"; //$NON-NLS-1$
 	private static final String FIXTURE_DIRECTORY =
 			"sandbox_common_core/src/test/resources/org/sandbox/jdt/triggerpattern/promoted"; //$NON-NLS-1$
+	private static final Set<String> ACTIVE_BUNDLED_HINTS =
+			Set.of(HintFileStore.getBundledLibraryNames());
 
 	private CandidatePromotionCli() {
 	}
@@ -145,6 +150,10 @@ public final class CandidatePromotionCli {
 				|| target.indexOf('/') >= 0 || target.indexOf('\\') >= 0
 				|| ".".equals(target) || "..".equals(target)) { //$NON-NLS-1$ //$NON-NLS-2$
 			throw new IllegalArgumentException("targetHintFile must be a simple .sandbox-hint filename"); //$NON-NLS-1$
+		}
+		if (!ACTIVE_BUNDLED_HINTS.contains(target)) {
+			throw new IllegalArgumentException(
+					"targetHintFile is not an active cleanup/quick-assist bundle: " + target); //$NON-NLS-1$
 		}
 		return target;
 	}
