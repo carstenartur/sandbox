@@ -13,14 +13,31 @@ This module is intentionally separate from `sandbox_mining_cli`:
 
 A high number of scanner matches does not approve a discovered rule.
 
+## Discovery contract
+
+`PromptBuilder` uses a focused discovery-first contract. For each commit the model must return either exactly one local candidate or an explicit `noCleanup` decision.
+
+The normal prompt does not request architectural analysis, plugin-replacement decisions, speculative DSL extensions, or broad numeric scoring. It requires:
+
+- one raw DSL rule;
+- a target hint file and source level;
+- a complete before example;
+- the complete expected after example;
+- a compiling negative example;
+- confidence of at least `0.80`.
+
+Below that threshold, or when safety depends on unavailable type, overload, data-flow, synchronization, nullability, or multi-file context, the model must return `noCleanup=true`. Full legacy rule inventories and `known-rules.json` are not copied into prompts.
+
 ## Discovery flow
 
 ```text
 Git commits
-  -> LLM evaluation
+  -> focused candidate-or-noCleanup request
   -> deterministic DSL validation
   -> mining-candidates/*.json
+  -> legacy-schema migration if required
   -> CandidateVerifier
+  -> normalized duplicate check
   -> READY_FOR_REVIEW
   -> explicit human decision
   -> APPROVED or REJECTED
@@ -28,7 +45,7 @@ Git commits
   -> PROMOTED after merge
 ```
 
-`MiningCli` stages only GREEN evaluations whose DSL passes `DslValidator`. It does not write directly into the productive bundled hint directory.
+`MiningCli` stages only relevant GREEN evaluations whose DSL passes `DslValidator`. It does not write directly into the productive bundled hint directory.
 
 ## Candidate JSON
 
@@ -36,14 +53,14 @@ Git commits
 
 - stable `candidateId` based on source repository, commit, discovery category, target hint file, and candidate ordinal;
 - mutable `revision`;
-- rule and behavior fingerprints;
+- normalized rule and behavior fingerprints;
 - DSL rule and target hint file;
 - complete before, after, and negative examples;
 - source Java version;
 - structured verification diagnostics;
 - auditable lifecycle transitions.
 
-Correcting DSL or examples keeps the candidate ID and increments the revision when saved through `CandidateStore`. Multiple proposals from one commit can use different discovery origins or candidate ordinals.
+Correcting DSL or examples keeps the candidate ID and increments the revision when saved through `CandidateStore`. Multiple proposals from one commit receive separate ordinals. Schema-v1 files are migrated before verification, and obsolete filenames are removed only after the canonical schema-v2 file has been written successfully.
 
 Candidate JSON and review decisions are persisted on the dedicated `mining/candidates` data branch. That branch is not merged into `main` and never contains productive rules.
 
@@ -59,6 +76,8 @@ Candidate JSON and review decisions are persisted on the dedicated `mining/candi
 6. that replacement is applied using the AST match offset and length;
 7. the transformed and expected complete Java syntax trees are structurally equal, including literal values;
 8. the negative example produces no match.
+
+Only candidates that pass behavior verification participate in canonical duplicate selection. A malformed earlier proposal therefore cannot suppress a later valid proposal containing the same normalized DSL. Cross-origin duplicates become terminal `DUPLICATE` candidates and reference the canonical candidate ID.
 
 The verifier persists its version, final stage, message, match count, replacement count, and timestamp.
 
@@ -85,7 +104,7 @@ DISCOVERED
   -> PROMOTED
 ```
 
-`REJECTED` and `SUPERSEDED` are terminal alternatives. Invalid transitions fail and valid transitions are recorded with actor, reason, and timestamp.
+`REJECTED`, `DUPLICATE`, and `SUPERSEDED` are terminal alternatives. Invalid transitions fail and valid transitions are recorded with actor, reason, and timestamp.
 
 ## Review decisions
 
@@ -100,7 +119,7 @@ java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
   --reason "Reviewed against the source commit"
 ```
 
-Supported actions are `approve`, `reject`, `supersede`, and the post-merge `promote` transition.
+Supported actions are `approve`, `reject`, `supersede`, and the post-merge `promote` transition. Repeating an already-applied decision is a successful no-op so interrupted workflows can be retried safely.
 
 The **Review mining candidate** GitHub Actions workflow provides the repository workflow for this command. It loads the candidate from `mining/candidates`, records the decision there, and closes rejected review issues.
 
@@ -137,7 +156,7 @@ Only resumable scan state may be merged automatically. Candidate state stays on 
 
 ## Legacy known-rules data
 
-`docs/mining-report/known-rules.json` predates the candidate review boundary. It may be read as legacy duplicate context, but it is removed from the published approval view and its entries are not approved rules.
+`docs/mining-report/known-rules.json` predates the candidate review boundary. `KnownRulesStore` remains read-compatible only so historic reports can be archived. New evaluations are no longer registered there, its contents are not sent to the LLM, and it is removed from the published approval view.
 
 ## Build and tests
 
@@ -145,4 +164,4 @@ Only resumable scan state may be merged automatically. Candidate state stays on 
 mvn -pl sandbox_common_core,sandbox_mining_core -am test
 ```
 
-The suite covers candidate identity, revisioning, lifecycle transitions, structural positive transformation behavior, negative examples, malformed DSL and Java, ambiguous matches, resolver restoration, review commands, path-safe promotion generation, and permanent promoted-candidate fixtures.
+The suite covers candidate identity, revisioning, collision-safe legacy migration, lifecycle transitions, structural positive transformation behavior, negative examples, malformed DSL and Java, ambiguous matches, duplicate selection, resolver restoration, review commands, path-safe promotion generation, and permanent promoted-candidate fixtures.
