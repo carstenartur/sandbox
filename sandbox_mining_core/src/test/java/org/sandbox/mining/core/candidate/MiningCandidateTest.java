@@ -61,7 +61,7 @@ class MiningCandidateTest {
 		MiningCandidate first = createCandidate();
 		MiningCandidate second = createCandidate();
 		second.setDslRule("  $x + 0  \r\n  => $x\r\n ;;  "); //$NON-NLS-1$
-		second.setBeforeExample("class T {  int m(){ return 1 + 0; } }"); //$NON-NLS-1$
+		second.setBeforeExample("class T {\n  int m() {   return 1 + 0; }\n}"); //$NON-NLS-1$
 
 		assertEquals(first.getRuleFingerprint(), second.getRuleFingerprint());
 		assertEquals(first.getBehaviorFingerprint(), second.getBehaviorFingerprint());
