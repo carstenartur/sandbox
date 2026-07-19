@@ -89,12 +89,21 @@ public final class CandidatePromotionCli {
 
 		String targetName = validateTargetFileName(candidate.getTargetHintFile());
 		Path normalizedRoot = repoRoot.toAbsolutePath().normalize();
-		Path hintFile = normalizedRoot.resolve(HINT_DIRECTORY).resolve(targetName).normalize();
-		if (!hintFile.startsWith(normalizedRoot.resolve(HINT_DIRECTORY).normalize())) {
+		Path curatedHintDirectory = normalizedRoot.resolve(HINT_DIRECTORY).normalize();
+		Path hintFile = curatedHintDirectory.resolve(targetName).normalize();
+		if (!hintFile.startsWith(curatedHintDirectory)) {
 			throw new IllegalArgumentException("Target hint file escapes the curated hint directory"); //$NON-NLS-1$
 		}
 		if (!Files.isRegularFile(hintFile)) {
 			throw new IllegalArgumentException("Target hint file does not exist: " + hintFile); //$NON-NLS-1$
+		}
+
+		String semanticFingerprint = RuleFingerprintIndex.fingerprintDsl(candidate.getDslRule());
+		String existingRule = RuleFingerprintIndex.loadCurated(curatedHintDirectory)
+				.get(semanticFingerprint);
+		if (existingRule != null) {
+			throw new IllegalStateException(
+					"Candidate duplicates curated rule " + existingRule); //$NON-NLS-1$
 		}
 
 		appendRule(candidate, hintFile);
