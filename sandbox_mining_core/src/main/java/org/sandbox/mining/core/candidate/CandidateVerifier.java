@@ -40,16 +40,16 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 /**
  * Deterministically verifies a staged candidate without generating Java source.
  *
- * <p>The verifier parses the DSL and compiling Java examples with binding
- * resolution, verifies every referenced guard, applies exactly one replacement
- * to the positive example by AST match offset/length, compares the complete
- * transformed syntax tree with the expected after example, and proves that the
- * negative example does not match.</p>
+ * <p>The verifier parses one self-contained DSL rule and compiling Java examples
+ * with binding resolution, verifies every referenced guard, applies exactly one
+ * replacement to the positive example by AST match offset/length, compares the
+ * complete transformed syntax tree with the expected after example, and proves
+ * that the negative example does not match.</p>
  */
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "5"; //$NON-NLS-1$
+	public static final String VERSION = "6"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -82,6 +82,10 @@ public final class CandidateVerifier {
 		} catch (Exception e) {
 			return failure(CandidateVerification.Stage.DSL_PARSE,
 					"Could not parse DSL: " + safeMessage(e), 0, 0); //$NON-NLS-1$
+		}
+		String containerProblem = validateCandidateContainer(hintFile);
+		if (containerProblem != null) {
+			return failure(CandidateVerification.Stage.DSL_PARSE, containerProblem, 0, 0);
 		}
 		if (hintFile.getRules().size() != 1) {
 			return failure(CandidateVerification.Stage.DSL_PARSE,
@@ -181,6 +185,18 @@ public final class CandidateVerifier {
 		}
 
 		return CandidateVerification.success(VERSION, positiveResults.size(), replacements.size());
+	}
+
+	private static String validateCandidateContainer(HintFile hintFile) {
+		if (hintFile.getId() != null || hintFile.getDescription() != null
+				|| hintFile.getMinJavaVersion() > 0 || !hintFile.getTags().isEmpty()
+				|| !hintFile.getIncludes().isEmpty() || !hintFile.getEmbeddedJavaBlocks().isEmpty()
+				|| hintFile.isCaseInsensitive() || !hintFile.getSuppressWarnings().isEmpty()
+				|| !hintFile.getTreeKindNodeTypes().isEmpty()) {
+			return "Candidate DSL must contain only one rule and optional per-rule metadata; " //$NON-NLS-1$
+					+ "file metadata, includes, and embedded Java are not promotable"; //$NON-NLS-1$
+		}
+		return null;
 	}
 
 	private static String findUnresolvedGuard(HintFile hintFile) {
