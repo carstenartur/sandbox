@@ -116,7 +116,6 @@ public record CommitEvaluation(
 	}
 
 	/** Returns a usable source version even for legacy JSON with no field. */
-	@Override
 	public String sourceVersion() {
 		return sourceVersion == null || sourceVersion.isBlank() ? "21" : sourceVersion; //$NON-NLS-1$
 	}
