@@ -23,6 +23,8 @@ import com.google.gson.Gson;
 
 /**
  * Applies an explicit review or promotion decision to one verified candidate.
+ * Repeating an already-applied decision is a successful no-op so interrupted
+ * workflows can be retried safely.
  *
  * <p>Usage:</p>
  * <pre>
@@ -93,26 +95,28 @@ public final class CandidateReviewCli {
 		String normalizedAction = action.toLowerCase(Locale.ROOT);
 		switch (normalizedAction) {
 		case "approve": //$NON-NLS-1$
-			requireStatus(candidate, CandidateStatus.READY_FOR_REVIEW,
+			applyIdempotentTransition(candidate, CandidateStatus.READY_FOR_REVIEW,
+					CandidateStatus.APPROVED, actor,
+					normalizeReason(reason, "Approved after human review"), //$NON-NLS-1$
 					"Only READY_FOR_REVIEW candidates can be approved"); //$NON-NLS-1$
-			candidate.transitionTo(CandidateStatus.APPROVED, actor,
-					normalizeReason(reason, "Approved after human review")); //$NON-NLS-1$
 			break;
 		case "reject": //$NON-NLS-1$
-			requireStatus(candidate, CandidateStatus.READY_FOR_REVIEW,
+			applyIdempotentTransition(candidate, CandidateStatus.READY_FOR_REVIEW,
+					CandidateStatus.REJECTED, actor,
+					requireReason(reason, "A rejection reason is required"), //$NON-NLS-1$
 					"Only READY_FOR_REVIEW candidates can be rejected"); //$NON-NLS-1$
-			candidate.transitionTo(CandidateStatus.REJECTED, actor,
-					requireReason(reason, "A rejection reason is required")); //$NON-NLS-1$
 			break;
 		case "promote": //$NON-NLS-1$
-			requireStatus(candidate, CandidateStatus.APPROVED,
+			applyIdempotentTransition(candidate, CandidateStatus.APPROVED,
+					CandidateStatus.PROMOTED, actor,
+					normalizeReason(reason, "Promotion pull request merged"), //$NON-NLS-1$
 					"Only APPROVED candidates can be marked promoted"); //$NON-NLS-1$
-			candidate.transitionTo(CandidateStatus.PROMOTED, actor,
-					normalizeReason(reason, "Promotion pull request merged")); //$NON-NLS-1$
 			break;
 		case "supersede": //$NON-NLS-1$
-			candidate.transitionTo(CandidateStatus.SUPERSEDED, actor,
-					requireReason(reason, "A supersession reason is required")); //$NON-NLS-1$
+			if (candidate.getStatus() != CandidateStatus.SUPERSEDED) {
+				candidate.transitionTo(CandidateStatus.SUPERSEDED, actor,
+						requireReason(reason, "A supersession reason is required")); //$NON-NLS-1$
+			}
 			break;
 		default:
 			throw new IllegalArgumentException("Unsupported review action: " + action); //$NON-NLS-1$
@@ -129,11 +133,16 @@ public final class CandidateReviewCli {
 		return 0;
 	}
 
-	private static void requireStatus(MiningCandidate candidate, CandidateStatus expected,
-			String message) {
-		if (candidate.getStatus() != expected) {
-			throw new IllegalStateException(message);
+	private static void applyIdempotentTransition(MiningCandidate candidate,
+			CandidateStatus expectedSource, CandidateStatus target, String actor,
+			String reason, String invalidStateMessage) {
+		if (candidate.getStatus() == target) {
+			return;
 		}
+		if (candidate.getStatus() != expectedSource) {
+			throw new IllegalStateException(invalidStateMessage);
+		}
+		candidate.transitionTo(target, actor, reason);
 	}
 
 	private static String normalizeReason(String reason, String fallback) {
