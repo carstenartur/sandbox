@@ -6,7 +6,7 @@ on:
       - closed
 
 concurrency:
-  group: mining-candidate-promotion-${{ github.event.pull_request.number }}
+  group: mining-state
   cancel-in-progress: false
 
 jobs:
