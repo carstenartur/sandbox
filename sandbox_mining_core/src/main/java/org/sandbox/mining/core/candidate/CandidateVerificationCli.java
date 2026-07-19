@@ -88,39 +88,44 @@ public final class CandidateVerificationCli {
 				continue;
 			}
 
-			String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
-					candidate.getRuleFingerprint(), candidate.getCandidateId());
-			if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())
-					&& candidate.getStatus() != CandidateStatus.APPROVED
-					&& candidate.getStatus() != CandidateStatus.PROMOTED) {
-				String message = "Normalized DSL duplicates staged candidate " + canonicalId; //$NON-NLS-1$
-				candidate.setVerification(CandidateVerification.failure(
-						CandidateVerification.Stage.DUPLICATE, message,
-						CandidateVerifier.VERSION, 0, 0));
-				candidate.transitionTo(CandidateStatus.DUPLICATE,
-						"CandidateVerificationCli", message); //$NON-NLS-1$
+			if (candidate.getStatus() == CandidateStatus.PROMOTED
+					|| candidate.getStatus() == CandidateStatus.APPROVED) {
+				canonicalByRuleFingerprint.putIfAbsent(
+						candidate.getRuleFingerprint(), candidate.getCandidateId());
 				store.save(candidate);
-				duplicates++;
 				continue;
 			}
 
-			if (candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW
-					|| candidate.getStatus() == CandidateStatus.APPROVED
-					|| candidate.getStatus() == CandidateStatus.PROMOTED) {
+			if (candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW) {
+				String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
+						candidate.getRuleFingerprint(), candidate.getCandidateId());
+				if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())) {
+					markDuplicate(candidate, canonicalId);
+					duplicates++;
+				}
 				store.save(candidate);
 				continue;
 			}
 
 			CandidateVerification verification = verifier.verify(candidate);
 			candidate.setVerification(verification);
-			if (verification.successful()) {
-				advanceToReadyForReview(candidate);
-				verified++;
-				System.out.println("Verified candidate " + candidate.getCandidateId()); //$NON-NLS-1$
-			} else {
+			if (!verification.successful()) {
 				failed++;
 				System.out.println("Candidate " + candidate.getCandidateId() + " failed at " //$NON-NLS-1$ //$NON-NLS-2$
 						+ verification.stage() + ": " + verification.message()); //$NON-NLS-1$
+				store.save(candidate);
+				continue;
+			}
+
+			String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
+					candidate.getRuleFingerprint(), candidate.getCandidateId());
+			if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())) {
+				markDuplicate(candidate, canonicalId);
+				duplicates++;
+			} else {
+				advanceToReadyForReview(candidate);
+				verified++;
+				System.out.println("Verified candidate " + candidate.getCandidateId()); //$NON-NLS-1$
 			}
 			store.save(candidate);
 		}
@@ -136,6 +141,15 @@ public final class CandidateVerificationCli {
 				+ failed + " failed, " + duplicates + " duplicates, " //$NON-NLS-1$ //$NON-NLS-2$
 				+ ready + " ready for review"); //$NON-NLS-1$
 		return 0;
+	}
+
+	private static void markDuplicate(MiningCandidate candidate, String canonicalId) {
+		String message = "Normalized DSL duplicates staged candidate " + canonicalId; //$NON-NLS-1$
+		candidate.setVerification(CandidateVerification.failure(
+				CandidateVerification.Stage.DUPLICATE, message,
+				CandidateVerifier.VERSION, 0, 0));
+		candidate.transitionTo(CandidateStatus.DUPLICATE,
+				"CandidateVerificationCli", message); //$NON-NLS-1$
 	}
 
 	/**
