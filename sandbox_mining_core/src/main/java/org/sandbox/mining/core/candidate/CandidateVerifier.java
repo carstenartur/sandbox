@@ -13,10 +13,13 @@
  *******************************************************************************/
 package org.sandbox.mining.core.candidate;
 
+import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
@@ -37,16 +40,16 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 /**
  * Deterministically verifies a staged candidate without generating Java source.
  *
- * <p>The verifier parses the DSL and all examples, verifies every referenced
- * guard, applies exactly one replacement to the positive example by AST match
- * offset/length, compares the complete transformed syntax tree with the
- * expected after example, and proves that the negative example does not
- * match.</p>
+ * <p>The verifier parses the DSL and compiling Java examples with binding
+ * resolution, verifies every referenced guard, applies exactly one replacement
+ * to the positive example by AST match offset/length, compares the complete
+ * transformed syntax tree with the expected after example, and proves that the
+ * negative example does not match.</p>
  */
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "4"; //$NON-NLS-1$
+	public static final String VERSION = "5"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -264,11 +267,16 @@ public final class CandidateVerifier {
 			parser.setSource(source.toCharArray());
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
 			parser.setCompilerOptions(compilerOptions(sourceVersion));
+			parser.setResolveBindings(true);
+			parser.setBindingsRecovery(false);
+			parser.setStatementsRecovery(false);
+			parser.setUnitName("Candidate.java"); //$NON-NLS-1$
+			parser.setEnvironment(runtimeClasspath(), null, null, true);
 			CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);
 			for (IProblem problem : compilationUnit.getProblems()) {
 				if (problem.isError()) {
 					return new ParseResult(null, false,
-							"Java parse error at line " + problem.getSourceLineNumber() //$NON-NLS-1$
+							"Java compile error at line " + problem.getSourceLineNumber() //$NON-NLS-1$
 									+ ": " + problem.getMessage()); //$NON-NLS-1$
 				}
 			}
@@ -276,6 +284,16 @@ public final class CandidateVerifier {
 		} catch (RuntimeException e) {
 			return new ParseResult(null, false, "Java parse failed: " + safeMessage(e)); //$NON-NLS-1$
 		}
+	}
+
+	private static String[] runtimeClasspath() {
+		String classpath = System.getProperty("java.class.path", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		if (classpath.isBlank()) {
+			return new String[0];
+		}
+		return Arrays.stream(classpath.split(Pattern.quote(File.pathSeparator)))
+				.filter(entry -> !entry.isBlank())
+				.toArray(String[]::new);
 	}
 
 	private static Map<String, String> compilerOptions(String sourceVersion) {
