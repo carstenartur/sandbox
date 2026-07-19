@@ -15,32 +15,21 @@ package org.sandbox.mining.core.candidate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 /**
- * Persistent store for {@link MiningCandidate} objects in the
- * {@code mining-candidates/} directory.
- *
- * <p>Each candidate is stored as an individual JSON file named after a stable
- * candidate ID (SHA-256 derived from repo + commit + category + hint target + DSL).
- * This allows
- * individual candidates to be reviewed, promoted, or rejected without
- * touching productive bundled hint files.</p>
- *
- * <p>Usage example:</p>
- * <pre>
- * CandidateStore store = new CandidateStore(Path.of("mining-candidates"));
- * store.save(candidate);
- * List&lt;MiningCandidate&gt; all = store.loadAll();
- * </pre>
+ * Persistent candidate store. Candidate JSON is the authoritative record for an
+ * unreviewed proposal; reports and workflow issues are derived views.
  */
 public class CandidateStore {
 
@@ -48,100 +37,107 @@ public class CandidateStore {
 
 	private final Path storeDir;
 
-	/**
-	 * Creates a new candidate store for the given directory.
-	 * The directory will be created if it does not exist.
-	 *
-	 * @param storeDir the directory to store candidate JSON files in
-	 */
 	public CandidateStore(Path storeDir) {
 		this.storeDir = storeDir;
 	}
 
 	/**
-	 * Saves a candidate to its JSON file. If a file for the same commit
-	 * hash already exists, it is overwritten atomically.
-	 *
-	 * @param candidate the candidate to save
-	 * @throws IOException if the file cannot be written
+	 * Saves a candidate atomically. Corrected content for the same stable
+	 * candidate ID increments the revision; status-only updates do not.
 	 */
 	public void save(MiningCandidate candidate) throws IOException {
+		if (candidate == null) {
+			throw new IllegalArgumentException("candidate must not be null"); //$NON-NLS-1$
+		}
 		Files.createDirectories(storeDir);
-		String fileName = candidate.toFileName();
-		Path target = storeDir.resolve(fileName);
-		Path tmpFile = storeDir.resolve(fileName + ".tmp"); //$NON-NLS-1$
-		String json = GSON.toJson(candidate);
-		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);
-		Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+		Path target = storeDir.resolve(candidate.toFileName());
+		Optional<MiningCandidate> existing = load(target);
+		if (existing.isPresent()) {
+			MiningCandidate previous = existing.get();
+			boolean contentChanged = !previous.getRuleFingerprint().equals(candidate.getRuleFingerprint())
+					|| !previous.getBehaviorFingerprint().equals(candidate.getBehaviorFingerprint());
+			if (contentChanged && candidate.getRevision() <= previous.getRevision()) {
+				candidate.setRevision(previous.getRevision() + 1);
+			} else if (!contentChanged && candidate.getRevision() < previous.getRevision()) {
+				candidate.setRevision(previous.getRevision());
+			}
+		}
+
+		Path tmpFile = storeDir.resolve(candidate.toFileName() + ".tmp"); //$NON-NLS-1$
+		Files.writeString(tmpFile, GSON.toJson(candidate) + System.lineSeparator(),
+				StandardCharsets.UTF_8);
+		try {
+			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING,
+					StandardCopyOption.ATOMIC_MOVE);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
-	/**
-	 * Loads all candidate JSON files from the store directory.
-	 * Files that cannot be parsed are silently skipped with a warning.
-	 *
-	 * @return list of all loaded candidates
-	 * @throws IOException if the directory cannot be listed
-	 */
+	/** Loads all candidate files in deterministic filename order. */
 	public List<MiningCandidate> loadAll() throws IOException {
 		if (!Files.exists(storeDir)) {
 			return List.of();
 		}
 		List<MiningCandidate> candidates = new ArrayList<>();
 		try (Stream<Path> paths = Files.list(storeDir)) {
-			paths.filter(p -> p.getFileName().toString().endsWith("-candidate.json")) //$NON-NLS-1$
-				.sorted()
-				.forEach(p -> {
-					try {
-						String json = Files.readString(p, StandardCharsets.UTF_8);
-						MiningCandidate candidate = GSON.fromJson(json, MiningCandidate.class);
-						if (candidate != null) {
-							candidates.add(candidate);
-						}
-					} catch (Exception e) {
-						System.err.println("Warning: could not load candidate " + p + ": " + e.getMessage()); //$NON-NLS-1$
-					}
-				});
+			paths.filter(CandidateStore::isCandidateFile)
+					.sorted()
+					.forEach(path -> load(path).ifPresent(candidates::add));
 		}
 		return candidates;
 	}
 
-	/**
-	 * Loads candidates filtered by status.
-	 *
-	 * @param status the status to filter by
-	 * @return list of candidates with the given status
-	 * @throws IOException if the directory cannot be listed
-	 */
+	/** Loads candidates filtered by lifecycle status. */
 	public List<MiningCandidate> loadByStatus(CandidateStatus status) throws IOException {
-		List<MiningCandidate> all = loadAll();
-		List<MiningCandidate> filtered = new ArrayList<>();
-		for (MiningCandidate c : all) {
-			if (status.equals(c.getStatus())) {
-				filtered.add(c);
-			}
+		if (status == null) {
+			return List.of();
 		}
-		return filtered;
+		return loadAll().stream().filter(candidate -> status == candidate.getStatus()).toList();
+	}
+
+	/** Loads a candidate by stable candidate ID. */
+	public Optional<MiningCandidate> findById(String candidateId) {
+		if (candidateId == null || candidateId.isBlank()) {
+			return Optional.empty();
+		}
+		return load(storeDir.resolve(candidateId + "-candidate.json")); //$NON-NLS-1$
 	}
 
 	/**
-	 * Returns whether this exact candidate already exists in the store.
-	 *
-	 * @param candidate the candidate to check
-	 * @return {@code true} if a candidate file exists for this candidate ID
+	 * Returns whether the same candidate revision content is already stored.
+	 * A corrected rule or example set for the same origin is not considered an
+	 * exact duplicate and will be saved as a new revision.
 	 */
 	public boolean containsCandidate(MiningCandidate candidate) {
 		if (candidate == null) {
 			return false;
 		}
-		return Files.exists(storeDir.resolve(candidate.toFileName()));
+		Optional<MiningCandidate> stored = findById(candidate.getCandidateId());
+		return stored.filter(existing -> existing.getRuleFingerprint().equals(candidate.getRuleFingerprint())
+				&& existing.getBehaviorFingerprint().equals(candidate.getBehaviorFingerprint())).isPresent();
 	}
 
-	/**
-	 * Returns the store directory path.
-	 *
-	 * @return the store directory
-	 */
 	public Path getStoreDir() {
 		return storeDir;
+	}
+
+	private Optional<MiningCandidate> load(Path path) {
+		if (!Files.isRegularFile(path)) {
+			return Optional.empty();
+		}
+		try {
+			String json = Files.readString(path, StandardCharsets.UTF_8);
+			MiningCandidate candidate = GSON.fromJson(json, MiningCandidate.class);
+			return Optional.ofNullable(candidate);
+		} catch (Exception e) {
+			System.err.println("Warning: could not load candidate " + path + ": " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
+			return Optional.empty();
+		}
+	}
+
+	private static boolean isCandidateFile(Path path) {
+		return Files.isRegularFile(path)
+				&& path.getFileName().toString().endsWith("-candidate.json"); //$NON-NLS-1$
 	}
 }
