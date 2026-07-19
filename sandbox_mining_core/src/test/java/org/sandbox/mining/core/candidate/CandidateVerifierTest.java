@@ -85,7 +85,7 @@ class CandidateVerifierTest {
 	@Test
 	void rejectsInvalidDslBeforeBehaviorEvaluation() {
 		MiningCandidate candidate = validCandidate();
-		candidate.setDslRule("$x + 0\n=>\n;;"); //$NON-NLS-1$
+		candidate.setDslRule("<!id:>\n=>\n"); //$NON-NLS-1$
 
 		CandidateVerification result = verifier.verify(candidate);
 
@@ -102,6 +102,17 @@ class CandidateVerifierTest {
 
 		assertFalse(result.successful());
 		assertEquals(CandidateVerification.Stage.BEFORE_PARSE, result.stage());
+	}
+
+	@Test
+	void rejectsJavaSyntaxErrorInExpectedExample() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setAfterExample("class Test { void m( { }"); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.AFTER_PARSE, result.stage());
 	}
 
 	private static MiningCandidate validCandidate() {
