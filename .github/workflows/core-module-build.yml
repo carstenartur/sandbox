@@ -51,9 +51,10 @@ jobs:
 
       - name: Build and Test Mining Core
         run: |
+          set -o pipefail
           mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
-          mvn clean verify -pl sandbox_mining_core
+          mvn clean verify -pl sandbox_mining_core 2>&1 | tee mining-core-build.log
         
       - name: Upload Test Results
         uses: actions/upload-artifact@v7
@@ -65,3 +66,4 @@ jobs:
             sandbox_common_core/target/surefire-reports/
             sandbox_mining_cli/target/surefire-reports/
             sandbox_mining_core/target/surefire-reports/
+            mining-core-build.log
