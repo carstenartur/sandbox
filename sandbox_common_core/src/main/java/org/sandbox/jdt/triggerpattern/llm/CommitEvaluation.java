@@ -27,7 +27,7 @@ import java.time.Instant;
  * @param irrelevantReason      reason if not relevant
  * @param isDuplicate           whether a similar rule already exists
  * @param duplicateOf           existing rule this duplicates
- * @param reusability           legacy score; discovery-first prompts map confidence to this 0-10 value
+ * @param reusability           legacy reporter score retained for compatibility
  * @param codeImprovement       legacy code improvement score
  * @param implementationEffort  legacy implementation effort score
  * @param trafficLight          overall assessment
