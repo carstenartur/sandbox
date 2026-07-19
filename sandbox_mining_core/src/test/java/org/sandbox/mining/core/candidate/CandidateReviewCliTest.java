@@ -43,15 +43,22 @@ class CandidateReviewCliTest {
 	}
 
 	@Test
-	void repeatedApprovalIsIdempotent() throws IOException {
+	void repeatedApprovalIsIdempotentAndRefreshesVerification() throws IOException {
 		Path candidateFile = saveReadyCandidate();
 		apply(candidateFile, "approve", "Source commit reviewed"); //$NON-NLS-1$ //$NON-NLS-2$
 
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate stale = store.loadAll().get(0);
+		stale.setVerification(CandidateVerification.success("old-verifier", 1, 1)); //$NON-NLS-1$
+		store.save(stale);
+
 		apply(candidateFile, "approve", "Retry after workflow interruption"); //$NON-NLS-1$ //$NON-NLS-2$
 
-		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
+		MiningCandidate loaded = store.loadAll().get(0);
 		assertEquals(CandidateStatus.APPROVED, loaded.getStatus());
 		assertEquals(4, loaded.getTransitions().size());
+		assertEquals(CandidateVerifier.VERSION,
+				loaded.getVerification().verifierVersion());
 	}
 
 	@Test
