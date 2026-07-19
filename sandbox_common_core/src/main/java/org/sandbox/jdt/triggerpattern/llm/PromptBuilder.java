@@ -19,284 +19,178 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Builds prompts combining DSL context,
- * existing categories, and commit diff information.
+ * Builds discovery-first prompts for one focused TriggerPattern candidate or an
+ * explicit no-cleanup decision. Broad architectural scoring and plugin analysis
+ * are deliberately excluded from the normal mining request.
  */
 public class PromptBuilder {
 
-	/**
-	 * Holds data for a single commit to be included in a batch prompt.
-	 *
-	 * @param commitHash    the commit hash
-	 * @param commitMessage the commit message
-	 * @param diff          the commit diff
-	 */
+	/** Commit data included in a discovery request. */
 	public record CommitData(String commitHash, String commitMessage, String diff) {
 	}
 
 	private static final String DSL_EXPLANATION_RESOURCE = "/dsl-explanation.md"; //$NON-NLS-1$
-	private static final String EXISTING_PLUGINS_RESOURCE = "/existing-java-plugins.md"; //$NON-NLS-1$
-	private static final String ECLIPSE_API_CONTEXT_RESOURCE = "/eclipse-api-context.md"; //$NON-NLS-1$
-	private static final String MINING_EXAMPLES_RESOURCE = "/mining-examples.md"; //$NON-NLS-1$
 
-	private String dslExplanation;
-	private String existingPluginsContext;
-	private String eclipseApiContext;
-	private String miningExamples;
+	private final String dslExplanation;
 	private String typeContext;
 	private String errorFeedback;
 
 	public PromptBuilder() {
 		this.dslExplanation = loadResource(DSL_EXPLANATION_RESOURCE);
-		this.existingPluginsContext = loadResource(EXISTING_PLUGINS_RESOURCE);
-		this.eclipseApiContext = loadResource(ECLIPSE_API_CONTEXT_RESOURCE);
-		this.miningExamples = loadResource(MINING_EXAMPLES_RESOURCE);
 	}
 
-	/**
-	 * Sets optional type context to include in prompts.
-	 *
-	 * @param typeContext the type context section
-	 */
+	/** Sets optional deterministic type context extracted from the current diff. */
 	public void setTypeContext(String typeContext) {
 		this.typeContext = typeContext;
 	}
 
-	/**
-	 * Sets optional error feedback to include in prompts.
-	 *
-	 * @param errorFeedback the error feedback section
-	 */
+	/** Sets concise feedback about recurring response errors. */
 	public void setErrorFeedback(String errorFeedback) {
 		this.errorFeedback = errorFeedback;
 	}
 
-	/**
-	 * Builds a complete prompt for LLM evaluation.
-	 *
-	 * @param dslContext       existing DSL rules context
-	 * @param categoriesJson   existing categories as JSON
-	 * @param diff             the commit diff
-	 * @param commitMessage    the commit message
-	 * @return the complete prompt string
-	 */
+	/** Builds a prompt for one commit. */
 	public String buildPrompt(String dslContext, String categoriesJson,
 			String diff, String commitMessage) {
 		return buildPrompt(dslContext, categoriesJson, diff, commitMessage, null);
 	}
 
 	/**
-	 * Builds a complete prompt for LLM evaluation with optional previously discovered rules.
-	 *
-	 * @param dslContext        existing DSL rules context
-	 * @param categoriesJson    existing categories as JSON
-	 * @param diff              the commit diff
-	 * @param commitMessage     the commit message
-	 * @param previousResults   JSON array of previously discovered rules (from evaluations.json), or null
-	 * @return the complete prompt string
+	 * Builds a prompt for one commit. Legacy context parameters are retained for
+	 * binary/source compatibility but duplicate rejection is performed
+	 * deterministically after generation rather than by sending all known rules to
+	 * the model.
 	 */
 	public String buildPrompt(String dslContext, String categoriesJson,
 			String diff, String commitMessage, String previousResults) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("You are an expert in Eclipse JDT code transformations and the TriggerPattern DSL.\n\n"); //$NON-NLS-1$
-		sb.append("## DSL Explanation\n"); //$NON-NLS-1$
-		sb.append(dslExplanation).append("\n\n"); //$NON-NLS-1$
-		sb.append("## Existing DSL Rules\n"); //$NON-NLS-1$
-		sb.append(dslContext != null ? dslContext : "(none)").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
-		sb.append("## Existing Categories\n"); //$NON-NLS-1$
-		sb.append(categoriesJson != null ? categoriesJson : "[]").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
-		appendExistingPluginsSection(sb);
-		appendPreviousResultsSection(sb, previousResults);
-		appendOptionalSections(sb);
-		sb.append("## Commit to Analyze\n\n"); //$NON-NLS-1$
-		sb.append("### Commit Message\n"); //$NON-NLS-1$
-		sb.append(commitMessage).append("\n\n"); //$NON-NLS-1$
-		sb.append("### Diff\n```\n"); //$NON-NLS-1$
-		sb.append(diff).append("\n```\n\n"); //$NON-NLS-1$
-		appendTaskSection(sb);
-		return sb.toString();
+		StringBuilder prompt = new StringBuilder();
+		appendHeader(prompt);
+		appendOptionalContext(prompt);
+		prompt.append("## Commit to analyze\n\n"); //$NON-NLS-1$
+		prompt.append("### Message\n").append(nullToEmpty(commitMessage)).append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		prompt.append("### Diff\n```diff\n").append(nullToEmpty(diff)).append("\n```\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendTask(prompt, false, 1);
+		return prompt.toString();
 	}
 
-	/**
-	 * Builds a batch prompt for evaluating multiple commits in a single API call.
-	 *
-	 * @param dslContext     existing DSL rules context
-	 * @param categoriesJson existing categories as JSON
-	 * @param commits        list of commits to evaluate
-	 * @return the complete batch prompt string
-	 */
+	/** Builds a batch discovery prompt. */
 	public String buildBatchPrompt(String dslContext, String categoriesJson,
 			List<CommitData> commits) {
 		return buildBatchPrompt(dslContext, categoriesJson, commits, null);
 	}
 
 	/**
-	 * Builds a batch prompt with optional previously discovered rules.
-	 *
-	 * @param dslContext       existing DSL rules context
-	 * @param categoriesJson   existing categories as JSON
-	 * @param commits          list of commits to evaluate
-	 * @param previousResults  JSON array of previously discovered rules, or null
-	 * @return the complete batch prompt string
+	 * Builds a batch discovery prompt. Each commit must receive exactly one
+	 * candidate-or-no-cleanup object in the original order.
 	 */
 	public String buildBatchPrompt(String dslContext, String categoriesJson,
 			List<CommitData> commits, String previousResults) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("You are an expert in Eclipse JDT code transformations and the TriggerPattern DSL.\n\n"); //$NON-NLS-1$
-		sb.append("## DSL Explanation\n"); //$NON-NLS-1$
-		sb.append(dslExplanation).append("\n\n"); //$NON-NLS-1$
-		sb.append("## Existing DSL Rules\n"); //$NON-NLS-1$
-		sb.append(dslContext != null ? dslContext : "(none)").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
-		sb.append("## Existing Categories\n"); //$NON-NLS-1$
-		sb.append(categoriesJson != null ? categoriesJson : "[]").append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
-		appendExistingPluginsSection(sb);
-		appendPreviousResultsSection(sb, previousResults);
-		appendOptionalSections(sb);
-		sb.append("## Commits to Analyze\n\n"); //$NON-NLS-1$
+		StringBuilder prompt = new StringBuilder();
+		appendHeader(prompt);
+		appendOptionalContext(prompt);
+		prompt.append("## Commits to analyze\n\n"); //$NON-NLS-1$
 		for (int i = 0; i < commits.size(); i++) {
-			CommitData cd = commits.get(i);
-			sb.append("### Commit ").append(i).append(" (").append(cd.commitHash()).append(")\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			sb.append("#### Message\n"); //$NON-NLS-1$
-			sb.append(cd.commitMessage()).append("\n\n"); //$NON-NLS-1$
-			sb.append("#### Diff\n```\n"); //$NON-NLS-1$
-			sb.append(cd.diff()).append("\n```\n\n"); //$NON-NLS-1$
+			CommitData commit = commits.get(i);
+			prompt.append("### Commit ").append(i).append(" (") //$NON-NLS-1$ //$NON-NLS-2$
+					.append(commit.commitHash()).append(")\n"); //$NON-NLS-1$
+			prompt.append("#### Message\n").append(nullToEmpty(commit.commitMessage())).append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			prompt.append("#### Diff\n```diff\n").append(nullToEmpty(commit.diff())).append("\n```\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		sb.append("## Task\n"); //$NON-NLS-1$
-		sb.append("Analyze each commit above and determine whether its code change\n"); //$NON-NLS-1$
-		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n\n"); //$NON-NLS-1$
-		sb.append("Return a JSON array with exactly ").append(commits.size()); //$NON-NLS-1$
-		sb.append(" evaluation objects, one per commit, in the same order as presented.\n"); //$NON-NLS-1$
-		sb.append("Each object has the same schema as before:\n\n"); //$NON-NLS-1$
-		appendJsonSchema(sb, true);
-		appendTrafficLightMeanings(sb);
-		appendDslRuleChecklist(sb);
-		return sb.toString();
+		appendTask(prompt, true, commits.size());
+		return prompt.toString();
 	}
 
-	private void appendExistingPluginsSection(StringBuilder sb) {
-		sb.append("## Existing Java-Based Cleanup Plugins\n\n"); //$NON-NLS-1$
-		sb.append(existingPluginsContext).append("\n\n"); //$NON-NLS-1$
+	private void appendHeader(StringBuilder prompt) {
+		prompt.append("You discover small, local, semantics-preserving Java cleanups from commit diffs.\n"); //$NON-NLS-1$
+		prompt.append("For each commit, propose exactly one reusable TriggerPattern DSL candidate or explicitly return noCleanup.\n"); //$NON-NLS-1$
+		prompt.append("Do not perform architectural analysis, plugin replacement analysis, or speculative DSL redesign.\n\n"); //$NON-NLS-1$
+		prompt.append("## TriggerPattern DSL\n\n").append(dslExplanation).append("\n\n"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private static void appendPreviousResultsSection(StringBuilder sb, String previousResults) {
-		if (previousResults != null && !previousResults.isBlank()) {
-			sb.append("## Previously Discovered Rules\n\n"); //$NON-NLS-1$
-			sb.append("The following rules have already been discovered in prior mining runs. "); //$NON-NLS-1$
-			sb.append("Do NOT re-propose identical rules. If you see a similar pattern, "); //$NON-NLS-1$
-			sb.append("acknowledge it with `\"previouslyProposed\": \"<rule summary>\"` and explain "); //$NON-NLS-1$
-			sb.append("how your proposal differs or improves on it.\n\n"); //$NON-NLS-1$
-			sb.append(previousResults).append("\n\n"); //$NON-NLS-1$
-		}
-	}
-
-	private void appendOptionalSections(StringBuilder sb) {
-		if (eclipseApiContext != null && !eclipseApiContext.startsWith("(Resource not available")) { //$NON-NLS-1$
-			sb.append("## Eclipse API Context\n\n"); //$NON-NLS-1$
-			sb.append(eclipseApiContext).append("\n\n"); //$NON-NLS-1$
-		}
-		if (miningExamples != null && !miningExamples.startsWith("(Resource not available")) { //$NON-NLS-1$
-			sb.append("## Mining Examples\n\n"); //$NON-NLS-1$
-			sb.append(miningExamples).append("\n\n"); //$NON-NLS-1$
-		}
+	private void appendOptionalContext(StringBuilder prompt) {
 		if (typeContext != null && !typeContext.isBlank()) {
-			sb.append(typeContext);
+			prompt.append("## Deterministic type context\n\n") //$NON-NLS-1$
+					.append(typeContext.strip()).append("\n\n"); //$NON-NLS-1$
 		}
 		if (errorFeedback != null && !errorFeedback.isBlank()) {
-			sb.append(errorFeedback);
+			prompt.append("## Recurring response errors to avoid\n\n") //$NON-NLS-1$
+					.append(errorFeedback.strip()).append("\n\n"); //$NON-NLS-1$
 		}
 	}
 
-	private void appendTaskSection(StringBuilder sb) {
-		sb.append("## Task\n"); //$NON-NLS-1$
-		sb.append("Analyze this commit and determine whether the code change\n"); //$NON-NLS-1$
-		sb.append("can be generalized into a reusable TriggerPattern DSL rule.\n\n"); //$NON-NLS-1$
-		appendDslRuleChecklist(sb);
-		sb.append("Respond with a JSON object:\n\n"); //$NON-NLS-1$
-		appendJsonSchema(sb, false);
-		appendTrafficLightMeanings(sb);
-	}
-
-	/**
-	 * Compact MUST/MUST-NOT checklist re-emphasised at the end of every prompt
-	 * so the model does not regress on the recurring error patterns detected
-	 * by {@code scan_hints.py} and {@code HintFileResourcesValidationTest}.
-	 */
-	private static void appendDslRuleChecklist(StringBuilder sb) {
-		sb.append("### dslRule Validation Rules (MUST hold — else the build fails)\n"); //$NON-NLS-1$
-		sb.append("1. Plain DSL text only. NEVER use <trigger>, <import>, <pattern> or any XML tags.\n"); //$NON-NLS-1$
-		sb.append("2. NEVER use isType() — use instanceof($var, \"TypeName\") instead.\n"); //$NON-NLS-1$
-		sb.append("3. Every rule MUST end with `;;` on its own line.\n"); //$NON-NLS-1$
-		sb.append("4. Every quick-fix rule MUST contain exactly one `=>` between source and replacement.\n"); //$NON-NLS-1$
-		sb.append("5. Every `$placeholder` used in the replacement MUST also appear in the source pattern.\n"); //$NON-NLS-1$
-		sb.append("   If the replacement needs information not in the source, emit a HINT-ONLY rule:\n"); //$NON-NLS-1$
-		sb.append("     \"Description\":\n"); //$NON-NLS-1$
-		sb.append("     source_pattern :: optional_guard\n"); //$NON-NLS-1$
-		sb.append("     ;;\n"); //$NON-NLS-1$
-		sb.append("   (no `=>` line, no unbound placeholders).\n"); //$NON-NLS-1$
-		sb.append("6. Source and replacement MUST NOT be identical (no NOOP rules).\n"); //$NON-NLS-1$
-		sb.append("7. NEVER mix FQNs with placeholders in the same dotted chain.\n"); //$NON-NLS-1$
-		sb.append("   Bad: java.lang.String.$str.foo()  Good: $str.foo() :: instanceof($str, \"java.lang.String\")\n"); //$NON-NLS-1$
-		sb.append("8. NEVER use per-rule /*!key: value*/ directives (minJavaVersion, tags, id, severity, description).\n"); //$NON-NLS-1$
-		sb.append("   They are silently stripped. Use `@id:` / `@severity:` annotations or file-level `<!key: value>`.\n"); //$NON-NLS-1$
-		sb.append("9. At most ONE `<!id: ...>` per file. Per-rule IDs go in `@id:` annotations.\n"); //$NON-NLS-1$
-		sb.append("10. Self-check before responding: re-read each rule and verify points 1–9.\n"); //$NON-NLS-1$
-		sb.append("    Drop any rule that cannot satisfy them rather than emitting a broken rule.\n\n"); //$NON-NLS-1$
-	}
-
-	private static void appendJsonSchema(StringBuilder sb, boolean asArray) {
-		if (asArray) {
-			sb.append("[\n  {\n"); //$NON-NLS-1$
+	private static void appendTask(StringBuilder prompt, boolean array, int count) {
+		prompt.append("## Task\n\n"); //$NON-NLS-1$
+		prompt.append("Identify one local transformation that is safe for code matching the supplied examples.\n"); //$NON-NLS-1$
+		prompt.append("Return noCleanup=true when the change is uncertain, context-dependent, already merely stylistic, or not expressible safely.\n\n"); //$NON-NLS-1$
+		appendSafetyPolicy(prompt);
+		appendDslRuleChecklist(prompt);
+		if (array) {
+			prompt.append("Return a JSON array with exactly ").append(count) //$NON-NLS-1$
+					.append(" objects, one per commit, in the same order.\n\n"); //$NON-NLS-1$
 		} else {
-			sb.append("{\n"); //$NON-NLS-1$
+			prompt.append("Return exactly one JSON object.\n\n"); //$NON-NLS-1$
 		}
-		String indent = asArray ? "    " : "  "; //$NON-NLS-1$ //$NON-NLS-2$
-		sb.append(indent).append("\"relevant\": true/false,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"irrelevantReason\": \"reason if not relevant\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"isDuplicate\": true/false,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"duplicateOf\": \"name of existing rule if duplicate\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"reusability\": 1-10,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"codeImprovement\": 1-10,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"implementationEffort\": 1-10,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"trafficLight\": \"GREEN|YELLOW|RED|NOT_APPLICABLE\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"category\": \"category name\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"isNewCategory\": true/false,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"categoryReason\": \"why this category\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"canImplementInCurrentDsl\": true/false,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"dslRule\": \"raw .sandbox-hint rule (NO <trigger> tags, NO <import> tags, NO XML)\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"targetHintFile\": \"suggested .sandbox-hint filename\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"languageChangeNeeded\": \"what DSL change would be needed\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"dslRuleAfterChange\": \"DSL rule after language extension\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"existsAsJavaPlugin\": true/false,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"replacesPlugin\": \"name of Java plugin this would replace, or null\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"previouslyProposed\": \"summary of similar prior rule, or null\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"sourceVersion\": 11,\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"beforeExample\": \"minimal self-contained Java class showing code BEFORE the fix (must compile)\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"afterExample\": \"same class showing code AFTER the fix (must compile)\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"negativeExample\": \"minimal Java class that looks similar but should NOT be changed by the rule\",\n"); //$NON-NLS-1$
-		sb.append(indent).append("\"summary\": \"brief summary of the analysis\"\n"); //$NON-NLS-1$
-		if (asArray) {
-			sb.append("  },\n  ...\n]\n\n"); //$NON-NLS-1$
-		} else {
-			sb.append("}\n\n"); //$NON-NLS-1$
-		}
+		appendJsonSchema(prompt, array);
 	}
 
-	private static void appendTrafficLightMeanings(StringBuilder sb) {
-		sb.append("Traffic light meanings:\n"); //$NON-NLS-1$
-		sb.append("- GREEN: Directly implementable as a DSL rule\n"); //$NON-NLS-1$
-		sb.append("- YELLOW: Implementable with minor DSL extensions\n"); //$NON-NLS-1$
-		sb.append("- RED: Requires DSL extensions not yet available (may be supported in future DSL versions)\n"); //$NON-NLS-1$
-		sb.append("- NOT_APPLICABLE: Commit is not relevant for DSL mining\n"); //$NON-NLS-1$
+	private static void appendSafetyPolicy(StringBuilder prompt) {
+		prompt.append("### Mandatory safety policy\n\n"); //$NON-NLS-1$
+		prompt.append("Return noCleanup=true for:\n"); //$NON-NLS-1$
+		prompt.append("- import-only or formatting-only changes;\n"); //$NON-NLS-1$
+		prompt.append("- type-changing replacements without a guard proving context and type safety;\n"); //$NON-NLS-1$
+		prompt.append("- architecture refactorings, multi-file migrations, or statement restructuring;\n"); //$NON-NLS-1$
+		prompt.append("- changes whose correctness depends on unavailable data-flow, overload, synchronization, or nullability facts;\n"); //$NON-NLS-1$
+		prompt.append("- multiple unrelated transformations in one proposal;\n"); //$NON-NLS-1$
+		prompt.append("- a candidate without complete compiling before, after, and negative examples.\n\n"); //$NON-NLS-1$
+	}
+
+	private static void appendDslRuleChecklist(StringBuilder prompt) {
+		prompt.append("### DSL validation rules\n\n"); //$NON-NLS-1$
+		prompt.append("1. Emit plain DSL only; never emit XML tags.\n"); //$NON-NLS-1$
+		prompt.append("2. Use instanceof($var, \"fully.qualified.Type\") for type guards; never use isType().\n"); //$NON-NLS-1$
+		prompt.append("3. End every rule with `;;` on its own line.\n"); //$NON-NLS-1$
+		prompt.append("4. A quick-fix rule contains exactly one `=>`.\n"); //$NON-NLS-1$
+		prompt.append("5. Every replacement placeholder must be bound by the source pattern.\n"); //$NON-NLS-1$
+		prompt.append("6. Source and replacement must differ.\n"); //$NON-NLS-1$
+		prompt.append("7. Use fully qualified concrete API names and placeholders only for variable parts.\n"); //$NON-NLS-1$
+		prompt.append("8. Do not emit per-rule `/*!...*/` directives.\n"); //$NON-NLS-1$
+		prompt.append("9. Drop the proposal rather than returning invalid or context-dependent DSL.\n\n"); //$NON-NLS-1$
+	}
+
+	private static void appendJsonSchema(StringBuilder prompt, boolean array) {
+		String prefix = array ? "[\n  {\n" : "{\n"; //$NON-NLS-1$ //$NON-NLS-2$
+		String indent = array ? "    " : "  "; //$NON-NLS-1$ //$NON-NLS-2$
+		prompt.append(prefix);
+		prompt.append(indent).append("\"noCleanup\": false,\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"reason\": \"short reason, especially when noCleanup=true\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"relevant\": true,\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"trafficLight\": \"GREEN|NOT_APPLICABLE\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"confidence\": 0.0,\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"category\": \"short stable category\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"canImplementInCurrentDsl\": true,\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"dslRule\": \"one raw .sandbox-hint rule or null\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"targetHintFile\": \"simple .sandbox-hint filename or null\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"sourceVersion\": \"21\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"beforeExample\": \"minimal self-contained compiling Java class or null\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"afterExample\": \"complete expected Java class or null\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"negativeExample\": \"similar compiling class that must not match or null\",\n"); //$NON-NLS-1$
+		prompt.append(indent).append("\"summary\": \"brief local transformation summary\"\n"); //$NON-NLS-1$
+		prompt.append(array ? "  }\n]\n" : "}\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		prompt.append("confidence must be between 0.0 and 1.0. For noCleanup=true, set relevant=false, trafficLight=NOT_APPLICABLE, and candidate fields to null.\n"); //$NON-NLS-1$
+	}
+
+	private static String nullToEmpty(String value) {
+		return value == null ? "" : value; //$NON-NLS-1$
 	}
 
 	private static String loadResource(String resourcePath) {
-		try (InputStream is = PromptBuilder.class.getResourceAsStream(resourcePath)) {
-			if (is == null) {
-				return "(Resource not available: " + resourcePath + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+		try (InputStream input = PromptBuilder.class.getResourceAsStream(resourcePath)) {
+			if (input == null) {
+				return "(Resource not available: " + resourcePath + ')'; //$NON-NLS-1$
 			}
-			return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			return new String(input.readAllBytes(), StandardCharsets.UTF_8);
 		} catch (IOException e) {
-			return "(Failed to load resource: " + resourcePath + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "(Failed to load resource: " + resourcePath + ')'; //$NON-NLS-1$
 		}
 	}
 }
