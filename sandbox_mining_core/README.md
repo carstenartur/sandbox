@@ -1,121 +1,107 @@
 # Refactoring Mining Core (`sandbox_mining_core`)
 
-> **Navigation**: [Main README](../README.md) | [TODO](TODO.md)
+> **Navigation**: [Main README](../README.md) | [Issue #1111](https://github.com/carstenartur/sandbox/issues/1111)
 
-## Overview
+## Purpose
 
-`sandbox_mining_core` is the AI-assisted commit analysis engine for inferring TriggerPattern DSL rules from Git diffs. It forms the core of the refactoring mining infrastructure by scanning Eclipse JDT commits to discover and document recurring code transformation patterns.
+`sandbox_mining_core` analyzes commit history with an LLM to discover possible TriggerPattern DSL cleanups. Its output is **untrusted candidate data**, not a productive cleanup rule.
 
-## Features
+This module is intentionally separate from `sandbox_mining_cli`:
 
-- **LLM-based rule inference** — integrates with Gemini and other LLM providers to analyze Git diffs and propose `.sandbox-hint` rules
-- **State management** — persistent state with deferred commits, epoch rotation, and category tracking
-- **Keyword filtering** — focus mining on relevant commits using configurable keyword sets
-- **Comparison mode** — evaluate mining results against a reference tool (e.g., GitHub Copilot) to identify gaps
-- **Automatic HintFile generation** — discovered rules are written directly as `.sandbox-hint` files
-- **Category-aware mining** — tracks per-category hit counts, exhausted categories, and focus categories
-- **DSL enhancement reporting** — groups unsatisfied patterns by limitation category and creates GitHub issues
+- `sandbox_mining_core` discovers possible new rules from commits.
+- `sandbox_mining_cli` scans source trees with already curated rules.
 
-## Architecture
+A high number of scanner matches does not approve a discovered rule.
 
-```
-MiningCli.run(args)
-  → MiningConfig (YAML-based configuration)
-  → CommitWalker (JGit-based Git traversal, epoch rotation)
-  → LlmClient (Gemini / configurable provider)
-  → PromptBuilder (enriched context: Eclipse API, type info, examples, error feedback)
-  → HintFileUpdater (writes .sandbox-hint files)
-  → MiningState (RepoState: currentEpoch, completedEpochs, categoryHitCounts)
-  → DslEnhancementReporter (creates GitHub issues for unresolvable patterns)
+## Discovery flow
+
+```text
+Git commits
+  -> local commit selection
+  -> LLM evaluation
+  -> deterministic DSL validation
+  -> mining-candidates/*.json
+  -> CandidateVerifier
+  -> READY_FOR_REVIEW
+  -> human approval
+  -> separate promotion PR
 ```
 
-Key packages under `org.sandbox.mining.core`:
-- `action` — high-level mining actions (scan, compare, report)
-- `category` — transformation category definitions and tracking
-- `comparison` — comparison mode and delta reporting against reference evaluations
-- `config` — YAML configuration parsing (`MiningConfig`, `RepoConfig`)
-- `enrichment` — prompt enrichment (type context, API context, examples)
-- `filter` — keyword-based commit filtering
-- `report` — JSON/Markdown report generation
+`MiningCli` stages only GREEN evaluations whose DSL passes `DslValidator`. It does not write directly into the productive bundled hint directory.
 
-## Usage
+## Candidate JSON
 
-The mining core is used by:
-- **`sandbox_mining_cli`** — standalone CLI tool that wraps this module
-- **GitHub Actions workflows** — `.github/workflows/mining-core.yml` runs mining automatically
+`MiningCandidate` is the authoritative record for an unreviewed proposal. Schema version 2 records:
 
-### Configuration
+- stable `candidateId` based on source repository, commit, and candidate ordinal;
+- mutable `revision`;
+- normalized rule and behavior fingerprints;
+- DSL rule and target hint file;
+- complete before, after, and negative examples;
+- source Java version;
+- structured verification diagnostics;
+- auditable lifecycle transitions.
 
-Mining is configured via YAML files in `.github/refactoring-mining/`:
+Correcting DSL or examples keeps the candidate ID and increments the revision when saved through `CandidateStore`. Multiple proposals from one commit use distinct candidate ordinals.
 
-```yaml
-repos:
-  - url: https://github.com/eclipse-jdt/eclipse.jdt.ui
-    branch: master
-    keywords: [cleanup, refactor, simplify]
-epochs:
-  - startDate: "2024-01-01"
-    endDate: "2024-06-30"
+## Deterministic behavior verification
+
+`CandidateVerifier` runs in process; it does not generate Java test source. It verifies:
+
+1. required candidate fields are present;
+2. DSL parsing and `DslValidator` succeed;
+3. built-in guards are registered;
+4. the positive Java example parses at the declared source level;
+5. exactly one replacement is produced;
+6. that replacement is applied using the AST match offset and length;
+7. the complete transformed source equals `afterExample` after whitespace normalization;
+8. the negative example parses and produces no match.
+
+The verifier persists its version, final stage, message, match count, replacement count, and timestamp.
+
+Run verification and generate candidate reports with:
+
+```shell
+java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+  org.sandbox.mining.core.candidate.CandidateVerificationCli \
+  --candidate-dir mining-candidates \
+  --report-dir docs/mining-report
 ```
 
-## Related Documentation
+The command writes `candidates.json`, `candidates.html`, and copies individual candidate JSON files into the report directory.
 
-- [docs/COMPARISON-PROCESS.md](../docs/COMPARISON-PROCESS.md) — iterative comparison workflow
-- [sandbox_mining_cli/README.md](../sandbox_mining_cli/README.md) — CLI usage
-- [TODO](TODO.md) — open tasks and implementation tracking
+## Lifecycle
 
-## Mining Candidate Pipeline
-
-`MiningCli` stages mined DSL rules as JSON candidates in `mining-candidates/` instead of writing directly to productive bundled `.sandbox-hint` files.
-
-### What is a candidate?
-
-A candidate is a staged mining result (`MiningCandidate`) with:
-
-- `dslRule`
-- `beforeExample`
-- `afterExample`
-- `negativeExample`
-- `targetHintFile`
-- `sourceCommit`
-- `sourceRepo`
-- `status`
-
-Each candidate is persisted as `<candidateId>-candidate.json`, where `candidateId` is a deterministic SHA-256 hash over:
-
-`sourceRepo + sourceCommit + category + targetHintFile + dslRule`
-
-This avoids collisions and allows multiple candidates from the same commit.
-
-### Status model
-
-```
+```text
 DISCOVERED
-→ DSL_VALID
-→ TEST_GENERATED
-→ TEST_PASSED
-→ READY_FOR_PR
-→ PROMOTED
+  -> DSL_VALID
+  -> BEHAVIOR_VALID
+  -> READY_FOR_REVIEW
+  -> APPROVED
+  -> PROMOTED
 ```
 
-Candidates can be moved to `REJECTED` from any stage.
+`REJECTED` and `SUPERSEDED` are terminal alternatives. Invalid transitions fail and valid transitions are recorded with actor, reason, and timestamp.
 
-### Generation and validation flow
+## Workflow safety boundary
 
-1. Mining run emits `CommitEvaluation`.
-2. `saveCandidates(...)` stages only `GREEN` + `VALID` evaluations.
-3. `DslValidator` is executed again before staging.
-4. Candidate tests can be generated via `MiningCandidateTestGenerator`.
+The nightly discovery workflow may publish candidate artifacts and create review issues for `READY_FOR_REVIEW` candidates. It must not:
 
-Generated candidate tests currently validate:
+- auto-merge candidate JSON into `main`;
+- add generated `.sandbox-hint` files;
+- create review issues from raw `evaluations.json`;
+- treat `known-rules.json` as approval state.
 
-- DSL parses
-- `beforeExample` matches
-- at least one replacement equals `afterExample` (when provided)
-- `negativeExample` does not match
+Only resumable scan state may be persisted automatically. Promotion remains a separate reviewed code change containing the rule and a behavior test.
 
-### Promotion constraints
+## Legacy known-rules data
 
-- Mining does **not** mutate productive hint files.
-- Promotion to productive hints must be an explicit, separate action.
-- Only `READY_FOR_PR` candidates should be considered promotable.
+`docs/mining-report/known-rules.json` predates the candidate review boundary. It may be read as legacy duplicate context, but newly discovered evaluations are not persisted there by the workflow and its entries are not approved rules.
+
+## Build and tests
+
+```shell
+mvn -pl sandbox_mining_core -am test
+```
+
+The normal suite covers candidate identity, revisioning, lifecycle transitions, positive transformation behavior, negative examples, malformed DSL, malformed Java, ambiguous matches, and incorrect expected output.
