@@ -32,164 +32,86 @@ import org.sandbox.mining.core.config.KnownRulesStore;
 import org.sandbox.mining.core.config.KnownRulesStore.KnownRule;
 import org.sandbox.mining.core.config.KnownRulesStore.RuleStatus;
 
-/**
- * Tests for {@link KnownRulesStore}.
- */
+/** Tests read-compatible handling of legacy known-rules data. */
+@SuppressWarnings("removal")
 class KnownRulesStoreTest {
 
 	@TempDir
 	Path tempDir;
 
 	@Test
-	void testNewStoreIsEmpty() {
+	void newLegacyArchiveIsEmpty() {
 		KnownRulesStore store = new KnownRulesStore();
 		assertEquals(0, store.size());
 		assertTrue(store.getRules().isEmpty());
+		assertEquals("", store.formatForPrompt()); //$NON-NLS-1$
 	}
 
 	@Test
-	void testSaveAndLoad() throws IOException {
-		KnownRulesStore store = new KnownRulesStore();
-		CommitEvaluation eval = createGreenValidEval("abc123", "Use isEmpty", "Collections");
-		store.registerFromEvaluations(List.of(eval), 1);
-
-		Path file = tempDir.resolve("known-rules.json");
-		store.save(file);
-		assertTrue(Files.exists(file));
+	void loadsAndPreservesHistoricData() throws IOException {
+		Path file = tempDir.resolve("known-rules.json"); //$NON-NLS-1$
+		Files.writeString(file, """
+				{
+				  "version": 1,
+				  "rules": [
+				    {
+				      "id": "legacy-rule",
+				      "category": "Collections",
+				      "dslRule": "$x.size() == 0\\n=> $x.isEmpty()\\n;;",
+				      "summary": "Legacy discovery",
+				      "sourceCommit": "abc123",
+				      "status": "DISCOVERED",
+				      "hintFile": "collections.sandbox-hint"
+				    }
+				  ]
+				}
+				""", StandardCharsets.UTF_8);
 
 		KnownRulesStore loaded = KnownRulesStore.load(file);
+
 		assertEquals(1, loaded.size());
 		KnownRule rule = loaded.getRules().get(0);
-		assertEquals("abc123", rule.getSourceCommit());
-		assertEquals("Collections", rule.getCategory());
+		assertEquals("abc123", rule.getSourceCommit()); //$NON-NLS-1$
+		assertEquals("Collections", rule.getCategory()); //$NON-NLS-1$
 		assertEquals(RuleStatus.DISCOVERED, rule.getStatus());
+		assertTrue(loaded.containsCommit("abc123")); //$NON-NLS-1$
+		assertEquals("legacy-rule", loaded.getCommitHashIndex().get("abc123")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		Path copy = tempDir.resolve("copy.json"); //$NON-NLS-1$
+		loaded.save(copy);
+		assertTrue(Files.readString(copy, StandardCharsets.UTF_8).contains("legacy-rule")); //$NON-NLS-1$
 	}
 
 	@Test
-	void testLoadFromNonExistentFile() throws IOException {
-		KnownRulesStore store = KnownRulesStore.load(tempDir.resolve("nonexistent.json"));
-		assertEquals(0, store.size());
-	}
-
-	@Test
-	void testLoadFromInvalidJson() throws IOException {
-		Path file = tempDir.resolve("known-rules.json");
-		Files.writeString(file, "not valid json", StandardCharsets.UTF_8);
-		KnownRulesStore store = KnownRulesStore.load(file);
-		assertEquals(0, store.size());
-	}
-
-	@Test
-	void testRegisterGreenValidEvaluation() {
+	void newEvaluationsAreNotRegisteredInLegacyArchive() {
 		KnownRulesStore store = new KnownRulesStore();
-		CommitEvaluation eval = createGreenValidEval("abc123", "Use isEmpty", "Collections");
+		CommitEvaluation evaluation = greenEvaluation();
 
-		int added = store.registerFromEvaluations(List.of(eval), 1);
-
-		assertEquals(1, added);
-		assertEquals(1, store.size());
-		assertTrue(store.containsCommit("abc123"));
-	}
-
-	@Test
-	void testSkipsDuplicateCommits() {
-		KnownRulesStore store = new KnownRulesStore();
-		CommitEvaluation eval = createGreenValidEval("abc123", "Use isEmpty", "Collections");
-
-		store.registerFromEvaluations(List.of(eval), 1);
-		int added = store.registerFromEvaluations(List.of(eval), 2);
-
-		assertEquals(0, added);
-		assertEquals(1, store.size());
-	}
-
-	@Test
-	void testSkipsNonGreenEvaluations() {
-		KnownRulesStore store = new KnownRulesStore();
-		CommitEvaluation yellowEval = createEval("abc123", "Summary", "Cat", TrafficLight.YELLOW, "VALID");
-		CommitEvaluation redEval = createEval("def456", "Summary", "Cat", TrafficLight.RED, "VALID");
-
-		int added = store.registerFromEvaluations(List.of(yellowEval, redEval), 1);
+		int added = store.registerFromEvaluations(List.of(evaluation), 12);
 
 		assertEquals(0, added);
 		assertEquals(0, store.size());
+		assertFalse(store.containsCommit("new-commit")); //$NON-NLS-1$
+		assertEquals("", store.formatForPrompt()); //$NON-NLS-1$
 	}
 
 	@Test
-	void testSkipsInvalidDslEvaluations() {
-		KnownRulesStore store = new KnownRulesStore();
-		CommitEvaluation invalidDsl = createEval("abc123", "Summary", "Cat", TrafficLight.GREEN, "PARSE_ERROR");
-
-		int added = store.registerFromEvaluations(List.of(invalidDsl), 1);
-
-		assertEquals(0, added);
+	void missingAndInvalidArchivesLoadAsEmpty() throws IOException {
+		assertTrue(KnownRulesStore.load(tempDir.resolve("missing.json")).getRules().isEmpty()); //$NON-NLS-1$
+		Path invalid = tempDir.resolve("invalid.json"); //$NON-NLS-1$
+		Files.writeString(invalid, "not json", StandardCharsets.UTF_8); //$NON-NLS-1$
+		assertTrue(KnownRulesStore.load(invalid).getRules().isEmpty());
 	}
 
-	@Test
-	void testSkipsEvaluationsWithNullDslRule() {
-		KnownRulesStore store = new KnownRulesStore();
-		CommitEvaluation noDsl = new CommitEvaluation(
-				"abc123", "message", "https://example.com",
-				Instant.now(), null, true, null, false, null,
-				5, 5, 3, TrafficLight.GREEN,
-				"Cat", false, null,
-				true, null, null,
-				null, null, "Summary", "VALID", null, null, null);
-
-		int added = store.registerFromEvaluations(List.of(noDsl), 1);
-
-		assertEquals(0, added);
-	}
-
-	@Test
-	void testFormatForPromptEmpty() {
-		KnownRulesStore store = new KnownRulesStore();
-		assertEquals("", store.formatForPrompt());
-	}
-
-	@Test
-	void testFormatForPromptWithRules() {
-		KnownRulesStore store = new KnownRulesStore();
-		store.registerFromEvaluations(List.of(
-				createGreenValidEval("abc123", "Use isEmpty for Collection", "Collections")), 1);
-
-		String prompt = store.formatForPrompt();
-		assertFalse(prompt.isEmpty());
-		assertTrue(prompt.contains("Collections"));
-		assertTrue(prompt.contains("Use isEmpty for Collection"));
-	}
-
-	@Test
-	void testGetCommitHashIndex() {
-		KnownRulesStore store = new KnownRulesStore();
-		store.registerFromEvaluations(List.of(
-				createGreenValidEval("abc123", "Rule 1", "Cat1"),
-				createGreenValidEval("def456", "Rule 2", "Cat2")), 1);
-
-		var index = store.getCommitHashIndex();
-		assertEquals(2, index.size());
-		assertTrue(index.containsKey("abc123"));
-		assertTrue(index.containsKey("def456"));
-	}
-
-	@Test
-	void testContainsCommitReturnsFalseForUnknown() {
-		KnownRulesStore store = new KnownRulesStore();
-		assertFalse(store.containsCommit("nonexistent"));
-	}
-
-	private CommitEvaluation createGreenValidEval(String hash, String summary, String category) {
-		return createEval(hash, summary, category, TrafficLight.GREEN, "VALID");
-	}
-
-	private CommitEvaluation createEval(String hash, String summary, String category,
-			TrafficLight light, String validationResult) {
+	private static CommitEvaluation greenEvaluation() {
 		return new CommitEvaluation(
-				hash, "commit message", "https://github.com/test/repo",
+				"new-commit", "message", "https://github.com/example/repo", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				Instant.now(), null, true, null, false, null,
-				5, 5, 3, light,
-				category, false, null,
-				true, "new Boolean(true)\n=> Boolean.TRUE\n;;\n", "test.sandbox-hint",
-				null, null, summary, validationResult, null, null, null);
+				0, 0, 0, TrafficLight.GREEN,
+				"Collections", false, null, //$NON-NLS-1$
+				true, "$x.size() == 0\n=> $x.isEmpty()\n;;", //$NON-NLS-1$
+				"collections.sandbox-hint", //$NON-NLS-1$
+				null, null, "Use isEmpty", "VALID", //$NON-NLS-1$ //$NON-NLS-2$
+				"class T {}", "class T {}", "class N {}"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 }
