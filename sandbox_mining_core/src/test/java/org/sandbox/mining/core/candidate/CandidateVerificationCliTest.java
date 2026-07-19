@@ -119,6 +119,36 @@ class CandidateVerificationCliTest {
 	}
 
 	@Test
+	void marksCandidateThatDuplicatesCuratedRule() throws IOException {
+		Path candidateDir = tempDir.resolve("curated-duplicate-candidates"); //$NON-NLS-1$
+		Path curatedDir = tempDir.resolve("curated-rules"); //$NON-NLS-1$
+		Files.createDirectories(curatedDir);
+		Files.writeString(curatedDir.resolve("arithmetic.sandbox-hint"), """
+				<!id: arithmetic>
+				<!description: Existing reviewed arithmetic rules>
+
+				$x + 0
+				=> $x
+				;;
+				"""); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(candidateDir);
+		store.save(candidate("commit-new", "2026-03-01T00:00:00Z")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), //$NON-NLS-1$
+				"--report-dir", tempDir.resolve("curated-duplicate-report").toString(), //$NON-NLS-1$ //$NON-NLS-2$
+				"--curated-hint-dir", curatedDir.toString() //$NON-NLS-1$
+		});
+
+		MiningCandidate duplicate = store.loadAll().get(0);
+		assertEquals(CandidateStatus.DUPLICATE, duplicate.getStatus());
+		assertEquals(CandidateVerification.Stage.DUPLICATE,
+				duplicate.getVerification().stage());
+		assertTrue(duplicate.getVerification().message()
+				.contains("curated rule arithmetic.sandbox-hint#rule 1")); //$NON-NLS-1$
+	}
+
+	@Test
 	void migratesMultipleLegacyCandidatesFromOneOriginWithoutCollision() throws IOException {
 		Path candidateDir = tempDir.resolve("legacy-candidates"); //$NON-NLS-1$
 		Files.createDirectories(candidateDir);
