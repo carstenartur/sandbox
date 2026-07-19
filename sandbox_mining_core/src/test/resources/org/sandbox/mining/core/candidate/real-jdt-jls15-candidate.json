@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.dom.AST.JLS15\n=> org.eclipse.jdt.core.dom.AST.getJLSLatest()\n;;",
+  "beforeExample": "class CandidateFixture { int level() { return org.eclipse.jdt.core.dom.AST.JLS15; } }",
+  "afterExample": "class CandidateFixture { int level() { return org.eclipse.jdt.core.dom.AST.getJLSLatest(); } }",
+  "negativeExample": "class CandidateFixture { int level() { return org.eclipse.jdt.core.dom.AST.JLS16; } }",
+  "targetHintFile": "jdt-api-modernization.sandbox-hint",
+  "sourceCommit": "5a1165f14f197472183f53e939b8c77ffcd965aa",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.core",
+  "category": "Eclipse API Migration",
+  "summary": "Replace the fixed AST.JLS15 level with AST.getJLSLatest()",
+  "sourceVersion": "21",
+  "status": "DISCOVERED",
+  "discoveredAt": "2026-03-11T00:00:00Z"
+}
