@@ -24,7 +24,7 @@ on:
         type: string
 
 concurrency:
-  group: mining-candidate-${{ inputs.candidate_id }}
+  group: mining-state
   cancel-in-progress: false
 
 jobs:
