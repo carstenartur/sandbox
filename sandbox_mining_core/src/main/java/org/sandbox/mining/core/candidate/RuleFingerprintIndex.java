@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.mining.core.candidate;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -96,7 +97,9 @@ public final class RuleFingerprintIndex {
 				TransformationRule rule = hintFile.getRules().get(i);
 				String ruleName = rule.getRuleId() == null || rule.getRuleId().isBlank()
 						? "rule " + (i + 1) : rule.getRuleId(); //$NON-NLS-1$
-				String reference = hintDirectory.relativize(file) + "#" + ruleName; //$NON-NLS-1$
+				String relativeFile = hintDirectory.relativize(file).toString()
+						.replace(File.separatorChar, '/');
+				String reference = relativeFile + "#" + ruleName; //$NON-NLS-1$
 				index.putIfAbsent(fingerprintRule(rule), reference);
 			}
 		}
