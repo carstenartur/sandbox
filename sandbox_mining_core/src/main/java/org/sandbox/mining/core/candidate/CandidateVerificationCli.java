@@ -20,22 +20,14 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-/**
- * Post-processes staged candidate JSON after discovery.
- *
- * <p>Usage:</p>
- * <pre>
- * java -cp sandbox-mining-core.jar \
- *   org.sandbox.mining.core.candidate.CandidateVerificationCli \
- *   --candidate-dir mining-candidates \
- *   --report-dir docs/mining-report
- * </pre>
- */
+/** Post-processes staged candidate JSON after discovery. */
 public final class CandidateVerificationCli {
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -79,17 +71,41 @@ public final class CandidateVerificationCli {
 
 		CandidateStore store = new CandidateStore(candidateDir);
 		List<MiningCandidate> candidates = new ArrayList<>(store.loadAll());
-		candidates.sort(Comparator.comparing(MiningCandidate::getCandidateId));
+		candidates.sort(candidatePriority());
 		CandidateVerifier verifier = new CandidateVerifier();
+		Map<String, String> canonicalByRuleFingerprint = new HashMap<>();
 
 		int verified = 0;
 		int failed = 0;
+		int duplicates = 0;
 		for (MiningCandidate candidate : candidates) {
 			if (!candidate.hasDeclaredSourceVersion()) {
 				candidate.setSourceVersion(defaultSourceVersion);
 			}
-			if (isTerminal(candidate.getStatus())
-					|| candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW) {
+			if (isDiscarded(candidate.getStatus())) {
+				store.save(candidate);
+				continue;
+			}
+
+			String canonicalId = canonicalByRuleFingerprint.putIfAbsent(
+					candidate.getRuleFingerprint(), candidate.getCandidateId());
+			if (canonicalId != null && !canonicalId.equals(candidate.getCandidateId())
+					&& candidate.getStatus() != CandidateStatus.APPROVED
+					&& candidate.getStatus() != CandidateStatus.PROMOTED) {
+				String message = "Normalized DSL duplicates staged candidate " + canonicalId; //$NON-NLS-1$
+				candidate.setVerification(CandidateVerification.failure(
+						CandidateVerification.Stage.DUPLICATE, message,
+						CandidateVerifier.VERSION, 0, 0));
+				candidate.transitionTo(CandidateStatus.DUPLICATE,
+						"CandidateVerificationCli", message); //$NON-NLS-1$
+				store.save(candidate);
+				duplicates++;
+				continue;
+			}
+
+			if (candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW
+					|| candidate.getStatus() == CandidateStatus.APPROVED
+					|| candidate.getStatus() == CandidateStatus.PROMOTED) {
 				store.save(candidate);
 				continue;
 			}
@@ -116,8 +132,23 @@ public final class CandidateVerificationCli {
 				.filter(candidate -> candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW)
 				.count();
 		System.out.println("Candidate verification summary: " + verified + " verified, " //$NON-NLS-1$ //$NON-NLS-2$
-				+ failed + " failed, " + ready + " ready for review"); //$NON-NLS-1$ //$NON-NLS-2$
+				+ failed + " failed, " + duplicates + " duplicates, " //$NON-NLS-1$ //$NON-NLS-2$
+				+ ready + " ready for review"); //$NON-NLS-1$
 		return 0;
+	}
+
+	private static Comparator<MiningCandidate> candidatePriority() {
+		return Comparator.comparingInt((MiningCandidate candidate) -> switch (candidate.getStatus()) {
+		case PROMOTED -> 0;
+		case APPROVED -> 1;
+		case READY_FOR_REVIEW -> 2;
+		case BEHAVIOR_VALID -> 3;
+		case DSL_VALID -> 4;
+		case DISCOVERED -> 5;
+		case REJECTED, DUPLICATE, SUPERSEDED -> 9;
+		}).thenComparing(candidate -> candidate.getDiscoveredAt() == null
+				? "9999" : candidate.getDiscoveredAt()) //$NON-NLS-1$
+				.thenComparing(MiningCandidate::getCandidateId);
 	}
 
 	private static void advanceToReadyForReview(MiningCandidate candidate) {
@@ -135,9 +166,9 @@ public final class CandidateVerificationCli {
 		}
 	}
 
-	private static boolean isTerminal(CandidateStatus status) {
-		return status == CandidateStatus.PROMOTED
-				|| status == CandidateStatus.REJECTED
+	private static boolean isDiscarded(CandidateStatus status) {
+		return status == CandidateStatus.REJECTED
+				|| status == CandidateStatus.DUPLICATE
 				|| status == CandidateStatus.SUPERSEDED;
 	}
 
@@ -169,7 +200,7 @@ public final class CandidateVerificationCli {
 				.append("table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.55rem;text-align:left;vertical-align:top}") //$NON-NLS-1$
 				.append("th{background:#f4f4f4}code{overflow-wrap:anywhere}.ok{font-weight:600}.fail{font-weight:600}</style></head><body>") //$NON-NLS-1$
 				.append("<h1>Staged mining candidates</h1>") //$NON-NLS-1$
-				.append("<p>Only candidates marked <strong>READY_FOR_REVIEW</strong> passed deterministic DSL and behavior verification.</p>") //$NON-NLS-1$
+				.append("<p>Only candidates marked <strong>READY_FOR_REVIEW</strong> passed deterministic DSL, duplicate, and behavior checks.</p>") //$NON-NLS-1$
 				.append("<table><thead><tr><th>Status</th><th>Candidate</th><th>Proposal</th><th>Source</th><th>Verification</th></tr></thead><tbody>"); //$NON-NLS-1$
 		for (MiningCandidate candidate : candidates) {
 			CandidateVerification verification = candidate.getVerification();
