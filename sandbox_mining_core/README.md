@@ -60,7 +60,9 @@ Git commits
 - structured verification diagnostics;
 - auditable lifecycle transitions.
 
-Correcting DSL or examples keeps the candidate ID and increments the revision when saved through `CandidateStore`. Multiple proposals from one commit receive separate ordinals. Schema-v1 files are migrated before verification, and obsolete filenames are removed only after the canonical schema-v2 file has been written successfully.
+Correcting the DSL, examples, or declared source level keeps the candidate ID but starts a new revision. `CandidateStore` resets that revision to `DISCOVERED`, clears stale verification and rejection state, and records a revision boundary so deterministic verification and human review must run again. Status-only updates do not change the revision. A `PROMOTED` candidate is immutable; a different transformation must use a new candidate origin.
+
+Multiple proposals from one commit receive separate ordinals. Schema-v1 files are migrated before verification, and obsolete filenames are removed only after the canonical schema-v2 file has been written successfully.
 
 Candidate JSON and review decisions are persisted on the dedicated `mining/candidates` data branch. That branch is not merged into `main` and never contains productive rules.
 
@@ -109,7 +111,7 @@ DISCOVERED
   -> PROMOTED
 ```
 
-`REJECTED`, `DUPLICATE`, and `SUPERSEDED` are terminal alternatives. Invalid transitions fail and valid transitions are recorded with actor, reason, and timestamp.
+`REJECTED`, `DUPLICATE`, and `SUPERSEDED` are terminal alternatives. Invalid transitions fail and valid transitions are recorded with actor, reason, and timestamp. A semantic content revision is a separate audited boundary that deliberately restarts the lifecycle at `DISCOVERED`.
 
 ## Review decisions
 
@@ -124,7 +126,7 @@ java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
   --reason "Reviewed against the source commit"
 ```
 
-Supported actions are `approve`, `reject`, `supersede`, and the post-merge `promote` transition. Repeating an already-applied decision is a successful no-op so interrupted workflows can be retried safely.
+Supported actions are `approve`, `reject`, `supersede`, and the post-merge `promote` transition. Repeating an already-applied decision is retry-safe. An approval retry does not add another approval transition, but it does refresh and persist verification with the current verifier before promotion continues.
 
 The **Review mining candidate** GitHub Actions workflow provides the repository workflow for this command. It loads the candidate from `mining/candidates`, records the decision there, and closes rejected review issues.
 
@@ -146,7 +148,13 @@ The command re-verifies the approved candidate and changes only:
 - a permanent JSON behavior fixture;
 - the promoted-fixture index.
 
-`PromotedCandidateBehaviorTest` executes every indexed fixture against the proposed DSL and confirms that the DSL text is present in the selected bundled rule file. The review workflow runs these tests before opening or updating a promotion PR. A separate completion workflow records `PROMOTED` only after that PR is actually merged.
+Promotion is limited to bundled libraries that are actually loaded as active Cleanup and Quick Assist rule sets. Maintenance-only or disabled hint files cannot receive promoted candidates. The generated fixture contains the reviewed rule, complete before/after/negative examples, fingerprints, verifier version, provenance, and reviewer.
+
+`PromotedCandidateBehaviorTest` executes every indexed fixture with binding resolution, confirms that its target remains active, and checks that both the DSL and candidate provenance marker remain in the selected bundled rule file. It also scans active bundled files in the reverse direction, so a promoted rule marker without an indexed permanent fixture fails the build.
+
+The review workflow runs these tests before opening or updating a promotion PR. After merge, the completion workflow compares the merged fixture and rule against the still-`APPROVED` candidate before recording `PROMOTED`; a branch name or fixture file alone is not sufficient.
+
+The Eclipse Quick Assist path is also binding-aware. Its JUnit coverage selects a proposal at the matching cursor position, applies it to an `IDocument`, verifies the complete result, and verifies that no proposal is offered outside the match.
 
 ## Workflow safety boundary
 
@@ -171,4 +179,4 @@ Only resumable scan state may be merged automatically. Candidate state stays on 
 mvn -pl sandbox_common_core,sandbox_mining_core -am test
 ```
 
-The suite covers candidate identity, revisioning, collision-safe legacy migration, lifecycle transitions, compiling examples with binding-aware guards, structural positive transformation behavior, negative examples, malformed or multi-rule DSL, unresolved guards, malformed Java, ambiguous matches, curated and staged duplicate selection, resolver restoration, review commands, path-safe promotion generation, and permanent promoted-candidate fixtures.
+The suite covers candidate identity, revision invalidation, promoted-state immutability, collision-safe legacy migration, lifecycle transitions, compiling examples with binding-aware guards, structural positive transformation behavior, negative examples, malformed or multi-rule DSL, unresolved guards, malformed Java, ambiguous matches, curated and staged duplicate selection, resolver restoration, review retry verification, path-safe active-bundle promotion, merged-promotion integrity, permanent promoted-candidate fixtures, and Quick Assist proposal application.
