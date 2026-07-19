@@ -1,0 +1,92 @@
+name: Complete candidate promotion
+
+on:
+  pull_request:
+    types:
+      - closed
+
+concurrency:
+  group: mining-candidate-promotion-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  mark-promoted:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'mining/promote/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Resolve promoted candidate
+        id: candidate
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          CANDIDATE_ID="${HEAD_REF#mining/promote/}"
+          if [[ ! "$CANDIDATE_ID" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Unexpected promotion branch: $HEAD_REF" >&2
+            exit 1
+          fi
+          FIXTURE="sandbox_common_core/src/test/resources/org/sandbox/jdt/triggerpattern/promoted/${CANDIDATE_ID}.json"
+          if [ ! -f "$FIXTURE" ]; then
+            echo "Merged promotion has no permanent fixture: $FIXTURE" >&2
+            exit 1
+          fi
+          git fetch origin mining/candidates:refs/remotes/origin/mining/candidates
+          mkdir -p mining-candidates
+          git show "origin/mining/candidates:mining-candidates/${CANDIDATE_ID}-candidate.json" \
+            > "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          echo "id=$CANDIDATE_ID" >> "$GITHUB_OUTPUT"
+          echo "file=mining-candidates/${CANDIDATE_ID}-candidate.json" >> "$GITHUB_OUTPUT"
+
+      - name: Build candidate tooling
+        run: |
+          set -euo pipefail
+          mvn install -N -q
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn package -pl sandbox_mining_core -DskipTests -q
+
+      - name: Record successful promotion
+        env:
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidateReviewCli \
+            --candidate "$CANDIDATE_FILE" \
+            --action promote \
+            --actor github-actions \
+            --reason "Promotion PR #${{ github.event.pull_request.number }} merged as ${MERGE_SHA}"
+
+      - name: Persist promoted lifecycle state
+        env:
+          CANDIDATE_ID: ${{ steps.candidate.outputs.id }}
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+        run: |
+          set -euo pipefail
+          DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-promoted"
+          git worktree add -B mining/candidates "$DATA_WORKTREE" origin/mining/candidates
+          cp "$CANDIDATE_FILE" \
+            "$DATA_WORKTREE/mining-candidates/${CANDIDATE_ID}-candidate.json"
+          git -C "$DATA_WORKTREE" config user.name 'github-actions[bot]'
+          git -C "$DATA_WORKTREE" config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C "$DATA_WORKTREE" add "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          git -C "$DATA_WORKTREE" commit -m \
+            "mining: mark candidate ${CANDIDATE_ID:0:12} promoted"
+          git -C "$DATA_WORKTREE" push origin mining/candidates
+          git worktree remove "$DATA_WORKTREE" --force
