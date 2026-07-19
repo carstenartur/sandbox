@@ -32,8 +32,9 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
 
 /**
  * Builds canonical fingerprints for individual parsed transformation rules and
- * indexes the curated bundled rule library. File metadata, comments, and rule
- * order do not affect an individual rule fingerprint.
+ * indexes the curated bundled rule library. File metadata, comments, rule IDs,
+ * descriptions, severity, and rule order do not affect a transformation
+ * fingerprint.
  */
 public final class RuleFingerprintIndex {
 
@@ -57,8 +58,16 @@ public final class RuleFingerprintIndex {
 
 	/** Returns a stable fingerprint for one parsed transformation rule. */
 	public static String fingerprintRule(TransformationRule rule) {
+		TransformationRule semanticRule = new TransformationRule(
+				null,
+				null,
+				rule.sourcePattern(),
+				rule.sourceGuard(),
+				rule.alternatives(),
+				rule.getImportDirective(),
+				null);
 		HintFile singleRuleFile = new HintFile();
-		singleRuleFile.addRule(rule);
+		singleRuleFile.addRule(semanticRule);
 		String canonical = new HintFileSerializer().serialize(singleRuleFile)
 				.replace("\r\n", "\n") //$NON-NLS-1$ //$NON-NLS-2$
 				.replace('\r', '\n')
