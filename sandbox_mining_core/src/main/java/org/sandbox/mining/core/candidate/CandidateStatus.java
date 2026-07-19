@@ -14,53 +14,68 @@
 package org.sandbox.mining.core.candidate;
 
 /**
- * Lifecycle status of a mined cleanup candidate.
- *
- * <p>Candidates progress through these states as they are validated,
- * tested, and eventually promoted into productive bundled hint files.</p>
+ * Enforced lifecycle status of a mined cleanup candidate.
  *
  * <pre>
- * DISCOVERED → DSL_VALID → TEST_GENERATED → TEST_PASSED → READY_FOR_PR → PROMOTED
- *                                                        ↘
- *                                                         REJECTED (at any stage)
+ * DISCOVERED -> DSL_VALID -> BEHAVIOR_VALID -> READY_FOR_REVIEW
+ *                                                |       |
+ *                                                v       v
+ *                                            APPROVED  REJECTED
+ *                                                |
+ *                                                v
+ *                                            PROMOTED
  * </pre>
+ *
+ * <p>{@link #SUPERSEDED} is a terminal state for an older candidate revision.
+ * Generated source files and test execution are implementation details and are
+ * deliberately not represented as domain states.</p>
  */
 public enum CandidateStatus {
 
-	/**
-	 * Initial state: candidate discovered by LLM from a commit diff.
-	 * DSL rule has not yet been validated.
-	 */
+	/** Candidate was produced by discovery and has not been validated. */
 	DISCOVERED,
 
-	/**
-	 * DSL rule has been parsed and validated by {@code DslValidator}.
-	 */
+	/** The DSL parser and deterministic DSL validator accepted the proposal. */
 	DSL_VALID,
 
-	/**
-	 * A lightweight JUnit test skeleton has been auto-generated for this candidate.
-	 */
-	TEST_GENERATED,
+	/** Before/after/negative examples passed deterministic behavior verification. */
+	BEHAVIOR_VALID,
 
-	/**
-	 * The generated test was executed and passed (beforeExample matches,
-	 * replacement equals afterExample, negativeExample does NOT match).
-	 */
-	TEST_PASSED,
+	/** Candidate passed automated gates and is ready for a human decision. */
+	READY_FOR_REVIEW,
 
-	/**
-	 * Candidate has passed all validations and is ready for PR/issue creation.
-	 */
-	READY_FOR_PR,
+	/** A human reviewer approved the candidate for promotion. */
+	APPROVED,
 
-	/**
-	 * Candidate has been promoted into a productive bundled {@code .sandbox-hint} file.
-	 */
+	/** The rule and its behavior test were merged into the curated rule set. */
 	PROMOTED,
 
+	/** A human reviewer rejected the candidate. */
+	REJECTED,
+
+	/** This revision was replaced by a newer revision of the same candidate. */
+	SUPERSEDED;
+
 	/**
-	 * Candidate has been rejected by a reviewer or failed automated checks.
+	 * Returns whether a transition from this state to {@code target} is valid.
+	 *
+	 * @param target requested target state
+	 * @return {@code true} when the transition is allowed
 	 */
-	REJECTED
+	public boolean canTransitionTo(CandidateStatus target) {
+		if (target == null || target == this) {
+			return false;
+		}
+		if (target == REJECTED || target == SUPERSEDED) {
+			return this != PROMOTED && this != REJECTED && this != SUPERSEDED;
+		}
+		return switch (this) {
+		case DISCOVERED -> target == DSL_VALID;
+		case DSL_VALID -> target == BEHAVIOR_VALID;
+		case BEHAVIOR_VALID -> target == READY_FOR_REVIEW;
+		case READY_FOR_REVIEW -> target == APPROVED;
+		case APPROVED -> target == PROMOTED;
+		case PROMOTED, REJECTED, SUPERSEDED -> false;
+		};
+	}
 }
