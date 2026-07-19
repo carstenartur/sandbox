@@ -29,10 +29,10 @@ import org.sandbox.jdt.triggerpattern.api.HintFile;
 import com.google.gson.Gson;
 
 /**
- * Executes the permanent data-driven behavior fixtures generated for approved
+ * Executes permanent, binding-aware behavior fixtures generated for approved
  * mining candidates. The suite is empty until the first candidate is promoted.
  */
-class PromotedCandidateBehaviorTest extends HintRuleTestSupport {
+class PromotedCandidateBehaviorTest extends StrictHintRuleTestSupport {
 
 	private static final String FIXTURE_PREFIX =
 			"org/sandbox/jdt/triggerpattern/promoted/"; //$NON-NLS-1$
@@ -67,24 +67,18 @@ class PromotedCandidateBehaviorTest extends HintRuleTestSupport {
 				fixture.sourceVersion());
 		assertNoMatch(proposedRule, fixture.negativeExample(), fixture.sourceVersion());
 
-		String bundledRule = readResource(classLoader, HINT_PREFIX + fixture.targetHintFile());
+		String bundledRule = readUtf8Resource(classLoader,
+				HINT_PREFIX + fixture.targetHintFile());
 		assertTrue(bundledRule.contains(fixture.dslRule().strip()),
 				"Promoted DSL is missing from bundled hint file " + fixture.targetHintFile()); //$NON-NLS-1$
 	}
 
-	private static PromotionFixture loadFixture(ClassLoader classLoader, String fixtureName)
+	private PromotionFixture loadFixture(ClassLoader classLoader, String fixtureName)
 			throws Exception {
-		String json = readResource(classLoader, FIXTURE_PREFIX + fixtureName);
+		String json = readUtf8Resource(classLoader, FIXTURE_PREFIX + fixtureName);
 		PromotionFixture fixture = GSON.fromJson(json, PromotionFixture.class);
 		assertNotNull(fixture, "Empty promotion fixture: " + fixtureName); //$NON-NLS-1$
 		return fixture;
-	}
-
-	private static String readResource(ClassLoader classLoader, String path) throws Exception {
-		try (var stream = classLoader.getResourceAsStream(path)) {
-			assertNotNull(stream, "Resource not found: " + path); //$NON-NLS-1$
-			return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-		}
 	}
 
 	private record PromotionFixture(
