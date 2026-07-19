@@ -14,6 +14,7 @@
 package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -37,6 +38,8 @@ class CandidateReviewCliTest {
 		MiningCandidate loaded = new CandidateStore(tempDir).loadAll().get(0);
 		assertEquals(CandidateStatus.APPROVED, loaded.getStatus());
 		assertEquals("reviewer", loaded.getTransitions().get(3).actor()); //$NON-NLS-1$
+		assertEquals(CandidateVerifier.VERSION,
+				loaded.getVerification().verifierVersion());
 	}
 
 	@Test
@@ -107,6 +110,24 @@ class CandidateReviewCliTest {
 		assertThrows(IllegalStateException.class, () -> apply(candidateFile, "approve", null)); //$NON-NLS-1$
 	}
 
+	@Test
+	void cannotApproveCandidateWhoseContentChangedAfterVerification() throws IOException {
+		Path candidateFile = saveReadyCandidate();
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate changed = store.loadAll().get(0);
+		changed.setAfterExample("class T { int m() { return 99; } }"); //$NON-NLS-1$
+		store.save(changed);
+
+		assertThrows(IllegalStateException.class,
+				() -> apply(candidateFile, "approve", "Review completed")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		MiningCandidate persisted = store.loadAll().get(0);
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, persisted.getStatus());
+		assertFalse(persisted.getVerification().successful());
+		assertEquals(CandidateVerification.Stage.AFTER_REWRITE,
+				persisted.getVerification().stage());
+	}
+
 	private void apply(Path candidateFile, String action, String reason) throws IOException {
 		if (reason == null) {
 			CandidateReviewCli.run(new String[] {
@@ -126,6 +147,7 @@ class CandidateReviewCliTest {
 
 	private Path saveReadyCandidate() throws IOException {
 		MiningCandidate candidate = candidate();
+		candidate.setVerification(new CandidateVerifier().verify(candidate));
 		candidate.transitionTo(CandidateStatus.DSL_VALID, "validator", "valid"); //$NON-NLS-1$ //$NON-NLS-2$
 		candidate.transitionTo(CandidateStatus.BEHAVIOR_VALID, "verifier", "valid"); //$NON-NLS-1$ //$NON-NLS-2$
 		candidate.transitionTo(CandidateStatus.READY_FOR_REVIEW, "pipeline", "ready"); //$NON-NLS-1$ //$NON-NLS-2$
