@@ -41,6 +41,19 @@ jobs:
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn package -pl sandbox_mining_core -DskipTests -q
 
+      - name: Restore staged candidate history
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin mining/candidates >/dev/null 2>&1; then
+            git fetch origin mining/candidates:refs/remotes/origin/mining/candidates
+            if git ls-tree -d --name-only origin/mining/candidates mining-candidates | grep -q '^mining-candidates$'; then
+              git archive origin/mining/candidates mining-candidates | tar -xf -
+              echo "Restored $(find mining-candidates -name '*-candidate.json' | wc -l) staged candidates."
+            fi
+          else
+            echo 'No candidate-data branch exists yet.'
+          fi
+
       - name: Discover staged candidates
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -79,6 +92,44 @@ jobs:
             --candidate-dir mining-candidates \
             --report-dir docs/mining-report \
             --source-version 21
+
+      - name: Persist candidate data outside main
+        run: |
+          set -euo pipefail
+          DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-data"
+          rm -rf "$DATA_WORKTREE"
+
+          if git show-ref --verify --quiet refs/remotes/origin/mining/candidates; then
+            git worktree add -B mining/candidates "$DATA_WORKTREE" origin/mining/candidates
+          else
+            git worktree add --detach "$DATA_WORKTREE" HEAD
+            git -C "$DATA_WORKTREE" checkout --orphan mining/candidates
+            git -C "$DATA_WORKTREE" rm -rf .
+            git -C "$DATA_WORKTREE" clean -fdx
+          fi
+
+          rm -rf "$DATA_WORKTREE/mining-candidates"
+          mkdir -p "$DATA_WORKTREE/mining-candidates"
+          if [ -d mining-candidates ]; then
+            cp -a mining-candidates/. "$DATA_WORKTREE/mining-candidates/"
+          fi
+          cat > "$DATA_WORKTREE/README.md" <<'EOF'
+          # Mining candidate data
+
+          This branch stores untrusted, staged DSL candidate JSON and review decisions.
+          It is deliberately not merged into `main` and contains no productive hint files.
+          EOF
+
+          git -C "$DATA_WORKTREE" config user.name 'github-actions[bot]'
+          git -C "$DATA_WORKTREE" config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C "$DATA_WORKTREE" add -A
+          if ! git -C "$DATA_WORKTREE" diff --cached --quiet; then
+            git -C "$DATA_WORKTREE" commit -m "mining: persist candidate state ${{ github.run_number }}"
+            git -C "$DATA_WORKTREE" push origin mining/candidates
+          else
+            echo 'No candidate-state changes to persist.'
+          fi
+          git worktree remove "$DATA_WORKTREE" --force
 
       - name: Create review issues for verified candidates
         env:
@@ -173,7 +224,7 @@ jobs:
           - [ ] The target hint file and source-version constraints are correct.
           - [ ] Promotion will include a permanent behavior test.
 
-          This issue is a review record only. No productive hint file was modified.
+          After review, run the **Review mining candidate** workflow with this candidate ID and issue number. No productive hint file was modified by discovery.
           '''
               with tempfile.NamedTemporaryFile('w', encoding='utf-8', delete=False) as handle:
                   handle.write(body)
