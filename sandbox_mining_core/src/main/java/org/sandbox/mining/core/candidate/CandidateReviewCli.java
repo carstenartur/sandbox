@@ -22,7 +22,7 @@ import java.util.Locale;
 import com.google.gson.Gson;
 
 /**
- * Applies an explicit human review decision to one verified candidate.
+ * Applies an explicit review or promotion decision to one verified candidate.
  *
  * <p>Usage:</p>
  * <pre>
@@ -93,18 +93,22 @@ public final class CandidateReviewCli {
 		String normalizedAction = action.toLowerCase(Locale.ROOT);
 		switch (normalizedAction) {
 		case "approve": //$NON-NLS-1$
-			if (candidate.getStatus() != CandidateStatus.READY_FOR_REVIEW) {
-				throw new IllegalStateException("Only READY_FOR_REVIEW candidates can be approved"); //$NON-NLS-1$
-			}
+			requireStatus(candidate, CandidateStatus.READY_FOR_REVIEW,
+					"Only READY_FOR_REVIEW candidates can be approved"); //$NON-NLS-1$
 			candidate.transitionTo(CandidateStatus.APPROVED, actor,
 					normalizeReason(reason, "Approved after human review")); //$NON-NLS-1$
 			break;
 		case "reject": //$NON-NLS-1$
-			if (candidate.getStatus() != CandidateStatus.READY_FOR_REVIEW) {
-				throw new IllegalStateException("Only READY_FOR_REVIEW candidates can be rejected"); //$NON-NLS-1$
-			}
+			requireStatus(candidate, CandidateStatus.READY_FOR_REVIEW,
+					"Only READY_FOR_REVIEW candidates can be rejected"); //$NON-NLS-1$
 			candidate.transitionTo(CandidateStatus.REJECTED, actor,
 					requireReason(reason, "A rejection reason is required")); //$NON-NLS-1$
+			break;
+		case "promote": //$NON-NLS-1$
+			requireStatus(candidate, CandidateStatus.APPROVED,
+					"Only APPROVED candidates can be marked promoted"); //$NON-NLS-1$
+			candidate.transitionTo(CandidateStatus.PROMOTED, actor,
+					normalizeReason(reason, "Promotion pull request merged")); //$NON-NLS-1$
 			break;
 		case "supersede": //$NON-NLS-1$
 			candidate.transitionTo(CandidateStatus.SUPERSEDED, actor,
@@ -123,6 +127,13 @@ public final class CandidateReviewCli {
 		}
 		System.out.println(candidate.getCandidateId() + " -> " + candidate.getStatus()); //$NON-NLS-1$
 		return 0;
+	}
+
+	private static void requireStatus(MiningCandidate candidate, CandidateStatus expected,
+			String message) {
+		if (candidate.getStatus() != expected) {
+			throw new IllegalStateException(message);
+		}
 	}
 
 	private static String normalizeReason(String reason, String fallback) {
