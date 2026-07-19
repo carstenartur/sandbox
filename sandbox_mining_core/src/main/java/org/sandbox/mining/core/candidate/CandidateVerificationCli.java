@@ -71,6 +71,7 @@ public final class CandidateVerificationCli {
 
 		CandidateStore store = new CandidateStore(candidateDir);
 		List<MiningCandidate> candidates = new ArrayList<>(store.loadAll());
+		migrateLegacyCandidates(candidates);
 		candidates.sort(candidatePriority());
 		CandidateVerifier verifier = new CandidateVerifier();
 		Map<String, String> canonicalByRuleFingerprint = new HashMap<>();
@@ -135,6 +136,41 @@ public final class CandidateVerificationCli {
 				+ failed + " failed, " + duplicates + " duplicates, " //$NON-NLS-1$ //$NON-NLS-2$
 				+ ready + " ready for review"); //$NON-NLS-1$
 		return 0;
+	}
+
+	/**
+	 * Assigns deterministic ordinals before schema-v1 candidates are renamed.
+	 * This prevents multiple proposals from one commit from collapsing onto the
+	 * same schema-v2 filename during migration.
+	 */
+	private static void migrateLegacyCandidates(List<MiningCandidate> candidates) {
+		Map<String, Integer> nextOrdinalByOrigin = new HashMap<>();
+		for (MiningCandidate candidate : candidates) {
+			if (candidate.getSchemaVersion() >= 2) {
+				nextOrdinalByOrigin.merge(originKey(candidate),
+						candidate.getCandidateOrdinal() + 1, Math::max);
+			}
+		}
+		for (MiningCandidate candidate : candidates) {
+			if (candidate.getSchemaVersion() >= 2) {
+				continue;
+			}
+			String origin = originKey(candidate);
+			int ordinal = nextOrdinalByOrigin.getOrDefault(origin, 0);
+			nextOrdinalByOrigin.put(origin, ordinal + 1);
+			candidate.setCandidateId(null);
+			candidate.setCandidateOrdinal(ordinal);
+			candidate.setRevision(candidate.getRevision());
+			candidate.setSchemaVersion(2);
+		}
+	}
+
+	private static String originKey(MiningCandidate candidate) {
+		return String.join("\n", //$NON-NLS-1$
+				nullToEmpty(candidate.getSourceRepo()),
+				nullToEmpty(candidate.getSourceCommit()),
+				nullToEmpty(candidate.getCategory()),
+				nullToEmpty(candidate.getTargetHintFile()));
 	}
 
 	private static Comparator<MiningCandidate> candidatePriority() {
@@ -248,6 +284,10 @@ public final class CandidateVerificationCli {
 				.replace("<", "&lt;") //$NON-NLS-1$ //$NON-NLS-2$
 				.replace(">", "&gt;") //$NON-NLS-1$ //$NON-NLS-2$
 				.replace("\"", "&quot;"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static String nullToEmpty(String value) {
+		return value == null ? "" : value; //$NON-NLS-1$
 	}
 
 	private static String requireValue(String[] args, int index, String option) {
