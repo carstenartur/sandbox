@@ -39,6 +39,45 @@ class CandidateVerifierTest {
 	}
 
 	@Test
+	void verifiesTypeGuardWithResolvedBinding() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setDslRule("$value.trim() :: instanceof($value, \"java.lang.String\")\n" //$NON-NLS-1$
+				+ "=> $value.strip()\n;;"); //$NON-NLS-1$
+		candidate.setBeforeExample(
+				"class Test { String m(String value) { return value.trim(); } }"); //$NON-NLS-1$
+		candidate.setAfterExample(
+				"class Test { String m(String value) { return value.strip(); } }"); //$NON-NLS-1$
+		candidate.setNegativeExample(
+				"class Test { String m(String value) { return value.strip(); } }"); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertTrue(result.successful(), result.message());
+		assertEquals(CandidateVerification.Stage.SUCCESS, result.stage());
+	}
+
+	@Test
+	void rejectsTypeGuardForWrongResolvedReceiverType() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setDslRule("$value.trim() :: instanceof($value, \"java.lang.String\")\n" //$NON-NLS-1$
+				+ "=> $value.strip()\n;;"); //$NON-NLS-1$
+		candidate.setBeforeExample("""
+				class Box { String trim() { return ""; } }
+				class Test { String m(Box value) { return value.trim(); } }
+				"""); //$NON-NLS-1$
+		candidate.setAfterExample(candidate.getBeforeExample());
+		candidate.setNegativeExample("""
+				class Box { String strip() { return ""; } }
+				class Test { String m(Box value) { return value.strip(); } }
+				"""); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.BEFORE_MATCH, result.stage());
+	}
+
+	@Test
 	void rejectsFragmentToFullSourceMismatch() {
 		MiningCandidate candidate = validCandidate();
 		candidate.setAfterExample("class Test { void m() { int r = 2; } }"); //$NON-NLS-1$
@@ -158,6 +197,18 @@ class CandidateVerifierTest {
 
 		assertFalse(result.successful());
 		assertEquals(CandidateVerification.Stage.BEFORE_PARSE, result.stage());
+	}
+
+	@Test
+	void rejectsUnresolvedTypeInPositiveExample() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setBeforeExample("class Test { MissingType m() { return null; } }"); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.BEFORE_PARSE, result.stage());
+		assertTrue(result.message().contains("MissingType")); //$NON-NLS-1$
 	}
 
 	@Test
