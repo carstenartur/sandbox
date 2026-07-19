@@ -133,7 +133,10 @@ public class CandidateStore {
 		try (Stream<Path> paths = Files.list(storeDir)) {
 			List<Path> aliases = paths.filter(CandidateStore::isCandidateFile)
 					.filter(path -> !path.equals(canonicalPath))
-					.filter(path -> load(path).filter(existing -> sameProposal(existing, candidate)).isPresent())
+					.filter(path -> load(path)
+							.filter(existing -> existing.getSchemaVersion() < 2)
+							.filter(existing -> sameProposal(existing, candidate))
+							.isPresent())
 					.toList();
 			for (Path alias : aliases) {
 				Files.deleteIfExists(alias);
