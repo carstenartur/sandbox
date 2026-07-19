@@ -85,11 +85,12 @@ public final class CandidateVerificationCli {
 		int verified = 0;
 		int failed = 0;
 		for (MiningCandidate candidate : candidates) {
-			if (candidate.getSourceVersion() == null || candidate.getSourceVersion().isBlank()) {
+			if (!candidate.hasDeclaredSourceVersion()) {
 				candidate.setSourceVersion(defaultSourceVersion);
 			}
 			if (isTerminal(candidate.getStatus())
 					|| candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW) {
+				store.save(candidate);
 				continue;
 			}
 
