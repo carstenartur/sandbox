@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -43,13 +44,19 @@ public class CandidateStore {
 
 	/**
 	 * Saves a candidate atomically. Corrected content for the same stable
-	 * candidate ID increments the revision; status-only updates do not.
+	 * candidate ID increments the revision; status-only updates do not. Legacy
+	 * filenames for the same proposal are removed after a successful write.
 	 */
 	public void save(MiningCandidate candidate) throws IOException {
 		if (candidate == null) {
 			throw new IllegalArgumentException("candidate must not be null"); //$NON-NLS-1$
 		}
 		Files.createDirectories(storeDir);
+		if (candidate.getSchemaVersion() < 2) {
+			candidate.setSchemaVersion(2);
+		}
+		candidate.setRevision(candidate.getRevision());
+
 		Path target = storeDir.resolve(candidate.toFileName());
 		Optional<MiningCandidate> existing = load(target);
 		if (existing.isPresent()) {
@@ -72,6 +79,7 @@ public class CandidateStore {
 		} catch (AtomicMoveNotSupportedException e) {
 			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING);
 		}
+		deleteLegacyAliases(candidate, target);
 	}
 
 	/** Loads all candidate files in deterministic filename order. */
@@ -106,8 +114,6 @@ public class CandidateStore {
 
 	/**
 	 * Returns whether the same candidate revision content is already stored.
-	 * A corrected rule or example set for the same origin is not considered an
-	 * exact duplicate and will be saved as a new revision.
 	 */
 	public boolean containsCandidate(MiningCandidate candidate) {
 		if (candidate == null) {
@@ -120,6 +126,28 @@ public class CandidateStore {
 
 	public Path getStoreDir() {
 		return storeDir;
+	}
+
+	private void deleteLegacyAliases(MiningCandidate candidate, Path canonicalPath)
+			throws IOException {
+		try (Stream<Path> paths = Files.list(storeDir)) {
+			List<Path> aliases = paths.filter(CandidateStore::isCandidateFile)
+					.filter(path -> !path.equals(canonicalPath))
+					.filter(path -> load(path).filter(existing -> sameProposal(existing, candidate)).isPresent())
+					.toList();
+			for (Path alias : aliases) {
+				Files.deleteIfExists(alias);
+			}
+		}
+	}
+
+	private static boolean sameProposal(MiningCandidate first, MiningCandidate second) {
+		return Objects.equals(first.getSourceRepo(), second.getSourceRepo())
+				&& Objects.equals(first.getSourceCommit(), second.getSourceCommit())
+				&& Objects.equals(first.getCategory(), second.getCategory())
+				&& Objects.equals(first.getTargetHintFile(), second.getTargetHintFile())
+				&& first.getRuleFingerprint().equals(second.getRuleFingerprint())
+				&& first.getBehaviorFingerprint().equals(second.getBehaviorFingerprint());
 	}
 
 	private Optional<MiningCandidate> load(Path path) {
