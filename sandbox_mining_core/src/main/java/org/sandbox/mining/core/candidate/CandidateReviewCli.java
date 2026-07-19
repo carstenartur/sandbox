@@ -122,12 +122,16 @@ public final class CandidateReviewCli {
 			throw new IllegalArgumentException("Unsupported review action: " + action); //$NON-NLS-1$
 		}
 
-		Path parent = candidateFile.toAbsolutePath().getParent();
+		Path absoluteCandidateFile = candidateFile.toAbsolutePath().normalize();
+		Path parent = absoluteCandidateFile.getParent();
+		if (parent == null) {
+			throw new IOException("Candidate file has no parent directory: " + absoluteCandidateFile); //$NON-NLS-1$
+		}
 		CandidateStore store = new CandidateStore(parent);
 		store.save(candidate);
 		Path canonicalFile = parent.resolve(candidate.toFileName());
-		if (!candidateFile.toAbsolutePath().equals(canonicalFile) && Files.exists(candidateFile)) {
-			Files.delete(candidateFile);
+		if (!absoluteCandidateFile.equals(canonicalFile) && Files.exists(absoluteCandidateFile)) {
+			Files.delete(absoluteCandidateFile);
 		}
 		System.out.println(candidate.getCandidateId() + " -> " + candidate.getStatus()); //$NON-NLS-1$
 		return 0;
