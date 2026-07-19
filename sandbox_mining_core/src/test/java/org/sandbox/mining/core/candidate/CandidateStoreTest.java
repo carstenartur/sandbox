@@ -18,154 +18,133 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Tests for {@link CandidateStore}.
- */
+/** Tests candidate persistence, revisioning, and status queries. */
 class CandidateStoreTest {
 
 	@TempDir
 	Path tempDir;
 
 	@Test
-	void testSaveAndLoadSingleCandidate() throws IOException {
+	void savesAndLoadsCandidateMetadata() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
-		MiningCandidate candidate = createCandidate("abc1234567890", CandidateStatus.DSL_VALID);
+		MiningCandidate candidate = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		candidate.setStatus(CandidateStatus.DSL_VALID);
 
 		store.save(candidate);
+
+		MiningCandidate loaded = store.loadAll().get(0);
+		assertEquals(candidate.getCandidateId(), loaded.getCandidateId());
+		assertEquals(CandidateStatus.DSL_VALID, loaded.getStatus());
+		assertEquals(candidate.getRuleFingerprint(), loaded.getRuleFingerprint());
+		assertEquals(candidate.getBehaviorFingerprint(), loaded.getBehaviorFingerprint());
+		assertEquals(2, loaded.getSchemaVersion());
+	}
+
+	@Test
+	void statusOnlyUpdateDoesNotIncrementRevision() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate candidate = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		store.save(candidate);
+		candidate.setStatus(CandidateStatus.DSL_VALID);
+
+		store.save(candidate);
+
+		MiningCandidate loaded = store.loadAll().get(0);
+		assertEquals(1, loaded.getRevision());
+		assertEquals(CandidateStatus.DSL_VALID, loaded.getStatus());
+	}
+
+	@Test
+	void correctedContentIncrementsRevisionAndKeepsStableId() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate original = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		store.save(original);
+		MiningCandidate corrected = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		corrected.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+		corrected.setBeforeExample("class T { int m() { return 2 * 1; } }"); //$NON-NLS-1$
+		corrected.setAfterExample("class T { int m() { return 2; } }"); //$NON-NLS-1$
+
+		assertFalse(store.containsCandidate(corrected));
+		store.save(corrected);
 
 		List<MiningCandidate> loaded = store.loadAll();
 		assertEquals(1, loaded.size());
-		MiningCandidate loaded0 = loaded.get(0);
-		assertEquals("abc1234567890", loaded0.getSourceCommit()); //$NON-NLS-1$
-		assertEquals(CandidateStatus.DSL_VALID, loaded0.getStatus());
-		assertEquals("$x + 0\n=> $x\n;;", loaded0.getDslRule()); //$NON-NLS-1$
-		assertEquals("before example", loaded0.getBeforeExample()); //$NON-NLS-1$
-		assertEquals("after example", loaded0.getAfterExample()); //$NON-NLS-1$
-		assertEquals("negative example", loaded0.getNegativeExample()); //$NON-NLS-1$
+		assertEquals(original.getCandidateId(), loaded.get(0).getCandidateId());
+		assertEquals(2, loaded.get(0).getRevision());
 	}
 
 	@Test
-	void testSaveMultipleCandidates() throws IOException {
+	void allowsMultipleCandidatesFromSameCommitUsingOrdinal() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
-		store.save(createCandidate("abc1234567890", CandidateStatus.DISCOVERED));
-		store.save(createCandidate("def5678901234", CandidateStatus.TEST_PASSED));
-		store.save(createCandidate("ghi9012345678", CandidateStatus.READY_FOR_PR));
+		store.save(createCandidate("abc1234567890", 0)); //$NON-NLS-1$
+		store.save(createCandidate("abc1234567890", 1)); //$NON-NLS-1$
 
-		List<MiningCandidate> loaded = store.loadAll();
-		assertEquals(3, loaded.size());
+		assertEquals(2, store.loadAll().size());
 	}
 
 	@Test
-	void testOverwriteExistingCandidate() throws IOException {
+	void exactDuplicateIsDetected() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
-		MiningCandidate candidate = createCandidate("abc1234567890", CandidateStatus.DISCOVERED);
+		MiningCandidate candidate = createCandidate("abc1234567890", 0); //$NON-NLS-1$
 		store.save(candidate);
 
-		// Update status and save again
-		candidate.setStatus(CandidateStatus.DSL_VALID);
-		store.save(candidate);
-
-		List<MiningCandidate> loaded = store.loadAll();
-		assertEquals(1, loaded.size(), "Should have only one file (overwritten)"); //$NON-NLS-1$
-		assertEquals(CandidateStatus.DSL_VALID, loaded.get(0).getStatus());
-	}
-
-	@Test
-	void testLoadAllFromEmptyDirectory() throws IOException {
-		CandidateStore store = new CandidateStore(tempDir.resolve("empty-subdir")); //$NON-NLS-1$
-		List<MiningCandidate> loaded = store.loadAll();
-		assertTrue(loaded.isEmpty(), "Empty directory should return empty list"); //$NON-NLS-1$
-	}
-
-	@Test
-	void testLoadAllFromNonExistentDirectory() throws IOException {
-		CandidateStore store = new CandidateStore(tempDir.resolve("nonexistent")); //$NON-NLS-1$
-		List<MiningCandidate> loaded = store.loadAll();
-		assertTrue(loaded.isEmpty(), "Non-existent directory should return empty list"); //$NON-NLS-1$
-	}
-
-	@Test
-	void testLoadByStatus() throws IOException {
-		CandidateStore store = new CandidateStore(tempDir);
-		store.save(createCandidate("abc1234567890", CandidateStatus.DISCOVERED));
-		store.save(createCandidate("def5678901234", CandidateStatus.DSL_VALID));
-		store.save(createCandidate("ghi9012345678", CandidateStatus.DSL_VALID));
-
-		List<MiningCandidate> discovered = store.loadByStatus(CandidateStatus.DISCOVERED);
-		List<MiningCandidate> valid = store.loadByStatus(CandidateStatus.DSL_VALID);
-
-		assertEquals(1, discovered.size());
-		assertEquals(2, valid.size());
-	}
-
-	@Test
-	void testContainsCandidate() throws IOException {
-		CandidateStore store = new CandidateStore(tempDir);
-		MiningCandidate candidate = createCandidate("abc1234567890", CandidateStatus.DISCOVERED);
-		store.save(candidate);
-
-		assertTrue(store.containsCandidate(candidate));
-		assertFalse(store.containsCandidate(createCandidate("def5678901234", CandidateStatus.DISCOVERED))); //$NON-NLS-1$
-	}
-
-	@Test
-	void testContainsCandidateNull() throws IOException {
-		CandidateStore store = new CandidateStore(tempDir);
+		assertTrue(store.containsCandidate(createCandidate("abc1234567890", 0))); //$NON-NLS-1$
+		assertFalse(store.containsCandidate(createCandidate("def5678901234", 0))); //$NON-NLS-1$
 		assertFalse(store.containsCandidate(null));
 	}
 
 	@Test
-	void testSaveAllowsMultipleCandidatesFromSameCommit() throws IOException {
+	void loadsByOperationalStatus() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
-		MiningCandidate first = createCandidate("abc1234567890", CandidateStatus.DSL_VALID); //$NON-NLS-1$
-		MiningCandidate second = createCandidate("abc1234567890", CandidateStatus.DSL_VALID); //$NON-NLS-1$
-		second.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+		MiningCandidate discovered = createCandidate("a", 0); //$NON-NLS-1$
+		MiningCandidate ready = createCandidate("b", 0); //$NON-NLS-1$
+		ready.setStatus(CandidateStatus.READY_FOR_REVIEW);
+		store.save(discovered);
+		store.save(ready);
 
-		store.save(first);
-		store.save(second);
-
-		List<MiningCandidate> loaded = store.loadAll();
-		assertEquals(2, loaded.size(), "Different rules from same commit should produce distinct candidate files"); //$NON-NLS-1$
+		assertEquals(1, store.loadByStatus(CandidateStatus.DISCOVERED).size());
+		assertEquals(1, store.loadByStatus(CandidateStatus.READY_FOR_REVIEW).size());
 	}
 
 	@Test
-	void testGetStoreDir() {
-		CandidateStore store = new CandidateStore(tempDir);
-		assertEquals(tempDir, store.getStoreDir());
+	void emptyAndMissingDirectoriesReturnNoCandidates() throws IOException {
+		assertTrue(new CandidateStore(tempDir.resolve("missing")).loadAll().isEmpty()); //$NON-NLS-1$
+		Path empty = tempDir.resolve("empty"); //$NON-NLS-1$
+		Files.createDirectories(empty);
+		assertTrue(new CandidateStore(empty).loadAll().isEmpty());
 	}
 
 	@Test
-	void testDirectoryCreatedOnSave() throws IOException {
-		Path subDir = tempDir.resolve("new-subdir"); //$NON-NLS-1$
-		assertFalse(java.nio.file.Files.exists(subDir), "Directory should not exist yet"); //$NON-NLS-1$
+	void saveCreatesStoreDirectory() throws IOException {
+		Path storePath = tempDir.resolve("new-store"); //$NON-NLS-1$
+		CandidateStore store = new CandidateStore(storePath);
 
-		CandidateStore store = new CandidateStore(subDir);
-		store.save(createCandidate("abc1234567890", CandidateStatus.DISCOVERED));
+		store.save(createCandidate("abc", 0)); //$NON-NLS-1$
 
-		assertTrue(java.nio.file.Files.exists(subDir), "Directory should be created on save"); //$NON-NLS-1$
+		assertTrue(Files.isDirectory(storePath));
+		assertEquals(storePath, store.getStoreDir());
 	}
 
-	// --- helpers ---
-
-	private MiningCandidate createCandidate(String commitHash, CandidateStatus status) {
+	private static MiningCandidate createCandidate(String commitHash, int ordinal) {
 		MiningCandidate candidate = new MiningCandidate(
 				"$x + 0\n=> $x\n;;", //$NON-NLS-1$
-				"before example", //$NON-NLS-1$
-				"after example", //$NON-NLS-1$
-				"negative example", //$NON-NLS-1$
+				"class T { int m() { return 1 + 0; } }", //$NON-NLS-1$
+				"class T { int m() { return 1; } }", //$NON-NLS-1$
+				"class T { int m() { return 1 + 2; } }", //$NON-NLS-1$
 				"performance.sandbox-hint", //$NON-NLS-1$
 				commitHash,
 				"https://github.com/example/repo", //$NON-NLS-1$
 				"arithmetic", //$NON-NLS-1$
 				"Remove addition of zero", //$NON-NLS-1$
 				"2026-01-01T00:00:00Z"); //$NON-NLS-1$
-		candidate.setStatus(status);
+		candidate.setCandidateOrdinal(ordinal);
 		return candidate;
 	}
 }
