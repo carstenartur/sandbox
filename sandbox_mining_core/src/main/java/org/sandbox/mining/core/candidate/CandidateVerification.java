@@ -15,17 +15,7 @@ package org.sandbox.mining.core.candidate;
 
 import java.time.Instant;
 
-/**
- * Structured result of deterministic candidate verification.
- *
- * @param successful whether all verification stages passed
- * @param stage final stage reached
- * @param message human-readable diagnostic
- * @param verifiedAt ISO-8601 timestamp
- * @param verifierVersion verifier implementation version
- * @param matches number of matches produced for the positive example
- * @param replacements number of positive matches with a replacement
- */
+/** Structured result of deterministic candidate verification. */
 public record CandidateVerification(
 		boolean successful,
 		Stage stage,
@@ -38,6 +28,7 @@ public record CandidateVerification(
 	/** Deterministic verification stages. */
 	public enum Stage {
 		SCHEMA,
+		DUPLICATE,
 		DSL_VALIDATION,
 		DSL_PARSE,
 		BEFORE_PARSE,
