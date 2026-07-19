@@ -84,14 +84,39 @@ public final class CandidateReviewCli {
 			throw new IllegalArgumentException("--actor is required"); //$NON-NLS-1$
 		}
 
+		Path absoluteCandidateFile = candidateFile.toAbsolutePath().normalize();
+		Path parent = absoluteCandidateFile.getParent();
+		if (parent == null) {
+			throw new IOException("Candidate file has no parent directory: " + absoluteCandidateFile); //$NON-NLS-1$
+		}
+		CandidateStore store = new CandidateStore(parent);
 		MiningCandidate candidate = GSON.fromJson(
-				Files.readString(candidateFile, StandardCharsets.UTF_8), MiningCandidate.class);
+				Files.readString(absoluteCandidateFile, StandardCharsets.UTF_8), MiningCandidate.class);
 		if (candidate == null) {
 			throw new IllegalArgumentException("Candidate JSON is empty"); //$NON-NLS-1$
 		}
 
-		String normalizedAction = action.toLowerCase(Locale.ROOT);
-		switch (normalizedAction) {
+		try {
+			applyAction(candidate, action.toLowerCase(Locale.ROOT), actor, reason);
+		} catch (IllegalStateException e) {
+			// Persist a freshly computed failed verification diagnostic before
+			// returning the failed review decision to the caller.
+			store.save(candidate);
+			throw e;
+		}
+
+		store.save(candidate);
+		Path canonicalFile = parent.resolve(candidate.toFileName());
+		if (!absoluteCandidateFile.equals(canonicalFile) && Files.exists(absoluteCandidateFile)) {
+			Files.delete(absoluteCandidateFile);
+		}
+		System.out.println(candidate.getCandidateId() + " -> " + candidate.getStatus()); //$NON-NLS-1$
+		return 0;
+	}
+
+	private static void applyAction(MiningCandidate candidate, String action,
+			String actor, String reason) {
+		switch (action) {
 		case "approve": //$NON-NLS-1$
 			approve(candidate, actor, normalizeReason(reason, "Approved after human review")); //$NON-NLS-1$
 			break;
@@ -116,20 +141,6 @@ public final class CandidateReviewCli {
 		default:
 			throw new IllegalArgumentException("Unsupported review action: " + action); //$NON-NLS-1$
 		}
-
-		Path absoluteCandidateFile = candidateFile.toAbsolutePath().normalize();
-		Path parent = absoluteCandidateFile.getParent();
-		if (parent == null) {
-			throw new IOException("Candidate file has no parent directory: " + absoluteCandidateFile); //$NON-NLS-1$
-		}
-		CandidateStore store = new CandidateStore(parent);
-		store.save(candidate);
-		Path canonicalFile = parent.resolve(candidate.toFileName());
-		if (!absoluteCandidateFile.equals(canonicalFile) && Files.exists(absoluteCandidateFile)) {
-			Files.delete(absoluteCandidateFile);
-		}
-		System.out.println(candidate.getCandidateId() + " -> " + candidate.getStatus()); //$NON-NLS-1$
-		return 0;
 	}
 
 	private static void approve(MiningCandidate candidate, String actor, String reason) {
