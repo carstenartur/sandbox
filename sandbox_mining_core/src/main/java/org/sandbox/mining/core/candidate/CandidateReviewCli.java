@@ -23,12 +23,13 @@ import com.google.gson.Gson;
 
 /**
  * Applies an explicit review or promotion decision to one verified candidate.
- * Repeating an already-applied decision is a successful no-op so interrupted
- * workflows can be retried safely.
+ * Repeating an already-applied decision is retry-safe. An approval retry keeps
+ * the existing decision transition but refreshes the persisted deterministic
+ * verification with the current verifier.
  *
  * <p>Approval always re-runs deterministic verification with the current
- * verifier before recording the human decision. Promotion is independently
- * re-verified by {@link CandidatePromotionCli}.</p>
+ * verifier before recording or retaining the human decision. Promotion is
+ * independently re-verified by {@link CandidatePromotionCli}.</p>
  */
 public final class CandidateReviewCli {
 
@@ -144,11 +145,11 @@ public final class CandidateReviewCli {
 	}
 
 	private static void approve(MiningCandidate candidate, String actor, String reason) {
-		if (candidate.getStatus() == CandidateStatus.APPROVED) {
-			return;
-		}
-		if (candidate.getStatus() != CandidateStatus.READY_FOR_REVIEW) {
-			throw new IllegalStateException("Only READY_FOR_REVIEW candidates can be approved"); //$NON-NLS-1$
+		CandidateStatus status = candidate.getStatus();
+		if (status != CandidateStatus.READY_FOR_REVIEW
+				&& status != CandidateStatus.APPROVED) {
+			throw new IllegalStateException(
+					"Only READY_FOR_REVIEW or already APPROVED candidates can be approved"); //$NON-NLS-1$
 		}
 		CandidateVerification currentVerification = new CandidateVerifier().verify(candidate);
 		candidate.setVerification(currentVerification);
@@ -156,7 +157,9 @@ public final class CandidateReviewCli {
 			throw new IllegalStateException("Candidate failed current deterministic verification at " //$NON-NLS-1$
 					+ currentVerification.stage() + ": " + currentVerification.message()); //$NON-NLS-1$
 		}
-		candidate.transitionTo(CandidateStatus.APPROVED, actor, reason);
+		if (status == CandidateStatus.READY_FOR_REVIEW) {
+			candidate.transitionTo(CandidateStatus.APPROVED, actor, reason);
+		}
 	}
 
 	private static void applyIdempotentTransition(MiningCandidate candidate,
