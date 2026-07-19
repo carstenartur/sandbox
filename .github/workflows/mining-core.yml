@@ -91,6 +91,7 @@ jobs:
             org.sandbox.mining.core.candidate.CandidateVerificationCli \
             --candidate-dir mining-candidates \
             --report-dir docs/mining-report \
+            --curated-hint-dir sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal \
             --source-version 21
 
       - name: Persist candidate data outside main
@@ -140,8 +141,18 @@ jobs:
           import json
           import os
           import pathlib
+          import re
           import subprocess
           import tempfile
+
+          def inline(value):
+              return ' '.join(str(value or '').split()).replace('|', '\\|')
+
+          def fenced(value, language):
+              text = str(value or '')
+              longest = max((len(run) for run in re.findall(r'`+', text)), default=0)
+              marker = '`' * max(4, longest + 1)
+              return f'{marker}{language}\n{text}\n{marker}'
 
           candidate_dir = pathlib.Path('mining-candidates')
           if not candidate_dir.exists():
@@ -158,7 +169,10 @@ jobs:
               if candidate.get('status') == 'READY_FOR_REVIEW':
                   ready.append((path, candidate))
 
-          for path, candidate in ready[:5]:
+          created_count = 0
+          for path, candidate in ready:
+              if created_count >= 5:
+                  break
               candidate_id = candidate.get('candidateId') or path.name.removesuffix('-candidate.json')
               search = f'{candidate_id} in:body'
               existing = subprocess.run(
@@ -169,11 +183,15 @@ jobs:
                   print(f'Candidate {candidate_id} already has issue #{existing}')
                   continue
 
-              source = candidate.get('sourceRepo', '').removesuffix('.git')
-              commit = candidate.get('sourceCommit', '')
+              source = str(candidate.get('sourceRepo') or '').removesuffix('.git')
+              commit = str(candidate.get('sourceCommit') or '')
               verification = candidate.get('verification') or {}
-              summary = candidate.get('summary') or 'Mined cleanup candidate'
+              summary = inline(candidate.get('summary') or 'Mined cleanup candidate')
               title = f'🧪 Review DSL candidate: {summary}'[:220]
+              dsl_block = fenced(candidate.get('dslRule'), 'text')
+              before_block = fenced(candidate.get('beforeExample'), 'java')
+              after_block = fenced(candidate.get('afterExample'), 'java')
+              negative_block = fenced(candidate.get('negativeExample'), 'java')
               body = f'''<!-- mining-candidate-id: {candidate_id} -->
           ## Verified mining candidate
 
@@ -181,40 +199,32 @@ jobs:
           |---|---|
           | Candidate ID | `{candidate_id}` |
           | Revision | `{candidate.get("revision", 1)}` |
-          | Status | `{candidate.get("status")}` |
-          | Rule fingerprint | `{candidate.get("ruleFingerprint", "")}` |
-          | Behavior fingerprint | `{candidate.get("behaviorFingerprint", "")}` |
+          | Status | `{inline(candidate.get("status"))}` |
+          | Rule fingerprint | `{inline(candidate.get("ruleFingerprint"))}` |
+          | Behavior fingerprint | `{inline(candidate.get("behaviorFingerprint"))}` |
           | Source | {source}/commit/{commit} |
-          | Target hint file | `{candidate.get("targetHintFile", "")}` |
-          | Verifier | `{verification.get("verifierVersion", "")}` |
+          | Target hint file | `{inline(candidate.get("targetHintFile"))}` |
+          | Verifier | `{inline(verification.get("verifierVersion"))}` |
 
           ### Verification
 
-          `{verification.get("stage", "unknown")}` — {verification.get("message", "No diagnostic")}
+          `{inline(verification.get("stage") or "unknown")}` — {inline(verification.get("message") or "No diagnostic")}
 
           ### Proposed DSL
 
-          ````text
-          {candidate.get("dslRule", "")}
-          ````
+          {dsl_block}
 
           ### Before
 
-          ````java
-          {candidate.get("beforeExample", "")}
-          ````
+          {before_block}
 
           ### After
 
-          ````java
-          {candidate.get("afterExample", "")}
-          ````
+          {after_block}
 
           ### Negative example
 
-          ````java
-          {candidate.get("negativeExample", "")}
-          ````
+          {negative_block}
 
           ## Review checklist
 
@@ -234,6 +244,7 @@ jobs:
                       ['gh', 'issue', 'create', '--title', title, '--body-file', body_path],
                       check=True, capture_output=True, text=True).stdout.strip()
                   print(f'Created review issue: {created}')
+                  created_count += 1
               finally:
                   os.unlink(body_path)
           PY
