@@ -133,7 +133,8 @@ public final class CandidatePromotionCli {
 		}
 		String target = targetHintFile.trim();
 		if (!target.endsWith(".sandbox-hint") //$NON-NLS-1$
-				|| !Path.of(target).getFileName().toString().equals(target)) {
+				|| target.indexOf('/') >= 0 || target.indexOf('\\') >= 0
+				|| ".".equals(target) || "..".equals(target)) { //$NON-NLS-1$ //$NON-NLS-2$
 			throw new IllegalArgumentException("targetHintFile must be a simple .sandbox-hint filename"); //$NON-NLS-1$
 		}
 		return target;
