@@ -1,0 +1,172 @@
+name: Review mining candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_id:
+        description: '64-character candidate ID from the review issue'
+        required: true
+        type: string
+      decision:
+        description: 'Human review decision'
+        required: true
+        type: choice
+        options:
+          - approve
+          - reject
+      reason:
+        description: 'Review rationale; required for rejection'
+        required: false
+        type: string
+      issue_number:
+        description: 'Review issue number to update'
+        required: false
+        type: string
+
+concurrency:
+  group: mining-candidate-${{ inputs.candidate_id }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Validate candidate ID and load candidate data
+        id: candidate
+        run: |
+          set -euo pipefail
+          CANDIDATE_ID='${{ inputs.candidate_id }}'
+          if [[ ! "$CANDIDATE_ID" =~ ^[0-9a-f]{64}$ ]]; then
+            echo 'candidate_id must be a lowercase 64-character SHA-256 value.' >&2
+            exit 1
+          fi
+          git fetch origin mining/candidates:refs/remotes/origin/mining/candidates
+          mkdir -p mining-candidates
+          git show "origin/mining/candidates:mining-candidates/${CANDIDATE_ID}-candidate.json" \
+            > "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          echo "file=mining-candidates/${CANDIDATE_ID}-candidate.json" >> "$GITHUB_OUTPUT"
+          echo "short=${CANDIDATE_ID:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Build candidate tooling
+        run: |
+          set -euo pipefail
+          mvn install -N -q
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn package -pl sandbox_mining_core -DskipTests -q
+
+      - name: Apply review decision
+        run: |
+          set -euo pipefail
+          REASON_ARGS=()
+          if [ -n '${{ inputs.reason }}' ]; then
+            REASON_ARGS=(--reason '${{ inputs.reason }}')
+          fi
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidateReviewCli \
+            --candidate '${{ steps.candidate.outputs.file }}' \
+            --action '${{ inputs.decision }}' \
+            --actor '${{ github.actor }}' \
+            "${REASON_ARGS[@]}"
+
+      - name: Persist review decision on candidate-data branch
+        run: |
+          set -euo pipefail
+          DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-review"
+          git worktree add -B mining/candidates "$DATA_WORKTREE" origin/mining/candidates
+          cp '${{ steps.candidate.outputs.file }}' \
+            "$DATA_WORKTREE/mining-candidates/${{ inputs.candidate_id }}-candidate.json"
+          git -C "$DATA_WORKTREE" config user.name '${{ github.actor }}'
+          git -C "$DATA_WORKTREE" config user.email '${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com'
+          git -C "$DATA_WORKTREE" add "mining-candidates/${{ inputs.candidate_id }}-candidate.json"
+          if ! git -C "$DATA_WORKTREE" diff --cached --quiet; then
+            git -C "$DATA_WORKTREE" commit -m \
+              "mining: ${{ inputs.decision }} candidate ${{ steps.candidate.outputs.short }}"
+            git -C "$DATA_WORKTREE" push origin mining/candidates
+          fi
+          git worktree remove "$DATA_WORKTREE" --force
+
+      - name: Close rejected candidate issue
+        if: inputs.decision == 'reject' && inputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh issue comment '${{ inputs.issue_number }}' --body \
+            'Candidate `${{ inputs.candidate_id }}` was rejected by `${{ github.actor }}`. Reason: ${{ inputs.reason }}'
+          gh issue close '${{ inputs.issue_number }}' --reason 'not planned'
+
+      - name: Generate promotion changes
+        if: inputs.decision == 'approve'
+        run: |
+          set -euo pipefail
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidatePromotionCli \
+            --candidate '${{ steps.candidate.outputs.file }}' \
+            --repo-root . \
+            --actor '${{ github.actor }}'
+
+      - name: Verify promotion rule and permanent fixture
+        if: inputs.decision == 'approve'
+        run: |
+          set -euo pipefail
+          mvn -pl sandbox_common_core,sandbox_mining_core -am test
+
+      - name: Prepare promotion pull request description
+        if: inputs.decision == 'approve'
+        run: |
+          cat > promotion-pr-body.md <<'EOF'
+          ## Verified candidate promotion
+
+          This pull request promotes mining candidate `${{ inputs.candidate_id }}` after an explicit human approval by `${{ github.actor }}`.
+
+          It contains only:
+
+          - the reviewed DSL rule in its curated `.sandbox-hint` file;
+          - a permanent data-driven before/after/negative behavior fixture;
+          - the fixture index update.
+
+          Discovery output and candidate state remain on the dedicated `mining/candidates` data branch.
+          EOF
+          if [ -n '${{ inputs.issue_number }}' ]; then
+            echo '' >> promotion-pr-body.md
+            echo 'Closes #${{ inputs.issue_number }}' >> promotion-pr-body.md
+          fi
+
+      - name: Open or update promotion pull request
+        if: inputs.decision == 'approve'
+        id: promotion_pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: mining/promote/${{ inputs.candidate_id }}
+          delete-branch: true
+          commit-message: 'mining: promote candidate ${{ steps.candidate.outputs.short }}'
+          title: 'Promote verified DSL candidate ${{ steps.candidate.outputs.short }}'
+          body-path: promotion-pr-body.md
+          add-paths: |
+            sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal/
+            sandbox_common_core/src/test/resources/org/sandbox/jdt/triggerpattern/promoted/
+
+      - name: Link promotion pull request from review issue
+        if: inputs.decision == 'approve' && inputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment '${{ inputs.issue_number }}' --body \
+            'Candidate `${{ inputs.candidate_id }}` was approved by `${{ github.actor }}`. Promotion PR: ${{ steps.promotion_pr.outputs.pull-request-url }}'
