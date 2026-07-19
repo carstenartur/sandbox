@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Persistent candidate store. Candidate JSON is the authoritative record for an
@@ -112,9 +114,7 @@ public class CandidateStore {
 		return load(storeDir.resolve(candidateId + "-candidate.json")); //$NON-NLS-1$
 	}
 
-	/**
-	 * Returns whether the same candidate revision content is already stored.
-	 */
+	/** Returns whether the same candidate revision content is already stored. */
 	public boolean containsCandidate(MiningCandidate candidate) {
 		if (candidate == null) {
 			return false;
@@ -159,8 +159,24 @@ public class CandidateStore {
 		}
 		try {
 			String json = Files.readString(path, StandardCharsets.UTF_8);
-			MiningCandidate candidate = GSON.fromJson(json, MiningCandidate.class);
-			return Optional.ofNullable(candidate);
+			JsonObject object = JsonParser.parseString(json).getAsJsonObject();
+			MiningCandidate candidate = GSON.fromJson(object, MiningCandidate.class);
+			if (candidate == null) {
+				return Optional.empty();
+			}
+			if (!object.has("schemaVersion")) { //$NON-NLS-1$
+				candidate.setSchemaVersion(1);
+			}
+			if (!object.has("revision")) { //$NON-NLS-1$
+				candidate.setRevision(1);
+			}
+			if (!object.has("candidateId")) { //$NON-NLS-1$
+				candidate.setCandidateId(null);
+			}
+			if (!object.has("sourceVersion")) { //$NON-NLS-1$
+				candidate.setSourceVersion(null);
+			}
+			return Optional.of(candidate);
 		} catch (Exception e) {
 			System.err.println("Warning: could not load candidate " + path + ": " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
 			return Optional.empty();
