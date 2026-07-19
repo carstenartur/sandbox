@@ -14,127 +14,109 @@
 package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Tests for {@link MiningCandidate}.
- */
+/** Tests the authoritative candidate model and lifecycle. */
 class MiningCandidateTest {
 
 	@Test
-	void testDefaultConstructor() {
+	void defaultCandidateUsesSchemaVersionTwo() {
 		MiningCandidate candidate = new MiningCandidate();
+
+		assertEquals(2, candidate.getSchemaVersion());
+		assertEquals(1, candidate.getRevision());
+		assertEquals("21", candidate.getSourceVersion()); //$NON-NLS-1$
 		assertEquals(CandidateStatus.DISCOVERED, candidate.getStatus());
-		assertNull(candidate.getDslRule());
-		assertNull(candidate.getBeforeExample());
-		assertNull(candidate.getAfterExample());
-		assertNull(candidate.getNegativeExample());
+		assertTrue(candidate.getTransitions().isEmpty());
 	}
 
 	@Test
-	void testFullConstructor() {
-		MiningCandidate candidate = new MiningCandidate(
-				"$x + 0\n=> $x\n;;", //$NON-NLS-1$
-				"class T { int m() { return 1 + 0; } }", //$NON-NLS-1$
-				"class T { int m() { return 1; } }", //$NON-NLS-1$
-				"class T { int m() { return 1 + 2; } }", //$NON-NLS-1$
-				"performance.sandbox-hint", //$NON-NLS-1$
-				"abc1234567890", //$NON-NLS-1$
-				"https://github.com/example/repo", //$NON-NLS-1$
-				"arithmetic-simplification", //$NON-NLS-1$
-				"Remove addition of zero", //$NON-NLS-1$
-				"2026-01-01T00:00:00Z"); //$NON-NLS-1$
+	void candidateIdIsStableAcrossContentRevisions() {
+		MiningCandidate first = createCandidate();
+		MiningCandidate revised = createCandidate();
+		revised.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+		revised.setAfterExample("class T { int m() { return 2; } }"); //$NON-NLS-1$
 
-		assertEquals(CandidateStatus.DISCOVERED, candidate.getStatus());
-		assertEquals("$x + 0\n=> $x\n;;", candidate.getDslRule()); //$NON-NLS-1$
-		assertEquals("class T { int m() { return 1 + 0; } }", candidate.getBeforeExample()); //$NON-NLS-1$
-		assertEquals("class T { int m() { return 1; } }", candidate.getAfterExample()); //$NON-NLS-1$
-		assertEquals("class T { int m() { return 1 + 2; } }", candidate.getNegativeExample()); //$NON-NLS-1$
-		assertEquals("performance.sandbox-hint", candidate.getTargetHintFile()); //$NON-NLS-1$
-		assertEquals("abc1234567890", candidate.getSourceCommit()); //$NON-NLS-1$
-		assertEquals("https://github.com/example/repo", candidate.getSourceRepo()); //$NON-NLS-1$
-		assertEquals("arithmetic-simplification", candidate.getCategory()); //$NON-NLS-1$
-		assertEquals("Remove addition of zero", candidate.getSummary()); //$NON-NLS-1$
-		assertEquals("2026-01-01T00:00:00Z", candidate.getDiscoveredAt()); //$NON-NLS-1$
-		assertNull(candidate.getRejectionReason());
+		assertEquals(first.getCandidateId(), revised.getCandidateId());
+		assertNotEquals(first.getRuleFingerprint(), revised.getRuleFingerprint());
+		assertNotEquals(first.getBehaviorFingerprint(), revised.getBehaviorFingerprint());
 	}
 
 	@Test
-	void testSetters() {
-		MiningCandidate candidate = new MiningCandidate();
-		candidate.setStatus(CandidateStatus.DSL_VALID);
-		candidate.setDslRule("$x + 0\n=> $x\n;;"); //$NON-NLS-1$
-		candidate.setBeforeExample("before"); //$NON-NLS-1$
-		candidate.setAfterExample("after"); //$NON-NLS-1$
-		candidate.setNegativeExample("negative"); //$NON-NLS-1$
-		candidate.setRejectionReason("bad rule"); //$NON-NLS-1$
-
-		assertEquals(CandidateStatus.DSL_VALID, candidate.getStatus());
-		assertEquals("$x + 0\n=> $x\n;;", candidate.getDslRule()); //$NON-NLS-1$
-		assertEquals("before", candidate.getBeforeExample()); //$NON-NLS-1$
-		assertEquals("after", candidate.getAfterExample()); //$NON-NLS-1$
-		assertEquals("negative", candidate.getNegativeExample()); //$NON-NLS-1$
-		assertEquals("bad rule", candidate.getRejectionReason()); //$NON-NLS-1$
-	}
-
-	@Test
-	void testToFileName() {
-		MiningCandidate candidate = createCandidate();
-		String filename = candidate.toFileName();
-		assertTrue(filename.endsWith("-candidate.json")); //$NON-NLS-1$
-		assertEquals(64 + "-candidate.json".length(), filename.length()); //$NON-NLS-1$
-	}
-
-	@Test
-	void testCandidateIdStableForSameContent() {
+	void ordinalAllowsMultipleCandidatesFromOneCommit() {
 		MiningCandidate first = createCandidate();
 		MiningCandidate second = createCandidate();
-		assertEquals(first.getCandidateId(), second.getCandidateId());
-	}
+		second.setCandidateOrdinal(1);
 
-	@Test
-	void testCandidateIdChangesForDifferentRule() {
-		MiningCandidate first = createCandidate();
-		MiningCandidate second = createCandidate();
-		second.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
 		assertNotEquals(first.getCandidateId(), second.getCandidateId());
 	}
 
 	@Test
-	void testCandidateIdGeneratedWhenFieldsMissing() {
-		MiningCandidate candidate = new MiningCandidate();
-		assertEquals(64, candidate.getCandidateId().length());
+	void ruleFingerprintIgnoresDslLineFormatting() {
+		MiningCandidate first = createCandidate();
+		MiningCandidate second = createCandidate();
+		second.setDslRule("  $x + 0  \r\n  => $x\r\n ;;  "); //$NON-NLS-1$
+
+		assertEquals(first.getRuleFingerprint(), second.getRuleFingerprint());
+	}
+
+	@Test
+	void behaviorFingerprintPreservesJavaWhitespace() {
+		MiningCandidate first = createCandidate();
+		MiningCandidate second = createCandidate();
+		second.setBeforeExample("class T { int m() { return \"a b\".length() + 0; } }"); //$NON-NLS-1$
+
+		assertNotEquals(first.getBehaviorFingerprint(), second.getBehaviorFingerprint());
+	}
+
+	@Test
+	void lifecycleTransitionsAreRecorded() {
+		MiningCandidate candidate = createCandidate();
+
+		candidate.transitionTo(CandidateStatus.DSL_VALID, "validator", "valid DSL"); //$NON-NLS-1$ //$NON-NLS-2$
+		candidate.transitionTo(CandidateStatus.BEHAVIOR_VALID, "verifier", "examples passed"); //$NON-NLS-1$ //$NON-NLS-2$
+		candidate.transitionTo(CandidateStatus.READY_FOR_REVIEW, "pipeline", "gates passed"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, candidate.getStatus());
+		assertEquals(3, candidate.getTransitions().size());
+		assertEquals(CandidateStatus.DISCOVERED, candidate.getTransitions().get(0).from());
+		assertEquals(CandidateStatus.DSL_VALID, candidate.getTransitions().get(0).to());
+	}
+
+	@Test
+	void invalidLifecycleTransitionFails() {
+		MiningCandidate candidate = createCandidate();
+
+		assertThrows(IllegalStateException.class,
+				() -> candidate.transitionTo(CandidateStatus.PROMOTED, "pipeline", "skip gates")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(CandidateStatus.DISCOVERED, candidate.getStatus());
+	}
+
+	@Test
+	void rejectionRecordsReason() {
+		MiningCandidate candidate = createCandidate();
+		candidate.transitionTo(CandidateStatus.REJECTED, "reviewer", "unsafe type change"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertEquals(CandidateStatus.REJECTED, candidate.getStatus());
+		assertEquals("unsafe type change", candidate.getRejectionReason()); //$NON-NLS-1$
+	}
+
+	@Test
+	void fullConstructorPreservesDiscoveryData() {
+		MiningCandidate candidate = createCandidate();
+
+		assertEquals("$x + 0\n=> $x\n;;", candidate.getDslRule()); //$NON-NLS-1$
+		assertEquals("performance.sandbox-hint", candidate.getTargetHintFile()); //$NON-NLS-1$
+		assertEquals("abc1234567890", candidate.getSourceCommit()); //$NON-NLS-1$
+		assertEquals("https://github.com/example/repo", candidate.getSourceRepo()); //$NON-NLS-1$
+		assertEquals("Remove addition of zero", candidate.getSummary()); //$NON-NLS-1$
+		assertNull(candidate.getVerification());
 		assertTrue(candidate.toFileName().endsWith("-candidate.json")); //$NON-NLS-1$
-	}
-
-	@Test
-	void testToStringContainsKeyFields() {
-		MiningCandidate candidate = new MiningCandidate();
-		candidate.setSourceCommit("abc1234"); //$NON-NLS-1$
-		candidate.setStatus(CandidateStatus.PROMOTED);
-		candidate.setCategory("string-modernization"); //$NON-NLS-1$
-		candidate.setSummary("Test rule"); //$NON-NLS-1$
-
-		String str = candidate.toString();
-		assertNotNull(str);
-		assertTrue(str.contains("abc1234")); //$NON-NLS-1$
-		assertTrue(str.contains("PROMOTED")); //$NON-NLS-1$
-		assertTrue(str.contains("string-modernization")); //$NON-NLS-1$
-	}
-
-	@Test
-	void testAllStatusValues() {
-		for (CandidateStatus status : CandidateStatus.values()) {
-			MiningCandidate candidate = new MiningCandidate();
-			candidate.setStatus(status);
-			assertEquals(status, candidate.getStatus());
-		}
 	}
 
 	private static MiningCandidate createCandidate() {

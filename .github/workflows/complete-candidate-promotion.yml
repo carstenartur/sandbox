@@ -1,0 +1,151 @@
+name: Complete candidate promotion
+
+on:
+  pull_request:
+    types:
+      - closed
+
+concurrency:
+  group: mining-state
+  cancel-in-progress: false
+
+jobs:
+  mark-promoted:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'mining/promote/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Resolve promoted candidate
+        id: candidate
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          CANDIDATE_ID="${HEAD_REF#mining/promote/}"
+          if [[ ! "$CANDIDATE_ID" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Unexpected promotion branch: $HEAD_REF" >&2
+            exit 1
+          fi
+          FIXTURE="sandbox_common_core/src/test/resources/org/sandbox/jdt/triggerpattern/promoted/${CANDIDATE_ID}.json"
+          if [ ! -f "$FIXTURE" ]; then
+            echo "Merged promotion has no permanent fixture: $FIXTURE" >&2
+            exit 1
+          fi
+          git fetch origin mining/candidates:refs/remotes/origin/mining/candidates
+          mkdir -p mining-candidates
+          git show "origin/mining/candidates:mining-candidates/${CANDIDATE_ID}-candidate.json" \
+            > "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          echo "id=$CANDIDATE_ID" >> "$GITHUB_OUTPUT"
+          echo "file=mining-candidates/${CANDIDATE_ID}-candidate.json" >> "$GITHUB_OUTPUT"
+          echo "fixture=$FIXTURE" >> "$GITHUB_OUTPUT"
+
+      - name: Validate merged promotion integrity
+        env:
+          CANDIDATE_ID: ${{ steps.candidate.outputs.id }}
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          FIXTURE_FILE: ${{ steps.candidate.outputs.fixture }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          candidate_id = os.environ['CANDIDATE_ID']
+          candidate = json.loads(pathlib.Path(os.environ['CANDIDATE_FILE']).read_text(encoding='utf-8'))
+          fixture = json.loads(pathlib.Path(os.environ['FIXTURE_FILE']).read_text(encoding='utf-8'))
+
+          if candidate.get('candidateId') != candidate_id:
+              raise SystemExit('Candidate JSON ID does not match the promotion branch')
+          if candidate.get('status') != 'APPROVED':
+              raise SystemExit('Only an APPROVED candidate may be completed as PROMOTED')
+          verification = candidate.get('verification') or {}
+          if verification.get('successful') is not True:
+              raise SystemExit('Candidate has no successful persisted verification')
+          if fixture.get('candidateId') != candidate_id:
+              raise SystemExit('Permanent fixture ID does not match the promoted candidate')
+
+          shared_fields = (
+              'revision', 'sourceRepo', 'sourceCommit', 'targetHintFile',
+              'sourceVersion', 'dslRule', 'beforeExample', 'afterExample',
+              'negativeExample', 'ruleFingerprint', 'behaviorFingerprint'
+          )
+          for field in shared_fields:
+              if fixture.get(field) != candidate.get(field):
+                  raise SystemExit(f'Permanent fixture differs from approved candidate field: {field}')
+          if fixture.get('verifierVersion') != verification.get('verifierVersion'):
+              raise SystemExit('Permanent fixture verifier version differs from approved verification')
+
+          hint_root = pathlib.Path(
+              'sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal'
+          ).resolve()
+          target_name = fixture.get('targetHintFile')
+          if not isinstance(target_name, str) or pathlib.Path(target_name).name != target_name:
+              raise SystemExit('Fixture targetHintFile is not a simple file name')
+          target = (hint_root / target_name).resolve()
+          if target.parent != hint_root or not target.is_file():
+              raise SystemExit(f'Promoted target hint file is missing or outside the curated directory: {target}')
+          hint_source = target.read_text(encoding='utf-8')
+          if fixture.get('dslRule', '').strip() not in hint_source:
+              raise SystemExit('Merged target hint file does not contain the approved DSL rule')
+          marker = f'// Promoted mining candidate: {candidate_id}'
+          if marker not in hint_source:
+              raise SystemExit('Merged target hint file does not contain the candidate provenance marker')
+          PY
+
+      - name: Build candidate tooling
+        run: |
+          set -euo pipefail
+          mvn install -N -q
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn package -pl sandbox_mining_core -DskipTests -q
+
+      - name: Record successful promotion
+        env:
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidateReviewCli \
+            --candidate "$CANDIDATE_FILE" \
+            --action promote \
+            --actor github-actions \
+            --reason "Promotion PR #${{ github.event.pull_request.number }} merged as ${MERGE_SHA}"
+
+      - name: Persist promoted lifecycle state
+        env:
+          CANDIDATE_ID: ${{ steps.candidate.outputs.id }}
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+        run: |
+          set -euo pipefail
+          DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-promoted"
+          git worktree add -B mining/candidates "$DATA_WORKTREE" origin/mining/candidates
+          cp "$CANDIDATE_FILE" \
+            "$DATA_WORKTREE/mining-candidates/${CANDIDATE_ID}-candidate.json"
+          git -C "$DATA_WORKTREE" config user.name 'github-actions[bot]'
+          git -C "$DATA_WORKTREE" config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C "$DATA_WORKTREE" add "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          if git -C "$DATA_WORKTREE" diff --cached --quiet; then
+            echo 'Promoted lifecycle state is already persisted.'
+          else
+            git -C "$DATA_WORKTREE" commit -m \
+              "mining: mark candidate ${CANDIDATE_ID:0:12} promoted"
+            git -C "$DATA_WORKTREE" push origin mining/candidates
+          fi
+          git worktree remove "$DATA_WORKTREE" --force

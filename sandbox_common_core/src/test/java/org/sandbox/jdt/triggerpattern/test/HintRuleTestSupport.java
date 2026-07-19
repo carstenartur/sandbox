@@ -31,15 +31,15 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.Transform
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
-import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
 /**
  * Reusable support for behavior tests of {@code .sandbox-hint} rules.
  *
- * <p>The goal is to keep tests for promoted mining candidates nearly as compact
- * as the hint rules themselves: load a rule file, provide before/after snippets,
- * and assert either a full-source replacement or no match.</p>
+ * <p>This compatibility helper intentionally permits unresolved imports and
+ * bindings because several matcher tests exercise standalone source fragments.
+ * Strict promoted-candidate fixtures use {@link StrictHintRuleTestSupport}.</p>
  */
 abstract class HintRuleTestSupport {
 
@@ -84,12 +84,6 @@ abstract class HintRuleTestSupport {
 				"Expected replacement not produced: " + expectedReplacement); //$NON-NLS-1$
 	}
 
-	/**
-	 * Asserts that the first replacement can be embedded back into the original
-	 * source and produce the expected full source. This avoids misleading tests
-	 * where a complete class snippet is compared only with an expression-level
-	 * replacement fragment.
-	 */
 	protected void assertFullReplacement(HintFile hintFile, String beforeCode, String expectedCode) {
 		assertFullReplacement(hintFile, beforeCode, expectedCode, DEFAULT_SOURCE_VERSION);
 	}
@@ -124,11 +118,11 @@ abstract class HintRuleTestSupport {
 
 	protected void registerBuiltInGuards() {
 		java.util.HashMap<String, GuardFunction> guards = new java.util.HashMap<>();
-		BuiltInGuards.registerAll(guards);
+		BuiltInGuardRegistration.registerAll(guards);
 		GuardFunctionResolverHolder.setResolver(guards::get);
 	}
 
-	private String replaceUsingOffset(String source, TransformationResult result) {
+	private static String replaceUsingOffset(String source, TransformationResult result) {
 		int offset = result.match().getOffset();
 		int length = result.match().getLength();
 		assertTrue(offset >= 0 && length >= 0 && offset + length <= source.length(),
@@ -136,11 +130,11 @@ abstract class HintRuleTestSupport {
 		return source.substring(0, offset) + result.replacement() + source.substring(offset + length);
 	}
 
-	private String normalizeSource(String source) {
+	private static String normalizeSource(String source) {
 		return source.replaceAll("\\s+", " ").trim(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private CompilationUnit parseCode(String code, String sourceVersion) {
+	private static CompilationUnit parseCode(String code, String sourceVersion) {
 		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
 		astParser.setSource(code.toCharArray());
 		astParser.setKind(ASTParser.K_COMPILATION_UNIT);

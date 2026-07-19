@@ -30,7 +30,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
-import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 import org.sandbox.mining.config.MiningConfig;
@@ -92,7 +92,6 @@ public class MiningCli {
 	}
 
 	static int run(String[] args) throws IOException, GitAPIException, HintParseException {
-		// Parse arguments
 		String configPath = null;
 		String hintsDir = null;
 		String repoUrl = null;
@@ -130,10 +129,8 @@ public class MiningCli {
 			}
 		}
 
-		// Initialize guard functions
 		initializeGuards();
 
-		// Load configuration
 		MiningConfig config;
 		if (configPath != null) {
 			config = MiningConfig.parse(Path.of(configPath));
@@ -142,7 +139,6 @@ public class MiningCli {
 		}
 		Map<String, String> compilerOptions = Map.of(JavaCore.COMPILER_SOURCE, config.getSourceVersion());
 
-		// Override with ad-hoc repo if specified
 		List<RepoEntry> repos;
 		if (repoUrl != null) {
 			RepoEntry entry = new RepoEntry(repoUrl, "main", List.of()); //$NON-NLS-1$
@@ -156,7 +152,6 @@ public class MiningCli {
 			return 1;
 		}
 
-		// Load hint files
 		List<HintFile> hintFiles = loadHintFiles(config, hintsDir);
 		if (hintFiles.isEmpty()) {
 			System.err.println("No hint files found. Check your configuration."); //$NON-NLS-1$
@@ -166,12 +161,9 @@ public class MiningCli {
 		System.out.println("Mining with " + hintFiles.size() + " hint file(s) against " + repos.size() //$NON-NLS-1$ //$NON-NLS-2$
 				+ " repository(ies), source level " + config.getSourceVersion() + '.'); //$NON-NLS-1$
 
-		// Set up scanner
 		StandaloneAstParser astParser = new StandaloneAstParser();
 		SourceScanner scanner = new SourceScanner(astParser, config.getMaxFilesPerRepo());
 		RepoCloner cloner = new RepoCloner();
-
-		// Process each repository
 		MiningReport totalReport = new MiningReport();
 
 		for (RepoEntry repo : repos) {
@@ -196,7 +188,6 @@ public class MiningCli {
 			}
 		}
 
-		// Generate reports
 		if (!dryRun) {
 			Path output = Path.of(outputDir);
 			writeReports(totalReport, output, format);
@@ -208,7 +199,7 @@ public class MiningCli {
 
 	private static void initializeGuards() {
 		Map<String, GuardFunction> guards = new HashMap<>();
-		BuiltInGuards.registerAll(guards);
+		BuiltInGuardRegistration.registerAll(guards);
 		GuardFunctionResolverHolder.setResolver(guards::get);
 	}
 
@@ -218,7 +209,6 @@ public class MiningCli {
 		HintFileParser parser = new HintFileParser();
 
 		if (hintsDirOverride != null) {
-			// Load all .sandbox-hint files from the given directory
 			Path hintsPath = Path.of(hintsDirOverride);
 			if (Files.isDirectory(hintsPath)) {
 				try (var stream = Files.walk(hintsPath)) {
@@ -232,7 +222,6 @@ public class MiningCli {
 			return hintFiles;
 		}
 
-		// Load hints from configuration
 		for (String hint : config.getHints()) {
 			if (hint.startsWith("bundled:")) { //$NON-NLS-1$
 				String name = hint.substring("bundled:".length()); //$NON-NLS-1$
@@ -250,7 +239,6 @@ public class MiningCli {
 					System.err.println("Warning: Hint file not found: " + path); //$NON-NLS-1$
 				}
 			} else {
-				// Try as bundled first, then as path
 				HintFile hf = loadBundledHint(parser, hint);
 				if (hf == null) {
 					Path p = Path.of(hint);
@@ -265,7 +253,6 @@ public class MiningCli {
 			}
 		}
 
-		// If no hints configured, load all bundled hints known to the mining CLI.
 		if (hintFiles.isEmpty()) {
 			for (String name : BUNDLED_HINTS.keySet()) {
 				HintFile hf = loadBundledHint(parser, name);
@@ -341,15 +328,13 @@ public class MiningCli {
 		}
 		try {
 			try (var stream = Files.walk(dir)) {
-				stream
-					.sorted((a, b) -> b.compareTo(a)) // delete children first
-					.forEach(p -> {
-						try {
-							Files.deleteIfExists(p);
-						} catch (IOException e) {
-							// ignore cleanup errors
-						}
-					});
+				stream.sorted((a, b) -> b.compareTo(a)).forEach(p -> {
+					try {
+						Files.deleteIfExists(p);
+					} catch (IOException e) {
+						// ignore cleanup errors
+					}
+				});
 			}
 		} catch (IOException e) {
 			// ignore cleanup errors

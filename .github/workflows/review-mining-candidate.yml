@@ -1,0 +1,201 @@
+name: Review mining candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_id:
+        description: '64-character candidate ID from the review issue'
+        required: true
+        type: string
+      decision:
+        description: 'Human review decision'
+        required: true
+        type: choice
+        options:
+          - approve
+          - reject
+      reason:
+        description: 'Review rationale; required for rejection'
+        required: false
+        type: string
+      issue_number:
+        description: 'Review issue number to update'
+        required: false
+        type: string
+
+concurrency:
+  group: mining-state
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Validate inputs and load candidate data
+        id: candidate
+        env:
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$CANDIDATE_ID" =~ ^[0-9a-f]{64}$ ]]; then
+            echo 'candidate_id must be a lowercase 64-character SHA-256 value.' >&2
+            exit 1
+          fi
+          if [ -n "$ISSUE_NUMBER" ] && [[ ! "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo 'issue_number must be numeric when supplied.' >&2
+            exit 1
+          fi
+          git fetch origin mining/candidates:refs/remotes/origin/mining/candidates
+          mkdir -p mining-candidates
+          git show "origin/mining/candidates:mining-candidates/${CANDIDATE_ID}-candidate.json" \
+            > "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          echo "file=mining-candidates/${CANDIDATE_ID}-candidate.json" >> "$GITHUB_OUTPUT"
+          echo "short=${CANDIDATE_ID:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Build candidate tooling
+        run: |
+          set -euo pipefail
+          mvn install -N -q
+          mvn install -pl sandbox_common_core -DskipTests -q
+          mvn package -pl sandbox_mining_core -DskipTests -q
+
+      - name: Apply review decision
+        env:
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          REVIEW_ACTION: ${{ inputs.decision }}
+          REVIEW_ACTOR: ${{ github.actor }}
+          REVIEW_REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          REASON_ARGS=()
+          if [ -n "$REVIEW_REASON" ]; then
+            REASON_ARGS=(--reason "$REVIEW_REASON")
+          fi
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidateReviewCli \
+            --candidate "$CANDIDATE_FILE" \
+            --action "$REVIEW_ACTION" \
+            --actor "$REVIEW_ACTOR" \
+            "${REASON_ARGS[@]}"
+
+      - name: Persist review decision on candidate-data branch
+        env:
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+        run: |
+          set -euo pipefail
+          DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-review"
+          git worktree add -B mining/candidates "$DATA_WORKTREE" origin/mining/candidates
+          cp "$CANDIDATE_FILE" \
+            "$DATA_WORKTREE/mining-candidates/${CANDIDATE_ID}-candidate.json"
+          git -C "$DATA_WORKTREE" config user.name 'github-actions[bot]'
+          git -C "$DATA_WORKTREE" config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C "$DATA_WORKTREE" add "mining-candidates/${CANDIDATE_ID}-candidate.json"
+          if ! git -C "$DATA_WORKTREE" diff --cached --quiet; then
+            git -C "$DATA_WORKTREE" commit -m \
+              "mining: ${{ inputs.decision }} candidate ${{ steps.candidate.outputs.short }}"
+            git -C "$DATA_WORKTREE" push origin mining/candidates
+          fi
+          git worktree remove "$DATA_WORKTREE" --force
+
+      - name: Close rejected candidate issue
+        if: inputs.decision == 'reject' && inputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          REVIEW_ACTOR: ${{ github.actor }}
+          REVIEW_REASON: ${{ inputs.reason }}
+        run: |
+          set -euo pipefail
+          printf 'Candidate `%s` was rejected by `%s`. Reason: %s\n' \
+            "$CANDIDATE_ID" "$REVIEW_ACTOR" "$REVIEW_REASON" > rejection-comment.md
+          gh issue comment "$ISSUE_NUMBER" --body-file rejection-comment.md
+          gh issue close "$ISSUE_NUMBER" --reason 'not planned'
+
+      - name: Generate promotion changes
+        if: inputs.decision == 'approve'
+        env:
+          CANDIDATE_FILE: ${{ steps.candidate.outputs.file }}
+          REVIEW_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidatePromotionCli \
+            --candidate "$CANDIDATE_FILE" \
+            --repo-root . \
+            --actor "$REVIEW_ACTOR"
+
+      - name: Verify promotion rule and permanent fixture
+        if: inputs.decision == 'approve'
+        run: |
+          set -euo pipefail
+          mvn -pl sandbox_common_core,sandbox_mining_core -am test
+
+      - name: Prepare promotion pull request description
+        if: inputs.decision == 'approve'
+        env:
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          REVIEW_ACTOR: ${{ github.actor }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          printf '## Verified candidate promotion\n\n' > promotion-pr-body.md
+          printf 'This pull request promotes mining candidate `%s` after an explicit human approval by `%s`.\n\n' \
+            "$CANDIDATE_ID" "$REVIEW_ACTOR" >> promotion-pr-body.md
+          cat >> promotion-pr-body.md <<'EOF'
+          It contains only:
+
+          - the reviewed DSL rule in its curated `.sandbox-hint` file;
+          - a permanent data-driven before/after/negative behavior fixture;
+          - the fixture index update.
+
+          Discovery output and candidate state remain on the dedicated `mining/candidates` data branch.
+          EOF
+          if [ -n "$ISSUE_NUMBER" ]; then
+            printf '\nCloses #%s\n' "$ISSUE_NUMBER" >> promotion-pr-body.md
+          fi
+
+      - name: Open or update promotion pull request
+        if: inputs.decision == 'approve'
+        id: promotion_pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          branch: mining/promote/${{ inputs.candidate_id }}
+          delete-branch: true
+          commit-message: 'mining: promote candidate ${{ steps.candidate.outputs.short }}'
+          title: 'Promote verified DSL candidate ${{ steps.candidate.outputs.short }}'
+          body-path: promotion-pr-body.md
+          add-paths: |
+            sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal/
+            sandbox_common_core/src/test/resources/org/sandbox/jdt/triggerpattern/promoted/
+
+      - name: Link promotion pull request from review issue
+        if: inputs.decision == 'approve' && inputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          CANDIDATE_ID: ${{ inputs.candidate_id }}
+          REVIEW_ACTOR: ${{ github.actor }}
+          PROMOTION_URL: ${{ steps.promotion_pr.outputs.pull-request-url }}
+        run: |
+          printf 'Candidate `%s` was approved by `%s`. Promotion PR: %s\n' \
+            "$CANDIDATE_ID" "$REVIEW_ACTOR" "$PROMOTION_URL" > promotion-comment.md
+          gh issue comment "$ISSUE_NUMBER" --body-file promotion-comment.md

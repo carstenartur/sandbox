@@ -2,26 +2,28 @@ name: Nightly Commit Mining
 
 on:
   schedule:
-    - cron: '0 2 * * *'    # Every night at 2 AM
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       batch_size:
-        description: 'Number of commits per run (default: 500)'
-        default: '500'
+        description: 'Number of commits to inspect in this run'
+        default: '200'
       llm_provider:
-        description: 'LLM provider (gemini, openai, deepseek, qwen, llama, mistral; auto-detected if not set)'
+        description: 'LLM provider; leave empty for auto-detection'
         default: ''
+
+concurrency:
+  group: mining-state
+  cancel-in-progress: false
 
 jobs:
   mine:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    concurrency:
-      group: mining-state
-      cancel-in-progress: false
     permissions:
-      contents: write        # Required: commit state.json and deploy report to gh-pages
-      pull-requests: write   # Required: create and auto-merge the state-update PR
+      contents: write
+      pull-requests: write
+      issues: write
 
     steps:
       - uses: actions/checkout@v6
@@ -29,25 +31,30 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
           cache: maven
 
-      - name: Build Mining CLI
+      - name: Build mining core
         run: |
+          set -euo pipefail
           mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn package -pl sandbox_mining_core -DskipTests -q
 
-      - name: Snapshot known rules before mining
+      - name: Restore staged candidate history
         run: |
-          if [ -f docs/mining-report/known-rules.json ]; then
-            cp docs/mining-report/known-rules.json "$RUNNER_TEMP/known-rules-before.json"
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin mining/candidates >/dev/null 2>&1; then
+            git fetch origin mining/candidates:refs/remotes/origin/mining/candidates
+            if git ls-tree -d --name-only origin/mining/candidates mining-candidates | grep -q '^mining-candidates$'; then
+              git archive origin/mining/candidates mining-candidates | tar -xf -
+              echo "Restored $(find mining-candidates -name '*-candidate.json' | wc -l) staged candidates."
+            fi
           else
-            printf '{"version":1,"rules":[]}' > "$RUNNER_TEMP/known-rules-before.json"
+            echo 'No candidate-data branch exists yet.'
           fi
 
-      - name: Run Commit Mining
-        continue-on-error: true
+      - name: Discover staged candidates
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-2.5-flash
@@ -63,300 +70,222 @@ jobs:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           MISTRAL_MODEL: ${{ secrets.MISTRAL_MODEL }}
         run: |
+          set -euo pipefail
+          PROVIDER_ARG=()
+          if [ -n "${{ github.event.inputs.llm_provider }}" ]; then
+            PROVIDER_ARG=(--llm-provider "${{ github.event.inputs.llm_provider }}")
+          fi
           java -jar sandbox_mining_core/target/sandbox-mining-core.jar \
             --config .github/refactoring-mining/repos.yml \
             --state .github/refactoring-mining/state.json \
             --sandbox-root . \
-            --batch-size ${{ github.event.inputs.batch_size || '200' }} \
+            --batch-size "${{ github.event.inputs.batch_size || '200' }}" \
             --commits-per-request 4 \
             --output docs/mining-report/ \
-            ${{ github.event.inputs.llm_provider != '' && format('--llm-provider {0}', github.event.inputs.llm_provider) || '' }}
+            "${PROVIDER_ARG[@]}"
 
-      - name: Reconcile staged mining candidates
-        if: always()
+      - name: Verify candidate behavior
         run: |
-          BEFORE_KNOWN="$RUNNER_TEMP/known-rules-before.json"
-          CURRENT_KNOWN="docs/mining-report/known-rules.json"
-          CANDIDATE_DIR="mining-candidates"
-          if [ ! -f "$CURRENT_KNOWN" ]; then
-            echo "No known-rules.json found after mining; skipping candidate reconciliation."
-            exit 0
+          set -euo pipefail
+          java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
+            org.sandbox.mining.core.candidate.CandidateVerificationCli \
+            --candidate-dir mining-candidates \
+            --report-dir docs/mining-report \
+            --curated-hint-dir sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal \
+            --source-version 21
+
+      - name: Persist candidate data outside main
+        run: |
+          set -euo pipefail
+          DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-data"
+          rm -rf "$DATA_WORKTREE"
+
+          if git show-ref --verify --quiet refs/remotes/origin/mining/candidates; then
+            git worktree add -B mining/candidates "$DATA_WORKTREE" origin/mining/candidates
+          else
+            git worktree add --detach "$DATA_WORKTREE" HEAD
+            git -C "$DATA_WORKTREE" checkout --orphan mining/candidates
+            git -C "$DATA_WORKTREE" rm -rf .
+            git -C "$DATA_WORKTREE" clean -fdx
           fi
-          python3 - "$BEFORE_KNOWN" "$CURRENT_KNOWN" "$CANDIDATE_DIR" <<'PY'
+
+          rm -rf "$DATA_WORKTREE/mining-candidates"
+          mkdir -p "$DATA_WORKTREE/mining-candidates"
+          if [ -d mining-candidates ]; then
+            cp -a mining-candidates/. "$DATA_WORKTREE/mining-candidates/"
+          fi
+          cat > "$DATA_WORKTREE/README.md" <<'EOF'
+          # Mining candidate data
+
+          This branch stores untrusted, staged DSL candidate JSON and review decisions.
+          It is deliberately not merged into `main` and contains no productive hint files.
+          EOF
+
+          git -C "$DATA_WORKTREE" config user.name 'github-actions[bot]'
+          git -C "$DATA_WORKTREE" config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C "$DATA_WORKTREE" add -A
+          if ! git -C "$DATA_WORKTREE" diff --cached --quiet; then
+            git -C "$DATA_WORKTREE" commit -m "mining: persist candidate state ${{ github.run_number }}"
+            git -C "$DATA_WORKTREE" push origin mining/candidates
+          else
+            echo 'No candidate-state changes to persist.'
+          fi
+          git worktree remove "$DATA_WORKTREE" --force
+
+      - name: Create review issues for verified candidates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
           import json
+          import os
           import pathlib
-          import sys
+          import re
+          import subprocess
+          import tempfile
 
-          before_path = pathlib.Path(sys.argv[1])
-          known_path = pathlib.Path(sys.argv[2])
-          candidate_dir = pathlib.Path(sys.argv[3])
+          def inline(value):
+              return ' '.join(str(value or '').split()).replace('|', '\\|')
 
-          def load_rules(path):
-              if not path.exists():
-                  return {"version": 1, "rules": []}
-              with path.open(encoding="utf-8") as handle:
-                  return json.load(handle)
+          def fenced(value, language):
+              text = str(value or '')
+              longest = max((len(run) for run in re.findall(r'`+', text)), default=0)
+              marker = '`' * max(4, longest + 1)
+              return f'{marker}{language}\n{text}\n{marker}'
 
-          before = load_rules(before_path)
-          current = load_rules(known_path)
-          before_commits = {
-              rule.get("sourceCommit")
-              for rule in before.get("rules", [])
-              if rule.get("sourceCommit")
-          }
+          candidate_dir = pathlib.Path('mining-candidates')
+          if not candidate_dir.exists():
+              print('No candidate directory; nothing to review.')
+              raise SystemExit(0)
 
-          candidate_commits = set()
-          if candidate_dir.exists():
-              for candidate_path in candidate_dir.glob("*-candidate.json"):
-                  try:
-                      with candidate_path.open(encoding="utf-8") as handle:
-                          candidate = json.load(handle)
-                      commit = candidate.get("sourceCommit")
-                      if commit:
-                          candidate_commits.add(commit)
-                  except Exception as exc:
-                      print(f"Warning: could not read candidate {candidate_path}: {exc}", file=sys.stderr)
+          ready = []
+          for path in sorted(candidate_dir.glob('*-candidate.json')):
+              try:
+                  candidate = json.loads(path.read_text(encoding='utf-8'))
+              except Exception as exc:
+                  print(f'Ignoring unreadable candidate {path}: {exc}')
+                  continue
+              if candidate.get('status') == 'READY_FOR_REVIEW':
+                  ready.append((path, candidate))
 
-          rules = current.get("rules", [])
-          kept = [
-              rule for rule in rules
-              if rule.get("sourceCommit") in before_commits
-              or rule.get("sourceCommit") in candidate_commits
-          ]
-          removed = len(rules) - len(kept)
-          if removed:
-              current["rules"] = kept
-              with known_path.open("w", encoding="utf-8") as handle:
-                  json.dump(current, handle, indent=2)
-                  handle.write("\n")
-          print(
-              "Candidate reconciliation: "
-              f"kept {len(kept)} known rules, "
-              f"removed {removed} non-staged new rules, "
-              f"candidate commits {len(candidate_commits)}"
-          )
+          created_count = 0
+          for path, candidate in ready:
+              if created_count >= 5:
+                  break
+              candidate_id = candidate.get('candidateId') or path.name.removesuffix('-candidate.json')
+              search = f'{candidate_id} in:body'
+              existing = subprocess.run(
+                  ['gh', 'issue', 'list', '--state', 'all', '--search', search,
+                   '--json', 'number', '--jq', '.[0].number'],
+                  check=False, capture_output=True, text=True).stdout.strip()
+              if existing:
+                  print(f'Candidate {candidate_id} already has issue #{existing}')
+                  continue
+
+              source = str(candidate.get('sourceRepo') or '').removesuffix('.git')
+              commit = str(candidate.get('sourceCommit') or '')
+              verification = candidate.get('verification') or {}
+              summary = inline(candidate.get('summary') or 'Mined cleanup candidate')
+              title = f'🧪 Review DSL candidate: {summary}'[:220]
+              dsl_block = fenced(candidate.get('dslRule'), 'text')
+              before_block = fenced(candidate.get('beforeExample'), 'java')
+              after_block = fenced(candidate.get('afterExample'), 'java')
+              negative_block = fenced(candidate.get('negativeExample'), 'java')
+              body = f'''<!-- mining-candidate-id: {candidate_id} -->
+          ## Verified mining candidate
+
+          | Field | Value |
+          |---|---|
+          | Candidate ID | `{candidate_id}` |
+          | Revision | `{candidate.get("revision", 1)}` |
+          | Status | `{inline(candidate.get("status"))}` |
+          | Rule fingerprint | `{inline(candidate.get("ruleFingerprint"))}` |
+          | Behavior fingerprint | `{inline(candidate.get("behaviorFingerprint"))}` |
+          | Source | {source}/commit/{commit} |
+          | Target hint file | `{inline(candidate.get("targetHintFile"))}` |
+          | Verifier | `{inline(verification.get("verifierVersion"))}` |
+
+          ### Verification
+
+          `{inline(verification.get("stage") or "unknown")}` — {inline(verification.get("message") or "No diagnostic")}
+
+          ### Proposed DSL
+
+          {dsl_block}
+
+          ### Before
+
+          {before_block}
+
+          ### After
+
+          {after_block}
+
+          ### Negative example
+
+          {negative_block}
+
+          ## Review checklist
+
+          - [ ] The transformation is local and semantically safe.
+          - [ ] The negative example covers the most important near miss.
+          - [ ] The rule does not duplicate a curated rule.
+          - [ ] The target hint file and source-version constraints are correct.
+          - [ ] Promotion will include a permanent behavior test.
+
+          After review, run the **Review mining candidate** workflow with this candidate ID and issue number. No productive hint file was modified by discovery.
+          '''
+              with tempfile.NamedTemporaryFile('w', encoding='utf-8', delete=False) as handle:
+                  handle.write(body)
+                  body_path = handle.name
+              try:
+                  created = subprocess.run(
+                      ['gh', 'issue', 'create', '--title', title, '--body-file', body_path],
+                      check=True, capture_output=True, text=True).stdout.strip()
+                  print(f'Created review issue: {created}')
+                  created_count += 1
+              finally:
+                  os.unlink(body_path)
           PY
 
-      - name: Post-run diagnostics
+      - name: Add mining diagnostics to job summary
         if: always()
         run: |
-          STATS_FILE="docs/mining-report/statistics.json"
-          if [ -f "$STATS_FILE" ]; then
-            API_CALLS=$(python3 -c "import json; d=json.load(open('$STATS_FILE')); print(d.get('runMetadata',{}).get('apiCallsMade',0))" 2>/dev/null || echo "?")
-            DEFERRED=$(python3 -c "import json; d=json.load(open('$STATS_FILE')); print(d.get('runMetadata',{}).get('deferredCommits',0))" 2>/dev/null || echo "?")
-            PROCESSED=$(python3 -c "import json; d=json.load(open('$STATS_FILE')); print(d.get('totalProcessed',0))" 2>/dev/null || echo "?")
-            echo "### ⛏️ Mining Run Diagnostics" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| API Calls | $API_CALLS |" >> $GITHUB_STEP_SUMMARY
-            echo "| Commits Processed | $PROCESSED |" >> $GITHUB_STEP_SUMMARY
-            echo "| Deferred Commits | $DEFERRED |" >> $GITHUB_STEP_SUMMARY
-            if [ "$API_CALLS" = "0" ] && [ "$DEFERRED" != "0" ]; then
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "⚠️ **Warning:** No API calls were made but there are deferred commits." >> $GITHUB_STEP_SUMMARY
-              echo "Possible causes: API key expired/missing, all diffs filtered out, or API rate-limited." >> $GITHUB_STEP_SUMMARY
-            fi
+          echo '### Mining diagnostics' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f docs/mining-report/statistics.json ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          data = json.load(open('docs/mining-report/statistics.json', encoding='utf-8'))
+          metadata = data.get('runMetadata', {})
+          print(f'- API calls: {metadata.get("apiCallsMade", 0)}')
+          print(f'- Commits processed: {data.get("totalProcessed", 0)}')
+          print(f'- Deferred commits: {metadata.get("deferredCommits", 0)}')
+          PY
           else
-            echo "### ⚠️ Mining Run Diagnostics" >> $GITHUB_STEP_SUMMARY
-            echo "statistics.json not found — mining may have failed before producing output." >> $GITHUB_STEP_SUMMARY
+            echo '- statistics.json was not produced' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f docs/mining-report/candidates.json ]; then
+            python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          candidates = json.load(open('docs/mining-report/candidates.json', encoding='utf-8'))
+          ready = sum(c.get('status') == 'READY_FOR_REVIEW' for c in candidates)
+          failed = sum((c.get('verification') or {}).get('successful') is False for c in candidates)
+          print(f'- Candidates ready for review: {ready}')
+          print(f'- Candidates failing deterministic verification: {failed}')
+          PY
           fi
 
-      - name: Commit State
-        id: commit_state
+      - name: Exclude legacy proposal registry from published report
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/refactoring-mining/state.json
-          # Include known-rules.json if it was created/updated
-          if [ -f docs/mining-report/known-rules.json ]; then
-            git add docs/mining-report/known-rules.json
-          fi
-          # Include staged mining candidates if they were created/updated
-          CANDIDATE_DIR="mining-candidates"
-          if [ -d "$CANDIDATE_DIR" ]; then
-            git add "$CANDIDATE_DIR"/*.json 2>/dev/null || true
-          fi
-          # Include auto-generated .sandbox-hint files from HintFileUpdater
-          HINT_DIR="sandbox_common_core/src/main/resources/org/sandbox/jdt/triggerpattern/internal"
-          if [ -d "$HINT_DIR" ]; then
-            NEW_HINTS=$(git ls-files --others --exclude-standard "$HINT_DIR"/*.sandbox-hint 2>/dev/null || true)
-            if [ -n "$NEW_HINTS" ]; then
-              echo "Auto-generated hint files found:"
-              echo "$NEW_HINTS"
-              git add $HINT_DIR/*.sandbox-hint
-            fi
-          fi
-          if git diff --cached --quiet; then
-            echo "No state changes to commit."
-            echo "state_updated=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          BRANCH="mining/state-update"
-          git stash --include-untracked
-          git checkout -b "$BRANCH"
-          if ! git stash pop; then
-            echo "Failed to apply stashed changes; aborting state update." >&2
-            exit 1
-          fi
-          if [ ! -f .github/refactoring-mining/state.json ]; then
-            echo "state.json not found after applying stash; aborting." >&2
-            exit 1
-          fi
-          git add .github/refactoring-mining/state.json
-          if [ -f docs/mining-report/known-rules.json ]; then
-            git add docs/mining-report/known-rules.json
-          fi
-          # Re-add staged mining candidates after stash pop
-          if [ -d "$CANDIDATE_DIR" ]; then
-            git add "$CANDIDATE_DIR"/*.json 2>/dev/null || true
-          fi
-          # Re-add hint files after stash pop
-          if [ -d "$HINT_DIR" ]; then
-            git add $HINT_DIR/*.sandbox-hint 2>/dev/null || true
-          fi
-          git commit -m "mining: Update state + known rules + candidates $(date +%Y-%m-%d)"
-          git push origin "$BRANCH" --force
-          echo "state_updated=true" >> "$GITHUB_OUTPUT"
+          rm -f docs/mining-report/known-rules.json
+          cat > docs/mining-report/known-rules-notice.txt <<'EOF'
+          known-rules.json is legacy mining state and is not an approval registry.
+          Candidate review state is published in candidates.json and candidates.html.
+          EOF
 
-      - name: Create Issues for new GREEN findings
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          EVALS_FILE="docs/mining-report/evaluations.json"
-          KNOWN_FILE="docs/mining-report/known-rules.json"
-          if [ ! -f "$EVALS_FILE" ]; then
-            echo "No evaluations file found; skipping issue creation."
-            exit 0
-          fi
-          # Extract GREEN+VALID evaluations not yet in known-rules.json
-          python3 -c "
-          import json, sys
-          evals = json.load(open('$EVALS_FILE'))
-          known_commits = set()
-          if __import__('os').path.exists('$KNOWN_FILE'):
-              known = json.load(open('$KNOWN_FILE'))
-              known_commits = {r.get('sourceCommit','') for r in known.get('rules',[])}
-          new_green = [e for e in evals
-                       if e.get('trafficLight') == 'GREEN'
-                       and e.get('dslValidationResult') == 'VALID'
-                       and e.get('relevant', False)
-                       and e.get('commitHash','') not in known_commits
-                       and e.get('dslRule')]
-          # Limit to 5 issues per run to avoid issue spam during catch-up phases
-          for e in new_green[:5]:
-              print(json.dumps({
-                  'summary': e.get('summary','Unknown'),
-                  'category': e.get('category','Unknown'),
-                  'dslRule': e.get('dslRule',''),
-                  'targetHintFile': e.get('targetHintFile',''),
-                  'commitHash': e.get('commitHash','')
-              }))
-          " 2>/dev/null | while IFS= read -r line; do
-            SUMMARY=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['summary'])")
-            CATEGORY=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['category'])")
-            DSL_RULE=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['dslRule'])")
-            TARGET=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['targetHintFile'])")
-            COMMIT=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['commitHash'])")
-            # Check if issue already exists
-            EXISTING=$(gh issue list --search "🟢 $CATEGORY — $SUMMARY" --json number -q '.[0].number' 2>/dev/null || true)
-            if [ -n "$EXISTING" ]; then
-              echo "Issue already exists for: $SUMMARY (#$EXISTING)"
-              continue
-            fi
-            gh issue create \
-              --title "🟢 New DSL Rule: $CATEGORY — $SUMMARY" \
-              --body "## DSL Rule
-          \`\`\`
-          $DSL_RULE
-          \`\`\`
-          ## Target File
-          $TARGET
-          ## Source
-          Commit: $COMMIT
-          Mining Run: #${{ github.run_number }}" \
-              --label "dsl-rule,green,automated" 2>/dev/null || echo "Could not create issue for: $SUMMARY"
-          done
-
-      - name: Create Issues for DSL Enhancement needs
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          KNOWN_FILE="docs/mining-report/known-rules.json"
-          if [ ! -f "$KNOWN_FILE" ]; then
-            echo "No known-rules.json found; skipping DSL enhancement issues."
-            exit 0
-          fi
-          # Extract rules with NEEDS_DSL_EXTENSION status, group by limitation
-          python3 -c "
-          import json, sys
-          known = json.load(open('$KNOWN_FILE'))
-          needs_ext = [r for r in known.get('rules', []) if r.get('status') == 'NEEDS_DSL_EXTENSION']
-          if not needs_ext:
-              sys.exit(0)
-          # Group by simple heuristic on summary
-          groups = {}
-          for r in needs_ext:
-              summary = (r.get('summary') or '').lower()
-              if 'bitwise' in summary or ' | ' in (r.get('dslRule') or ''):
-                  key = 'Bitwise operators'
-              elif 'try-with' in summary or 'autocloseable' in summary:
-                  key = 'Statement wrapping (try-with-resources)'
-              elif 'generic' in summary or 'type parameter' in summary:
-                  key = 'Generics / type-parameterized matching'
-              elif 'arity' in summary or 'vararg' in summary:
-                  key = 'Arity changes / varargs'
-              else:
-                  key = 'Other DSL limitations'
-              groups.setdefault(key, []).append(r)
-          for key, rules in sorted(groups.items(), key=lambda x: -len(x[1])):
-              print(json.dumps({'limitation': key, 'count': len(rules)}))
-          " 2>/dev/null | while IFS= read -r line; do
-            LIMITATION=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['limitation'])")
-            COUNT=$(echo "$line" | python3 -c "import json,sys; print(json.load(sys.stdin)['count'])")
-            # Check if issue already exists
-            EXISTING=$(gh issue list --search "🔧 DSL Enhancement: $LIMITATION" --json number -q '.[0].number' 2>/dev/null || true)
-            if [ -n "$EXISTING" ]; then
-              echo "DSL enhancement issue already exists for: $LIMITATION (#$EXISTING)"
-              continue
-            fi
-            gh issue create \
-              --title "🔧 DSL Enhancement: $LIMITATION ($COUNT rules blocked)" \
-              --body "## DSL Limitation
-          **$LIMITATION**
-
-          ## Impact
-          **$COUNT** discovered transformation rules cannot be implemented because of this DSL limitation.
-
-          ## Action Needed
-          Extend the TriggerPattern DSL to support this pattern category.
-
-          _Auto-generated by mining workflow run #${{ github.run_number }}._" \
-              --label "dsl-enhancement,automated" 2>/dev/null || echo "Could not create issue for: $LIMITATION"
-          done
-
-      - name: Auto-merge state update
-        if: steps.commit_state.outputs.state_updated == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Close any existing PR from this branch first (keep the branch so we can reuse it)
-          EXISTING_PR=$(gh pr list --head "mining/state-update" --json number -q '.[0].number' 2>/dev/null || true)
-          if [ -n "$EXISTING_PR" ]; then
-            gh pr close "$EXISTING_PR" 2>/dev/null || true
-          fi
-          # Create new PR and merge it
-          gh pr create \
-            --base main \
-            --head "mining/state-update" \
-            --title "mining: Update state $(date +%Y-%m-%d)" \
-            --body "Automated state update from mining workflow run #${{ github.run_number }}. This PR is auto-merged to persist the mining progress so the next run continues where this one left off."
-          gh pr merge "mining/state-update" --squash --auto --delete-branch \
-            || gh pr merge "mining/state-update" --squash --delete-branch
-
-      - name: Deploy Mining Report to gh-pages
+      - name: Deploy mining report
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -364,23 +293,62 @@ jobs:
           publish_branch: gh-pages
           destination_dir: mining-report
           keep_files: true
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'mining: evaluation run ${{ github.run_number }}'
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: 'mining: publish verified candidate report ${{ github.run_number }}'
 
-      - name: Report Deployed URL
-        if: always()
-        run: |
-          echo "### 🔗 Deployed Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 [View Mining Report](https://carstenartur.github.io/sandbox/mining-report/)" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload Artifacts
+      - name: Upload candidate artifacts
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: mining-report-${{ github.run_number }}
+          name: mining-candidates-${{ github.run_number }}
           path: |
             docs/mining-report/
             mining-candidates/
           if-no-files-found: ignore
+
+      - name: Report candidate review URL
+        run: |
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '📋 [View verified candidates](https://carstenartur.github.io/sandbox/mining-report/candidates.html)' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Persist resumable scan state only
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          STATE='.github/refactoring-mining/state.json'
+          if [ ! -f "$STATE" ]; then
+            echo 'No mining state file was produced.' >&2
+            exit 1
+          fi
+          cp "$STATE" "$RUNNER_TEMP/mining-state.json"
+
+          git fetch origin main
+          git reset --hard HEAD
+          git clean -fd
+          git checkout -B mining/state-update origin/main
+          cp "$RUNNER_TEMP/mining-state.json" "$STATE"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add "$STATE"
+          if git diff --cached --quiet; then
+            echo 'No scan-state changes to persist.'
+            exit 0
+          fi
+
+          git commit -m "mining: update resumable scan state ${{ github.run_number }}"
+          git push origin mining/state-update --force
+
+          PR_NUMBER=$(gh pr list --head mining/state-update --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -z "$PR_NUMBER" ]; then
+            gh pr create \
+              --base main \
+              --head mining/state-update \
+              --title "mining: Update resumable scan state (${{ github.run_number }})" \
+              --body 'Automated update containing only resumable commit-scan state. Candidate JSON, known-rule proposals, and productive hint files are deliberately excluded.'
+            PR_NUMBER=$(gh pr list --head mining/state-update --state open --json number --jq '.[0].number')
+          fi
+          gh pr merge "$PR_NUMBER" --squash --auto --delete-branch \
+            || gh pr merge "$PR_NUMBER" --squash --delete-branch
