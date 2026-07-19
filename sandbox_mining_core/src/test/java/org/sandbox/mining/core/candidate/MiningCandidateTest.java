@@ -57,14 +57,21 @@ class MiningCandidateTest {
 	}
 
 	@Test
-	void fingerprintsIgnoreFormattingOnlyDifferences() {
+	void ruleFingerprintIgnoresDslLineFormatting() {
 		MiningCandidate first = createCandidate();
 		MiningCandidate second = createCandidate();
 		second.setDslRule("  $x + 0  \r\n  => $x\r\n ;;  "); //$NON-NLS-1$
-		second.setBeforeExample("class T {\n  int m() {   return 1 + 0; }\n}"); //$NON-NLS-1$
 
 		assertEquals(first.getRuleFingerprint(), second.getRuleFingerprint());
-		assertEquals(first.getBehaviorFingerprint(), second.getBehaviorFingerprint());
+	}
+
+	@Test
+	void behaviorFingerprintPreservesJavaWhitespace() {
+		MiningCandidate first = createCandidate();
+		MiningCandidate second = createCandidate();
+		second.setBeforeExample("class T { int m() { return \"a b\".length() + 0; } }"); //$NON-NLS-1$
+
+		assertNotEquals(first.getBehaviorFingerprint(), second.getBehaviorFingerprint());
 	}
 
 	@Test
