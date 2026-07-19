@@ -15,9 +15,14 @@ package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.function.Function;
+
 import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 
 /** Tests deterministic behavior verification for mined candidates. */
 class CandidateVerifierTest {
@@ -42,6 +47,33 @@ class CandidateVerifierTest {
 
 		assertFalse(result.successful());
 		assertEquals(CandidateVerification.Stage.AFTER_REWRITE, result.stage());
+	}
+
+	@Test
+	void structuralComparisonPreservesWhitespaceInsideLiterals() {
+		MiningCandidate candidate = validCandidate();
+		candidate.setBeforeExample(
+				"class Test { void m() { String s = \"a  b\"; int r = 1 + 0; } }"); //$NON-NLS-1$
+		candidate.setAfterExample(
+				"class Test { void m() { String s = \"a b\"; int r = 1; } }"); //$NON-NLS-1$
+
+		CandidateVerification result = verifier.verify(candidate);
+
+		assertFalse(result.successful());
+		assertEquals(CandidateVerification.Stage.AFTER_REWRITE, result.stage());
+	}
+
+	@Test
+	void restoresPreviousGuardResolver() {
+		Function<String, GuardFunction> original = GuardFunctionResolverHolder.getResolver();
+		Function<String, GuardFunction> previous = name -> null;
+		GuardFunctionResolverHolder.setResolver(previous);
+		try {
+			verifier.verify(validCandidate());
+			assertSame(previous, GuardFunctionResolverHolder.getResolver());
+		} finally {
+			GuardFunctionResolverHolder.setResolver(original);
+		}
 	}
 
 	@Test
