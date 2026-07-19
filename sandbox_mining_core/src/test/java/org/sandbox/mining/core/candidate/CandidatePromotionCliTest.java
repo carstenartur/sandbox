@@ -87,6 +87,22 @@ class CandidatePromotionCliTest {
 	}
 
 	@Test
+	void refusesPromotionIntoDisabledMaintenanceLibrary() throws IOException {
+		createHint("jdt-api-modernization.sandbox-hint", "jdt-api-modernization"); //$NON-NLS-1$ //$NON-NLS-2$
+		MiningCandidate candidate = candidate();
+		candidate.setTargetHintFile("jdt-api-modernization.sandbox-hint"); //$NON-NLS-1$
+		Path candidateFile = saveApprovedCandidate(candidate);
+
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+				() -> CandidatePromotionCli.run(new String[] {
+						"--candidate", candidateFile.toString(), //$NON-NLS-1$
+						"--repo-root", tempDir.toString(), //$NON-NLS-1$
+						"--actor", "reviewer" //$NON-NLS-1$ //$NON-NLS-2$
+				}));
+		assertTrue(exception.getMessage().contains("active cleanup/quick-assist bundle")); //$NON-NLS-1$
+	}
+
+	@Test
 	void refusesDuplicateRule() throws IOException {
 		createTargetHint();
 		Path candidateFile = saveApprovedCandidate(candidate());
@@ -101,10 +117,14 @@ class CandidatePromotionCliTest {
 	}
 
 	private Path createTargetHint() throws IOException {
+		return createHint("performance.sandbox-hint", "performance"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private Path createHint(String fileName, String id) throws IOException {
 		Path hintDirectory = tempDir.resolve(HINT_DIRECTORY);
 		Files.createDirectories(hintDirectory);
-		Path hintFile = hintDirectory.resolve("performance.sandbox-hint"); //$NON-NLS-1$
-		Files.writeString(hintFile, "<!id: performance>\n", StandardCharsets.UTF_8); //$NON-NLS-1$
+		Path hintFile = hintDirectory.resolve(fileName);
+		Files.writeString(hintFile, "<!id: " + id + ">\n", StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$
 		return hintFile;
 	}
 
