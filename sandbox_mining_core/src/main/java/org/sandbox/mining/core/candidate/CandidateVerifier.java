@@ -33,7 +33,7 @@ import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
-import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
@@ -49,7 +49,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "6"; //$NON-NLS-1$
+	public static final String VERSION = "7"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -192,7 +192,8 @@ public final class CandidateVerifier {
 				|| hintFile.getMinJavaVersion() > 0 || !hintFile.getTags().isEmpty()
 				|| !hintFile.getIncludes().isEmpty() || !hintFile.getEmbeddedJavaBlocks().isEmpty()
 				|| hintFile.isCaseInsensitive() || !hintFile.getSuppressWarnings().isEmpty()
-				|| !hintFile.getTreeKindNodeTypes().isEmpty()) {
+				|| !hintFile.getTreeKindNodeTypes().isEmpty()
+				|| !"info".equals(hintFile.getSeverityAsString())) { //$NON-NLS-1$
 			return "Candidate DSL must contain only one rule and optional per-rule metadata; " //$NON-NLS-1$
 					+ "file metadata, includes, and embedded Java are not promotable"; //$NON-NLS-1$
 		}
@@ -321,7 +322,7 @@ public final class CandidateVerifier {
 
 	private static void installBuiltInGuards(Function<String, GuardFunction> previousResolver) {
 		Map<String, GuardFunction> guards = new HashMap<>();
-		BuiltInGuards.registerAll(guards);
+		BuiltInGuardRegistration.registerAll(guards);
 		GuardFunctionResolverHolder.setResolver(name -> {
 			GuardFunction builtIn = guards.get(name);
 			return builtIn != null || previousResolver == null
