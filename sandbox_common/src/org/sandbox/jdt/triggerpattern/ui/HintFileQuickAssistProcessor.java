@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.ui.text.java.IInvocationContext;
@@ -38,14 +37,17 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
 /**
  * Quick Assist processor that creates proposals from {@code .sandbox-hint} files.
  *
  * <p>This processor finds matching transformation rules from registered
- * {@code .sandbox-hint} files at the cursor location and creates
- * completion proposals for each match that has a replacement.</p>
+ * {@code .sandbox-hint} files at the cursor location and creates completion
+ * proposals for each match that has a replacement. The editor AST is parsed
+ * with binding resolution enabled so type-dependent guards do not fall back to
+ * permissive unresolved-binding behavior when project type information exists.</p>
  *
  * <p>This is complementary to {@link TriggerPatternQuickAssistProcessor},
  * which handles annotation-based {@code @TriggerPattern} hints.
@@ -57,8 +59,8 @@ public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {
 
 	@Override
 	public boolean hasAssists(IInvocationContext context) throws CoreException {
+		GuardRegistry.getInstance();
 		HintFileRegistry registry = HintFileRegistry.getInstance();
-		// Ensure bundled libraries are loaded so assists are discoverable in a fresh session
 		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());
 		return !registry.getAllHintFiles().isEmpty();
 	}
@@ -66,7 +68,6 @@ public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {
 	@Override
 	public IJavaCompletionProposal[] getAssists(IInvocationContext context, IProblemLocation[] locations)
 			throws CoreException {
-
 		ICompilationUnit icu = context.getCompilationUnit();
 		if (icu == null) {
 			return null;
@@ -77,30 +78,39 @@ public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {
 			return null;
 		}
 
-		int offset = context.getSelectionOffset();
-		List<IJavaCompletionProposal> proposals = new ArrayList<>();
-
+		GuardRegistry.getInstance();
 		HintFileRegistry registry = HintFileRegistry.getInstance();
-		// Ensure bundled libraries are loaded
 		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());
 
-		// Load project-level .sandbox-hint files if available
 		if (icu.getJavaProject() != null) {
 			org.eclipse.core.resources.IProject project = icu.getJavaProject().getProject();
 			registry.loadProjectHintFiles(project);
 		}
 
+		return collectAssists(cu, context.getSelectionOffset());
+	}
+
+	/**
+	 * Collects proposals from the hint files currently registered in the singleton
+	 * registry. Kept package-visible so the proposal selection and application path
+	 * can be exercised without creating an Eclipse editor in tests.
+	 */
+	IJavaCompletionProposal[] collectAssists(CompilationUnit cu, int offset) {
+		if (cu == null || offset < 0) {
+			return null;
+		}
+		GuardRegistry.getInstance();
+		HintFileRegistry registry = HintFileRegistry.getInstance();
+		List<IJavaCompletionProposal> proposals = new ArrayList<>();
+
 		for (Map.Entry<String, HintFile> entry : registry.getAllHintFiles().entrySet()) {
 			HintFile hintFile = entry.getValue();
-
 			try {
 				List<TransformationRule> resolvedRules = registry.resolveIncludes(hintFile);
 				BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);
-				List<TransformationResult> results = processor.process(cu);
-
-				for (TransformationResult result : results) {
+				for (TransformationResult result : processor.process(cu)) {
 					if (result.hasReplacement() && containsOffset(result, offset)) {
-						proposals.add(new HintFileProposal(result, cu));
+						proposals.add(new HintFileProposal(result));
 					}
 				}
 			} catch (Exception e) {
@@ -112,46 +122,39 @@ public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {
 		return proposals.isEmpty() ? null : proposals.toArray(new IJavaCompletionProposal[0]);
 	}
 
-	/**
-	 * Parses the compilation unit.
-	 */
-	private CompilationUnit getCompilationUnit(ICompilationUnit icu) {
+	private static CompilationUnit getCompilationUnit(ICompilationUnit icu) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(icu);
-		parser.setResolveBindings(false);
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		parser.setStatementsRecovery(true);
 		return (CompilationUnit) parser.createAST(null);
 	}
 
-	/**
-	 * Checks if a transformation result contains the given offset.
-	 */
-	private boolean containsOffset(TransformationResult result, int offset) {
+	private static boolean containsOffset(TransformationResult result, int offset) {
 		int start = result.match().getOffset();
 		int end = start + result.match().getLength();
 		return start <= offset && offset <= end;
 	}
 
-	/**
-	 * Quick Assist proposal generated from a {@code .sandbox-hint} file rule match.
-	 */
+	/** Quick Assist proposal generated from a hint-file rule match. */
 	private static class HintFileProposal implements IJavaCompletionProposal {
 
 		private final TransformationResult result;
-		private final CompilationUnit cu;
 
-		HintFileProposal(TransformationResult result, CompilationUnit cu) {
+		HintFileProposal(TransformationResult result) {
 			this.result = result;
-			this.cu = cu;
 		}
 
 		@Override
 		public void apply(IDocument document) {
 			try {
-				ASTNode matchedNode = result.match().getMatchedNode();
 				String replacement = result.replacement();
-				if (matchedNode != null && replacement != null) {
-					int start = matchedNode.getStartPosition();
-					int length = matchedNode.getLength();
+				int start = result.match().getOffset();
+				int length = result.match().getLength();
+				if (replacement != null && start >= 0 && length >= 0
+						&& start + length <= document.getLength()) {
 					document.replace(start, length, replacement);
 				}
 			} catch (Exception e) {
