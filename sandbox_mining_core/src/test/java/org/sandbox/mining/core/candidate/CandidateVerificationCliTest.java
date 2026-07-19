@@ -14,17 +14,21 @@
 package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Tests end-to-end candidate verification and duplicate policy. */
+/** Tests end-to-end candidate verification, migration, and duplicate policy. */
 class CandidateVerificationCliTest {
 
 	@TempDir
@@ -83,6 +87,68 @@ class CandidateVerificationCliTest {
 		assertEquals(1, candidates.stream()
 				.filter(candidate -> candidate.getStatus() == CandidateStatus.DUPLICATE)
 				.count());
+	}
+
+	@Test
+	void migratesMultipleLegacyCandidatesFromOneOriginWithoutCollision() throws IOException {
+		Path candidateDir = tempDir.resolve("legacy-candidates"); //$NON-NLS-1$
+		Files.createDirectories(candidateDir);
+		writeLegacyCandidate(candidateDir.resolve("legacy-a-candidate.json"), //$NON-NLS-1$
+				"$x + 0\n=> $x\n;;", //$NON-NLS-1$
+				"class T { int m() { return 1 + 0; } }", //$NON-NLS-1$
+				"class T { int m() { return 1; } }", //$NON-NLS-1$
+				"class T { int m() { return 1 + 2; } }"); //$NON-NLS-1$
+		writeLegacyCandidate(candidateDir.resolve("legacy-b-candidate.json"), //$NON-NLS-1$
+				"$x * 1\n=> $x\n;;", //$NON-NLS-1$
+				"class T { int m() { return 2 * 1; } }", //$NON-NLS-1$
+				"class T { int m() { return 2; } }", //$NON-NLS-1$
+				"class T { int m() { return 2 * 3; } }"); //$NON-NLS-1$
+
+		CandidateVerificationCli.run(new String[] {
+				"--candidate-dir", candidateDir.toString(), //$NON-NLS-1$
+				"--report-dir", tempDir.resolve("legacy-report").toString() //$NON-NLS-1$ //$NON-NLS-2$
+		});
+
+		List<MiningCandidate> migrated = new CandidateStore(candidateDir).loadAll();
+		assertEquals(2, migrated.size());
+		assertTrue(migrated.stream().allMatch(candidate -> candidate.getSchemaVersion() == 2));
+		assertTrue(migrated.stream().allMatch(candidate -> candidate.getRevision() == 1));
+		Set<Integer> ordinals = migrated.stream()
+				.map(MiningCandidate::getCandidateOrdinal)
+				.collect(Collectors.toSet());
+		assertEquals(Set.of(0, 1), ordinals);
+		assertEquals(2, migrated.stream()
+				.filter(candidate -> candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW)
+				.count());
+		assertFalse(Files.exists(candidateDir.resolve("legacy-a-candidate.json"))); //$NON-NLS-1$
+		assertFalse(Files.exists(candidateDir.resolve("legacy-b-candidate.json"))); //$NON-NLS-1$
+	}
+
+	private static void writeLegacyCandidate(Path path, String dslRule, String before,
+			String after, String negative) throws IOException {
+		String json = """
+				{
+				  "dslRule": %s,
+				  "beforeExample": %s,
+				  "afterExample": %s,
+				  "negativeExample": %s,
+				  "targetHintFile": "performance.sandbox-hint",
+				  "sourceCommit": "same-commit",
+				  "sourceRepo": "https://github.com/example/repo",
+				  "category": "arithmetic",
+				  "summary": "Legacy candidate",
+				  "status": "DSL_VALID",
+				  "discoveredAt": "2026-01-01T00:00:00Z"
+				}
+				""".formatted(jsonString(dslRule), jsonString(before),
+				jsonString(after), jsonString(negative));
+		Files.writeString(path, json, StandardCharsets.UTF_8);
+	}
+
+	private static String jsonString(String value) {
+		return '"' + value.replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("\"", "\\\"") //$NON-NLS-1$ //$NON-NLS-2$
+				.replace("\n", "\\n") + '"'; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static MiningCandidate candidate(String commit, String discoveredAt) {
