@@ -176,7 +176,7 @@ public class PromptBuilder {
 		prompt.append(indent).append("\"negativeExample\": \"similar compiling class that must not match or null\",\n"); //$NON-NLS-1$
 		prompt.append(indent).append("\"summary\": \"brief local transformation summary\"\n"); //$NON-NLS-1$
 		prompt.append(array ? "  }\n]\n" : "}\n"); //$NON-NLS-1$ //$NON-NLS-2$
-		prompt.append("confidence must be between 0.0 and 1.0. For noCleanup=true, set relevant=false, trafficLight=NOT_APPLICABLE, and candidate fields to null.\n"); //$NON-NLS-1$
+		prompt.append("confidence must be between 0.0 and 1.0. When confidence is below 0.80, set noCleanup=true, relevant=false, trafficLight=NOT_APPLICABLE, and all candidate fields to null.\n"); //$NON-NLS-1$
 	}
 
 	private static String nullToEmpty(String value) {
