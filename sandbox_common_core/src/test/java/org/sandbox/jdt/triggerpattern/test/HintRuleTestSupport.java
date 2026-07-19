@@ -13,22 +13,17 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
@@ -40,13 +35,11 @@ import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
 /**
- * Reusable support for binding-aware behavior tests of {@code .sandbox-hint}
- * rules.
+ * Reusable support for behavior tests of {@code .sandbox-hint} rules.
  *
- * <p>The helper intentionally mirrors the strict candidate verifier: examples
- * are compiled with bindings, type guards use the canonical registration path,
- * replacements are applied by source range, and complete ASTs are compared so
- * literal contents are preserved.</p>
+ * <p>This compatibility helper intentionally permits unresolved imports and
+ * bindings because several matcher tests exercise standalone source fragments.
+ * Strict promoted-candidate fixtures use {@link StrictHintRuleTestSupport}.</p>
  */
 abstract class HintRuleTestSupport {
 
@@ -59,8 +52,8 @@ abstract class HintRuleTestSupport {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		try (var stream = classLoader.getResourceAsStream(resourcePath)) {
 			assertTrue(stream != null, "Bundled hint resource not found: " + resourcePath); //$NON-NLS-1$
-			return new HintFileParser().parse(
-					new InputStreamReader(stream, StandardCharsets.UTF_8));
+			HintFileParser parser = new HintFileParser();
+			return parser.parse(new InputStreamReader(stream, StandardCharsets.UTF_8));
 		}
 	}
 
@@ -72,16 +65,16 @@ abstract class HintRuleTestSupport {
 		return process(hintFile, code, DEFAULT_SOURCE_VERSION);
 	}
 
-	protected List<TransformationResult> process(HintFile hintFile, String code,
-			String sourceVersion) {
+	protected List<TransformationResult> process(HintFile hintFile, String code, String sourceVersion) {
 		BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
-		return processor.process(parseCode(code, sourceVersion),
-				compilerOptions(sourceVersion));
+		return processor.process(parseCode(code, sourceVersion), Map.of(JavaCore.COMPILER_SOURCE, sourceVersion));
 	}
 
-	/** Low-level assertion for the raw replacement fragment. */
-	protected void assertReplacementFragment(HintFile hintFile, String beforeCode,
-			String expectedReplacement) {
+	/**
+	 * Low-level assertion for the raw replacement fragment returned by the processor.
+	 * Promotion tests should normally prefer {@link #assertFullReplacement}.
+	 */
+	protected void assertReplacementFragment(HintFile hintFile, String beforeCode, String expectedReplacement) {
 		List<TransformationResult> results = process(hintFile, beforeCode);
 		assertFalse(results.isEmpty(), "Expected at least one match"); //$NON-NLS-1$
 		assertTrue(results.stream()
@@ -91,26 +84,20 @@ abstract class HintRuleTestSupport {
 				"Expected replacement not produced: " + expectedReplacement); //$NON-NLS-1$
 	}
 
-	protected void assertFullReplacement(HintFile hintFile, String beforeCode,
-			String expectedCode) {
-		assertFullReplacement(hintFile, beforeCode, expectedCode,
-				DEFAULT_SOURCE_VERSION);
+	protected void assertFullReplacement(HintFile hintFile, String beforeCode, String expectedCode) {
+		assertFullReplacement(hintFile, beforeCode, expectedCode, DEFAULT_SOURCE_VERSION);
 	}
 
-	protected void assertFullReplacement(HintFile hintFile, String beforeCode,
-			String expectedCode, String sourceVersion) {
+	protected void assertFullReplacement(HintFile hintFile, String beforeCode, String expectedCode,
+			String sourceVersion) {
 		List<TransformationResult> results = process(hintFile, beforeCode, sourceVersion);
 		assertFalse(results.isEmpty(), "Expected at least one match"); //$NON-NLS-1$
-		List<TransformationResult> replacements = results.stream()
+		TransformationResult result = results.stream()
 				.filter(TransformationResult::hasReplacement)
-				.toList();
-		assertTrue(replacements.size() == 1,
-				"Expected exactly one replacement but got: " + replacements); //$NON-NLS-1$
-		String actualCode = replaceUsingOffset(beforeCode, replacements.get(0));
-		CompilationUnit actual = parseCode(actualCode, sourceVersion);
-		CompilationUnit expected = parseCode(expectedCode, sourceVersion);
-		assertTrue(actual.subtreeMatch(new ASTMatcher(true), expected),
-				"Transformed syntax tree differs from expected source"); //$NON-NLS-1$
+				.findFirst()
+				.orElseThrow(() -> new AssertionError("Expected at least one replacement")); //$NON-NLS-1$
+		String actualCode = replaceUsingOffset(beforeCode, result);
+		assertEquals(normalizeSource(expectedCode), normalizeSource(actualCode));
 	}
 
 	protected void assertHintOnlyMatch(HintFile hintFile, String code) {
@@ -130,54 +117,30 @@ abstract class HintRuleTestSupport {
 	}
 
 	protected void registerBuiltInGuards() {
-		HashMap<String, GuardFunction> guards = new HashMap<>();
+		java.util.HashMap<String, GuardFunction> guards = new java.util.HashMap<>();
 		BuiltInGuardRegistration.registerAll(guards);
 		GuardFunctionResolverHolder.setResolver(guards::get);
 	}
 
-	private static String replaceUsingOffset(String source,
-			TransformationResult result) {
+	private static String replaceUsingOffset(String source, TransformationResult result) {
 		int offset = result.match().getOffset();
 		int length = result.match().getLength();
 		assertTrue(offset >= 0 && length >= 0 && offset + length <= source.length(),
 				"Invalid match range: offset=" + offset + ", length=" + length); //$NON-NLS-1$ //$NON-NLS-2$
-		return source.substring(0, offset) + result.replacement()
-				+ source.substring(offset + length);
+		return source.substring(0, offset) + result.replacement() + source.substring(offset + length);
+	}
+
+	private static String normalizeSource(String source) {
+		return source.replaceAll("\\s+", " ").trim(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static CompilationUnit parseCode(String code, String sourceVersion) {
-		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
-		parser.setSource(code.toCharArray());
-		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		parser.setCompilerOptions(compilerOptions(sourceVersion));
-		parser.setResolveBindings(true);
-		parser.setBindingsRecovery(false);
-		parser.setStatementsRecovery(false);
-		parser.setUnitName("BehaviorFixture.java"); //$NON-NLS-1$
-		parser.setEnvironment(runtimeClasspath(), null, null, true);
-		CompilationUnit unit = (CompilationUnit) parser.createAST(null);
-		for (IProblem problem : unit.getProblems()) {
-			assertFalse(problem.isError(),
-					"Java compile error at line " + problem.getSourceLineNumber() //$NON-NLS-1$
-							+ ": " + problem.getMessage()); //$NON-NLS-1$
-		}
-		return unit;
-	}
-
-	private static Map<String, String> compilerOptions(String sourceVersion) {
-		Map<String, String> options = new HashMap<>(JavaCore.getOptions());
-		JavaCore.setComplianceOptions(sourceVersion, options);
+		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
+		astParser.setSource(code.toCharArray());
+		astParser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options = JavaCore.getOptions();
 		options.put(JavaCore.COMPILER_SOURCE, sourceVersion);
-		return options;
-	}
-
-	private static String[] runtimeClasspath() {
-		String classpath = System.getProperty("java.class.path", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		if (classpath.isBlank()) {
-			return new String[0];
-		}
-		return Arrays.stream(classpath.split(Pattern.quote(File.pathSeparator)))
-				.filter(entry -> !entry.isBlank())
-				.toArray(String[]::new);
+		astParser.setCompilerOptions(options);
+		return (CompilationUnit) astParser.createAST(null);
 	}
 }
