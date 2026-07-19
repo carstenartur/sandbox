@@ -15,6 +15,8 @@ package org.sandbox.mining.core.candidate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -62,11 +64,16 @@ class CandidateStoreTest {
 	}
 
 	@Test
-	void correctedContentIncrementsRevisionAndKeepsStableId() throws IOException {
+	void correctedContentStartsUnverifiedRevisionAndKeepsStableId() throws IOException {
 		CandidateStore store = new CandidateStore(tempDir);
 		MiningCandidate original = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		original.setStatus(CandidateStatus.READY_FOR_REVIEW);
+		original.setVerification(CandidateVerification.success(CandidateVerifier.VERSION, 1, 1));
 		store.save(original);
+
 		MiningCandidate corrected = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		corrected.setStatus(CandidateStatus.READY_FOR_REVIEW);
+		corrected.setVerification(CandidateVerification.success(CandidateVerifier.VERSION, 1, 1));
 		corrected.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
 		corrected.setBeforeExample("class T { int m() { return 2 * 1; } }"); //$NON-NLS-1$
 		corrected.setAfterExample("class T { int m() { return 2; } }"); //$NON-NLS-1$
@@ -76,8 +83,48 @@ class CandidateStoreTest {
 
 		List<MiningCandidate> loaded = store.loadAll();
 		assertEquals(1, loaded.size());
-		assertEquals(original.getCandidateId(), loaded.get(0).getCandidateId());
-		assertEquals(2, loaded.get(0).getRevision());
+		MiningCandidate revision = loaded.get(0);
+		assertEquals(original.getCandidateId(), revision.getCandidateId());
+		assertEquals(2, revision.getRevision());
+		assertEquals(CandidateStatus.DISCOVERED, revision.getStatus());
+		assertNull(revision.getVerification());
+		assertNull(revision.getRejectionReason());
+		CandidateTransition boundary = revision.getTransitions().get(
+				revision.getTransitions().size() - 1);
+		assertEquals(CandidateStatus.READY_FOR_REVIEW, boundary.from());
+		assertEquals(CandidateStatus.DISCOVERED, boundary.to());
+		assertEquals("CandidateStore", boundary.actor()); //$NON-NLS-1$
+	}
+
+	@Test
+	void sourceVersionChangeAlsoRequiresNewVerification() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate original = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		original.setStatus(CandidateStatus.READY_FOR_REVIEW);
+		original.setVerification(CandidateVerification.success(CandidateVerifier.VERSION, 1, 1));
+		store.save(original);
+
+		MiningCandidate changedVersion = store.loadAll().get(0);
+		changedVersion.setSourceVersion("17"); //$NON-NLS-1$
+		store.save(changedVersion);
+
+		MiningCandidate revision = store.loadAll().get(0);
+		assertEquals(2, revision.getRevision());
+		assertEquals(CandidateStatus.DISCOVERED, revision.getStatus());
+		assertNull(revision.getVerification());
+	}
+
+	@Test
+	void promotedCandidateContentIsImmutable() throws IOException {
+		CandidateStore store = new CandidateStore(tempDir);
+		MiningCandidate promoted = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		promoted.setStatus(CandidateStatus.PROMOTED);
+		store.save(promoted);
+
+		MiningCandidate changed = store.loadAll().get(0);
+		changed.setDslRule("$x * 1\n=> $x\n;;"); //$NON-NLS-1$
+
+		assertThrows(IllegalStateException.class, () -> store.save(changed));
 	}
 
 	@Test
@@ -97,6 +144,9 @@ class CandidateStoreTest {
 
 		assertTrue(store.containsCandidate(createCandidate("abc1234567890", 0))); //$NON-NLS-1$
 		assertFalse(store.containsCandidate(createCandidate("def5678901234", 0))); //$NON-NLS-1$
+		MiningCandidate otherSourceVersion = createCandidate("abc1234567890", 0); //$NON-NLS-1$
+		otherSourceVersion.setSourceVersion("17"); //$NON-NLS-1$
+		assertFalse(store.containsCandidate(otherSourceVersion));
 		assertFalse(store.containsCandidate(null));
 	}
 
