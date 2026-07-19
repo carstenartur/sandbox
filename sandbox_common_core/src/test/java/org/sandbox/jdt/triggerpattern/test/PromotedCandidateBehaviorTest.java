@@ -20,10 +20,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
+import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 
 import com.google.gson.Gson;
@@ -61,16 +64,21 @@ class PromotedCandidateBehaviorTest extends StrictHintRuleTestSupport {
 
 	private void verifyFixture(ClassLoader classLoader, String fixtureName) throws Exception {
 		PromotionFixture fixture = loadFixture(classLoader, fixtureName);
+		Function<String, GuardFunction> previousResolver = GuardFunctionResolverHolder.getResolver();
 		registerBuiltInGuards();
-		HintFile proposedRule = parseHint(fixture.dslRule());
-		assertFullReplacement(proposedRule, fixture.beforeExample(), fixture.afterExample(),
-				fixture.sourceVersion());
-		assertNoMatch(proposedRule, fixture.negativeExample(), fixture.sourceVersion());
+		try {
+			HintFile proposedRule = parseHint(fixture.dslRule());
+			assertFullReplacement(proposedRule, fixture.beforeExample(), fixture.afterExample(),
+					fixture.sourceVersion());
+			assertNoMatch(proposedRule, fixture.negativeExample(), fixture.sourceVersion());
 
-		String bundledRule = readUtf8Resource(classLoader,
-				HINT_PREFIX + fixture.targetHintFile());
-		assertTrue(bundledRule.contains(fixture.dslRule().strip()),
-				"Promoted DSL is missing from bundled hint file " + fixture.targetHintFile()); //$NON-NLS-1$
+			String bundledRule = readUtf8Resource(classLoader,
+					HINT_PREFIX + fixture.targetHintFile());
+			assertTrue(bundledRule.contains(fixture.dslRule().strip()),
+					"Promoted DSL is missing from bundled hint file " + fixture.targetHintFile()); //$NON-NLS-1$
+		} finally {
+			GuardFunctionResolverHolder.setResolver(previousResolver);
+		}
 	}
 
 	private PromotionFixture loadFixture(ClassLoader classLoader, String fixtureName)
