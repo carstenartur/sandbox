@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
@@ -36,15 +37,16 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 /**
  * Deterministically verifies a staged candidate without generating Java source.
  *
- * <p>The verifier parses the DSL and all examples, applies exactly one
- * replacement to the positive example by AST match offset/length, compares the
- * complete transformed syntax tree with the expected after example, and proves
- * that the negative example does not match.</p>
+ * <p>The verifier parses the DSL and all examples, verifies every referenced
+ * guard, applies exactly one replacement to the positive example by AST match
+ * offset/length, compares the complete transformed syntax tree with the
+ * expected after example, and proves that the negative example does not
+ * match.</p>
  */
 public final class CandidateVerifier {
 
 	/** Persisted verifier version for reproducibility. */
-	public static final String VERSION = "3"; //$NON-NLS-1$
+	public static final String VERSION = "4"; //$NON-NLS-1$
 
 	private final DslValidator dslValidator;
 	private final HintFileParser hintFileParser;
@@ -78,14 +80,20 @@ public final class CandidateVerifier {
 			return failure(CandidateVerification.Stage.DSL_PARSE,
 					"Could not parse DSL: " + safeMessage(e), 0, 0); //$NON-NLS-1$
 		}
-		if (hintFile.getRules().isEmpty()) {
+		if (hintFile.getRules().size() != 1) {
 			return failure(CandidateVerification.Stage.DSL_PARSE,
-					"DSL contains no transformation rule", 0, 0); //$NON-NLS-1$
+					"Candidate DSL must contain exactly one transformation rule, but contains " //$NON-NLS-1$
+							+ hintFile.getRules().size(), 0, 0);
 		}
 
 		Function<String, GuardFunction> previousResolver = GuardFunctionResolverHolder.getResolver();
 		installBuiltInGuards(previousResolver);
 		try {
+			String unresolvedGuard = findUnresolvedGuard(hintFile);
+			if (unresolvedGuard != null) {
+				return failure(CandidateVerification.Stage.GUARD_RESOLUTION,
+						"Unknown guard function: " + unresolvedGuard, 0, 0); //$NON-NLS-1$
+			}
 			return verifyExamples(candidate, hintFile);
 		} finally {
 			GuardFunctionResolverHolder.setResolver(previousResolver);
@@ -170,6 +178,56 @@ public final class CandidateVerifier {
 		}
 
 		return CandidateVerification.success(VERSION, positiveResults.size(), replacements.size());
+	}
+
+	private static String findUnresolvedGuard(HintFile hintFile) {
+		Function<String, GuardFunction> resolver = GuardFunctionResolverHolder.getResolver();
+		for (var rule : hintFile.getRules()) {
+			String unresolved = findUnresolvedGuard(rule.sourceGuard(), resolver);
+			if (unresolved != null) {
+				return unresolved;
+			}
+			for (var alternative : rule.alternatives()) {
+				unresolved = findUnresolvedGuard(alternative.condition(), resolver);
+				if (unresolved != null) {
+					return unresolved;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static String findUnresolvedGuard(GuardExpression expression,
+			Function<String, GuardFunction> resolver) {
+		if (expression == null) {
+			return null;
+		}
+		return switch (expression) {
+		case GuardExpression.FunctionCall call -> isResolvable(call.name(), resolver)
+				? null : call.name();
+		case GuardExpression.And and -> firstNonNull(
+				findUnresolvedGuard(and.left(), resolver),
+				findUnresolvedGuard(and.right(), resolver));
+		case GuardExpression.Or or -> firstNonNull(
+				findUnresolvedGuard(or.left(), resolver),
+				findUnresolvedGuard(or.right(), resolver));
+		case GuardExpression.Not not -> findUnresolvedGuard(not.operand(), resolver);
+		};
+	}
+
+	private static boolean isResolvable(String name, Function<String, GuardFunction> resolver) {
+		if (resolver == null) {
+			return false;
+		}
+		try {
+			return resolver.apply(name) != null;
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	private static String firstNonNull(String first, String second) {
+		return first != null ? first : second;
 	}
 
 	private static String validateSchema(MiningCandidate candidate) {
