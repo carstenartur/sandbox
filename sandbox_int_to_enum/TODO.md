@@ -1,205 +1,134 @@
-# TODO: Int to Enum/Switch Refactoring Plugin
+# Int-to-Enum Refactoring Roadmap
 
-## Current Implementation Status
+## Current implementation
 
 ### Completed
-- [x] Basic plugin structure created
-- [x] Documentation files (ARCHITECTURE.md, TODO.md, README.md)
-- [x] Refactored to follow repository patterns
-- [x] Helper structure (AbstractTool, IntToEnumHelper) following JFace pattern
-- [x] Using ReferenceHolder from sandbox_common
-- [x] CompilationUnitRewriteOperationWithSourceRange implementation
-- [x] Proper static imports and code organization
-- [x] IntConstantHolder data structure defined
-- [x] SwitchIntToEnumHelper - converts switch statements using int constants to use enums
-- [x] Pattern detection: finds static final int fields and switch statements referencing them
-- [x] Enum generation from common constant name prefix
-- [x] Switch case label updates from int constants to enum values
-- [x] Method parameter type updates from int to enum
-- [x] Test for switch int to enum basic transformation
-- [x] Test for single constant (no transformation expected)
 
-### Implementation Complexity Note
+- [x] Eclipse cleanup integration and preference UI
+- [x] Helper-based cleanup architecture using `CompilationUnitRewriteOperationWithSourceRange`
+- [x] Existing integer-switch prototype
+- [x] Binding-based detection of private integer state constants
+- [x] Detection of if/else-if chains comparing one private method parameter with a constant group
+- [x] Support for equality operands in either order
+- [x] Common-prefix enum naming
+- [x] Validation of distinct compile-time integer values
+- [x] Validation of generated Java identifiers and nested-type name conflicts
+- [x] Whole-compilation-unit reference validation for constants, the state parameter, and the private method
+- [x] Propagation to proven private method call sites
+- [x] Removal of migrated constant fields or individual declaration fragments
+- [x] Tests for positive migration and conservative rejection
+- [x] Documentation of the single-file safety boundary
 
-**The actual transformation logic is marked as a placeholder for the following reasons:**
+## Safety model
 
-1. **Complexity of Transformation**: Converting int constants to enum with switch statements requires:
-   - Complex AST pattern matching across multiple node types
-   - Sophisticated scope and type analysis
-   - Coordinated multi-step AST rewrites
-   - Careful handling of data flow and control flow
-   
-2. **Required Analysis**:
-   - Find all int constant declarations with common prefixes
-   - Analyze if-else chains to identify which constants are related
-   - Determine variable types and propagate enum type through code
-   - Handle edge cases (constants used in calculations, comparisons, etc.)
-   
-3. **Multiple Coordinated Changes**:
-   - Generate new enum declaration
-   - Remove or replace int constant fields
-   - Convert if-else to switch (with proper break statements)
-   - Update method parameters from `int` to enum type
-   - Update variable declarations
-   - Add imports if needed
-   
-4. **Edge Cases**:
-   - Constants used outside of if-else chains
-   - Mixed usage (some constants in if-else, others in calculations)
-   - Constants from different scopes or classes
-   - Integer values used without named constants
+The current if/else migration intentionally accepts only candidates whose complete source-level data flow can be proven inside one compilation unit:
 
-### Current State
-- [x] Switch int to enum transformation (SwitchIntToEnumHelper - fully implemented)
-- [x] Core transformation structure (Placeholder implementation with extensive comments)
-  - Structure is in place but returns no operations for IF_ELSE_TO_SWITCH
-  - Prevents incorrect transformations
-  - Demonstrates intended architecture
-- [ ] If-else to switch transformation (IntToEnumHelper - placeholder)
-  - [ ] AST visitor for if-else pattern detection
-  - [ ] If-else to switch conversion
-  - [ ] Enum generation logic
+- constants are `private static final int` compile-time constants;
+- the method is private;
+- the state parameter is used only in recognised comparisons;
+- all calls pass one of the recognised constants;
+- constants have no other references;
+- values are distinct and are not treated as aliases.
 
-### Next Steps for Full Implementation
-- [ ] Implement if-else pattern detection in IntToEnumHelper.find() method
-  - [ ] Use AstProcessorBuilder for field and if-statement visitors
-  - [ ] Detect public static final int constants
-  - [ ] Find if-else chains comparing against constants
-  - [ ] Group related constants by common prefixes
-  
-- [ ] Implement if-else to switch transformation in IntToEnumHelper.rewrite() method
-  - [ ] Generate enum declaration from constants
-  - [ ] Create switch statement from if-else chain
-  - [ ] Update variable types
-  - [ ] Handle break statements and fall-through
+This is narrower than the eventual feature, but it is suitable for an ordinary cleanup because it does not guess about references in other files.
 
-- [ ] Enhanced switch int to enum support
-  - [ ] Handle switch expressions (not just switch statements)
-  - [ ] Handle local variable type updates (not just method parameters)
-  - [ ] Handle constants from other classes (qualified name references)
-  
-- [ ] Comprehensive testing
-  - [ ] Test with various constant patterns
-  - [ ] Test edge cases
-  - [ ] Verify no regressions
+## High-priority next steps
 
+### 1. Extract a reusable semantic candidate model
 
-## Known Limitations
+- [ ] Separate candidate discovery from AST rewriting
+- [ ] Represent constant groups, state carriers, comparison sites, call sites, and rejection reasons explicitly
+- [ ] Produce diagnostics explaining why a potential candidate was rejected
+- [ ] Reuse the same model for if/else chains, switches, quick assists, and project-wide refactoring
 
-1. **Pattern Detection**
-   - Currently only detects simple switch statements with direct constant references in case labels
-   - If-else chain detection not yet implemented
-   - Does not handle complex boolean expressions
-   - Does not handle switch expressions (only switch statements)
+### 2. Harden the existing switch prototype
 
-2. **Scope Analysis**
-   - Only processes constants in the same class
-   - Does not follow constant references across compilation units
-   - Conservative approach may miss some valid transformation opportunities
+- [ ] Apply the same visibility and whole-reference safety checks as the if/else implementation
+- [ ] Propagate method call arguments before changing a parameter type
+- [ ] Reject public API changes in single-file cleanup mode
+- [ ] Support qualified constant references
+- [ ] Add switch-expression support
+- [ ] Add tests for method references, unsupported call arguments, and external-use risks
 
-3. **Naming**
-   - Enum name generation is heuristic-based
-   - May not always produce ideal names
-   - No user interaction for name selection in automated mode
+### 3. Support additional state carriers within one file
 
-## Future Enhancements
+- [ ] Local variables initialized and assigned only from one constant group
+- [ ] Private fields whose reads and writes are fully contained in one compilation unit
+- [ ] Multiple if/else chains using the same state carrier
+- [ ] Multiple private methods participating in one closed state flow
+- [ ] Return values when every producer and consumer is locally provable
 
-### High Priority
+### 4. Detect patterns that must not become a plain enum
 
-1. **Improved Pattern Detection**
-   - Handle nested if-else chains
-   - Detect constants used in multiple methods
-   - Support for package-private and private constants
+- [ ] Bit flags and masks: recommend `EnumSet` or retain the integer representation
+- [ ] Persisted or wire-protocol values: generate an enum with an explicit numeric value and `fromValue`
+- [ ] Aliased integer constants: preserve aliases or reject with an explanation
+- [ ] Ordered/ranged arithmetic: reject plain enum migration
+- [ ] JNI, reflection, serialization, annotations, and compile-time constant consumers
 
-2. **Better Enum Naming**
-   - Analyze constant name patterns (e.g., STATUS_*, ERROR_*)
-   - Generate more meaningful enum names
-   - Detect common prefixes and use them for enum name
+## Project-wide refactoring
 
-3. **Safety Checks**
-   - Verify no arithmetic operations on constants
-   - Check for external references before transformation
-   - Validate that all constant usages can be converted
+### Architectural requirement
 
-### Medium Priority
+`ICleanUpFix#createChange` returns a single `CompilationUnitChange`. Therefore, a third-party ordinary cleanup cannot atomically coordinate declaration and reference changes across several compilation units.
 
-4. **Configuration Options**
-   - Minimum number of constants to trigger transformation (default: 2)
-   - Allow/disallow transformation of public constants
-   - Option to preserve original constants as deprecated
+A full migration should use one of these approaches:
 
-5. **Enhanced Transformations**
-   - Support for int constants with associated string values (name/value pairs)
-   - Handle constants with bit flags (suggest EnumSet instead)
-   - Support for ordinal-based enums when order matters
+1. **JDT UI multi-file cleanup API**
+   - revise the proposal in `carstenartur/eclipse.jdt.ui#68` into a small, focused API change;
+   - integrate candidate collection with `CleanUpRefactoring` lifecycle and preview;
+   - return an LTK `CompositeChange` with unified preview and undo.
 
-### Low Priority
+2. **Dedicated plugin refactoring**
+   - add an Eclipse command and LTK `Refactoring` implementation in this project;
+   - use JDT search and hierarchy APIs to collect affected compilation units;
+   - expose a wizard with candidate selection, compatibility options, and preview;
+   - keep the ordinary cleanup as the conservative single-file variant.
 
-6. **IDE Integration**
-   - Quick fix for individual if-else chains
-   - Preview dialog showing before/after
-   - Undo/redo support in IDE
+The second path is possible outside JDT UI and is likely the fastest way to validate the feature. Integration into the standard Clean Up profile requires changes in JDT UI.
 
-7. **Advanced Features**
-   - Support for migrating existing enum-like patterns
-   - Generate enum methods (toString, fromValue, etc.)
-   - Handle legacy code with minimal disruption
+### Project-wide analysis tasks
 
-## Testing Requirements
+- [ ] Find all references with JDT `SearchEngine`
+- [ ] Follow method declarations, overrides, implementations, and interface contracts
+- [ ] Propagate types through parameters, return values, fields, locals, assignments, and calls
+- [ ] Detect reflection and binary/external API compatibility risks
+- [ ] Decide whether to preserve deprecated integer adapter constants
+- [ ] Handle tests and generated sources
+- [ ] Produce one atomic `CompositeChange`
+- [ ] Add cancellation and progress reporting
+- [ ] Add integration tests using at least three compilation units
 
-### Test Cases Needed
+## User-facing configuration
 
-1. **Basic Transformation**
-   - Simple if-else with 2 constants
-   - If-else with 3+ constants
-   - If-else with else clause
+- [ ] Minimum number of states
+- [ ] Preserve numeric values in the enum
+- [ ] Keep deprecated integer compatibility constants
+- [ ] Include package-visible APIs
+- [ ] Include public APIs only with explicit confirmation
+- [ ] Preserve if/else or convert to switch
+- [ ] Report-only analysis mode
 
-2. **Edge Cases**
-   - Constants with no usages (should not transform)
-   - Constants used in arithmetic (should not transform)
-   - Mixed usage (if-else + arithmetic) (should not transform)
+## Test matrix
 
-3. **Negative Tests**
-   - Single constant (should not trigger)
-   - Constants from different classes
-   - Switch statement on int (already optimal)
+- [x] Disabled cleanup
+- [x] Basic private if/else chain
+- [x] Reversed equality operands
+- [x] Proven private call-site propagation
+- [x] Public API rejection
+- [x] Arbitrary call argument rejection
+- [x] Unrelated constant-use rejection
+- [ ] Multiple constant fragments in one field declaration
+- [ ] Qualified references (`Type.STATUS_PENDING`)
+- [ ] Parenthesized comparisons and arguments
+- [ ] Duplicate values
+- [ ] Existing nested enum-name conflict
+- [ ] Method references
+- [ ] Recursive calls
+- [ ] Multiple candidate groups in one type
+- [ ] Local variables and private fields
+- [ ] Multi-file interface/implementation/caller scenario
 
-4. **Complex Scenarios**
-   - Multiple if-else chains using same constants
-   - Nested if-else structures
-   - Constants with annotations
+## DSL status
 
-## Open Questions
-
-1. Should we transform constants that are part of a public API?
-2. How to handle constants with associated data (name-value pairs)?
-3. Should we generate equals/hashCode for the enum?
-4. How to handle backward compatibility when constants are in public API?
-
-## Performance Considerations
-
-- AST traversal should be efficient for large files
-- Pattern matching should be optimized
-- Transformation should be atomic (all or nothing)
-
-## Documentation Needs
-
-- User-facing documentation for Eclipse Help
-- Example transformations in README.md
-- Configuration guide for cleanup preferences
-
-## TriggerPattern DSL Integration
-
-### Status: ❌ Not expressible in DSL
-
-The int-to-enum cleanup requires complex multi-statement pattern detection and
-code generation that cannot be expressed in the `.sandbox-hint` DSL:
-
-- **Multi-statement pattern detection**: Identifying if-else chains or switch statements using int constants
-- **Enum generation**: Creating new enum type declarations
-- **Cross-method analysis**: Tracking integer constant usage across the class
-- **Switch/if-else restructuring**: Converting control flow to enum-based patterns
-
-### Required DSL Extensions (for future work)
-- [ ] Multi-statement pattern matching
-- [ ] Code generation patterns (new type creation)
+The transformation is not currently expressible in the `.sandbox-hint` DSL. It requires binding-aware, multi-statement and eventually multi-file analysis plus new type generation. The DSL could participate only after gaining semantic candidate aggregation and coordinated change support.
