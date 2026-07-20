@@ -3,7 +3,8 @@ Bundle-Version: ${version_cleanup;${project.version}}
 Bundle-Name: Sandbox Common Core
 Bundle-Vendor: Carsten Hammer
 
-Export-Package: org.sandbox.jdt.internal.common,\
+Export-Package: org.sandbox.jdt.cleanup.multifile.api,\
+ org.sandbox.jdt.internal.common,\
  org.sandbox.jdt.triggerpattern.api,\
  org.sandbox.jdt.triggerpattern.internal,\
  org.sandbox.jdt.triggerpattern.nullability,\
