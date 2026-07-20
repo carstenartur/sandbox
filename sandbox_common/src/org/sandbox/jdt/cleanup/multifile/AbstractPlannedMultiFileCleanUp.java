@@ -28,6 +28,8 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
+
 /**
  * Base class for cleanups that first build one immutable semantic plan for all
  * selected compilation units and then emit the local part of that plan for each
