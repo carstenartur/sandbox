@@ -25,7 +25,7 @@ import org.eclipse.jdt.core.IJavaProject;
 
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
-import org.sandbox.jdt.cleanup.multifile.IMultiFileCleanUpScopeProvider;
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 
 /** Cleanup wrapper for JUnit migration. */
 public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore>
