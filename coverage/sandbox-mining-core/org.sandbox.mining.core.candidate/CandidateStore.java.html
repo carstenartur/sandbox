@@ -15,134 +15,210 @@ package org.sandbox.mining.core.candidate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
- * Persistent store for {@link MiningCandidate} objects in the
- * {@code mining-candidates/} directory.
- *
- * &lt;p&gt;Each candidate is stored as an individual JSON file named after a stable
- * candidate ID (SHA-256 derived from repo + commit + category + hint target + DSL).
- * This allows
- * individual candidates to be reviewed, promoted, or rejected without
- * touching productive bundled hint files.&lt;/p&gt;
- *
- * &lt;p&gt;Usage example:&lt;/p&gt;
- * &lt;pre&gt;
- * CandidateStore store = new CandidateStore(Path.of(&quot;mining-candidates&quot;));
- * store.save(candidate);
- * List&amp;lt;MiningCandidate&amp;gt; all = store.loadAll();
- * &lt;/pre&gt;
+ * Persistent candidate store. Candidate JSON is the authoritative record for an
+ * unreviewed proposal; reports and workflow issues are derived views.
  */
 public class CandidateStore {
 
-<span class="fc" id="L47">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
+<span class="fc" id="L40">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
 
 	private final Path storeDir;
 
-	/**
-	 * Creates a new candidate store for the given directory.
-	 * The directory will be created if it does not exist.
-	 *
-	 * @param storeDir the directory to store candidate JSON files in
-	 */
-<span class="fc" id="L57">	public CandidateStore(Path storeDir) {</span>
-<span class="fc" id="L58">		this.storeDir = storeDir;</span>
-<span class="fc" id="L59">	}</span>
+<span class="fc" id="L44">	public CandidateStore(Path storeDir) {</span>
+<span class="fc" id="L45">		this.storeDir = storeDir;</span>
+<span class="fc" id="L46">	}</span>
 
 	/**
-	 * Saves a candidate to its JSON file. If a file for the same commit
-	 * hash already exists, it is overwritten atomically.
-	 *
-	 * @param candidate the candidate to save
-	 * @throws IOException if the file cannot be written
+	 * Saves a candidate atomically. Corrected semantic content for the same stable
+	 * candidate ID starts a new revision at {@link CandidateStatus#DISCOVERED},
+	 * clears stale verification/rejection state, and therefore requires all gates
+	 * and human review to run again. Status-only updates do not increment the
+	 * revision. Promoted provenance is immutable. Legacy filenames for the same
+	 * proposal are removed after a successful write.
 	 */
 	public void save(MiningCandidate candidate) throws IOException {
-<span class="fc" id="L69">		Files.createDirectories(storeDir);</span>
-<span class="fc" id="L70">		String fileName = candidate.toFileName();</span>
-<span class="fc" id="L71">		Path target = storeDir.resolve(fileName);</span>
-<span class="fc" id="L72">		Path tmpFile = storeDir.resolve(fileName + &quot;.tmp&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L73">		String json = GSON.toJson(candidate);</span>
-<span class="fc" id="L74">		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L75">		Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);</span>
-<span class="fc" id="L76">	}</span>
-
-	/**
-	 * Loads all candidate JSON files from the store directory.
-	 * Files that cannot be parsed are silently skipped with a warning.
-	 *
-	 * @return list of all loaded candidates
-	 * @throws IOException if the directory cannot be listed
-	 */
-	public List&lt;MiningCandidate&gt; loadAll() throws IOException {
-<span class="fc bfc" id="L86" title="All 2 branches covered.">		if (!Files.exists(storeDir)) {</span>
-<span class="fc" id="L87">			return List.of();</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		if (candidate == null) {</span>
+<span class="nc" id="L58">			throw new IllegalArgumentException(&quot;candidate must not be null&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L89">		List&lt;MiningCandidate&gt; candidates = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L90">		try (Stream&lt;Path&gt; paths = Files.list(storeDir)) {</span>
-<span class="fc" id="L91">			paths.filter(p -&gt; p.getFileName().toString().endsWith(&quot;-candidate.json&quot;)) //$NON-NLS-1$</span>
-<span class="fc" id="L92">				.sorted()</span>
-<span class="fc" id="L93">				.forEach(p -&gt; {</span>
-					try {
-<span class="fc" id="L95">						String json = Files.readString(p, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L96">						MiningCandidate candidate = GSON.fromJson(json, MiningCandidate.class);</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">						if (candidate != null) {</span>
-<span class="fc" id="L98">							candidates.add(candidate);</span>
-						}
-<span class="nc" id="L100">					} catch (Exception e) {</span>
-<span class="nc" id="L101">						System.err.println(&quot;Warning: could not load candidate &quot; + p + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L102">					}</span>
-<span class="fc" id="L103">				});</span>
+<span class="fc" id="L60">		Files.createDirectories(storeDir);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">		if (candidate.getSchemaVersion() &lt; 2) {</span>
+<span class="nc" id="L62">			candidate.setSchemaVersion(2);</span>
 		}
-<span class="fc" id="L105">		return candidates;</span>
-	}
+<span class="fc" id="L64">		candidate.setRevision(candidate.getRevision());</span>
 
-	/**
-	 * Loads candidates filtered by status.
-	 *
-	 * @param status the status to filter by
-	 * @return list of candidates with the given status
-	 * @throws IOException if the directory cannot be listed
-	 */
-	public List&lt;MiningCandidate&gt; loadByStatus(CandidateStatus status) throws IOException {
-<span class="fc" id="L116">		List&lt;MiningCandidate&gt; all = loadAll();</span>
-<span class="fc" id="L117">		List&lt;MiningCandidate&gt; filtered = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (MiningCandidate c : all) {</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">			if (status.equals(c.getStatus())) {</span>
-<span class="fc" id="L120">				filtered.add(c);</span>
+<span class="fc" id="L66">		Path target = storeDir.resolve(candidate.toFileName());</span>
+<span class="fc" id="L67">		Optional&lt;MiningCandidate&gt; existing = load(target);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">		if (existing.isPresent()) {</span>
+<span class="fc" id="L69">			MiningCandidate previous = existing.get();</span>
+<span class="fc" id="L70">			boolean contentChanged = semanticContentChanged(previous, candidate);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">			if (contentChanged) {</span>
+<span class="fc" id="L72">				startNewRevision(previous, candidate);</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">			} else if (candidate.getRevision() &lt; previous.getRevision()) {</span>
+<span class="nc" id="L74">				candidate.setRevision(previous.getRevision());</span>
 			}
-<span class="fc" id="L122">		}</span>
-<span class="fc" id="L123">		return filtered;</span>
-	}
-
-	/**
-	 * Returns whether this exact candidate already exists in the store.
-	 *
-	 * @param candidate the candidate to check
-	 * @return {@code true} if a candidate file exists for this candidate ID
-	 */
-	public boolean containsCandidate(MiningCandidate candidate) {
-<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (candidate == null) {</span>
-<span class="fc" id="L134">			return false;</span>
 		}
-<span class="fc" id="L136">		return Files.exists(storeDir.resolve(candidate.toFileName()));</span>
+
+<span class="fc" id="L78">		Path tmpFile = storeDir.resolve(candidate.toFileName() + &quot;.tmp&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		Files.writeString(tmpFile, GSON.toJson(candidate) + System.lineSeparator(),</span>
+				StandardCharsets.UTF_8);
+		try {
+<span class="fc" id="L82">			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING,</span>
+					StandardCopyOption.ATOMIC_MOVE);
+<span class="nc" id="L84">		} catch (AtomicMoveNotSupportedException e) {</span>
+<span class="nc" id="L85">			Files.move(tmpFile, target, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="fc" id="L86">		}</span>
+<span class="fc" id="L87">		deleteLegacyAliases(candidate, target);</span>
+<span class="fc" id="L88">	}</span>
+
+	/** Loads all candidate files in deterministic filename order. */
+	public List&lt;MiningCandidate&gt; loadAll() throws IOException {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (!Files.exists(storeDir)) {</span>
+<span class="fc" id="L93">			return List.of();</span>
+		}
+<span class="fc" id="L95">		List&lt;MiningCandidate&gt; candidates = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L96">		try (Stream&lt;Path&gt; paths = Files.list(storeDir)) {</span>
+<span class="fc" id="L97">			paths.filter(CandidateStore::isCandidateFile)</span>
+<span class="fc" id="L98">					.sorted()</span>
+<span class="fc" id="L99">					.forEach(path -&gt; load(path).ifPresent(candidates::add));</span>
+		}
+<span class="fc" id="L101">		return candidates;</span>
 	}
 
-	/**
-	 * Returns the store directory path.
-	 *
-	 * @return the store directory
-	 */
+	/** Loads candidates filtered by lifecycle status. */
+	public List&lt;MiningCandidate&gt; loadByStatus(CandidateStatus status) throws IOException {
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (status == null) {</span>
+<span class="nc" id="L107">			return List.of();</span>
+		}
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		return loadAll().stream().filter(candidate -&gt; status == candidate.getStatus()).toList();</span>
+	}
+
+	/** Loads a candidate by stable candidate ID. */
+	public Optional&lt;MiningCandidate&gt; findById(String candidateId) {
+<span class="pc bpc" id="L114" title="2 of 4 branches missed.">		if (candidateId == null || candidateId.isBlank()) {</span>
+<span class="nc" id="L115">			return Optional.empty();</span>
+		}
+<span class="fc" id="L117">		return load(storeDir.resolve(candidateId + &quot;-candidate.json&quot;)); //$NON-NLS-1$</span>
+	}
+
+	/** Returns whether the same candidate revision content is already stored. */
+	public boolean containsCandidate(MiningCandidate candidate) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (candidate == null) {</span>
+<span class="fc" id="L123">			return false;</span>
+		}
+<span class="fc" id="L125">		Optional&lt;MiningCandidate&gt; stored = findById(candidate.getCandidateId());</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		return stored.filter(existing -&gt; !semanticContentChanged(existing, candidate)).isPresent();</span>
+	}
+
 	public Path getStoreDir() {
-<span class="fc" id="L145">		return storeDir;</span>
+<span class="fc" id="L130">		return storeDir;</span>
+	}
+
+	private static boolean semanticContentChanged(MiningCandidate previous,
+			MiningCandidate candidate) {
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		return !previous.getRuleFingerprint().equals(candidate.getRuleFingerprint())</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">				|| !previous.getBehaviorFingerprint().equals(candidate.getBehaviorFingerprint())</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">				|| !Objects.equals(previous.getSourceVersion(), candidate.getSourceVersion());</span>
+	}
+
+	private static void startNewRevision(MiningCandidate previous,
+			MiningCandidate candidate) {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">		if (previous.getStatus() == CandidateStatus.PROMOTED) {</span>
+<span class="fc" id="L143">			throw new IllegalStateException(</span>
+					&quot;Promoted candidate content is immutable; create a new candidate origin&quot;); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L147">		int newRevision = Math.max(previous.getRevision() + 1, candidate.getRevision());</span>
+<span class="fc" id="L148">		List&lt;CandidateTransition&gt; history = new ArrayList&lt;&gt;(previous.getTransitions());</span>
+<span class="fc" id="L149">		history.add(new CandidateTransition(</span>
+<span class="fc" id="L150">				previous.getStatus(), CandidateStatus.DISCOVERED,</span>
+				&quot;CandidateStore&quot;, //$NON-NLS-1$
+				&quot;Semantic content changed; revision &quot; + newRevision //$NON-NLS-1$
+						+ &quot; requires deterministic verification and review&quot;, //$NON-NLS-1$
+<span class="fc" id="L154">				Instant.now().toString()));</span>
+
+<span class="fc" id="L156">		candidate.setCandidateId(previous.getCandidateId());</span>
+<span class="fc" id="L157">		candidate.setRevision(newRevision);</span>
+<span class="fc" id="L158">		candidate.setStatus(CandidateStatus.DISCOVERED);</span>
+<span class="fc" id="L159">		candidate.setVerification(null);</span>
+<span class="fc" id="L160">		candidate.setRejectionReason(null);</span>
+<span class="fc" id="L161">		candidate.setTransitions(history);</span>
+<span class="fc" id="L162">	}</span>
+
+	private void deleteLegacyAliases(MiningCandidate candidate, Path canonicalPath)
+			throws IOException {
+<span class="fc" id="L166">		try (Stream&lt;Path&gt; paths = Files.list(storeDir)) {</span>
+<span class="fc" id="L167">			List&lt;Path&gt; aliases = paths.filter(CandidateStore::isCandidateFile)</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">					.filter(path -&gt; !path.equals(canonicalPath))</span>
+<span class="fc" id="L169">					.filter(path -&gt; load(path)</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">							.filter(existing -&gt; existing.getSchemaVersion() &lt; 2)</span>
+<span class="fc" id="L171">							.filter(existing -&gt; sameProposal(existing, candidate))</span>
+<span class="fc" id="L172">							.isPresent())</span>
+<span class="fc" id="L173">					.toList();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			for (Path alias : aliases) {</span>
+<span class="fc" id="L175">				Files.deleteIfExists(alias);</span>
+<span class="fc" id="L176">			}</span>
+		}
+<span class="fc" id="L178">	}</span>
+
+	private static boolean sameProposal(MiningCandidate first, MiningCandidate second) {
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		return Objects.equals(first.getSourceRepo(), second.getSourceRepo())</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				&amp;&amp; Objects.equals(first.getSourceCommit(), second.getSourceCommit())</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				&amp;&amp; Objects.equals(first.getCategory(), second.getCategory())</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">				&amp;&amp; Objects.equals(first.getTargetHintFile(), second.getTargetHintFile())</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">				&amp;&amp; first.getRuleFingerprint().equals(second.getRuleFingerprint())</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				&amp;&amp; first.getBehaviorFingerprint().equals(second.getBehaviorFingerprint());</span>
+	}
+
+	private Optional&lt;MiningCandidate&gt; load(Path path) {
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		if (!Files.isRegularFile(path)) {</span>
+<span class="fc" id="L191">			return Optional.empty();</span>
+		}
+		try {
+<span class="fc" id="L194">			String json = Files.readString(path, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L195">			JsonObject object = JsonParser.parseString(json).getAsJsonObject();</span>
+<span class="fc" id="L196">			MiningCandidate candidate = GSON.fromJson(object, MiningCandidate.class);</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">			if (candidate == null) {</span>
+<span class="nc" id="L198">				return Optional.empty();</span>
+			}
+<span class="fc bfc" id="L200" title="All 2 branches covered.">			if (!object.has(&quot;schemaVersion&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L201">				candidate.setSchemaVersion(1);</span>
+			}
+<span class="fc bfc" id="L203" title="All 2 branches covered.">			if (!object.has(&quot;revision&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L204">				candidate.setRevision(1);</span>
+			}
+<span class="fc bfc" id="L206" title="All 2 branches covered.">			if (!object.has(&quot;candidateId&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L207">				candidate.setCandidateId(null);</span>
+			}
+<span class="fc bfc" id="L209" title="All 2 branches covered.">			if (!object.has(&quot;sourceVersion&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L210">				candidate.setSourceVersion(null);</span>
+			}
+<span class="fc" id="L212">			return Optional.of(candidate);</span>
+<span class="nc" id="L213">		} catch (Exception e) {</span>
+<span class="nc" id="L214">			System.err.println(&quot;Warning: could not load candidate &quot; + path + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L215">			return Optional.empty();</span>
+		}
+	}
+
+	private static boolean isCandidateFile(Path path) {
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		return Files.isRegularFile(path)</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">				&amp;&amp; path.getFileName().toString().endsWith(&quot;-candidate.json&quot;); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

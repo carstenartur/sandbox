@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleFingerprintIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.candidate</a> &gt; <span class="el_source">RuleFingerprintIndex.java</span></div><h1>RuleFingerprintIndex.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.candidate;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
+
+/**
+ * Builds canonical fingerprints for individual parsed transformation rules and
+ * indexes the curated bundled rule library. File metadata, comments, rule IDs,
+ * descriptions, severity, and rule order do not affect a transformation
+ * fingerprint.
+ */
+public final class RuleFingerprintIndex {
+
+	private RuleFingerprintIndex() {
+	}
+
+	/** Returns the canonical fingerprint of the single rule in candidate DSL. */
+	public static String fingerprintDsl(String dslRule) throws IOException {
+		try {
+<span class="fc" id="L47">			HintFile parsed = new HintFileParser().parse(dslRule);</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">			if (parsed.getRules().size() != 1) {</span>
+<span class="nc" id="L49">				throw new IOException(&quot;Candidate DSL must contain exactly one rule&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L51">			return fingerprintRule(parsed.getRules().get(0));</span>
+<span class="nc" id="L52">		} catch (IOException e) {</span>
+<span class="nc" id="L53">			throw e;</span>
+<span class="nc" id="L54">		} catch (Exception e) {</span>
+<span class="nc" id="L55">			throw new IOException(&quot;Could not fingerprint candidate DSL: &quot; + e.getMessage(), e); //$NON-NLS-1$</span>
+		}
+	}
+
+	/** Returns a stable fingerprint for one parsed transformation rule. */
+	public static String fingerprintRule(TransformationRule rule) {
+<span class="fc" id="L61">		TransformationRule semanticRule = new TransformationRule(</span>
+				null,
+				null,
+<span class="fc" id="L64">				rule.sourcePattern(),</span>
+<span class="fc" id="L65">				rule.sourceGuard(),</span>
+<span class="fc" id="L66">				rule.alternatives(),</span>
+<span class="fc" id="L67">				rule.getImportDirective(),</span>
+				null);
+<span class="fc" id="L69">		HintFile singleRuleFile = new HintFile();</span>
+<span class="fc" id="L70">		singleRuleFile.addRule(semanticRule);</span>
+<span class="fc" id="L71">		String canonical = new HintFileSerializer().serialize(singleRuleFile)</span>
+<span class="fc" id="L72">				.replace(&quot;\r\n&quot;, &quot;\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L73">				.replace('\r', '\n')</span>
+<span class="fc" id="L74">				.strip();</span>
+<span class="fc" id="L75">		return &quot;sha256:&quot; + sha256(canonical); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Loads all curated {@code .sandbox-hint} files below a directory.
+	 *
+	 * @return fingerprint to human-readable file/rule reference
+	 */
+	public static Map&lt;String, String&gt; loadCurated(Path hintDirectory) throws IOException {
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">		if (hintDirectory == null || !Files.isDirectory(hintDirectory)) {</span>
+<span class="nc" id="L85">			throw new IOException(&quot;Curated hint directory does not exist: &quot; + hintDirectory); //$NON-NLS-1$</span>
+		}
+		List&lt;Path&gt; files;
+<span class="fc" id="L88">		try (Stream&lt;Path&gt; paths = Files.walk(hintDirectory)) {</span>
+<span class="fc" id="L89">			files = paths.filter(Files::isRegularFile)</span>
+<span class="fc" id="L90">					.filter(path -&gt; path.getFileName().toString().endsWith(&quot;.sandbox-hint&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L91">					.sorted()</span>
+<span class="fc" id="L92">					.toList();</span>
+		}
+
+<span class="fc" id="L95">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L96">		HintFileParser parser = new HintFileParser();</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (Path file : files) {</span>
+			HintFile hintFile;
+			try {
+<span class="fc" id="L100">				hintFile = parser.parse(Files.readString(file, StandardCharsets.UTF_8));</span>
+<span class="nc" id="L101">			} catch (Exception e) {</span>
+<span class="nc" id="L102">				throw new IOException(&quot;Could not parse curated hint file &quot; + file + &quot;: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L103">						+ e.getMessage(), e);</span>
+<span class="fc" id="L104">			}</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			for (int i = 0; i &lt; hintFile.getRules().size(); i++) {</span>
+<span class="fc" id="L106">				TransformationRule rule = hintFile.getRules().get(i);</span>
+<span class="pc bpc" id="L107" title="3 of 4 branches missed.">				String ruleName = rule.getRuleId() == null || rule.getRuleId().isBlank()</span>
+<span class="pc" id="L108">						? &quot;rule &quot; + (i + 1) : rule.getRuleId(); //$NON-NLS-1$</span>
+<span class="fc" id="L109">				String relativeFile = hintDirectory.relativize(file).toString()</span>
+<span class="fc" id="L110">						.replace(File.separatorChar, '/');</span>
+<span class="fc" id="L111">				String reference = relativeFile + &quot;#&quot; + ruleName; //$NON-NLS-1$</span>
+<span class="fc" id="L112">				index.putIfAbsent(fingerprintRule(rule), reference);</span>
+			}
+<span class="fc" id="L114">		}</span>
+<span class="fc" id="L115">		return Map.copyOf(index);</span>
+	}
+
+	private static String sha256(String value) {
+		try {
+<span class="fc" id="L120">			MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L121">			byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L122">			StringBuilder hex = new StringBuilder(hash.length * 2);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			for (byte b : hash) {</span>
+<span class="fc" id="L124">				hex.append(Character.forDigit((b &gt;&gt;&gt; 4) &amp; 0x0f, 16));</span>
+<span class="fc" id="L125">				hex.append(Character.forDigit(b &amp; 0x0f, 16));</span>
+			}
+<span class="fc" id="L127">			return hex.toString();</span>
+<span class="nc" id="L128">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L129">			throw new IllegalStateException(&quot;SHA-256 algorithm not available&quot;, e); //$NON-NLS-1$</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

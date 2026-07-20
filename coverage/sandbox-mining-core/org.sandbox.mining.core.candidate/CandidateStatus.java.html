@@ -14,54 +14,71 @@
 package org.sandbox.mining.core.candidate;
 
 /**
- * Lifecycle status of a mined cleanup candidate.
- *
- * &lt;p&gt;Candidates progress through these states as they are validated,
- * tested, and eventually promoted into productive bundled hint files.&lt;/p&gt;
+ * Enforced lifecycle status of a mined cleanup candidate.
  *
  * &lt;pre&gt;
- * DISCOVERED → DSL_VALID → TEST_GENERATED → TEST_PASSED → READY_FOR_PR → PROMOTED
- *                                                        ↘
- *                                                         REJECTED (at any stage)
+ * DISCOVERED -&gt; DSL_VALID -&gt; BEHAVIOR_VALID -&gt; READY_FOR_REVIEW
+ *                                                |       |
+ *                                                v       v
+ *                                            APPROVED  REJECTED
+ *                                                |
+ *                                                v
+ *                                            PROMOTED
  * &lt;/pre&gt;
+ *
+ * &lt;p&gt;{@link #DUPLICATE} records deterministic cross-origin duplicate
+ * detection. {@link #SUPERSEDED} is a terminal state for an older proposal
+ * revision or origin. Generated source files and test execution are
+ * implementation details and are deliberately not domain states.&lt;/p&gt;
  */
-<span class="fc" id="L28">public enum CandidateStatus {</span>
+<span class="fc" id="L34">public enum CandidateStatus {</span>
+
+	/** Candidate was produced by discovery and has not been validated. */
+<span class="fc" id="L37">	DISCOVERED,</span>
+
+	/** The DSL parser and deterministic DSL validator accepted the proposal. */
+<span class="fc" id="L40">	DSL_VALID,</span>
+
+	/** Before/after/negative examples passed deterministic behavior verification. */
+<span class="fc" id="L43">	BEHAVIOR_VALID,</span>
+
+	/** Candidate passed automated gates and is ready for a human decision. */
+<span class="fc" id="L46">	READY_FOR_REVIEW,</span>
+
+	/** A human reviewer approved the candidate for promotion. */
+<span class="fc" id="L49">	APPROVED,</span>
+
+	/** The rule and its behavior test were merged into the curated rule set. */
+<span class="fc" id="L52">	PROMOTED,</span>
+
+	/** A reviewer or deterministic policy rejected the candidate. */
+<span class="fc" id="L55">	REJECTED,</span>
+
+	/** The normalized rule duplicates another staged candidate. */
+<span class="fc" id="L58">	DUPLICATE,</span>
+
+	/** This proposal was replaced by another candidate or revision. */
+<span class="fc" id="L61">	SUPERSEDED;</span>
 
 	/**
-	 * Initial state: candidate discovered by LLM from a commit diff.
-	 * DSL rule has not yet been validated.
+	 * Returns whether a transition from this state to {@code target} is valid.
 	 */
-<span class="fc" id="L34">	DISCOVERED,</span>
-
-	/**
-	 * DSL rule has been parsed and validated by {@code DslValidator}.
-	 */
-<span class="fc" id="L39">	DSL_VALID,</span>
-
-	/**
-	 * A lightweight JUnit test skeleton has been auto-generated for this candidate.
-	 */
-<span class="fc" id="L44">	TEST_GENERATED,</span>
-
-	/**
-	 * The generated test was executed and passed (beforeExample matches,
-	 * replacement equals afterExample, negativeExample does NOT match).
-	 */
-<span class="fc" id="L50">	TEST_PASSED,</span>
-
-	/**
-	 * Candidate has passed all validations and is ready for PR/issue creation.
-	 */
-<span class="fc" id="L55">	READY_FOR_PR,</span>
-
-	/**
-	 * Candidate has been promoted into a productive bundled {@code .sandbox-hint} file.
-	 */
-<span class="fc" id="L60">	PROMOTED,</span>
-
-	/**
-	 * Candidate has been rejected by a reviewer or failed automated checks.
-	 */
-<span class="fc" id="L65">	REJECTED</span>
+	public boolean canTransitionTo(CandidateStatus target) {
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">		if (target == null || target == this) {</span>
+<span class="nc" id="L68">			return false;</span>
+		}
+<span class="pc bpc" id="L70" title="1 of 6 branches missed.">		if (target == REJECTED || target == DUPLICATE || target == SUPERSEDED) {</span>
+<span class="pc bpc" id="L71" title="4 of 8 branches missed.">			return this != PROMOTED &amp;&amp; this != REJECTED</span>
+					&amp;&amp; this != DUPLICATE &amp;&amp; this != SUPERSEDED;
+		}
+<span class="pc bpc" id="L74" title="1 of 6 branches missed.">		return switch (this) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		case DISCOVERED -&gt; target == DSL_VALID;</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		case DSL_VALID -&gt; target == BEHAVIOR_VALID;</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		case BEHAVIOR_VALID -&gt; target == READY_FOR_REVIEW;</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		case READY_FOR_REVIEW -&gt; target == APPROVED;</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		case APPROVED -&gt; target == PROMOTED;</span>
+<span class="nc" id="L80">		case PROMOTED, REJECTED, DUPLICATE, SUPERSEDED -&gt; false;</span>
+		};
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

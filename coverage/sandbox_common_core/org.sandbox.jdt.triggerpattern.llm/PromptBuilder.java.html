@@ -19,284 +19,178 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Builds prompts combining DSL context,
- * existing categories, and commit diff information.
+ * Builds discovery-first prompts for one focused TriggerPattern candidate or an
+ * explicit no-cleanup decision. Broad architectural scoring and plugin analysis
+ * are deliberately excluded from the normal mining request.
  */
 public class PromptBuilder {
 
-	/**
-	 * Holds data for a single commit to be included in a batch prompt.
-	 *
-	 * @param commitHash    the commit hash
-	 * @param commitMessage the commit message
-	 * @param diff          the commit diff
-	 */
-<span class="fc" id="L34">	public record CommitData(String commitHash, String commitMessage, String diff) {</span>
+	/** Commit data included in a discovery request. */
+<span class="fc" id="L29">	public record CommitData(String commitHash, String commitMessage, String diff) {</span>
 	}
 
 	private static final String DSL_EXPLANATION_RESOURCE = &quot;/dsl-explanation.md&quot;; //$NON-NLS-1$
-	private static final String EXISTING_PLUGINS_RESOURCE = &quot;/existing-java-plugins.md&quot;; //$NON-NLS-1$
-	private static final String ECLIPSE_API_CONTEXT_RESOURCE = &quot;/eclipse-api-context.md&quot;; //$NON-NLS-1$
-	private static final String MINING_EXAMPLES_RESOURCE = &quot;/mining-examples.md&quot;; //$NON-NLS-1$
 
-	private String dslExplanation;
-	private String existingPluginsContext;
-	private String eclipseApiContext;
-	private String miningExamples;
+	private final String dslExplanation;
 	private String typeContext;
 	private String errorFeedback;
 
-<span class="fc" id="L49">	public PromptBuilder() {</span>
-<span class="fc" id="L50">		this.dslExplanation = loadResource(DSL_EXPLANATION_RESOURCE);</span>
-<span class="fc" id="L51">		this.existingPluginsContext = loadResource(EXISTING_PLUGINS_RESOURCE);</span>
-<span class="fc" id="L52">		this.eclipseApiContext = loadResource(ECLIPSE_API_CONTEXT_RESOURCE);</span>
-<span class="fc" id="L53">		this.miningExamples = loadResource(MINING_EXAMPLES_RESOURCE);</span>
-<span class="fc" id="L54">	}</span>
+<span class="fc" id="L38">	public PromptBuilder() {</span>
+<span class="fc" id="L39">		this.dslExplanation = loadResource(DSL_EXPLANATION_RESOURCE);</span>
+<span class="fc" id="L40">	}</span>
 
-	/**
-	 * Sets optional type context to include in prompts.
-	 *
-	 * @param typeContext the type context section
-	 */
+	/** Sets optional deterministic type context extracted from the current diff. */
 	public void setTypeContext(String typeContext) {
-<span class="nc" id="L62">		this.typeContext = typeContext;</span>
-<span class="nc" id="L63">	}</span>
+<span class="fc" id="L44">		this.typeContext = typeContext;</span>
+<span class="fc" id="L45">	}</span>
 
-	/**
-	 * Sets optional error feedback to include in prompts.
-	 *
-	 * @param errorFeedback the error feedback section
-	 */
+	/** Sets concise feedback about recurring response errors. */
 	public void setErrorFeedback(String errorFeedback) {
-<span class="nc" id="L71">		this.errorFeedback = errorFeedback;</span>
-<span class="nc" id="L72">	}</span>
+<span class="fc" id="L49">		this.errorFeedback = errorFeedback;</span>
+<span class="fc" id="L50">	}</span>
 
-	/**
-	 * Builds a complete prompt for LLM evaluation.
-	 *
-	 * @param dslContext       existing DSL rules context
-	 * @param categoriesJson   existing categories as JSON
-	 * @param diff             the commit diff
-	 * @param commitMessage    the commit message
-	 * @return the complete prompt string
-	 */
+	/** Builds a prompt for one commit. */
 	public String buildPrompt(String dslContext, String categoriesJson,
 			String diff, String commitMessage) {
-<span class="fc" id="L85">		return buildPrompt(dslContext, categoriesJson, diff, commitMessage, null);</span>
+<span class="fc" id="L55">		return buildPrompt(dslContext, categoriesJson, diff, commitMessage, null);</span>
 	}
 
 	/**
-	 * Builds a complete prompt for LLM evaluation with optional previously discovered rules.
-	 *
-	 * @param dslContext        existing DSL rules context
-	 * @param categoriesJson    existing categories as JSON
-	 * @param diff              the commit diff
-	 * @param commitMessage     the commit message
-	 * @param previousResults   JSON array of previously discovered rules (from evaluations.json), or null
-	 * @return the complete prompt string
+	 * Builds a prompt for one commit. Legacy context parameters are retained for
+	 * binary/source compatibility but duplicate rejection is performed
+	 * deterministically after generation rather than by sending all known rules to
+	 * the model.
 	 */
 	public String buildPrompt(String dslContext, String categoriesJson,
 			String diff, String commitMessage, String previousResults) {
-<span class="fc" id="L100">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L101">		sb.append(&quot;You are an expert in Eclipse JDT code transformations and the TriggerPattern DSL.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L102">		sb.append(&quot;## DSL Explanation\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L103">		sb.append(dslExplanation).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L104">		sb.append(&quot;## Existing DSL Rules\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">		sb.append(dslContext != null ? dslContext : &quot;(none)&quot;).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L106">		sb.append(&quot;## Existing Categories\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L107" title="All 2 branches covered.">		sb.append(categoriesJson != null ? categoriesJson : &quot;[]&quot;).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L108">		appendExistingPluginsSection(sb);</span>
-<span class="fc" id="L109">		appendPreviousResultsSection(sb, previousResults);</span>
-<span class="fc" id="L110">		appendOptionalSections(sb);</span>
-<span class="fc" id="L111">		sb.append(&quot;## Commit to Analyze\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L112">		sb.append(&quot;### Commit Message\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L113">		sb.append(commitMessage).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L114">		sb.append(&quot;### Diff\n```\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L115">		sb.append(diff).append(&quot;\n```\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L116">		appendTaskSection(sb);</span>
-<span class="fc" id="L117">		return sb.toString();</span>
+<span class="fc" id="L66">		StringBuilder prompt = new StringBuilder();</span>
+<span class="fc" id="L67">		appendHeader(prompt);</span>
+<span class="fc" id="L68">		appendOptionalContext(prompt);</span>
+<span class="fc" id="L69">		prompt.append(&quot;## Commit to analyze\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L70">		prompt.append(&quot;### Message\n&quot;).append(nullToEmpty(commitMessage)).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L71">		prompt.append(&quot;### Diff\n```diff\n&quot;).append(nullToEmpty(diff)).append(&quot;\n```\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L72">		appendTask(prompt, false, 1);</span>
+<span class="fc" id="L73">		return prompt.toString();</span>
 	}
 
-	/**
-	 * Builds a batch prompt for evaluating multiple commits in a single API call.
-	 *
-	 * @param dslContext     existing DSL rules context
-	 * @param categoriesJson existing categories as JSON
-	 * @param commits        list of commits to evaluate
-	 * @return the complete batch prompt string
-	 */
+	/** Builds a batch discovery prompt. */
 	public String buildBatchPrompt(String dslContext, String categoriesJson,
 			List&lt;CommitData&gt; commits) {
-<span class="fc" id="L130">		return buildBatchPrompt(dslContext, categoriesJson, commits, null);</span>
+<span class="fc" id="L79">		return buildBatchPrompt(dslContext, categoriesJson, commits, null);</span>
 	}
 
 	/**
-	 * Builds a batch prompt with optional previously discovered rules.
-	 *
-	 * @param dslContext       existing DSL rules context
-	 * @param categoriesJson   existing categories as JSON
-	 * @param commits          list of commits to evaluate
-	 * @param previousResults  JSON array of previously discovered rules, or null
-	 * @return the complete batch prompt string
+	 * Builds a batch discovery prompt. Each commit must receive exactly one
+	 * candidate-or-no-cleanup object in the original order.
 	 */
 	public String buildBatchPrompt(String dslContext, String categoriesJson,
 			List&lt;CommitData&gt; commits, String previousResults) {
-<span class="fc" id="L144">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L145">		sb.append(&quot;You are an expert in Eclipse JDT code transformations and the TriggerPattern DSL.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L146">		sb.append(&quot;## DSL Explanation\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L147">		sb.append(dslExplanation).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L148">		sb.append(&quot;## Existing DSL Rules\n&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		sb.append(dslContext != null ? dslContext : &quot;(none)&quot;).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L150">		sb.append(&quot;## Existing Categories\n&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		sb.append(categoriesJson != null ? categoriesJson : &quot;[]&quot;).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L152">		appendExistingPluginsSection(sb);</span>
-<span class="fc" id="L153">		appendPreviousResultsSection(sb, previousResults);</span>
-<span class="fc" id="L154">		appendOptionalSections(sb);</span>
-<span class="fc" id="L155">		sb.append(&quot;## Commits to Analyze\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L156" title="All 2 branches covered.">		for (int i = 0; i &lt; commits.size(); i++) {</span>
-<span class="fc" id="L157">			CommitData cd = commits.get(i);</span>
-<span class="fc" id="L158">			sb.append(&quot;### Commit &quot;).append(i).append(&quot; (&quot;).append(cd.commitHash()).append(&quot;)\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L159">			sb.append(&quot;#### Message\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L160">			sb.append(cd.commitMessage()).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L161">			sb.append(&quot;#### Diff\n```\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L162">			sb.append(cd.diff()).append(&quot;\n```\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L88">		StringBuilder prompt = new StringBuilder();</span>
+<span class="fc" id="L89">		appendHeader(prompt);</span>
+<span class="fc" id="L90">		appendOptionalContext(prompt);</span>
+<span class="fc" id="L91">		prompt.append(&quot;## Commits to analyze\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		for (int i = 0; i &lt; commits.size(); i++) {</span>
+<span class="fc" id="L93">			CommitData commit = commits.get(i);</span>
+<span class="fc" id="L94">			prompt.append(&quot;### Commit &quot;).append(i).append(&quot; (&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L95">					.append(commit.commitHash()).append(&quot;)\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L96">			prompt.append(&quot;#### Message\n&quot;).append(nullToEmpty(commit.commitMessage())).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L97">			prompt.append(&quot;#### Diff\n```diff\n&quot;).append(nullToEmpty(commit.diff())).append(&quot;\n```\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L164">		sb.append(&quot;## Task\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L165">		sb.append(&quot;Analyze each commit above and determine whether its code change\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L166">		sb.append(&quot;can be generalized into a reusable TriggerPattern DSL rule.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L167">		sb.append(&quot;Return a JSON array with exactly &quot;).append(commits.size()); //$NON-NLS-1$</span>
-<span class="fc" id="L168">		sb.append(&quot; evaluation objects, one per commit, in the same order as presented.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L169">		sb.append(&quot;Each object has the same schema as before:\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L170">		appendJsonSchema(sb, true);</span>
-<span class="fc" id="L171">		appendTrafficLightMeanings(sb);</span>
-<span class="fc" id="L172">		appendDslRuleChecklist(sb);</span>
-<span class="fc" id="L173">		return sb.toString();</span>
+<span class="fc" id="L99">		appendTask(prompt, true, commits.size());</span>
+<span class="fc" id="L100">		return prompt.toString();</span>
 	}
 
-	private void appendExistingPluginsSection(StringBuilder sb) {
-<span class="fc" id="L177">		sb.append(&quot;## Existing Java-Based Cleanup Plugins\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L178">		sb.append(existingPluginsContext).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L179">	}</span>
+	private void appendHeader(StringBuilder prompt) {
+<span class="fc" id="L104">		prompt.append(&quot;You discover small, local, semantics-preserving Java cleanups from commit diffs.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L105">		prompt.append(&quot;For each commit, propose exactly one reusable TriggerPattern DSL candidate or explicitly return noCleanup.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L106">		prompt.append(&quot;Do not perform architectural analysis, plugin replacement analysis, or speculative DSL redesign.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		prompt.append(&quot;## TriggerPattern DSL\n\n&quot;).append(dslExplanation).append(&quot;\n\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L108">	}</span>
 
-	private static void appendPreviousResultsSection(StringBuilder sb, String previousResults) {
-<span class="pc bpc" id="L182" title="1 of 4 branches missed.">		if (previousResults != null &amp;&amp; !previousResults.isBlank()) {</span>
-<span class="fc" id="L183">			sb.append(&quot;## Previously Discovered Rules\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L184">			sb.append(&quot;The following rules have already been discovered in prior mining runs. &quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L185">			sb.append(&quot;Do NOT re-propose identical rules. If you see a similar pattern, &quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L186">			sb.append(&quot;acknowledge it with `\&quot;previouslyProposed\&quot;: \&quot;&lt;rule summary&gt;\&quot;` and explain &quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L187">			sb.append(&quot;how your proposal differs or improves on it.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L188">			sb.append(previousResults).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
+	private void appendOptionalContext(StringBuilder prompt) {
+<span class="pc bpc" id="L111" title="1 of 4 branches missed.">		if (typeContext != null &amp;&amp; !typeContext.isBlank()) {</span>
+<span class="fc" id="L112">			prompt.append(&quot;## Deterministic type context\n\n&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L113">					.append(typeContext.strip()).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L190">	}</span>
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		if (errorFeedback != null &amp;&amp; !errorFeedback.isBlank()) {</span>
+<span class="fc" id="L116">			prompt.append(&quot;## Recurring response errors to avoid\n\n&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L117">					.append(errorFeedback.strip()).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L119">	}</span>
 
-	private void appendOptionalSections(StringBuilder sb) {
-<span class="pc bpc" id="L193" title="2 of 4 branches missed.">		if (eclipseApiContext != null &amp;&amp; !eclipseApiContext.startsWith(&quot;(Resource not available&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L194">			sb.append(&quot;## Eclipse API Context\n\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L195">			sb.append(eclipseApiContext).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-		}
-<span class="pc bpc" id="L197" title="2 of 4 branches missed.">		if (miningExamples != null &amp;&amp; !miningExamples.startsWith(&quot;(Resource not available&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L198">			sb.append(&quot;## Mining Examples\n\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L199">			sb.append(miningExamples).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
-		}
-<span class="pc bpc" id="L201" title="3 of 4 branches missed.">		if (typeContext != null &amp;&amp; !typeContext.isBlank()) {</span>
-<span class="nc" id="L202">			sb.append(typeContext);</span>
-		}
-<span class="pc bpc" id="L204" title="3 of 4 branches missed.">		if (errorFeedback != null &amp;&amp; !errorFeedback.isBlank()) {</span>
-<span class="nc" id="L205">			sb.append(errorFeedback);</span>
-		}
-<span class="fc" id="L207">	}</span>
-
-	private void appendTaskSection(StringBuilder sb) {
-<span class="fc" id="L210">		sb.append(&quot;## Task\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L211">		sb.append(&quot;Analyze this commit and determine whether the code change\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L212">		sb.append(&quot;can be generalized into a reusable TriggerPattern DSL rule.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L213">		appendDslRuleChecklist(sb);</span>
-<span class="fc" id="L214">		sb.append(&quot;Respond with a JSON object:\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L215">		appendJsonSchema(sb, false);</span>
-<span class="fc" id="L216">		appendTrafficLightMeanings(sb);</span>
-<span class="fc" id="L217">	}</span>
-
-	/**
-	 * Compact MUST/MUST-NOT checklist re-emphasised at the end of every prompt
-	 * so the model does not regress on the recurring error patterns detected
-	 * by {@code scan_hints.py} and {@code HintFileResourcesValidationTest}.
-	 */
-	private static void appendDslRuleChecklist(StringBuilder sb) {
-<span class="fc" id="L225">		sb.append(&quot;### dslRule Validation Rules (MUST hold — else the build fails)\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L226">		sb.append(&quot;1. Plain DSL text only. NEVER use &lt;trigger&gt;, &lt;import&gt;, &lt;pattern&gt; or any XML tags.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L227">		sb.append(&quot;2. NEVER use isType() — use instanceof($var, \&quot;TypeName\&quot;) instead.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L228">		sb.append(&quot;3. Every rule MUST end with `;;` on its own line.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L229">		sb.append(&quot;4. Every quick-fix rule MUST contain exactly one `=&gt;` between source and replacement.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L230">		sb.append(&quot;5. Every `$placeholder` used in the replacement MUST also appear in the source pattern.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L231">		sb.append(&quot;   If the replacement needs information not in the source, emit a HINT-ONLY rule:\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L232">		sb.append(&quot;     \&quot;Description\&quot;:\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L233">		sb.append(&quot;     source_pattern :: optional_guard\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L234">		sb.append(&quot;     ;;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L235">		sb.append(&quot;   (no `=&gt;` line, no unbound placeholders).\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L236">		sb.append(&quot;6. Source and replacement MUST NOT be identical (no NOOP rules).\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L237">		sb.append(&quot;7. NEVER mix FQNs with placeholders in the same dotted chain.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L238">		sb.append(&quot;   Bad: java.lang.String.$str.foo()  Good: $str.foo() :: instanceof($str, \&quot;java.lang.String\&quot;)\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L239">		sb.append(&quot;8. NEVER use per-rule /*!key: value*/ directives (minJavaVersion, tags, id, severity, description).\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L240">		sb.append(&quot;   They are silently stripped. Use `@id:` / `@severity:` annotations or file-level `&lt;!key: value&gt;`.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L241">		sb.append(&quot;9. At most ONE `&lt;!id: ...&gt;` per file. Per-rule IDs go in `@id:` annotations.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L242">		sb.append(&quot;10. Self-check before responding: re-read each rule and verify points 1–9.\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L243">		sb.append(&quot;    Drop any rule that cannot satisfy them rather than emitting a broken rule.\n\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L244">	}</span>
-
-	private static void appendJsonSchema(StringBuilder sb, boolean asArray) {
-<span class="fc bfc" id="L247" title="All 2 branches covered.">		if (asArray) {</span>
-<span class="fc" id="L248">			sb.append(&quot;[\n  {\n&quot;); //$NON-NLS-1$</span>
+	private static void appendTask(StringBuilder prompt, boolean array, int count) {
+<span class="fc" id="L122">		prompt.append(&quot;## Task\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L123">		prompt.append(&quot;Identify one local transformation that is safe for code matching the supplied examples.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L124">		prompt.append(&quot;Return noCleanup=true when the change is uncertain, context-dependent, already merely stylistic, or not expressible safely.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		appendSafetyPolicy(prompt);</span>
+<span class="fc" id="L126">		appendDslRuleChecklist(prompt);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (array) {</span>
+<span class="fc" id="L128">			prompt.append(&quot;Return a JSON array with exactly &quot;).append(count) //$NON-NLS-1$</span>
+<span class="fc" id="L129">					.append(&quot; objects, one per commit, in the same order.\n\n&quot;); //$NON-NLS-1$</span>
 		} else {
-<span class="fc" id="L250">			sb.append(&quot;{\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L131">			prompt.append(&quot;Return exactly one JSON object.\n\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L252" title="All 2 branches covered.">		String indent = asArray ? &quot;    &quot; : &quot;  &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L253">		sb.append(indent).append(&quot;\&quot;relevant\&quot;: true/false,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L254">		sb.append(indent).append(&quot;\&quot;irrelevantReason\&quot;: \&quot;reason if not relevant\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L255">		sb.append(indent).append(&quot;\&quot;isDuplicate\&quot;: true/false,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L256">		sb.append(indent).append(&quot;\&quot;duplicateOf\&quot;: \&quot;name of existing rule if duplicate\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L257">		sb.append(indent).append(&quot;\&quot;reusability\&quot;: 1-10,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L258">		sb.append(indent).append(&quot;\&quot;codeImprovement\&quot;: 1-10,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L259">		sb.append(indent).append(&quot;\&quot;implementationEffort\&quot;: 1-10,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L260">		sb.append(indent).append(&quot;\&quot;trafficLight\&quot;: \&quot;GREEN|YELLOW|RED|NOT_APPLICABLE\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L261">		sb.append(indent).append(&quot;\&quot;category\&quot;: \&quot;category name\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L262">		sb.append(indent).append(&quot;\&quot;isNewCategory\&quot;: true/false,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L263">		sb.append(indent).append(&quot;\&quot;categoryReason\&quot;: \&quot;why this category\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L264">		sb.append(indent).append(&quot;\&quot;canImplementInCurrentDsl\&quot;: true/false,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L265">		sb.append(indent).append(&quot;\&quot;dslRule\&quot;: \&quot;raw .sandbox-hint rule (NO &lt;trigger&gt; tags, NO &lt;import&gt; tags, NO XML)\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L266">		sb.append(indent).append(&quot;\&quot;targetHintFile\&quot;: \&quot;suggested .sandbox-hint filename\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L267">		sb.append(indent).append(&quot;\&quot;languageChangeNeeded\&quot;: \&quot;what DSL change would be needed\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L268">		sb.append(indent).append(&quot;\&quot;dslRuleAfterChange\&quot;: \&quot;DSL rule after language extension\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L269">		sb.append(indent).append(&quot;\&quot;existsAsJavaPlugin\&quot;: true/false,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L270">		sb.append(indent).append(&quot;\&quot;replacesPlugin\&quot;: \&quot;name of Java plugin this would replace, or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L271">		sb.append(indent).append(&quot;\&quot;previouslyProposed\&quot;: \&quot;summary of similar prior rule, or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L272">		sb.append(indent).append(&quot;\&quot;sourceVersion\&quot;: 11,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L273">		sb.append(indent).append(&quot;\&quot;beforeExample\&quot;: \&quot;minimal self-contained Java class showing code BEFORE the fix (must compile)\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L274">		sb.append(indent).append(&quot;\&quot;afterExample\&quot;: \&quot;same class showing code AFTER the fix (must compile)\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L275">		sb.append(indent).append(&quot;\&quot;negativeExample\&quot;: \&quot;minimal Java class that looks similar but should NOT be changed by the rule\&quot;,\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L276">		sb.append(indent).append(&quot;\&quot;summary\&quot;: \&quot;brief summary of the analysis\&quot;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L277" title="All 2 branches covered.">		if (asArray) {</span>
-<span class="fc" id="L278">			sb.append(&quot;  },\n  ...\n]\n\n&quot;); //$NON-NLS-1$</span>
-		} else {
-<span class="fc" id="L280">			sb.append(&quot;}\n\n&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L282">	}</span>
+<span class="fc" id="L133">		appendJsonSchema(prompt, array);</span>
+<span class="fc" id="L134">	}</span>
 
-	private static void appendTrafficLightMeanings(StringBuilder sb) {
-<span class="fc" id="L285">		sb.append(&quot;Traffic light meanings:\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L286">		sb.append(&quot;- GREEN: Directly implementable as a DSL rule\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L287">		sb.append(&quot;- YELLOW: Implementable with minor DSL extensions\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L288">		sb.append(&quot;- RED: Requires DSL extensions not yet available (may be supported in future DSL versions)\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L289">		sb.append(&quot;- NOT_APPLICABLE: Commit is not relevant for DSL mining\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L290">	}</span>
+	private static void appendSafetyPolicy(StringBuilder prompt) {
+<span class="fc" id="L137">		prompt.append(&quot;### Mandatory safety policy\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L138">		prompt.append(&quot;Return noCleanup=true for:\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L139">		prompt.append(&quot;- import-only or formatting-only changes;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L140">		prompt.append(&quot;- type-changing replacements without a guard proving context and type safety;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L141">		prompt.append(&quot;- architecture refactorings, multi-file migrations, or statement restructuring;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L142">		prompt.append(&quot;- changes whose correctness depends on unavailable data-flow, overload, synchronization, or nullability facts;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		prompt.append(&quot;- multiple unrelated transformations in one proposal;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L144">		prompt.append(&quot;- a candidate without complete compiling before, after, and negative examples.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L145">	}</span>
+
+	private static void appendDslRuleChecklist(StringBuilder prompt) {
+<span class="fc" id="L148">		prompt.append(&quot;### DSL validation rules\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L149">		prompt.append(&quot;1. Emit plain DSL only; never emit XML tags.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L150">		prompt.append(&quot;2. Use instanceof($var, \&quot;fully.qualified.Type\&quot;) for type guards; never use isType().\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L151">		prompt.append(&quot;3. End every rule with `;;` on its own line.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		prompt.append(&quot;4. A quick-fix rule contains exactly one `=&gt;`.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L153">		prompt.append(&quot;5. Every replacement placeholder must be bound by the source pattern.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L154">		prompt.append(&quot;6. Source and replacement must differ.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L155">		prompt.append(&quot;7. Use fully qualified concrete API names and placeholders only for variable parts.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L156">		prompt.append(&quot;8. Do not emit per-rule `/*!...*/` directives.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L157">		prompt.append(&quot;9. Drop the proposal rather than returning invalid or context-dependent DSL.\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L158">	}</span>
+
+	private static void appendJsonSchema(StringBuilder prompt, boolean array) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">		String prefix = array ? &quot;[\n  {\n&quot; : &quot;{\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">		String indent = array ? &quot;    &quot; : &quot;  &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L163">		prompt.append(prefix);</span>
+<span class="fc" id="L164">		prompt.append(indent).append(&quot;\&quot;noCleanup\&quot;: false,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L165">		prompt.append(indent).append(&quot;\&quot;reason\&quot;: \&quot;short reason, especially when noCleanup=true\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L166">		prompt.append(indent).append(&quot;\&quot;relevant\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L167">		prompt.append(indent).append(&quot;\&quot;trafficLight\&quot;: \&quot;GREEN|NOT_APPLICABLE\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L168">		prompt.append(indent).append(&quot;\&quot;confidence\&quot;: 0.0,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L169">		prompt.append(indent).append(&quot;\&quot;category\&quot;: \&quot;short stable category\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L170">		prompt.append(indent).append(&quot;\&quot;canImplementInCurrentDsl\&quot;: true,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L171">		prompt.append(indent).append(&quot;\&quot;dslRule\&quot;: \&quot;one raw .sandbox-hint rule or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L172">		prompt.append(indent).append(&quot;\&quot;targetHintFile\&quot;: \&quot;simple .sandbox-hint filename or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L173">		prompt.append(indent).append(&quot;\&quot;sourceVersion\&quot;: \&quot;21\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L174">		prompt.append(indent).append(&quot;\&quot;beforeExample\&quot;: \&quot;minimal self-contained compiling Java class or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L175">		prompt.append(indent).append(&quot;\&quot;afterExample\&quot;: \&quot;complete expected Java class or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L176">		prompt.append(indent).append(&quot;\&quot;negativeExample\&quot;: \&quot;similar compiling class that must not match or null\&quot;,\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L177">		prompt.append(indent).append(&quot;\&quot;summary\&quot;: \&quot;brief local transformation summary\&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		prompt.append(array ? &quot;  }\n]\n&quot; : &quot;}\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L179">		prompt.append(&quot;confidence must be between 0.0 and 1.0. When confidence is below 0.80, set noCleanup=true, relevant=false, trafficLight=NOT_APPLICABLE, and all candidate fields to null.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L180">	}</span>
+
+	private static String nullToEmpty(String value) {
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
+	}
 
 	private static String loadResource(String resourcePath) {
-<span class="fc" id="L293">		try (InputStream is = PromptBuilder.class.getResourceAsStream(resourcePath)) {</span>
-<span class="fc bfc" id="L294" title="All 2 branches covered.">			if (is == null) {</span>
-<span class="fc" id="L295">				return &quot;(Resource not available: &quot; + resourcePath + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L187">		try (InputStream input = PromptBuilder.class.getResourceAsStream(resourcePath)) {</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">			if (input == null) {</span>
+<span class="nc" id="L189">				return &quot;(Resource not available: &quot; + resourcePath + ')'; //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L297">			return new String(is.readAllBytes(), StandardCharsets.UTF_8);</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		} catch (IOException e) {</span>
-<span class="nc" id="L299">			return &quot;(Failed to load resource: &quot; + resourcePath + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L191">			return new String(input.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">		} catch (IOException e) {</span>
+<span class="nc" id="L193">			return &quot;(Failed to load resource: &quot; + resourcePath + ')'; //$NON-NLS-1$</span>
 		}
 	}
 }

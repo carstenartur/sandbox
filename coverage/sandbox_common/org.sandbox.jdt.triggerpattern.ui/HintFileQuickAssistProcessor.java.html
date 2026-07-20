@@ -23,7 +23,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.ui.text.java.IInvocationContext;
@@ -38,14 +37,17 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 
 /**
  * Quick Assist processor that creates proposals from {@code .sandbox-hint} files.
  *
  * &lt;p&gt;This processor finds matching transformation rules from registered
- * {@code .sandbox-hint} files at the cursor location and creates
- * completion proposals for each match that has a replacement.&lt;/p&gt;
+ * {@code .sandbox-hint} files at the cursor location and creates completion
+ * proposals for each match that has a replacement. The editor AST is parsed
+ * with binding resolution enabled so type-dependent guards do not fall back to
+ * permissive unresolved-binding behavior when project type information exists.&lt;/p&gt;
  *
  * &lt;p&gt;This is complementary to {@link TriggerPatternQuickAssistProcessor},
  * which handles annotation-based {@code @TriggerPattern} hints.
@@ -53,148 +55,149 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
  *
  * @since 1.3.5
  */
-<span class="nc" id="L56">public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {</span>
+<span class="fc" id="L58">public class HintFileQuickAssistProcessor implements IQuickAssistProcessor {</span>
 
 	@Override
 	public boolean hasAssists(IInvocationContext context) throws CoreException {
-<span class="nc" id="L60">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
-		// Ensure bundled libraries are loaded so assists are discoverable in a fresh session
-<span class="nc" id="L62">		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());</span>
-<span class="nc bnc" id="L63" title="All 2 branches missed.">		return !registry.getAllHintFiles().isEmpty();</span>
+<span class="nc" id="L62">		GuardRegistry.getInstance();</span>
+<span class="nc" id="L63">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+<span class="nc" id="L64">		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		return !registry.getAllHintFiles().isEmpty();</span>
 	}
 
 	@Override
 	public IJavaCompletionProposal[] getAssists(IInvocationContext context, IProblemLocation[] locations)
 			throws CoreException {
-
-<span class="nc" id="L70">		ICompilationUnit icu = context.getCompilationUnit();</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (icu == null) {</span>
-<span class="nc" id="L72">			return null;</span>
+<span class="nc" id="L71">		ICompilationUnit icu = context.getCompilationUnit();</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (icu == null) {</span>
+<span class="nc" id="L73">			return null;</span>
 		}
 
-<span class="nc" id="L75">		CompilationUnit cu = getCompilationUnit(icu);</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">		if (cu == null) {</span>
-<span class="nc" id="L77">			return null;</span>
+<span class="nc" id="L76">		CompilationUnit cu = getCompilationUnit(icu);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (cu == null) {</span>
+<span class="nc" id="L78">			return null;</span>
 		}
 
-<span class="nc" id="L80">		int offset = context.getSelectionOffset();</span>
-<span class="nc" id="L81">		List&lt;IJavaCompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L81">		GuardRegistry.getInstance();</span>
+<span class="nc" id="L82">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+<span class="nc" id="L83">		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());</span>
 
-<span class="nc" id="L83">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
-		// Ensure bundled libraries are loaded
-<span class="nc" id="L85">		registry.loadBundledLibraries(HintFileQuickAssistProcessor.class.getClassLoader());</span>
-
-		// Load project-level .sandbox-hint files if available
-<span class="nc bnc" id="L88" title="All 2 branches missed.">		if (icu.getJavaProject() != null) {</span>
-<span class="nc" id="L89">			org.eclipse.core.resources.IProject project = icu.getJavaProject().getProject();</span>
-<span class="nc" id="L90">			registry.loadProjectHintFiles(project);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">		if (icu.getJavaProject() != null) {</span>
+<span class="nc" id="L86">			org.eclipse.core.resources.IProject project = icu.getJavaProject().getProject();</span>
+<span class="nc" id="L87">			registry.loadProjectHintFiles(project);</span>
 		}
 
-<span class="nc bnc" id="L93" title="All 2 branches missed.">		for (Map.Entry&lt;String, HintFile&gt; entry : registry.getAllHintFiles().entrySet()) {</span>
-<span class="nc" id="L94">			HintFile hintFile = entry.getValue();</span>
+<span class="nc" id="L90">		return collectAssists(cu, context.getSelectionOffset());</span>
+	}
 
+	/**
+	 * Collects proposals from the hint files currently registered in the singleton
+	 * registry. Kept package-visible so the proposal selection and application path
+	 * can be exercised without creating an Eclipse editor in tests.
+	 */
+	IJavaCompletionProposal[] collectAssists(CompilationUnit cu, int offset) {
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">		if (cu == null || offset &lt; 0) {</span>
+<span class="nc" id="L100">			return null;</span>
+		}
+<span class="fc" id="L102">		GuardRegistry.getInstance();</span>
+<span class="fc" id="L103">		HintFileRegistry registry = HintFileRegistry.getInstance();</span>
+<span class="fc" id="L104">		List&lt;IJavaCompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		for (Map.Entry&lt;String, HintFile&gt; entry : registry.getAllHintFiles().entrySet()) {</span>
+<span class="fc" id="L107">			HintFile hintFile = entry.getValue();</span>
 			try {
-<span class="nc" id="L97">				List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
-<span class="nc" id="L98">				BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
-<span class="nc" id="L99">				List&lt;TransformationResult&gt; results = processor.process(cu);</span>
-
-<span class="nc bnc" id="L101" title="All 2 branches missed.">				for (TransformationResult result : results) {</span>
-<span class="nc bnc" id="L102" title="All 4 branches missed.">					if (result.hasReplacement() &amp;&amp; containsOffset(result, offset)) {</span>
-<span class="nc" id="L103">						proposals.add(new HintFileProposal(result, cu));</span>
+<span class="fc" id="L109">				List&lt;TransformationRule&gt; resolvedRules = registry.resolveIncludes(hintFile);</span>
+<span class="fc" id="L110">				BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile, resolvedRules);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				for (TransformationResult result : processor.process(cu)) {</span>
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">					if (result.hasReplacement() &amp;&amp; containsOffset(result, offset)) {</span>
+<span class="fc" id="L113">						proposals.add(new HintFileProposal(result));</span>
 					}
 				}
-<span class="nc" id="L106">			} catch (Exception e) {</span>
-<span class="nc" id="L107">				ILog log = Platform.getLog(HintFileQuickAssistProcessor.class);</span>
-<span class="nc" id="L108">				log.log(Status.error(&quot;Error processing hint file: &quot; + entry.getKey(), e)); //$NON-NLS-1$</span>
+<span class="pc" id="L116">			} catch (Exception e) {</span>
+<span class="nc" id="L117">				ILog log = Platform.getLog(HintFileQuickAssistProcessor.class);</span>
+<span class="nc" id="L118">				log.log(Status.error(&quot;Error processing hint file: &quot; + entry.getKey(), e)); //$NON-NLS-1$</span>
 			}
 		}
 
-<span class="nc bnc" id="L112" title="All 2 branches missed.">		return proposals.isEmpty() ? null : proposals.toArray(new IJavaCompletionProposal[0]);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		return proposals.isEmpty() ? null : proposals.toArray(new IJavaCompletionProposal[0]);</span>
 	}
 
-	/**
-	 * Parses the compilation unit.
-	 */
-	private CompilationUnit getCompilationUnit(ICompilationUnit icu) {
-<span class="nc" id="L119">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L120">		parser.setSource(icu);</span>
-<span class="nc" id="L121">		parser.setResolveBindings(false);</span>
-<span class="nc" id="L122">		return (CompilationUnit) parser.createAST(null);</span>
+	private static CompilationUnit getCompilationUnit(ICompilationUnit icu) {
+<span class="nc" id="L126">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L127">		parser.setSource(icu);</span>
+<span class="nc" id="L128">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L129">		parser.setResolveBindings(true);</span>
+<span class="nc" id="L130">		parser.setBindingsRecovery(true);</span>
+<span class="nc" id="L131">		parser.setStatementsRecovery(true);</span>
+<span class="nc" id="L132">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
-	/**
-	 * Checks if a transformation result contains the given offset.
-	 */
-	private boolean containsOffset(TransformationResult result, int offset) {
-<span class="nc" id="L129">		int start = result.match().getOffset();</span>
-<span class="nc" id="L130">		int end = start + result.match().getLength();</span>
-<span class="nc bnc" id="L131" title="All 4 branches missed.">		return start &lt;= offset &amp;&amp; offset &lt;= end;</span>
+	private static boolean containsOffset(TransformationResult result, int offset) {
+<span class="fc" id="L136">		int start = result.match().getOffset();</span>
+<span class="fc" id="L137">		int end = start + result.match().getLength();</span>
+<span class="pc bpc" id="L138" title="1 of 4 branches missed.">		return start &lt;= offset &amp;&amp; offset &lt;= end;</span>
 	}
 
-	/**
-	 * Quick Assist proposal generated from a {@code .sandbox-hint} file rule match.
-	 */
+	/** Quick Assist proposal generated from a hint-file rule match. */
 	private static class HintFileProposal implements IJavaCompletionProposal {
 
 		private final TransformationResult result;
-		private final CompilationUnit cu;
 
-<span class="nc" id="L142">		HintFileProposal(TransformationResult result, CompilationUnit cu) {</span>
-<span class="nc" id="L143">			this.result = result;</span>
-<span class="nc" id="L144">			this.cu = cu;</span>
-<span class="nc" id="L145">		}</span>
+<span class="fc" id="L146">		HintFileProposal(TransformationResult result) {</span>
+<span class="fc" id="L147">			this.result = result;</span>
+<span class="fc" id="L148">		}</span>
 
 		@Override
 		public void apply(IDocument document) {
 			try {
-<span class="nc" id="L150">				ASTNode matchedNode = result.match().getMatchedNode();</span>
-<span class="nc" id="L151">				String replacement = result.replacement();</span>
-<span class="nc bnc" id="L152" title="All 4 branches missed.">				if (matchedNode != null &amp;&amp; replacement != null) {</span>
-<span class="nc" id="L153">					int start = matchedNode.getStartPosition();</span>
-<span class="nc" id="L154">					int length = matchedNode.getLength();</span>
-<span class="nc" id="L155">					document.replace(start, length, replacement);</span>
+<span class="fc" id="L153">				String replacement = result.replacement();</span>
+<span class="fc" id="L154">				int start = result.match().getOffset();</span>
+<span class="fc" id="L155">				int length = result.match().getLength();</span>
+<span class="pc bpc" id="L156" title="3 of 6 branches missed.">				if (replacement != null &amp;&amp; start &gt;= 0 &amp;&amp; length &gt;= 0</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">						&amp;&amp; start + length &lt;= document.getLength()) {</span>
+<span class="fc" id="L158">					document.replace(start, length, replacement);</span>
 				}
-<span class="nc" id="L157">			} catch (Exception e) {</span>
-<span class="nc" id="L158">				ILog log = Platform.getLog(HintFileQuickAssistProcessor.class);</span>
-<span class="nc" id="L159">				log.log(Status.error(&quot;Error applying hint file proposal&quot;, e)); //$NON-NLS-1$</span>
+<span class="pc" id="L160">			} catch (Exception e) {</span>
+<span class="nc" id="L161">				ILog log = Platform.getLog(HintFileQuickAssistProcessor.class);</span>
+<span class="nc" id="L162">				log.log(Status.error(&quot;Error applying hint file proposal&quot;, e)); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L161">		}</span>
+<span class="fc" id="L164">		}</span>
 
 		@Override
 		public String getDisplayString() {
-<span class="nc" id="L165">			String description = result.description();</span>
-<span class="nc bnc" id="L166" title="All 4 branches missed.">			if (description != null &amp;&amp; !description.isEmpty()) {</span>
-<span class="nc" id="L167">				return description;</span>
+<span class="fc" id="L168">			String description = result.description();</span>
+<span class="pc bpc" id="L169" title="2 of 4 branches missed.">			if (description != null &amp;&amp; !description.isEmpty()) {</span>
+<span class="fc" id="L170">				return description;</span>
 			}
-<span class="nc" id="L169">			return &quot;Apply hint: &quot; + result.matchedText() + &quot; → &quot; + result.replacement(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L172">			return &quot;Apply hint: &quot; + result.matchedText() + &quot; → &quot; + result.replacement(); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
 
 		@Override
 		public Point getSelection(IDocument document) {
-<span class="nc" id="L174">			return null;</span>
+<span class="nc" id="L177">			return null;</span>
 		}
 
 		@Override
 		public String getAdditionalProposalInfo() {
-<span class="nc" id="L179">			StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L180">			sb.append(&quot;Before: &quot;).append(result.matchedText()).append('\n'); //$NON-NLS-1$</span>
-<span class="nc" id="L181">			sb.append(&quot;After:  &quot;).append(result.replacement()); //$NON-NLS-1$</span>
-<span class="nc" id="L182">			return sb.toString();</span>
+<span class="nc" id="L182">			StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L183">			sb.append(&quot;Before: &quot;).append(result.matchedText()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc" id="L184">			sb.append(&quot;After:  &quot;).append(result.replacement()); //$NON-NLS-1$</span>
+<span class="nc" id="L185">			return sb.toString();</span>
 		}
 
 		@Override
 		public Image getImage() {
-<span class="nc" id="L187">			return null;</span>
+<span class="nc" id="L190">			return null;</span>
 		}
 
 		@Override
 		public IContextInformation getContextInformation() {
-<span class="nc" id="L192">			return null;</span>
+<span class="nc" id="L195">			return null;</span>
 		}
 
 		@Override
 		public int getRelevance() {
-<span class="nc" id="L197">			return 5;</span>
+<span class="nc" id="L200">			return 5;</span>
 		}
 	}
 }

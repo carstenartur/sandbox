@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CandidateVerifier.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.candidate</a> &gt; <span class="el_source">CandidateVerifier.java</span></div><h1>CandidateVerifier.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.candidate;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTMatcher;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
+import org.sandbox.jdt.triggerpattern.internal.DslValidator;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+
+/**
+ * Deterministically verifies a staged candidate without generating Java source.
+ *
+ * &lt;p&gt;The verifier parses one self-contained DSL rule and compiling Java examples
+ * with binding resolution, verifies every referenced guard, applies exactly one
+ * replacement to the positive example by AST match offset/length, compares the
+ * complete transformed syntax tree with the expected after example, and proves
+ * that the negative example does not match.&lt;/p&gt;
+ */
+public final class CandidateVerifier {
+
+	/** Persisted verifier version for reproducibility. */
+	public static final String VERSION = &quot;7&quot;; //$NON-NLS-1$
+
+	private final DslValidator dslValidator;
+	private final HintFileParser hintFileParser;
+
+	public CandidateVerifier() {
+<span class="fc" id="L58">		this(new DslValidator(), new HintFileParser());</span>
+<span class="fc" id="L59">	}</span>
+
+<span class="fc" id="L61">	CandidateVerifier(DslValidator dslValidator, HintFileParser hintFileParser) {</span>
+<span class="fc" id="L62">		this.dslValidator = dslValidator;</span>
+<span class="fc" id="L63">		this.hintFileParser = hintFileParser;</span>
+<span class="fc" id="L64">	}</span>
+
+	/** Verifies one candidate and returns structured diagnostics. */
+	public CandidateVerification verify(MiningCandidate candidate) {
+<span class="fc" id="L68">		String schemaProblem = validateSchema(candidate);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		if (schemaProblem != null) {</span>
+<span class="fc" id="L70">			return failure(CandidateVerification.Stage.SCHEMA, schemaProblem, 0, 0);</span>
+		}
+
+<span class="fc" id="L73">		var dslValidation = dslValidator.validate(candidate.getDslRule());</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		if (!dslValidation.valid()) {</span>
+<span class="fc" id="L75">			return failure(CandidateVerification.Stage.DSL_VALIDATION,</span>
+<span class="fc" id="L76">					dslValidation.message(), 0, 0);</span>
+		}
+
+		HintFile hintFile;
+		try {
+<span class="fc" id="L81">			hintFile = hintFileParser.parse(candidate.getDslRule());</span>
+<span class="nc" id="L82">		} catch (Exception e) {</span>
+<span class="nc" id="L83">			return failure(CandidateVerification.Stage.DSL_PARSE,</span>
+<span class="nc" id="L84">					&quot;Could not parse DSL: &quot; + safeMessage(e), 0, 0); //$NON-NLS-1$</span>
+<span class="fc" id="L85">		}</span>
+<span class="fc" id="L86">		String containerProblem = validateCandidateContainer(hintFile);</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">		if (containerProblem != null) {</span>
+<span class="nc" id="L88">			return failure(CandidateVerification.Stage.DSL_PARSE, containerProblem, 0, 0);</span>
+		}
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (hintFile.getRules().size() != 1) {</span>
+<span class="fc" id="L91">			return failure(CandidateVerification.Stage.DSL_PARSE,</span>
+					&quot;Candidate DSL must contain exactly one transformation rule, but contains &quot; //$NON-NLS-1$
+<span class="fc" id="L93">							+ hintFile.getRules().size(), 0, 0);</span>
+		}
+
+<span class="fc" id="L96">		Function&lt;String, GuardFunction&gt; previousResolver = GuardFunctionResolverHolder.getResolver();</span>
+<span class="fc" id="L97">		installBuiltInGuards(previousResolver);</span>
+		try {
+<span class="fc" id="L99">			String unresolvedGuard = findUnresolvedGuard(hintFile);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			if (unresolvedGuard != null) {</span>
+<span class="fc" id="L101">				return failure(CandidateVerification.Stage.GUARD_RESOLUTION,</span>
+						&quot;Unknown guard function: &quot; + unresolvedGuard, 0, 0); //$NON-NLS-1$
+			}
+<span class="fc" id="L104">			return verifyExamples(candidate, hintFile);</span>
+		} finally {
+<span class="fc" id="L106">			GuardFunctionResolverHolder.setResolver(previousResolver);</span>
+		}
+	}
+
+	private CandidateVerification verifyExamples(MiningCandidate candidate, HintFile hintFile) {
+<span class="fc" id="L111">		ParseResult beforeParse = parse(candidate.getBeforeExample(), candidate.getSourceVersion());</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (!beforeParse.valid()) {</span>
+<span class="fc" id="L113">			return failure(CandidateVerification.Stage.BEFORE_PARSE,</span>
+<span class="fc" id="L114">					beforeParse.message(), 0, 0);</span>
+		}
+<span class="fc" id="L116">		ParseResult afterParse = parse(candidate.getAfterExample(), candidate.getSourceVersion());</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">		if (!afterParse.valid()) {</span>
+<span class="fc" id="L118">			return failure(CandidateVerification.Stage.AFTER_PARSE,</span>
+<span class="fc" id="L119">					afterParse.message(), 0, 0);</span>
+		}
+
+<span class="fc" id="L122">		Map&lt;String, String&gt; compilerOptions = compilerOptions(candidate.getSourceVersion());</span>
+		List&lt;TransformationResult&gt; positiveResults;
+		try {
+<span class="fc" id="L125">			positiveResults = new BatchTransformationProcessor(hintFile)</span>
+<span class="fc" id="L126">					.process(beforeParse.compilationUnit(), compilerOptions);</span>
+<span class="nc" id="L127">		} catch (RuntimeException e) {</span>
+<span class="nc" id="L128">			return failure(CandidateVerification.Stage.BEFORE_MATCH,</span>
+<span class="nc" id="L129">					&quot;Positive example evaluation failed: &quot; + safeMessage(e), 0, 0); //$NON-NLS-1$</span>
+<span class="fc" id="L130">		}</span>
+
+<span class="fc" id="L132">		List&lt;TransformationResult&gt; replacements = positiveResults.stream()</span>
+<span class="fc" id="L133">				.filter(TransformationResult::hasReplacement)</span>
+<span class="fc" id="L134">				.toList();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		if (replacements.isEmpty()) {</span>
+<span class="fc" id="L136">			return failure(CandidateVerification.Stage.BEFORE_MATCH,</span>
+<span class="fc" id="L137">					&quot;Positive example produced no replacement&quot;, positiveResults.size(), 0); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (replacements.size() != 1) {</span>
+<span class="fc" id="L140">			return failure(CandidateVerification.Stage.BEFORE_MATCH,</span>
+					&quot;Positive example is ambiguous: expected one replacement but got &quot; //$NON-NLS-1$
+<span class="fc" id="L142">							+ replacements.size(), positiveResults.size(), replacements.size());</span>
+		}
+
+<span class="fc" id="L145">		TransformationResult replacement = replacements.get(0);</span>
+		String transformed;
+		try {
+<span class="fc" id="L148">			transformed = applyReplacement(candidate.getBeforeExample(), replacement);</span>
+<span class="nc" id="L149">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L150">			return failure(CandidateVerification.Stage.AFTER_REWRITE,</span>
+<span class="nc" id="L151">					e.getMessage(), positiveResults.size(), replacements.size());</span>
+<span class="fc" id="L152">		}</span>
+<span class="fc" id="L153">		ParseResult transformedParse = parse(transformed, candidate.getSourceVersion());</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">		if (!transformedParse.valid()) {</span>
+<span class="nc" id="L155">			return failure(CandidateVerification.Stage.AFTER_REWRITE,</span>
+<span class="nc" id="L156">					&quot;Transformed source is invalid: &quot; + transformedParse.message(), //$NON-NLS-1$</span>
+<span class="nc" id="L157">					positiveResults.size(), replacements.size());</span>
+		}
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		if (!transformedParse.compilationUnit().subtreeMatch(</span>
+<span class="fc" id="L160">				new ASTMatcher(true), afterParse.compilationUnit())) {</span>
+<span class="fc" id="L161">			return failure(CandidateVerification.Stage.AFTER_REWRITE,</span>
+					&quot;Transformed syntax tree does not equal afterExample&quot;, //$NON-NLS-1$
+<span class="fc" id="L163">					positiveResults.size(), replacements.size());</span>
+		}
+
+<span class="fc" id="L166">		ParseResult negativeParse = parse(candidate.getNegativeExample(), candidate.getSourceVersion());</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (!negativeParse.valid()) {</span>
+<span class="nc" id="L168">			return failure(CandidateVerification.Stage.NEGATIVE_PARSE,</span>
+<span class="nc" id="L169">					negativeParse.message(), positiveResults.size(), replacements.size());</span>
+		}
+
+		List&lt;TransformationResult&gt; negativeResults;
+		try {
+<span class="fc" id="L174">			negativeResults = new BatchTransformationProcessor(hintFile)</span>
+<span class="fc" id="L175">					.process(negativeParse.compilationUnit(), compilerOptions);</span>
+<span class="nc" id="L176">		} catch (RuntimeException e) {</span>
+<span class="nc" id="L177">			return failure(CandidateVerification.Stage.NEGATIVE_MATCH,</span>
+<span class="nc" id="L178">					&quot;Negative example evaluation failed: &quot; + safeMessage(e), //$NON-NLS-1$</span>
+<span class="nc" id="L179">					positiveResults.size(), replacements.size());</span>
+<span class="fc" id="L180">		}</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (!negativeResults.isEmpty()) {</span>
+<span class="fc" id="L182">			return failure(CandidateVerification.Stage.NEGATIVE_MATCH,</span>
+<span class="fc" id="L183">					&quot;Negative example unexpectedly matched &quot; + negativeResults.size() + &quot; time(s)&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L184">					positiveResults.size(), replacements.size());</span>
+		}
+
+<span class="fc" id="L187">		return CandidateVerification.success(VERSION, positiveResults.size(), replacements.size());</span>
+	}
+
+	private static String validateCandidateContainer(HintFile hintFile) {
+<span class="pc bpc" id="L191" title="2 of 4 branches missed.">		if (hintFile.getId() != null || hintFile.getDescription() != null</span>
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">				|| hintFile.getMinJavaVersion() &gt; 0 || !hintFile.getTags().isEmpty()</span>
+<span class="pc bpc" id="L193" title="2 of 4 branches missed.">				|| !hintFile.getIncludes().isEmpty() || !hintFile.getEmbeddedJavaBlocks().isEmpty()</span>
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">				|| hintFile.isCaseInsensitive() || !hintFile.getSuppressWarnings().isEmpty()</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">				|| !hintFile.getTreeKindNodeTypes().isEmpty()</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">				|| !&quot;info&quot;.equals(hintFile.getSeverityAsString())) { //$NON-NLS-1$</span>
+<span class="nc" id="L197">			return &quot;Candidate DSL must contain only one rule and optional per-rule metadata; &quot; //$NON-NLS-1$</span>
+					+ &quot;file metadata, includes, and embedded Java are not promotable&quot;; //$NON-NLS-1$
+		}
+<span class="fc" id="L200">		return null;</span>
+	}
+
+	private static String findUnresolvedGuard(HintFile hintFile) {
+<span class="fc" id="L204">		Function&lt;String, GuardFunction&gt; resolver = GuardFunctionResolverHolder.getResolver();</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		for (var rule : hintFile.getRules()) {</span>
+<span class="fc" id="L206">			String unresolved = findUnresolvedGuard(rule.sourceGuard(), resolver);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">			if (unresolved != null) {</span>
+<span class="fc" id="L208">				return unresolved;</span>
+			}
+<span class="fc bfc" id="L210" title="All 2 branches covered.">			for (var alternative : rule.alternatives()) {</span>
+<span class="fc" id="L211">				unresolved = findUnresolvedGuard(alternative.condition(), resolver);</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">				if (unresolved != null) {</span>
+<span class="nc" id="L213">					return unresolved;</span>
+				}
+<span class="fc" id="L215">			}</span>
+<span class="fc" id="L216">		}</span>
+<span class="fc" id="L217">		return null;</span>
+	}
+
+	private static String findUnresolvedGuard(GuardExpression expression,
+			Function&lt;String, GuardFunction&gt; resolver) {
+<span class="fc bfc" id="L222" title="All 2 branches covered.">		if (expression == null) {</span>
+<span class="fc" id="L223">			return null;</span>
+		}
+<span class="pc bpc" id="L225" title="3 of 4 branches missed.">		return switch (expression) {</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">		case GuardExpression.FunctionCall call -&gt; isResolvable(call.name(), resolver)</span>
+<span class="fc" id="L227">				? null : call.name();</span>
+<span class="nc" id="L228">		case GuardExpression.And and -&gt; firstNonNull(</span>
+<span class="nc" id="L229">				findUnresolvedGuard(and.left(), resolver),</span>
+<span class="nc" id="L230">				findUnresolvedGuard(and.right(), resolver));</span>
+<span class="nc" id="L231">		case GuardExpression.Or or -&gt; firstNonNull(</span>
+<span class="nc" id="L232">				findUnresolvedGuard(or.left(), resolver),</span>
+<span class="nc" id="L233">				findUnresolvedGuard(or.right(), resolver));</span>
+<span class="nc" id="L234">		case GuardExpression.Not not -&gt; findUnresolvedGuard(not.operand(), resolver);</span>
+		};
+	}
+
+	private static boolean isResolvable(String name, Function&lt;String, GuardFunction&gt; resolver) {
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (resolver == null) {</span>
+<span class="nc" id="L240">			return false;</span>
+		}
+		try {
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			return resolver.apply(name) != null;</span>
+<span class="nc" id="L244">		} catch (RuntimeException e) {</span>
+<span class="nc" id="L245">			return false;</span>
+		}
+	}
+
+	private static String firstNonNull(String first, String second) {
+<span class="nc bnc" id="L250" title="All 2 branches missed.">		return first != null ? first : second;</span>
+	}
+
+	private static String validateSchema(MiningCandidate candidate) {
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		if (candidate == null) {</span>
+<span class="nc" id="L255">			return &quot;Candidate is null&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">		if (isBlank(candidate.getSourceRepo())) {</span>
+<span class="nc" id="L258">			return &quot;sourceRepo is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">		if (isBlank(candidate.getSourceCommit())) {</span>
+<span class="nc" id="L261">			return &quot;sourceCommit is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (isBlank(candidate.getDslRule())) {</span>
+<span class="nc" id="L264">			return &quot;dslRule is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">		if (isBlank(candidate.getBeforeExample())) {</span>
+<span class="nc" id="L267">			return &quot;beforeExample is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">		if (isBlank(candidate.getAfterExample())) {</span>
+<span class="nc" id="L270">			return &quot;afterExample is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L272" title="All 2 branches covered.">		if (isBlank(candidate.getNegativeExample())) {</span>
+<span class="fc" id="L273">			return &quot;negativeExample is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (isBlank(candidate.getSourceVersion())) {</span>
+<span class="nc" id="L276">			return &quot;sourceVersion is required&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L278">		return null;</span>
+	}
+
+	private static ParseResult parse(String source, String sourceVersion) {
+		try {
+<span class="fc" id="L283">			ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L284">			parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L285">			parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L286">			parser.setCompilerOptions(compilerOptions(sourceVersion));</span>
+<span class="fc" id="L287">			parser.setResolveBindings(true);</span>
+<span class="fc" id="L288">			parser.setBindingsRecovery(false);</span>
+<span class="fc" id="L289">			parser.setStatementsRecovery(false);</span>
+<span class="fc" id="L290">			parser.setUnitName(&quot;Candidate.java&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L291">			parser.setEnvironment(runtimeClasspath(), null, null, true);</span>
+<span class="fc" id="L292">			CompilationUnit compilationUnit = (CompilationUnit) parser.createAST(null);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">			for (IProblem problem : compilationUnit.getProblems()) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">				if (problem.isError()) {</span>
+<span class="fc" id="L295">					return new ParseResult(null, false,</span>
+<span class="fc" id="L296">							&quot;Java compile error at line &quot; + problem.getSourceLineNumber() //$NON-NLS-1$</span>
+<span class="fc" id="L297">									+ &quot;: &quot; + problem.getMessage()); //$NON-NLS-1$</span>
+				}
+			}
+<span class="fc" id="L300">			return new ParseResult(compilationUnit, true, &quot;valid&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L301">		} catch (RuntimeException e) {</span>
+<span class="nc" id="L302">			return new ParseResult(null, false, &quot;Java parse failed: &quot; + safeMessage(e)); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static String[] runtimeClasspath() {
+<span class="fc" id="L307">		String classpath = System.getProperty(&quot;java.class.path&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">		if (classpath.isBlank()) {</span>
+<span class="nc" id="L309">			return new String[0];</span>
+		}
+<span class="fc" id="L311">		return Arrays.stream(classpath.split(Pattern.quote(File.pathSeparator)))</span>
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">				.filter(entry -&gt; !entry.isBlank())</span>
+<span class="fc" id="L313">				.toArray(String[]::new);</span>
+	}
+
+	private static Map&lt;String, String&gt; compilerOptions(String sourceVersion) {
+<span class="fc" id="L317">		Map&lt;String, String&gt; options = new HashMap&lt;&gt;(JavaCore.getOptions());</span>
+<span class="fc" id="L318">		JavaCore.setComplianceOptions(sourceVersion, options);</span>
+<span class="fc" id="L319">		options.put(JavaCore.COMPILER_SOURCE, sourceVersion);</span>
+<span class="fc" id="L320">		return options;</span>
+	}
+
+	private static void installBuiltInGuards(Function&lt;String, GuardFunction&gt; previousResolver) {
+<span class="fc" id="L324">		Map&lt;String, GuardFunction&gt; guards = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L325">		BuiltInGuardRegistration.registerAll(guards);</span>
+<span class="fc" id="L326">		GuardFunctionResolverHolder.setResolver(name -&gt; {</span>
+<span class="fc" id="L327">			GuardFunction builtIn = guards.get(name);</span>
+<span class="pc bpc" id="L328" title="1 of 4 branches missed.">			return builtIn != null || previousResolver == null</span>
+<span class="pc" id="L329">					? builtIn : previousResolver.apply(name);</span>
+		});
+<span class="fc" id="L331">	}</span>
+
+	private static String applyReplacement(String source, TransformationResult result) {
+<span class="fc" id="L334">		int offset = result.match().getOffset();</span>
+<span class="fc" id="L335">		int length = result.match().getLength();</span>
+<span class="pc bpc" id="L336" title="3 of 6 branches missed.">		if (offset &lt; 0 || length &lt; 0 || offset + length &gt; source.length()) {</span>
+<span class="nc" id="L337">			throw new IllegalArgumentException(</span>
+					&quot;Invalid match range: offset=&quot; + offset + &quot;, length=&quot; + length); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+<span class="fc" id="L340">		return source.substring(0, offset) + result.replacement()</span>
+<span class="fc" id="L341">				+ source.substring(offset + length);</span>
+	}
+
+	private static boolean isBlank(String value) {
+<span class="pc bpc" id="L345" title="1 of 4 branches missed.">		return value == null || value.isBlank();</span>
+	}
+
+	private static String safeMessage(Throwable throwable) {
+<span class="nc" id="L349">		String message = throwable.getMessage();</span>
+<span class="nc bnc" id="L350" title="All 4 branches missed.">		return message == null || message.isBlank()</span>
+<span class="nc" id="L351">				? throwable.getClass().getSimpleName() : message;</span>
+	}
+
+	private static CandidateVerification failure(CandidateVerification.Stage stage,
+			String message, int matches, int replacements) {
+<span class="fc" id="L356">		return CandidateVerification.failure(stage, message, VERSION, matches, replacements);</span>
+	}
+
+<span class="fc" id="L359">	private record ParseResult(CompilationUnit compilationUnit, boolean valid, String message) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

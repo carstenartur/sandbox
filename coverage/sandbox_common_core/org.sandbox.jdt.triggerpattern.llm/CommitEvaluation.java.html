@@ -27,25 +27,26 @@ import java.time.Instant;
  * @param irrelevantReason      reason if not relevant
  * @param isDuplicate           whether a similar rule already exists
  * @param duplicateOf           existing rule this duplicates
- * @param reusability           reusability score (1-10)
- * @param codeImprovement       code improvement score (1-10)
- * @param implementationEffort  implementation effort score (1-10)
- * @param trafficLight          overall assessment (GREEN, YELLOW, RED, NOT_APPLICABLE)
+ * @param reusability           legacy reporter score retained for compatibility
+ * @param codeImprovement       legacy code improvement score
+ * @param implementationEffort  legacy implementation effort score
+ * @param trafficLight          overall assessment
  * @param category              category of the transformation
  * @param isNewCategory         whether this is a new category
  * @param categoryReason        reason for the category assignment
  * @param canImplementInCurrentDsl whether it can be implemented in the current DSL
  * @param dslRule               suggested DSL rule
  * @param targetHintFile        target hint file for the rule
- * @param languageChangeNeeded  description of language change needed
- * @param dslRuleAfterChange    DSL rule that would work after language change
+ * @param languageChangeNeeded  legacy description of language change needed
+ * @param dslRuleAfterChange    legacy DSL rule after a language extension
  * @param summary               human-readable summary
- * @param dslValidationResult   result of DSL validation (&quot;VALID&quot; or error message), null if not validated
- * @param beforeExample         Java code example that should be matched by the rule (for candidate testing)
- * @param afterExample          expected Java code after the rule is applied (for candidate testing)
- * @param negativeExample       Java code example that should NOT match the rule (for candidate testing)
+ * @param dslValidationResult   result of deterministic DSL validation
+ * @param beforeExample         Java code example that should be matched by the rule
+ * @param afterExample          expected Java code after the rule is applied
+ * @param negativeExample       Java code example that should not match the rule
+ * @param sourceVersion         Java source level for parsing and guard evaluation
  */
-<span class="fc" id="L48">public record CommitEvaluation(</span>
+<span class="fc" id="L49">public record CommitEvaluation(</span>
 		String commitHash,
 		String commitMessage,
 		String repoUrl,
@@ -71,20 +72,64 @@ import java.time.Instant;
 		String dslValidationResult,
 		String beforeExample,
 		String afterExample,
-		String negativeExample) {
+		String negativeExample,
+		String sourceVersion) {
 
 	/**
-	 * Traffic light assessment for a commit evaluation.
+	 * Compatibility constructor for existing callers and persisted test fixtures.
+	 * New discovery clients should supply the source version explicitly.
 	 */
-<span class="fc" id="L79">	public enum TrafficLight {</span>
+	public CommitEvaluation(
+			String commitHash,
+			String commitMessage,
+			String repoUrl,
+			Instant evaluatedAt,
+			Instant commitDate,
+			boolean relevant,
+			String irrelevantReason,
+			boolean isDuplicate,
+			String duplicateOf,
+			int reusability,
+			int codeImprovement,
+			int implementationEffort,
+			TrafficLight trafficLight,
+			String category,
+			boolean isNewCategory,
+			String categoryReason,
+			boolean canImplementInCurrentDsl,
+			String dslRule,
+			String targetHintFile,
+			String languageChangeNeeded,
+			String dslRuleAfterChange,
+			String summary,
+			String dslValidationResult,
+			String beforeExample,
+			String afterExample,
+			String negativeExample) {
+<span class="fc" id="L109">		this(commitHash, commitMessage, repoUrl, evaluatedAt, commitDate,</span>
+				relevant, irrelevantReason, isDuplicate, duplicateOf,
+				reusability, codeImprovement, implementationEffort, trafficLight,
+				category, isNewCategory, categoryReason, canImplementInCurrentDsl,
+				dslRule, targetHintFile, languageChangeNeeded, dslRuleAfterChange,
+				summary, dslValidationResult, beforeExample, afterExample,
+				negativeExample, &quot;21&quot;); //$NON-NLS-1$
+<span class="fc" id="L116">	}</span>
+
+	/** Returns a usable source version even for legacy JSON with no field. */
+	public String sourceVersion() {
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">		return sourceVersion == null || sourceVersion.isBlank() ? &quot;21&quot; : sourceVersion; //$NON-NLS-1$</span>
+	}
+
+	/** Traffic light assessment retained for reporter compatibility. */
+<span class="fc" id="L124">	public enum TrafficLight {</span>
 		/** Directly implementable as DSL rule */
-<span class="fc" id="L81">		GREEN,</span>
+<span class="fc" id="L126">		GREEN,</span>
 		/** Implementable with DSL extensions */
-<span class="fc" id="L83">		YELLOW,</span>
+<span class="fc" id="L128">		YELLOW,</span>
 		/** Not implementable in current DSL */
-<span class="fc" id="L85">		RED,</span>
+<span class="fc" id="L130">		RED,</span>
 		/** Not applicable / irrelevant commit */
-<span class="fc" id="L87">		NOT_APPLICABLE</span>
+<span class="fc" id="L132">		NOT_APPLICABLE</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

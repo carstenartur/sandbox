@@ -30,7 +30,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
-import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 import org.sandbox.mining.config.MiningConfig;
@@ -92,279 +92,264 @@ import org.sandbox.mining.scanner.StandaloneAstParser;
 <span class="nc" id="L92">	}</span>
 
 	static int run(String[] args) throws IOException, GitAPIException, HintParseException {
-		// Parse arguments
-<span class="fc" id="L96">		String configPath = null;</span>
-<span class="fc" id="L97">		String hintsDir = null;</span>
-<span class="fc" id="L98">		String repoUrl = null;</span>
-<span class="fc" id="L99">		String outputDir = DEFAULT_OUTPUT;</span>
-<span class="fc" id="L100">		String format = FORMAT_BOTH;</span>
-<span class="fc" id="L101">		boolean dryRun = false;</span>
+<span class="fc" id="L95">		String configPath = null;</span>
+<span class="fc" id="L96">		String hintsDir = null;</span>
+<span class="fc" id="L97">		String repoUrl = null;</span>
+<span class="fc" id="L98">		String outputDir = DEFAULT_OUTPUT;</span>
+<span class="fc" id="L99">		String format = FORMAT_BOTH;</span>
+<span class="fc" id="L100">		boolean dryRun = false;</span>
 
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		for (int i = 0; i &lt; args.length; i++) {</span>
-<span class="pc bpc" id="L104" title="7 of 8 branches missed.">			switch (args[i]) {</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		for (int i = 0; i &lt; args.length; i++) {</span>
+<span class="pc bpc" id="L103" title="7 of 8 branches missed.">			switch (args[i]) {</span>
 			case &quot;--config&quot;: //$NON-NLS-1$
-<span class="nc" id="L106">				configPath = args[++i];</span>
-<span class="nc" id="L107">				break;</span>
+<span class="nc" id="L105">				configPath = args[++i];</span>
+<span class="nc" id="L106">				break;</span>
 			case &quot;--hints&quot;: //$NON-NLS-1$
-<span class="nc" id="L109">				hintsDir = args[++i];</span>
-<span class="nc" id="L110">				break;</span>
+<span class="nc" id="L108">				hintsDir = args[++i];</span>
+<span class="nc" id="L109">				break;</span>
 			case &quot;--repo&quot;: //$NON-NLS-1$
-<span class="nc" id="L112">				repoUrl = args[++i];</span>
-<span class="nc" id="L113">				break;</span>
+<span class="nc" id="L111">				repoUrl = args[++i];</span>
+<span class="nc" id="L112">				break;</span>
 			case &quot;--output&quot;: //$NON-NLS-1$
-<span class="nc" id="L115">				outputDir = args[++i];</span>
-<span class="nc" id="L116">				break;</span>
+<span class="nc" id="L114">				outputDir = args[++i];</span>
+<span class="nc" id="L115">				break;</span>
 			case &quot;--format&quot;: //$NON-NLS-1$
-<span class="nc" id="L118">				format = args[++i];</span>
-<span class="nc" id="L119">				break;</span>
+<span class="nc" id="L117">				format = args[++i];</span>
+<span class="nc" id="L118">				break;</span>
 			case &quot;--dry-run&quot;: //$NON-NLS-1$
-<span class="nc" id="L121">				dryRun = true;</span>
-<span class="nc" id="L122">				break;</span>
+<span class="nc" id="L120">				dryRun = true;</span>
+<span class="nc" id="L121">				break;</span>
 			case &quot;--help&quot;: //$NON-NLS-1$
-<span class="fc" id="L124">				printUsage();</span>
-<span class="fc" id="L125">				return 0;</span>
+<span class="fc" id="L123">				printUsage();</span>
+<span class="fc" id="L124">				return 0;</span>
 			default:
-<span class="nc" id="L127">				System.err.println(&quot;Unknown option: &quot; + args[i]); //$NON-NLS-1$</span>
-<span class="nc" id="L128">				printUsage();</span>
-<span class="nc" id="L129">				return 1;</span>
+<span class="nc" id="L126">				System.err.println(&quot;Unknown option: &quot; + args[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L127">				printUsage();</span>
+<span class="nc" id="L128">				return 1;</span>
 			}
 		}
 
-		// Initialize guard functions
-<span class="nc" id="L134">		initializeGuards();</span>
+<span class="nc" id="L132">		initializeGuards();</span>
 
-		// Load configuration
 		MiningConfig config;
-<span class="nc bnc" id="L138" title="All 2 branches missed.">		if (configPath != null) {</span>
-<span class="nc" id="L139">			config = MiningConfig.parse(Path.of(configPath));</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (configPath != null) {</span>
+<span class="nc" id="L136">			config = MiningConfig.parse(Path.of(configPath));</span>
 		} else {
-<span class="nc" id="L141">			config = new MiningConfig();</span>
+<span class="nc" id="L138">			config = new MiningConfig();</span>
 		}
-<span class="nc" id="L143">		Map&lt;String, String&gt; compilerOptions = Map.of(JavaCore.COMPILER_SOURCE, config.getSourceVersion());</span>
+<span class="nc" id="L140">		Map&lt;String, String&gt; compilerOptions = Map.of(JavaCore.COMPILER_SOURCE, config.getSourceVersion());</span>
 
-		// Override with ad-hoc repo if specified
 		List&lt;RepoEntry&gt; repos;
-<span class="nc bnc" id="L147" title="All 2 branches missed.">		if (repoUrl != null) {</span>
-<span class="nc" id="L148">			RepoEntry entry = new RepoEntry(repoUrl, &quot;main&quot;, List.of()); //$NON-NLS-1$</span>
-<span class="nc" id="L149">			repos = List.of(entry);</span>
-<span class="nc" id="L150">		} else {</span>
-<span class="nc" id="L151">			repos = config.getRepositories();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (repoUrl != null) {</span>
+<span class="nc" id="L144">			RepoEntry entry = new RepoEntry(repoUrl, &quot;main&quot;, List.of()); //$NON-NLS-1$</span>
+<span class="nc" id="L145">			repos = List.of(entry);</span>
+<span class="nc" id="L146">		} else {</span>
+<span class="nc" id="L147">			repos = config.getRepositories();</span>
 		}
 
-<span class="nc bnc" id="L154" title="All 2 branches missed.">		if (repos.isEmpty()) {</span>
-<span class="nc" id="L155">			System.err.println(&quot;No repositories to scan. Use --config or --repo.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L156">			return 1;</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (repos.isEmpty()) {</span>
+<span class="nc" id="L151">			System.err.println(&quot;No repositories to scan. Use --config or --repo.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L152">			return 1;</span>
 		}
 
-		// Load hint files
-<span class="nc" id="L160">		List&lt;HintFile&gt; hintFiles = loadHintFiles(config, hintsDir);</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
-<span class="nc" id="L162">			System.err.println(&quot;No hint files found. Check your configuration.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L163">			return 1;</span>
+<span class="nc" id="L155">		List&lt;HintFile&gt; hintFiles = loadHintFiles(config, hintsDir);</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
+<span class="nc" id="L157">			System.err.println(&quot;No hint files found. Check your configuration.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L158">			return 1;</span>
 		}
 
-<span class="nc" id="L166">		System.out.println(&quot;Mining with &quot; + hintFiles.size() + &quot; hint file(s) against &quot; + repos.size() //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L167">				+ &quot; repository(ies), source level &quot; + config.getSourceVersion() + '.'); //$NON-NLS-1$</span>
+<span class="nc" id="L161">		System.out.println(&quot;Mining with &quot; + hintFiles.size() + &quot; hint file(s) against &quot; + repos.size() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L162">				+ &quot; repository(ies), source level &quot; + config.getSourceVersion() + '.'); //$NON-NLS-1$</span>
 
-		// Set up scanner
-<span class="nc" id="L170">		StandaloneAstParser astParser = new StandaloneAstParser();</span>
-<span class="nc" id="L171">		SourceScanner scanner = new SourceScanner(astParser, config.getMaxFilesPerRepo());</span>
-<span class="nc" id="L172">		RepoCloner cloner = new RepoCloner();</span>
+<span class="nc" id="L164">		StandaloneAstParser astParser = new StandaloneAstParser();</span>
+<span class="nc" id="L165">		SourceScanner scanner = new SourceScanner(astParser, config.getMaxFilesPerRepo());</span>
+<span class="nc" id="L166">		RepoCloner cloner = new RepoCloner();</span>
+<span class="nc" id="L167">		MiningReport totalReport = new MiningReport();</span>
 
-		// Process each repository
-<span class="nc" id="L175">		MiningReport totalReport = new MiningReport();</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">		for (RepoEntry repo : repos) {</span>
+<span class="nc" id="L170">			String repoName = extractRepoName(repo.getUrl());</span>
+<span class="nc" id="L171">			System.out.println(&quot;Scanning: &quot; + repoName + &quot; ...&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
-<span class="nc bnc" id="L177" title="All 2 branches missed.">		for (RepoEntry repo : repos) {</span>
-<span class="nc" id="L178">			String repoName = extractRepoName(repo.getUrl());</span>
-<span class="nc" id="L179">			System.out.println(&quot;Scanning: &quot; + repoName + &quot; ...&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-
-<span class="nc" id="L181">			Path tempDir = Files.createTempDirectory(&quot;mining-&quot; + repoName); //$NON-NLS-1$</span>
+<span class="nc" id="L173">			Path tempDir = Files.createTempDirectory(&quot;mining-&quot; + repoName); //$NON-NLS-1$</span>
 			try {
-<span class="nc" id="L183">				cloner.shallowClone(repo.getUrl(), repo.getBranch(), tempDir);</span>
-<span class="nc" id="L184">				MiningReport repoReport = scanner.scan(repoName, tempDir, repo.getPaths(), hintFiles, compilerOptions);</span>
-<span class="nc" id="L185">				totalReport.merge(repoReport);</span>
+<span class="nc" id="L175">				cloner.shallowClone(repo.getUrl(), repo.getBranch(), tempDir);</span>
+<span class="nc" id="L176">				MiningReport repoReport = scanner.scan(repoName, tempDir, repo.getPaths(), hintFiles, compilerOptions);</span>
+<span class="nc" id="L177">				totalReport.merge(repoReport);</span>
 
-<span class="nc" id="L187">				int matchCount = repoReport.getMatches().size();</span>
-<span class="nc" id="L188">				System.out.println(&quot;  Found &quot; + matchCount + &quot; match(es) in &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L189">						+ repoReport.getFileCounts().getOrDefault(repoName, 0) + &quot; file(s).&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L190">			} catch (Exception e) {</span>
-<span class="nc" id="L191">				System.err.println(&quot;  Error scanning &quot; + repoName + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L192">				totalReport.addError(repoName, e.getMessage());</span>
-<span class="nc" id="L193">				totalReport.addFileCount(repoName, 0);</span>
+<span class="nc" id="L179">				int matchCount = repoReport.getMatches().size();</span>
+<span class="nc" id="L180">				System.out.println(&quot;  Found &quot; + matchCount + &quot; match(es) in &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L181">						+ repoReport.getFileCounts().getOrDefault(repoName, 0) + &quot; file(s).&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L182">			} catch (Exception e) {</span>
+<span class="nc" id="L183">				System.err.println(&quot;  Error scanning &quot; + repoName + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L184">				totalReport.addError(repoName, e.getMessage());</span>
+<span class="nc" id="L185">				totalReport.addFileCount(repoName, 0);</span>
 			} finally {
-<span class="nc" id="L195">				deleteDirectory(tempDir);</span>
+<span class="nc" id="L187">				deleteDirectory(tempDir);</span>
 			}
-<span class="nc" id="L197">		}</span>
+<span class="nc" id="L189">		}</span>
 
-		// Generate reports
-<span class="nc bnc" id="L200" title="All 2 branches missed.">		if (!dryRun) {</span>
-<span class="nc" id="L201">			Path output = Path.of(outputDir);</span>
-<span class="nc" id="L202">			writeReports(totalReport, output, format);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">		if (!dryRun) {</span>
+<span class="nc" id="L192">			Path output = Path.of(outputDir);</span>
+<span class="nc" id="L193">			writeReports(totalReport, output, format);</span>
 		}
 
-<span class="nc" id="L205">		System.out.println(&quot;\nTotal: &quot; + totalReport.getMatches().size() + &quot; match(es) found.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L206">		return 0;</span>
+<span class="nc" id="L196">		System.out.println(&quot;\nTotal: &quot; + totalReport.getMatches().size() + &quot; match(es) found.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L197">		return 0;</span>
 	}
 
 	private static void initializeGuards() {
-<span class="nc" id="L210">		Map&lt;String, GuardFunction&gt; guards = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L211">		BuiltInGuards.registerAll(guards);</span>
-<span class="nc" id="L212">		GuardFunctionResolverHolder.setResolver(guards::get);</span>
-<span class="nc" id="L213">	}</span>
+<span class="nc" id="L201">		Map&lt;String, GuardFunction&gt; guards = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L202">		BuiltInGuardRegistration.registerAll(guards);</span>
+<span class="nc" id="L203">		GuardFunctionResolverHolder.setResolver(guards::get);</span>
+<span class="nc" id="L204">	}</span>
 
 	private static List&lt;HintFile&gt; loadHintFiles(MiningConfig config, String hintsDirOverride)
 			throws IOException, HintParseException {
-<span class="nc" id="L217">		List&lt;HintFile&gt; hintFiles = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L218">		HintFileParser parser = new HintFileParser();</span>
+<span class="nc" id="L208">		List&lt;HintFile&gt; hintFiles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L209">		HintFileParser parser = new HintFileParser();</span>
 
-<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (hintsDirOverride != null) {</span>
-			// Load all .sandbox-hint files from the given directory
-<span class="nc" id="L222">			Path hintsPath = Path.of(hintsDirOverride);</span>
-<span class="nc bnc" id="L223" title="All 2 branches missed.">			if (Files.isDirectory(hintsPath)) {</span>
-<span class="nc" id="L224">				try (var stream = Files.walk(hintsPath)) {</span>
-<span class="nc" id="L225">					List&lt;Path&gt; hintPaths = stream.filter(p -&gt; p.toString().endsWith(&quot;.sandbox-hint&quot;)).toList(); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L226" title="All 2 branches missed.">					for (Path p : hintPaths) {</span>
-<span class="nc" id="L227">						String content = Files.readString(p, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L228">						hintFiles.add(parser.parse(content));</span>
-<span class="nc" id="L229">					}</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">		if (hintsDirOverride != null) {</span>
+<span class="nc" id="L212">			Path hintsPath = Path.of(hintsDirOverride);</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">			if (Files.isDirectory(hintsPath)) {</span>
+<span class="nc" id="L214">				try (var stream = Files.walk(hintsPath)) {</span>
+<span class="nc" id="L215">					List&lt;Path&gt; hintPaths = stream.filter(p -&gt; p.toString().endsWith(&quot;.sandbox-hint&quot;)).toList(); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">					for (Path p : hintPaths) {</span>
+<span class="nc" id="L217">						String content = Files.readString(p, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L218">						hintFiles.add(parser.parse(content));</span>
+<span class="nc" id="L219">					}</span>
 				}
 			}
-<span class="nc" id="L232">			return hintFiles;</span>
+<span class="nc" id="L222">			return hintFiles;</span>
 		}
 
-		// Load hints from configuration
-<span class="nc bnc" id="L236" title="All 2 branches missed.">		for (String hint : config.getHints()) {</span>
-<span class="nc bnc" id="L237" title="All 2 branches missed.">			if (hint.startsWith(&quot;bundled:&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L238">				String name = hint.substring(&quot;bundled:&quot;.length()); //$NON-NLS-1$</span>
-<span class="nc" id="L239">				HintFile hf = loadBundledHint(parser, name);</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">				if (hf != null) {</span>
-<span class="nc" id="L241">					hintFiles.add(hf);</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">		for (String hint : config.getHints()) {</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			if (hint.startsWith(&quot;bundled:&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L227">				String name = hint.substring(&quot;bundled:&quot;.length()); //$NON-NLS-1$</span>
+<span class="nc" id="L228">				HintFile hf = loadBundledHint(parser, name);</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">				if (hf != null) {</span>
+<span class="nc" id="L230">					hintFiles.add(hf);</span>
 				}
-<span class="nc bnc" id="L243" title="All 2 branches missed.">			} else if (hint.startsWith(&quot;path:&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L244">				String path = hint.substring(&quot;path:&quot;.length()); //$NON-NLS-1$</span>
-<span class="nc" id="L245">				Path p = Path.of(path);</span>
-<span class="nc bnc" id="L246" title="All 2 branches missed.">				if (Files.isRegularFile(p)) {</span>
-<span class="nc" id="L247">					String content = Files.readString(p, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L248">					hintFiles.add(parser.parse(content));</span>
-<span class="nc" id="L249">				} else {</span>
-<span class="nc" id="L250">					System.err.println(&quot;Warning: Hint file not found: &quot; + path); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">			} else if (hint.startsWith(&quot;path:&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L233">				String path = hint.substring(&quot;path:&quot;.length()); //$NON-NLS-1$</span>
+<span class="nc" id="L234">				Path p = Path.of(path);</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">				if (Files.isRegularFile(p)) {</span>
+<span class="nc" id="L236">					String content = Files.readString(p, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L237">					hintFiles.add(parser.parse(content));</span>
+<span class="nc" id="L238">				} else {</span>
+<span class="nc" id="L239">					System.err.println(&quot;Warning: Hint file not found: &quot; + path); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L252">			} else {</span>
-				// Try as bundled first, then as path
-<span class="nc" id="L254">				HintFile hf = loadBundledHint(parser, hint);</span>
-<span class="nc bnc" id="L255" title="All 2 branches missed.">				if (hf == null) {</span>
-<span class="nc" id="L256">					Path p = Path.of(hint);</span>
-<span class="nc bnc" id="L257" title="All 2 branches missed.">					if (Files.isRegularFile(p)) {</span>
-<span class="nc" id="L258">						String content = Files.readString(p, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L259">						hf = parser.parse(content);</span>
+<span class="nc" id="L241">			} else {</span>
+<span class="nc" id="L242">				HintFile hf = loadBundledHint(parser, hint);</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">				if (hf == null) {</span>
+<span class="nc" id="L244">					Path p = Path.of(hint);</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">					if (Files.isRegularFile(p)) {</span>
+<span class="nc" id="L246">						String content = Files.readString(p, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L247">						hf = parser.parse(content);</span>
 					}
 				}
-<span class="nc bnc" id="L262" title="All 2 branches missed.">				if (hf != null) {</span>
-<span class="nc" id="L263">					hintFiles.add(hf);</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">				if (hf != null) {</span>
+<span class="nc" id="L251">					hintFiles.add(hf);</span>
 				}
 			}
-<span class="nc" id="L266">		}</span>
+<span class="nc" id="L254">		}</span>
 
-		// If no hints configured, load all bundled hints known to the mining CLI.
-<span class="nc bnc" id="L269" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">			for (String name : BUNDLED_HINTS.keySet()) {</span>
-<span class="nc" id="L271">				HintFile hf = loadBundledHint(parser, name);</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">				if (hf != null) {</span>
-<span class="nc" id="L273">					hintFiles.add(hf);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">			for (String name : BUNDLED_HINTS.keySet()) {</span>
+<span class="nc" id="L258">				HintFile hf = loadBundledHint(parser, name);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">				if (hf != null) {</span>
+<span class="nc" id="L260">					hintFiles.add(hf);</span>
 				}
-<span class="nc" id="L275">			}</span>
+<span class="nc" id="L262">			}</span>
 		}
 
-<span class="nc" id="L278">		return hintFiles;</span>
+<span class="nc" id="L265">		return hintFiles;</span>
 	}
 
 	private static HintFile loadBundledHint(HintFileParser parser, String name) {
-<span class="nc" id="L282">		String resourcePath = BUNDLED_HINTS.get(name);</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">		if (resourcePath == null) {</span>
-<span class="nc" id="L284">			System.err.println(&quot;Warning: Unknown bundled hint: &quot; + name); //$NON-NLS-1$</span>
-<span class="nc" id="L285">			return null;</span>
+<span class="nc" id="L269">		String resourcePath = BUNDLED_HINTS.get(name);</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">		if (resourcePath == null) {</span>
+<span class="nc" id="L271">			System.err.println(&quot;Warning: Unknown bundled hint: &quot; + name); //$NON-NLS-1$</span>
+<span class="nc" id="L272">			return null;</span>
 		}
-<span class="nc" id="L287">		try (InputStream is = MiningCli.class.getResourceAsStream(resourcePath)) {</span>
-<span class="nc bnc" id="L288" title="All 2 branches missed.">			if (is == null) {</span>
-<span class="nc" id="L289">				System.err.println(&quot;Warning: Bundled hint resource not found: &quot; + resourcePath); //$NON-NLS-1$</span>
-<span class="nc" id="L290">				return null;</span>
+<span class="nc" id="L274">		try (InputStream is = MiningCli.class.getResourceAsStream(resourcePath)) {</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">			if (is == null) {</span>
+<span class="nc" id="L276">				System.err.println(&quot;Warning: Bundled hint resource not found: &quot; + resourcePath); //$NON-NLS-1$</span>
+<span class="nc" id="L277">				return null;</span>
 			}
-<span class="nc" id="L292">			try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
-<span class="nc" id="L293">				return parser.parse(reader);</span>
+<span class="nc" id="L279">			try (Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L280">				return parser.parse(reader);</span>
 			}
-<span class="nc bnc" id="L295" title="All 2 branches missed.">		} catch (IOException e) {</span>
-<span class="nc" id="L296">			System.err.println(&quot;Warning: Error loading bundled hint &quot; + name + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L297">			return null;</span>
-<span class="nc" id="L298">		} catch (HintParseException e) {</span>
-<span class="nc" id="L299">			System.err.println(&quot;Warning: Error parsing bundled hint &quot; + name + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L300">			return null;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">		} catch (IOException e) {</span>
+<span class="nc" id="L283">			System.err.println(&quot;Warning: Error loading bundled hint &quot; + name + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L284">			return null;</span>
+<span class="nc" id="L285">		} catch (HintParseException e) {</span>
+<span class="nc" id="L286">			System.err.println(&quot;Warning: Error parsing bundled hint &quot; + name + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L287">			return null;</span>
 		}
 	}
 
 	static String extractRepoName(String url) {
-<span class="fc bfc" id="L305" title="All 2 branches covered.">		if (url == null) {</span>
-<span class="fc" id="L306">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">		if (url == null) {</span>
+<span class="fc" id="L293">			return &quot;unknown&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L308">		String name = url;</span>
-<span class="fc bfc" id="L309" title="All 2 branches covered.">		if (name.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L310">			name = name.substring(0, name.length() - 4);</span>
+<span class="fc" id="L295">		String name = url;</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">		if (name.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L297">			name = name.substring(0, name.length() - 4);</span>
 		}
-<span class="fc" id="L312">		int lastSlash = name.lastIndexOf('/');</span>
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (lastSlash &gt;= 0) {</span>
-<span class="fc" id="L314">			name = name.substring(lastSlash + 1);</span>
+<span class="fc" id="L299">		int lastSlash = name.lastIndexOf('/');</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">		if (lastSlash &gt;= 0) {</span>
+<span class="fc" id="L301">			name = name.substring(lastSlash + 1);</span>
 		}
-<span class="fc" id="L316">		return name;</span>
+<span class="fc" id="L303">		return name;</span>
 	}
 
 	private static void writeReports(MiningReport report, Path outputDir, String format) throws IOException {
-<span class="nc bnc" id="L320" title="All 3 branches missed.">		switch (format) {</span>
+<span class="nc bnc" id="L307" title="All 3 branches missed.">		switch (format) {</span>
 		case FORMAT_MARKDOWN:
-<span class="nc" id="L322">			new MarkdownReporter().write(report, outputDir);</span>
-<span class="nc" id="L323">			System.out.println(&quot;Report written to &quot; + outputDir.resolve(&quot;report.md&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L324">			break;</span>
+<span class="nc" id="L309">			new MarkdownReporter().write(report, outputDir);</span>
+<span class="nc" id="L310">			System.out.println(&quot;Report written to &quot; + outputDir.resolve(&quot;report.md&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L311">			break;</span>
 		case FORMAT_JSON:
-<span class="nc" id="L326">			new JsonReporter().write(report, outputDir);</span>
-<span class="nc" id="L327">			System.out.println(&quot;Report written to &quot; + outputDir.resolve(&quot;report.json&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L328">			break;</span>
+<span class="nc" id="L313">			new JsonReporter().write(report, outputDir);</span>
+<span class="nc" id="L314">			System.out.println(&quot;Report written to &quot; + outputDir.resolve(&quot;report.json&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L315">			break;</span>
 		case FORMAT_BOTH:
 		default:
-<span class="nc" id="L331">			new MarkdownReporter().write(report, outputDir);</span>
-<span class="nc" id="L332">			new JsonReporter().write(report, outputDir);</span>
-<span class="nc" id="L333">			System.out.println(&quot;Reports written to &quot; + outputDir); //$NON-NLS-1$</span>
+<span class="nc" id="L318">			new MarkdownReporter().write(report, outputDir);</span>
+<span class="nc" id="L319">			new JsonReporter().write(report, outputDir);</span>
+<span class="nc" id="L320">			System.out.println(&quot;Reports written to &quot; + outputDir); //$NON-NLS-1$</span>
 			break;
 		}
-<span class="nc" id="L336">	}</span>
+<span class="nc" id="L323">	}</span>
 
 	private static void deleteDirectory(Path dir) {
-<span class="nc bnc" id="L339" title="All 4 branches missed.">		if (dir == null || !Files.exists(dir)) {</span>
-<span class="nc" id="L340">			return;</span>
+<span class="nc bnc" id="L326" title="All 4 branches missed.">		if (dir == null || !Files.exists(dir)) {</span>
+<span class="nc" id="L327">			return;</span>
 		}
 		try {
-<span class="nc" id="L343">			try (var stream = Files.walk(dir)) {</span>
-<span class="nc" id="L344">				stream</span>
-<span class="nc" id="L345">					.sorted((a, b) -&gt; b.compareTo(a)) // delete children first</span>
-<span class="nc" id="L346">					.forEach(p -&gt; {</span>
-						try {
-<span class="nc" id="L348">							Files.deleteIfExists(p);</span>
-<span class="nc" id="L349">						} catch (IOException e) {</span>
-							// ignore cleanup errors
-<span class="nc" id="L351">						}</span>
-<span class="nc" id="L352">					});</span>
+<span class="nc" id="L330">			try (var stream = Files.walk(dir)) {</span>
+<span class="nc" id="L331">				stream.sorted((a, b) -&gt; b.compareTo(a)).forEach(p -&gt; {</span>
+					try {
+<span class="nc" id="L333">						Files.deleteIfExists(p);</span>
+<span class="nc" id="L334">					} catch (IOException e) {</span>
+						// ignore cleanup errors
+<span class="nc" id="L336">					}</span>
+<span class="nc" id="L337">				});</span>
 			}
-<span class="nc" id="L354">		} catch (IOException e) {</span>
+<span class="nc" id="L339">		} catch (IOException e) {</span>
 			// ignore cleanup errors
-<span class="nc" id="L356">		}</span>
-<span class="nc" id="L357">	}</span>
+<span class="nc" id="L341">		}</span>
+<span class="nc" id="L342">	}</span>
 
 	private static void printUsage() {
-<span class="fc" id="L360">		System.out.println(&quot;Usage: java -jar sandbox-mining-cli.jar [options]&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L361">		System.out.println(&quot;  --config &lt;path&gt;    Path to repos.yml configuration file&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L362">		System.out.println(&quot;  --hints &lt;dir&gt;      Directory with .sandbox-hint files&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L363">		System.out.println(&quot;  --repo &lt;url&gt;       Single repo to scan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L364">		System.out.println(&quot;  --output &lt;dir&gt;     Output directory (default: mining-results)&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L365">		System.out.println(&quot;  --format &lt;fmt&gt;     markdown|json|both (default: both)&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L366">		System.out.println(&quot;  --dry-run          Only count matches&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L367">		System.out.println(&quot;  --help             Show this help&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L368">	}</span>
+<span class="fc" id="L345">		System.out.println(&quot;Usage: java -jar sandbox-mining-cli.jar [options]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L346">		System.out.println(&quot;  --config &lt;path&gt;    Path to repos.yml configuration file&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L347">		System.out.println(&quot;  --hints &lt;dir&gt;      Directory with .sandbox-hint files&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L348">		System.out.println(&quot;  --repo &lt;url&gt;       Single repo to scan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L349">		System.out.println(&quot;  --output &lt;dir&gt;     Output directory (default: mining-results)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L350">		System.out.println(&quot;  --format &lt;fmt&gt;     markdown|json|both (default: both)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L351">		System.out.println(&quot;  --dry-run          Only count matches&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L352">		System.out.println(&quot;  --help             Show this help&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L353">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

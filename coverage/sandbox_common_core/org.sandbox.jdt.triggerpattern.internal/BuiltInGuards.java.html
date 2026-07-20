@@ -230,14 +230,14 @@ public final class BuiltInGuards {
 		}
 
 <span class="fc" id="L232">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">		if (typeBinding == null) {</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
 			// Graceful degradation: if bindings are not available,
 			// assume the guard matches (allows the rule to apply).
 <span class="fc" id="L236">			return true;</span>
 		}
 
 		// Handle array types: &quot;Type[]&quot;
-<span class="pc bpc" id="L240" title="3 of 4 branches missed.">		if (typeName.endsWith(&quot;[]&quot;) &amp;&amp; typeName.length() &gt; 2) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L240" title="All 4 branches missed.">		if (typeName.endsWith(&quot;[]&quot;) &amp;&amp; typeName.length() &gt; 2) { //$NON-NLS-1$</span>
 <span class="nc bnc" id="L241" title="All 2 branches missed.">			if (!typeBinding.isArray()) {</span>
 <span class="nc" id="L242">				return false;</span>
 			}
@@ -245,7 +245,7 @@ public final class BuiltInGuards {
 <span class="nc" id="L245">			return matchesTypeName(typeBinding.getElementType(), elementTypeName);</span>
 		}
 
-<span class="fc" id="L248">		return matchesTypeName(typeBinding, typeName);</span>
+<span class="nc" id="L248">		return matchesTypeName(typeBinding, typeName);</span>
 	}
 
 	/**
@@ -1068,8 +1068,8 @@ public final class BuiltInGuards {
 	private static ITypeBinding resolveTypeBinding(ASTNode node) {
 <span class="fc bfc" id="L1069" title="All 2 branches covered.">		if (node instanceof Name name) {</span>
 <span class="fc" id="L1070">			IBinding binding = name.resolveBinding();</span>
-<span class="fc bfc" id="L1071" title="All 2 branches covered.">			if (binding instanceof IVariableBinding varBinding) {</span>
-<span class="fc" id="L1072">				return varBinding.getType();</span>
+<span class="pc bpc" id="L1071" title="1 of 2 branches missed.">			if (binding instanceof IVariableBinding varBinding) {</span>
+<span class="nc" id="L1072">				return varBinding.getType();</span>
 			}
 <span class="pc bpc" id="L1074" title="1 of 2 branches missed.">			if (binding instanceof ITypeBinding typeBinding) {</span>
 <span class="nc" id="L1075">				return typeBinding;</span>
@@ -1091,23 +1091,23 @@ public final class BuiltInGuards {
 	 * Checks if a type binding matches a given type name (simple or qualified).
 	 */
 	private static boolean matchesTypeName(ITypeBinding typeBinding, String typeName) {
-<span class="pc bpc" id="L1094" title="1 of 2 branches missed.">		if (typeBinding.getName().equals(typeName)) {</span>
+<span class="nc bnc" id="L1094" title="All 2 branches missed.">		if (typeBinding.getName().equals(typeName)) {</span>
 <span class="nc" id="L1095">			return true;</span>
 		}
-<span class="fc bfc" id="L1097" title="All 2 branches covered.">		if (typeBinding.getQualifiedName().equals(typeName)) {</span>
-<span class="fc" id="L1098">			return true;</span>
+<span class="nc bnc" id="L1097" title="All 2 branches missed.">		if (typeBinding.getQualifiedName().equals(typeName)) {</span>
+<span class="nc" id="L1098">			return true;</span>
 		}
 		// Check supertypes
-<span class="fc" id="L1101">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
-<span class="pc bpc" id="L1102" title="1 of 4 branches missed.">		if (superclass != null &amp;&amp; matchesTypeName(superclass, typeName)) {</span>
+<span class="nc" id="L1101">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="nc bnc" id="L1102" title="All 4 branches missed.">		if (superclass != null &amp;&amp; matchesTypeName(superclass, typeName)) {</span>
 <span class="nc" id="L1103">			return true;</span>
 		}
-<span class="fc bfc" id="L1105" title="All 2 branches covered.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
-<span class="pc bpc" id="L1106" title="1 of 2 branches missed.">			if (matchesTypeName(iface, typeName)) {</span>
+<span class="nc bnc" id="L1105" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L1106" title="All 2 branches missed.">			if (matchesTypeName(iface, typeName)) {</span>
 <span class="nc" id="L1107">				return true;</span>
 			}
 		}
-<span class="fc" id="L1110">		return false;</span>
+<span class="nc" id="L1110">		return false;</span>
 	}
 
 	/**

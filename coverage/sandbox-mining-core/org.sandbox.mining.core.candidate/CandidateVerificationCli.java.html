@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CandidateVerificationCli.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-mining-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.mining.core.candidate</a> &gt; <span class="el_source">CandidateVerificationCli.java</span></div><h1>CandidateVerificationCli.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.mining.core.candidate;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+/** Post-processes staged candidate JSON after discovery. */
+public final class CandidateVerificationCli {
+
+<span class="fc" id="L33">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
+
+	private CandidateVerificationCli() {
+	}
+
+	public static void main(String[] args) {
+		try {
+<span class="nc" id="L40">			int exitCode = run(args);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">			if (exitCode != 0) {</span>
+<span class="nc" id="L42">				System.exit(exitCode);</span>
+			}
+<span class="nc" id="L44">		} catch (Exception e) {</span>
+<span class="nc" id="L45">			System.err.println(&quot;Candidate verification failed: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L46">			e.printStackTrace(System.err);</span>
+<span class="nc" id="L47">			System.exit(1);</span>
+<span class="nc" id="L48">		}</span>
+<span class="nc" id="L49">	}</span>
+
+	static int run(String[] args) throws IOException {
+<span class="fc" id="L52">		Path candidateDir = Path.of(&quot;mining-candidates&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L53">		Path reportDir = Path.of(&quot;docs/mining-report&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		Path curatedHintDir = null;</span>
+<span class="fc" id="L55">		String defaultSourceVersion = &quot;21&quot;; //$NON-NLS-1$</span>
+
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (int i = 0; i &lt; args.length; i++) {</span>
+<span class="pc bpc" id="L58" title="1 of 5 branches missed.">			switch (args[i]) {</span>
+			case &quot;--candidate-dir&quot;: //$NON-NLS-1$
+<span class="fc" id="L60">				candidateDir = Path.of(requireValue(args, ++i, &quot;--candidate-dir&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L61">				break;</span>
+			case &quot;--report-dir&quot;: //$NON-NLS-1$
+<span class="fc" id="L63">				reportDir = Path.of(requireValue(args, ++i, &quot;--report-dir&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L64">				break;</span>
+			case &quot;--curated-hint-dir&quot;: //$NON-NLS-1$
+<span class="fc" id="L66">				curatedHintDir = Path.of(requireValue(args, ++i, &quot;--curated-hint-dir&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L67">				break;</span>
+			case &quot;--source-version&quot;: //$NON-NLS-1$
+<span class="fc" id="L69">				defaultSourceVersion = requireValue(args, ++i, &quot;--source-version&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L70">				break;</span>
+			default:
+<span class="nc" id="L72">				throw new IllegalArgumentException(&quot;Unknown option: &quot; + args[i]); //$NON-NLS-1$</span>
+			}
+		}
+
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		Map&lt;String, String&gt; curatedRuleIndex = curatedHintDir == null</span>
+<span class="fc" id="L77">				? Map.of() : RuleFingerprintIndex.loadCurated(curatedHintDir);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (!curatedRuleIndex.isEmpty()) {</span>
+<span class="fc" id="L79">			System.out.println(&quot;Loaded &quot; + curatedRuleIndex.size() //$NON-NLS-1$</span>
+					+ &quot; curated rule fingerprints from &quot; + curatedHintDir); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L83">		CandidateStore store = new CandidateStore(candidateDir);</span>
+<span class="fc" id="L84">		List&lt;MiningCandidate&gt; candidates = new ArrayList&lt;&gt;(store.loadAll());</span>
+<span class="fc" id="L85">		migrateLegacyCandidates(candidates);</span>
+<span class="fc" id="L86">		candidates.sort(candidatePriority());</span>
+<span class="fc" id="L87">		CandidateVerifier verifier = new CandidateVerifier();</span>
+<span class="fc" id="L88">		Map&lt;String, String&gt; canonicalByRuleFingerprint = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L90">		int verified = 0;</span>
+<span class="fc" id="L91">		int failed = 0;</span>
+<span class="fc" id="L92">		int duplicates = 0;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		for (MiningCandidate candidate : candidates) {</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (!candidate.hasDeclaredSourceVersion()) {</span>
+<span class="fc" id="L95">				candidate.setSourceVersion(defaultSourceVersion);</span>
+			}
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (isDiscarded(candidate.getStatus())) {</span>
+<span class="nc" id="L98">				store.save(candidate);</span>
+<span class="nc" id="L99">				continue;</span>
+			}
+
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">			if (candidate.getStatus() == CandidateStatus.PROMOTED</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">					|| candidate.getStatus() == CandidateStatus.APPROVED) {</span>
+<span class="fc" id="L104">				canonicalByRuleFingerprint.putIfAbsent(</span>
+<span class="fc" id="L105">						semanticFingerprint(candidate), candidate.getCandidateId());</span>
+<span class="fc" id="L106">				store.save(candidate);</span>
+<span class="fc" id="L107">				continue;</span>
+			}
+
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">			if (candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW) {</span>
+<span class="nc" id="L111">				String fingerprint = semanticFingerprint(candidate);</span>
+<span class="nc" id="L112">				String curatedReference = curatedRuleIndex.get(fingerprint);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">				if (curatedReference != null) {</span>
+<span class="nc" id="L114">					markDuplicate(candidate, &quot;curated rule &quot; + curatedReference); //$NON-NLS-1$</span>
+<span class="nc" id="L115">					duplicates++;</span>
+				} else {
+<span class="nc" id="L117">					String canonicalId = canonicalByRuleFingerprint.putIfAbsent(</span>
+<span class="nc" id="L118">							fingerprint, candidate.getCandidateId());</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">					if (canonicalId != null &amp;&amp; !canonicalId.equals(candidate.getCandidateId())) {</span>
+<span class="nc" id="L120">						markDuplicate(candidate, &quot;staged candidate &quot; + canonicalId); //$NON-NLS-1$</span>
+<span class="nc" id="L121">						duplicates++;</span>
+					}
+				}
+<span class="nc" id="L124">				store.save(candidate);</span>
+<span class="nc" id="L125">				continue;</span>
+			}
+
+<span class="fc" id="L128">			CandidateVerification verification = verifier.verify(candidate);</span>
+<span class="fc" id="L129">			candidate.setVerification(verification);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			if (!verification.successful()) {</span>
+<span class="fc" id="L131">				failed++;</span>
+<span class="fc" id="L132">				System.out.println(&quot;Candidate &quot; + candidate.getCandidateId() + &quot; failed at &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L133">						+ verification.stage() + &quot;: &quot; + verification.message()); //$NON-NLS-1$</span>
+<span class="fc" id="L134">				store.save(candidate);</span>
+<span class="fc" id="L135">				continue;</span>
+			}
+
+<span class="fc" id="L138">			String fingerprint = semanticFingerprint(candidate);</span>
+<span class="fc" id="L139">			String curatedReference = curatedRuleIndex.get(fingerprint);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">			if (curatedReference != null) {</span>
+<span class="fc" id="L141">				markDuplicate(candidate, &quot;curated rule &quot; + curatedReference); //$NON-NLS-1$</span>
+<span class="fc" id="L142">				duplicates++;</span>
+			} else {
+<span class="fc" id="L144">				String canonicalId = canonicalByRuleFingerprint.putIfAbsent(</span>
+<span class="fc" id="L145">						fingerprint, candidate.getCandidateId());</span>
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">				if (canonicalId != null &amp;&amp; !canonicalId.equals(candidate.getCandidateId())) {</span>
+<span class="fc" id="L147">					markDuplicate(candidate, &quot;staged candidate &quot; + canonicalId); //$NON-NLS-1$</span>
+<span class="fc" id="L148">					duplicates++;</span>
+				} else {
+<span class="fc" id="L150">					advanceToReadyForReview(candidate);</span>
+<span class="fc" id="L151">					verified++;</span>
+<span class="fc" id="L152">					System.out.println(&quot;Verified candidate &quot; + candidate.getCandidateId()); //$NON-NLS-1$</span>
+				}
+			}
+<span class="fc" id="L155">			store.save(candidate);</span>
+<span class="fc" id="L156">		}</span>
+
+<span class="fc" id="L158">		List&lt;MiningCandidate&gt; updated = store.loadAll().stream()</span>
+<span class="fc" id="L159">				.sorted(Comparator.comparing(MiningCandidate::getCandidateId))</span>
+<span class="fc" id="L160">				.toList();</span>
+<span class="fc" id="L161">		writeReport(updated, candidateDir, reportDir);</span>
+<span class="fc" id="L162">		long ready = updated.stream()</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				.filter(candidate -&gt; candidate.getStatus() == CandidateStatus.READY_FOR_REVIEW)</span>
+<span class="fc" id="L164">				.count();</span>
+<span class="fc" id="L165">		System.out.println(&quot;Candidate verification summary: &quot; + verified + &quot; verified, &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+				+ failed + &quot; failed, &quot; + duplicates + &quot; duplicates, &quot; //$NON-NLS-1$ //$NON-NLS-2$
+				+ ready + &quot; ready for review&quot;); //$NON-NLS-1$
+<span class="fc" id="L168">		return 0;</span>
+	}
+
+	private static String semanticFingerprint(MiningCandidate candidate) throws IOException {
+<span class="fc" id="L172">		return RuleFingerprintIndex.fingerprintDsl(candidate.getDslRule());</span>
+	}
+
+	private static void markDuplicate(MiningCandidate candidate, String duplicateOf) {
+<span class="fc" id="L176">		String message = &quot;Normalized DSL duplicates &quot; + duplicateOf; //$NON-NLS-1$</span>
+<span class="fc" id="L177">		candidate.setVerification(CandidateVerification.failure(</span>
+				CandidateVerification.Stage.DUPLICATE, message,
+				CandidateVerifier.VERSION, 0, 0));
+<span class="fc" id="L180">		candidate.transitionTo(CandidateStatus.DUPLICATE,</span>
+				&quot;CandidateVerificationCli&quot;, message); //$NON-NLS-1$
+<span class="fc" id="L182">	}</span>
+
+	/**
+	 * Assigns deterministic ordinals before schema-v1 candidates are renamed.
+	 * This prevents multiple proposals from one commit from collapsing onto the
+	 * same schema-v2 filename during migration.
+	 */
+	private static void migrateLegacyCandidates(List&lt;MiningCandidate&gt; candidates) {
+<span class="fc" id="L190">		Map&lt;String, Integer&gt; nextOrdinalByOrigin = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		for (MiningCandidate candidate : candidates) {</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">			if (candidate.getSchemaVersion() &gt;= 2) {</span>
+<span class="fc" id="L193">				nextOrdinalByOrigin.merge(originKey(candidate),</span>
+<span class="fc" id="L194">						candidate.getCandidateOrdinal() + 1, Math::max);</span>
+			}
+<span class="fc" id="L196">		}</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		for (MiningCandidate candidate : candidates) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			if (candidate.getSchemaVersion() &gt;= 2) {</span>
+<span class="fc" id="L199">				continue;</span>
+			}
+<span class="fc" id="L201">			String origin = originKey(candidate);</span>
+<span class="fc" id="L202">			int ordinal = nextOrdinalByOrigin.getOrDefault(origin, 0);</span>
+<span class="fc" id="L203">			nextOrdinalByOrigin.put(origin, ordinal + 1);</span>
+<span class="fc" id="L204">			candidate.setCandidateId(null);</span>
+<span class="fc" id="L205">			candidate.setCandidateOrdinal(ordinal);</span>
+<span class="fc" id="L206">			candidate.setRevision(candidate.getRevision());</span>
+<span class="fc" id="L207">			candidate.setSchemaVersion(2);</span>
+<span class="fc" id="L208">		}</span>
+<span class="fc" id="L209">	}</span>
+
+	private static String originKey(MiningCandidate candidate) {
+<span class="fc" id="L212">		return String.join(&quot;\n&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L213">				nullToEmpty(candidate.getSourceRepo()),</span>
+<span class="fc" id="L214">				nullToEmpty(candidate.getSourceCommit()),</span>
+<span class="fc" id="L215">				nullToEmpty(candidate.getCategory()),</span>
+<span class="fc" id="L216">				nullToEmpty(candidate.getTargetHintFile()));</span>
+	}
+
+	private static Comparator&lt;MiningCandidate&gt; candidatePriority() {
+<span class="pc bpc" id="L220" title="4 of 7 branches missed.">		return Comparator.comparingInt((MiningCandidate candidate) -&gt; switch (candidate.getStatus()) {</span>
+<span class="nc" id="L221">		case PROMOTED -&gt; 0;</span>
+<span class="fc" id="L222">		case APPROVED -&gt; 1;</span>
+<span class="nc" id="L223">		case READY_FOR_REVIEW -&gt; 2;</span>
+<span class="nc" id="L224">		case BEHAVIOR_VALID -&gt; 3;</span>
+<span class="fc" id="L225">		case DSL_VALID -&gt; 4;</span>
+<span class="fc" id="L226">		case DISCOVERED -&gt; 5;</span>
+<span class="nc" id="L227">		case REJECTED, DUPLICATE, SUPERSEDED -&gt; 9;</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		}).thenComparing(candidate -&gt; candidate.getDiscoveredAt() == null</span>
+<span class="pc" id="L229">				? &quot;9999&quot; : candidate.getDiscoveredAt()) //$NON-NLS-1$</span>
+<span class="fc" id="L230">				.thenComparing(MiningCandidate::getCandidateId);</span>
+	}
+
+	private static void advanceToReadyForReview(MiningCandidate candidate) {
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		if (candidate.getStatus() == CandidateStatus.DISCOVERED) {</span>
+<span class="fc" id="L235">			candidate.transitionTo(CandidateStatus.DSL_VALID,</span>
+					&quot;CandidateVerifier&quot;, &quot;DSL parser and validator passed&quot;); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		if (candidate.getStatus() == CandidateStatus.DSL_VALID) {</span>
+<span class="fc" id="L239">			candidate.transitionTo(CandidateStatus.BEHAVIOR_VALID,</span>
+					&quot;CandidateVerifier&quot;, &quot;Positive and negative behavior examples passed&quot;); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (candidate.getStatus() == CandidateStatus.BEHAVIOR_VALID) {</span>
+<span class="fc" id="L243">			candidate.transitionTo(CandidateStatus.READY_FOR_REVIEW,</span>
+					&quot;CandidateVerificationCli&quot;, &quot;All deterministic candidate gates passed&quot;); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+<span class="fc" id="L246">	}</span>
+
+	private static boolean isDiscarded(CandidateStatus status) {
+<span class="pc bpc" id="L249" title="3 of 6 branches missed.">		return status == CandidateStatus.REJECTED</span>
+				|| status == CandidateStatus.DUPLICATE
+				|| status == CandidateStatus.SUPERSEDED;
+	}
+
+	private static void writeReport(List&lt;MiningCandidate&gt; candidates, Path candidateDir,
+			Path reportDir) throws IOException {
+<span class="fc" id="L256">		Files.createDirectories(reportDir);</span>
+<span class="fc" id="L257">		Files.writeString(reportDir.resolve(&quot;candidates.json&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L258">				GSON.toJson(candidates) + System.lineSeparator(), StandardCharsets.UTF_8);</span>
+
+<span class="fc" id="L260">		Path reportCandidates = reportDir.resolve(&quot;candidates&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L261">		Files.createDirectories(reportCandidates);</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		for (MiningCandidate candidate : candidates) {</span>
+<span class="fc" id="L263">			Path source = candidateDir.resolve(candidate.toFileName());</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">			if (Files.isRegularFile(source)) {</span>
+<span class="fc" id="L265">				Files.copy(source, reportCandidates.resolve(candidate.toFileName()),</span>
+						StandardCopyOption.REPLACE_EXISTING);
+			}
+<span class="fc" id="L268">		}</span>
+<span class="fc" id="L269">		Files.writeString(reportDir.resolve(&quot;candidates.html&quot;), buildHtml(candidates), //$NON-NLS-1$</span>
+				StandardCharsets.UTF_8);
+<span class="fc" id="L271">	}</span>
+
+	private static String buildHtml(List&lt;MiningCandidate&gt; candidates) {
+<span class="fc" id="L274">		StringBuilder html = new StringBuilder();</span>
+<span class="fc" id="L275">		html.append(&quot;&lt;!doctype html&gt;&lt;html lang=\&quot;en\&quot;&gt;&lt;head&gt;&lt;meta charset=\&quot;utf-8\&quot;&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L276">				.append(&quot;&lt;meta name=\&quot;viewport\&quot; content=\&quot;width=device-width,initial-scale=1\&quot;&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L277">				.append(&quot;&lt;title&gt;Mining candidates&lt;/title&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L278">				.append(&quot;&lt;style&gt;body{font-family:system-ui,sans-serif;max-width:1200px;margin:2rem auto;padding:0 1rem}&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L279">				.append(&quot;table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:.55rem;text-align:left;vertical-align:top}&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L280">				.append(&quot;th{background:#f4f4f4}code{overflow-wrap:anywhere}.ok{font-weight:600}.fail{font-weight:600}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L281">				.append(&quot;&lt;h1&gt;Staged mining candidates&lt;/h1&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L282">				.append(&quot;&lt;p&gt;Only candidates marked &lt;strong&gt;READY_FOR_REVIEW&lt;/strong&gt; passed deterministic DSL, duplicate, and behavior checks.&lt;/p&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L283">				.append(&quot;&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Status&lt;/th&gt;&lt;th&gt;Candidate&lt;/th&gt;&lt;th&gt;Proposal&lt;/th&gt;&lt;th&gt;Source&lt;/th&gt;&lt;th&gt;Verification&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">		for (MiningCandidate candidate : candidates) {</span>
+<span class="fc" id="L285">			CandidateVerification verification = candidate.getVerification();</span>
+<span class="fc" id="L286">			html.append(&quot;&lt;tr&gt;&lt;td&gt;&quot;).append(escape(candidate.getStatus().name())).append(&quot;&lt;/td&gt;&lt;td&gt;&lt;a href=\&quot;candidates/&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L287">					.append(escape(candidate.toFileName())).append(&quot;\&quot;&gt;&lt;code&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L288">					.append(escape(candidate.getCandidateId())).append(&quot;&lt;/code&gt;&lt;/a&gt;&lt;br&gt;revision &quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L289">					.append(candidate.getRevision()).append(&quot;&lt;/td&gt;&lt;td&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L290">					.append(escape(candidate.getSummary())).append(&quot;&lt;br&gt;&lt;code&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L291">					.append(escape(candidate.getTargetHintFile())).append(&quot;&lt;/code&gt;&lt;/td&gt;&lt;td&gt;&lt;a href=\&quot;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L292">					.append(escape(commitUrl(candidate))).append(&quot;\&quot;&gt;&lt;code&gt;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L293">					.append(escape(shortCommit(candidate.getSourceCommit()))).append(&quot;&lt;/code&gt;&lt;/a&gt;&lt;/td&gt;&lt;td&gt;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L294" title="1 of 2 branches missed.">			if (verification == null) {</span>
+<span class="nc" id="L295">				html.append(&quot;not run&quot;); //$NON-NLS-1$</span>
+			} else {
+<span class="fc" id="L297">				html.append(&quot;&lt;span class=\&quot;&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">						.append(verification.successful() ? &quot;ok&quot; : &quot;fail&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L299">						.append(&quot;\&quot;&gt;&quot;).append(escape(verification.stage().name())).append(&quot;&lt;/span&gt;&lt;br&gt;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L300">						.append(escape(verification.message()));</span>
+			}
+<span class="fc" id="L302">			html.append(&quot;&lt;/td&gt;&lt;/tr&gt;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L303">		}</span>
+<span class="fc" id="L304">		return html.append(&quot;&lt;/tbody&gt;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;\n&quot;).toString(); //$NON-NLS-1$</span>
+	}
+
+	private static String commitUrl(MiningCandidate candidate) {
+<span class="fc" id="L308">		String repo = candidate.getSourceRepo();</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		if (repo == null) {</span>
+<span class="nc" id="L310">			return &quot;#&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">		if (repo.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L313">			repo = repo.substring(0, repo.length() - 4);</span>
+		}
+<span class="fc" id="L315">		return repo + &quot;/commit/&quot; + candidate.getSourceCommit(); //$NON-NLS-1$</span>
+	}
+
+	private static String shortCommit(String commit) {
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		return commit == null ? &quot;unknown&quot; : commit.substring(0, Math.min(12, commit.length())); //$NON-NLS-1$</span>
+	}
+
+	private static String escape(String value) {
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L324">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L326">		return value.replace(&quot;&amp;&quot;, &quot;&amp;amp;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L327">				.replace(&quot;&lt;&quot;, &quot;&amp;lt;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L328">				.replace(&quot;&gt;&quot;, &quot;&amp;gt;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L329">				.replace(&quot;\&quot;&quot;, &quot;&amp;quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static String nullToEmpty(String value) {
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
+	}
+
+	private static String requireValue(String[] args, int index, String option) {
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">		if (index &gt;= args.length) {</span>
+<span class="nc" id="L338">			throw new IllegalArgumentException(option + &quot; requires a value&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L340">		return args[index];</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

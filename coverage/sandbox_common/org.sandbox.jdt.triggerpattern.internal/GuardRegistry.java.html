@@ -70,7 +70,7 @@ public final class GuardRegistry {
 <span class="fc" id="L70">	private final Map&lt;String, GuardFunction&gt; guards = new ConcurrentHashMap&lt;&gt;();</span>
 	
 <span class="fc" id="L72">	private GuardRegistry() {</span>
-<span class="fc" id="L73">		BuiltInGuards.registerAll(guards);</span>
+<span class="fc" id="L73">		BuiltInGuardRegistration.registerAll(guards);</span>
 		// Register this registry as the resolver for GuardExpression evaluation
 <span class="fc" id="L75">		org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder.setResolver(this::get);</span>
 <span class="fc" id="L76">	}</span>

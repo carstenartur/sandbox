@@ -15,46 +15,42 @@ package org.sandbox.mining.core.config;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
-import org.sandbox.mining.core.candidate.MiningCandidate;
 
 /**
- * Persistent store for known mining rules ({@code known-rules.json}).
+ * Read-compatible archive for the legacy {@code known-rules.json} format.
  *
- * &lt;p&gt;Tracks all rules ever discovered and validated across mining runs.
- * GREEN+VALID evaluations are registered after each run so the LLM can
- * be informed about already-known rules and avoid proposing duplicates.&lt;/p&gt;
+ * &lt;p&gt;This store is no longer an approval registry, duplicate index, or LLM
+ * prompt source. New proposals are represented exclusively by versioned
+ * {@code MiningCandidate} JSON. The class remains temporarily so historic
+ * reports can be loaded and archived without data loss.&lt;/p&gt;
  *
- * @since 1.3.2
+ * @deprecated use staged candidates and their rule fingerprints
  */
+@Deprecated(forRemoval = true)
 public class KnownRulesStore {
 
-	/** Status of a known rule. */
-<span class="fc" id="L44">	public enum RuleStatus {</span>
-		/** Discovered by mining but not yet implemented as a .sandbox-hint file. */
-<span class="fc" id="L46">		DISCOVERED,</span>
-		/** Implemented as a .sandbox-hint rule. */
+	/** Legacy status retained for JSON compatibility. */
+<span class="fc" id="L46">	public enum RuleStatus {</span>
+<span class="fc" id="L47">		DISCOVERED,</span>
 <span class="fc" id="L48">		IMPLEMENTED,</span>
-		/** Manually rejected by a reviewer. */
-<span class="fc" id="L50">		REJECTED,</span>
-		/** Requires a DSL language extension before it can be implemented. */
-<span class="fc" id="L52">		NEEDS_DSL_EXTENSION</span>
+<span class="fc" id="L49">		REJECTED,</span>
+<span class="fc" id="L50">		NEEDS_DSL_EXTENSION</span>
 	}
 
-	/**
-	 * A single known rule entry.
-	 */
+	/** Legacy known-rule record retained for archival reads. */
 	public static class KnownRule {
 		private String id;
 		private String category;
@@ -68,269 +64,129 @@ public class KnownRulesStore {
 		private RuleStatus status;
 		private String hintFile;
 
-		/** No-arg constructor for Gson. */
-<span class="fc" id="L72">		public KnownRule() {</span>
-<span class="fc" id="L73">		}</span>
+<span class="fc" id="L67">		public KnownRule() {</span>
+<span class="fc" id="L68">		}</span>
 
-		public KnownRule(String id, String category, String dslRule, String summary,
-				String discoveredAt, int discoveredInRun, String sourceCommit,
-<span class="fc" id="L77">				String sourceRepo, String candidateId, RuleStatus status, String hintFile) {</span>
-<span class="fc" id="L78">			this.id = id;</span>
-<span class="fc" id="L79">			this.category = category;</span>
-<span class="fc" id="L80">			this.dslRule = dslRule;</span>
-<span class="fc" id="L81">			this.summary = summary;</span>
-<span class="fc" id="L82">			this.discoveredAt = discoveredAt;</span>
-<span class="fc" id="L83">			this.discoveredInRun = discoveredInRun;</span>
-<span class="fc" id="L84">			this.sourceCommit = sourceCommit;</span>
-<span class="fc" id="L85">			this.sourceRepo = sourceRepo;</span>
-<span class="fc" id="L86">			this.candidateId = candidateId;</span>
-<span class="fc" id="L87">			this.status = status;</span>
-<span class="fc" id="L88">			this.hintFile = hintFile;</span>
-<span class="fc" id="L89">		}</span>
-
-<span class="nc" id="L91">		public String getId() { return id; }</span>
-<span class="nc" id="L92">		public void setId(String id) { this.id = id; }</span>
-<span class="fc" id="L93">		public String getCategory() { return category; }</span>
-<span class="nc" id="L94">		public void setCategory(String category) { this.category = category; }</span>
-<span class="fc" id="L95">		public String getDslRule() { return dslRule; }</span>
-<span class="nc" id="L96">		public void setDslRule(String dslRule) { this.dslRule = dslRule; }</span>
-<span class="fc" id="L97">		public String getSummary() { return summary; }</span>
-<span class="nc" id="L98">		public void setSummary(String summary) { this.summary = summary; }</span>
-<span class="nc" id="L99">		public String getDiscoveredAt() { return discoveredAt; }</span>
-<span class="nc" id="L100">		public void setDiscoveredAt(String discoveredAt) { this.discoveredAt = discoveredAt; }</span>
-<span class="nc" id="L101">		public int getDiscoveredInRun() { return discoveredInRun; }</span>
-<span class="nc" id="L102">		public void setDiscoveredInRun(int discoveredInRun) { this.discoveredInRun = discoveredInRun; }</span>
-<span class="fc" id="L103">		public String getSourceCommit() { return sourceCommit; }</span>
-<span class="nc" id="L104">		public void setSourceCommit(String sourceCommit) { this.sourceCommit = sourceCommit; }</span>
-<span class="nc" id="L105">		public String getSourceRepo() { return sourceRepo; }</span>
-<span class="nc" id="L106">		public void setSourceRepo(String sourceRepo) { this.sourceRepo = sourceRepo; }</span>
-<span class="nc" id="L107">		public String getCandidateId() { return candidateId; }</span>
-<span class="nc" id="L108">		public void setCandidateId(String candidateId) { this.candidateId = candidateId; }</span>
-<span class="fc" id="L109">		public RuleStatus getStatus() { return status; }</span>
-<span class="nc" id="L110">		public void setStatus(RuleStatus status) { this.status = status; }</span>
-<span class="nc" id="L111">		public String getHintFile() { return hintFile; }</span>
-<span class="nc" id="L112">		public void setHintFile(String hintFile) { this.hintFile = hintFile; }</span>
+<span class="nc" id="L70">		public String getId() { return id; }</span>
+<span class="nc" id="L71">		public void setId(String id) { this.id = id; }</span>
+<span class="fc" id="L72">		public String getCategory() { return category; }</span>
+<span class="nc" id="L73">		public void setCategory(String category) { this.category = category; }</span>
+<span class="fc" id="L74">		public String getDslRule() { return dslRule; }</span>
+<span class="nc" id="L75">		public void setDslRule(String dslRule) { this.dslRule = dslRule; }</span>
+<span class="fc" id="L76">		public String getSummary() { return summary; }</span>
+<span class="nc" id="L77">		public void setSummary(String summary) { this.summary = summary; }</span>
+<span class="nc" id="L78">		public String getDiscoveredAt() { return discoveredAt; }</span>
+<span class="nc" id="L79">		public void setDiscoveredAt(String discoveredAt) { this.discoveredAt = discoveredAt; }</span>
+<span class="nc" id="L80">		public int getDiscoveredInRun() { return discoveredInRun; }</span>
+<span class="nc" id="L81">		public void setDiscoveredInRun(int discoveredInRun) { this.discoveredInRun = discoveredInRun; }</span>
+<span class="fc" id="L82">		public String getSourceCommit() { return sourceCommit; }</span>
+<span class="nc" id="L83">		public void setSourceCommit(String sourceCommit) { this.sourceCommit = sourceCommit; }</span>
+<span class="nc" id="L84">		public String getSourceRepo() { return sourceRepo; }</span>
+<span class="nc" id="L85">		public void setSourceRepo(String sourceRepo) { this.sourceRepo = sourceRepo; }</span>
+<span class="nc" id="L86">		public String getCandidateId() { return candidateId; }</span>
+<span class="nc" id="L87">		public void setCandidateId(String candidateId) { this.candidateId = candidateId; }</span>
+<span class="fc" id="L88">		public RuleStatus getStatus() { return status; }</span>
+<span class="nc" id="L89">		public void setStatus(RuleStatus status) { this.status = status; }</span>
+<span class="nc" id="L90">		public String getHintFile() { return hintFile; }</span>
+<span class="nc" id="L91">		public void setHintFile(String hintFile) { this.hintFile = hintFile; }</span>
 	}
 
-	/**
-	 * Root JSON structure for known-rules.json.
-	 */
-<span class="fc" id="L118">	static class KnownRulesData {</span>
-<span class="fc" id="L119">		int version = 1;</span>
-<span class="fc" id="L120">		List&lt;KnownRule&gt; rules = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L94">	static class KnownRulesData {</span>
+<span class="fc" id="L95">		int version = 1;</span>
+<span class="fc" id="L96">		List&lt;KnownRule&gt; rules = new ArrayList&lt;&gt;();</span>
 	}
 
-<span class="fc" id="L123">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
-
+<span class="fc" id="L99">	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();</span>
 	private final KnownRulesData data;
 
-	/** Creates a new empty store. */
-<span class="fc" id="L128">	public KnownRulesStore() {</span>
-<span class="fc" id="L129">		this.data = new KnownRulesData();</span>
-<span class="fc" id="L130">	}</span>
+	public KnownRulesStore() {
+<span class="fc" id="L103">		this(new KnownRulesData());</span>
+<span class="fc" id="L104">	}</span>
 
-<span class="fc" id="L132">	private KnownRulesStore(KnownRulesData data) {</span>
-<span class="fc" id="L133">		this.data = data;</span>
-<span class="fc" id="L134">	}</span>
+<span class="fc" id="L106">	private KnownRulesStore(KnownRulesData data) {</span>
+<span class="fc" id="L107">		this.data = data;</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (this.data.rules == null) {</span>
+<span class="nc" id="L109">			this.data.rules = new ArrayList&lt;&gt;();</span>
+		}
+<span class="fc" id="L111">	}</span>
 
-	/**
-	 * Loads the store from a JSON file, or returns a new empty store if the file
-	 * does not exist.
-	 *
-	 * @param path path to known-rules.json
-	 * @return the loaded store
-	 * @throws IOException if the file cannot be read
-	 */
+	/** Loads historic data, returning an empty archive for absent/invalid files. */
 	public static KnownRulesStore load(Path path) throws IOException {
-<span class="fc bfc" id="L145" title="All 2 branches covered.">		if (!Files.exists(path)) {</span>
-<span class="fc" id="L146">			return new KnownRulesStore();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (!Files.exists(path)) {</span>
+<span class="fc" id="L116">			return new KnownRulesStore();</span>
 		}
 		try {
-<span class="fc" id="L149">			String json = Files.readString(path, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L150">			KnownRulesData loaded = GSON.fromJson(json, KnownRulesData.class);</span>
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">			return new KnownRulesStore(loaded != null ? loaded : new KnownRulesData());</span>
-<span class="fc" id="L152">		} catch (Exception e) {</span>
-<span class="fc" id="L153">			System.err.println(&quot;Warning: could not load known-rules.json: &quot; + e.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L154">			return new KnownRulesStore();</span>
+<span class="fc" id="L119">			KnownRulesData loaded = GSON.fromJson(</span>
+<span class="fc" id="L120">					Files.readString(path, StandardCharsets.UTF_8), KnownRulesData.class);</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">			return new KnownRulesStore(loaded == null ? new KnownRulesData() : loaded);</span>
+<span class="fc" id="L122">		} catch (RuntimeException e) {</span>
+<span class="fc" id="L123">			System.err.println(&quot;Warning: could not load legacy known-rules.json: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L124">					+ e.getMessage());</span>
+<span class="fc" id="L125">			return new KnownRulesStore();</span>
 		}
 	}
 
-	/**
-	 * Saves the store to a JSON file atomically.
-	 *
-	 * @param path path to known-rules.json
-	 * @throws IOException if the file cannot be written
-	 */
+	/** Writes the archive without interpreting or promoting its contents. */
 	public void save(Path path) throws IOException {
-<span class="fc" id="L165">		Path parent = path.getParent();</span>
-<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (parent != null) {</span>
-<span class="fc" id="L167">			Files.createDirectories(parent);</span>
+<span class="fc" id="L131">		Path parent = path.getParent();</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		if (parent != null) {</span>
+<span class="fc" id="L133">			Files.createDirectories(parent);</span>
 		}
-<span class="fc" id="L169">		Path fileName = path.getFileName();</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		if (fileName == null) {</span>
-<span class="nc" id="L171">			throw new IOException(&quot;Cannot save known rules to a root path&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L135">		Path fileName = path.getFileName();</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (fileName == null) {</span>
+<span class="nc" id="L137">			throw new IOException(&quot;Cannot save legacy known rules to a root path&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L173">		Path tmpFile = path.resolveSibling(fileName + &quot;.tmp&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L174">		String json = GSON.toJson(data);</span>
-<span class="fc" id="L175">		Files.writeString(tmpFile, json, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L176">		Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);</span>
-<span class="fc" id="L177">	}</span>
+<span class="fc" id="L139">		Path temporary = path.resolveSibling(fileName + &quot;.tmp&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L140">		Files.writeString(temporary, GSON.toJson(data) + System.lineSeparator(),</span>
+				StandardCharsets.UTF_8);
+		try {
+<span class="fc" id="L143">			Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING,</span>
+					StandardCopyOption.ATOMIC_MOVE);
+<span class="nc" id="L145">		} catch (AtomicMoveNotSupportedException e) {</span>
+<span class="nc" id="L146">			Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="fc" id="L147">		}</span>
+<span class="fc" id="L148">	}</span>
 
-	/**
-	 * Returns all known rules.
-	 *
-	 * @return unmodifiable list of known rules
-	 */
 	public List&lt;KnownRule&gt; getRules() {
-<span class="fc" id="L185">		return List.copyOf(data.rules);</span>
+<span class="fc" id="L151">		return List.copyOf(data.rules);</span>
 	}
 
-	/**
-	 * Returns the number of known rules.
-	 *
-	 * @return count
-	 */
 	public int size() {
-<span class="fc" id="L194">		return data.rules.size();</span>
+<span class="fc" id="L155">		return data.rules.size();</span>
 	}
 
-	/**
-	 * Checks whether a rule with the given commit hash already exists.
-	 *
-	 * @param commitHash the commit hash
-	 * @return true if a rule from this commit is already known
-	 */
 	public boolean containsCommit(String commitHash) {
-<span class="fc" id="L204">		return data.rules.stream().anyMatch(r -&gt; commitHash.equals(r.sourceCommit));</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		return data.rules.stream().anyMatch(rule -&gt; commitHash != null</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">				&amp;&amp; commitHash.equals(rule.sourceCommit));</span>
 	}
 
 	/**
-	 * Registers GREEN+VALID evaluations from a mining run as known rules.
-	 * Evaluations whose commit hash is already present are skipped.
+	 * New evaluations are deliberately not copied into this legacy store.
 	 *
-	 * @param evaluations all evaluations from the current run
-	 * @param runNumber   the mining run number
-	 * @return the number of newly registered rules
+	 * @return always {@code 0}
 	 */
 	public int registerFromEvaluations(List&lt;CommitEvaluation&gt; evaluations, int runNumber) {
-<span class="fc" id="L216">		int added = 0;</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">		for (CommitEvaluation eval : evaluations) {</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">			if (!isGreenAndValid(eval)) {</span>
-<span class="fc" id="L219">				continue;</span>
-			}
-<span class="fc bfc" id="L221" title="All 2 branches covered.">			if (containsCommit(eval.commitHash())) {</span>
-<span class="fc" id="L222">				continue;</span>
-			}
-<span class="fc" id="L224">			String ruleId = buildRuleId(eval);</span>
-<span class="fc" id="L225">			MiningCandidate candidate = new MiningCandidate(</span>
-<span class="fc" id="L226">					eval.dslRule(),</span>
-<span class="fc" id="L227">					eval.beforeExample(),</span>
-<span class="fc" id="L228">					eval.afterExample(),</span>
-<span class="fc" id="L229">					eval.negativeExample(),</span>
-<span class="fc" id="L230">					eval.targetHintFile(),</span>
-<span class="fc" id="L231">					eval.commitHash(),</span>
-<span class="fc" id="L232">					eval.repoUrl(),</span>
-<span class="fc" id="L233">					eval.category(),</span>
-<span class="fc" id="L234">					eval.summary(),</span>
-<span class="fc" id="L235">					LocalDate.now().toString());</span>
-<span class="fc" id="L236">			KnownRule rule = new KnownRule(</span>
-					ruleId,
-<span class="fc" id="L238">					eval.category(),</span>
-<span class="fc" id="L239">					eval.dslRule(),</span>
-<span class="fc" id="L240">					eval.summary(),</span>
-<span class="fc" id="L241">					LocalDate.now().toString(),</span>
-					runNumber,
-<span class="fc" id="L243">					eval.commitHash(),</span>
-<span class="fc" id="L244">					eval.repoUrl(),</span>
-<span class="fc" id="L245">					candidate.getCandidateId(),</span>
-					RuleStatus.DISCOVERED,
-<span class="fc" id="L247">					eval.targetHintFile());</span>
-<span class="fc" id="L248">			data.rules.add(rule);</span>
-<span class="fc" id="L249">			added++;</span>
-<span class="fc" id="L250">		}</span>
-<span class="fc" id="L251">		return added;</span>
+<span class="fc" id="L169">		return 0;</span>
 	}
 
 	/**
-	 * Formats the known rules as a concise text summary suitable for LLM context.
+	 * Legacy rule data is deliberately excluded from LLM prompts.
 	 *
-	 * @return summary string, or empty string if no rules are known
+	 * @return always the empty string
 	 */
 	public String formatForPrompt() {
-<span class="fc bfc" id="L260" title="All 2 branches covered.">		if (data.rules.isEmpty()) {</span>
-<span class="fc" id="L261">			return &quot;&quot;; //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L263">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L264">		sb.append('[');</span>
-<span class="fc bfc" id="L265" title="All 2 branches covered.">		for (int i = 0; i &lt; data.rules.size(); i++) {</span>
-<span class="fc" id="L266">			KnownRule r = data.rules.get(i);</span>
-<span class="pc bpc" id="L267" title="1 of 2 branches missed.">			if (i &gt; 0) {</span>
-<span class="nc" id="L268">				sb.append(',');</span>
-			}
-<span class="fc" id="L270">			sb.append(&quot;\n  {\&quot;id\&quot;:\&quot;&quot;).append(escape(r.id)) //$NON-NLS-1$</span>
-<span class="fc" id="L271">			  .append(&quot;\&quot;,\&quot;candidateId\&quot;:\&quot;&quot;).append(escape(r.candidateId)) //$NON-NLS-1$</span>
-<span class="fc" id="L272">			  .append(&quot;\&quot;,\&quot;sourceRepo\&quot;:\&quot;&quot;).append(escape(r.sourceRepo)) //$NON-NLS-1$</span>
-<span class="fc" id="L273">			  .append(&quot;\&quot;,\&quot;sourceCommit\&quot;:\&quot;&quot;).append(escape(r.sourceCommit)) //$NON-NLS-1$</span>
-<span class="fc" id="L274">			  .append(&quot;\&quot;,\&quot;category\&quot;:\&quot;&quot;).append(escape(r.category)) //$NON-NLS-1$</span>
-<span class="fc" id="L275">			  .append(&quot;\&quot;,\&quot;summary\&quot;:\&quot;&quot;).append(escape(r.summary)) //$NON-NLS-1$</span>
-<span class="fc" id="L276">			  .append(&quot;\&quot;,\&quot;dslRule\&quot;:\&quot;&quot;).append(escape(r.dslRule)) //$NON-NLS-1$</span>
-<span class="fc" id="L277">			  .append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L279">		sb.append(&quot;\n]&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L280">		return sb.toString();</span>
+<span class="fc" id="L178">		return &quot;&quot;; //$NON-NLS-1$</span>
 	}
 
-	/**
-	 * Returns a map of commit hashes to their rule IDs for quick lookup.
-	 *
-	 * @return map of commitHash → ruleId
-	 */
+	/** Returns a read-only index for archival tooling only. */
 	public Map&lt;String, String&gt; getCommitHashIndex() {
-<span class="fc" id="L289">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L290" title="All 2 branches covered.">		for (KnownRule rule : data.rules) {</span>
-<span class="pc bpc" id="L291" title="1 of 2 branches missed.">			if (rule.sourceCommit != null) {</span>
-<span class="fc" id="L292">				index.put(rule.sourceCommit, rule.id);</span>
+<span class="fc" id="L183">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		for (KnownRule rule : data.rules) {</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">			if (rule.sourceCommit != null) {</span>
+<span class="fc" id="L186">				index.put(rule.sourceCommit, rule.id);</span>
 			}
-<span class="fc" id="L294">		}</span>
-<span class="fc" id="L295">		return index;</span>
-	}
-
-	private static boolean isGreenAndValid(CommitEvaluation eval) {
-<span class="pc bpc" id="L299" title="2 of 4 branches missed.">		if (eval == null || !eval.relevant()) {</span>
-<span class="nc" id="L300">			return false;</span>
-		}
-<span class="fc bfc" id="L302" title="All 2 branches covered.">		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
-<span class="fc" id="L303">			return false;</span>
-		}
-<span class="pc bpc" id="L305" title="1 of 4 branches missed.">		if (eval.dslRule() == null || eval.dslRule().isBlank()) {</span>
-<span class="fc" id="L306">			return false;</span>
-		}
-<span class="fc" id="L308">		return &quot;VALID&quot;.equals(eval.dslValidationResult()); //$NON-NLS-1$</span>
-	}
-
-	private static String buildRuleId(CommitEvaluation eval) {
-<span class="pc bpc" id="L312" title="1 of 2 branches missed.">		String category = eval.category() != null ? eval.category().toLowerCase().replace(' ', '-') : &quot;unknown&quot;; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		String summary = eval.summary() != null</span>
-<span class="fc" id="L314">				? eval.summary().toLowerCase().replaceAll(&quot;[^a-z0-9]+&quot;, &quot;-&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc" id="L315">				: &quot;rule&quot;; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		if (summary.length() &gt; 40) {</span>
-<span class="nc" id="L317">			summary = summary.substring(0, 40);</span>
-		}
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		if (summary.endsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L320">			summary = summary.substring(0, summary.length() - 1);</span>
-		}
-<span class="fc" id="L322">		return category + &quot;-&quot; + summary; //$NON-NLS-1$</span>
-	}
-
-	private static String escape(String s) {
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">		if (s == null) {</span>
-<span class="nc" id="L327">			return &quot;&quot;; //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L329">		return s.replace(&quot;\\&quot;, &quot;\\\\&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L330">				.replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L331">				.replace(&quot;\n&quot;, &quot;\\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L332">				.replace(&quot;\r&quot;, &quot;\\r&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L333">				.replace(&quot;\t&quot;, &quot;\\t&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L188">		}</span>
+<span class="fc" id="L189">		return Map.copyOf(index);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
