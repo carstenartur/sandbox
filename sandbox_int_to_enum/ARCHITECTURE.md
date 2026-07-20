@@ -8,11 +8,9 @@ This is a semantic refactoring rather than a textual pattern replacement. Intege
 
 ## Transformation layers
 
-### 1. Conservative single-file cleanup
+### 1. Implemented local detector
 
-The existing Eclipse cleanup extension receives one `CleanUpContext` for one compilation unit and returns an `ICleanUpFix`. The if/else implementation therefore accepts only candidates whose complete relevant data flow is local and private.
-
-Current safe candidate:
+The first implementation recognises candidates whose complete relevant data flow is contained in one compilation unit and is private.
 
 ```java
 private static final int STATUS_PENDING = 0;
@@ -31,26 +29,53 @@ The detector validates bindings, constant values, all parameter references, all 
 
 The if/else structure is preserved. Conversion to switch is not required for type safety and can introduce control-flow hazards involving unlabeled `break`, `continue`, abrupt completion, or unreachable statements.
 
-### 2. Existing switch prototype
+### 2. Selected-scope multi-file cleanup
 
-`SwitchIntToEnumHelper` detects integer switch cases and creates a nested enum. It predates the conservative if/else detector and still requires hardening so that it applies the same whole-reference and API-visibility safety rules.
+The standard cleanup API is per-file only at the final edit boundary, but its lifecycle is project-aware:
 
-### 3. Future project-wide refactoring
+1. `ICleanUp.checkPreConditions(IJavaProject, ICompilationUnit[], ...)` receives every compilation unit selected for the project.
+2. The same cleanup instance is invoked later through `createFix(CleanUpContext)` for each target unit.
+3. Each fix returns a local `CompilationUnitChange`.
+4. `CleanUpRefactoring` collects all local changes into one LTK change tree, validates all modified resources, previews them together, and applies and undoes them atomically.
 
-Public and package-visible constants, interface methods, overridden methods, fields, return values, and callers in other files require coordinated multi-file changes.
+Consequently, a project-wide semantic plan can be calculated without changing JDT UI when all affected compilation units are already selected. The cleanup stores an immutable plan keyed by Java project, then emits only the current file's part of that plan from `createFix`.
 
-There are two viable integration paths:
+The plan must store stable Java element handles, binding keys, and semantic edit descriptors rather than retaining AST nodes between parser passes. The current AST may already include edits from earlier cleanups in the fixpoint pipeline, so every planned edit must be re-resolved and validated before it is emitted.
 
-- a new multi-file cleanup lifecycle in JDT UI; or
-- a dedicated LTK `Refactoring` contributed by this plugin.
+### 3. Automatic target-scope expansion
 
-A dedicated refactoring can be implemented outside JDT UI and return an LTK `CompositeChange`. Appearing as a standard item in the Java Clean Up profile requires JDT UI infrastructure because the current `ICleanUpFix` contract is compilation-unit based.
+The existing lifecycle cannot add compilation units that were not part of the original cleanup selection. This matters when cleanup starts on one class or package but analysis discovers callers, interfaces, implementations, suites, or shared helpers elsewhere in the project.
+
+A minimal patched `org.eclipse.jdt.ui` bundle can extend `CleanUpRefactoring` before precondition checking:
+
+1. detect cleanups implementing a Sandbox-owned scope-provider SPI;
+2. request additional related compilation units;
+3. compute a transitive, deduplicated target closure;
+4. add those units to the existing target set;
+5. continue through the unchanged precondition, batch parser, working-copy fixpoint, overlap handling, preview, validation, apply, and undo pipeline.
+
+Example experimental SPI in `sandbox_common`:
+
+```java
+public interface IMultiFileCleanUpScopeProvider {
+    Collection<ICompilationUnit> expandScope(
+        IJavaProject project,
+        Collection<ICompilationUnit> initialScope,
+        IProgressMonitor monitor) throws CoreException;
+}
+```
+
+This approach is deliberately narrower than making a cleanup return an arbitrary `CompositeChange`. The current cleanup refactoring already knows how to combine per-file changes correctly; the missing capability is mainly target discovery.
+
+### 4. Dedicated LTK refactoring
+
+A dedicated refactoring remains useful when the operation needs interactive choices such as enum naming, compatibility bridge methods, preservation of integer adapters, persistence mappings, or partial/excluded source roots. It is not required merely to coordinate edits across Java files already included in a cleanup run.
 
 ## Package structure
 
 ### `org.sandbox.jdt.internal.corext.fix`
 
-- `IntToEnumFixCore` selects the transformation helper and creates rewrite operations.
+- `IntToEnumFixCore` selects transformation helpers and creates rewrite operations.
 
 ### `org.sandbox.jdt.internal.corext.fix.helper`
 
@@ -61,17 +86,25 @@ A dedicated refactoring can be implemented outside JDT UI and return an LTK `Com
 ### `org.sandbox.jdt.internal.ui.fix`
 
 - `IntToEnumCleanUp` is the UI wrapper.
-- `IntToEnumCleanUpCore` integrates with the single-file cleanup lifecycle.
+- `IntToEnumCleanUpCore` integrates with the cleanup lifecycle.
 
-### `org.sandbox.jdt.internal.ui.preferences.cleanup`
+### `sandbox_common`
 
-Contains the cleanup profile and save-action configuration UI.
+The planned multi-file infrastructure should live here so it can be shared by `sandbox_int_to_enum`, `sandbox_junit_cleanup`, and later migrations.
+
+Proposed reusable concepts:
+
+- `AbstractPlannedMultiFileCleanUp<P>` or an equivalent composition-based coordinator;
+- `PlanResult<P>` containing an immutable plan and `RefactoringStatus`;
+- per-compilation-unit edit descriptors;
+- explicit rejection diagnostics;
+- optional `IMultiFileCleanUpScopeProvider` for the patched JDT UI bundle.
 
 ## If/else candidate analysis
 
 ### Constant group discovery
 
-The current single-file detector collects fields that are:
+The current detector collects fields that are:
 
 - `private`;
 - `static`;
@@ -91,8 +124,6 @@ The detector rejects:
 ### State-carrier discovery
 
 The recognised state carrier is currently a plain `int` parameter of a private method. Every branch condition in the root if/else-if chain must be an equality comparison between the same parameter binding and one of the constant bindings. Operand order may be reversed.
-
-Examples accepted by the condition matcher:
 
 ```java
 status == STATUS_PENDING
@@ -122,11 +153,20 @@ For an accepted candidate, one `CompilationUnitRewriteOperationWithSourceRange`:
 4. replaces constant references in comparisons with qualified enum constants;
 5. replaces every proven call argument with the corresponding enum constant.
 
-The edit remains one compilation-unit change and participates in normal cleanup preview and undo.
+## Project-wide candidate model
 
-## Why public API migration is different
+The next step is to extract discovery from `IntToEnumHelper` into an immutable semantic model containing:
 
-A source file cannot prove that a public constant or method is unused elsewhere. Binary clients may also depend on compile-time inlined constants or an integer method signature. A project-wide migration must consider:
+- constant group and numeric-value semantics;
+- declarations and generated names;
+- state carriers;
+- comparison and switch sites;
+- producer and consumer edges;
+- required edits per compilation unit;
+- compatibility boundaries;
+- explicit rejection reasons and confidence level.
+
+Project-wide analysis must consider:
 
 - JDT search results across source roots;
 - method hierarchies, interfaces, overrides, and implementations;
@@ -135,35 +175,51 @@ A source file cannot prove that a public constant or method is unused elsewhere.
 - reflection, JNI, generated code, and external binaries;
 - compatibility adapters or deprecated bridge constants.
 
-This analysis must finish before any edit is applied, and all edits should be presented and committed as one atomic `CompositeChange`.
+Where numeric identity must remain stable, the generated enum must use an explicit value field and conversion method rather than `ordinal()`.
 
-## Reusable future model
+## Ordering and fixpoint behaviour
 
-The next architectural step is to extract candidate discovery from `IntToEnumHelper` into a reusable semantic model containing:
+A multi-file migration plan can become stale if unrelated cleanups structurally change the same sources before it runs. The implementation must therefore:
 
-- constant group and numeric-value semantics;
-- state carriers;
-- comparison and switch sites;
-- producer and consumer edges;
-- required edits per compilation unit;
-- explicit rejection reasons and confidence level.
+- use cleanup ordering (`runAfter`) so semantic migrations run late;
+- request fresh ASTs where necessary;
+- resolve planned locations by binding key or Java model handle against the current working copy;
+- fail the whole candidate if any required edit no longer matches;
+- clear all per-run plan state after success, failure, or cancellation.
 
-That model can support:
+## Save-action boundary
 
-- the conservative cleanup;
-- a report-only inspection or marker;
-- a quick assist for one candidate;
-- a project-wide LTK refactoring;
-- future JDT UI multi-file cleanup integration.
+The JDT save participant calls `checkPreConditions` with only the saved compilation unit. Multi-file migration must therefore not run as a save action. Local transformations may remain available on save, while project-wide planning is enabled only for explicit cleanup runs or the headless batch application.
 
-## Portability to Eclipse JDT
+## Headless application
 
-The helper and candidate-analysis code can be moved from `org.sandbox.jdt.internal.*` to the corresponding JDT internal packages. Standard cleanup-profile integration for project-wide candidates additionally needs a JDT UI API and lifecycle change. The dedicated-refactoring approach does not.
+`sandbox_cleanup_application` currently creates one `CleanUpRefactoring` per file. Multi-file support requires it to collect and group all selected compilation units by Java project, add the entire group to one refactoring, and apply/check/diff the resulting composite change as one transaction.
+
+## OSGi delivery
+
+`org.eclipse.jdt.ui` is a singleton bundle. A normal fragment cannot override an existing host class because the host bundle class path is searched first. The Sandbox product should therefore install a patched higher-version `org.eclipse.jdt.ui` bundle through a p2 feature patch or its custom target/product.
+
+Keep the experimental scope-provider SPI in a Sandbox package. The public `org.eclipse.jdt.ui.cleanup` package is supplied by the singleton `org.eclipse.jdt.core.manipulation` bundle; adding a new interface there would unnecessarily require patching that bundle too.
+
+## Relationship to JDT UI PR 68
+
+PR 68 demonstrates that the cleanup orchestration can be changed, but its API and execution path are broader than necessary. It should be reduced to scope expansion and reuse the existing fixpoint pipeline. In particular, the implementation should not:
+
+- hold every AST context for the whole project longer than required;
+- run multi-file changes outside the normal working-copy lifecycle;
+- swallow `CoreException` and continue a supposedly atomic migration;
+- introduce independent-selection/recomputation APIs before the preview UI supports them.
+
+## Reuse by JUnit migration
+
+The shared planned-cleanup infrastructure is also required by `sandbox_junit_cleanup`, especially for migrations involving test superclass/subclass relationships, suites and referenced test classes, named rules or `ExternalResource` implementations declared in other files, lifecycle contracts, method sources, and helper APIs used by several tests.
+
+Both plugins should produce an immutable semantic plan first and emit one validated local fix per affected compilation unit.
 
 ## Dependencies
 
-- Eclipse JDT Core DOM and bindings
+- Eclipse JDT Core DOM, Java model, search, and bindings
 - Eclipse JDT Core Manipulation rewrite infrastructure
-- Eclipse JDT UI cleanup APIs
+- Eclipse JDT UI cleanup and refactoring infrastructure
 - Eclipse LTK refactoring framework
-- `sandbox_common` helper infrastructure
+- `sandbox_common` shared infrastructure
