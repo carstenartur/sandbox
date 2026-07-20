@@ -41,14 +41,16 @@ import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
-import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
 
 /** Core cleanup implementation that converts integer constants to enums. */
-public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<SelectedCompilationUnitPlan> {
+public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnumMigrationPlan> {
 	public IntToEnumCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -66,20 +68,19 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<Select
 	}
 
 	@Override
-	protected MultiFileCleanUpPlanResult<SelectedCompilationUnitPlan> createPlan(IJavaProject project,
-			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) {
+	protected MultiFileCleanUpPlanResult<IntEnumMigrationPlan> createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
 		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet().isEmpty()) {
 			return MultiFileCleanUpPlanResult.noPlan();
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		return MultiFileCleanUpPlanResult.success(SelectedCompilationUnitPlan.of(project, compilationUnits));
+		return IntEnumMultiFilePlanner.create(project, compilationUnits, monitor);
 	}
 
 	@Override
-	protected ICleanUpFix createFixForPlan(SelectedCompilationUnitPlan plan, CleanUpContext context)
-			throws CoreException {
+	protected ICleanUpFix createFixForPlan(IntEnumMigrationPlan plan, CleanUpContext context) throws CoreException {
 		if (!plan.contains(context.getCompilationUnit())) {
 			return null;
 		}
@@ -95,6 +96,7 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<Select
 
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesProcessed= new HashSet<>();
+		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, nodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesProcessed));
 
 		if (operations.isEmpty()) {
