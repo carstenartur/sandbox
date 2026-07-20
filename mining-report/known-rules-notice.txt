@@ -1,0 +1,2 @@
+known-rules.json is legacy mining state and is not an approval registry.
+Candidate review state is published in candidates.json and candidates.html.

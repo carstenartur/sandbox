@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "945976bac0b7292a89eec5b74ef37d48734c0ea45baa63fde34ad1e4ec5d7427",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: refactor-typeparameterscleanup\u003e\n\u003c!description: Refactor TypeParametersCleanUp to TypeParametersCleanUpCore.\n\u003c!severity: INFO\u003e\n*/\nnew org.eclipse.jdt.internal.ui.fix.TypeParametersCleanUp($args$)\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.fix.TypeParametersCleanUpCore($args$)\n;;",
+  "beforeExample": "package test;\n\nimport java.util.Collections;\nimport java.util.Map;\n\nimport org.eclipse.jdt.internal.ui.fix.TypeParametersCleanUp;\n\npublic class MyProcessor {\n    public void process(Map\u003cString, String\u003e options) {\n        TypeParametersCleanUp cleanup \u003d new TypeParametersCleanUp(options);\n        System.out.println(cleanup.getClass().getName());\n    }\n}",
+  "afterExample": "package test;\n\nimport java.util.Collections;\nimport java.util.Map;\n\nimport org.eclipse.jdt.internal.ui.fix.TypeParametersCleanUpCore;\n\npublic class MyProcessor {\n    public void process(Map\u003cString, String\u003e options) {\n        TypeParametersCleanUpCore cleanup \u003d new TypeParametersCleanUpCore(options);\n        System.out.println(cleanup.getClass().getName());\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.Collections;\nimport java.util.Map;\n\nimport org.eclipse.jdt.internal.ui.fix.CodeStyleCleanUpCore;\n\npublic class MyProcessor {\n    public void process(Map\u003cString, String\u003e options) {\n        CodeStyleCleanUpCore cleanup \u003d new CodeStyleCleanUpCore(options); // Different class, should not match\n        System.out.println(cleanup.getClass().getName());\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-migration.sandbox-hint",
+  "sourceCommit": "d2abdce788f060f4021a68484867603ebdcb147a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces `new TypeParametersCleanUp($args$)` with `new TypeParametersCleanUpCore($args$)`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-20T03:16:54.666207299Z",
+  "ruleFingerprint": "sha256:ee8a913ab852d147db9a06753ffa0a8181ae885af5c68e6aaaa030d342c5e7f8",
+  "behaviorFingerprint": "sha256:fcb9ef65b13a261810aa5a938f334e3746a9e59e8e8794807f5c7a8186e8207c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-07-20T03:16:55.780084326Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

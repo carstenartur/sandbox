@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0f1ef34d290bffdb882cab9c7cc142523c280c2000783fc90b16c49874a70ce4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add.deprecated.to.method.of.deprecated.type\u003e\n\u003c!description: Add @Deprecated to a method if its enclosing class is deprecated but the method is not. This aligns with the COMPILER_PB_MEMBER_OF_DEPRECATED_TYPE warning.\n\u003e\n\u003c!severity: WARNING\u003e\n\n$retType $methodName($params$) :: containsAnnotation(\"java.lang.Deprecated\") \u0026\u0026 !isDeprecated($methodName) \u0026\u0026 !isInConstructor()\n\u003d\u003e @java.lang.Deprecated $retType $methodName($params$)\n;;",
+  "beforeExample": "@Deprecated\nclass MyClass {\n    public void foo() { \n        System.out.println(\"Foo\");\n    }\n\n    public void bar(String s) {\n        System.out.println(s);\n    }\n\n    @Deprecated\n    public void baz() {\n        System.out.println(\"Baz\");\n    }\n\n    public MyClass() {\n        System.out.println(\"Constructor\");\n    }\n}\nclass AnotherClass {\n    public void qux() {\n        System.out.println(\"Qux\");\n    }\n}",
+  "afterExample": "@Deprecated\nclass MyClass {\n    @java.lang.Deprecated\n    public void foo() { \n        System.out.println(\"Foo\");\n    }\n\n    @java.lang.Deprecated\n    public void bar(String s) {\n        System.out.println(s);\n    }\n\n    @Deprecated\n    public void baz() {\n        System.out.println(\"Baz\");\n    }\n\n    public MyClass() {\n        System.out.println(\"Constructor\");\n    }\n}\nclass AnotherClass {\n    public void qux() {\n        System.out.println(\"Qux\");\n    }\n}",
+  "negativeExample": "// Already deprecated method\n@Deprecated\nclass MyClassDeprec {\n    @Deprecated\n    public void baz() { // Should not be matched\n        System.out.println(\"Baz\");\n    }\n}\n\n// Class not deprecated\nclass AnotherClassReg {\n    public void qux() { // Should not be matched\n        System.out.println(\"Qux\");\n    }\n}\n\n// Constructor (guard !isInConstructor() should prevent match)\n@Deprecated\nclass MyClassConstructor {\n    public MyClassConstructor() { // Should not be matched\n        System.out.println(\"Constructor\");\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "516af06f59a17d993b550212bac5d75a20eadd9e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Deprecation Cleanup",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-20T03:16:54.668779959Z",
+  "ruleFingerprint": "sha256:3ceec44f9a39193e161901e5b8962a34e4915acbd94ee763f739f083f9c46a2a",
+  "behaviorFingerprint": "sha256:8eae2efdd4d11a329108a03dc0671e063935d78381287f4d56bb895a7eb4c0f6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-20T03:16:55.787215611Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
