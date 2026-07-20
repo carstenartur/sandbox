@@ -22,20 +22,14 @@ For each Java project in an explicit cleanup run, Eclipse:
 
 Therefore a cleanup can perform project-wide analysis in `checkPreConditions`, retain an immutable semantic plan, and return only the current file's part of that plan from `createFix`.
 
-## Shared classes
+## Shared classes and bundle boundary
 
 ### `sandbox_common_core`
 
-`org.sandbox.jdt.cleanup.multifile.IMultiFileCleanUpScopeProvider`
+`org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider`
 : Optional capability for discovering related compilation units that were not in the initial selection.
 
-`org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits`
-: Deterministically collects all source compilation units in a Java project.
-
-`org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan`
-: Minimal immutable plan containing project and compilation-unit handles.
-
-The package has no dependency on JDT UI. This keeps it usable by headless analysis code and avoids a circular dependency with a patched `org.eclipse.jdt.ui` bundle.
+Only this small SPI is exported from the UI-independent core bundle. A patched `org.eclipse.jdt.ui` bundle can describe or eventually depend on this boundary without creating a dependency cycle.
 
 ### `sandbox_common`
 
@@ -44,6 +38,14 @@ The package has no dependency on JDT UI. This keeps it usable by headless analys
 
 `org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult<P>`
 : Carries the plan and its `RefactoringStatus` diagnostics.
+
+`org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits`
+: Deterministically collects all source compilation units in a Java project.
+
+`org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan`
+: Minimal immutable plan containing project and compilation-unit handles.
+
+Keeping implementation and plan classes together in `sandbox_common` avoids an OSGi split package. A package imported by another bundle is wired to one exporter; it must not be assembled from classes exported by both common bundles.
 
 ## Lifecycle
 
@@ -99,7 +101,7 @@ public final class ExampleCleanUp
 }
 ```
 
-The extension-point wrapper must forward `expandCleanUpScope(...)` because Eclipse registers the wrapper rather than the core implementation.
+The extension-point wrapper must implement the API-package `IMultiFileCleanUpScopeProvider` and forward `expandCleanUpScope(...)`, because Eclipse registers the wrapper rather than the core implementation.
 
 ## Plan rules
 
@@ -125,7 +127,7 @@ The Sandbox JDT UI fork adds a deliberately small enhancement to `CleanUpRefacto
 4. reject missing or cross-project units;
 5. feed the expanded scope into the unchanged cleanup pipeline.
 
-The implementation currently uses reflective capability discovery so the patched JDT UI bundle does not depend on Sandbox bundles and no second patch of `org.eclipse.jdt.core.manipulation` is needed. The typed Sandbox interface documents and tests the contract.
+The implementation currently uses reflective capability discovery so the patched JDT UI bundle has no runtime dependency on Sandbox bundles and no second patch of `org.eclipse.jdt.core.manipulation` is needed. The typed Sandbox SPI documents and tests the contract.
 
 See `carstenartur/eclipse.jdt.ui#94`.
 
