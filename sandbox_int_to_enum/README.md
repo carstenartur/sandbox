@@ -1,134 +1,129 @@
-# Int to Enum/Switch Refactoring Plugin
+# Int-to-Enum Refactoring Plugin
 
 ## Overview
 
-This Eclipse plugin provides an automated cleanup that transforms integer constant-based if-else chains into type-safe enum-based switch statements.
+This Eclipse plugin detects legacy Java code in which integer constants represent a closed set of states and migrates provably safe cases to an enum.
 
-## Implementation Status
+The implementation has two transformation paths:
 
-**Note:** This plugin has a complete structural implementation following repository patterns, but the actual transformation logic is currently a placeholder. The transformation from int constants to enums is a complex refactoring that requires:
+- **If/else state detection** — implemented conservatively with binding and usage analysis.
+- **Integer switch migration** — existing experimental prototype for switch statements.
 
-- Sophisticated AST pattern matching and analysis
-- Multi-step coordinated AST rewrites
-- Type propagation and scope analysis
-- Careful handling of edge cases
+## Why this needs semantic analysis
 
-The current implementation:
-- ✅ Follows all repository patterns (helper structure, ReferenceHolder, etc.)
-- ✅ Integrates with Eclipse cleanup framework
-- ✅ Has proper UI and configuration
-- ⚠️ Returns no transformation operations (prevents incorrect changes)
-- 📋 Includes extensive documentation for future implementation
+A group of similarly named integer constants is not sufficient evidence for an enum. Integers may be used as bit masks, protocol values, persisted identifiers, arithmetic operands, public API values, or values crossing file boundaries. The cleanup therefore analyses bindings and all relevant references before changing a type.
 
-See [TODO.md](TODO.md) for detailed implementation notes and [ARCHITECTURE.md](ARCHITECTURE.md) for design details.
+## Implemented safe if/else migration
 
-## Features
+The ordinary single-file cleanup currently transforms a candidate only when all of the following are true:
 
-- Detects integer constants used in if-else chains
-- Automatically generates appropriate enum types
-- Converts if-else chains to switch statements
-- Updates variable types and method signatures
-- Improves code maintainability and type safety
+1. At least two `private static final int` constants share an underscore-delimited prefix, such as `STATUS_*`.
+2. Their compile-time integer values are distinct.
+3. A `private` method has an `int` parameter compared with those constants in an `if`/`else if` chain.
+4. All comparisons refer to the same parameter binding.
+5. Every use of that parameter is one of the recognised comparisons.
+6. Every call site in the compilation unit passes one of the recognised constants.
+7. The constants have no unsupported remaining references.
+8. The generated enum name and constants are valid and do not conflict with an existing nested type.
 
-## Example Transformation
+The visibility restrictions are intentional. A normal `ICleanUp` receives one compilation unit at a time and cannot prove that public or package-visible constants and method signatures have no references in other files.
 
-### Before:
+## Example
+
+### Before
+
 ```java
 public class OrderProcessor {
-    public static final int STATUS_PENDING = 0;
-    public static final int STATUS_APPROVED = 1;
-    public static final int STATUS_REJECTED = 2;
-    
-    public void processOrder(int status) {
+    private static final int STATUS_PENDING = 0;
+    private static final int STATUS_APPROVED = 1;
+    private static final int STATUS_REJECTED = 2;
+
+    public void run() {
+        process(STATUS_PENDING);
+    }
+
+    private void process(int status) {
         if (status == STATUS_PENDING) {
-            System.out.println("Order pending");
+            handlePending();
         } else if (status == STATUS_APPROVED) {
-            System.out.println("Order approved");
+            handleApproved();
         } else if (status == STATUS_REJECTED) {
-            System.out.println("Order rejected");
+            handleRejected();
         }
     }
 }
 ```
 
-### After:
+### After
+
 ```java
 public class OrderProcessor {
-    public enum Status {
+    private enum Status {
         PENDING, APPROVED, REJECTED
     }
-    
-    public void processOrder(Status status) {
-        switch (status) {
-            case PENDING:
-                System.out.println("Order pending");
-                break;
-            case APPROVED:
-                System.out.println("Order approved");
-                break;
-            case REJECTED:
-                System.out.println("Order rejected");
-                break;
+
+    public void run() {
+        process(Status.PENDING);
+    }
+
+    private void process(Status status) {
+        if (status == Status.PENDING) {
+            handlePending();
+        } else if (status == Status.APPROVED) {
+            handleApproved();
+        } else if (status == Status.REJECTED) {
+            handleRejected();
         }
     }
 }
 ```
 
-## Benefits
+The cleanup deliberately preserves the existing control flow. Replacing an if/else chain with a switch is a separate transformation and can change the meaning of unlabeled `break` statements or create unreachable statements in branches that complete abruptly.
 
-1. **Type Safety**: Enums provide compile-time type checking
-2. **Maintainability**: Clear intent and self-documenting code
-3. **IDE Support**: Better autocomplete and refactoring support
-4. **Extensibility**: Easy to add new values and behavior
+## Cases intentionally rejected
+
+The single-file cleanup does not currently migrate:
+
+- public, protected, or package-visible constants or method signatures;
+- parameters passed arbitrary integer expressions rather than recognised constants;
+- constants used in arithmetic, persistence, return values, method arguments, or unrelated comparisons;
+- duplicate integer values used as aliases;
+- bit flags, which generally require a different model such as `EnumSet`;
+- state flows spanning multiple methods or compilation units;
+- existing nested types that conflict with the generated enum name.
+
+A rejected candidate is left unchanged.
+
+## Project-wide migration
+
+A complete migration of legacy APIs requires project-wide reference analysis and coordinated edits to declarations, callers, implementations, overrides, fields, locals, tests, serialization boundaries, and possibly external compatibility adapters.
+
+This cannot be implemented safely as an ordinary third-party cleanup because `ICleanUpFix#createChange` returns a single `CompilationUnitChange`. Two viable designs are:
+
+1. add explicit multi-file cleanup support to JDT UI; or
+2. implement a dedicated LTK refactoring in this plugin that produces a `CompositeChange`.
+
+The semantic candidate detector should remain independent of the UI path so it can be reused by both the conservative cleanup and the future project-wide refactoring.
 
 ## Usage
 
-### Via Eclipse Cleanup
+1. Open **Preferences → Java → Code Style → Clean Up**.
+2. Create or edit a cleanup profile.
+3. Enable **Convert int constants to enum/switch**.
+4. Run the cleanup on selected Java sources.
 
-1. Open Eclipse Preferences
-2. Navigate to Java → Code Style → Clean Up
-3. Create or edit a cleanup profile
-4. Enable "Convert int constants to enum/switch"
-5. Run cleanup on your code
-
-### As Save Action
-
-1. Open Eclipse Preferences
-2. Navigate to Java → Editor → Save Actions
-3. Enable "Perform the selected actions on save"
-4. Enable "Additional actions"
-5. Configure to include "Convert int constants to enum/switch"
-
-## Configuration Options
-
-Currently, this cleanup exposes a single boolean option in the Eclipse Clean Up profile:
-
-- **Convert int constants to enum/switch**: Enables or disables the int-to-enum/switch refactoring.
-
-More fine-grained options such as minimum number of constants, scope filtering, or preserving original constants are planned enhancements and are tracked in [TODO.md](TODO.md).
+The transformation can also be enabled as a save action, although project-wide migrations should not run as save actions.
 
 ## Requirements
 
 - Eclipse 2025-12 or later
 - Java 21 or later
 
-## Limitations
+## Technical documentation
 
-- Only transforms constants defined in the same compilation unit
-- Requires constants to be used in a clear if-else or switch pattern
-- Does not transform constants used in arithmetic operations
-- Conservative approach - only transforms obvious cases
-
-## Technical Details
-
-For architecture and implementation details, see [ARCHITECTURE.md](ARCHITECTURE.md).
-
-For planned improvements and known issues, see [TODO.md](TODO.md).
+- [Architecture](ARCHITECTURE.md)
+- [Implementation roadmap and limitations](TODO.md)
 
 ## License
 
 Eclipse Public License 2.0
-
-## Contributing
-
-This is part of the Sandbox project for Eclipse JDT experiments. Contributions following Eclipse JDT patterns are welcome.
