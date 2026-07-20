@@ -1,203 +1,169 @@
-# Architecture: Int to Enum/Switch Refactoring Plugin
+# Architecture: Int-to-Enum Refactoring
 
-## Overview
+## Purpose
 
-This plugin provides a cleanup that automatically refactors integer constant-based if-else chains into enum-based switch statements. This transformation improves code maintainability, type safety, and readability.
+The plugin identifies legacy Java designs in which integers encode a finite state domain and replaces provably safe cases with an enum.
 
-## Problem Statement
+This is a semantic refactoring rather than a textual pattern replacement. Integer constants may represent states, bit masks, protocol values, persisted identifiers, error codes, array indexes, or arithmetic values. A valid migration must therefore prove how declarations and values flow through the program before changing their type.
 
-Code that uses integer constants in if-else chains is less type-safe and harder to maintain:
+## Transformation layers
+
+### 1. Conservative single-file cleanup
+
+The existing Eclipse cleanup extension receives one `CleanUpContext` for one compilation unit and returns an `ICleanUpFix`. The if/else implementation therefore accepts only candidates whose complete relevant data flow is local and private.
+
+Current safe candidate:
 
 ```java
-public static final int STATUS_PENDING = 0;
-public static final int STATUS_APPROVED = 1;
-public static final int STATUS_REJECTED = 2;
+private static final int STATUS_PENDING = 0;
+private static final int STATUS_APPROVED = 1;
 
-public void handleStatus(int status) {
+private void process(int status) {
     if (status == STATUS_PENDING) {
-        // handle pending
+        handlePending();
     } else if (status == STATUS_APPROVED) {
-        // handle approved
-    } else if (status == STATUS_REJECTED) {
-        // handle rejected
+        handleApproved();
     }
 }
 ```
 
-## Solution
+The detector validates bindings, constant values, all parameter references, all constant references, and every call to the private method. It then generates a private nested enum and rewrites the proven call sites and comparisons.
 
-The plugin transforms integer constant-based code in two ways:
+The if/else structure is preserved. Conversion to switch is not required for type safety and can introduce control-flow hazards involving unlabeled `break`, `continue`, abrupt completion, or unreachable statements.
 
-### 1. Switch with int constants → Switch with enum (Implemented)
+### 2. Existing switch prototype
 
-When code already has a switch statement using int constants:
+`SwitchIntToEnumHelper` detects integer switch cases and creates a nested enum. It predates the conservative if/else detector and still requires hardening so that it applies the same whole-reference and API-visibility safety rules.
+
+### 3. Future project-wide refactoring
+
+Public and package-visible constants, interface methods, overridden methods, fields, return values, and callers in other files require coordinated multi-file changes.
+
+There are two viable integration paths:
+
+- a new multi-file cleanup lifecycle in JDT UI; or
+- a dedicated LTK `Refactoring` contributed by this plugin.
+
+A dedicated refactoring can be implemented outside JDT UI and return an LTK `CompositeChange`. Appearing as a standard item in the Java Clean Up profile requires JDT UI infrastructure because the current `ICleanUpFix` contract is compilation-unit based.
+
+## Package structure
+
+### `org.sandbox.jdt.internal.corext.fix`
+
+- `IntToEnumFixCore` selects the transformation helper and creates rewrite operations.
+
+### `org.sandbox.jdt.internal.corext.fix.helper`
+
+- `AbstractTool<T>` defines detection, rewrite, and preview hooks.
+- `IntToEnumHelper` implements conservative binding-based if/else detection and migration.
+- `SwitchIntToEnumHelper` implements the existing switch prototype.
+
+### `org.sandbox.jdt.internal.ui.fix`
+
+- `IntToEnumCleanUp` is the UI wrapper.
+- `IntToEnumCleanUpCore` integrates with the single-file cleanup lifecycle.
+
+### `org.sandbox.jdt.internal.ui.preferences.cleanup`
+
+Contains the cleanup profile and save-action configuration UI.
+
+## If/else candidate analysis
+
+### Constant group discovery
+
+The current single-file detector collects fields that are:
+
+- `private`;
+- `static`;
+- `final`;
+- primitive `int`;
+- compile-time constants with an `Integer` value.
+
+Candidate constants must share an underscore-delimited prefix, such as `STATUS_`. The prefix produces the enum type name and the suffix produces each enum constant name.
+
+The detector rejects:
+
+- fewer than two constants;
+- duplicate numeric values;
+- invalid generated identifiers;
+- a generated enum name that conflicts with an existing nested type.
+
+### State-carrier discovery
+
+The recognised state carrier is currently a plain `int` parameter of a private method. Every branch condition in the root if/else-if chain must be an equality comparison between the same parameter binding and one of the constant bindings. Operand order may be reversed.
+
+Examples accepted by the condition matcher:
 
 ```java
-public static final int STATUS_PENDING = 0;
-public static final int STATUS_APPROVED = 1;
-public static final int STATUS_REJECTED = 2;
-
-public void handleStatus(int status) {
-    switch (status) {
-        case STATUS_PENDING:
-            // handle pending
-            break;
-        case STATUS_APPROVED:
-            // handle approved
-            break;
-        case STATUS_REJECTED:
-            // handle rejected
-            break;
-    }
-}
+status == STATUS_PENDING
+STATUS_APPROVED == status
 ```
 
-Is transformed into:
+More complex boolean expressions are rejected rather than partially rewritten.
 
-```java
-public enum Status {
-    PENDING, APPROVED, REJECTED
-}
+### Whole-reference validation
 
-public void handleStatus(Status status) {
-    switch (status) {
-        case PENDING:
-            // handle pending
-            break;
-        case APPROVED:
-            // handle approved
-            break;
-        case REJECTED:
-            // handle rejected
-            break;
-    }
-}
-```
+Before producing a rewrite operation, the detector traverses the complete compilation unit and proves that:
 
-### 2. If-else chain with int constants → Switch with enum (Planned)
+- the state parameter is referenced only by the recognised comparisons;
+- group constants are referenced only by their declarations, recognised comparisons, and proven call arguments;
+- every call to the private method passes a constant from the group;
+- the method is not used through a method reference or another unsupported construct.
 
-When code uses if-else chains comparing against int constants:
+A single unsupported reference rejects the entire candidate. The cleanup never performs a partial migration.
 
-```java
-public static final int STATUS_PENDING = 0;
-public static final int STATUS_APPROVED = 1;
-public static final int STATUS_REJECTED = 2;
+### Rewrite
 
-public void handleStatus(int status) {
-    if (status == STATUS_PENDING) {
-        // handle pending
-    } else if (status == STATUS_APPROVED) {
-        // handle approved
-    } else if (status == STATUS_REJECTED) {
-        // handle rejected
-    }
-}
-```
+For an accepted candidate, one `CompilationUnitRewriteOperationWithSourceRange`:
 
-Will be transformed into an enum with switch statement (not yet implemented).
+1. inserts a private nested enum before the first migrated field;
+2. removes complete constant field declarations or only the migrated fragments;
+3. changes the private method parameter from `int` to the enum type;
+4. replaces constant references in comparisons with qualified enum constants;
+5. replaces every proven call argument with the corresponding enum constant.
 
-## Implementation Design
+The edit remains one compilation-unit change and participates in normal cleanup preview and undo.
 
-### Package Structure
+## Why public API migration is different
 
-Following the standard Eclipse JDT cleanup plugin pattern with helper structure:
+A source file cannot prove that a public constant or method is unused elsewhere. Binary clients may also depend on compile-time inlined constants or an integer method signature. A project-wide migration must consider:
 
-- `org.sandbox.jdt.internal.corext.fix` - Core transformation logic
-  - `IntToEnumFixCore` - Enum containing transformation operations following JfaceCleanUpFixCore pattern
-  - Uses helper pattern for transformation logic
-  - Uses ReferenceHolder from sandbox_common for tracking patterns
+- JDT search results across source roots;
+- method hierarchies, interfaces, overrides, and implementations;
+- callers, assignments, fields, locals, return values, and method references;
+- persisted and wire-format integer values;
+- reflection, JNI, generated code, and external binaries;
+- compatibility adapters or deprecated bridge constants.
 
-- `org.sandbox.jdt.internal.corext.fix.helper` - Helper classes for transformation
-  - `AbstractTool<T>` - Base class with common helper methods (addImport, getUsedVariableNames)
-  - `IntToEnumHelper` - If-else chain transformation logic (placeholder)
-  - `SwitchIntToEnumHelper` - Switch statement transformation logic (implemented)
-  - `IntConstantHolder` - Data structure for tracking int constants and their usage
+This analysis must finish before any edit is applied, and all edits should be presented and committed as one atomic `CompositeChange`.
 
-- `org.sandbox.jdt.internal.ui.fix` - UI wrapper
-  - `IntToEnumCleanUp` - Wrapper class extending AbstractCleanUpCoreWrapper
-  - `IntToEnumCleanUpCore` - Core cleanup implementation using CompilationUnitRewriteOperationWithSourceRange
+## Reusable future model
 
-- `org.sandbox.jdt.internal.ui.preferences.cleanup` - UI configuration
-  - `SandboxCodeTabPage` - Configuration UI
-  - `DefaultCleanUpOptionsInitializer` - Default options
-  - `SaveActionCleanUpOptionsInitializer` - Save action options
+The next architectural step is to extract candidate discovery from `IntToEnumHelper` into a reusable semantic model containing:
 
-### Detection Pattern
+- constant group and numeric-value semantics;
+- state carriers;
+- comparison and switch sites;
+- producer and consumer edges;
+- required edits per compilation unit;
+- explicit rejection reasons and confidence level.
 
-The plugin detects:
-1. Multiple `static final int` constants in the same class with a common name prefix
-2. Switch statements that use these constants as case labels (SWITCH_INT_TO_ENUM)
-3. If-else chains that compare a variable against these constants (IF_ELSE_TO_SWITCH, planned)
+That model can support:
 
-### Transformation Steps
-
-#### SWITCH_INT_TO_ENUM (Implemented)
-1. **Detect Constants**: Find `static final int` field declarations
-2. **Find Switch Statements**: Locate switch statements referencing these constants as case labels
-3. **Validate**: Ensure at least 2 constants with a common prefix are used
-4. **Create Enum**: Generate enum type from constant names (prefix → enum name, suffix → value)
-5. **Replace Fields**: Remove old int constant field declarations
-6. **Update Cases**: Replace constant references in switch cases with enum values
-7. **Update Types**: Change method parameter types from int to the new enum type
-
-#### IF_ELSE_TO_SWITCH (Planned)
-1. **Detect Pattern**: Find int constants used in if-else chains using AST visitors
-2. **Analyze Scope**: Determine which constants belong together
-3. **Create Enum**: Generate enum type with appropriate name and values
-4. **Convert If-Else to Switch**: Transform if-else chain into switch statement using enum
-5. **Update Variable Types**: Change parameter/variable types from int to enum
-
-### Helper Pattern Implementation
-
-Following the established pattern from JFaceCleanUpFixCore:
-
-- **IntToEnumFixCore enum** holds AbstractTool instances (IntToEnumHelper, SwitchIntToEnumHelper)
-- **ReferenceHolder<Integer, IntConstantHolder>** from sandbox_common stores found patterns
-- **AbstractTool.find()** discovers patterns and creates CompilationUnitRewriteOperationWithSourceRange
-- **AbstractTool.rewrite()** performs the actual AST transformation
-- **TightSourceRangeComputer** ensures proper source range tracking for refactoring
-
-This pattern provides:
-- Clear separation of concerns (detection vs transformation)
-- Reusability of common utilities from sandbox_common
-- Consistency with other cleanup plugins in the repository
-- Type-safe tracking of transformation candidates
-
-### Constraints and Limitations
-
-- Only processes constants defined in the same compilation unit
-- Requires at least 2 constants with a common prefix to trigger
-- Constants must share a common underscore-delimited prefix (e.g., `STATUS_*`)
-- Does not process constants used in other contexts (arithmetic, etc.)
-- Conservative approach - only transforms obvious cases
-
-## Eclipse JDT Integration
-
-This plugin follows the standard pattern for Eclipse JDT cleanups:
-
-1. Registered via `org.eclipse.jdt.ui.cleanUps` extension point
-2. Integrates with Eclipse's cleanup framework
-3. Can be enabled in cleanup preferences
-4. Can be used as a save action
+- the conservative cleanup;
+- a report-only inspection or marker;
+- a quick assist for one candidate;
+- a project-wide LTK refactoring;
+- future JDT UI multi-file cleanup integration.
 
 ## Portability to Eclipse JDT
 
-The package structure maps directly to Eclipse JDT internal packages:
-- `org.sandbox.jdt.internal.*` → `org.eclipse.jdt.internal.*`
-
-When porting to Eclipse JDT:
-1. Replace package names
-2. Merge constants into `CleanUpConstants`
-3. Update extension point registrations
-4. Add tests to JDT test suite
+The helper and candidate-analysis code can be moved from `org.sandbox.jdt.internal.*` to the corresponding JDT internal packages. Standard cleanup-profile integration for project-wide candidates additionally needs a JDT UI API and lifecycle change. The dedicated-refactoring approach does not.
 
 ## Dependencies
 
-- Eclipse JDT Core - AST manipulation
-- Eclipse JDT UI - Cleanup framework integration
-- Eclipse JDT Core Manipulation - Rewrite operations
-- sandbox_common - Shared constants and utilities
-
-## Future Enhancements
-
-See TODO.md for planned improvements and known limitations.
+- Eclipse JDT Core DOM and bindings
+- Eclipse JDT Core Manipulation rewrite infrastructure
+- Eclipse JDT UI cleanup APIs
+- Eclipse LTK refactoring framework
+- `sandbox_common` helper infrastructure
