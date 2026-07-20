@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -13,39 +13,34 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-/*-
- * #%L
- * Sandbox junit cleanup
- * %%
- * Copyright (C) 2024 hammer
- * %%
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- * 
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is
- * available at https://www.gnu.org/software/classpath/license.html.
- * 
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * #L%
- */
-
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
-/**
- */
-public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore> {
+import org.sandbox.jdt.cleanup.multifile.IMultiFileCleanUpScopeProvider;
+
+/** Cleanup wrapper for JUnit migration. */
+public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore>
+		implements IMultiFileCleanUpScopeProvider {
 	public JUnitCleanUp(final Map<String, String> options) {
 		super(options, new JUnitCleanUpCore());
 	}
 
 	public JUnitCleanUp() {
 		this(Collections.emptyMap());
+	}
+
+	@Override
+	public Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project,
+			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
+		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
 	}
 }
