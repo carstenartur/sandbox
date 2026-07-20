@@ -15,7 +15,7 @@ A group of similarly named integer constants is not sufficient evidence for an e
 
 ## Implemented safe if/else migration
 
-The ordinary single-file cleanup currently transforms a candidate only when all of the following are true:
+The current implementation transforms a candidate only when all of the following are true:
 
 1. At least two `private static final int` constants share an underscore-delimited prefix, such as `STATUS_*`.
 2. Their compile-time integer values are distinct.
@@ -26,7 +26,7 @@ The ordinary single-file cleanup currently transforms a candidate only when all 
 7. The constants have no unsupported remaining references.
 8. The generated enum name and constants are valid and do not conflict with an existing nested type.
 
-The visibility restrictions are intentional. A normal `ICleanUp` receives one compilation unit at a time and cannot prove that public or package-visible constants and method signatures have no references in other files.
+These restrictions describe the first implemented detector, not a fundamental restriction of the Eclipse cleanup framework. The existing `ICleanUp` lifecycle calls `checkPreConditions(IJavaProject, ICompilationUnit[], ...)` with all selected compilation units and then invokes the same cleanup instance once per target unit. A cleanup can therefore prepare an immutable project-wide migration plan and return one local `CompilationUnitChange` for each file. `CleanUpRefactoring` already combines those changes into one preview, apply operation, and undo.
 
 ## Example
 
@@ -80,9 +80,9 @@ public class OrderProcessor {
 
 The cleanup deliberately preserves the existing control flow. Replacing an if/else chain with a switch is a separate transformation and can change the meaning of unlabeled `break` statements or create unreachable statements in branches that complete abruptly.
 
-## Cases intentionally rejected
+## Cases currently rejected
 
-The single-file cleanup does not currently migrate:
+The implemented detector does not yet migrate:
 
 - public, protected, or package-visible constants or method signatures;
 - parameters passed arbitrary integer expressions rather than recognised constants;
@@ -98,21 +98,25 @@ A rejected candidate is left unchanged.
 
 A complete migration of legacy APIs requires project-wide reference analysis and coordinated edits to declarations, callers, implementations, overrides, fields, locals, tests, serialization boundaries, and possibly external compatibility adapters.
 
-This cannot be implemented safely as an ordinary third-party cleanup because `ICleanUpFix#createChange` returns a single `CompilationUnitChange`. Two viable designs are:
+There are two stages:
 
-1. add explicit multi-file cleanup support to JDT UI; or
-2. implement a dedicated LTK refactoring in this plugin that produces a `CompositeChange`.
+1. **Selected-scope multi-file cleanup without a JDT UI patch.** During `checkPreConditions`, analyse all compilation units already selected for cleanup and build a shared immutable plan. During `createFix`, emit only the planned edits for the current `CleanUpContext`. The existing cleanup refactoring collects all per-file changes atomically.
+2. **Automatic scope expansion with a small patched JDT UI bundle.** Before precondition checking, a patched `CleanUpRefactoring` asks participating cleanups for additional related compilation units and adds them to the normal target set. The existing parsing, fixpoint, overlap, preview, validation, apply, and undo pipeline remains in use.
 
-The semantic candidate detector should remain independent of the UI path so it can be reused by both the conservative cleanup and the future project-wide refactoring.
+A dedicated LTK refactoring remains useful for interactive naming and compatibility choices, but it is not required merely to coordinate changes across already selected Java files.
+
+The reusable planning infrastructure is tracked in issue #1206 and is intended for both this plugin and `sandbox_junit_cleanup`.
+
+## Save actions
+
+The local transformation may remain available as a save action. Project-wide migration must be restricted to explicit cleanup runs because the save participant supplies only the saved compilation unit and should not silently edit other files.
 
 ## Usage
 
 1. Open **Preferences → Java → Code Style → Clean Up**.
 2. Create or edit a cleanup profile.
 3. Enable **Convert int constants to enum/switch**.
-4. Run the cleanup on selected Java sources.
-
-The transformation can also be enabled as a save action, although project-wide migrations should not run as save actions.
+4. Run the cleanup on selected Java sources, a package, source folder, or project.
 
 ## Requirements
 
