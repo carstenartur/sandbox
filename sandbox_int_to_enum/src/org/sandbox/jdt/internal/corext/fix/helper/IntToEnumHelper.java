@@ -14,7 +14,6 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -102,13 +101,11 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	private static final class ConstantInfo {
 		private final String name;
 		private final FieldDeclaration field;
-		private final IVariableBinding binding;
 		private final int value;
 
-		private ConstantInfo(String name, FieldDeclaration field, IVariableBinding binding, int value) {
+		private ConstantInfo(String name, FieldDeclaration field, int value) {
 			this.name = name;
 			this.field = field;
-			this.binding = binding;
 			this.value = value;
 		}
 	}
@@ -216,8 +213,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			return null;
 		}
 
-		List<String> usedNameList = new ArrayList<>(usedNames);
-		String prefix = SwitchIntToEnumHelper.findCommonPrefix(usedNameList);
+		String prefix = SwitchIntToEnumHelper.findCommonPrefix(new ArrayList<>(usedNames));
 		if (prefix == null) {
 			return null;
 		}
@@ -227,15 +223,17 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		}
 
 		Map<String, ConstantInfo> enumConstants = constantsForPrefix(constantsByBinding, prefix);
-		if (enumConstants.size() < 2 || !enumConstants.keySet().containsAll(usedNames)
-				|| !hasDistinctValues(enumConstants.values())) {
-			return null;
-		}
-		for (String constantName : enumConstants.keySet()) {
-			String enumConstantName = constantName.substring(prefix.length());
+		Set<String> enumConstantNames = new LinkedHashSet<>();
+		for (ConstantInfo info : enumConstants.values()) {
+			enumConstantNames.add(info.name);
+			String enumConstantName = info.name.substring(prefix.length());
 			if (!isValidIdentifier(enumConstantName)) {
 				return null;
 			}
+		}
+		if (enumConstants.size() < 2 || !enumConstantNames.containsAll(usedNames)
+				|| !hasDistinctValues(enumConstants.values())) {
+			return null;
 		}
 
 		candidate.holder.ifStatement = root;
@@ -339,8 +337,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 				Object constantValue = binding == null ? null : binding.getConstantValue();
 				String key = bindingKey(binding);
 				if (key != null && constantValue instanceof Integer value) {
-					result.put(key, new ConstantInfo(fragment.getName().getIdentifier(), field,
-							binding.getVariableDeclaration(), value.intValue()));
+					result.put(key, new ConstantInfo(fragment.getName().getIdentifier(), field, value.intValue()));
 				}
 			}
 		}
@@ -350,9 +347,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	private static Map<String, ConstantInfo> constantsForPrefix(Map<String, ConstantInfo> constantsByBinding,
 			String prefix) {
 		Map<String, ConstantInfo> result = new LinkedHashMap<>();
-		for (ConstantInfo info : constantsByBinding.values()) {
-			if (info.name.startsWith(prefix)) {
-				result.put(info.name, info);
+		for (Map.Entry<String, ConstantInfo> entry : constantsByBinding.entrySet()) {
+			if (entry.getValue().name.startsWith(prefix)) {
+				result.put(entry.getKey(), entry.getValue());
 			}
 		}
 		return result;
