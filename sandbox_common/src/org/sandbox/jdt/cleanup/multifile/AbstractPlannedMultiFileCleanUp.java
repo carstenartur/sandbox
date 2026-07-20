@@ -55,6 +55,11 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	protected AbstractPlannedMultiFileCleanUp() {
 	}
 
+	/** Creates a base class with cleanup options. */
+	protected AbstractPlannedMultiFileCleanUp(Map<String, String> settings) {
+		super(settings);
+	}
+
 	/**
 	 * Analyses all selected units and creates the immutable run plan.
 	 *
