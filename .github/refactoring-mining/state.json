@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "8bdcda4fcd65aad7d2692e35d4fdf96bbe9b2a7a",
-      "lastProcessedDate": "2026-02-25T04:30:39.794109661Z",
-      "totalProcessed": 9973,
+      "lastProcessedCommit": "4f771f0b79fc7193e72bc1309340ed9ea39eca16",
+      "lastProcessedDate": "2026-07-20T03:16:52.746236842Z",
+      "totalProcessed": 9997,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -156,15 +156,6 @@
           "diffLines": 58,
           "reason": "INCOMPLETE_BATCH",
           "deferredAt": "2026-02-25T04:27:03.794684674Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "6dbb3dd692f0e6f9f68f461f2253fa4cfa42129e",
-          "message": "Fix javadoc warnings in ISharedImages\n\nStop pointing to deprecated Cursor constructors in\nhttps://github.com/eclipse-pla",
-          "diffLines": 47,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-02-25T04:30:39.793969389Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -1201,10 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "71493e4c0ede28c1cbb79c62a661c684c7c016d0",
-      "lastProcessedDate": "2026-06-01T03:37:49.301689482Z",
-      "totalProcessed": 2462,
-      "status": "CATCHING_UP",
+      "lastProcessedDate": "2026-07-20T03:15:52.176530999Z",
+      "totalProcessed": 2548,
+      "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
           "hash": "c80a0ed5358fd6caf3f92e129276abba94329c19",
@@ -2305,56 +2295,56 @@
           "maxRetries": 3
         },
         {
-          "hash": "3af01829d95496bf91beb0349fb215b431b81381",
-          "message": "Cannot configure Null annotations for workspace (#2567)\n\n+ when configuring workspace preferences:\n  + search for annota",
-          "diffLines": 256,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-06-01T03:41:26.254298071Z",
+          "hash": "c76b5af9f358a2f84f435d19c43a59473ec569ca",
+          "message": "React to new info warnings from ecj",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:11:27.207072168Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "741d08e097fde002bfff10c165a4585efc1a54e5",
-          "message": "Removed unnecessary @SuppressWarnings(\"deprecation\") from jdt.ui\n\nSee https://github.com/eclipse-jdt/eclipse.jdt.core/is",
-          "diffLines": 61,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-06-01T03:41:26.254399992Z",
+          "hash": "d7d0d3d0cef09cb3f5d8ff0372b00da8252f23d5",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA26",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:12:51.346177166Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "0e3d69a653844388b3bdf6c0ccbcc4129bb5e60e",
-          "message": "Adjust highlighting of deprecation (#2578)\n\nAfter https://github.com/eclipse-jdt/eclipse.jdt.core/pull/4564\ndeprecation ",
-          "diffLines": 22,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-06-01T03:45:03.285169632Z",
+          "hash": "88d763ca0e594b45692e7aec279248a99a6dc1fd",
+          "message": "Merge pull request #2633 from jarthana/BETA_JAVA26",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:12:51.378195492Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "29e17ed9d4c0ecc65df9115ee0f7684e82bf333e",
-          "message": "Fix pasting into a String to not do tabs to spaces formatting (#2576)\n\n- add new JavaTabsToSpacesConverter class which a",
-          "diffLines": 105,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-06-01T03:45:03.285239094Z",
+          "hash": "ecb420fa1f6158f5c63e221a01275782407757c7",
+          "message": "Mass refactor of LocalCorrectionsSubProcessor methods to base (#2640)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:13:15.038395955Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "d2abdce788f060f4021a68484867603ebdcb147a",
-          "message": "Refactor TypeParametersCleanUp to jdt.core.manipulation (#2581)\n\n- refactor to TypeParametersCleanUpCore for use by jdt.",
-          "diffLines": 90,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-06-01T03:45:03.285250331Z",
+          "hash": "d3be3a659d8a85da67e08f1e479e43197d442bd1",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA26",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:14:00.711910928Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "f9770112c1ae4f0989b13b02cb44896b764c8f8d",
-          "message": "Highlight deprecation of canonical record constructor (#2582)\n\nFix highlighting of canonical constructors of a deprecate",
-          "diffLines": 14,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-06-01T03:45:03.285259545Z",
+          "hash": "0407b0dde5dd89bd5c3932857648a61b5343642a",
+          "message": "More refactoring of LocalCorrectionsSubProcessor methods (#2659)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:14:36.669770511Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -2362,8 +2352,10 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 0,
-      "completedEpochs": [],
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
@@ -2496,7 +2488,12 @@
         "Bug Fix / Logging": 2,
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
-        "Bug Fix / UI Logic": 1
+        "Bug Fix / UI Logic": 1,
+        "API Migration": 2,
+        "Deprecation Cleanup": 1,
+        "Class Refactoring": 1,
+        "String Literal Transformation": 1,
+        "Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -2537,5 +2534,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25097
+  "globalTotalProcessed": 25207
 }
