@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4e3e7d2c4064459ca6e52f48a58bc42ec8b1cc5e1d965e4040a81e55d3b85f9f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: markdown.javadoc.indentation.fix\u003e\n\u003c!description: Adds a space after \u0027///\u0027 in markdown Javadoc comments to ensure correct indentation in the Javadoc auto-indent strategy.\nThis rule specifically targets the JavaDocAutoIndentStrategy class to avoid unintended side effects on other string literals.\n\u003e\n\u003c!severity: INFO\u003e\n\n$buf.append(\"///\") :: inClass(\"org.eclipse.jdt.internal.ui.text.javadoc.JavaDocAutoIndentStrategy\")\n\u003d\u003e $buf.append(\"/// \")\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.javadoc;\n\nclass JavaDocAutoIndentStrategy {\n    // Simplified for example\n    void computeIndentation(StringBuilder buf) {\n        // Simulate the relevant context\n        int firstNonWS \u003d 0; // Assume 0 for simplicity\n        char[] line \u003d new char[]{\u0027/\u0027, \u0027/\u0027, \u0027/\u0027};\n        if (line[firstNonWS] \u003d\u003d \u0027/\u0027) {\n            if (line[firstNonWS+1] \u003d\u003d \u0027/\u0027) {\n                buf.append(\"///\"); // This is the target match\n            } else {\n                buf.append(\" * \");\n            }\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.javadoc;\n\nclass JavaDocAutoIndentStrategy {\n    // Simplified for example\n    void computeIndentation(StringBuilder buf) {\n        // Simulate the relevant context\n        int firstNonWS \u003d 0; // Assume 0 for simplicity\n        char[] line \u003d new char[]{\u0027/\u0027, \u0027/\u0027, \u0027/\u0027};\n        if (line[firstNonWS] \u003d\u003d \u0027/\u0027) {\n            if (line[firstNonWS+1] \u003d\u003d \u0027/\u0027) {\n                buf.append(\"/// \"); // Expected replacement\n            } else {\n                buf.append(\" * \");\n            }\n        }\n    }\n}\n",
+  "negativeExample": "package com.example;\n\nclass OtherClass {\n    void someMethod(StringBuilder buf) {\n        buf.append(\"///\"); // This should NOT be matched due to inClass guard\n        buf.append(\"http://example.com///path\"); // Should not match\n    }\n}\n",
+  "targetHintFile": "javadoc.sandbox-hint",
+  "sourceCommit": "5724bfa25ee949689815c3fd19b0045d774b0ed1",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Literal Transformation",
+  "summary": "Adds a trailing space to the string literal \"///\" when passed to an append method, specifically within the JavaDocAutoIndentStrategy class to correct markdown comment indentation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-20T03:16:54.670851804Z",
+  "ruleFingerprint": "sha256:c1f6e446b66edd21af12356bd21e0c37c36b3ed3c5e39189cbcf836f29ba28ae",
+  "behaviorFingerprint": "sha256:c71df99f54ad1b00c55714741930914e779e5b98f48db35f6bf4e78d9a6abb0f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-20T03:16:55.796478121Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

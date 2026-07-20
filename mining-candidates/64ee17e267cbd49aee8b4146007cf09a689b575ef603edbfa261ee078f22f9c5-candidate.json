@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "64ee17e267cbd49aee8b4146007cf09a689b575ef603edbfa261ee078f22f9c5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: replace-tabs-to-spaces-converter\u003e\n\u003c!description: Replace TabsToSpacesConverter with JavaTabsToSpacesConverter for Java-specific handling.\n\u003c!severity: INFO\u003e\n*/\nnew org.eclipse.jface.text.TabsToSpacesConverter()\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.javaeditor.JavaTabsToSpacesConverter()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.TabsToSpacesConverter;\n\npublic class MyEditor {\n    public void setupConverter() {\n        TabsToSpacesConverter converter \u003d new TabsToSpacesConverter();\n        converter.setNumberOfSpacesPerTab(4);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.javaeditor.JavaTabsToSpacesConverter;\nimport org.eclipse.jface.text.TabsToSpacesConverter;\n\npublic class MyEditor {\n    public void setupConverter() {\n        TabsToSpacesConverter converter \u003d new JavaTabsToSpacesConverter();\n        converter.setNumberOfSpacesPerTab(4);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.TabsToSpacesConverter;\n\nclass AnotherClass {\n    public void doSomething() {\n        Object obj \u003d new Object(); // Should not match\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-migration.sandbox-hint",
+  "sourceCommit": "29e17ed9d4c0ecc65df9115ee0f7684e82bf333e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces `new TabsToSpacesConverter()` with `new JavaTabsToSpacesConverter()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-20T03:16:54.659676299Z",
+  "ruleFingerprint": "sha256:166f1c4752b2c42306d3db0a423b43b9cdacfbcc34ce30d4a4099c7e09f1d0da",
+  "behaviorFingerprint": "sha256:f42cc30aed5b736ee865e398e8fc326970794a81d35620a7d9d9bcff1cc08d17",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.TabsToSpacesConverter cannot be resolved",
+    "verifiedAt": "2026-07-20T03:16:55.723815492Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5f2c72c793ba1d9bf55642b9790bf877f78188cbef2fe1d7d35ebfadabde7e2a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-diamond-operator\u003e\n\u003c!description: Replace explicit type arguments with the diamond operator where type can be inferred by the compiler (Java 7+).\nThis transformation is only applied if the compiler infers the same type with the diamond operator, ensuring semantic equivalence.\u003e\n\u003c!severity: HINT\u003e\n\nnew $Type\u003c$Exprs$\u003e()\n\u003d\u003e\nnew $Type\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Example {\n    public void method() {\n        List\u003cString\u003e myList \u003d new ArrayList\u003cString\u003e();\n        ArrayList\u003cInteger\u003e anotherList \u003d new ArrayList\u003cInteger\u003e();\n        call(new ArrayList\u003cString\u003e());\n    }\n\n    public \u003cT\u003e T call(T arg) { return arg; }\n}\n",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Example {\n    public void method() {\n        List\u003cString\u003e myList \u003d new ArrayList\u003c\u003e();\n        ArrayList\u003cInteger\u003e anotherList \u003d new ArrayList\u003c\u003e();\n        call(new ArrayList\u003c\u003e());\n    }\n\n    public \u003cT\u003e T call(T arg) { return arg; }\n}\n",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class NegativeExample {\n    public void method() {\n        // This case should NOT be changed because replacing `new ArrayList\u003cString\u003e()` with `new ArrayList\u003c\u003e()`\n        // would result in `ArrayList\u003cObject\u003e` being inferred due to the `Object` type of `expr`,\n        // which changes the generic type from `String` to `Object`, breaking semantic equivalence.\n        // The DSL engine\u0027s implicit type inference validation must prevent this transformation.\n        Object expr \u003d new ArrayList\u003cString\u003e();\n\n        // Anonymous classes cannot use the diamond operator (Java language restriction).\n        // This pattern `new $Type\u003c$Exprs$\u003e()` does not match anonymous classes so it won\u0027t apply anyway.\n        List\u003cString\u003e yetAnotherList \u003d new ArrayList\u003cString\u003e() {\n            private static final long serialVersionUID \u003d 1L;\n            @Override\n            public String toString() { return \"\"; }\n        };\n    }\n}\n",
+  "targetHintFile": "general.sandbox-hint",
+  "sourceCommit": "90ff95a00fbedd5e7bd5747668cfe1aa606527d4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modernization",
+  "summary": "Replaces explicit type arguments in constructor calls (e.g., `new ArrayList\u003cString\u003e()`) with the diamond operator (`new ArrayList\u003c\u003e()`) if type inference allows for identical type derivation. This is a common Java 7+ modernization.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-20T03:16:54.671945704Z",
+  "ruleFingerprint": "sha256:d6dd5ca592d1b559609a0961cfd2f253d391a909f2c61a9501058927f5328866",
+  "behaviorFingerprint": "sha256:18a5f09c4f6ed7aeca9c6a957f1cb9d0b4bd752cf22fc1f1f2afa2bf6125d536",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-20T03:16:55.800768461Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
