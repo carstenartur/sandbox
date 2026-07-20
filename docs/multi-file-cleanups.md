@@ -143,33 +143,53 @@ The save participant supplies only the saved compilation unit and does not run t
 
 Local, semantics-preserving transformations may remain available as save actions. Project-wide API migrations should require an explicit cleanup run with preview; saving one editor must not silently rewrite unrelated files.
 
-## Current consumers
+## Implemented consumers
 
 ### Int-to-enum
 
-The cleanup now participates in the planned lifecycle and can request the full project source scope. Its current local detector still performs the implemented private, closed-data-flow transformation. The next layer is an `IntEnumMigrationPlan` for public/package declarations, interfaces, overrides, and callers.
+Two paths are implemented:
+
+1. A local detector migrates a private closed integer state flow inside one compilation unit.
+2. `IntEnumMultiFilePlanner` detects a conservative package-scoped state API when the complete Java source project is in scope. It migrates package-private `static final int` constants, the package-private method parameter and its equality tests, and callers in other compilation units.
+
+The cross-file plan records constant, type, method, and parameter identities through binding keys and Java-element handles. Before rewriting each file it verifies expected reference and invocation counts against the current AST. The current project-wide path deliberately rejects public/protected APIs, type hierarchies, arbitrary integer arguments, aliases, arithmetic, bit flags, unresolved uses, persistence/protocol semantics, and incomplete project selections.
 
 ### JUnit migration
 
-The JUnit cleanup uses the same lifecycle and project scope. Existing transformations continue to produce their local changes. The planned layer is the foundation for shared `ExternalResource` types, test hierarchies, suites, method sources, helper APIs, and dependency validation.
+`JUnitMultiFilePlanner` implements the first coordinated JUnit migration:
+
+- a named class directly extending JUnit 4 `ExternalResource` may be declared in one file;
+- one or more selected test files may use it through `@Rule` or `@ClassRule` fields;
+- rule fields become Jupiter `@RegisterExtension` fields in their own compilation units;
+- the resource class becomes the corresponding Before/After Each or Before/After All callback implementation in its own compilation unit;
+- mixed instance and class-rule use of one resource type is rejected because one callback lifecycle cannot represent both safely.
+
+The old local helper is prevented from editing the planned declarations, so no AST node from one compilation unit is ever passed to another file's `ASTRewrite`.
+
+Further planned consumers include test hierarchies, suites, shared helper APIs, method sources, and dependency validation.
 
 ## Headless execution
 
 A headless caller must add all participating compilation units to one `CleanUpRefactoring`. Running a separate refactoring per file prevents coordinated planning.
 
-The command-line cleanup application is being moved to project-batched execution so `APPLY`, `CHECK`, and `DIFF` operate on the same atomic multi-file change tree.
+The current `sandbox_cleanup_application` still executes one refactoring per file. Its batching conversion is tracked separately from the IDE cleanup implementation and must be completed before the new project-wide plans are advertised for command-line use.
 
 ## Testing requirements
 
-At minimum, test:
+Implemented tests cover:
 
-- all selected units are visible during planning;
-- the same cleanup instance is used for every local fix;
-- expanded units enter preconditions, preview, validation, apply, and undo;
-- duplicate provider results do not duplicate targets;
-- transitive discovery reaches a fixed point;
-- cross-project and missing targets abort the run;
-- plan state is cleared after success and failure;
-- a stale local target prevents partial migration;
-- save actions remain single-file;
-- ordinary cleanups are unchanged when no provider is present.
+- planning before local fixes and cleanup of retained state;
+- fatal planning diagnostics;
+- target-scope expansion into one unified preview in the JDT UI fork;
+- a named `ExternalResource` plus `@Rule` consumer in another file;
+- a named `ExternalResource` plus `@ClassRule` consumer in another file;
+- a package-scoped integer state method plus caller in another file.
+
+Additional required coverage remains:
+
+- duplicate provider results and transitive fixed-point discovery;
+- cross-project and missing targets;
+- stale-plan rejection after an earlier cleanup changes a target;
+- one atomic apply and undo in PDE integration tests;
+- save-action isolation;
+- ordinary cleanups unchanged when no provider is present.
