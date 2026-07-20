@@ -1,0 +1,27 @@
+name: Extract failed multi-file build log
+
+on:
+  push:
+    branches:
+      - feature/multifile-cleanup-planning
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  extract-log:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download failed workflow log
+        shell: bash
+        run: |
+          gh run view 29781116751 --repo carstenartur/sandbox --log-failed > failed-build.log
+      - name: Upload failed log
+        uses: actions/upload-artifact@v7
+        with:
+          name: failed-multifile-build-log
+          path: failed-build.log
+          retention-days: 2
