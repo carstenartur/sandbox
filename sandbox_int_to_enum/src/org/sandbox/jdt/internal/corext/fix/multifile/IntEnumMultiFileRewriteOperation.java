@@ -91,118 +91,119 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 		Map<IntEnumCandidate, Integer> callCounts= new HashMap<>();
 		Set<ASTNode> processed= java.util.Collections.newSetFromMap(new IdentityHashMap<>());
 
-		root.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(TypeDeclaration node) {
-				String key= typeKey(node.resolveBinding());
-				for (IntEnumCandidate candidate : candidates) {
-					if (unitHandle.equals(candidate.ownerCompilationUnitHandle())
-							&& candidate.ownerTypeBindingKey().equals(key)) {
-						ownerTypes.put(candidate, node);
-						processed.add(node);
-					}
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodDeclaration node) {
-				IMethodBinding binding= node.resolveBinding();
-				String key= binding == null ? null : binding.getMethodDeclaration().getKey();
-				IntEnumCandidate candidate= byMethod.get(key);
-				if (candidate != null && unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
-					ownerMethods.put(candidate, node);
-					processed.add(node);
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(FieldDeclaration node) {
-				for (Object fragmentObject : node.fragments()) {
-					VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObject;
-					IVariableBinding binding= fragment.resolveBinding();
-					String key= binding == null ? null : binding.getVariableDeclaration().getKey();
-					IntEnumCandidate candidate= byConstant.get(key);
-					if (candidate != null && unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
-						ownerFields.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
-								.computeIfAbsent(node, ignored -> new LinkedHashSet<>()).add(key);
-						processed.add(node);
-					}
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodInvocation node) {
-				IMethodBinding binding= node.resolveMethodBinding();
-				String key= binding == null ? null : binding.getMethodDeclaration().getKey();
-				IntEnumCandidate candidate= byMethod.get(key);
-				if (candidate != null) {
-					callCounts.merge(candidate, Integer.valueOf(1), Integer::sum);
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(SimpleName node) {
-				IBinding binding= node.resolveBinding();
-				if (!(binding instanceof IVariableBinding variable)) {
-					return true;
-				}
-				String constantKey= variable.getVariableDeclaration().getKey();
-				IntEnumCandidate candidate= byConstant.get(constantKey);
-				if (candidate == null || isDeclarationName(node)) {
-					return true;
-				}
-				Expression expression= containingExpression(node);
-				if (!isRecognisedReference(expression, candidate)) {
-					throw new StalePlanRuntimeException(stale(unit, "unexpected use of " + node.getIdentifier())); //$NON-NLS-1$
-				}
-				IntEnumConstant constant= candidate.constant(constantKey);
-				String qualifier= unitHandle.equals(candidate.ownerCompilationUnitHandle())
-						? candidate.enumTypeName()
-						: candidate.ownerTypeQualifiedName() + "." + candidate.enumTypeName(); //$NON-NLS-1$
-				replacements.put(expression, qualifier + "." + constant.enumName()); //$NON-NLS-1$
-				referenceCounts.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
-						.merge(constantKey, Integer.valueOf(1), Integer::sum);
-				processed.add(expression);
-				return true;
-			}
-		});
-
-		List<ResolvedOwner> owners= new ArrayList<>();
 		try {
-			for (IntEnumCandidate candidate : candidates) {
-				Map<String, Integer> expectedReferences= candidate.expectedReferenceCountsByUnit()
-						.getOrDefault(unitHandle, Map.of());
-				Map<String, Integer> actualReferences= referenceCounts.getOrDefault(candidate, Map.of());
-				if (!expectedReferences.equals(actualReferences)) {
-					throw stale(unit, "constant reference count changed for " + candidate.enumTypeName()); //$NON-NLS-1$
-				}
-				int expectedCalls= candidate.expectedCallCountsByUnit().getOrDefault(unitHandle, Integer.valueOf(0))
-						.intValue();
-				if (expectedCalls != callCounts.getOrDefault(candidate, Integer.valueOf(0)).intValue()) {
-					throw stale(unit, "method call count changed for " + candidate.enumTypeName()); //$NON-NLS-1$
-				}
-				if (unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
-					TypeDeclaration type= ownerTypes.get(candidate);
-					MethodDeclaration method= ownerMethods.get(candidate);
-					Map<FieldDeclaration, Set<String>> fields= ownerFields.getOrDefault(candidate, Map.of());
-					if (type == null || method == null || candidate.parameterIndex() >= method.parameters().size()
-							|| fields.values().stream().mapToInt(Set::size).sum() != candidate.constants().size()) {
-						throw stale(unit, "owner declaration changed for " + candidate.enumTypeName()); //$NON-NLS-1$
+			root.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(TypeDeclaration node) {
+					String key= typeKey(node.resolveBinding());
+					for (IntEnumCandidate candidate : candidates) {
+						if (unitHandle.equals(candidate.ownerCompilationUnitHandle())
+								&& candidate.ownerTypeBindingKey().equals(key)) {
+							ownerTypes.put(candidate, node);
+							processed.add(node);
+						}
 					}
-					SingleVariableDeclaration parameter= (SingleVariableDeclaration) method.parameters()
-							.get(candidate.parameterIndex());
-					if (!isInt(parameter.getType())) {
-						throw stale(unit, "state parameter is no longer int"); //$NON-NLS-1$
-					}
-					owners.add(new ResolvedOwner(candidate, type, method, parameter, fields));
+					return true;
 				}
-			}
+
+				@Override
+				public boolean visit(MethodDeclaration node) {
+					IMethodBinding binding= node.resolveBinding();
+					String key= binding == null ? null : binding.getMethodDeclaration().getKey();
+					IntEnumCandidate candidate= byMethod.get(key);
+					if (candidate != null && unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
+						ownerMethods.put(candidate, node);
+						processed.add(node);
+					}
+					return true;
+				}
+
+				@Override
+				public boolean visit(FieldDeclaration node) {
+					for (Object fragmentObject : node.fragments()) {
+						VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObject;
+						IVariableBinding binding= fragment.resolveBinding();
+						String key= binding == null ? null : binding.getVariableDeclaration().getKey();
+						IntEnumCandidate candidate= byConstant.get(key);
+						if (candidate != null && unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
+							ownerFields.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
+									.computeIfAbsent(node, ignored -> new LinkedHashSet<>()).add(key);
+							processed.add(node);
+						}
+					}
+					return true;
+				}
+
+				@Override
+				public boolean visit(MethodInvocation node) {
+					IMethodBinding binding= node.resolveMethodBinding();
+					String key= binding == null ? null : binding.getMethodDeclaration().getKey();
+					IntEnumCandidate candidate= byMethod.get(key);
+					if (candidate != null) {
+						callCounts.merge(candidate, Integer.valueOf(1), Integer::sum);
+					}
+					return true;
+				}
+
+				@Override
+				public boolean visit(SimpleName node) {
+					IBinding binding= node.resolveBinding();
+					if (!(binding instanceof IVariableBinding variable)) {
+						return true;
+					}
+					String constantKey= variable.getVariableDeclaration().getKey();
+					IntEnumCandidate candidate= byConstant.get(constantKey);
+					if (candidate == null || isDeclarationName(node)) {
+						return true;
+					}
+					Expression expression= containingExpression(node);
+					if (!isRecognisedReference(expression, candidate)) {
+						throw new StalePlanRuntimeException(
+								stale(unit, "unexpected use of " + node.getIdentifier())); //$NON-NLS-1$
+					}
+					IntEnumConstant constant= candidate.constant(constantKey);
+					String qualifier= unitHandle.equals(candidate.ownerCompilationUnitHandle())
+							? candidate.enumTypeName()
+							: candidate.ownerTypeQualifiedName() + "." + candidate.enumTypeName(); //$NON-NLS-1$
+					replacements.put(expression, qualifier + "." + constant.enumName()); //$NON-NLS-1$
+					referenceCounts.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
+							.merge(constantKey, Integer.valueOf(1), Integer::sum);
+					processed.add(expression);
+					return true;
+				}
+			});
 		} catch (StalePlanRuntimeException exception) {
 			throw exception.coreException;
+		}
+
+		List<ResolvedOwner> owners= new ArrayList<>();
+		for (IntEnumCandidate candidate : candidates) {
+			Map<String, Integer> expectedReferences= candidate.expectedReferenceCountsByUnit()
+					.getOrDefault(unitHandle, Map.of());
+			Map<String, Integer> actualReferences= referenceCounts.getOrDefault(candidate, Map.of());
+			if (!expectedReferences.equals(actualReferences)) {
+				throw stale(unit, "constant reference count changed for " + candidate.enumTypeName()); //$NON-NLS-1$
+			}
+			int expectedCalls= candidate.expectedCallCountsByUnit().getOrDefault(unitHandle, Integer.valueOf(0))
+					.intValue();
+			if (expectedCalls != callCounts.getOrDefault(candidate, Integer.valueOf(0)).intValue()) {
+				throw stale(unit, "method call count changed for " + candidate.enumTypeName()); //$NON-NLS-1$
+			}
+			if (unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
+				TypeDeclaration type= ownerTypes.get(candidate);
+				MethodDeclaration method= ownerMethods.get(candidate);
+				Map<FieldDeclaration, Set<String>> fields= ownerFields.getOrDefault(candidate, Map.of());
+				if (type == null || method == null || candidate.parameterIndex() >= method.parameters().size()
+						|| fields.values().stream().mapToInt(Set::size).sum() != candidate.constants().size()) {
+					throw stale(unit, "owner declaration changed for " + candidate.enumTypeName()); //$NON-NLS-1$
+				}
+				SingleVariableDeclaration parameter= (SingleVariableDeclaration) method.parameters()
+						.get(candidate.parameterIndex());
+				if (!isInt(parameter.getType())) {
+					throw stale(unit, "state parameter is no longer int"); //$NON-NLS-1$
+				}
+				owners.add(new ResolvedOwner(candidate, type, method, parameter, fields));
+			}
 		}
 		return new ResolvedPlan(List.copyOf(owners), Map.copyOf(replacements), Set.copyOf(processed));
 	}
@@ -225,8 +226,8 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 
 		for (ResolvedOwner owner : plan.owners()) {
 			insertEnum(owner, ast, rewrite, group);
-			rewrite.replace(owner.parameter().getType(), ast.newSimpleType(ast.newSimpleName(owner.candidate().enumTypeName())),
-					group);
+			rewrite.replace(owner.parameter().getType(),
+					ast.newSimpleType(ast.newSimpleName(owner.candidate().enumTypeName())), group);
 			removeConstants(owner, rewrite, group);
 		}
 		for (Map.Entry<Expression, String> replacement : plan.replacements().entrySet()) {
