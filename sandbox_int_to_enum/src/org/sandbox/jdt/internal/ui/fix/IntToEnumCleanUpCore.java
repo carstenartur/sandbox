@@ -18,6 +18,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUpF
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_description;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -27,25 +28,31 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.Messages;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 
-/**
- * Core cleanup implementation that converts integer constants to enums.
- */
-public class IntToEnumCleanUpCore extends AbstractCleanUp {
+/** Core cleanup implementation that converts integer constants to enums. */
+public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<SelectedCompilationUnitPlan> {
 	public IntToEnumCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
-	
+
 	public IntToEnumCleanUpCore() {
 	}
 
@@ -59,36 +66,64 @@ public class IntToEnumCleanUpCore extends AbstractCleanUp {
 	}
 
 	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-		CompilationUnit compilationUnit = context.getAST();
+	protected MultiFileCleanUpPlanResult<SelectedCompilationUnitPlan> createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) {
+		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet().isEmpty()) {
+			return MultiFileCleanUpPlanResult.noPlan();
+		}
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
+		return MultiFileCleanUpPlanResult.success(SelectedCompilationUnitPlan.of(project, compilationUnits));
+	}
+
+	@Override
+	protected ICleanUpFix createFixForPlan(SelectedCompilationUnitPlan plan, CleanUpContext context)
+			throws CoreException {
+		if (!plan.contains(context.getCompilationUnit())) {
+			return null;
+		}
+		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;
 		}
-		
-		EnumSet<IntToEnumFixCore> computeFixSet = computeFixSet();
+
+		EnumSet<IntToEnumFixCore> computeFixSet= computeFixSet();
 		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet.isEmpty()) {
 			return null;
 		}
 
-		Set<CompilationUnitRewriteOperationWithSourceRange> operations = new LinkedHashSet<>();
-		Set<ASTNode> nodesProcessed = new HashSet<>();
+		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
+		Set<ASTNode> nodesProcessed= new HashSet<>();
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesProcessed));
-		
+
 		if (operations.isEmpty()) {
 			return null;
 		}
 
-		CompilationUnitRewriteOperationWithSourceRange[] array = operations.toArray(
+		CompilationUnitRewriteOperationWithSourceRange[] array= operations.toArray(
 				new CompilationUnitRewriteOperationWithSourceRange[0]);
 		return new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);
 	}
 
 	@Override
+	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
+			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
+		if (!isEnabled(INT_TO_ENUM_CLEANUP)) {
+			return List.of();
+		}
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
+		return JavaProjectCompilationUnits.collect(project);
+	}
+
+	@Override
 	public String[] getStepDescriptions() {
-		List<String> result = new ArrayList<>();
+		List<String> result= new ArrayList<>();
 		if (isEnabled(INT_TO_ENUM_CLEANUP)) {
 			result.add(Messages.format(IntToEnumCleanUp_description,
-					new Object[] { String.join(",", computeFixSet().stream()
+					new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
 							.map(IntToEnumFixCore::toString)
 							.collect(Collectors.toList())) }));
 		}
@@ -97,17 +132,16 @@ public class IntToEnumCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public String getPreview() {
-		StringBuilder sb = new StringBuilder();
-		EnumSet<IntToEnumFixCore> computeFixSet = computeFixSet();
-		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -> 
-			sb.append(e.getPreview(computeFixSet.contains(e))));
+		StringBuilder sb= new StringBuilder();
+		EnumSet<IntToEnumFixCore> computeFixSet= computeFixSet();
+		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 
 	private EnumSet<IntToEnumFixCore> computeFixSet() {
-		EnumSet<IntToEnumFixCore> fixSet = EnumSet.noneOf(IntToEnumFixCore.class);
+		EnumSet<IntToEnumFixCore> fixSet= EnumSet.noneOf(IntToEnumFixCore.class);
 		if (isEnabled(INT_TO_ENUM_CLEANUP)) {
-			fixSet = EnumSet.allOf(IntToEnumFixCore.class);
+			fixSet= EnumSet.allOf(IntToEnumFixCore.class);
 		}
 		return fixSet;
 	}
