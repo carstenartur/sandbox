@@ -46,12 +46,13 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
-import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
-public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<SelectedCompilationUnitPlan> {
+public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigrationPlan> {
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -69,20 +70,21 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<SelectedCo
 	}
 
 	@Override
-	protected MultiFileCleanUpPlanResult<SelectedCompilationUnitPlan> createPlan(IJavaProject project,
-			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) {
-		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || computeFixSet().isEmpty()) {
+	protected MultiFileCleanUpPlanResult<JUnitMigrationPlan> createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
+		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {
 			return MultiFileCleanUpPlanResult.noPlan();
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		return MultiFileCleanUpPlanResult.success(SelectedCompilationUnitPlan.of(project, compilationUnits));
+		return JUnitMultiFilePlanner.create(project, compilationUnits,
+				fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE), monitor);
 	}
 
 	@Override
-	protected ICleanUpFix createFixForPlan(SelectedCompilationUnitPlan plan, CleanUpContext context)
-			throws CoreException {
+	protected ICleanUpFix createFixForPlan(JUnitMigrationPlan plan, CleanUpContext context) throws CoreException {
 		if (!plan.contains(context.getCompilationUnit())) {
 			return null;
 		}
@@ -96,6 +98,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<SelectedCo
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
+		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
 		if (operations.isEmpty()) {
 			return null;
