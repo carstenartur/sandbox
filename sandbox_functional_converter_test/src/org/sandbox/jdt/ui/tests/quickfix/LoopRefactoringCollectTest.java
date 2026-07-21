@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -478,7 +477,6 @@ public class LoopRefactoringCollectTest {
 	 * <p><b>Best Practice:</b> Use Arrays.stream() for array sources</p>
 	 * <p><b>Note:</b> V1 requires Arrays import in input, doesn't add it automatically</p>
 	 */
-	@Disabled("V1 doesn't handle Arrays import with java.util.* - needs specific import setup")
 	@Test
 	@DisplayName("Array source collect: Arrays.stream(array).toList()")
 	void testArraySourceCollect() throws CoreException {
@@ -499,10 +497,10 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.Arrays;
+				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(String[] items) {
-						List<String> list = Arrays.stream(items).toList();
+						List<String> list = Arrays.stream(items).collect(Collectors.toList());
 						System.out.println(list);
 					}
 				}
@@ -521,7 +519,6 @@ public class LoopRefactoringCollectTest {
 	 * <p><b>Expected:</b> {@code Arrays.stream(array).map(transform).toList()}</p>
 	 * <p><b>Note:</b> V1 requires Arrays import in input, doesn't add it automatically</p>
 	 */
-	@Disabled("V1 doesn't handle Arrays import with java.util.* - needs specific import setup")
 	@Test
 	@DisplayName("Array map+collect: Arrays.stream(arr).map(f).toList()")
 	void testArraySourceMapCollect() throws CoreException {
@@ -542,10 +539,10 @@ public class LoopRefactoringCollectTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.Arrays;
+				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(Integer[] numbers) {
-						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).toList();
+						List<String> strings = Arrays.stream(numbers).map(num -> num.toString()).collect(Collectors.toList());
 						System.out.println(strings);
 					}
 				}
@@ -570,7 +567,6 @@ public class LoopRefactoringCollectTest {
 	 * <p><b>Reason:</b> Stream operations would change execution order of side effects</p>
 	 * <p><b>BUG:</b> V1 incorrectly converts this and loses the counter++ side effect entirely!</p>
 	 */
-	@Disabled("V2 incorrectly wraps counter++ as side-effect map instead of detecting external state modification")
 	@Test
 	@DisplayName("Side effects prevent collect conversion")
 	void testCollectWithSideEffects_ShouldNotConvert() throws CoreException {

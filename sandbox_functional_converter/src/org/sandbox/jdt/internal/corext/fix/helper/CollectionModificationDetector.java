@@ -15,156 +15,179 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.ASTMatcher;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.ThisExpression;
 
 /**
- * Shared utility for detecting structural modifications on a collection.
- * 
- * <p>Used by both {@link PreconditionsChecker} and
- * {@link JdtLoopExtractor.LoopBodyAnalyzer} to ensure consistent detection
- * of collection modifications that block loop-to-stream conversions.</p>
- * 
- * <p><b>Supported Receivers:</b></p>
- * <ul>
- * <li>Simple names: {@code list.remove(x)}</li>
- * <li>Field access: {@code this.list.remove(x)}</li>
- * <li>Method invocation (getter pattern): {@code getList().remove(x)}</li>
- * </ul>
- * 
- * <p><b>Method Invocation Heuristic:</b> For method invocations, matches getter
- * method names against collection names. For example, {@code getList().add(x)}
- * is detected when iterating over {@code list}. Supports common getter patterns:
- * {@code getXxx()}, {@code fetchXxx()}, {@code retrieveXxx()}, etc.</p>
- * 
- * <p><b>Limitation:</b> Does not detect modifications via array access
- * ({@code arrays[0].clear()}). This is an intentional conservative limitation.</p>
- * 
+ * Shared utility for detecting structural modifications on the source being
+ * iterated.
+ *
+ * <p>The production API compares Java bindings rather than spelling. It handles
+ * local variables, fields, repeated getter invocations, and map view expressions
+ * such as {@code map.keySet()} whose structural owner is {@code map}.</p>
+ *
  * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
  * @since 1.0.0
  */
 public final class CollectionModificationDetector {
 
-	/**
-	 * Method names that represent structural modifications on a collection.
-	 * Calling any of these on the iterated collection causes
-	 * ConcurrentModificationException with fail-fast iterators.
-	 * 
-	 * <p>Includes:</p>
-	 * <ul>
-	 * <li>Collection methods: add, remove, clear, addAll, removeAll, retainAll, removeIf, replaceAll, sort</li>
-	 * <li>List methods: set</li>
-	 * <li>Map methods: put, putAll, putIfAbsent, compute, computeIfAbsent, computeIfPresent, merge, replace, replaceAll</li>
-	 * </ul>
-	 */
-	private static final Set<String> MODIFYING_METHODS = Set.of(
-			// Collection/List methods
+	private static final Set<String> MODIFYING_METHODS= Set.of(
 			"remove", "add", "clear", "set", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			"addAll", "removeAll", "retainAll", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"removeIf", "replaceAll", "sort", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			// Map methods
 			"put", "putAll", "putIfAbsent", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"compute", "computeIfAbsent", "computeIfPresent", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			"merge", "replace"); //$NON-NLS-1$ //$NON-NLS-2$
+
+	private static final Set<String> MAP_VIEW_METHODS= Set.of(
+			"entrySet", "keySet", "values"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+	private static final String[] GETTER_PREFIXES= {
+			"get", "fetch", "retrieve", "obtain" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	};
 
 	private CollectionModificationDetector() {
 		// utility class
 	}
 
 	/**
-	 * Checks if a method invocation is a structural modification on a named collection.
-	 * 
-	 * <p>Detects calls to structural modification methods on the given collection variable.
-	 * Supports simple names ({@code list.remove(x)}), field access
-	 * ({@code this.list.remove(x)}), and method invocation receivers
-	 * ({@code getList().remove(x)}).</p>
-	 * 
-	 * @param methodInv the method invocation to check
-	 * @param collectionName the name of the iterated collection variable
-	 * @return {@code true} if this is a structural modification on the named collection
+	 * Checks whether an invocation structurally modifies the expression whose
+	 * elements are being traversed.
+	 *
+	 * @param methodInvocation candidate mutation
+	 * @param iteratedExpression expression from the enhanced-for or iterator source
+	 * @return {@code true} only when the mutation receiver identifies the same source
 	 */
-	public static boolean isModification(MethodInvocation methodInv, String collectionName) {
-		Expression receiver = methodInv.getExpression();
-		
-		// Check for simple name receiver: list.remove(x)
-		if (receiver instanceof SimpleName receiverName) {
-			if (collectionName.equals(receiverName.getIdentifier())) {
-				String methodName = methodInv.getName().getIdentifier();
-				return MODIFYING_METHODS.contains(methodName);
-			}
-		}
-		
-		// Check for field access receiver: this.list.remove(x)
-		if (receiver instanceof FieldAccess fieldAccess) {
-			Expression fieldExpression = fieldAccess.getExpression();
-			// Check if it's "this.fieldName"
-			if (fieldExpression instanceof ThisExpression) {
-				SimpleName fieldName = fieldAccess.getName();
-				if (collectionName.equals(fieldName.getIdentifier())) {
-					String methodName = methodInv.getName().getIdentifier();
-					return MODIFYING_METHODS.contains(methodName);
-				}
-			}
-		}
-		
-		// Check for method invocation receiver: getList().remove(x)
-		if (receiver instanceof MethodInvocation getterInvocation) {
-			if (matchesGetterPattern(getterInvocation, collectionName)) {
-				String methodName = methodInv.getName().getIdentifier();
-				return MODIFYING_METHODS.contains(methodName);
-			}
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Common getter method prefixes used in heuristic matching.
-	 */
-	private static final String[] GETTER_PREFIXES = { 
-			"get", "fetch", "retrieve", "obtain" //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-	};
-	
-	/**
-	 * Checks if a method invocation matches a getter pattern for the given collection name.
-	 * 
-	 * <p>Matches common getter patterns like:</p>
-	 * <ul>
-	 * <li>{@code getList()} → {@code list}</li>
-	 * <li>{@code fetchItems()} → {@code items}</li>
-	 * <li>{@code retrieveMap()} → {@code map}</li>
-	 * </ul>
-	 * 
-	 * @param methodInv the method invocation to check
-	 * @param collectionName the expected collection name
-	 * @return {@code true} if the method name matches a getter pattern for the collection
-	 */
-	private static boolean matchesGetterPattern(MethodInvocation methodInv, String collectionName) {
-		// Only consider no-arg methods (simple getters)
-		if (!methodInv.arguments().isEmpty()) {
+	public static boolean isModification(MethodInvocation methodInvocation, Expression iteratedExpression) {
+		if (!MODIFYING_METHODS.contains(methodInvocation.getName().getIdentifier())) {
 			return false;
 		}
-		
-		String methodName = methodInv.getName().getIdentifier();
-		
+		Expression receiver= methodInvocation.getExpression();
+		if (receiver == null || iteratedExpression == null) {
+			return false;
+		}
+		return referencesSameTarget(receiver, normalizeIteratedExpression(iteratedExpression));
+	}
+
+	/**
+	 * Compatibility overload for existing focused detector tests. Production loop
+	 * analysis should use {@link #isModification(MethodInvocation, Expression)}.
+	 *
+	 * @param methodInvocation candidate mutation
+	 * @param collectionName simple source name
+	 * @return whether the receiver denotes the named source
+	 */
+	public static boolean isModification(MethodInvocation methodInvocation, String collectionName) {
+		if (collectionName == null || !MODIFYING_METHODS.contains(methodInvocation.getName().getIdentifier())) {
+			return false;
+		}
+		Expression receiver= unwrap(methodInvocation.getExpression());
+		if (receiver instanceof SimpleName name) {
+			return collectionName.equals(name.getIdentifier());
+		}
+		if (receiver instanceof FieldAccess fieldAccess
+				&& fieldAccess.getExpression() instanceof ThisExpression) {
+			return collectionName.equals(fieldAccess.getName().getIdentifier());
+		}
+		if (receiver instanceof MethodInvocation getterInvocation) {
+			return matchesGetterPattern(getterInvocation, collectionName);
+		}
+		return false;
+	}
+
+	/**
+	 * A map view iterates the backing map. Mutating that map while traversing
+	 * {@code keySet()}, {@code values()}, or {@code entrySet()} must therefore block
+	 * conversion as well.
+	 */
+	static Expression normalizeIteratedExpression(Expression expression) {
+		Expression current= unwrap(expression);
+		if (current instanceof MethodInvocation invocation
+				&& MAP_VIEW_METHODS.contains(invocation.getName().getIdentifier())
+				&& invocation.arguments().isEmpty()
+				&& invocation.getExpression() != null) {
+			return unwrap(invocation.getExpression());
+		}
+		return current;
+	}
+
+	private static boolean referencesSameTarget(Expression first, Expression second) {
+		Expression left= unwrap(first);
+		Expression right= unwrap(second);
+		IBinding leftBinding= resolveIdentityBinding(left);
+		IBinding rightBinding= resolveIdentityBinding(right);
+		if (leftBinding != null && rightBinding != null) {
+			String leftKey= bindingKey(leftBinding);
+			String rightKey= bindingKey(rightBinding);
+			return leftKey != null && leftKey.equals(rightKey);
+		}
+		if (leftBinding != null || rightBinding != null) {
+			return false;
+		}
+		return left.subtreeMatch(new ASTMatcher(), right);
+	}
+
+	private static IBinding resolveIdentityBinding(Expression expression) {
+		if (expression instanceof SimpleName name) {
+			return name.resolveBinding();
+		}
+		if (expression instanceof FieldAccess fieldAccess) {
+			return fieldAccess.resolveFieldBinding();
+		}
+		if (expression instanceof QualifiedName qualifiedName) {
+			return qualifiedName.resolveBinding();
+		}
+		if (expression instanceof SuperFieldAccess superFieldAccess) {
+			return superFieldAccess.resolveFieldBinding();
+		}
+		if (expression instanceof MethodInvocation invocation) {
+			return invocation.resolveMethodBinding();
+		}
+		return null;
+	}
+
+	private static String bindingKey(IBinding binding) {
+		if (binding instanceof IVariableBinding variableBinding) {
+			return variableBinding.getVariableDeclaration().getKey();
+		}
+		if (binding instanceof IMethodBinding methodBinding) {
+			return methodBinding.getMethodDeclaration().getKey();
+		}
+		return binding.getKey();
+	}
+
+	private static boolean matchesGetterPattern(MethodInvocation invocation, String collectionName) {
+		if (!invocation.arguments().isEmpty()) {
+			return false;
+		}
+		String methodName= invocation.getName().getIdentifier();
 		for (String prefix : GETTER_PREFIXES) {
 			if (methodName.startsWith(prefix) && methodName.length() > prefix.length()) {
-				// Extract the property name after the prefix (e.g., "List" from "getList")
-				String propertyName = methodName.substring(prefix.length());
-				
-				// Convert first char to lowercase to get the expected variable name
-				String expectedName = Character.toLowerCase(propertyName.charAt(0)) + 
-						propertyName.substring(1);
-				
+				String propertyName= methodName.substring(prefix.length());
+				String expectedName= Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
 				if (collectionName.equals(expectedName)) {
 					return true;
 				}
 			}
 		}
-		
 		return false;
+	}
+
+	private static Expression unwrap(Expression expression) {
+		Expression current= expression;
+		while (current instanceof ParenthesizedExpression parenthesized) {
+			current= parenthesized.getExpression();
+		}
+		return current;
 	}
 }

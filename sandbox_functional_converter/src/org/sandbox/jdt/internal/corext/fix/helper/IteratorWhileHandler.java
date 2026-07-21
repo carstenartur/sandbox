@@ -14,241 +14,234 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.*;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.functional.core.builder.LoopModelBuilder;
-import org.sandbox.functional.core.model.ElementDescriptor;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.WhileStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+
+import org.eclipse.jdt.internal.corext.dom.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
-import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.terminal.CollectTerminal;
+import org.sandbox.functional.core.terminal.ReduceTerminal;
+import org.sandbox.functional.core.terminal.TerminalOperation;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
+import org.sandbox.jdt.internal.common.ASTProcessor;
+import org.sandbox.jdt.internal.common.HelperVisitorProvider;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopAnalyzer.SafetyAnalysis;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopBodyParser.ParsedBody;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
 
-/**
- * Handler for converting iterator-based while-loops to functional stream operations.
- * 
- * <p>This handler processes:</p>
- * <ul>
- *   <li>while-iterator pattern: {@code Iterator<T> it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</li>
- *   <li>for-loop-iterator pattern: {@code for (Iterator<T> it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }}</li>
- * </ul>
- * 
- * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer}.</p>
- * 
- * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (iterator while-loop),
- * not the target format. The architecture supports bidirectional transformations, so the name
- * describes what loop pattern this handler processes.</p>
- * 
- * @see LoopModel
- * @see ASTStreamRenderer
- * @see LoopModelTransformer
- */
-public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
-    
-    private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();
-    private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();
-    private final IteratorLoopBodyParser bodyParser = new IteratorLoopBodyParser();
-    
-    @Override
-    public void find(UseFunctionalCallFixCore fixCore, CompilationUnit compilationUnit,
-                     Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesProcessed) {
-        
-        compilationUnit.accept(new ASTVisitor() {
-            
-            @Override
-            public boolean visit(WhileStatement node) {
-                if (nodesProcessed.contains(node)) {
-                    return false;
-                }
-                
-                // Find previous statement for while-iterator pattern
-                if (!IteratorPatternDetector.isStatementInBlock(node)) {
-                    return true;
-                }
-                
-                Block parentBlock = (Block) node.getParent();
-                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, node);
-                
-                IteratorPattern pattern = patternDetector.detectWhilePattern(node, previousStmt);
-                if (pattern == null) {
-                    return true;
-                }
-                
-                if (!analyzeAndValidate(pattern)) {
-                    return true;
-                }
-                
-                // Mark both the iterator declaration and the while loop as processed
-                nodesProcessed.add(previousStmt);
-                nodesProcessed.add(node);
-                
-                ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
-                holder.put(node, pattern);
-                
-                operations.add(fixCore.rewrite(node, holder));
-                
-                return false;
-            }
-            
-            @Override
-            public boolean visit(ForStatement node) {
-                if (nodesProcessed.contains(node)) {
-                    return false;
-                }
-                
-                IteratorPattern pattern = patternDetector.detectForLoopPattern(node);
-                if (pattern == null) {
-                    return true;
-                }
-                
-                if (!analyzeAndValidate(pattern)) {
-                    return true;
-                }
-                
-                nodesProcessed.add(node);
-                
-                ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
-                holder.put(node, pattern);
-                
-                operations.add(fixCore.rewrite(node, holder));
-                
-                return false;
-            }
-        });
-    }
-    
-    /**
-     * Analyzes and validates that the pattern can be safely converted.
-     */
-    private boolean analyzeAndValidate(IteratorPattern pattern) {
-        // Analyze for safety
-        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());
-        if (!analysis.isSafe()) {
-            // Cannot convert unsafe patterns
-            return false;
-        }
-        
-        // Parse body to ensure it has the expected structure
-        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
-        if (parsedBody == null) {
-            return false;
-        }
-        
-        return true;
-    }
-    
-    @Override
-    public void rewrite(UseFunctionalCallFixCore fixCore, ASTNode node, 
-                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
-                        ReferenceHolder<ASTNode, Object> holder) throws CoreException {
-        
-        Object data = holder.get(node);
-        if (!(data instanceof IteratorPattern pattern)) {
-            return;
-        }
-        
-        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
-        
-        if (parsedBody == null) {
-            return;
-        }
-        
-        AST ast = cuRewrite.getRoot().getAST();
-        ASTRewrite rewrite = cuRewrite.getASTRewrite();
-        
-        // Build LoopModel using the ULR pipeline
-        LoopModel model = buildLoopModel(pattern, parsedBody);
-        
-        // Create renderer with the original loop body for AST node access
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody());
-        
-        // Transform using LoopModelTransformer
-        LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
-        Expression streamExpression = transformer.transform(model);
-        
-        if (streamExpression != null) {
-            // For while pattern, also remove the iterator declaration
-            if (node instanceof WhileStatement whileStmt) {
-                Block parentBlock = (Block) whileStmt.getParent();
-                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
-                
-                if (previousStmt != null) {
-                    rewrite.remove(previousStmt, group);
-                }
-            }
-            
-            // Wrap in ExpressionStatement and replace the loop
-            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
-            rewrite.replace(node, newStatement, group);
-        }
-    }
-    
-    /**
-     * Builds a LoopModel from the iterator pattern using the ULR pipeline.
-     * Uses COLLECTION source type since the iterator comes from collection.iterator().
-     */
-    private LoopModel buildLoopModel(IteratorPattern pattern, ParsedBody parsedBody) {
-        // Build COLLECTION source descriptor using the collection expression
-        SourceDescriptor source = new SourceDescriptor(
-            SourceDescriptor.SourceType.COLLECTION,
-            pattern.collectionExpression().toString(),
-            parsedBody.elementType()
-        );
-        
-        // Build element descriptor for the loop variable
-        ElementDescriptor element = new ElementDescriptor(
-            parsedBody.elementVariableName(),
-            parsedBody.elementType(),
-            true // is a collection element
-        );
-        
-        // Extract body statements as expression strings (strip trailing semicolons)
-        List<String> bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements());
-        
-        // Build ForEachTerminal
-        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);
-        
-        // Build and return LoopModel
-        return new LoopModelBuilder()
-            .source(source)
-            .element(element)
-            .terminal(terminal)
-            .build();
-    }
-    
-    /**
-     * Converts body statements to expression strings for the ForEachTerminal.
-     * Trailing semicolons are stripped because ForEachTerminal / ASTStreamRenderer.createExpression()
-     * expects pure expressions, not statements.
-     */
-    private List<String> extractBodyStatementsAsStrings(List<Statement> statements) {
-        return ExpressionHelper.bodyStatementsToStrings(statements);
-    }
-    
-    @Override
-    public String getPreview(boolean afterRefactoring) {
-        if (afterRefactoring) {
-            return """
-                   items.stream()
-                       .forEach(item -> System.out.println(item));
-                   """;
-        } else {
-            return """
-                   Iterator<String> it = items.iterator();
-                   while (it.hasNext()) {
-                       String item = it.next();
-                       System.out.println(item);
-                   }
-                   """;
-        }
-    }
+/** Converts safe iterator while/for loops through the shared ULR pipeline. */
+public class IteratorWhileHandler extends ASTProcessor {
+
+	private final IteratorPatternDetector patternDetector= new IteratorPatternDetector();
+	private final IteratorLoopAnalyzer loopAnalyzer= new IteratorLoopAnalyzer();
+	private final IteratorLoopBodyParser bodyParser= new IteratorLoopBodyParser();
+	private final JdtLoopExtractor loopExtractor= new JdtLoopExtractor();
+
+	private record IteratorConversion(IteratorPattern pattern, ParsedBody parsedBody,
+			JdtLoopExtractor.ExtractedLoop extractedLoop) {
+	}
+
+	public IteratorWhileHandler() {
+		this(Map.of());
+	}
+
+	public IteratorWhileHandler(Map<String, String> options) {
+		super(options);
+	}
+
+	@Override
+	public void find(CompilationUnit compilationUnit, java.util.Set<ASTNode> nodesProcessed,
+			ReferenceHolder<ASTNode, Object> data) {
+		HelperVisitorProvider.getInstance().forWhileStatement()
+				.in(compilationUnit)
+				.excluding(nodesProcessed)
+				.process(node -> {
+					Statement previousStatement= findPreviousStatement(node);
+					IteratorPattern pattern= patternDetector.detectWhilePattern(node, previousStatement);
+					IteratorConversion conversion= analyzeAndCreateConversion(pattern, compilationUnit);
+					if (conversion != null) {
+						data.put(node, conversion);
+						nodesProcessed.add(node);
+						if (previousStatement != null) {
+							nodesProcessed.add(previousStatement);
+						}
+					}
+				});
+
+		HelperVisitorProvider.getInstance().forForStatement()
+				.in(compilationUnit)
+				.excluding(nodesProcessed)
+				.process(node -> {
+					IteratorPattern pattern= patternDetector.detectForLoopPattern(node);
+					IteratorConversion conversion= analyzeAndCreateConversion(pattern, compilationUnit);
+					if (conversion != null) {
+						data.put(node, conversion);
+						nodesProcessed.add(node);
+					}
+				});
+	}
+
+	private IteratorConversion analyzeAndCreateConversion(IteratorPattern pattern, CompilationUnit compilationUnit) {
+		if (pattern == null) {
+			return null;
+		}
+		IteratorLoopAnalyzer.SafetyAnalysis safety=
+				loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());
+		if (!safety.isSafe()) {
+			return null;
+		}
+		ParsedBody parsedBody= bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());
+		if (parsedBody == null || parsedBody.actualBodyStatements().isEmpty()) {
+			return null;
+		}
+		JdtLoopExtractor.ExtractedLoop extracted= loopExtractor.extractIterator(pattern, parsedBody, compilationUnit);
+		if (extracted.model == null || extracted.model.getTerminal() == null) {
+			return null;
+		}
+		return new IteratorConversion(pattern, parsedBody, extracted);
+	}
+
+	private Statement findPreviousStatement(Statement statement) {
+		if (statement.getParent() instanceof Block block) {
+			return IteratorPatternDetector.findPreviousStatement(block, statement);
+		}
+		return null;
+	}
+
+	@Override
+	public boolean rewrite(CompilationUnitRewrite cuRewrite, TextEditGroup group, LinkedProposalModelCore linkedModel,
+			ASTNode visited, ReferenceHolder<ASTNode, Object> data) throws CoreException {
+		Object stored= data.get(visited);
+		if (!(stored instanceof IteratorConversion conversion)) {
+			return false;
+		}
+
+		LoopModel model= conversion.extractedLoop().model;
+		TerminalOperation terminal= model.getTerminal();
+		VariableDeclarationStatement accumulatorDeclaration= null;
+		if (terminal instanceof CollectTerminal collectTerminal) {
+			accumulatorDeclaration= findAccumulatorDeclaration(visited, collectTerminal.targetVariable());
+			if (accumulatorDeclaration == null
+					|| !collectTerminal.targetVariable().equals(
+							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))) {
+				return false;
+			}
+		} else if (terminal instanceof ReduceTerminal reduceTerminal) {
+			accumulatorDeclaration= findAccumulatorDeclaration(visited, reduceTerminal.targetVariable());
+			VariableDeclarationFragment fragment= singleFragment(accumulatorDeclaration, reduceTerminal.targetVariable());
+			if (fragment == null || fragment.getInitializer() == null) {
+				return false;
+			}
+			model.setTerminal(new ReduceTerminal(fragment.getInitializer().toString(), reduceTerminal.accumulator(),
+					reduceTerminal.combiner(), reduceTerminal.reduceType(), reduceTerminal.targetVariable()));
+		}
+
+		AST ast= cuRewrite.getRoot().getAST();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(),
+				conversion.extractedLoop().originalBody);
+		Expression streamExpression= new LoopModelTransformer<>(renderer).transform(model);
+		if (streamExpression == null) {
+			return false;
+		}
+
+		Statement replacement;
+		if (accumulatorDeclaration != null) {
+			replacement= createMergedDeclaration(ast, accumulatorDeclaration, streamExpression);
+			rewrite.remove(accumulatorDeclaration, group);
+		} else {
+			replacement= ast.newExpressionStatement(streamExpression);
+		}
+
+		rewrite.replace(visited, replacement, group);
+		if (visited instanceof WhileStatement) {
+			Statement iteratorDeclaration= findPreviousStatement((Statement) visited);
+			if (iteratorDeclaration != null) {
+				rewrite.remove(iteratorDeclaration, group);
+			}
+		}
+		addRequiredImports(cuRewrite, model);
+		return true;
+	}
+
+	private VariableDeclarationStatement findAccumulatorDeclaration(ASTNode loop, String targetVariable) {
+		if (targetVariable == null || !(loop instanceof Statement statement)
+				|| !(statement.getParent() instanceof Block block)) {
+			return null;
+		}
+		@SuppressWarnings("unchecked") //$NON-NLS-1$
+		List<Statement> statements= block.statements();
+		int loopIndex= statements.indexOf(statement);
+		int candidateIndex= loopIndex - (statement instanceof WhileStatement ? 2 : 1);
+		if (candidateIndex < 0 || candidateIndex >= statements.size()) {
+			return null;
+		}
+		Statement candidate= statements.get(candidateIndex);
+		if (!(candidate instanceof VariableDeclarationStatement declaration)) {
+			return null;
+		}
+		return singleFragment(declaration, targetVariable) == null ? null : declaration;
+	}
+
+	private VariableDeclarationFragment singleFragment(VariableDeclarationStatement declaration,
+			String targetVariable) {
+		if (declaration == null || declaration.fragments().size() != 1) {
+			return null;
+		}
+		VariableDeclarationFragment fragment=
+				(VariableDeclarationFragment) declaration.fragments().get(0);
+		return fragment.getName().getIdentifier().equals(targetVariable) ? fragment : null;
+	}
+
+	private VariableDeclarationStatement createMergedDeclaration(AST ast,
+			VariableDeclarationStatement original, Expression initializer) {
+		VariableDeclarationFragment originalFragment=
+				(VariableDeclarationFragment) original.fragments().get(0);
+		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
+		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));
+		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));
+		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);
+		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
+		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
+		return declaration;
+	}
+
+	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
+		if (model.getSource().type() == SourceDescriptor.SourceType.ITERABLE) {
+			cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport"); //$NON-NLS-1$
+		}
+		if (model.getTerminal() instanceof CollectTerminal) {
+			cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors"); //$NON-NLS-1$
+		}
+	}
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+		if (afterRefactoring) {
+			return "items.stream().forEach(item -> System.out.println(item));\n"; //$NON-NLS-1$
+		}
+		return "Iterator<String> it = items.iterator();\n" //$NON-NLS-1$
+				+ "while (it.hasNext()) {\n" //$NON-NLS-1$
+				+ "    String item = it.next();\n" //$NON-NLS-1$
+				+ "    System.out.println(item);\n" //$NON-NLS-1$
+				+ "}\n"; //$NON-NLS-1$
+	}
 }

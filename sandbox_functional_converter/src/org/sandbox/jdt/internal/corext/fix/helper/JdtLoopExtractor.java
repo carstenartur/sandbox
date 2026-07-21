@@ -60,11 +60,7 @@ public class JdtLoopExtractor {
         boolean isFinal = Modifier.isFinal(parameter.getModifiers());
         
         // Analyze metadata — track truly unconvertible control flow and patterns.
-        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer();
-        // Issue #670: Enable collection modification detection
-        if (iterable instanceof SimpleName) {
-            analyzer.setIteratedCollectionName(((SimpleName) iterable).getIdentifier());
-        }
+        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable);
         body.accept(analyzer);
         
         // Issue #670: Check if the iterated collection is a concurrent collection type
@@ -99,6 +95,68 @@ public class JdtLoopExtractor {
         return new ExtractedLoop(model, body);
     }
     
+
+    /**
+     * Extracts a stream model from the statements after an iterator.next()
+     * declaration. The iterator handler performs the surrounding declaration and
+     * rewrite validation; this method deliberately shares the enhanced-for body
+     * pattern analysis.
+     */
+    public ExtractedLoop extractIterator(IteratorPatternDetector.IteratorPattern pattern,
+            IteratorLoopBodyParser.ParsedBody parsedBody, CompilationUnit compilationUnit) {
+        Expression iterable = pattern.collectionExpression();
+        AST ast = pattern.loopBody().getAST();
+        Block actualBody = ast.newBlock();
+        for (Statement statement : parsedBody.actualBodyStatements()) {
+            actualBody.statements().add(ASTNode.copySubtree(ast, statement));
+        }
+
+        SourceType sourceType = determineSourceType(iterable);
+        String sourceExpression = iterable.toString();
+        String elementType = parsedBody.elementType();
+        String variableName = parsedBody.elementVariableName();
+
+        LoopBodyAnalyzer analyzer = new LoopBodyAnalyzer(iterable);
+        pattern.loopBody().accept(analyzer);
+        boolean isConcurrentCollection = checkConcurrentCollection(iterable);
+        boolean hasUnconvertiblePatterns = analyzer.hasBreak()
+                || analyzer.hasLabeledContinue()
+                || analyzer.hasTryCatch()
+                || analyzer.hasSynchronized()
+                || analyzer.hasNestedLoop()
+                || analyzer.hasVoidReturn()
+                || analyzer.modifiesIteratedCollection()
+                || isConcurrentCollection;
+
+        LoopModelBuilder builder = new LoopModelBuilder()
+                .source(sourceType, sourceExpression, elementType)
+                .element(variableName, elementType, false)
+                .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), false,
+                        analyzer.modifiesIteratedCollection(), true);
+        if (!hasUnconvertiblePatterns) {
+            analyzeIteratorStatements(parsedBody.actualBodyStatements(), builder, variableName, compilationUnit);
+        }
+        return new ExtractedLoop(builder.build(), actualBody);
+    }
+
+    private void analyzeIteratorStatements(java.util.List<Statement> originalStatements,
+            LoopModelBuilder builder, String variableName, CompilationUnit compilationUnit) {
+        java.util.List<Statement> statements = new java.util.ArrayList<>(originalStatements);
+        if (statements.isEmpty() || containsUnconvertibleStatements(statements)) {
+            return;
+        }
+        int varDeclCount = countVariableDeclarations(statements);
+        if (varDeclCount > 1) {
+            addSimpleForEachTerminal(statements, builder);
+            return;
+        }
+        if (statements.size() > 1 && allSideEffects(statements)) {
+            addSimpleForEachTerminal(statements, builder);
+            return;
+        }
+        analyzeStatements(statements, builder, variableName, compilationUnit, false);
+    }
+
     private SourceType determineSourceType(Expression iterable) {
         ITypeBinding binding = iterable.resolveTypeBinding();
         if (binding != null) {
@@ -124,10 +182,10 @@ public class JdtLoopExtractor {
         }
         
         String qualifiedName = erasure.getQualifiedName();
-        if ("java.util.Collection".equals(qualifiedName)
-                || "java.util.List".equals(qualifiedName)
-                || "java.util.Set".equals(qualifiedName)
-                || "java.util.Queue".equals(qualifiedName)
+        if ("java.util.Collection".equals(qualifiedName) //$NON-NLS-1$
+                || "java.util.List".equals(qualifiedName) //$NON-NLS-1$
+                || "java.util.Set".equals(qualifiedName) //$NON-NLS-1$
+                || "java.util.Queue".equals(qualifiedName) //$NON-NLS-1$
                 || "java.util.Deque".equals(qualifiedName)) {
             return true;
         }
@@ -160,7 +218,8 @@ public class JdtLoopExtractor {
     private boolean checkConcurrentCollection(Expression iterable) {
         ITypeBinding typeBinding = resolveIteratedCollectionType(iterable);
         if (typeBinding != null) {
-            return ConcurrentCollectionDetector.isConcurrentCollection(typeBinding);
+            return ConcurrentCollectionDetector.isConcurrentCollection(typeBinding)
+                    && !ConcurrentCollectionDetector.hasSnapshotIteration(typeBinding);
         }
         return false;
     }
@@ -313,7 +372,7 @@ public class JdtLoopExtractor {
                 // Pattern: if (cond) continue; → filter(x -> !(cond))
                 if (isContinueStatement(thenStmt)) {
                     String condition = ifStmt.getExpression().toString();
-                    builder.filter("!(" + condition + ")");
+                    builder.filter("!(" + condition + ")"); //$NON-NLS-1$ //$NON-NLS-2$
                     attachComments(builder.getLastOperation(), stmt, compilationUnit);
                     hasOperations = true;
                     continue;
@@ -328,7 +387,7 @@ public class JdtLoopExtractor {
                 // Pattern: if (cond) { body } (last stmt) → filter(cond) + body operations
                 if (isLast) {
                     String condition = ifStmt.getExpression().toString();
-                    builder.filter("(" + condition + ")");
+                    builder.filter("(" + condition + ")"); //$NON-NLS-1$ //$NON-NLS-2$
                     attachComments(builder.getLastOperation(), stmt, compilationUnit);
                     hasOperations = true;
                     analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);
@@ -346,7 +405,7 @@ public class JdtLoopExtractor {
             // === VARIABLE DECLARATION pattern ===
             // Type x = expr; → map(var -> expr) with renamed pipeline variable
             if (stmt instanceof VariableDeclarationStatement varDecl && !isLast) {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings("unchecked") //$NON-NLS-1$
                 java.util.List<VariableDeclarationFragment> fragments = varDecl.fragments();
                 if (fragments.size() == 1) {
                     VariableDeclarationFragment frag = fragments.get(0);
@@ -413,7 +472,7 @@ public class JdtLoopExtractor {
                 java.util.List<String> bodyStmts = new java.util.ArrayList<>();
                 String stmtStr = stmt.toString();
                 if (stmtStr.endsWith(";\n") || stmtStr.endsWith(";")) {
-                    stmtStr = stmtStr.replaceAll(";\\s*$", "").trim();
+                    stmtStr = stmtStr.replaceAll(";\\s*$", "").trim(); //$NON-NLS-1$ //$NON-NLS-2$
                 }
                 bodyStmts.add(stmtStr);
                 builder.forEach(bodyStmts, hasOperations || builder.hasOperations());
@@ -424,7 +483,10 @@ public class JdtLoopExtractor {
             // Intermediate statements that don't match any pattern above are wrapped as 
             // side-effect MAP: map(var -> { stmt; return var; })
             // This is the V1 NON_TERMINAL handler equivalent
-            if (isCollectPattern(stmt) || isReducePattern(stmt) || isSimpleSideEffect(stmt)) {
+            if (isReducePattern(stmt)) {
+                return; // A non-terminal accumulator mutation is not a safe stream operation
+            }
+            if (isCollectPattern(stmt) || isSimpleSideEffect(stmt)) {
                 builder.sideEffectMap(stmt.toString(), currentVarName);
                 attachComments(builder.getLastOperation(), stmt, compilationUnit);
                 hasOperations = true;
@@ -537,7 +599,7 @@ public class JdtLoopExtractor {
             return true;
         }
         if (stmt instanceof Block block) {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings("unchecked") //$NON-NLS-1$
             java.util.List<Statement> stmts = block.statements();
             return stmts.size() == 1 && stmts.get(0) instanceof ContinueStatement;
         }
@@ -554,7 +616,7 @@ public class JdtLoopExtractor {
             return returnStmt.getExpression() instanceof BooleanLiteral;
         }
         if (thenStmt instanceof Block block) {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings("unchecked") //$NON-NLS-1$
             java.util.List<Statement> stmts = block.statements();
             if (stmts.size() == 1 && stmts.get(0) instanceof ReturnStatement returnStmt) {
                 return returnStmt.getExpression() instanceof BooleanLiteral;
@@ -572,7 +634,7 @@ public class JdtLoopExtractor {
         if (thenStmt instanceof ReturnStatement rs) {
             returnStmt = rs;
         } else {
-            @SuppressWarnings("unchecked")
+            @SuppressWarnings("unchecked") //$NON-NLS-1$
             java.util.List<Statement> stmts = ((Block) thenStmt).statements();
             returnStmt = (ReturnStatement) stmts.get(0);
         }
@@ -610,7 +672,7 @@ public class JdtLoopExtractor {
             Expression expr = exprStmt.getExpression();
             if (expr instanceof MethodInvocation mi) {
                 String methodName = mi.getName().getIdentifier();
-                return "add".equals(methodName) && mi.arguments().size() == 1;
+                return "add".equals(methodName) && mi.arguments().size() == 1; //$NON-NLS-1$
             }
         }
         return false;
@@ -628,13 +690,13 @@ public class JdtLoopExtractor {
             org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_LIST;
         
         if (targetType != null) {
-            String typeName = targetType.getErasure() != null ? targetType.getErasure().getQualifiedName() : "";
+            String typeName = targetType.getErasure() != null ? targetType.getErasure().getQualifiedName() : ""; //$NON-NLS-1$
             if (typeName.contains("Set")) {
                 collectorType = org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_SET;
             }
         }
         
-        String targetVar = target != null ? target.toString() : "result";
+        String targetVar = target != null ? target.toString() : "result"; //$NON-NLS-1$
         
         // Check if the added expression is not identity (needs a map before collect)
         Expression addedExpr = (Expression) mi.arguments().get(0);
@@ -662,6 +724,9 @@ public class JdtLoopExtractor {
             Expression expr = exprStmt.getExpression();
             // Compound assignment: sum += x, product *= x
             if (expr instanceof Assignment assign) {
+                if (!isLocalAccumulator(assign.getLeftHandSide())) {
+                    return false;
+                }
                 Assignment.Operator op = assign.getOperator();
                 if (op == Assignment.Operator.PLUS_ASSIGN 
                     || op == Assignment.Operator.MINUS_ASSIGN
@@ -675,14 +740,15 @@ public class JdtLoopExtractor {
                 }
             }
             // Postfix: count++, count--
-            if (expr instanceof PostfixExpression) {
-                return true;
+            if (expr instanceof PostfixExpression postfix) {
+                return isLocalAccumulator(postfix.getOperand());
             }
             // Prefix: ++count, --count
             if (expr instanceof PrefixExpression prefix) {
                 PrefixExpression.Operator op = prefix.getOperator();
-                return op == PrefixExpression.Operator.INCREMENT 
-                    || op == PrefixExpression.Operator.DECREMENT;
+                return isLocalAccumulator(prefix.getOperand())
+                    && (op == PrefixExpression.Operator.INCREMENT
+                        || op == PrefixExpression.Operator.DECREMENT);
             }
         }
         return false;
@@ -707,6 +773,20 @@ public class JdtLoopExtractor {
         return false;
     }
     
+    private boolean isLocalAccumulator(Expression expression) {
+        IBinding binding = null;
+        if (expression instanceof SimpleName name) {
+            binding = name.resolveBinding();
+        } else if (expression instanceof FieldAccess fieldAccess) {
+            binding = fieldAccess.resolveFieldBinding();
+        } else if (expression instanceof QualifiedName qualifiedName) {
+            binding = qualifiedName.resolveBinding();
+        } else if (expression instanceof SuperFieldAccess superFieldAccess) {
+            binding = superFieldAccess.resolveFieldBinding();
+        }
+        return binding instanceof IVariableBinding variableBinding && !variableBinding.isField();
+    }
+
     private void addReduceTerminal(Statement stmt, LoopModelBuilder builder, String varName) {
         ExpressionStatement exprStmt = (ExpressionStatement) stmt;
         Expression expr = exprStmt.getExpression();
@@ -750,7 +830,7 @@ public class JdtLoopExtractor {
             // i++ → .map(var -> 1).reduce(i, Integer::sum)
             String accumVar = postfix.getOperand().toString();
             String accumType = resolveReducerType(postfix.getOperand());
-            String mapValue = isLongType(accumType) ? "1L" : "1";
+            String mapValue = isLongType(accumType) ? "1L" : "1"; //$NON-NLS-1$ //$NON-NLS-2$
             builder.map(mapValue, null);
             builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
                 accumVar, accumType + "::sum", null,
@@ -758,7 +838,7 @@ public class JdtLoopExtractor {
         } else if (expr instanceof PrefixExpression prefix) {
             String accumVar = prefix.getOperand().toString();
             String accumType = resolveReducerType(prefix.getOperand());
-            String mapValue = isLongType(accumType) ? "1L" : "1";
+            String mapValue = isLongType(accumType) ? "1L" : "1"; //$NON-NLS-1$ //$NON-NLS-2$
             if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {
                 builder.map(mapValue, null);
                 builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
@@ -783,21 +863,21 @@ public class JdtLoopExtractor {
             String name = binding.isPrimitive() ? getBoxedTypeName(binding.getName()) : binding.getName();
             if (name != null) return name;
         }
-        return "Integer";
+        return "Integer"; //$NON-NLS-1$
     }
     
     private String getBoxedTypeName(String primitiveName) {
         return switch (primitiveName) {
-            case "int" -> "Integer";
-            case "long" -> "Long";
-            case "double" -> "Double";
-            case "float" -> "Float";
-            default -> "Integer";
+            case "int" -> "Integer"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "long" -> "Long"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "double" -> "Double"; //$NON-NLS-1$ //$NON-NLS-2$
+            case "float" -> "Float"; //$NON-NLS-1$ //$NON-NLS-2$
+            default -> "Integer"; //$NON-NLS-1$
         };
     }
     
     private boolean isLongType(String typeName) {
-        return "Long".equals(typeName) || "long".equals(typeName);
+        return "Long".equals(typeName) || "long".equals(typeName); //$NON-NLS-1$ //$NON-NLS-2$
     }
     
     /**
@@ -810,7 +890,7 @@ public class JdtLoopExtractor {
             String methodName = mi.getName().getIdentifier();
             Expression expr = mi.getExpression();
             if (expr instanceof SimpleName sn && "Math".equals(sn.getIdentifier())) {
-                return ("max".equals(methodName) || "min".equals(methodName)) && mi.arguments().size() == 2;
+                return ("max".equals(methodName) || "min".equals(methodName)) && mi.arguments().size() == 2; //$NON-NLS-1$ //$NON-NLS-2$
             }
         }
         return false;
@@ -829,7 +909,7 @@ public class JdtLoopExtractor {
                                      : org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MIN;
         
         builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(
-            accumVar, "Math::" + methodName, null, type, accumVar));
+            accumVar, "Math::" + methodName, null, type, accumVar)); //$NON-NLS-1$
     }
     
     private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
@@ -911,7 +991,7 @@ public class JdtLoopExtractor {
      * @param cu the compilation unit (can be null)
      * @return list of comment strings, never null
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked") //$NON-NLS-1$
     private java.util.List<String> extractComments(ASTNode node, CompilationUnit cu) {
         java.util.List<String> comments = new java.util.ArrayList<>();
         
@@ -988,15 +1068,15 @@ public class JdtLoopExtractor {
             // Remove comment delimiters
             if (comment.isLineComment()) {
                 // Remove leading //
-                commentStr = commentStr.replaceFirst("^//\\s*", "");
+                commentStr = commentStr.replaceFirst("^//\\s*", ""); //$NON-NLS-1$ //$NON-NLS-2$
             } else if (comment.isBlockComment()) {
                 // Remove /* and */
-                commentStr = commentStr.replaceFirst("^/\\*\\s*", "");
-                commentStr = commentStr.replaceFirst("\\s*\\*/$", "");
+                commentStr = commentStr.replaceFirst("^/\\*\\s*", ""); //$NON-NLS-1$ //$NON-NLS-2$
+                commentStr = commentStr.replaceFirst("\\s*\\*/$", ""); //$NON-NLS-1$ //$NON-NLS-2$
             } else if (comment instanceof Javadoc) {
                 // Remove /** and */
-                commentStr = commentStr.replaceFirst("^/\\*\\*\\s*", "");
-                commentStr = commentStr.replaceFirst("\\s*\\*/$", "");
+                commentStr = commentStr.replaceFirst("^/\\*\\*\\s*", ""); //$NON-NLS-1$ //$NON-NLS-2$
+                commentStr = commentStr.replaceFirst("\\s*\\*/$", ""); //$NON-NLS-1$ //$NON-NLS-2$
             }
             
             return commentStr.trim();
@@ -1034,7 +1114,11 @@ public class JdtLoopExtractor {
         private boolean hasVoidReturn = false;
         private boolean hasIfElse = false;
         private boolean modifiesIteratedCollection = false;
-        private String iteratedCollectionName;
+        private final Expression iteratedExpression;
+
+        LoopBodyAnalyzer(Expression iteratedExpression) {
+            this.iteratedExpression = CollectionModificationDetector.normalizeIteratedExpression(iteratedExpression);
+        }
         
         @Override
         public boolean visit(BreakStatement node) {
@@ -1114,8 +1198,8 @@ public class JdtLoopExtractor {
         @Override
         public boolean visit(MethodInvocation node) {
             // Issue #670: Detect structural modifications on the iterated collection
-            if (iteratedCollectionName != null
-                    && CollectionModificationDetector.isModification(node, iteratedCollectionName)) {
+            if (iteratedExpression != null
+                    && CollectionModificationDetector.isModification(node, iteratedExpression)) {
                 modifiesIteratedCollection = true;
             }
             return true;
@@ -1130,14 +1214,5 @@ public class JdtLoopExtractor {
         public boolean hasIfElse() { return hasIfElse; }
         public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }
         
-        /**
-         * Sets the name of the iterated collection for modification detection.
-         * Must be called before accept() to enable collection modification checking.
-         * 
-         * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
-         */
-        public void setIteratedCollectionName(String name) {
-            this.iteratedCollectionName = name;
-        }
     }
 }

@@ -340,7 +340,7 @@ public final class PreconditionsChecker {
 	 */
 	private void analyzeLoop() {
 		// Extract the iterated collection name and type for modification detection (Issue #670)
-		String iteratedCollectionName = extractIteratedCollectionName();
+		Expression iteratedCollectionExpression = extractIteratedCollectionExpression();
 		ITypeBinding iteratedCollectionType = extractIteratedCollectionType();
 		
 		// Check if iterating over a concurrent collection (Issue #670 - Point 2.4)
@@ -427,8 +427,8 @@ public final class PreconditionsChecker {
 				markAsCollectPattern(node);
 			}
 			// Issue #670: Detect structural modifications on the iterated collection
-			if (iteratedCollectionName != null
-					&& CollectionModificationDetector.isModification(node, iteratedCollectionName)) {
+			if (iteratedCollectionExpression != null
+					&& CollectionModificationDetector.isModification(node, iteratedCollectionExpression)) {
 				modifiesIteratedCollection = true;
 			}
 			return true;
@@ -568,7 +568,7 @@ public final class PreconditionsChecker {
 		}
 		
 		String methodName = methodInv.getName().getIdentifier();
-		return "max".equals(methodName) || "min".equals(methodName);
+		return "max".equals(methodName) || "min".equals(methodName); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
@@ -796,33 +796,14 @@ public final class PreconditionsChecker {
 	}
 
 	/**
-	 * Extracts the name of the iterated collection from the loop statement.
-	 * 
-	 * <p>For enhanced for-loops: {@code for (String item : list)} → "list"</p>
-	 * 
-	 * @return the collection variable name, or null if not determinable
+	 * Returns the iterated source expression used for binding-based mutation checks.
+	 * Map views are normalized to their backing map.
+	 *
+	 * @return the normalized iterated expression, or null when unavailable
 	 */
-	private String extractIteratedCollectionName() {
+	private Expression extractIteratedCollectionExpression() {
 		if (loop instanceof EnhancedForStatement enhancedFor) {
-			Expression expression = enhancedFor.getExpression();
-			if (expression instanceof SimpleName simpleName) {
-				return simpleName.getIdentifier();
-			}
-			// Unwrap common map view-producing calls like map.entrySet(), map.keySet(), map.values()
-			if (expression instanceof MethodInvocation methodInvocation) {
-				SimpleName name = methodInvocation.getName();
-				if (name != null) {
-					String identifier = name.getIdentifier();
-					if ("entrySet".equals(identifier) || "keySet".equals(identifier) || "values".equals(identifier)) {
-						if (methodInvocation.arguments().isEmpty()) {
-							Expression qualifier = methodInvocation.getExpression();
-							if (qualifier instanceof SimpleName qualifierName) {
-								return qualifierName.getIdentifier();
-							}
-						}
-					}
-				}
-			}
+			return CollectionModificationDetector.normalizeIteratedExpression(enhancedFor.getExpression());
 		}
 		return null;
 	}
