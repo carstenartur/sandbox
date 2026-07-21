@@ -55,6 +55,49 @@ public class IntToEnumScopeExpansionTest {
 	}
 
 	@Test
+	public void localCleanupStillRunsWithoutProjectPlanner() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class Selected {
+					private static final int STATUS_PENDING = 0;
+					private static final int STATUS_APPROVED = 1;
+
+					private void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+		createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { selected },
+				new String[] { """
+						package test;
+
+						public class Selected {
+							private enum Status {
+								PENDING, APPROVED
+							}
+
+							private void process(Status status) {
+								if (status == Status.PENDING) {
+									System.out.println("pending");
+								} else if (status == Status.APPROVED) {
+									System.out.println("approved");
+								}
+							}
+						}
+						""" }, null);
+	}
+
+	@Test
 	public void projectWideOptionExpandsToAllProjectSources() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= createUnit(pack, "Selected.java"); //$NON-NLS-1$
