@@ -1,30 +1,134 @@
-name: Extract failed multi-file build log
+name: Apply verified multi-file planner fixes
 
 on:
   push:
     branches:
       - feature/multifile-cleanup-planning
-  pull_request:
-    branches:
-      - main
 
 permissions:
-  actions: read
-  contents: read
+  contents: write
 
 jobs:
-  extract-log:
+  repair:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Download failed workflow log
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/multifile-cleanup-planning
+      - name: Apply exact source fixes
         shell: bash
         run: |
-          gh run view 29782560691 --repo carstenartur/sandbox --log-failed > failed-build.log
-      - name: Upload failed log
-        uses: actions/upload-artifact@v7
-        with:
-          name: failed-multifile-build-log
-          path: failed-build.log
-          retention-days: 2
+          python3 - <<'PY'
+          from pathlib import Path
+
+          int_path = Path('sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java')
+          text = int_path.read_text()
+          old = '''\tprivate static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
+\t\treturn type.bodyDeclarations().stream().filter(TypeDeclaration.class::isInstance).map(TypeDeclaration.class::cast)
+\t\t\t\t.anyMatch(nested -> name.equals(nested.getName().getIdentifier()));
+\t}
+'''
+          new = '''\tprivate static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
+\t\tfor (Object declaration : type.bodyDeclarations()) {
+\t\t\tif (declaration instanceof TypeDeclaration nested
+\t\t\t\t\t&& name.equals(nested.getName().getIdentifier())) {
+\t\t\t\treturn true;
+\t\t\t}
+\t\t}
+\t\treturn false;
+\t}
+'''
+          if text.count(old) != 1:
+              raise SystemExit('Expected exactly one raw bodyDeclarations stream block')
+          int_path.write_text(text.replace(old, new))
+
+          junit_path = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java')
+          text = junit_path.read_text()
+          marker = '''\tprivate record RuleField(String compilationUnitHandle, String fieldBindingKey, String resourceTypeKey,
+\t\t\tboolean classRule) {
+\t}
+
+'''
+          replacement = marker + '''\tprivate enum RuleKind {
+\t\tNONE,
+\t\tINSTANCE,
+\t\tCLASS
+\t}
+
+'''
+          if text.count(marker) != 1:
+              raise SystemExit('Expected exactly one RuleField declaration')
+          text = text.replace(marker, replacement)
+
+          old = '''\t\t\t\tpublic boolean visit(FieldDeclaration node) {
+\t\t\t\t\tBoolean classRule= ruleKind(node);
+\t\t\t\t\tif (classRule == null || node.fragments().size() != 1
+\t\t\t\t\t\t\t|| classRule.booleanValue() != Modifier.isStatic(node.getModifiers())) {
+\t\t\t\t\t\treturn true;
+\t\t\t\t\t}
+'''
+          new = '''\t\t\t\tpublic boolean visit(FieldDeclaration node) {
+\t\t\t\t\tRuleKind kind= ruleKind(node);
+\t\t\t\t\tboolean classRule= kind == RuleKind.CLASS;
+\t\t\t\t\tif (kind == RuleKind.NONE || node.fragments().size() != 1
+\t\t\t\t\t\t\t|| classRule != Modifier.isStatic(node.getModifiers())) {
+\t\t\t\t\t\treturn true;
+\t\t\t\t\t}
+'''
+          if text.count(old) != 1:
+              raise SystemExit('Expected exactly one nullable RuleKind visitor block')
+          text = text.replace(old, new)
+          text = text.replace('result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule.booleanValue()));',
+                              'result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule));')
+
+          old = '''\tprivate static Boolean ruleKind(FieldDeclaration field) {
+\t\tfor (Object modifier : field.modifiers()) {
+\t\t\tif (modifier instanceof Annotation annotation) {
+\t\t\t\tITypeBinding binding= annotation.resolveTypeBinding();
+\t\t\t\tif (binding == null) {
+\t\t\t\t\tcontinue;
+\t\t\t\t}
+\t\t\t\tif (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {
+\t\t\t\t\treturn Boolean.FALSE;
+\t\t\t\t}
+\t\t\t\tif (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {
+\t\t\t\t\treturn Boolean.TRUE;
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t\treturn null;
+\t}
+'''
+          new = '''\tprivate static RuleKind ruleKind(FieldDeclaration field) {
+\t\tfor (Object modifier : field.modifiers()) {
+\t\t\tif (modifier instanceof Annotation annotation) {
+\t\t\t\tITypeBinding binding= annotation.resolveTypeBinding();
+\t\t\t\tif (binding == null) {
+\t\t\t\t\tcontinue;
+\t\t\t\t}
+\t\t\t\tif (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {
+\t\t\t\t\treturn RuleKind.INSTANCE;
+\t\t\t\t}
+\t\t\t\tif (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {
+\t\t\t\t\treturn RuleKind.CLASS;
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t\treturn RuleKind.NONE;
+\t}
+'''
+          if text.count(old) != 1:
+              raise SystemExit('Expected exactly one nullable ruleKind method')
+          junit_path.write_text(text.replace(old, new))
+          PY
+      - name: Commit fixes and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/extract-failed-build-log.yml
+          git add sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java
+          git add sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java
+          git commit -m 'Fix multi-file planner build blockers'
+          git push origin HEAD:feature/multifile-cleanup-planning
