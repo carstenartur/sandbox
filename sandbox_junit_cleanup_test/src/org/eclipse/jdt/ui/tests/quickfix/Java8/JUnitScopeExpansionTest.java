@@ -85,11 +85,8 @@ public class JUnitScopeExpansionTest {
 	}
 
 	private static ICompilationUnit createUnit(IPackageFragment pack, String name) throws CoreException {
-		return pack.createCompilationUnit(name, """
-				package test;
-
-				public class %s {
-				}
-				""".formatted(name.substring(0, name.length() - ".java".length())), false, null); //$NON-NLS-1$
+		String source= "package test;%n%npublic class %s {%n}%n" //$NON-NLS-1$
+				.formatted(name.substring(0, name.length() - ".java".length())); //$NON-NLS-1$
+		return pack.createCompilationUnit(name, source, false, null);
 	}
 }
