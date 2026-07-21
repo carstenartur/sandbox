@@ -1192,8 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedDate": "2026-07-20T03:15:52.176530999Z",
-      "totalProcessed": 2548,
+      "lastProcessedCommit": "80a8879beff3141dbc2da105941c631799924aea",
+      "lastProcessedDate": "2026-07-21T03:16:09.797366742Z",
+      "totalProcessed": 2624,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2347,6 +2348,24 @@
           "deferredAt": "2026-07-20T03:14:36.669770511Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "3478a850278f2be0b18137ec3eb5eeab119a73db",
+          "message": "Bug 440815 - External annotations need UI to be attached to library jars on the classpath",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-21T03:11:52.817582920Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "594ed91e555d1955d9ad67626570809adfd08aaf",
+          "message": "Bug 403917 - [1.8] Render TYPE_USE annotations in Javadoc hover/view",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-21T03:15:49.087273691Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2493,7 +2512,12 @@
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
-        "Modernization": 1
+        "Modernization": 1,
+        "Defensive Programming": 1,
+        "Preference Configuration": 1,
+        "Typo Fix": 1,
+        "Unnecessary Call Removal": 1,
+        "String Literal Replacement": 1
       },
       "exhaustedCategories": []
     },
@@ -2534,5 +2558,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25207
+  "globalTotalProcessed": 25283
 }
