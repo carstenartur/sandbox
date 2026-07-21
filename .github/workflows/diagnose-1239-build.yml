@@ -31,27 +31,20 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/88732643922/logs" \
             --output failed-job.log
-      - name: Extract relevant failure context
+      - name: Extract exact SpotBugs context
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           lines = Path('failed-job.log').read_text(errors='replace').splitlines()
-          pattern = re.compile(
-              r'\[ERROR\]|BUILD FAILURE|Failed to execute goal|cannot find symbol|Compilation failure|'
-              r'There are test failures|Failures: [1-9]|Errors: [1-9]|Reactor Summary',
-              re.IGNORECASE,
-          )
           selected = set()
           for index, line in enumerate(lines):
-              if pattern.search(line):
-                  selected.update(range(max(0, index - 6), min(len(lines), index + 12)))
-          if not selected:
-              selected.update(range(max(0, len(lines) - 250), len(lines)))
+              if ('Total bugs:' in line or 'spotbugs' in line.lower() or
+                      'BUILD FAILURE' in line or 'Failed to execute goal' in line):
+                  selected.update(range(max(0, index - 4), min(len(lines), index + 22)))
           excerpt = '\n'.join(f'{index + 1:05d}: {lines[index]}' for index in sorted(selected))
           Path('summary.md').write_text(
-              '### Automated Maven failure diagnosis\n\n```text\n' + excerpt[-50000:] + '\n```\n'
+              '### Exact SpotBugs diagnosis\n\n```text\n' + excerpt[-30000:] + '\n```\n'
           )
           print(excerpt)
           PY
