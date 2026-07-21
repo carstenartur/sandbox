@@ -8,6 +8,8 @@ on:
 permissions:
   actions: read
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   diagnose:
@@ -23,7 +25,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/88732643922/logs" \
             --output failed-job.log
-      - name: Print relevant failure context
+      - name: Extract relevant failure context
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -41,6 +43,13 @@ jobs:
                   selected.update(range(max(0, index - 6), min(len(lines), index + 12)))
           if not selected:
               selected.update(range(max(0, len(lines) - 250), len(lines)))
-          for index in sorted(selected):
-              print(f'{index + 1:05d}: {lines[index]}')
+          excerpt = '\n'.join(f'{index + 1:05d}: {lines[index]}' for index in sorted(selected))
+          Path('summary.md').write_text(
+              '### Automated Maven failure diagnosis\n\n```text\n' + excerpt[-50000:] + '\n```\n'
+          )
+          print(excerpt)
           PY
+      - name: Post diagnosis to PR 1239
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/${GITHUB_REPOSITORY}/issues/1239/comments" --method POST --raw-field body="$(cat summary.md)"
