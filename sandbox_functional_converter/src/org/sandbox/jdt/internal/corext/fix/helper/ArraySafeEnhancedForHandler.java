@@ -46,6 +46,8 @@ public class ArraySafeEnhancedForHandler extends EnhancedForHandler {
 			ReferenceHolder<ASTNode, Object> data) throws CoreException {
 		Object stored= data.get(visited);
 		if (stored instanceof JdtLoopExtractor.ExtractedLoop extracted
+				&& extracted.model != null
+				&& extracted.model.getSource() != null
 				&& extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY
 				&& extracted.model.getTerminal() instanceof CollectTerminal collectTerminal
 				&& !hasFreshAccumulator(visited, collectTerminal.targetVariable())) {
