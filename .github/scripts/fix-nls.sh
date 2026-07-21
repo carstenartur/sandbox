@@ -9,7 +9,7 @@ echo "Fixing NLS comments in plugin sources..."
 # Find all plugin source directories (exclude test modules and special modules)
 # Exclude: *_test/, sandbox_test_commons/, sandbox_web/, sandbox_target/, sandbox_coverage/
 # Matches both sandbox_ (underscore) and sandbox- (hyphen) patterns
-PLUGIN_DIRS=$(find . -type d -name "src" | grep -E "^\./sandbox[_-][^/]+/src$" | grep -v "_test/" | grep -v "sandbox_test_commons/" | grep -v "sandbox_web/" | grep -v "sandbox_target/" | grep -v "sandbox_coverage/" | sort)
+PLUGIN_DIRS=$(find . -type d -name "src" | grep -E "^\\./sandbox[_-][^/]+/src$" | grep -v "_test/" | grep -v "sandbox_test_commons/" | grep -v "sandbox_web/" | grep -v "sandbox_target/" | grep -v "sandbox_coverage/" | sort)
 
 if [ -z "$PLUGIN_DIRS" ]; then
     echo "No plugin source directories found"
