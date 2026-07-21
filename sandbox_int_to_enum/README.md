@@ -4,18 +4,21 @@
 
 This Eclipse plugin detects legacy Java code in which integer constants represent a closed set of states and migrates provably safe cases to an enum.
 
-The implementation has two transformation paths:
+The implementation has three deliberately separated capabilities:
 
-- **If/else state detection** — implemented conservatively with binding and usage analysis.
-- **Integer switch migration** — existing experimental prototype for switch statements.
+- **Local if/else state detection** — binding-based migration when the complete state flow is contained in one compilation unit.
+- **Complete-project coordinated migration** — a narrow package-scoped method/caller migration that runs only when every project source compilation unit is in scope.
+- **Integer switch migration** — the existing experimental prototype for switch statements.
+
+Local cleanup does not automatically request project sources. Complete-project analysis is an explicit, disabled-by-default option because it can inspect and modify additional files and is materially more expensive.
 
 ## Why this needs semantic analysis
 
 A group of similarly named integer constants is not sufficient evidence for an enum. Integers may be used as bit masks, protocol values, persisted identifiers, arithmetic operands, public API values, or values crossing file boundaries. The cleanup therefore analyses bindings and all relevant references before changing a type.
 
-## Implemented safe if/else migration
+## Implemented safe local if/else migration
 
-The current implementation transforms a candidate only when all of the following are true:
+The local implementation transforms a candidate only when all of the following are true:
 
 1. At least two `private static final int` constants share an underscore-delimited prefix, such as `STATUS_*`.
 2. Their compile-time integer values are distinct.
@@ -26,7 +29,7 @@ The current implementation transforms a candidate only when all of the following
 7. The constants have no unsupported remaining references.
 8. The generated enum name and constants are valid and do not conflict with an existing nested type.
 
-These restrictions describe the first implemented detector, not a fundamental restriction of the Eclipse cleanup framework. The existing `ICleanUp` lifecycle calls `checkPreConditions(IJavaProject, ICompilationUnit[], ...)` with all selected compilation units and then invokes the same cleanup instance once per target unit. A cleanup can therefore prepare an immutable project-wide migration plan and return one local `CompilationUnitChange` for each file. `CleanUpRefactoring` already combines those changes into one preview, apply operation, and undo.
+These restrictions describe the local detector, not a fundamental restriction of the Eclipse cleanup framework. The existing `ICleanUp` lifecycle calls `checkPreConditions(IJavaProject, ICompilationUnit[], ...)` with all target compilation units and then invokes the same cleanup instance once per target unit. A cleanup can therefore prepare an immutable project-wide migration plan and return one local `CompilationUnitChange` for each file. `CleanUpRefactoring` combines those changes into one preview, apply operation, and undo.
 
 ## Example
 
@@ -82,46 +85,51 @@ The cleanup deliberately preserves the existing control flow. Replacing an if/el
 
 ## Cases currently rejected
 
-The implemented detector does not yet migrate:
+The implemented detectors do not yet migrate:
 
-- public, protected, or package-visible constants or method signatures;
+- public or protected constants and method signatures;
 - parameters passed arbitrary integer expressions rather than recognised constants;
-- constants used in arithmetic, persistence, return values, method arguments, or unrelated comparisons;
+- constants used in arithmetic, persistence, return values, unrelated method arguments, or unrelated comparisons;
 - duplicate integer values used as aliases;
 - bit flags, which generally require a different model such as `EnumSet`;
-- state flows spanning multiple methods or compilation units;
+- inheritance, interfaces, overrides, method references, or state flows spanning several methods;
+- partial-project multi-file analysis;
 - existing nested types that conflict with the generated enum name.
 
 A rejected candidate is left unchanged.
 
-## Project-wide migration
+## Complete-project coordinated migration
 
-A complete migration of legacy APIs requires project-wide reference analysis and coordinated edits to declarations, callers, implementations, overrides, fields, locals, tests, serialization boundaries, and possibly external compatibility adapters.
+The coordinated planner currently recognises a deliberately narrow package-scoped state method and proven callers in other files. Before producing any edits it requires every source compilation unit in the Java project to be present in the cleanup target. This closed-world requirement prevents unselected callers or constant references from being missed.
 
-There are two stages:
+There are two ways to provide that scope:
 
-1. **Selected-scope multi-file cleanup without a JDT UI patch.** During `checkPreConditions`, analyse all compilation units already selected for cleanup and build a shared immutable plan. During `createFix`, emit only the planned edits for the current `CleanUpContext`. The existing cleanup refactoring collects all per-file changes atomically.
-2. **Automatic scope expansion with a small patched JDT UI bundle.** Before precondition checking, a patched `CleanUpRefactoring` asks participating cleanups for additional related compilation units and adds them to the normal target set. The existing parsing, fixpoint, overlap, preview, validation, apply, and undo pipeline remains in use.
+1. **Select the entire Java project explicitly.** Stock cleanup orchestration passes all selected source units to the shared planner.
+2. **Enable automatic project-wide scope expansion.** In a product containing the patched JDT UI scope-provider integration, enable the child option **Analyze all project source files for coordinated migrations**. The cleanup then requests every project source compilation unit before precondition checking.
 
-A dedicated LTK refactoring remains useful for interactive naming and compatibility choices, but it is not required merely to coordinate changes across already selected Java files.
+The project-wide option is disabled by default. Enabling only **Convert int constants to enum/switch** retains the user's initial selection and runs the local detector without scanning unrelated project files.
 
-The reusable planning infrastructure is tracked in issue #1206 and is intended for both this plugin and `sandbox_junit_cleanup`.
+The existing cleanup refactoring still owns parsing, fixpoint processing, overlap handling, preview, validation, apply, and undo. The Sandbox cleanup contributes scope discovery and an immutable semantic plan; it does not bypass the standard LTK transaction.
+
+A dedicated LTK refactoring remains useful for interactive naming and compatibility choices, but it is not required merely to coordinate already closed and fully selected Java source scope.
 
 ## Save actions
 
-The local transformation may remain available as a save action. Project-wide migration must be restricted to explicit cleanup runs because the save participant supplies only the saved compilation unit and should not silently edit other files.
+Local transformation may remain available as a save action. Project-wide scope expansion is initialized to `false` for save actions and also requires the main cleanup option, so saving one compilation unit cannot silently edit other files.
 
 ## Usage
 
 1. Open **Preferences → Java → Code Style → Clean Up**.
 2. Create or edit a cleanup profile.
-3. Enable **Convert int constants to enum/switch**.
-4. Run the cleanup on selected Java sources, a package, source folder, or project.
+3. Enable **Convert int constants to enum/switch** for local transformations in the selected cleanup scope.
+4. For the coordinated complete-project migration, additionally enable **Analyze all project source files for coordinated migrations**.
+5. Review the cleanup preview before applying changes.
 
 ## Requirements
 
 - Eclipse 2025-12 or later
 - Java 21 or later
+- The patched JDT UI scope-provider integration for automatic target expansion; otherwise select the complete Java project manually
 
 ## Technical documentation
 
