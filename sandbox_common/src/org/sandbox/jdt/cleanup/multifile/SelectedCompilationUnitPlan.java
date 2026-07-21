@@ -11,6 +11,7 @@
 package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -27,9 +28,9 @@ import org.eclipse.jdt.core.IJavaProject;
  */
 public record SelectedCompilationUnitPlan(String projectHandle, Set<String> compilationUnitHandles) {
 
-	/** Defensively copies plan data. */
+	/** Defensively copies plan data while retaining its deterministic order. */
 	public SelectedCompilationUnitPlan {
-		compilationUnitHandles= Set.copyOf(compilationUnitHandles);
+		compilationUnitHandles= Collections.unmodifiableSet(new LinkedHashSet<>(compilationUnitHandles));
 	}
 
 	/**
@@ -41,12 +42,13 @@ public record SelectedCompilationUnitPlan(String projectHandle, Set<String> comp
 	 */
 	public static SelectedCompilationUnitPlan of(IJavaProject project, ICompilationUnit[] units) {
 		Set<String> handles= new LinkedHashSet<>();
-		Arrays.stream(units).map(IJavaElement::getHandleIdentifier).sorted().forEach(handles::add);
+		Arrays.stream(units).map(ICompilationUnit::getPrimary).map(IJavaElement::getHandleIdentifier).sorted()
+				.forEach(handles::add);
 		return new SelectedCompilationUnitPlan(project.getHandleIdentifier(), handles);
 	}
 
 	/** Returns whether the unit belongs to this plan. */
 	public boolean contains(ICompilationUnit unit) {
-		return compilationUnitHandles.contains(unit.getHandleIdentifier());
+		return compilationUnitHandles.contains(unit.getPrimary().getHandleIdentifier());
 	}
 }
