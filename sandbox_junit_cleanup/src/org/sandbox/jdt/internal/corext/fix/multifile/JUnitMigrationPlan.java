@@ -60,7 +60,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
-		String unitHandle= unit.getHandleIdentifier();
+		String unitHandle= unit.getPrimary().getHandleIdentifier();
 		List<ExternalResourceRuleMigration> fieldMigrations= externalResourceRules.stream()
 				.filter(migration -> unitHandle.equals(migration.ruleCompilationUnitHandle())).toList();
 		List<ExternalResourceRuleMigration> typeMigrations= externalResourceRules.stream()
