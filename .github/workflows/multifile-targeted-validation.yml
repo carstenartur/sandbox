@@ -1,3 +1,4 @@
+# One-shot finalization workflow; removes itself after applying the verified patch.
 name: Finalize multi-file cleanup hardening
 
 on:
