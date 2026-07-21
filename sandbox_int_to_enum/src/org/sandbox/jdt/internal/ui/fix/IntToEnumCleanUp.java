@@ -13,20 +13,34 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
-/**
- * Cleanup that converts integer constants used in if-else chains to enum-based switch statements.
- */
-public class IntToEnumCleanUp extends AbstractCleanUpCoreWrapper<IntToEnumCleanUpCore> {
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
+
+/** Cleanup that converts integer state domains to enums. */
+public class IntToEnumCleanUp extends AbstractCleanUpCoreWrapper<IntToEnumCleanUpCore>
+		implements IMultiFileCleanUpScopeProvider {
 	public IntToEnumCleanUp(final Map<String, String> options) {
 		super(options, new IntToEnumCleanUpCore());
 	}
 
 	public IntToEnumCleanUp() {
 		this(Collections.emptyMap());
+	}
+
+	@Override
+	public Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project,
+			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
+		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
 	}
 }

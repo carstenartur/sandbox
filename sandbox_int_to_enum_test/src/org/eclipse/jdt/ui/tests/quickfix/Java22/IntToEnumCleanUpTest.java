@@ -16,7 +16,6 @@ package org.eclipse.jdt.ui.tests.quickfix.Java22;
 import java.util.Hashtable;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -56,10 +55,10 @@ public class IntToEnumCleanUpTest {
 				package test1;
 				
 				public class E1 {
-				    public static final int STATUS_PENDING = 0;
-				    public static final int STATUS_APPROVED = 1;
+				    private static final int STATUS_PENDING = 0;
+				    private static final int STATUS_APPROVED = 1;
 				    
-				    public void process(int status) {
+				    private void process(int status) {
 				        if (status == STATUS_PENDING) {
 				            System.out.println("Pending");
 				        } else if (status == STATUS_APPROVED) {
@@ -69,28 +68,30 @@ public class IntToEnumCleanUpTest {
 				}
 				""";
 		ICompilationUnit cu = pack.createCompilationUnit("E1.java", given, false, null);
-		
-		// Cleanup disabled - no transformation expected
 		context.disable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
-	@Disabled("Transformation logic not yet implemented - test documents expected behavior")
 	@Test
-	public void testBasicIfElseToEnumSwitch() throws CoreException {
+	public void testBasicIfElseIntStateToEnum() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		String given = """
 				package test1;
 				
 				public class E2 {
-				    public static final int STATUS_PENDING = 0;
-				    public static final int STATUS_APPROVED = 1;
-				    public static final int STATUS_REJECTED = 2;
+				    private static final int STATUS_PENDING = 0;
+				    private static final int STATUS_APPROVED = 1;
+				    private static final int STATUS_REJECTED = 2;
 				    
-				    public void process(int status) {
+				    public void run() {
+				        process(STATUS_PENDING);
+				        process(STATUS_REJECTED);
+				    }
+				    
+				    private void process(int status) {
 				        if (status == STATUS_PENDING) {
 				            System.out.println("Pending");
-				        } else if (status == STATUS_APPROVED) {
+				        } else if (STATUS_APPROVED == status) {
 				            System.out.println("Approved");
 				        } else if (status == STATUS_REJECTED) {
 				            System.out.println("Rejected");
@@ -98,11 +99,113 @@ public class IntToEnumCleanUpTest {
 				    }
 				}
 				""";
-		
+
 		ICompilationUnit cu = pack.createCompilationUnit("E2.java", given, false, null);
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
-		
-		// If-else to enum transformation not yet implemented
+
+		String expected = "package test1;\n"
+				+ "\n"
+				+ "public class E2 {\n"
+				+ "    private enum Status {\n"
+				+ "\t\tPENDING, APPROVED, REJECTED\n"
+				+ "\t}\n"
+				+ "\n"
+				+ "    public void run() {\n"
+				+ "        process(Status.PENDING);\n"
+				+ "        process(Status.REJECTED);\n"
+				+ "    }\n"
+				+ "    \n"
+				+ "\tprivate void process(Status status) {\n"
+				+ "        if (status == Status.PENDING) {\n"
+				+ "            System.out.println(\"Pending\");\n"
+				+ "        } else if (Status.APPROVED == status) {\n"
+				+ "            System.out.println(\"Approved\");\n"
+				+ "        } else if (status == Status.REJECTED) {\n"
+				+ "            System.out.println(\"Rejected\");\n"
+				+ "        }\n"
+				+ "    }\n"
+				+ "}\n";
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu },
+				new String[] { expected }, null);
+	}
+
+	@Test
+	public void testNoTransformPublicApiWithoutMultiFileAnalysis() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+				package test1;
+				
+				public class EPublic {
+				    public static final int STATUS_PENDING = 0;
+				    public static final int STATUS_APPROVED = 1;
+				    
+				    public void process(int status) {
+				        if (status == STATUS_PENDING) {
+				            System.out.println("Pending");
+				        } else if (status == STATUS_APPROVED) {
+				            System.out.println("Approved");
+				        }
+				    }
+				}
+				""";
+		ICompilationUnit cu = pack.createCompilationUnit("EPublic.java", given, false, null);
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	@Test
+	public void testNoTransformWhenCallSiteDoesNotUseKnownConstant() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+				package test1;
+				
+				public class ECall {
+				    private static final int STATUS_PENDING = 0;
+				    private static final int STATUS_APPROVED = 1;
+				    
+				    public void run(int status) {
+				        process(status);
+				    }
+				    
+				    private void process(int status) {
+				        if (status == STATUS_PENDING) {
+				            System.out.println("Pending");
+				        } else if (status == STATUS_APPROVED) {
+				            System.out.println("Approved");
+				        }
+				    }
+				}
+				""";
+		ICompilationUnit cu = pack.createCompilationUnit("ECall.java", given, false, null);
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	@Test
+	public void testNoTransformWhenConstantHasAnotherUse() throws CoreException {
+		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+		String given = """
+				package test1;
+				
+				public class EOtherUse {
+				    private static final int STATUS_PENDING = 0;
+				    private static final int STATUS_APPROVED = 1;
+				    
+				    private void process(int status) {
+				        if (status == STATUS_PENDING) {
+				            System.out.println("Pending");
+				        } else if (status == STATUS_APPROVED) {
+				            System.out.println("Approved");
+				        }
+				    }
+				    
+				    private int defaultStatus() {
+				        return STATUS_PENDING;
+				    }
+				}
+				""";
+		ICompilationUnit cu = pack.createCompilationUnit("EOtherUse.java", given, false, null);
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -135,9 +238,6 @@ public class IntToEnumCleanUpTest {
 		ICompilationUnit cu = pack.createCompilationUnit("E3.java", given, false, null);
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 
-		// Expected output matches Eclipse ASTRewrite formatting:
-		// - Newly generated enum body/closing and method use tabs
-		// - Existing code (switch body) keeps original 4-space indentation
 		String expected = "package test1;\n"
 				+ "\n"
 				+ "public class E3 {\n"
@@ -212,7 +312,6 @@ public class IntToEnumCleanUpTest {
 		ICompilationUnit cu = pack.createCompilationUnit("E5.java", given, false, null);
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 
-		// Switch selector is a local variable, not a method parameter - skip
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -245,7 +344,6 @@ public class IntToEnumCleanUpTest {
 		ICompilationUnit cu = pack.createCompilationUnit("E6.java", given, false, null);
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 
-		// Constants referenced outside the switch - skip to avoid broken references
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
@@ -274,7 +372,6 @@ public class IntToEnumCleanUpTest {
 		ICompilationUnit cu = pack.createCompilationUnit("E7.java", given, false, null);
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 
-		// Constants have no underscore-delimited prefix - skip
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 }

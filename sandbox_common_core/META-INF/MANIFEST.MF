@@ -5,7 +5,8 @@ Bundle-SymbolicName: sandbox_common_core
 Bundle-Vendor: Carsten Hammer
 Bundle-Version: 1.2.6.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-21
-Export-Package: org.sandbox.jdt.internal.common,
+Export-Package: org.sandbox.jdt.cleanup.multifile.api,
+ org.sandbox.jdt.internal.common,
  org.sandbox.jdt.triggerpattern.api,
  org.sandbox.jdt.triggerpattern.internal,
  org.sandbox.jdt.triggerpattern.llm,

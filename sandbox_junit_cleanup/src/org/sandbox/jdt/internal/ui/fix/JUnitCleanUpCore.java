@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -19,6 +19,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUpFix_r
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUp_description;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -28,26 +29,34 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.Messages;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+
+import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
-public class JUnitCleanUpCore extends AbstractCleanUp {
+/** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
+public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigrationPlan> {
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
 
-	/**
-	 *
-	 */
 	public JUnitCleanUpCore() {
 	}
 
@@ -57,25 +66,39 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	}
 
 	public boolean requireAST() {
-		return isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP);
+		return isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP);
 	}
 
 	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
+	protected MultiFileCleanUpPlanResult<JUnitMigrationPlan> createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
+		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {
+			return MultiFileCleanUpPlanResult.noPlan();
+		}
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
+		return JUnitMultiFilePlanner.create(project, compilationUnits,
+				fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE), monitor);
+	}
+
+	@Override
+	protected ICleanUpFix createFixForPlan(JUnitMigrationPlan plan, CleanUpContext context) throws CoreException {
+		if (!plan.contains(context.getCompilationUnit())) {
+			return null;
+		}
 		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;
 		}
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
-		if (!(isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()
-//				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
-				) {
+		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
-		// Share the nodesprocessed set between all plugins so they can coordinate
-		// and avoid processing the same nodes twice (prevents rewrite conflicts)
-		Set<ASTNode> sharedNodesProcessed = new HashSet<>();
+		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
+		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
 		if (operations.isEmpty()) {
 			return null;
@@ -85,9 +108,21 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	}
 
 	@Override
+	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
+			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
+		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP))) {
+			return List.of();
+		}
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
+		return JavaProjectCompilationUnits.collect(project);
+	}
+
+	@Override
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
-		if ((isEnabled(JUNIT_CLEANUP)||isEnabled(JUNIT3_CLEANUP))) {
+		if (isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) {
 			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));
 		}
@@ -101,7 +136,6 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 		boolean first= true;
 		for (JUnitCleanUpFixCore e : allOfJunit4()) {
 			if (!first) {
-				// Add visual separator (comment line) between cleanup sections
 				sb.append("// ─── "); //$NON-NLS-1$
 				sb.append(e.toString());
 				sb.append(" ───").append(System.lineSeparator()); //$NON-NLS-1$
@@ -113,49 +147,47 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 	}
 
 	private EnumSet<JUnitCleanUpFixCore> computeFixSet() {
-		EnumSet<JUnitCleanUpFixCore> fixSetJunit4 = isEnabled(JUNIT_CLEANUP)
+		EnumSet<JUnitCleanUpFixCore> fixSetJunit4= isEnabled(JUNIT_CLEANUP)
 				? allOfJunit4()
-						: EnumSet.noneOf(JUnitCleanUpFixCore.class);
-		EnumSet<JUnitCleanUpFixCore> fixSetJunit3 = isEnabled(JUNIT3_CLEANUP)
+				: EnumSet.noneOf(JUnitCleanUpFixCore.class);
+		EnumSet<JUnitCleanUpFixCore> fixSetJunit3= isEnabled(JUNIT3_CLEANUP)
 				? allOfJunit3()
-						: EnumSet.noneOf(JUnitCleanUpFixCore.class);
-		Map<String, JUnitCleanUpFixCore> cleanupMappings = Map.ofEntries(
-				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),
-				   Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, JUnitCleanUpFixCore.ASSERT_OPTIMIZATION),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, JUnitCleanUpFixCore.ASSUME_OPTIMIZATION),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT, JUnitCleanUpFixCore.TEST_TIMEOUT),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED, JUnitCleanUpFixCore.TEST_EXPECTED),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT, JUnitCleanUpFixCore.RULETIMEOUT),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION, JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR, JUnitCleanUpFixCore.RULEERRORCOLLECTOR),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED, JUnitCleanUpFixCore.PARAMETERIZED),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),
-			       Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE)
-				);
-		EnumSet<JUnitCleanUpFixCore> fixSetcombined=EnumSet.copyOf(fixSetJunit4);
-		fixSetcombined.addAll(fixSetJunit3);
-
+				: EnumSet.noneOf(JUnitCleanUpFixCore.class);
+		Map<String, JUnitCleanUpFixCore> cleanupMappings= Map.ofEntries(
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, JUnitCleanUpFixCore.ASSERT),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, JUnitCleanUpFixCore.ASSERT_OPTIMIZATION),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, JUnitCleanUpFixCore.ASSUME),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION, JUnitCleanUpFixCore.ASSUME_OPTIMIZATION),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, JUnitCleanUpFixCore.AFTER),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, JUnitCleanUpFixCore.BEFORE),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, JUnitCleanUpFixCore.AFTERCLASS),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, JUnitCleanUpFixCore.BEFORECLASS),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST, JUnitCleanUpFixCore.TEST),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT, JUnitCleanUpFixCore.TEST_TIMEOUT),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED, JUnitCleanUpFixCore.TEST_EXPECTED),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_3_TEST, JUnitCleanUpFixCore.TEST3),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT, JUnitCleanUpFixCore.RULETIMEOUT),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION, JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR, JUnitCleanUpFixCore.RULEERRORCOLLECTOR),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED, JUnitCleanUpFixCore.PARAMETERIZED),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS, JUnitCleanUpFixCore.LOSTTESTS),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, JUnitCleanUpFixCore.THROWINGRUNNABLE));
+		EnumSet<JUnitCleanUpFixCore> fixSetCombined= EnumSet.copyOf(fixSetJunit4);
+		fixSetCombined.addAll(fixSetJunit3);
 		cleanupMappings.forEach((config, fix) -> {
 			if (!isEnabled(config)) {
-				fixSetcombined.remove(fix);
+				fixSetCombined.remove(fix);
 			}
 		});
-		return fixSetcombined;
+		return fixSetCombined;
 	}
 
 	private EnumSet<JUnitCleanUpFixCore> allOfJunit4() {
@@ -163,10 +195,8 @@ public class JUnitCleanUpCore extends AbstractCleanUp {
 		allOf.remove(JUnitCleanUpFixCore.TEST3);
 		return allOf;
 	}
-	
+
 	private EnumSet<JUnitCleanUpFixCore> allOfJunit3() {
-		EnumSet<JUnitCleanUpFixCore> allOf= EnumSet.noneOf(JUnitCleanUpFixCore.class);
-		allOf.add(JUnitCleanUpFixCore.TEST3);
-		return allOf;
+		return EnumSet.of(JUnitCleanUpFixCore.TEST3);
 	}
 }
