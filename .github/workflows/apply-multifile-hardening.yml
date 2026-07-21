@@ -1,0 +1,189 @@
+name: Apply verified multi-file hardening
+
+on:
+  push:
+    branches:
+      - feature/multifile-cleanup-planning
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/multifile-cleanup-planning
+          fetch-depth: 0
+      - name: Apply exact verified changes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, description):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{description}: expected one match, found {count}')
+              p.write_text(text.replace(old, new))
+
+          replace_once(
+              'sandbox_int_to_enum_test/src/org/eclipse/jdt/ui/tests/quickfix/Java22/IntToEnumCleanUpTest.java',
+              '\t\tcontext.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);\n',
+              '\t\tcontext.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu },\n\t\t\t\tnew String[] { expected }, null);\n',
+              'int-to-enum whitespace assertion')
+
+          selected = Path('sandbox_common/src/org/sandbox/jdt/cleanup/multifile/SelectedCompilationUnitPlan.java')
+          text = selected.read_text()
+          text = text.replace('import java.util.Arrays;\n', 'import java.util.Arrays;\nimport java.util.Collections;\n')
+          text = text.replace('compilationUnitHandles= Set.copyOf(compilationUnitHandles);',
+                              'compilationUnitHandles= Collections.unmodifiableSet(new LinkedHashSet<>(compilationUnitHandles));')
+          text = text.replace('Arrays.stream(units).map(IJavaElement::getHandleIdentifier).sorted().forEach(handles::add);',
+                              'Arrays.stream(units).map(ICompilationUnit::getPrimary).map(IJavaElement::getHandleIdentifier).sorted()\n\t\t\t\t.forEach(handles::add);')
+          text = text.replace('return compilationUnitHandles.contains(unit.getHandleIdentifier());',
+                              'return compilationUnitHandles.contains(unit.getPrimary().getHandleIdentifier());')
+          selected.write_text(text)
+
+          for path in [
+              'sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMigrationPlan.java',
+              'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java',
+              'sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFileRewriteOperation.java']:
+              p = Path(path)
+              text = p.read_text()
+              old = 'String unitHandle= unit.getHandleIdentifier();'
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one unit handle lookup')
+              p.write_text(text.replace(old, 'String unitHandle= unit.getPrimary().getHandleIdentifier();'))
+
+          planner = Path('sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java')
+          text = planner.read_text()
+          text = text.replace('import org.eclipse.jdt.core.dom.ASTNode;\n',
+                              'import org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.AbstractTypeDeclaration;\n')
+          old = '''\tprivate static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
+\t\tfor (Object declaration : type.bodyDeclarations()) {
+\t\t\tif (declaration instanceof TypeDeclaration nested
+\t\t\t\t\t&& name.equals(nested.getName().getIdentifier())) {
+\t\t\t\treturn true;
+\t\t\t}
+\t\t}
+\t\treturn false;
+\t}
+'''
+          new = '''\tprivate static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
+\t\tfor (Object declaration : type.bodyDeclarations()) {
+\t\t\tif (declaration instanceof AbstractTypeDeclaration nested
+\t\t\t\t\t&& name.equals(nested.getName().getIdentifier())) {
+\t\t\t\treturn true;
+\t\t\t}
+\t\t}
+\t\treturn false;
+\t}
+'''
+          if text.count(old) != 1:
+              raise SystemExit('nested type collision block not found exactly once')
+          planner.write_text(text.replace(old, new))
+
+          replace_once(
+              'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java',
+              'if (fieldBinding == null || resource == null || unitHandle.equals(resource.compilationUnitHandle())) {',
+              'if (fieldBinding == null || resource == null) {',
+              'same-file JUnit rule inclusion')
+
+          test_path = Path('sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceMigrationTest.java')
+          text = test_path.read_text()
+          marker = '\n\tprivate void enableExternalResourceRuleMigration() throws CoreException {'
+          if text.count(marker) != 1:
+              raise SystemExit('JUnit test insertion marker not found exactly once')
+          test = r'''
+
+	@Test
+	public void migratesLocalAndRemoteRuleFieldsThroughOnePlan() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit local= pack.createCompilationUnit("LocalTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.rules.ExternalResource;
+
+				class SharedResource extends ExternalResource {
+					@Override
+					protected void before() throws Throwable {
+					}
+
+					@Override
+					protected void after() {
+					}
+				}
+
+				public class LocalTest {
+					@Rule
+					public SharedResource local = new SharedResource();
+				}
+				""", false, null);
+		ICompilationUnit remote= pack.createCompilationUnit("RemoteTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+
+				public class RemoteTest {
+					@Rule
+					public SharedResource remote = new SharedResource();
+				}
+				""", false, null);
+
+		enableExternalResourceRuleMigration();
+
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { local, remote },
+				new String[] {
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.AfterEachCallback;
+						import org.junit.jupiter.api.extension.BeforeEachCallback;
+						import org.junit.jupiter.api.extension.ExtensionContext;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+
+						class SharedResource implements BeforeEachCallback, AfterEachCallback {
+							@Override
+							public void beforeEach(ExtensionContext context) {
+							}
+
+							@Override
+							public void afterEach(ExtensionContext context) {
+							}
+						}
+
+						public class LocalTest {
+							@RegisterExtension
+							public SharedResource local = new SharedResource();
+						}
+						""",
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+
+						public class RemoteTest {
+							@RegisterExtension
+							public SharedResource remote = new SharedResource();
+						}
+						""" }, null);
+	}
+'''
+          test_path.write_text(text.replace(marker, test + marker))
+          PY
+      - name: Commit verified changes and remove workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/apply-multifile-hardening.yml
+          git add sandbox_common/src/org/sandbox/jdt/cleanup/multifile/SelectedCompilationUnitPlan.java
+          git add sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile
+          git add sandbox_int_to_enum_test/src/org/eclipse/jdt/ui/tests/quickfix/Java22/IntToEnumCleanUpTest.java
+          git add sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile
+          git add sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceMigrationTest.java
+          git commit -m 'Harden planned multi-file cleanup execution'
+          git push origin HEAD:feature/multifile-cleanup-planning
