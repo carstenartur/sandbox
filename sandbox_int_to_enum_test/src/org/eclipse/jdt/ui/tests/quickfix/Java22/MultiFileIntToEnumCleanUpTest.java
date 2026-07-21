@@ -18,6 +18,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 
+import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
@@ -60,6 +61,7 @@ public class MultiFileIntToEnumCleanUpTest {
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { processor, client },
 				new String[] {
@@ -127,6 +129,7 @@ public class MultiFileIntToEnumCleanUpTest {
 				""", false, null);
 
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
 	}
