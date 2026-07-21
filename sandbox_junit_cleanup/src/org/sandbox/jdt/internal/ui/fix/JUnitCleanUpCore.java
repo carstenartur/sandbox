@@ -110,7 +110,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	@Override
 	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
-		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP))) {
+		if (!computeFixSet().contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
