@@ -218,5 +218,5 @@ When migrating to a new Eclipse version, update the following files:
 
 - **Eclipse Version**: 2025-12
 - **Java Version**: 21
-- **Tycho Version**: 5.0.2
+- **Tycho Version**: 5.0.3
 - **Default Branch**: `main`

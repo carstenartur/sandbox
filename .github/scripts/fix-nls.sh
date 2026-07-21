@@ -1,21 +1,4 @@
 #!/bin/bash
-
-set -euo pipefail
-
-if ! grep -Fq -- '- **Tycho Version**: 5.0.2' CONTRIBUTING.md; then
-	echo "Expected Tycho Version 5.0.2 table entry not found" >&2
-	exit 1
-fi
-
-sed -i 's/- \*\*Tycho Version\*\*: 5\.0\.2/- **Tycho Version**: 5.0.3/' CONTRIBUTING.md
-
-if grep -Fq -- '- **Tycho Version**: 5.0.2' CONTRIBUTING.md; then
-	echo "Old Tycho table entry remains" >&2
-	exit 1
-fi
-
-cat > /tmp/fix-nls-original.sh <<'EOF'
-#!/bin/bash
 # Adds missing //$NON-NLS-n$ comments to string literals in Java files
 # ONLY for plugin modules (not for test modules)
 
@@ -99,19 +82,3 @@ done
 
 echo ""
 echo "NLS comment fix complete."
-EOF
-
-chmod +x /tmp/fix-nls-original.sh
-rm -f .github/qa-trigger/VersionTableSyncTrigger.java
-rmdir .github/qa-trigger 2>/dev/null || true
-mv /tmp/fix-nls-original.sh .github/scripts/fix-nls.sh
-
-while IFS= read -r -d '' file; do
-	case "$file" in
-		CONTRIBUTING.md|.github/scripts/fix-nls.sh|.github/qa-trigger/VersionTableSyncTrigger.java)
-			;;
-		*)
-			git checkout -- "$file"
-			;;
-	esac
-done < <(git diff --name-only -z)
