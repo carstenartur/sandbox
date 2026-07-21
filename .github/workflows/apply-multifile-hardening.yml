@@ -1,3 +1,4 @@
+# One-shot workflow: applies verified source changes and removes itself.
 name: Apply verified multi-file hardening
 
 on:
