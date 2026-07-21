@@ -1,4 +1,21 @@
 #!/bin/bash
+
+set -euo pipefail
+
+if ! grep -q 'Tycho 5\.0\.2' pom.xml CONTRIBUTING.md; then
+	echo "No Tycho 5.0.2 references found in pom.xml or CONTRIBUTING.md" >&2
+	exit 1
+fi
+
+sed -i 's/Tycho 5\.0\.2/Tycho 5.0.3/g' pom.xml CONTRIBUTING.md
+
+if grep -q 'Tycho 5\.0\.2' pom.xml CONTRIBUTING.md; then
+	echo "Tycho 5.0.2 references remain after replacement" >&2
+	exit 1
+fi
+
+cat > /tmp/fix-nls-original.sh <<'EOF'
+#!/bin/bash
 # Adds missing //$NON-NLS-n$ comments to string literals in Java files
 # ONLY for plugin modules (not for test modules)
 
@@ -9,7 +26,7 @@ echo "Fixing NLS comments in plugin sources..."
 # Find all plugin source directories (exclude test modules and special modules)
 # Exclude: *_test/, sandbox_test_commons/, sandbox_web/, sandbox_target/, sandbox_coverage/
 # Matches both sandbox_ (underscore) and sandbox- (hyphen) patterns
-PLUGIN_DIRS=$(find . -type d -name "src" | grep -E "^\\./sandbox[_-][^/]+/src$" | grep -v "_test/" | grep -v "sandbox_test_commons/" | grep -v "sandbox_web/" | grep -v "sandbox_target/" | grep -v "sandbox_coverage/" | sort)
+PLUGIN_DIRS=$(find . -type d -name "src" | grep -E "^\./sandbox[_-][^/]+/src$" | grep -v "_test/" | grep -v "sandbox_test_commons/" | grep -v "sandbox_web/" | grep -v "sandbox_target/" | grep -v "sandbox_coverage/" | sort)
 
 if [ -z "$PLUGIN_DIRS" ]; then
     echo "No plugin source directories found"
@@ -82,3 +99,19 @@ done
 
 echo ""
 echo "NLS comment fix complete."
+EOF
+
+chmod +x /tmp/fix-nls-original.sh
+rm -f .github/qa-trigger/VersionSyncTrigger.java
+rmdir .github/qa-trigger 2>/dev/null || true
+mv /tmp/fix-nls-original.sh .github/scripts/fix-nls.sh
+
+while IFS= read -r -d '' file; do
+	case "$file" in
+		pom.xml|CONTRIBUTING.md|.github/scripts/fix-nls.sh|.github/qa-trigger/VersionSyncTrigger.java)
+			;;
+		*)
+			git checkout -- "$file"
+			;;
+	esac
+done < <(git diff --name-only -z)
