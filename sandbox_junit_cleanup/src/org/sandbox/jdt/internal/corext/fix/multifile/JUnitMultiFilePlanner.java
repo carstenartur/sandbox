@@ -61,6 +61,12 @@ public final class JUnitMultiFilePlanner {
 			boolean classRule) {
 	}
 
+	private enum RuleKind {
+		NONE,
+		INSTANCE,
+		CLASS
+	}
+
 	private JUnitMultiFilePlanner() {
 	}
 
@@ -147,9 +153,10 @@ public final class JUnitMultiFilePlanner {
 			entry.getValue().accept(new ASTVisitor() {
 				@Override
 				public boolean visit(FieldDeclaration node) {
-					Boolean classRule= ruleKind(node);
-					if (classRule == null || node.fragments().size() != 1
-							|| classRule.booleanValue() != Modifier.isStatic(node.getModifiers())) {
+					RuleKind kind= ruleKind(node);
+					boolean classRule= kind == RuleKind.CLASS;
+					if (kind == RuleKind.NONE || node.fragments().size() != 1
+							|| classRule != Modifier.isStatic(node.getModifiers())) {
 						return true;
 					}
 					VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);
@@ -162,7 +169,7 @@ public final class JUnitMultiFilePlanner {
 					}
 					String fieldKey= fieldBinding.getVariableDeclaration().getKey();
 					if (fieldKey != null) {
-						result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule.booleanValue()));
+						result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule));
 					}
 					return true;
 				}
@@ -189,7 +196,7 @@ public final class JUnitMultiFilePlanner {
 		return List.copyOf(result);
 	}
 
-	private static Boolean ruleKind(FieldDeclaration field) {
+	private static RuleKind ruleKind(FieldDeclaration field) {
 		for (Object modifier : field.modifiers()) {
 			if (modifier instanceof Annotation annotation) {
 				ITypeBinding binding= annotation.resolveTypeBinding();
@@ -197,14 +204,14 @@ public final class JUnitMultiFilePlanner {
 					continue;
 				}
 				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {
-					return Boolean.FALSE;
+					return RuleKind.INSTANCE;
 				}
 				if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {
-					return Boolean.TRUE;
+					return RuleKind.CLASS;
 				}
 			}
 		}
-		return null;
+		return RuleKind.NONE;
 	}
 
 	private static ITypeBinding resourceTypeBinding(VariableDeclarationFragment fragment,
