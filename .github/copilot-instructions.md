@@ -21,11 +21,11 @@ mvn test -pl sandbox-functional-converter-core
 
 ## Critical Rules
 
-1. **Java 21 required** — Tycho 5.0.1 and Eclipse 2025-12 need Java 21
+1. **Java 21 required** — Tycho 5.0.3 and Eclipse 2025-12 need Java 21
 2. **Do NOT restructure packages** — `org.sandbox.*` maps to `org.eclipse.*` for JDT porting
 3. **Do NOT de-duplicate CleanUpCore classes** — apparent duplication is intentional for JDT porting
 4. **Do NOT rename MYCleanUpConstants** — the `MY` prefix avoids conflicts with Eclipse JDT
-5. **Do NOT create shared base classes** — each cleanup directly extends `AbstractCleanUp`
+5. **Use shared cleanup base classes only for established lifecycle contracts** — ordinary cleanups extend `AbstractCleanUp`; coordinated multi-file cleanups may extend `AbstractPlannedMultiFileCleanUp`
 6. **Remove unused imports** — Tycho treats them as errors
 7. **Add `//$NON-NLS-1$`** to user-facing string literals
 
