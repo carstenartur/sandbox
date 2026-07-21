@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - qa/diagnose-1239-build
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/diagnose-1239-build.yml
+      - .github/diagnose-1239-trigger.txt
 
 permissions:
   actions: read
