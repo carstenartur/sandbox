@@ -1,1 +1,1 @@
-Trigger the one-shot diagnostic workflow.
+Trigger the updated one-shot diagnostic workflow.
