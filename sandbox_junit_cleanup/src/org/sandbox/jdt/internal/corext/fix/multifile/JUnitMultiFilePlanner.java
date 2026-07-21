@@ -89,7 +89,7 @@ public final class JUnitMultiFilePlanner {
 		Set<String> selectedHandles= selectedScope.compilationUnitHandles();
 		Set<String> projectHandles= new LinkedHashSet<>();
 		for (ICompilationUnit unit : allProjectUnits) {
-			projectHandles.add(unit.getHandleIdentifier());
+			projectHandles.add(unit.getPrimary().getHandleIdentifier());
 		}
 		if (!selectedHandles.equals(projectHandles)) {
 			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
@@ -164,7 +164,7 @@ public final class JUnitMultiFilePlanner {
 					ITypeBinding resourceBinding= resourceTypeBinding(fragment, fieldBinding);
 					String resourceTypeKey= JUnitMigrationPlan.typeKey(resourceBinding);
 					ResourceType resource= resourcesByTypeKey.get(resourceTypeKey);
-					if (fieldBinding == null || resource == null || unitHandle.equals(resource.compilationUnitHandle())) {
+					if (fieldBinding == null || resource == null) {
 						return true;
 					}
 					String fieldKey= fieldBinding.getVariableDeclaration().getKey();
