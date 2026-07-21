@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -527,7 +528,7 @@ public final class IntEnumMultiFilePlanner {
 
 	private static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
 		for (Object declaration : type.bodyDeclarations()) {
-			if (declaration instanceof TypeDeclaration nested
+			if (declaration instanceof AbstractTypeDeclaration nested
 					&& name.equals(nested.getName().getIdentifier())) {
 				return true;
 			}
