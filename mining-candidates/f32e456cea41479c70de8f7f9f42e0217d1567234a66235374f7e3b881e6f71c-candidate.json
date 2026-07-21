@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f32e456cea41479c70de8f7f9f42e0217d1567234a66235374f7e3b881e6f71c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.reflect.Modifier.isStatic($mb.getModifiers()) \u0026\u0026 !$mb.isSynthetic()\n\u003d\u003e\n$mb !\u003d null \u0026\u0026 java.lang.reflect.Modifier.isStatic($mb.getModifiers())\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.dom.IMethodBinding;\nimport java.lang.reflect.Modifier;\n\nclass QuickAssistProcessor {\n    void processMethod(IMethodBinding referredMethodBinding) {\n        // Before (part of an else if condition)\n        if (false) {} else if (Modifier.isStatic(referredMethodBinding.getModifiers()) \u0026\u0026 !referredMethodBinding.isSynthetic()) {\n            System.out.println(\"Condition matched: static and not synthetic\");\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.jdt.core.dom.IMethodBinding;\nimport java.lang.reflect.Modifier;\n\nclass QuickAssistProcessor {\n    void processMethod(IMethodBinding referredMethodBinding) {\n        // After\n        if (false) {} else if (referredMethodBinding !\u003d null \u0026\u0026 Modifier.isStatic(referredMethodBinding.getModifiers())) {\n            System.out.println(\"Condition matched: static\");\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.jdt.core.dom.IMethodBinding;\nimport java.lang.reflect.Modifier;\n\nclass QuickAssistProcessor {\n    void processMethod(IMethodBinding referredMethodBinding) {\n        // Not matching because it\u0027s only checking static\n        if (Modifier.isStatic(referredMethodBinding.getModifiers())) {\n            System.out.println(\"Only static check\");\n        }\n        // Not matching because it\u0027s only checking synthetic\n        if (referredMethodBinding.isSynthetic()) {\n            System.out.println(\"Only synthetic check\");\n        }\n        // Not matching because it\u0027s missing \u0027!\u0027 for synthetic\n        if (Modifier.isStatic(referredMethodBinding.getModifiers()) \u0026\u0026 referredMethodBinding.isSynthetic()) {\n            System.out.println(\"Static and synthetic\");\n        }\n    }\n}",
+  "targetHintFile": "defensive-programming.sandbox-hint",
+  "sourceCommit": "80d0d96882c97b75f2684901d0bdec7ad8cce924",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Defensive Programming",
+  "summary": "Replaced `Modifier.isStatic(method.getModifiers()) \u0026\u0026 !method.isSynthetic()` with `method !\u003d null \u0026\u0026 Modifier.isStatic(method.getModifiers())` in boolean conditions to improve null safety and fix specific API behavior for `IMethodBinding`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-21T03:16:11.157302564Z",
+  "ruleFingerprint": "sha256:702c13af06a6035a8d420289816cb2a4516702e9dae51479a08c12d32d5e17bc",
+  "behaviorFingerprint": "sha256:fcd5c9c137c5695e993266e4ba36f89eb24ee07ca6d88fafd2e7b9b1fefdb087",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-07-21T03:16:12.467908527Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

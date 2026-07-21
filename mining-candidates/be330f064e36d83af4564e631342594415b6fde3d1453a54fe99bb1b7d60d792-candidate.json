@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "be330f064e36d83af4564e631342594415b6fde3d1453a54fe99bb1b7d60d792",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: preference.codeassist.autoactivation.delay.default.zero\u003e\n\u003c!description: Sets the default content assist auto-activation delay from 200ms to 0ms.\nThis change aligns with Bug 161403, improving the responsiveness of content assist.\nOnly applies to the specific constant value 200.\n\u003e\n\u003c!severity: HINT\u003e\n\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 200)\n\u003d\u003e\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 0)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\nclass Test {\n    void setup(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 200);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\nclass Test {\n    void setup(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 0);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\nclass Test {\n    void setup(IPreferenceStore store) {\n        // This should not be changed if it\u0027s not 200\n        store.setDefault(PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 100);\n        // This should not be changed if it\u0027s a different preference key\n        store.setDefault(\"some.other.preference\", 200);\n        // This should not be changed if it\u0027s already 0\n        store.setDefault(PreferenceConstants.CODEASSIST_AUTOACTIVATION_DELAY, 0);\n    }\n}",
+  "targetHintFile": "preferences.sandbox-hint",
+  "sourceCommit": "22a5163208dca08f18a0dbfb1cb49a7108783cad",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Preference Configuration",
+  "summary": "Replace specific preference store default value for auto-activation delay from 200 to 0.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-21T03:16:11.168886680Z",
+  "ruleFingerprint": "sha256:a34f01c5ae0c19e8cd2e19fc0e5ae4dea22d02e6bd2acbadda5eb6731cc78ac5",
+  "behaviorFingerprint": "sha256:fe3f81d4025ee75dc5ee23df057167533e7d1e7c519a181e5a219a829218e32b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-21T03:16:12.473056450Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
