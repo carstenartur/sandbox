@@ -526,7 +526,12 @@ public final class IntEnumMultiFilePlanner {
 	}
 
 	private static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
-		return type.bodyDeclarations().stream().filter(TypeDeclaration.class::isInstance).map(TypeDeclaration.class::cast)
-				.anyMatch(nested -> name.equals(nested.getName().getIdentifier()));
+		for (Object declaration : type.bodyDeclarations()) {
+			if (declaration instanceof TypeDeclaration nested
+					&& name.equals(nested.getName().getIdentifier())) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
