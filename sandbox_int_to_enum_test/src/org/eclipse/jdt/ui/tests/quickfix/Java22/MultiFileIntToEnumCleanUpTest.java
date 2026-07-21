@@ -90,4 +90,44 @@ public class MultiFileIntToEnumCleanUpTest {
 						}
 						""" }, null);
 	}
+
+	@Test
+	public void doesNotMigrateWhenGeneratedEnumNameConflictsWithNestedEnum() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderProcessor {
+					enum Status {
+						EXISTING
+					}
+
+					static final int STATUS_PENDING = 0;
+					static final int STATUS_APPROVED = 1;
+
+					void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderClient {
+					void run(OrderProcessor processor) {
+						processor.process(OrderProcessor.STATUS_PENDING);
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
+	}
 }
