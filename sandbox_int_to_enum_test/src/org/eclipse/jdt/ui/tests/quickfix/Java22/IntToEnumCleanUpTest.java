@@ -125,7 +125,8 @@ public class IntToEnumCleanUpTest {
 				+ "        }\n"
 				+ "    }\n"
 				+ "}\n";
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu },
+				new String[] { expected }, null);
 	}
 
 	@Test
