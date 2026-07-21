@@ -135,7 +135,7 @@ See `carstenartur/eclipse.jdt.ui#94`.
 
 `org.eclipse.jdt.ui` is a singleton bundle. A fragment cannot reliably override an existing host class because host classes are resolved before attached fragment classes.
 
-Use a patched, higher-version `org.eclipse.jdt.ui` bundle in the Sandbox target/product or distribute it through a p2 feature patch. The bundle keeps its symbolic name and compatible package exports and dependencies.
+Use a patched, higher-version `org.eclipse.jdt.ui` bundle in the Sandbox target/product or distribute it through a p2 feature patch. The bundle keeps its symbolic name and compatible package exports and dependencies. Reproducible p2 and product delivery is tracked in #1209.
 
 No JDT UI patch is required when users explicitly run cleanup on a complete project, source folder, package, working set, or multi-file selection. The patch is only needed to add related files outside that original target set automatically.
 
@@ -154,14 +154,14 @@ Two paths are implemented:
 1. A local detector migrates a private closed integer state flow inside one compilation unit.
 2. `IntEnumMultiFilePlanner` detects a conservative package-scoped state API when the complete Java source project is in scope. It migrates package-private `static final int` constants, the package-private method parameter and its equality tests, and callers in other compilation units.
 
-The cross-file plan records constant, type, method, and parameter identities through binding keys and Java-element handles. Before rewriting each file it verifies expected reference and invocation counts against the current AST. The current project-wide path deliberately rejects public/protected APIs, type hierarchies, arbitrary integer arguments, aliases, arithmetic, bit flags, unresolved uses, persistence/protocol semantics, and incomplete project selections.
+The cross-file plan records constant, type, method, and parameter identities through binding keys and Java-element handles. Before rewriting each file it verifies expected reference and invocation counts against the current AST. The current project-wide path deliberately rejects public/protected APIs, type hierarchies, arbitrary integer arguments, aliases, arithmetic, bit flags, unresolved uses, persistence/protocol semantics, incomplete project selections, and generated enum names that conflict with an existing nested type.
 
 ### JUnit migration
 
 `JUnitMultiFilePlanner` implements the first coordinated JUnit migration:
 
 - a named class directly extending JUnit 4 `ExternalResource` may be declared in one file;
-- one or more selected test files may use it through `@Rule` or `@ClassRule` fields;
+- one or more rule fields in the resource file or other selected test files may use it through `@Rule` or `@ClassRule`;
 - rule fields become Jupiter `@RegisterExtension` fields in their own compilation units;
 - the resource class becomes the corresponding Before/After Each or Before/After All callback implementation in its own compilation unit;
 - mixed instance and class-rule use of one resource type is rejected because one callback lifecycle cannot represent both safely.
@@ -174,7 +174,7 @@ Further planned consumers include test hierarchies, suites, shared helper APIs, 
 
 A headless caller must add all participating compilation units to one `CleanUpRefactoring`. Running a separate refactoring per file prevents coordinated planning.
 
-The current `sandbox_cleanup_application` still executes one refactoring per file. Its batching conversion is tracked separately from the IDE cleanup implementation and must be completed before the new project-wide plans are advertised for command-line use.
+The current `sandbox_cleanup_application` still executes one refactoring per file. Its atomic per-project transaction conversion is tracked in #1210 and must be completed before the new project-wide plans are advertised for command-line use.
 
 ## Testing requirements
 
@@ -183,13 +183,15 @@ Implemented tests cover:
 - planning before local fixes and cleanup of retained state;
 - fatal planning diagnostics;
 - target-scope expansion into one unified preview in the JDT UI fork;
+- duplicate provider results, transitive fixed-point discovery, and invalid provider results;
 - a named `ExternalResource` plus `@Rule` consumer in another file;
 - a named `ExternalResource` plus `@ClassRule` consumer in another file;
-- a package-scoped integer state method plus caller in another file.
+- local and remote rule fields using one named `ExternalResource` type;
+- a package-scoped integer state method plus caller in another file;
+- rejection when the generated enum name conflicts with an existing nested type.
 
 Additional required coverage remains:
 
-- duplicate provider results and transitive fixed-point discovery;
 - cross-project and missing targets;
 - stale-plan rejection after an earlier cleanup changes a target;
 - one atomic apply and undo in PDE integration tests;
