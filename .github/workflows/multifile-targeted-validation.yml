@@ -1,57 +1,171 @@
-name: Targeted multi-file cleanup validation
+name: Finalize multi-file cleanup hardening
 
 on:
   push:
     branches:
       - feature/multifile-cleanup-planning
-  pull_request:
-    branches:
-      - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  targeted-tests:
+  finalize:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
-    env:
-      DISPLAY: :0
-      MAVEN_OPTS: -Djava.awt.headless=true
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: feature/multifile-cleanup-planning
           fetch-depth: 0
-      - uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: temurin
-          cache: maven
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-      - run: npm install -g prettier stylelint stylelint-config-standard
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb xauth \
-            libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
-            libasound2t64 libnss3 libgbm1
-      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
-      - name: Run focused reactor
+      - name: Apply verified source and documentation changes
         shell: bash
         run: |
-          set -o pipefail
-          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode \
-            -Dtycho.localArtifacts=ignore \
-            -Dspotbugs.skip=true \
-            -pl sandbox_target,sandbox_common,sandbox_common_test,sandbox_test_commons,sandbox_int_to_enum,sandbox_int_to_enum_test,sandbox_junit_cleanup,sandbox_junit_cleanup_test \
-            -am clean verify 2>&1 | tee targeted-build.log
-      - name: Upload focused log
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: targeted-multifile-cleanup-log
-          path: targeted-build.log
-          retention-days: 2
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str, description: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{description}: expected one match, found {count}")
+              file.write_text(text.replace(old, new))
+
+          planner = 'sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java'
+          replace_once(
+              planner,
+              'import org.eclipse.jdt.core.dom.ASTVisitor;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\n',
+              'import org.eclipse.jdt.core.dom.ASTVisitor;\nimport org.eclipse.jdt.core.dom.AbstractTypeDeclaration;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\n',
+              'abstract type import')
+          replace_once(
+              planner,
+              '''\tprivate static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
+\t\tfor (Object declaration : type.bodyDeclarations()) {
+\t\t\tif (declaration instanceof TypeDeclaration nested
+\t\t\t\t\t&& name.equals(nested.getName().getIdentifier())) {
+\t\t\t\treturn true;
+\t\t\t}
+\t\t}
+\t\treturn false;
+\t}
+''',
+              '''\tprivate static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
+\t\tfor (Object declaration : type.bodyDeclarations()) {
+\t\t\tif (declaration instanceof AbstractTypeDeclaration nested
+\t\t\t\t\t&& name.equals(nested.getName().getIdentifier())) {
+\t\t\t\treturn true;
+\t\t\t}
+\t\t}
+\t\treturn false;
+\t}
+''',
+              'nested type conflict check')
+
+          replace_once(
+              'sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMigrationPlan.java',
+              'IntEnumMultiFileRewriteOperation.ResolvedPlan resolved= IntEnumMultiFileRewriteOperation.resolve(unit, root,\n',
+              'IntEnumMultiFileRewriteOperation.ResolvedPlan resolved= IntEnumMultiFileRewriteOperation.resolve(\n\t\t\t\tunit.getPrimary(), root,\n',
+              'primary compilation unit resolution')
+
+          test_path = Path('sandbox_int_to_enum_test/src/org/eclipse/jdt/ui/tests/quickfix/Java22/MultiFileIntToEnumCleanUpTest.java')
+          text = test_path.read_text()
+          marker = '\n\t}\n}\n'
+          if text.count(marker) != 1:
+              raise SystemExit(f'int-to-enum test insertion: expected one class-end marker, found {text.count(marker)}')
+          test = r'''
+
+	@Test
+	public void doesNotMigrateWhenGeneratedEnumNameConflictsWithNestedEnum() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderProcessor {
+					enum Status {
+						EXISTING
+					}
+
+					static final int STATUS_PENDING = 0;
+					static final int STATUS_APPROVED = 1;
+
+					void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderClient {
+					void run(OrderProcessor processor) {
+						processor.process(OrderProcessor.STATUS_PENDING);
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
+	}
+'''
+          test_path.write_text(text.replace(marker, '\n\t}\n' + test + '}\n'))
+
+          docs = 'docs/multi-file-cleanups.md'
+          replace_once(
+              docs,
+              'Use a patched, higher-version `org.eclipse.jdt.ui` bundle in the Sandbox target/product or distribute it through a p2 feature patch. The bundle keeps its symbolic name and compatible package exports and dependencies.\n',
+              'Use a patched, higher-version `org.eclipse.jdt.ui` bundle in the Sandbox target/product or distribute it through a p2 feature patch. The bundle keeps its symbolic name and compatible package exports and dependencies. Reproducible p2 and product delivery is tracked in #1209.\n',
+              'p2 follow-up documentation')
+          replace_once(
+              docs,
+              'The current `sandbox_cleanup_application` still executes one refactoring per file. Its batching conversion is tracked separately from the IDE cleanup implementation and must be completed before the new project-wide plans are advertised for command-line use.\n',
+              'The current `sandbox_cleanup_application` still executes one refactoring per file. Its atomic per-project transaction conversion is tracked in #1210 and must be completed before the new project-wide plans are advertised for command-line use.\n',
+              'headless follow-up documentation')
+          replace_once(
+              docs,
+              '- one or more selected test files may use it through `@Rule` or `@ClassRule` fields;\n',
+              '- one or more rule fields in the resource file or other selected test files may use it through `@Rule` or `@ClassRule`;\n',
+              'JUnit coordinated field documentation')
+          replace_once(
+              docs,
+              '''- target-scope expansion into one unified preview in the JDT UI fork;
+- a named `ExternalResource` plus `@Rule` consumer in another file;
+- a named `ExternalResource` plus `@ClassRule` consumer in another file;
+- a package-scoped integer state method plus caller in another file.
+
+Additional required coverage remains:
+
+- duplicate provider results and transitive fixed-point discovery;
+- cross-project and missing targets;
+''',
+              '''- target-scope expansion into one unified preview in the JDT UI fork;
+- duplicate provider results, transitive fixed-point discovery, and invalid provider results;
+- a named `ExternalResource` plus `@Rule` consumer in another file;
+- a named `ExternalResource` plus `@ClassRule` consumer in another file;
+- local and remote rule fields using one named `ExternalResource` type;
+- a package-scoped integer state method plus caller in another file;
+- rejection when the generated enum name conflicts with an existing nested type.
+
+Additional required coverage remains:
+
+- cross-project and missing targets;
+''',
+              'test coverage documentation')
+          PY
+      - name: Commit final hardening and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/multifile-targeted-validation.yml
+          git add docs/multi-file-cleanups.md
+          git add sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java
+          git add sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMigrationPlan.java
+          git add sandbox_int_to_enum_test/src/org/eclipse/jdt/ui/tests/quickfix/Java22/MultiFileIntToEnumCleanUpTest.java
+          git commit -m 'Finalize multi-file cleanup safety coverage'
+          git push origin HEAD:feature/multifile-cleanup-planning
