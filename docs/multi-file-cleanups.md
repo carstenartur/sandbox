@@ -127,9 +127,9 @@ The Sandbox JDT UI fork adds a deliberately small enhancement to `CleanUpRefacto
 4. reject missing or cross-project units;
 5. feed the expanded scope into the unchanged cleanup pipeline.
 
-The implementation currently uses reflective capability discovery so the patched JDT UI bundle has no runtime dependency on Sandbox bundles and no second patch of `org.eclipse.jdt.core.manipulation` is needed. The typed Sandbox SPI documents and tests the contract.
+The implementation uses reflective capability discovery so the patched JDT UI bundle has no runtime dependency on Sandbox bundles and no second patch of `org.eclipse.jdt.core.manipulation` is needed. The typed Sandbox SPI documents and tests the contract.
 
-See `carstenartur/eclipse.jdt.ui#94`.
+Implemented and merged in `carstenartur/eclipse.jdt.ui#94` as commit `37da2aee4f2013669e4466f180fb822255382b4b`.
 
 ## OSGi product integration
 
@@ -146,6 +146,8 @@ The save participant supplies only the saved compilation unit and does not run t
 Local, semantics-preserving transformations may remain available as save actions. Project-wide API migrations should require an explicit cleanup run with preview; saving one editor must not silently rewrite unrelated files.
 
 ## Implemented consumers
+
+The shared planning infrastructure and the first consumers were merged through `carstenartur/sandbox#1207` as commit `61b10590146557da3cbf9e56e140c7fd18a1f734`.
 
 ### Int-to-enum
 
@@ -197,3 +199,19 @@ Additional required coverage remains:
 - one atomic apply and undo in PDE integration tests;
 - save-action isolation;
 - ordinary cleanups unchanged when no provider is present.
+
+## Post-merge QA and roadmap
+
+The validated implementation is deliberately an initial closed-scope capability, not a claim that arbitrary project-wide API migration is solved. The detailed post-merge assessment is in [`docs/qa/multi-file-cleanup-post-merge-qa.md`](qa/multi-file-cleanup-post-merge-qa.md).
+
+Prioritized follow-ups:
+
+1. Gate project expansion by the actually enabled coordinated option (#1228).
+2. Prove atomic apply/undo, stale-plan rejection, save-action isolation, and semantic compilation (#1213, #1222).
+3. Replace unconditional full-project expansion with candidate-driven JDT search and explicit source-root/resource policies (#1212, #1224, #1221).
+4. Expose scope and rejection diagnostics and classify cleanup impact (#1214, #1226).
+5. Define compatibility, visibility, qualification, and generated-name policy before widening Int-to-Enum (#1216, #1223, #1225).
+6. Extend coordinated JUnit migration incrementally (#1217).
+7. Complete headless transactions and reproducible patched-product delivery (#1210, #1209, #1215).
+
+The dependency-ordered umbrella is #1229.
