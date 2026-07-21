@@ -10,7 +10,7 @@ export PATH=$JAVA_HOME/bin:$PATH
 java -version  # Must show "21"
 ```
 
-**Why**: Tycho 5.0.1 and Eclipse 2025-12 require Java 21 (class file version 65.0).
+**Why**: Tycho 5.0.3 and Eclipse 2025-12 require Java 21 (class file version 65.0).
 If you see `UnsupportedClassVersionError`, you're using Java 17 instead of 21.
 
 ## Maven Profiles
