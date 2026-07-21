@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b6cad6387e5e6b2286adb7afbf20bade6116d391cc252006cda96db7c315d8ad",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-unnecessary-message-format\u003e\n\u003c!description: Remove unnecessary Messages.format call when the message constant is known to not require formatting arguments. This applies to specific static string fields that do not contain placeholders (e.g., {0}).\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jdt.internal.ui.wizards.buildpaths.Messages.format(org.eclipse.jdt.internal.ui.wizards.NewWizardMessages.AnnotationsAttachmentBlock_filename_error_notabsolute, $arg)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.wizards.NewWizardMessages.AnnotationsAttachmentBlock_filename_error_notabsolute\n;;",
+  "beforeExample": "public class Test {\n    static class NewWizardMessages {\n        public static String AnnotationsAttachmentBlock_filename_error_notabsolute \u003d \"The path must be absolute.\";\n        public static String AnotherMessage_with_arg \u003d \"Message with arg: {0}\";\n    }\n    static class Messages {\n        public static String format(String message, Object... args) { \n            // Simplified implementation for example; real implementation formats if placeholders exist\n            return message;\n        }\n    }\n    static class BasicElementLabels {\n        public static String getPathLabel(Object path, boolean qualified) { return \"dummyPath\"; }\n    }\n    static class IPath { /* Dummy */ }\n\n    public void foo(IPath filePath) {\n        // Code before transformation\n        String msg \u003d Messages.format(NewWizardMessages.AnnotationsAttachmentBlock_filename_error_notabsolute, BasicElementLabels.getPathLabel(filePath, false));\n        System.out.println(msg);\n    }\n}",
+  "afterExample": "public class Test {\n    static class NewWizardMessages {\n        public static String AnnotationsAttachmentBlock_filename_error_notabsolute \u003d \"The path must be absolute.\";\n        public static String AnotherMessage_with_arg \u003d \"Message with arg: {0}\";\n    }\n    static class Messages {\n        public static String format(String message, Object... args) { \n            // Simplified implementation for example; real implementation formats if placeholders exist\n            return message;\n        }\n    }\n    static class BasicElementLabels {\n        public static String getPathLabel(Object path, boolean qualified) { return \"dummyPath\"; }\n    }\n    static class IPath { /* Dummy */ }\n\n    public void foo(IPath filePath) {\n        // Code after transformation\n        String msg \u003d NewWizardMessages.AnnotationsAttachmentBlock_filename_error_notabsolute;\n        System.out.println(msg);\n    }\n}",
+  "negativeExample": "public class Test {\n    static class NewWizardMessages {\n        public static String AnnotationsAttachmentBlock_filename_error_notabsolute \u003d \"The path must be absolute.\";\n        public static String AnotherMessage_with_arg \u003d \"Message with arg: {0}\";\n    }\n    static class Messages {\n        public static String format(String message, Object... args) { \n            // Simplified implementation for example; real implementation formats if placeholders exist\n            return message;\n        }\n    }\n    static class BasicElementLabels {\n        public static String getPathLabel(Object path, boolean qualified) { return \"dummyPath\"; }\n    }\n    static class IPath { /* Dummy */ }\n\n    public void foo(IPath filePath) {\n        // This call uses a message that *does* have a placeholder, and should not be transformed.\n        String msg \u003d Messages.format(NewWizardMessages.AnotherMessage_with_arg, BasicElementLabels.getPathLabel(filePath, false));\n        System.out.println(msg);\n\n        // Another distinct call that should not be transformed.\n        String anotherMsg \u003d Messages.format(\"Plain string {0}\", \"value\");\n        System.out.println(anotherMsg);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "55333697ca06199de2587ca6644df3277161c380",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Unnecessary Call Removal",
+  "summary": "Removes a specific `Messages.format` call when the target message constant `AnnotationsAttachmentBlock_filename_error_notabsolute` is known to not contain format placeholders, simplifying the expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-21T03:16:11.174158133Z",
+  "ruleFingerprint": "sha256:83cf0c250d0fa5c7f685da37ff5c41f8656890cb654ddf23527b5ccfc919ffe1",
+  "behaviorFingerprint": "sha256:96fc389340d52848f503077512dfafeaf854239ea4e857aa181303e484bc9bbd",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-21T03:16:12.505258476Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

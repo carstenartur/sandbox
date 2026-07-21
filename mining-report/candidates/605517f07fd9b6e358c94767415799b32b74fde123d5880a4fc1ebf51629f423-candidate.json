@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "605517f07fd9b6e358c94767415799b32b74fde123d5880a4fc1ebf51629f423",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.corext.fix.ExternalNullAnnoatationChangeProposals\n\u003d\u003e\norg.eclipse.jdt.internal.corext.fix.ExternalNullAnnotationChangeProposals\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;\nimport java.util.ArrayList;\n\n// Class with a typo in its fully qualified name usage\npublic class MyProcessor {\n    public void process(ICompilationUnit cu, ASTNode node, int offset, ArrayList\u003cIJavaCompletionProposal\u003e proposals) {\n        // Original code using the misspelled class name\n        org.eclipse.jdt.internal.corext.fix.ExternalNullAnnoatationChangeProposals.collectExternalAnnotationProposals(cu, node, offset, proposals);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;\nimport java.util.ArrayList;\n\n// Class with the typo in its fully qualified name usage fixed\npublic class MyProcessor {\n    public void process(ICompilationUnit cu, ASTNode node, int offset, ArrayList\u003cIJavaCompletionProposal\u003e proposals) {\n        // Corrected code using the properly spelled class name\n        org.eclipse.jdt.internal.corext.fix.ExternalNullAnnotationChangeProposals.collectExternalAnnotationProposals(cu, node, offset, proposals);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;\nimport java.util.ArrayList;\n\n// Class already using the correct fully qualified name, should not be matched by the rule\npublic class AnotherProcessor {\n    public void process(ICompilationUnit cu, ASTNode node, int offset, ArrayList\u003cIJavaCompletionProposal\u003e proposals) {\n        org.eclipse.jdt.internal.corext.fix.ExternalNullAnnotationChangeProposals.collectExternalAnnotationProposals(cu, node, offset, proposals);\n    }\n}\n",
+  "targetHintFile": "typo-fixes.sandbox-hint",
+  "sourceCommit": "e17c289c770b80c0b8a44f1964e354e3371593ba",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Typo Fix",
+  "summary": "Fixes a typo in the fully qualified name of `ExternalNullAnnoatationChangeProposals` to `ExternalNullAnnotationChangeProposals`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-21T03:16:11.171404943Z",
+  "ruleFingerprint": "sha256:9539656780b20a4a1be650d77491b1ce1af5b2aa0fdeea5291a097024a5210da",
+  "behaviorFingerprint": "sha256:28b875f2422f441bffb8b9d559f1a1ce975ff0dc9acb47a8afa3e03158b99bbe",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The import org.eclipse.jdt.ui cannot be resolved",
+    "verifiedAt": "2026-07-21T03:16:12.500410132Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
