@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/multifile-cleanup-planning
+  pull_request:
+    branches:
+      - main
 
 permissions:
   actions: read
@@ -18,7 +21,7 @@ jobs:
       - name: Download failed workflow log
         shell: bash
         run: |
-          gh run view 29781116751 --repo carstenartur/sandbox --log-failed > failed-build.log
+          gh run view 29782560691 --repo carstenartur/sandbox --log-failed > failed-build.log
       - name: Upload failed log
         uses: actions/upload-artifact@v7
         with:
