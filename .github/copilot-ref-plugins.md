@@ -143,22 +143,27 @@ See dedicated file: `.github/copilot-ref-functional.md`
 - Uses TriggerPattern DSL for rule definitions
 
 ### Int to Enum (`sandbox_int_to_enum`)
-- Experimental: converts `static final int` constants to enum types
+- Migrates only proven closed integer state domains.
+- Local path: private constants, private state parameter, comparisons, and local callers in one compilation unit.
+- Multi-file path: conservative package-private owner plus proven callers when the complete required scope is available.
+- Rejects public/protected APIs, aliases, bit flags, arithmetic/ranges, arbitrary integer arguments, unresolved uses, and persistence/protocol semantics.
+- Multi-file architecture and safety rules: `docs/multi-file-cleanups.md` and `docs/multi-file-cleanup-cheatsheet.md`.
 
 ### CSS Cleanup (`sandbox_css_cleanup`)
 - CSS validation/formatting using Prettier and Stylelint
 - Requires npm tools (graceful fallback when not installed)
 
 ### Cleanup CLI (`sandbox_cleanup_application`)
-- Equinox CLI for running cleanups from command line
-- Requires `-data` parameter for Eclipse workspace
-- Supports recursive directory processing and configurable cleanup profiles
+- Equinox CLI for running cleanups from command line.
+- Requires `-data` parameter for an Eclipse workspace.
+- Supports recursive directory processing and configurable cleanup profiles.
+- Currently creates one `CleanUpRefactoring` per file; atomic project batching for planned multi-file cleanups is tracked in #1210.
 
 ---
 
 ## Common Patterns Across All Plugins
 
-1. **Every cleanup** extends `AbstractCleanUp` directly — NO shared base classes
+1. **Ordinary cleanups** extend `AbstractCleanUp`; coordinated multi-file cleanups may use the established `AbstractPlannedMultiFileCleanUp` lifecycle base
 2. **Every helper** follows `find()` / `rewrite()` / `getPreview()` pattern
 3. **Cleanup constants** registered in `MYCleanUpConstants` (the `MY` prefix is intentional)
 4. **Package structure** mirrors Eclipse JDT: `org.sandbox.*` → `org.eclipse.*` for porting
