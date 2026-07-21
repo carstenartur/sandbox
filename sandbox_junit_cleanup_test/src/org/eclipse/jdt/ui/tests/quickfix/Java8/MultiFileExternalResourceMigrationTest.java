@@ -162,6 +162,78 @@ public class MultiFileExternalResourceMigrationTest {
 						""" }, null);
 	}
 
+	@Test
+	public void migratesLocalAndRemoteRuleFieldsThroughOnePlan() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit local= pack.createCompilationUnit("LocalTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.rules.ExternalResource;
+
+				class SharedResource extends ExternalResource {
+					@Override
+					protected void before() throws Throwable {
+					}
+
+					@Override
+					protected void after() {
+					}
+				}
+
+				public class LocalTest {
+					@Rule
+					public SharedResource local = new SharedResource();
+				}
+				""", false, null);
+		ICompilationUnit remote= pack.createCompilationUnit("RemoteTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+
+				public class RemoteTest {
+					@Rule
+					public SharedResource remote = new SharedResource();
+				}
+				""", false, null);
+
+		enableExternalResourceRuleMigration();
+
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { local, remote },
+				new String[] {
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.AfterEachCallback;
+						import org.junit.jupiter.api.extension.BeforeEachCallback;
+						import org.junit.jupiter.api.extension.ExtensionContext;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+
+						class SharedResource implements BeforeEachCallback, AfterEachCallback {
+							@Override
+							public void beforeEach(ExtensionContext context) {
+							}
+
+							@Override
+							public void afterEach(ExtensionContext context) {
+							}
+						}
+
+						public class LocalTest {
+							@RegisterExtension
+							public SharedResource local = new SharedResource();
+						}
+						""",
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+
+						public class RemoteTest {
+							@RegisterExtension
+							public SharedResource remote = new SharedResource();
+						}
+						""" }, null);
+	}
+
 	private void enableExternalResourceRuleMigration() throws CoreException {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
