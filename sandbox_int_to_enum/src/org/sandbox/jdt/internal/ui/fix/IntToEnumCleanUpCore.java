@@ -47,6 +47,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
@@ -77,6 +78,10 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
+		}
+		if (!isEnabled(PROJECT_WIDE)) {
+			SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, compilationUnits);
+			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(selectedScope, List.of()));
 		}
 		return IntEnumMultiFilePlanner.create(project, compilationUnits, monitor);
 	}
