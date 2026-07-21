@@ -1,0 +1,82 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.jdt.ui.tests.quickfix.Java22;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+
+import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUpCore;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+
+/** Tests that project-wide Int-to-Enum analysis requires explicit opt-in. */
+public class IntToEnumScopeExpansionTest {
+
+	@RegisterExtension
+	AbstractEclipseJava context= new EclipseJava22();
+
+	@Test
+	public void localOptionDoesNotExpandScope() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit selected= createUnit(pack, "Selected.java"); //$NON-NLS-1$
+		createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+		IntToEnumCleanUpCore cleanup= new IntToEnumCleanUpCore(Map.of(
+				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.TRUE));
+
+		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null);
+
+		assertTrue(expanded.isEmpty(), "A local Int-to-Enum cleanup must retain the user's target scope");
+	}
+
+	@Test
+	public void projectWideOptionExpandsToAllProjectSources() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit selected= createUnit(pack, "Selected.java"); //$NON-NLS-1$
+		ICompilationUnit related= createUnit(pack, "Related.java"); //$NON-NLS-1$
+		ICompilationUnit unrelated= createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+		IntToEnumCleanUpCore cleanup= new IntToEnumCleanUpCore(Map.of(
+				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.TRUE,
+				IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.TRUE));
+
+		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null);
+		Set<String> expandedHandles= expanded.stream().map(ICompilationUnit::getHandleIdentifier)
+				.collect(Collectors.toSet());
+
+		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier(),
+				unrelated.getHandleIdentifier()), expandedHandles,
+				"The explicit project-wide option must include every project source unit");
+	}
+
+	private static ICompilationUnit createUnit(IPackageFragment pack, String name) throws CoreException {
+		String source= "package test;%n%npublic class %s {%n}%n" //$NON-NLS-1$
+				.formatted(name.substring(0, name.length() - ".java".length())); //$NON-NLS-1$
+		return pack.createCompilationUnit(name, source, false, null);
+	}
+}
