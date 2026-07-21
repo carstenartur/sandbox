@@ -76,7 +76,7 @@ The new release will be available at `https://carstenartur.github.io/sandbox/rel
 
 **IMPORTANT**: This project (main branch, targeting Eclipse 2025-12) requires **Java 21** or later.
 
-The project uses Tycho 5.0.2 which requires Java 21. Building with Java 17 or earlier will fail with:
+The project uses Tycho 5.0.3 which requires Java 21. Building with Java 17 or earlier will fail with:
 ```
 UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
 ```
