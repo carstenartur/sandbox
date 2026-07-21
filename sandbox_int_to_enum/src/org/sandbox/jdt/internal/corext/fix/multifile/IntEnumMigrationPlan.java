@@ -39,7 +39,7 @@ public record IntEnumMigrationPlan(SelectedCompilationUnitPlan selectedScope, Li
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
-		String handle= unit.getHandleIdentifier();
+		String handle= unit.getPrimary().getHandleIdentifier();
 		List<IntEnumCandidate> relevant= candidates.stream()
 				.filter(candidate -> handle.equals(candidate.ownerCompilationUnitHandle())
 						|| candidate.expectedReferenceCountsByUnit().containsKey(handle)
