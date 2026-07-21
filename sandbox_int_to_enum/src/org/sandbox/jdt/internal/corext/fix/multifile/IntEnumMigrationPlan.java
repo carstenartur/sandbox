@@ -48,8 +48,8 @@ public record IntEnumMigrationPlan(SelectedCompilationUnitPlan selectedScope, Li
 		if (relevant.isEmpty()) {
 			return;
 		}
-		IntEnumMultiFileRewriteOperation.ResolvedPlan resolved= IntEnumMultiFileRewriteOperation.resolve(unit, root,
-				relevant);
+		IntEnumMultiFileRewriteOperation.ResolvedPlan resolved= IntEnumMultiFileRewriteOperation.resolve(
+				unit.getPrimary(), root, relevant);
 		nodesProcessed.addAll(resolved.processedNodes());
 		operations.add(new IntEnumMultiFileRewriteOperation(resolved));
 	}
