@@ -65,6 +65,10 @@ public class IntToEnumScopeExpansionTest {
 					private static final int STATUS_PENDING = 0;
 					private static final int STATUS_APPROVED = 1;
 
+					void run() {
+						process(STATUS_PENDING);
+					}
+
 					private void process(int status) {
 						if (status == STATUS_PENDING) {
 							System.out.println("pending");
@@ -84,6 +88,10 @@ public class IntToEnumScopeExpansionTest {
 						public class Selected {
 							private enum Status {
 								PENDING, APPROVED
+							}
+
+							void run() {
+								process(Status.PENDING);
 							}
 
 							private void process(Status status) {
