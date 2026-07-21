@@ -44,7 +44,7 @@ jobs:
           set -o pipefail
           xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode \
             -Dtycho.localArtifacts=ignore \
-            -pl sandbox_target,sandbox_common_test,sandbox_int_to_enum_test,sandbox_junit_cleanup_test \
+            -pl sandbox_target,sandbox_common,sandbox_common_test,sandbox_test_commons,sandbox_int_to_enum,sandbox_int_to_enum_test,sandbox_junit_cleanup,sandbox_junit_cleanup_test \
             -am clean verify 2>&1 | tee targeted-build.log
       - name: Upload focused log
         if: always()
