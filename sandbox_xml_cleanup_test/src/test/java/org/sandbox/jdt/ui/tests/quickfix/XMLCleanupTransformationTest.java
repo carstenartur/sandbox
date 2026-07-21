@@ -447,7 +447,7 @@ public class XMLCleanupTransformationTest {
 		try {
 			Files.writeString(tempFile, xmlWithSpaces);
 			
-			String transformed = SchemaTransformationUtils.transform(tempFile, false);
+			String transformed = SchemaTransformationUtils.transform(tempFile, true);
 			
 			// Verify tabs are used for indentation
 			assertTrue(transformed.contains("\t<extension") || transformed.contains("\t<view"),
