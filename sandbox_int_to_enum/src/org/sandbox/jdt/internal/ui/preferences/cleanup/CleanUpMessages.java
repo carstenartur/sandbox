@@ -22,6 +22,7 @@ public final class CleanUpMessages extends NLS {
 	private static final String BUNDLE_NAME = "org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages"; //$NON-NLS-1$
 
 	public static String IntToEnumTabPage_CheckboxName_IntToEnum;
+	public static String IntToEnumTabPage_CheckboxName_ProjectWide;
 	public static String IntToEnumTabPage_GroupName_IntToEnum;
 
 	static {
