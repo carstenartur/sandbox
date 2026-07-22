@@ -23,7 +23,15 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
-/** Validates local-variable capture rules for generated loop lambdas. */
+/**
+ * Validates local-variable capture rules before a loop is rewritten as a lambda.
+ *
+ * <p>Variables declared inside the original body, the generated lambda parameter,
+ * fields, and accumulators removed from the lambda are not external captures. Every
+ * remaining local must be explicitly {@code final} or effectively final according
+ * to its resolved JDT binding. Incomplete binding identity is rejected rather than
+ * allowing a potentially uncompilable cleanup proposal.</p>
+ */
 final class LambdaCaptureSafety {
 
 	private LambdaCaptureSafety() {
