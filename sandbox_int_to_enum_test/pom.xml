@@ -27,7 +27,8 @@
 				<configuration>
 					<showEclipseLog>true</showEclipseLog>
 					<useJDK>BREE</useJDK>
-					<useUIHarness>false</useUIHarness>
+					<useUIHarness>true</useUIHarness>
+					<useUIThread>true</useUIThread>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
