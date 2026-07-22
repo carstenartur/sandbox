@@ -1,1 +1,0 @@
-Trigger the registered one-shot save-action diagnostic workflow.
