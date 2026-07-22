@@ -22,7 +22,7 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-/** Verifies Java lambda-capture preconditions for enhanced-for conversions. */
+/** Verifies Java lambda-capture preconditions for loop conversions. */
 public class LambdaCaptureSafetyTest {
 
 	@RegisterExtension
@@ -73,6 +73,25 @@ public class LambdaCaptureSafetyTest {
 					void process(List<String> source) {
 						String prefix = "item=";
 						for (String item : source) {
+							System.out.println(prefix + item);
+						}
+						prefix = "changed=";
+					}
+				}
+				""");
+	}
+
+	@Test
+	void iteratorCaptureReassignedAfterLoopBlocksConversion() throws CoreException {
+		assertNoChange("""
+				package test1;
+				import java.util.*;
+				class MyTest {
+					void process(List<String> source) {
+						String prefix = "item=";
+						Iterator<String> iterator = source.iterator();
+						while (iterator.hasNext()) {
+							String item = iterator.next();
 							System.out.println(prefix + item);
 						}
 						prefix = "changed=";
