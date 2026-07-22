@@ -36,7 +36,6 @@ import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
@@ -47,10 +46,10 @@ import org.eclipse.jdt.ui.cleanup.ICleanUp;
 /**
  * Assertions for the complete lifecycle of one coordinated multi-file cleanup.
  *
- * <p>The helper executes one {@link CleanUpRefactoring}, verifies all affected
- * sources and their Java error sets after apply, performs the returned undo
+ * <p>The helper executes one {@link CleanUpRefactoring}, verifies every affected
+ * compilation unit and its Java error set after apply, performs the returned undo
  * change, and finally proves that source and semantic state returned to the
- * original baseline.</p>
+ * original per-file baseline.</p>
  */
 public final class MultiFileCleanUpLifecycleAssertions {
 
@@ -66,12 +65,15 @@ public final class MultiFileCleanUpLifecycleAssertions {
 	 * undo for the complete source set.
 	 *
 	 * @param compilationUnits all units participating in the coordinated cleanup
-	 * @param expectedAfterApply expected source contents after the common change
+	 * @param expectedAfterApply expected source contents after the common change, in
+	 *            the same order as {@code compilationUnits}
 	 * @return the final-condition status of the cleanup refactoring
 	 * @throws CoreException if Eclipse cannot create or execute either change
 	 */
 	public static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] compilationUnits,
 			String[] expectedAfterApply) throws CoreException {
+		assertEquals(compilationUnits.length, expectedAfterApply.length,
+				"Each compilation unit needs one expected post-apply source"); //$NON-NLS-1$
 		String[] originals= contents(compilationUnits);
 		Map<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(compilationUnits);
 
@@ -100,16 +102,34 @@ public final class MultiFileCleanUpLifecycleAssertions {
 		Change undo= apply.getUndoChange();
 		assertNotNull(undo, "The coordinated cleanup did not create an undo change"); //$NON-NLS-1$
 
-		AbstractEclipseJava.assertEqualStringsIgnoreOrderAndWhitespace(contents(compilationUnits), expectedAfterApply);
+		assertPostApplyContents(compilationUnits, expectedAfterApply);
 		assertNoNewErrors(compilationUnits, baselineProblems, "after apply"); //$NON-NLS-1$
 
 		PerformChangeOperation performUndo= new PerformChangeOperation(undo);
 		workspace.run(performUndo, new NullProgressMonitor());
 		assertTrue(performUndo.changeExecuted(), "The coordinated cleanup undo change was not executed"); //$NON-NLS-1$
-		AbstractEclipseJava.assertEqualStringsIgnoreOrder(contents(compilationUnits), originals);
+		assertRestoredContents(compilationUnits, originals);
 		assertEquals(baselineProblems, errorCounts(compilationUnits),
 				"Undo must restore the original Java error set"); //$NON-NLS-1$
 		return status;
+	}
+
+	private static void assertPostApplyContents(ICompilationUnit[] units, String[] expected) throws CoreException {
+		String[] actual= contents(units);
+		for (int i= 0; i < units.length; i++) {
+			String unitName= units[i].getElementName();
+			assertEquals(normalizeWhitespace(expected[i]), normalizeWhitespace(actual[i]),
+					() -> unitName + " has unexpected content after the coordinated cleanup"); //$NON-NLS-1$
+		}
+	}
+
+	private static void assertRestoredContents(ICompilationUnit[] units, String[] originals) throws CoreException {
+		String[] actual= contents(units);
+		for (int i= 0; i < units.length; i++) {
+			String unitName= units[i].getElementName();
+			assertEquals(normalizeLineEndings(originals[i]), normalizeLineEndings(actual[i]),
+					() -> unitName + " was not restored exactly by undo"); //$NON-NLS-1$
+		}
 	}
 
 	private static String[] contents(ICompilationUnit[] units) throws CoreException {
@@ -157,5 +177,17 @@ public final class MultiFileCleanUpLifecycleAssertions {
 			result.put(unit.getPrimary().getHandleIdentifier(), problems);
 		}
 		return result;
+	}
+
+	private static String normalizeWhitespace(String source) {
+		return Arrays.stream(normalizeLineEndings(source).split("\n", -1)) //$NON-NLS-1$
+				.map(line -> line.stripTrailing().replaceFirst("^\\t+", match -> "    ".repeat(match.group().length()))) //$NON-NLS-1$ //$NON-NLS-2$
+				.collect(Collectors.joining("\n")) //$NON-NLS-1$
+				.replaceAll("\n{3,}", "\n\n") //$NON-NLS-1$ //$NON-NLS-2$
+				.strip();
+	}
+
+	private static String normalizeLineEndings(String source) {
+		return source.replace("\r\n", "\n").replace("\r", "\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 }
