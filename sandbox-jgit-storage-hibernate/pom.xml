@@ -21,7 +21,7 @@
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
 		<tycho.mode>maven</tycho.mode>
 		<!-- Hibernate Search 8.4 targets Hibernate ORM 7.4; keep the mapper stack aligned. -->
-		<hibernate.version>7.4.6.Final</hibernate.version>
+		<hibernate.version>7.4.5.Final</hibernate.version>
 		<hibernate-search.version>8.4.0.Final</hibernate-search.version>
 	</properties>
 
