@@ -127,6 +127,23 @@ public class ArrayExistingTargetSafetyTest {
 	}
 
 	@Test
+	public void referenceSupertypeLoopVariableRemainsUnchanged() throws CoreException {
+		assertNoChange("""
+				package test1;
+
+				import java.util.List;
+
+				class MyTest {
+					void append(String[] items, List<CharSequence> target) {
+						for (CharSequence item : items) {
+							target.add(item);
+						}
+					}
+				}
+				""");
+	}
+
+	@Test
 	public void boxedLoopVariableOverPrimitiveArrayRemainsUnchanged() throws CoreException {
 		assertNoChange("""
 				package test1;
