@@ -5,25 +5,25 @@ on:
     workflows: [ 'Java CI with Maven' ]
     types: [ completed ]
     branches: [ main ]
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: deploy-snapshot-${{ github.event.workflow_run.head_sha || github.sha }}
+  group: deploy-snapshot-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
-      VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-      VALIDATED_REF: ${{ github.event_name == 'workflow_run' && format('refs/heads/{0}', github.event.workflow_run.head_branch) || github.ref }}
+      VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+      VALIDATED_REF: refs/heads/main
       SOURCE_JAVA_CI_RUN_ID: ${{ github.event.workflow_run.id }}
       SOURCE_JAVA_CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
 
@@ -129,9 +129,7 @@ jobs:
             echo '### Deployed resources'
             echo
             echo "- [Validated commit](https://github.com/${GITHUB_REPOSITORY}/commit/${VALIDATED_SHA})"
-            if [ -n "$SOURCE_JAVA_CI_RUN_URL" ]; then
-              echo "- [Source Java CI run](${SOURCE_JAVA_CI_RUN_URL})"
-            fi
+            echo "- [Source Java CI run](${SOURCE_JAVA_CI_RUN_URL})"
             echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
             echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
             echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
