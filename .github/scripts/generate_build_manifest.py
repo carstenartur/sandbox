@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from html import escape
 import json
 import os
 import platform
@@ -115,7 +116,11 @@ def load_test_inventory(repo_root: Path) -> dict[str, Any] | None:
 
 def executed_test_totals(repo_root: Path) -> dict[str, int]:
     totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0, "report_files": 0}
-    for path in sorted(repo_root.glob("**/target/surefire-reports/TEST-*.xml")):
+    combined_reports = sorted(repo_root.glob("**/combined-tests.xml"))
+    report_paths = combined_reports or sorted(
+        repo_root.glob("**/target/surefire-reports/TEST-*.xml")
+    )
+    for path in report_paths:
         try:
             root = ET.parse(path).getroot()
         except ET.ParseError:
@@ -136,14 +141,14 @@ def executed_test_totals(repo_root: Path) -> dict[str, int]:
 
 
 def distribution_artifacts(repo_root: Path) -> dict[str, Any]:
-    product_roots = [repo_root / "sandbox_product" / "target" / "products"]
+    product_root = repo_root / "sandbox_product" / "target" / "products"
+    product_tree = None
     product_files: list[dict[str, Any]] = []
-    for root in product_roots:
-        if not root.is_dir():
-            continue
-        for path in sorted(candidate for candidate in root.rglob("*") if candidate.is_file()):
-            lower_name = path.name.lower()
-            if not lower_name.endswith(DISTRIBUTION_SUFFIXES):
+    if product_root.is_dir():
+        product_tree = tree_digest(product_root)
+        product_tree["path"] = product_root.relative_to(repo_root).as_posix()
+        for path in sorted(candidate for candidate in product_root.rglob("*") if candidate.is_file()):
+            if not path.name.lower().endswith(DISTRIBUTION_SUFFIXES):
                 continue
             product_files.append({
                 "path": path.relative_to(repo_root).as_posix(),
@@ -168,7 +173,8 @@ def distribution_artifacts(repo_root: Path) -> dict[str, Any]:
 
     return {
         "products": product_files,
-        "product_status": "built" if product_files else "not_built_in_this_run",
+        "product_tree": product_tree,
+        "product_status": "built" if product_tree else "not_built_in_this_run",
         "update_site": update_site,
         "update_site_status": "built" if update_site else "not_built_in_this_run",
     }
@@ -202,7 +208,7 @@ def build_manifest(repo_root: Path, related_workflows: Path | None) -> dict[str,
         f"{server_url}/{repository}/actions/runs/{run_id}" if run_id else None
     )
 
-    manifest = {
+    return {
         "schema_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "repository": repository,
@@ -237,19 +243,18 @@ def build_manifest(repo_root: Path, related_workflows: Path | None) -> dict[str,
             "version": os.environ.get("PATCHED_JDT_UI_VERSION"),
         },
     }
-    return manifest
 
 
 def render_html(manifest: dict[str, Any]) -> str:
-    commit_sha = manifest.get("commit_sha") or "unknown"
-    commit_url = manifest.get("commit_url") or "#"
+    commit_sha = escape(str(manifest.get("commit_sha") or "unknown"))
+    commit_url = escape(str(manifest.get("commit_url") or "#"), quote=True)
     workflows = manifest.get("related_workflows", [])
     rows = "\n".join(
         "<tr><td>{name}</td><td>{conclusion}</td><td><a href=\"{url}\">run {run_id}</a></td></tr>".format(
-            name=workflow.get("name", "unknown"),
-            conclusion=workflow.get("conclusion") or workflow.get("status", "unknown"),
-            url=workflow.get("html_url", "#"),
-            run_id=workflow.get("id", "?"),
+            name=escape(str(workflow.get("name", "unknown"))),
+            conclusion=escape(str(workflow.get("conclusion") or workflow.get("status", "unknown"))),
+            url=escape(str(workflow.get("html_url", "#")), quote=True),
+            run_id=escape(str(workflow.get("id", "?"))),
         )
         for workflow in workflows
     )
