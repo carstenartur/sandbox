@@ -43,7 +43,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add .github/functional-oracle-patch.log
+          git add -f .github/functional-oracle-patch.log
           git commit -m 'ci: record functional oracle patch failure'
           git push origin HEAD:fix/functional-disabled-tests
           exit 1
