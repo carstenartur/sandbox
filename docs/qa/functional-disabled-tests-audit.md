@@ -19,7 +19,6 @@ The implementation now supports the legitimate positive cases and rejects the le
 | `testGetterMethodReceiverModification_ShouldNotConvert` | Legitimate safety test | Repeated calls to the same getter identify the same source; `getList().add(...)` blocks conversion of `for (... : getList())`. |
 | `testIterator_withExternalModification_notConverted` | Legitimate safety test | Assigning to `lastItem`, declared outside the iterator body and used afterwards, cannot be moved into a lambda. |
 | `testCollectWithSideEffects_ShouldNotConvert` | Legitimate safety test | `counter++` before a collect terminal must not become a side-effecting `map` stage. |
-| `existingTargetArrayCollectIsLeftUnchanged` | Legitimate safety test | An array collect into an existing/aliased target remains unchanged until the array renderer can preserve the original loop body explicitly. |
 | `existingTargetReassignedAfterLoopIsNotCaptured` | Legitimate safety test | An existing target that is reassigned after the loop is not effectively final and cannot be captured by a generated `forEach` lambda. |
 | `additionalCollectCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | A non-accumulator local referenced by the collected expression must remain effectively final. |
 | `forEachCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | A simple side-effecting loop cannot become `forEach` when its lambda would capture a subsequently reassigned local. |
@@ -58,7 +57,11 @@ A loop adding to a pre-existing collection or iterable target is converted to di
 source.forEach(item -> target.add(item.toUpperCase()));
 ```
 
-It is not replaced with `target = source.stream().collect(...)`. Array sources are kept unchanged for this specific existing-target case until their renderer can copy the original body through the stream path; arrays with a compatible fresh interface accumulator remain supported.
+It is not replaced with `target = source.stream().collect(...)`. Array sources use the corresponding ordered stream form while copying the original AST body, so mappings, comments and the existing target object are preserved:
+
+```java
+Arrays.stream(array).forEachOrdered(item -> target.add(item.toUpperCase()));
+```
 
 ### Consecutive loops
 
@@ -70,7 +73,7 @@ Read-only iteration over `CopyOnWriteArrayList` and `CopyOnWriteArraySet` is sup
 
 ### Array collect and map+collect
 
-Array sources with a compatible fresh interface accumulator use `Arrays.stream(array)` and the project's canonical collector rendering. Import expectations account for wildcard imports and add only required imports.
+Array sources with a compatible fresh interface accumulator use `Arrays.stream(array)` and the project's canonical collector rendering. Existing targets use an AST-preserving `forEachOrdered` body instead of replacing the collection. Import expectations account for wildcard imports and add only required imports.
 
 ### Field side effects
 
@@ -78,7 +81,7 @@ A final field mutation such as `counter++` is rendered as a sequential `forEach`
 
 ## Test expectations corrected
 
-- Replacing an existing collection with a newly collected instance was rejected as non-equivalent; the expected result is direct `forEach` for collection and iterable sources.
+- Replacing an existing collection with a newly collected instance was rejected as non-equivalent; the expected result is direct `forEach` for collection and iterable sources and `Arrays.stream(...).forEachOrdered(...)` for arrays.
 - Copy-on-write collections are treated separately from weakly consistent concurrent collections.
 - Array tests no longer require a redundant explicit `Arrays` import and use the canonical renderer output.
 - Lambda versus method-reference form is treated as style, not correctness; tests verify the canonical renderer output.
@@ -88,10 +91,9 @@ A final field mutation such as `counter++` is rendered as a sequential `forEach`
 ## Remaining conservative boundaries
 
 - Iterators with `remove()`, multiple `next()` calls, `break`, labeled `continue`, nested loops, unsupported try/synchronized control flow, or unsafe external-local mutation are not converted.
-- Existing/aliased accumulator replacement is forbidden unless the handler can preserve the original object through direct `forEach`.
-- Concrete or construction-sensitive accumulator support remains blocked until #1251 models an explicit `Collectors.toCollection(...)` supplier.
+- Existing/aliased accumulator replacement is forbidden; supported conversions preserve the original target object through direct `forEach` or ordered array-stream traversal.
+- Concrete or construction-sensitive fresh accumulator support remains blocked until #1251 models an explicit `Collectors.toCollection(...)` supplier.
 - Loop conversions are rejected when local binding recovery is incomplete or a generated lambda would capture a non-effectively-final local.
-- Array existing-target collect remains unchanged until #1244 provides an AST-preserving body path for arrays.
 - Weakly consistent concurrent collection iteration is not generalized from the copy-on-write cases.
 - Parallelization is never introduced implicitly.
 
