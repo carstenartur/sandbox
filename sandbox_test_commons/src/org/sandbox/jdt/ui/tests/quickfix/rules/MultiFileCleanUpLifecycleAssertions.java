@@ -181,10 +181,24 @@ public final class MultiFileCleanUpLifecycleAssertions {
 
 	private static String normalizeWhitespace(String source) {
 		return Arrays.stream(normalizeLineEndings(source).split("\n", -1)) //$NON-NLS-1$
-				.map(line -> line.stripTrailing().replaceFirst("^\\t+", match -> "    ".repeat(match.group().length()))) //$NON-NLS-1$ //$NON-NLS-2$
+				.map(MultiFileCleanUpLifecycleAssertions::normalizeIndentation)
+				.map(String::stripTrailing)
 				.collect(Collectors.joining("\n")) //$NON-NLS-1$
 				.replaceAll("\n{3,}", "\n\n") //$NON-NLS-1$ //$NON-NLS-2$
 				.strip();
+	}
+
+	private static String normalizeIndentation(String line) {
+		int endOfIndent= 0;
+		while (endOfIndent < line.length()
+				&& (line.charAt(endOfIndent) == ' ' || line.charAt(endOfIndent) == '\t')) {
+			endOfIndent++;
+		}
+		if (endOfIndent == 0) {
+			return line;
+		}
+		String leading= line.substring(0, endOfIndent).replace("\t", "    "); //$NON-NLS-1$ //$NON-NLS-2$
+		return leading + line.substring(endOfIndent);
 	}
 
 	private static String normalizeLineEndings(String source) {
