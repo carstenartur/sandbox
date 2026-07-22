@@ -57,13 +57,13 @@ A loop adding to a pre-existing collection or iterable target is converted to di
 source.forEach(item -> target.add(item.toUpperCase()));
 ```
 
-It is not replaced with `target = source.stream().collect(...)`. Reference-array sources and the primitive array types supported directly by `Arrays.stream` use the corresponding ordered stream form while copying the original AST body, so mappings, comments and the existing target object are preserved:
+It is not replaced with `target = source.stream().collect(...)`. Compatible array sources use the corresponding ordered stream form while copying the original AST body, so mappings, comments and the existing target object are preserved:
 
 ```java
 Arrays.stream(array).forEachOrdered(item -> target.add(item.toUpperCase()));
 ```
 
-Primitive conversion is offered only for `int[]`, `long[]`, and `double[]` when the enhanced-for variable has the same primitive type. Boxing, widening, and primitive arrays without an `Arrays.stream` overload remain unchanged because an inferred stream lambda could otherwise change the variable's static type or fail to compile.
+Array conversion is offered only when the array component type and enhanced-for variable type have the same resolved binding. This avoids changing the lambda variable's static type and therefore Java overload resolution. Primitive conversion is additionally limited to `int[]`, `long[]`, and `double[]`, the primitive array types supported directly by `Arrays.stream`. Boxing, widening, reference supertypes, and primitive arrays without an overload remain unchanged.
 
 ### Consecutive loops
 
@@ -75,7 +75,7 @@ Read-only iteration over `CopyOnWriteArrayList` and `CopyOnWriteArraySet` is sup
 
 ### Array collect and map+collect
 
-Array sources with a compatible fresh interface accumulator use `Arrays.stream(array)` and the project's canonical collector rendering. Existing targets use an AST-preserving `forEachOrdered` body instead of replacing the collection. Existing-target primitive conversion is restricted to exact `int`, `long`, and `double` element types; unsupported or type-changing cases fail closed. Import expectations account for wildcard imports and add only required imports.
+Array sources with a compatible fresh interface accumulator use `Arrays.stream(array)` and the project's canonical collector rendering. Existing targets use an AST-preserving `forEachOrdered` body instead of replacing the collection. Existing-target conversion requires exact resolved element-type identity; primitive conversion is further restricted to `int`, `long`, and `double`. Unsupported or type-changing cases fail closed. Import expectations account for wildcard imports and add only required imports.
 
 ### Field side effects
 
@@ -96,7 +96,7 @@ A final field mutation such as `counter++` is rendered as a sequential `forEach`
 - Existing/aliased accumulator replacement is forbidden; supported conversions preserve the original target object through direct `forEach` or ordered array-stream traversal.
 - Concrete or construction-sensitive fresh accumulator support remains blocked until #1251 models an explicit `Collectors.toCollection(...)` supplier.
 - Loop conversions are rejected when local binding recovery is incomplete or a generated lambda would capture a non-effectively-final local.
-- Primitive existing-target array loops are rejected unless `Arrays.stream` preserves the exact primitive loop-variable type.
+- Existing-target array loops are rejected unless `Arrays.stream` preserves the exact resolved enhanced-for variable type.
 - Weakly consistent concurrent collection iteration is not generalized from the copy-on-write cases.
 - Parallelization is never introduced implicitly.
 
