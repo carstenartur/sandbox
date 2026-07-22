@@ -12,8 +12,10 @@ package org.sandbox.jdt.cleanup.multifile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
@@ -43,10 +47,21 @@ class AbstractPlannedMultiFileCleanUpTest {
 		private final List<ICompilationUnit> fixedUnits= new ArrayList<>();
 		private ICompilationUnit[] plannedUnits;
 		private RefactoringStatus planningStatus= new RefactoringStatus();
+		private CoreException planningCoreFailure;
+		private RuntimeException planningRuntimeFailure;
+		private IJavaProject failingFixProject;
+		private CoreException fixFailure;
+		private CoreException postConditionFailure;
 
 		@Override
 		protected MultiFileCleanUpPlanResult<TestPlan> createPlan(IJavaProject project,
-				ICompilationUnit[] compilationUnits, IProgressMonitor monitor) {
+				ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+			if (planningCoreFailure != null) {
+				throw planningCoreFailure;
+			}
+			if (planningRuntimeFailure != null) {
+				throw planningRuntimeFailure;
+			}
 			plannedUnits= compilationUnits;
 			if (planningStatus.hasFatalError()) {
 				return new MultiFileCleanUpPlanResult<>(null, planningStatus);
@@ -55,10 +70,21 @@ class AbstractPlannedMultiFileCleanUpTest {
 		}
 
 		@Override
-		protected ICleanUpFix createFixForPlan(TestPlan plan, CleanUpContext context) {
+		protected ICleanUpFix createFixForPlan(TestPlan plan, CleanUpContext context) throws CoreException {
 			assertSame(plan.project(), context.getCompilationUnit().getJavaProject());
+			if (plan.project() == failingFixProject && fixFailure != null) {
+				throw fixFailure;
+			}
 			fixedUnits.add(context.getCompilationUnit());
 			return null;
+		}
+
+		@Override
+		protected RefactoringStatus checkPlanPostConditions(IProgressMonitor monitor) throws CoreException {
+			if (postConditionFailure != null) {
+				throw postConditionFailure;
+			}
+			return new RefactoringStatus();
 		}
 
 		TestPlan retainedPlan(IJavaProject project) {
@@ -101,6 +127,91 @@ class AbstractPlannedMultiFileCleanUpTest {
 		assertEquals(RefactoringStatus.FATAL, status.getSeverity());
 		assertNull(cleanUp.retainedPlan(project));
 		assertNull(cleanUp.createFix(new CleanUpContext(unit, null)));
+	}
+
+	@Test
+	void clearsPreviousPlanWhenPlanningThrowsCoreException() throws CoreException {
+		IJavaProject project= javaProject();
+		ICompilationUnit unit= compilationUnit(project, "Changed.java"); //$NON-NLS-1$
+		TestCleanUp cleanUp= new TestCleanUp();
+		cleanUp.checkPreConditions(project, new ICompilationUnit[] { unit }, new NullProgressMonitor());
+		assertNotNull(cleanUp.retainedPlan(project));
+		cleanUp.planningCoreFailure= new CoreException(Status.error("Planning failed")); //$NON-NLS-1$
+
+		assertThrows(CoreException.class, () -> cleanUp.checkPreConditions(project,
+				new ICompilationUnit[] { unit }, new NullProgressMonitor()));
+
+		assertNull(cleanUp.retainedPlan(project));
+	}
+
+	@Test
+	void clearsPreviousPlanWhenPlanningIsCancelled() throws CoreException {
+		IJavaProject project= javaProject();
+		ICompilationUnit unit= compilationUnit(project, "Cancelled.java"); //$NON-NLS-1$
+		TestCleanUp cleanUp= new TestCleanUp();
+		cleanUp.checkPreConditions(project, new ICompilationUnit[] { unit }, new NullProgressMonitor());
+		assertNotNull(cleanUp.retainedPlan(project));
+		cleanUp.planningRuntimeFailure= new OperationCanceledException();
+
+		assertThrows(OperationCanceledException.class, () -> cleanUp.checkPreConditions(project,
+				new ICompilationUnit[] { unit }, new NullProgressMonitor()));
+
+		assertNull(cleanUp.retainedPlan(project));
+	}
+
+	@Test
+	void fixResolutionFailureClearsOnlyTheAffectedProjectPlan() throws CoreException {
+		IJavaProject firstProject= javaProject();
+		IJavaProject secondProject= javaProject();
+		ICompilationUnit first= compilationUnit(firstProject, "First.java"); //$NON-NLS-1$
+		ICompilationUnit second= compilationUnit(secondProject, "Second.java"); //$NON-NLS-1$
+		TestCleanUp cleanUp= new TestCleanUp();
+		cleanUp.checkPreConditions(firstProject, new ICompilationUnit[] { first }, new NullProgressMonitor());
+		cleanUp.checkPreConditions(secondProject, new ICompilationUnit[] { second }, new NullProgressMonitor());
+		cleanUp.failingFixProject= firstProject;
+		cleanUp.fixFailure= new CoreException(Status.error("Planned binding is stale")); //$NON-NLS-1$
+
+		assertThrows(CoreException.class, () -> cleanUp.createFix(new CleanUpContext(first, null)));
+
+		assertNull(cleanUp.retainedPlan(firstProject));
+		assertNotNull(cleanUp.retainedPlan(secondProject));
+		cleanUp.createFix(new CleanUpContext(second, null));
+		assertEquals(List.of(second), cleanUp.fixedUnits);
+	}
+
+	@Test
+	void postConditionExceptionClearsPlansForEveryProject() throws CoreException {
+		IJavaProject firstProject= javaProject();
+		IJavaProject secondProject= javaProject();
+		ICompilationUnit first= compilationUnit(firstProject, "First.java"); //$NON-NLS-1$
+		ICompilationUnit second= compilationUnit(secondProject, "Second.java"); //$NON-NLS-1$
+		TestCleanUp cleanUp= new TestCleanUp();
+		cleanUp.checkPreConditions(firstProject, new ICompilationUnit[] { first }, new NullProgressMonitor());
+		cleanUp.checkPreConditions(secondProject, new ICompilationUnit[] { second }, new NullProgressMonitor());
+		cleanUp.postConditionFailure= new CoreException(Status.error("Postcondition failed")); //$NON-NLS-1$
+
+		assertThrows(CoreException.class, () -> cleanUp.checkPostConditions(new NullProgressMonitor()));
+
+		assertNull(cleanUp.retainedPlan(firstProject));
+		assertNull(cleanUp.retainedPlan(secondProject));
+	}
+
+	@Test
+	void keepsPlansAndFixesIsolatedByJavaProject() throws CoreException {
+		IJavaProject firstProject= javaProject();
+		IJavaProject secondProject= javaProject();
+		ICompilationUnit first= compilationUnit(firstProject, "SameName.java"); //$NON-NLS-1$
+		ICompilationUnit second= compilationUnit(secondProject, "SameName.java"); //$NON-NLS-1$
+		TestCleanUp cleanUp= new TestCleanUp();
+
+		cleanUp.checkPreConditions(firstProject, new ICompilationUnit[] { first }, new NullProgressMonitor());
+		cleanUp.checkPreConditions(secondProject, new ICompilationUnit[] { second }, new NullProgressMonitor());
+
+		assertEquals(List.of(first), cleanUp.retainedPlan(firstProject).units());
+		assertEquals(List.of(second), cleanUp.retainedPlan(secondProject).units());
+		cleanUp.createFix(new CleanUpContext(second, null));
+		cleanUp.createFix(new CleanUpContext(first, null));
+		assertEquals(List.of(second, first), cleanUp.fixedUnits);
 	}
 
 	@Test
