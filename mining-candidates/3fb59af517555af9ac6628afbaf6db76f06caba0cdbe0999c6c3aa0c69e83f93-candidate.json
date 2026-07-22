@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3fb59af517555af9ac6628afbaf6db76f06caba0cdbe0999c6c3aa0c69e83f93",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_OBJS_FIXABLE_PROBLEM\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.IMG_OBJS_FIXABLE_WARNING\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\nimport org.eclipse.swt.graphics.Image;\n\npublic class CompilationUnitDocumentProvider {\n    private static Image fgQuickFixWarningImage;\n    private static boolean fgImagesInitialized \u003d false;\n\n    public void initialize() {\n        if (fgImagesInitialized)\n            return;\n        fgQuickFixWarningImage\u003d JavaPluginImages.get(JavaPluginImages.IMG_OBJS_FIXABLE_PROBLEM);\n        // other initializations\n        fgImagesInitialized \u003d true;\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\nimport org.eclipse.swt.graphics.Image;\n\npublic class CompilationUnitDocumentProvider {\n    private static Image fgQuickFixWarningImage;\n    private static boolean fgImagesInitialized \u003d false;\n\n    public void initialize() {\n        if (fgImagesInitialized)\n            return;\n        fgQuickFixWarningImage\u003d JavaPluginImages.get(JavaPluginImages.IMG_OBJS_FIXABLE_WARNING);\n        // other initializations\n        fgImagesInitialized \u003d true;\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\nimport org.eclipse.swt.graphics.Image;\n\npublic class CompilationUnitDocumentProvider {\n    private static Image fgQuickFixErrorImage;\n    private static boolean fgImagesInitialized \u003d false;\n\n    public void initialize() {\n        if (fgImagesInitialized)\n            return;\n        fgQuickFixErrorImage\u003d JavaPluginImages.get(JavaPluginImages.IMG_OBJS_FIXABLE_ERROR); // Should not match\n        fgImagesInitialized \u003d true;\n    }\n}\n",
+  "targetHintFile": "constants.sandbox-hint",
+  "sourceCommit": "79c19bbb0c681eade141b74251c905846a817206",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Rename Constant",
+  "summary": "Rename `IMG_OBJS_FIXABLE_PROBLEM` to `IMG_OBJS_FIXABLE_WARNING`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-22T03:16:09.601697757Z",
+  "ruleFingerprint": "sha256:02e33fbe434456ec9996823e2f7f4ad1116e296c72e7ca5781c1c2ae8ce93868",
+  "behaviorFingerprint": "sha256:f60a6b27d09f4b01acdfb11de14c687b29932070ef59a4d46ed96fa664b8fd21",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui.JavaPluginImages cannot be resolved",
+    "verifiedAt": "2026-07-22T03:16:11.044602385Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

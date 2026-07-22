@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ac917617ee22e2ca7e94b93e0d384bc984677445e3987dfc3a3779ed56fe579a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.Boolean($s).booleanValue()\n\u003d\u003e\njava.lang.Boolean.parseBoolean($s)\n;;",
+  "beforeExample": "class Example {\n    boolean check(String value) {\n        return new java.lang.Boolean(value).booleanValue();\n    }\n    boolean checkAnother(String flag) {\n        String data \u003d flag;\n        return new java.lang.Boolean(data).booleanValue();\n    }\n}",
+  "afterExample": "class Example {\n    boolean check(String value) {\n        return java.lang.Boolean.parseBoolean(value);\n    }\n    boolean checkAnother(String flag) {\n        String data \u003d flag;\n        return java.lang.Boolean.parseBoolean(data);\n    }\n}",
+  "negativeExample": "class Example {\n    java.lang.Boolean createBooleanObject(boolean b) {\n        return new java.lang.Boolean(b); // Should not match: not a String argument, no .booleanValue()\n    }\n    java.lang.Boolean createBooleanFromString(String s) {\n        return new java.lang.Boolean(s); // Should not match: no .booleanValue()\n    }\n    boolean checkPrimitive(String s) {\n        return java.lang.Boolean.valueOf(s).booleanValue(); // Should not match: uses valueOf, not new Boolean\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "507a3a86fd615cf7e070b27f9ffa3cf9399d7822",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces \u0027new Boolean(String).booleanValue()\u0027 with \u0027Boolean.parseBoolean(String)\u0027 for direct primitive boolean parsing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-22T03:16:09.598214701Z",
+  "ruleFingerprint": "sha256:e2fe31fd089f6b497b95969c58e20281292b44f8cbe963c0abdeb1e5c5ea6291",
+  "behaviorFingerprint": "sha256:22f5324d7af79c6a7a2933c54b5a62488dc7bc1af18a28826541d5144ba1c9b8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-07-22T03:16:11.028329422Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

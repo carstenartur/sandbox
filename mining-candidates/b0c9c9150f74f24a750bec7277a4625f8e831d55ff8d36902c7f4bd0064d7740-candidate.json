@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b0c9c9150f74f24a750bec7277a4625f8e831d55ff8d36902c7f4bd0064d7740",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt.signature.stripsignaturetofqn.to.gettypeerasure\u003e\n\u003c!description: Replace SignatureUtil.stripSignatureToFQN with Signature.getTypeErasure then Signature.toString for improved type erasure handling.\nThis transformation is based on a fix for a bug related to completion proposals for array clone() methods.\n\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.core.SignatureUtil.stripSignatureToFQN(java.lang.String.valueOf($var))\n\u003d\u003e\norg.eclipse.jdt.core.Signature.toString(org.eclipse.jdt.core.Signature.getTypeErasure(java.lang.String.valueOf($var)))\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.SignatureUtil;\nimport org.eclipse.jdt.core.Signature;\n\npublic class Example {\n    String getDeclaringType(String declaringTypeSignature) {\n        if (declaringTypeSignature \u003d\u003d null) {\n            return \"java.lang.Object\";\n        }\n        return SignatureUtil.stripSignatureToFQN(String.valueOf(declaringTypeSignature));\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.SignatureUtil;\nimport org.eclipse.jdt.core.Signature;\n\npublic class Example {\n    String getDeclaringType(String declaringTypeSignature) {\n        if (declaringTypeSignature \u003d\u003d null) {\n            return \"java.lang.Object\";\n        }\n        return Signature.toString(Signature.getTypeErasure(String.valueOf(declaringTypeSignature)));\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.SignatureUtil;\nimport org.eclipse.jdt.core.Signature;\n\npublic class Example {\n    String someOtherOperation(String signature) {\n        // This method call has a different argument ($signature directly, not String.valueOf($var))\n        String stripped \u003d SignatureUtil.stripSignatureToFQN(signature);\n        // This method call uses Signature.toString directly, not after getTypeErasure\n        String toString \u003d Signature.toString(signature);\n        return stripped + toString;\n    }\n}\n",
+  "targetHintFile": "jdt-core-api.sandbox-hint",
+  "sourceCommit": "428afb6b676443085e01a003367df438234f1cb2",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Replacement",
+  "summary": "Replaces a specific chain of SignatureUtil.stripSignatureToFQN(String.valueOf(...)) with Signature.toString(Signature.getTypeErasure(String.valueOf(...))) for improved handling of type signatures.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-22T03:16:09.581151061Z",
+  "ruleFingerprint": "sha256:1c75107d8f288d6db9416cbee125f03de8b52bb866a903c9260875e2faa5c4cb",
+  "behaviorFingerprint": "sha256:d69dcee1a88b59e7d59c99f1f822e4e12058a80036f773ae6088addec36e1a43",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-22T03:16:10.953039862Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
