@@ -22,7 +22,7 @@ The workflow artifacts use immutable names containing the full commit SHA and ar
 
 `.github/workflows/post-merge-provenance.yml` is triggered only after a successful `Java CI with Maven` run. Publication proceeds only when the triggering run represents a push to `main`.
 
-The workflow checks out `github.event.workflow_run.head_sha`, not the moving default branch. It then waits until the following push workflows for that exact SHA have completed:
+The workflow checks out `github.event.workflow_run.head_sha`, not the moving default branch. It then waits until the following push workflows for that exact SHA have completed successfully:
 
 - Java CI with Maven;
 - Core Module Build;
@@ -30,11 +30,11 @@ The workflow checks out `github.event.workflow_run.head_sha`, not the moving def
 - Codacy Security Scan;
 - Test Report.
 
-A failed, missing or indefinitely incomplete required workflow prevents provenance publication. `Core Module Build` consequently runs for every `main` push, while retaining path filtering for pull requests.
+A failed, cancelled, skipped, neutral, missing or indefinitely incomplete required workflow prevents provenance publication. `Core Module Build` consequently runs for every `main` push, while retaining path filtering for pull requests.
 
 ## Snapshot workflow
 
-`.github/workflows/deploy-snapshot.yml` also checks out the exact successful Java CI `head_sha`. The p2 repository is built only from that checkout. Its manifest contains:
+`.github/workflows/deploy-snapshot.yml` has no manual publication path. It runs only after a successful Java CI push run on `main`, checks out that exact `head_sha`, and builds the p2 repository only from that checkout. Its manifest contains:
 
 - validated commit SHA and commit URL;
 - source Java CI run ID and URL;
@@ -45,7 +45,7 @@ A failed, missing or indefinitely incomplete required workflow prevents provenan
 - individual p2 metadata hashes;
 - optional patched JDT UI commit/version when supplied by the product build.
 
-This removes the race in which a later `main` commit could otherwise be checked out after the triggering Java CI run had finished.
+This removes both the race in which a later `main` commit could be checked out after the triggering Java CI run and the possibility of manually publishing an unvalidated ref as the latest snapshot.
 
 ## Manifest schema
 
@@ -80,8 +80,10 @@ python3 -m json.tool build-manifest.json
 
 - Repository POM, target definitions and CI-generated XML are trusted inputs. The scripts do not process arbitrary uploaded XML.
 - The collector accepts only workflow runs whose `head_sha` exactly matches the requested commit and whose event is `push`.
+- Every required workflow must conclude with `success`; skipped or neutral checks do not prove validation.
 - A later rerun supersedes an earlier attempt of the same workflow for the same SHA.
 - Pull-request validation never publishes to GitHub Pages.
+- The snapshot workflow cannot be dispatched manually against an unvalidated ref.
 - The provenance workflows do not search for or comment on unrelated pull requests.
 - A manifest records `not_built_in_this_run` when no product or update-site output exists instead of implying that an artifact was validated.
 
