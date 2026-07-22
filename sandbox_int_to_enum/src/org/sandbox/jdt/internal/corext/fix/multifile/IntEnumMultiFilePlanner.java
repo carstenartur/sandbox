@@ -61,6 +61,9 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningLimits;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Builds conservative source-wide integer-state migration plans. */
@@ -110,18 +113,31 @@ public final class IntEnumMultiFilePlanner {
 	public static MultiFileCleanUpPlanResult<IntEnumMigrationPlan> create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean closedScope, IProgressMonitor monitor) throws CoreException {
 		SelectedCompilationUnitPlan scope= SelectedCompilationUnitPlan.of(project, selectedUnits);
-		if (monitor != null && monitor.isCanceled()) {
-			throw new OperationCanceledException();
-		}
+		MultiFilePlanningBudget.checkCanceled(monitor);
 		if (!closedScope) {
 			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, List.of()));
 		}
 
+		long planningStarted= System.nanoTime();
+		MultiFilePlanningBudget.Assessment budget= MultiFilePlanningBudget.assess(selectedUnits,
+				MultiFilePlanningLimits.fromSystemProperties(), monitor);
+		if (!budget.mayProceed()) {
+			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics());
+		}
+		long parseStarted= System.nanoTime();
 		Map<String, CompilationUnit> roots= parse(project, selectedUnits, monitor);
-		List<CandidateBuilder> builders= discoverCandidates(roots);
-		validateReferences(roots, builders);
-		List<IntEnumCandidate> candidates= freeze(builders);
-		return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, candidates));
+		long parseNanos= System.nanoTime() - parseStarted;
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		List<CandidateBuilder> builders= discoverCandidates(roots, monitor);
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		validateReferences(roots, builders, monitor);
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		List<IntEnumCandidate> candidates= freeze(builders, monitor);
+		MultiFilePlanningMetrics metrics= budget.metrics()
+				.withDurations(parseNanos, System.nanoTime() - planningStarted)
+				.withRetainedPlanEntries(candidates.size());
+		return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, candidates),
+				budget.status(), metrics);
 	}
 
 	private static Map<String, CompilationUnit> parse(IJavaProject project, ICompilationUnit[] units,
@@ -142,14 +158,17 @@ public final class IntEnumMultiFilePlanner {
 		return roots;
 	}
 
-	private static List<CandidateBuilder> discoverCandidates(Map<String, CompilationUnit> roots) {
+	private static List<CandidateBuilder> discoverCandidates(Map<String, CompilationUnit> roots,
+			IProgressMonitor monitor) {
 		List<CandidateBuilder> result= new ArrayList<>();
 		Set<String> claimedConstants= new HashSet<>();
 		for (Map.Entry<String, CompilationUnit> entry : roots.entrySet()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			String unitHandle= entry.getKey();
 			entry.getValue().accept(new ASTVisitor() {
 				@Override
 				public boolean visit(TypeDeclaration type) {
+					MultiFilePlanningBudget.checkCanceled(monitor);
 					if (!(type.getParent() instanceof CompilationUnit) || type.isInterface()
 							|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty()) {
 						return false;
@@ -292,21 +311,25 @@ public final class IntEnumMultiFilePlanner {
 		return null;
 	}
 
-	private static void validateReferences(Map<String, CompilationUnit> roots, List<CandidateBuilder> candidates) {
+	private static void validateReferences(Map<String, CompilationUnit> roots,
+			List<CandidateBuilder> candidates, IProgressMonitor monitor) {
 		Map<String, CandidateBuilder> byMethod= new HashMap<>();
 		Map<String, CandidateBuilder> byConstant= new HashMap<>();
 		for (CandidateBuilder candidate : candidates) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			byMethod.put(candidate.methodKey, candidate);
 			for (ConstantDecl constant : candidate.constants) {
 				byConstant.put(constant.bindingKey(), candidate);
 			}
 		}
 		for (Map.Entry<String, CompilationUnit> entry : roots.entrySet()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			String unitHandle= entry.getKey();
 			CompilationUnit root= entry.getValue();
 			root.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(MethodInvocation node) {
+					MultiFilePlanningBudget.checkCanceled(monitor);
 					IMethodBinding methodBinding= node.resolveMethodBinding();
 					String methodKey= methodBinding == null ? null : methodBinding.getMethodDeclaration().getKey();
 					CandidateBuilder candidate= byMethod.get(methodKey);
@@ -334,6 +357,7 @@ public final class IntEnumMultiFilePlanner {
 
 				@Override
 				public boolean visit(SimpleName node) {
+					MultiFilePlanningBudget.checkCanceled(monitor);
 					IBinding binding= node.resolveBinding();
 					if (binding instanceof IVariableBinding variable) {
 						String key= variable.getVariableDeclaration().getKey();
@@ -361,14 +385,16 @@ public final class IntEnumMultiFilePlanner {
 		}
 	}
 
-	private static List<IntEnumCandidate> freeze(List<CandidateBuilder> builders) {
+	private static List<IntEnumCandidate> freeze(List<CandidateBuilder> builders, IProgressMonitor monitor) {
 		List<IntEnumCandidate> result= new ArrayList<>();
 		for (CandidateBuilder builder : builders) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			if (!builder.valid || !builder.hasExternalCaller) {
 				continue;
 			}
 			Map<String, Map<String, Integer>> referenceCounts= new LinkedHashMap<>();
 			for (Map.Entry<Expression, String> reference : builder.recognisedReferences.entrySet()) {
+				MultiFilePlanningBudget.checkCanceled(monitor);
 				CompilationUnit root= root(reference.getKey());
 				if (root == null || !(root.getJavaElement() instanceof ICompilationUnit unit)) {
 					builder.valid= false;
