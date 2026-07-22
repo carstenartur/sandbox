@@ -132,23 +132,26 @@ class BuildManifestTest(unittest.TestCase):
 
 class WorkflowSelectionTest(unittest.TestCase):
 
+    @staticmethod
+    def successful_runs(commit: str) -> list[dict[str, object]]:
+        return [
+            {
+                "id": index + 1,
+                "name": name,
+                "head_sha": commit,
+                "event": "push",
+                "status": "completed",
+                "conclusion": "success",
+                "run_number": 10,
+                "run_attempt": 1,
+                "html_url": f"https://example/{name}",
+            }
+            for index, name in enumerate(workflow_module.EXPECTED_WORKFLOWS)
+        ]
+
     def test_selects_latest_push_run_for_exact_commit(self):
         commit = "abc123"
-        runs = []
-        for name in workflow_module.EXPECTED_WORKFLOWS:
-            runs.append(
-                {
-                    "id": len(runs) + 1,
-                    "name": name,
-                    "head_sha": commit,
-                    "event": "push",
-                    "status": "completed",
-                    "conclusion": "success",
-                    "run_number": 10,
-                    "run_attempt": 1,
-                    "html_url": f"https://example/{name}",
-                }
-            )
+        runs = self.successful_runs(commit)
         runs.append(
             {
                 "id": 100,
@@ -212,6 +215,15 @@ class WorkflowSelectionTest(unittest.TestCase):
         self.assertEqual(1, len(selected))
         self.assertIn("Core Module Build", missing)
         self.assertEqual(["Java CI with Maven"], incomplete)
+
+    def test_collect_rejects_skipped_required_workflow(self):
+        commit = "abc123"
+        runs = self.successful_runs(commit)
+        runs[2]["conclusion"] = "skipped"
+
+        with patch.object(workflow_module, "fetch_runs", return_value=runs):
+            with self.assertRaisesRegex(RuntimeError, "CodeQL=skipped"):
+                workflow_module.collect("carstenartur/sandbox", commit, "token", 1, 0)
 
 
 if __name__ == "__main__":
