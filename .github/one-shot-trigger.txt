@@ -1,1 +1,0 @@
-Trigger diagnosable Functional Converter finalizer.
