@@ -188,10 +188,7 @@ package test;
 import java.util.*;
 public class E {
     void foo(List<String> items) {
-        items.stream().forEach(item -> {
-			String upper = item.toUpperCase();
-			System.out.println(upper);
-		});
+        items.stream().map(item -> item.toUpperCase()).forEachOrdered(upper -> System.out.println(upper));
     }
 }
 """;

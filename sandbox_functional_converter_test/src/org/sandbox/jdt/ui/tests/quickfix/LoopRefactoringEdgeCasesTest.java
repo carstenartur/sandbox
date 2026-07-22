@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -627,7 +626,6 @@ class MyTest {
 	 * 
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
-	@Disabled("Pattern not converting in V1 - needs investigation")
 	@Test
 	@DisplayName("Unused element: lambda with unused parameter")
 	void testUnusedElement() throws CoreException {

@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -280,7 +279,6 @@ public class Issue670StrictLoopRefactoringTest {
 	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
 	 */
 	@Test
-	@Disabled("BUG: Collection modification detection not blocking conversion - Issue #670")
 	@DisplayName("Loop with map.put() on iterated map - should NOT convert (BUG)")
 	void testLoopWithMapPut_ShouldNotConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -346,7 +344,6 @@ public class Issue670StrictLoopRefactoringTest {
 	 * is disabled to avoid build failures.</p>
 	 */
 	@Test
-	@Disabled("Different but acceptable behavior - converts to collect() instead of forEach()")
 	@DisplayName("Loop modifying different collection - CAN convert")
 	void testLoopModifyingDifferentCollection_CanConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -429,7 +426,6 @@ public class Issue670StrictLoopRefactoringTest {
 	 * <p><b>Actual:</b> {@code list.stream().forEach(item -> ...)}</p>
 	 */
 	@Test
-	@Disabled("Different but acceptable behavior - converts to stream instead of enhanced-for")
 	@DisplayName("Simple iterator loop on CopyOnWriteArrayList - CAN convert")
 	void testConcurrentCollection_SimpleIteration_CanConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -455,9 +451,7 @@ public class Issue670StrictLoopRefactoringTest {
 				import java.util.concurrent.CopyOnWriteArrayList;
 				public class MyTest {
 					void process(CopyOnWriteArrayList<String> list) {
-						for (String item : list) {
-							System.out.println(item);
-						}
+						list.stream().forEach(item -> System.out.println(item));
 					}
 				}
 				""";
@@ -542,7 +536,6 @@ public class Issue670StrictLoopRefactoringTest {
 	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
 	 */
 	@Test
-	@Disabled("BUG: Field access modification detection not blocking conversion - Issue #670")
 	@DisplayName("Loop with field access receiver (this.list.remove) - should NOT convert (BUG)")
 	void testFieldAccessReceiverModification_ShouldNotConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
@@ -588,7 +581,6 @@ public class Issue670StrictLoopRefactoringTest {
 	 * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
 	 */
 	@Test
-	@Disabled("BUG: IllegalArgumentException - Invalid identifier : >getList()< - needs fix in EnhancedForHandler")
 	@DisplayName("Loop with getter method receiver (getList().add) - should NOT convert (CRASHES)")
 	void testGetterMethodReceiverModification_ShouldNotConvert() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);

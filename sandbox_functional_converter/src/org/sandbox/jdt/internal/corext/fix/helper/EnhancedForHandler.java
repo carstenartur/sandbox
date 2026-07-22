@@ -75,7 +75,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         
         // Initialize the LoopTree in the shared holder
         LoopTree tree = new LoopTree();
-        treeHolder.put("tree", tree);
+        treeHolder.put("tree", tree); //$NON-NLS-1$
         
         // Use BiPredicate (visit) and BiConsumer (endVisit) for tree-based analysis
         ReferenceHolder<ASTNode, Object> dataHolder = ReferenceHolder.create();
@@ -92,7 +92,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             if (loopStatement != null && !nodesprocessed.contains(loopStatement)) {
                 // Reuse cached ExtractedLoop from endVisitLoop to avoid duplicate extraction
                 JdtLoopExtractor.ExtractedLoop extracted = 
-                    (JdtLoopExtractor.ExtractedLoop) treeHolder.get("extracted_" + System.identityHashCode(loopStatement));
+                    (JdtLoopExtractor.ExtractedLoop) treeHolder.get("extracted_" + System.identityHashCode(loopStatement)); //$NON-NLS-1$
                 
                 // Fallback: if not cached (shouldn't happen), extract now
                 if (extracted == null) {
@@ -167,7 +167,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         }
         
         // Get the LoopTree from the holder
-        LoopTree tree = (LoopTree) treeHolder.get("tree");
+        LoopTree tree = (LoopTree) treeHolder.get("tree"); //$NON-NLS-1$
         if (tree == null) {
             return false;
         }
@@ -184,7 +184,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         scanner.populateScopeInfo(node.getScopeInfo());
         
         // Store the scanner for access in endVisitLoop (to check referenced variables)
-        treeHolder.put("scanner_" + System.identityHashCode(visited), scanner);
+        treeHolder.put("scanner_" + System.identityHashCode(visited), scanner); //$NON-NLS-1$
         
         // Continue visiting children (nested loops)
         return true;
@@ -208,7 +208,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             ReferenceHolder<String, Object> treeHolder,
             CompilationUnit compilationUnit) {
         // Get the LoopTree from the holder
-        LoopTree tree = (LoopTree) treeHolder.get("tree");
+        LoopTree tree = (LoopTree) treeHolder.get("tree"); //$NON-NLS-1$
         if (tree == null || !tree.isInsideLoop()) {
             return;
         }
@@ -232,7 +232,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         // Check ScopeInfo: if this loop references variables that are modified
         // in an ANCESTOR loop's scope, it cannot be converted (lambda capture requires
         // effectively final variables).
-        LoopBodyScopeScanner scanner = (LoopBodyScopeScanner) treeHolder.get("scanner_" + System.identityHashCode(visited));
+        LoopBodyScopeScanner scanner = (LoopBodyScopeScanner) treeHolder.get("scanner_" + System.identityHashCode(visited)); //$NON-NLS-1$
         if (scanner != null && node.getParent() != null) {
             // Walk up the tree and check if any referenced variable is modified in ancestor scopes
             LoopTreeNode parent = node.getParent();
@@ -264,7 +264,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         
         // Cache the extracted loop so that later phases (e.g., rewrite construction)
         // can reuse it without re-running the extraction on the same AST node.
-        treeHolder.put("extracted_" + System.identityHashCode(visited), extracted);
+        treeHolder.put("extracted_" + System.identityHashCode(visited), extracted); //$NON-NLS-1$
         
         // Loop is convertible
         node.setDecision(ConversionDecision.CONVERTIBLE);
@@ -294,7 +294,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
             ForEachTerminal terminal = (ForEachTerminal) extracted.model.getTerminal();
             String varName = extracted.model.getElement() != null 
                 ? extracted.model.getElement().variableName() 
-                : "x";
+                : "x"; //$NON-NLS-1$
             Expression streamExpression = renderer.renderDirectForEach(
                 extracted.model.getSource(), 
                 terminal.bodyStatements(), 
@@ -307,7 +307,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
                 rewrite.replace(visited, newStatement, group);
                 
                 if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
-                    cuRewrite.getImportRewrite().addImport("java.util.Arrays");
+                    cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
                 }
                 return;
             }
@@ -320,18 +320,32 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         if (streamExpression != null) {
             // Wrap the stream expression appropriately based on terminal type
             Statement replacement = createReplacement(ast, streamExpression, extracted.model, visited);
+            boolean directCollectFallback = false;
             if (replacement != null) {
-                // For COLLECT: try to merge with preceding empty collection declaration
+                // For COLLECT: merge a fresh accumulator or preserve an existing target with forEach
                 if (extracted.model.getTerminal() instanceof CollectTerminal collectTerminal) {
                     Statement merged = tryMergeWithPrecedingDeclaration(
                         ast, rewrite, group, visited, streamExpression, collectTerminal.targetVariable());
-                    if (merged != null) {
+                    if (merged == null) {
+                        String variableName = extracted.model.getElement() != null
+                                ? extracted.model.getElement().variableName() : "item"; //$NON-NLS-1$
+                        Expression directForEach = renderer.renderDirectForEach(
+                                extracted.model.getSource(), java.util.List.of(), variableName, true);
+                        replacement = ast.newExpressionStatement(directForEach);
+                        directCollectFallback = true;
+                    } else {
                         replacement = merged;
                     }
                 }
                 
                 rewrite.replace(visited, replacement, group);
-                addRequiredImports(cuRewrite, extracted.model);
+                if (directCollectFallback) {
+                    if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
+                        cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
+                    }
+                } else {
+                    addRequiredImports(cuRewrite, extracted.model);
+                }
             }
         }
     }
@@ -390,7 +404,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
      * <p>For noneMatch: {@code if (!stream.noneMatch(...)) { return false; }}</p>
      * <p>For allMatch: {@code if (!stream.allMatch(...)) { return false; }}</p>
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked") //$NON-NLS-1$
     private Statement createMatchIfStatement(AST ast, Expression streamExpression,
                                               org.sandbox.functional.core.terminal.MatchTerminal matchTerminal) {
         IfStatement ifStmt = ast.newIfStatement();
@@ -428,10 +442,10 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         // Source-based imports
         switch (model.getSource().type()) {
             case ARRAY:
-                cuRewrite.getImportRewrite().addImport("java.util.Arrays");
+                cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
                 break;
             case ITERABLE:
-                cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport");
+                cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport"); //$NON-NLS-1$
                 break;
             default:
                 break;
@@ -439,7 +453,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         
         // Terminal-based imports
         if (model.getTerminal() instanceof CollectTerminal) {
-            cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors");
+            cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors"); //$NON-NLS-1$
         }
     }
     
@@ -452,7 +466,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
      * 
      * @return merged VariableDeclarationStatement, or null if merge not possible
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked") //$NON-NLS-1$
     private Statement tryMergeWithPrecedingDeclaration(AST ast, ASTRewrite rewrite, TextEditGroup group,
                                                         EnhancedForStatement forLoop, 
                                                         Expression streamExpression, 

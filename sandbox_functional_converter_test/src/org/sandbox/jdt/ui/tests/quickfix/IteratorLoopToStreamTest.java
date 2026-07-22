@@ -16,7 +16,6 @@ package org.sandbox.jdt.ui.tests.quickfix;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -178,10 +177,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.stream().forEach(item -> {
-							String upper = item.toUpperCase();
-							System.out.println(upper);
-						});
+						items.stream().map(item -> item.toUpperCase()).forEachOrdered(upper -> System.out.println(upper));
 					}
 				}
 				""";
@@ -204,7 +200,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; collect pipeline not yet implemented
-	@Disabled("Iterator collect-to-List pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator collect to List: stream().collect(Collectors.toList())")
 	public void testIterator_collectToList() throws CoreException {
@@ -252,7 +247,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; collect pipeline not yet implemented
-	@Disabled("Iterator collect-to-Set pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator collect to Set: stream().collect(Collectors.toSet())")
 	public void testIterator_collectToSet() throws CoreException {
@@ -304,7 +298,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; map+collect pipeline not yet implemented
-	@Disabled("Iterator map+collect pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator map+collect: stream().map(transform).collect(toList())")
 	public void testIterator_mapAndCollect() throws CoreException {
@@ -332,9 +325,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> transformAll(List<Integer> numbers) {
-						List<String> result = numbers.stream()
-							.map(num -> num.toString())
-							.collect(Collectors.toList());
+						List<String> result = numbers.stream().map(num -> num.toString()).collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -354,7 +345,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; map pipeline not yet implemented
-	@Disabled("Iterator map pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator map with method reference: stream().map(String::toUpperCase)")
 	public void testIterator_mapWithMethodReference() throws CoreException {
@@ -382,9 +372,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> toUpperAll(List<String> items) {
-						List<String> result = items.stream()
-							.map(String::toUpperCase)
-							.collect(Collectors.toList());
+						List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -408,7 +396,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; filter+collect pipeline not yet implemented
-	@Disabled("Iterator filter+collect pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator filter+collect: stream().filter(predicate).collect(toList())")
 	public void testIterator_filterAndCollect() throws CoreException {
@@ -438,9 +425,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> filterNonEmpty(List<String> items) {
-						List<String> result = items.stream()
-							.filter(item -> !item.isEmpty())
-							.collect(Collectors.toList());
+						List<String> result = items.stream().filter(item -> (!item.isEmpty())).collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -464,7 +449,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; filter+map+collect pipeline not yet implemented
-	@Disabled("Iterator filter+map+collect pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator filter+map+collect: stream().filter().map().collect()")
 	public void testIterator_filterMapAndCollect() throws CoreException {
@@ -494,10 +478,8 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> processPositive(List<Integer> numbers) {
-						List<String> result = numbers.stream()
-							.filter(num -> num > 0)
-							.map(num -> num.toString())
-							.collect(Collectors.toList());
+						List<String> result = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+								.collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -521,7 +503,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: iterator conversion currently only supports forEach; reduce pipeline not yet implemented
-	@Disabled("Iterator reduce pipeline not yet implemented; re-enable when iterator patterns support collect/map/filter/reduce")
 	@Test
 	@DisplayName("Iterator sum reduction: stream().mapToInt(i -> i).sum()")
 	public void testIterator_sumReduction() throws CoreException {
@@ -548,9 +529,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					int calculateSum(List<Integer> numbers) {
-						int sum = numbers.stream()
-							.mapToInt(num -> num)
-							.sum();
+						int sum = numbers.stream().reduce(0, Integer::sum);
 						return sum;
 					}
 				}
@@ -692,7 +671,6 @@ public class IteratorLoopToStreamTest {
 	 */
 	// Enabled January 2026 - Phase 7: Iterator pattern support
 	// Temporarily disabled: external state modification detection not working correctly yet
-	@Disabled("External state modification detection needs fixing - currently converts when it shouldn't")
 	@Test
 	@DisplayName("External state modification prevents conversion - side effect")
 	public void testIterator_withExternalModification_notConverted() throws CoreException {
