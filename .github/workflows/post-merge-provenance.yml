@@ -9,6 +9,9 @@ on:
       - '.github/scripts/test_build_provenance.py'
       - '.github/workflows/post-merge-provenance.yml'
       - '.github/workflows/core-module-build.yml'
+      - '.github/workflows/deploy-snapshot.yml'
+      - '.github/pages/index.html'
+      - 'docs/build-provenance.md'
   workflow_run:
     workflows: [ 'Java CI with Maven' ]
     types: [ completed ]
@@ -81,6 +84,12 @@ jobs:
             --output related-workflow-runs.json \
             --timeout-seconds 3600 \
             --interval-seconds 30
+      - name: Download executed Java CI test reports
+        run: |
+          mkdir -p source-java-ci-artifacts
+          gh run download "$SOURCE_JAVA_CI_RUN_ID" \
+            --pattern 'test-reports-*' \
+            --dir source-java-ci-artifacts
       - name: Generate test inventory
         run: python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
       - name: Generate provenance manifest and dashboard
@@ -89,6 +98,8 @@ jobs:
           commit_dir="$publish_dir/$COMMIT_SHA"
           mkdir -p "$commit_dir"
           python3 .github/scripts/generate_build_manifest.py \
+            --commit-sha "$COMMIT_SHA" \
+            --source-ref refs/heads/main \
             --related-workflows related-workflow-runs.json \
             --output "$commit_dir/build-manifest.json" \
             --html-output "$publish_dir/index.html"
