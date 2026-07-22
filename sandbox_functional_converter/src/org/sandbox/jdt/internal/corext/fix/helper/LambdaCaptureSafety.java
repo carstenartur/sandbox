@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
@@ -37,7 +38,7 @@ final class LambdaCaptureSafety {
 	 * @param additionalLocalBindings declarations outside {@code body} that become
 	 *            lambda-local, such as an enhanced-for parameter
 	 * @return {@code true} when binding identity is incomplete or a captured local is
-	 *         not effectively final
+	 *         neither explicitly final nor effectively final
 	 */
 	static boolean hasUnsafeCapture(Statement body, Set<String> liftedVariableNames,
 			IVariableBinding... additionalLocalBindings) {
@@ -88,8 +89,9 @@ final class LambdaCaptureSafety {
 					unsafe.set(true);
 					return false;
 				}
+				boolean finalLocal= Modifier.isFinal(declaration.getModifiers()) || declaration.isEffectivelyFinal();
 				if (!declaration.isField() && !localBindingKeys.contains(key)
-						&& !liftedBindingKeys.contains(key) && !declaration.isEffectivelyFinal()) {
+						&& !liftedBindingKeys.contains(key) && !finalLocal) {
 					unsafe.set(true);
 					return false;
 				}
