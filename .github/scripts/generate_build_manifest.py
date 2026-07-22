@@ -199,9 +199,18 @@ def load_related_workflows(path: Path | None) -> list[dict[str, Any]]:
     return value
 
 
-def build_manifest(repo_root: Path, related_workflows: Path | None) -> dict[str, Any]:
+def build_manifest(
+    repo_root: Path,
+    related_workflows: Path | None,
+    commit_sha: str | None = None,
+    source_ref: str | None = None,
+) -> dict[str, Any]:
     repository = os.environ.get("GITHUB_REPOSITORY", "local/sandbox")
-    commit_sha = os.environ.get("GITHUB_SHA") or command_version(["git", "rev-parse", "HEAD"])
+    resolved_commit_sha = (
+        commit_sha
+        or os.environ.get("GITHUB_SHA")
+        or command_version(["git", "rev-parse", "HEAD"])
+    )
     run_id = os.environ.get("GITHUB_RUN_ID")
     server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
     workflow_run_url = (
@@ -212,9 +221,13 @@ def build_manifest(repo_root: Path, related_workflows: Path | None) -> dict[str,
         "schema_version": 1,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "repository": repository,
-        "commit_sha": commit_sha,
-        "commit_url": f"{server_url}/{repository}/commit/{commit_sha}" if commit_sha else None,
-        "ref": os.environ.get("GITHUB_REF"),
+        "commit_sha": resolved_commit_sha,
+        "commit_url": (
+            f"{server_url}/{repository}/commit/{resolved_commit_sha}"
+            if resolved_commit_sha
+            else None
+        ),
+        "ref": source_ref or os.environ.get("GITHUB_REF"),
         "event_name": os.environ.get("GITHUB_EVENT_NAME"),
         "provenance_workflow": {
             "name": os.environ.get("GITHUB_WORKFLOW"),
@@ -252,7 +265,9 @@ def render_html(manifest: dict[str, Any]) -> str:
     rows = "\n".join(
         "<tr><td>{name}</td><td>{conclusion}</td><td><a href=\"{url}\">run {run_id}</a></td></tr>".format(
             name=escape(str(workflow.get("name", "unknown"))),
-            conclusion=escape(str(workflow.get("conclusion") or workflow.get("status", "unknown"))),
+            conclusion=escape(
+                str(workflow.get("conclusion") or workflow.get("status", "unknown"))
+            ),
             url=escape(str(workflow.get("html_url", "#")), quote=True),
             run_id=escape(str(workflow.get("id", "?"))),
         )
@@ -293,12 +308,19 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     parser.add_argument("--related-workflows", type=Path)
+    parser.add_argument("--commit-sha")
+    parser.add_argument("--source-ref")
     parser.add_argument("--output", type=Path, default=Path("build-manifest.json"))
     parser.add_argument("--html-output", type=Path)
     args = parser.parse_args()
 
     repo_root = args.repository_root.resolve()
-    manifest = build_manifest(repo_root, args.related_workflows)
+    manifest = build_manifest(
+        repo_root,
+        args.related_workflows,
+        commit_sha=args.commit_sha,
+        source_ref=args.source_ref,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     if args.html_output:
