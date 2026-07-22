@@ -42,7 +42,7 @@ jobs:
           mvn -e -V --batch-mode \
             -Dtycho.localArtifacts=ignore \
             -DskipTests \
-            -pl sandbox_functional_converter -am \
+            -pl sandbox_common_core,sandbox_common,sandbox_functional_converter -am \
             clean verify 2>&1 | tee functional-converter-build.log
           status=${PIPESTATUS[0]}
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
