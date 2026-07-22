@@ -8,8 +8,8 @@ Disabled tests are not automatically specifications. Each case was checked again
 
 All Functional Converter tests are active:
 
-- **547 total**
-- **547 enabled**
+- **551 total**
+- **551 enabled**
 - **0 disabled**
 
 The implementation now supports the legitimate positive cases and rejects the legitimate safety cases described below.
@@ -24,8 +24,11 @@ The implementation now supports the legitimate positive cases and rejects the le
 | `testIterator_withExternalModification_notConverted` | Legitimate safety test | Assigning to `lastItem`, declared outside the iterator body and used afterwards, cannot be moved into a lambda. |
 | `testCollectWithSideEffects_ShouldNotConvert` | Legitimate safety test | `counter++` before a collect terminal must not become a side-effecting `map` stage. |
 | `existingTargetArrayCollectIsLeftUnchanged` | Legitimate safety test | An array collect into an existing/aliased target remains unchanged until the array renderer can preserve the original loop body explicitly. |
+| `existingTargetReassignedAfterLoopIsNotCaptured` | Legitimate safety test | An existing target that is reassigned after the loop is not effectively final and cannot be captured by a generated `forEach` lambda. |
+| `additionalCollectCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | A non-accumulator local referenced by the collected expression must remain effectively final. |
+| `forEachCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | A simple side-effecting loop cannot become `forEach` when its lambda would capture a subsequently reassigned local. |
 
-The implementation compares iterated-source and mutation receivers through bindings, normalizes map views to their backing map, rejects unsafe external iterator-state mutation, and refuses non-terminal accumulator mutation.
+The implementation compares iterated-source and mutation receivers through bindings, normalizes map views to their backing map, rejects unsafe external iterator-state mutation, refuses non-terminal accumulator mutation, and validates Java's effectively-final rule for every local that remains in a generated lambda. Missing binding identities fail closed.
 
 ## Positive iterator pipelines
 
@@ -47,7 +50,7 @@ Collect and reduce are applied only when the loop is preceded by a matching fres
 
 ### Existing target collection
 
-A loop adding to a pre-existing collection or iterable target is converted to direct `forEach`, preserving existing contents and aliases:
+A loop adding to a pre-existing collection or iterable target is converted to direct `forEach`, preserving existing contents and aliases when every captured local is effectively final:
 
 ```java
 source.forEach(item -> target.add(item.toUpperCase()));
@@ -65,7 +68,7 @@ Array sources with a fresh local accumulator use `Arrays.stream(array)` and the 
 
 ### Field side effects
 
-A final field mutation such as `counter++` is rendered as a sequential `forEach` body rather than being misclassified as a local reduction. External local-variable mutation that violates lambda capture rules remains blocked.
+A final field mutation such as `counter++` is rendered as a sequential `forEach` body rather than being misclassified as a local reduction. Fields are not subject to local-variable capture finality; external local-variable mutation that violates lambda capture rules remains blocked.
 
 ## Test expectations corrected
 
@@ -79,6 +82,7 @@ A final field mutation such as `counter++` is rendered as a sequential `forEach`
 
 - Iterators with `remove()`, multiple `next()` calls, `break`, labeled `continue`, nested loops, unsupported try/synchronized control flow, or unsafe external-local mutation are not converted.
 - Existing/aliased accumulator replacement is forbidden unless the handler can preserve the original object through direct `forEach`.
+- Enhanced-for conversions are rejected when local binding recovery is incomplete or a generated lambda would capture a non-effectively-final local.
 - Array existing-target collect remains unchanged until the stream renderer has an AST-preserving body path for arrays.
 - Weakly consistent concurrent collection iteration is not generalized from the copy-on-write cases.
 - Parallelization is never introduced implicitly.
