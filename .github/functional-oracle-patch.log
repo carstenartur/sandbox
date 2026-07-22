@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<stdin>", line 9, in <module>
+  File "patch-functional-test-oracles.py", line 1
+    from pathlib import Path
+IndentationError: unexpected indent
