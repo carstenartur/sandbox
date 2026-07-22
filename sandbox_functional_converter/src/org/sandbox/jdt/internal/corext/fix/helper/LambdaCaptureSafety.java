@@ -29,8 +29,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
  * <p>Variables declared inside the original body, the generated lambda parameter,
  * fields, and accumulators removed from the lambda are not external captures. Every
  * remaining local must be explicitly {@code final} or effectively final according
- * to its resolved JDT binding. Incomplete binding identity is rejected rather than
- * allowing a potentially uncompilable cleanup proposal.</p>
+ * to its resolved JDT variable binding. Incomplete binding identity is rejected
+ * rather than allowing a potentially uncompilable cleanup proposal.</p>
  */
 final class LambdaCaptureSafety {
 
