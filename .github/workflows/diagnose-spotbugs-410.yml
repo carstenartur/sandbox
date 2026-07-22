@@ -20,19 +20,19 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
-      - name: Build smallest SpotBugs-enabled reactor
+      - name: Build through sandbox_common_core
         id: build
         shell: bash
         run: |
           set +e
-          mvn -e -V --batch-mode -pl sandbox-functional-converter-core -am clean verify > spotbugs-410.log 2>&1
+          mvn -e -V --batch-mode -pl sandbox_common_core -am clean verify > spotbugs-410.log 2>&1
           status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          tail -n 500 spotbugs-410.log
+          tail -n 700 spotbugs-410.log
           exit 0
       - uses: actions/upload-artifact@v7
         with:
-          name: spotbugs-410-log
+          name: spotbugs-410-common-core-log
           path: spotbugs-410.log
           retention-days: 3
       - name: Fail on build failure
