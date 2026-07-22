@@ -1,0 +1,171 @@
+name: One-shot Branch Maintenance
+
+on:
+  push:
+    branches:
+      - fix/functional-disabled-tests
+      - test/1213-save-action-isolation
+
+permissions:
+  contents: write
+
+jobs:
+  functional-cleanup:
+    if: github.ref_name == 'fix/functional-disabled-tests' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Apply final audited Functional Converter expectations
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def method_block(text: str, method_name: str) -> tuple[int, int]:
+              start = text.index(method_name)
+              match = re.search(r'\n\s*/\*\*', text[start:])
+              end = len(text) if match is None else start + match.start()
+              return start, end
+
+          additional = Path('sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AdditionalLoopPatternsTest.java')
+          text = additional.read_text(encoding='utf-8')
+          old_signature = '@DisplayName("Multiple for-each loops populating same list should use Stream.concat()")\n\tpublic void testMultipleLoopsPopulatingList_streamConcat()'
+          new_signature = '@DisplayName("Multiple for-each loops preserve concrete accumulator and source order")\n\tpublic void testMultipleLoopsPopulatingList_preservesConcreteAccumulator()'
+          if old_signature not in text:
+              raise SystemExit('Multiple-loop test signature not found')
+          text = text.replace(old_signature, new_signature, 1)
+          start, end = method_block(text, 'testMultipleLoopsPopulatingList_preservesConcreteAccumulator')
+          block = text[start:end]
+          expected = '''\t\tString expected = """
+          package test1;
+          import java.util.*;
+          public class RuleChainBuilder {
+          \tprivate List<MethodRule> methodRules = new ArrayList<>();
+          \tprivate List<TestRule> testRules = new ArrayList<>();
+          \tprivate Map<Object, Integer> orderValues = new HashMap<>();
+          \tprivate static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
+
+          \tprivate List<RuleEntry> getSortedEntries() {
+          \t\tList<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
+          \t\t\t\tmethodRules.size() + testRules.size());
+          \t\tmethodRules.forEach(
+          \t\t\t\trule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))));
+          \t\ttestRules
+          \t\t\t\t.forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))));
+          \t\tCollections.sort(ruleEntries, ENTRY_COMPARATOR);
+          \t\treturn ruleEntries;
+          \t}
+
+          \tinterface MethodRule {}
+          \tinterface TestRule {}
+
+          \tstatic class RuleEntry {
+          \t\tstatic final int TYPE_METHOD_RULE = 1;
+          \t\tstatic final int TYPE_TEST_RULE = 2;
+          \t\tObject rule;
+          \t\tint type;
+          \t\tint order;
+          \t\tRuleEntry(Object rule, int type, Integer order) {
+          \t\t\tthis.rule = rule;
+          \t\t\tthis.type = type;
+          \t\t\tthis.order = order != null ? order : 0;
+          \t\t}
+          \t}
+          }
+          \t\t\t\t""";'''
+          block, count = re.subn(r'\t\tString expected = """\n.*?\n\s*""";', expected, block, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Multiple-loop expected block not found exactly once')
+          additional.write_text(text[:start] + block + text[end:], encoding='utf-8')
+
+          null_safety = Path('sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/FunctionalLoopNullSafetyTest.java')
+          text = null_safety.read_text(encoding='utf-8')
+          old_display = '@DisplayName("Assignment to external variable converts to filter/forEachOrdered")'
+          if old_display not in text:
+              raise SystemExit('External-assignment display name not found')
+          text = text.replace(old_display, '@DisplayName("Assignment to external variable - should NOT convert")', 1)
+          start, end = method_block(text, 'test_AssignNullToExternalVariable_ShouldNotConvert')
+          block = text[start:end]
+          block, count = re.subn(r'\n\s*String expected = """\n.*?\n\s*""";\n', '\n', block, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('External-assignment expected block not found exactly once')
+          old_assert = 'context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);'
+          if old_assert not in block:
+              raise SystemExit('External-assignment result assertion not found')
+          block = block.replace(old_assert, 'context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });', 1)
+          text = text[:start] + block + text[end:]
+          old_doc = '''\t\t/**
+          \t\t * Tests that loops assigning to external variable can be converted to filter/forEachOrdered.
+          \t\t * 
+          \t\t * <p>
+          \t\t * <b>Note:</b> While this pattern could semantically be a findLast() operation,
+          \t\t * the cleanup converts it to a filter/forEachOrdered chain that preserves
+          \t\t * the assignment behavior. The result variable must be effectively final 
+          \t\t * for lambda capture, but assignment is still possible via forEachOrdered.
+          \t\t * </p>
+          \t\t */'''
+          new_doc = '''\t\t/**
+          \t\t * Tests that assigning to an outer local variable is not moved into a lambda.
+          \t\t * The assignment makes the captured variable non-effectively-final, so the
+          \t\t * original loop must remain unchanged.
+          \t\t */'''
+          if old_doc not in text:
+              raise SystemExit('External-assignment Javadoc not found')
+          null_safety.write_text(text.replace(old_doc, new_doc, 1), encoding='utf-8')
+          PY
+      - name: Remove temporary branch scaffolding and commit
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout origin/main -- .github/scripts/fix-nls.sh .github/workflows/fix-nls.yml
+          rm -f .github/functional-oracle-patch.log
+          rm -f .github/workflows/patch-final-functional-failures.yml
+          rm -f .github/workflows/one-shot-branch-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'test: finalize functional safety expectations'
+          git push origin HEAD:fix/functional-disabled-tests
+
+  save-action-diagnostics:
+    if: github.ref_name == 'test/1213-save-action-isolation' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Compile Int-to-Enum test reactor and capture complete output
+        id: build
+        shell: bash
+        run: |
+          set +e
+          mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -DskipTests clean verify > save-action-build.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 400 save-action-build.log
+          exit 0
+      - uses: actions/upload-artifact@v7
+        with:
+          name: save-action-build-log
+          path: save-action-build.log
+          retention-days: 3
+      - name: Remove one-shot workflow from branch
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/one-shot-branch-maintenance.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git commit -m 'ci: remove one-shot save-action diagnostics'
+          git push origin HEAD:test/1213-save-action-isolation
+      - name: Fail when diagnostic build failed
+        if: steps.build.outputs.status != '0'
+        run: exit 1
