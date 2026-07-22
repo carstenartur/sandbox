@@ -23,15 +23,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 
-import org.eclipse.jface.internal.text.reconciler.ReconcilerJobFamilies;
-
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.texteditor.quickdiff.DocumentLineDiffer;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -139,6 +135,7 @@ public class IntToEnumSaveActionIsolationTest {
 		JavaEditor callerEditor= openEditor(caller);
 		caller.getBuffer().setContents(callerDirtyBuffer);
 		assertTrue(caller.hasUnsavedChanges(), "The unrelated caller editor must be dirty before saving the local file"); //$NON-NLS-1$
+		assertTrue(callerEditor.isDirty(), "The unrelated caller editor must report its dirty state"); //$NON-NLS-1$
 
 		JavaEditor localEditor= openEditor(local);
 		local.getBuffer().setContents(localInEditor);
@@ -158,6 +155,7 @@ public class IntToEnumSaveActionIsolationTest {
 		assertEquals(callerDirtyBuffer, caller.getBuffer().getContents(),
 				"The unrelated dirty editor buffer must remain untouched"); //$NON-NLS-1$
 		assertTrue(caller.hasUnsavedChanges(), "Saving the local editor must not save the unrelated caller editor"); //$NON-NLS-1$
+		assertTrue(callerEditor.isDirty(), "Saving the local editor must leave the unrelated editor dirty"); //$NON-NLS-1$
 		assertEquals(callerOnDisk,
 				Files.readString(caller.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8),
 				"The unrelated caller resource on disk must remain untouched"); //$NON-NLS-1$
@@ -174,8 +172,6 @@ public class IntToEnumSaveActionIsolationTest {
 	private JavaEditor openEditor(ICompilationUnit unit) throws Exception {
 		JavaEditor editor= (JavaEditor) EditorUtility.openInEditor(unit);
 		openedEditors.add(editor);
-		Job.getJobManager().join(ReconcilerJobFamilies.FAMILY_RECONCILER, null);
-		Job.getJobManager().join(DocumentLineDiffer.QUICKDIFF_INITIALIZE_FAMILY, null);
 		return editor;
 	}
 }
