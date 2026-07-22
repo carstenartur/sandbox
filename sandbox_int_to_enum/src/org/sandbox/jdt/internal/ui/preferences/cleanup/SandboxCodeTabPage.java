@@ -20,6 +20,7 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUp;
 
@@ -48,9 +49,19 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		Group intToEnumGroup = createGroup(numColumns, composite, CleanUpMessages.IntToEnumTabPage_GroupName_IntToEnum);
-		createCheckboxPref(intToEnumGroup, numColumns, 
-				CleanUpMessages.IntToEnumTabPage_CheckboxName_IntToEnum, 
-				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, 
+		CheckboxPreference intToEnum= createCheckboxPref(intToEnumGroup, numColumns,
+				CleanUpMessages.IntToEnumTabPage_CheckboxName_IntToEnum,
+				MYCleanUpConstants.INT_TO_ENUM_CLEANUP,
 				FALSE_TRUE);
+
+		intent(intToEnumGroup);
+		CheckboxPreference projectWide= createCheckboxPref(intToEnumGroup, numColumns - 1,
+				CleanUpMessages.IntToEnumTabPage_CheckboxName_ProjectWide,
+				IntToEnumCleanUpOptions.PROJECT_WIDE,
+				FALSE_TRUE);
+		registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });
+
+		intent(intToEnumGroup);
+		registerPreference(intToEnum);
 	}
 }

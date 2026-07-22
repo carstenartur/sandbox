@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
+import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
@@ -25,5 +26,6 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.FALSE);
 	}
 }

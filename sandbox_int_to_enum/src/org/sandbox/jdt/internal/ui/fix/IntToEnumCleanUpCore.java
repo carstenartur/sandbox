@@ -13,9 +13,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import static org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions.PROJECT_WIDE;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.INT_TO_ENUM_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUpFix_refactor;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_description;
+import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_project_wide_description;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,6 +47,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
@@ -75,6 +78,10 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
+		}
+		if (!isEnabled(PROJECT_WIDE)) {
+			SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, compilationUnits);
+			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(selectedScope, List.of()));
 		}
 		return IntEnumMultiFilePlanner.create(project, compilationUnits, monitor);
 	}
@@ -111,7 +118,7 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 	@Override
 	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
-		if (!isEnabled(INT_TO_ENUM_CLEANUP)) {
+		if (!isEnabled(INT_TO_ENUM_CLEANUP) || !isEnabled(PROJECT_WIDE)) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
@@ -128,6 +135,9 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 					new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
 							.map(IntToEnumFixCore::toString)
 							.collect(Collectors.toList())) }));
+			if (isEnabled(PROJECT_WIDE)) {
+				result.add(IntToEnumCleanUp_project_wide_description);
+			}
 		}
 		return result.toArray(new String[0]);
 	}

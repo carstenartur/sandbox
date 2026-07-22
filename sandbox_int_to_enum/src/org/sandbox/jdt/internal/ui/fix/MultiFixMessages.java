@@ -23,6 +23,7 @@ public final class MultiFixMessages extends NLS {
 
 	public static String IntToEnumCleanUpFix_refactor;
 	public static String IntToEnumCleanUp_description;
+	public static String IntToEnumCleanUp_project_wide_description;
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, MultiFixMessages.class);
