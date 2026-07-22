@@ -22,7 +22,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: write
-      pull-requests: write
       issues: write
 
     steps:
@@ -40,6 +39,23 @@ jobs:
           mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn package -pl sandbox_mining_core -DskipTests -q
+
+      - name: Restore resumable scan state
+        run: |
+          set -euo pipefail
+          STATE='.github/refactoring-mining/state.json'
+          if git ls-remote --exit-code --heads origin mining/scan-state >/dev/null 2>&1; then
+            git fetch origin mining/scan-state:refs/remotes/origin/mining/scan-state
+            if git cat-file -e "origin/mining/scan-state:$STATE" 2>/dev/null; then
+              git show "origin/mining/scan-state:$STATE" > "$STATE"
+              echo 'Restored resumable scan state from mining/scan-state.'
+            else
+              echo 'The scan-state branch exists but has no state file.' >&2
+              exit 1
+            fi
+          else
+            echo 'No scan-state branch exists yet; using the baseline state from main.'
+          fi
 
       - name: Restore staged candidate history
         run: |
@@ -312,9 +328,7 @@ jobs:
           echo '' >> "$GITHUB_STEP_SUMMARY"
           echo '📋 [View verified candidates](https://carstenartur.github.io/sandbox/mining-report/candidates.html)' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Persist resumable scan state only
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Persist resumable scan state outside main
         run: |
           set -euo pipefail
           STATE='.github/refactoring-mining/state.json'
@@ -324,31 +338,35 @@ jobs:
           fi
           cp "$STATE" "$RUNNER_TEMP/mining-state.json"
 
-          git fetch origin main
-          git reset --hard HEAD
-          git clean -fd
-          git checkout -B mining/state-update origin/main
-          cp "$RUNNER_TEMP/mining-state.json" "$STATE"
+          STATE_WORKTREE="$RUNNER_TEMP/mining-scan-state"
+          rm -rf "$STATE_WORKTREE"
+          if git show-ref --verify --quiet refs/remotes/origin/mining/scan-state; then
+            git worktree add -B mining/scan-state "$STATE_WORKTREE" origin/mining/scan-state
+            git -C "$STATE_WORKTREE" rm -rf .
+            git -C "$STATE_WORKTREE" clean -fdx
+          else
+            git worktree add --detach "$STATE_WORKTREE" HEAD
+            git -C "$STATE_WORKTREE" checkout --orphan mining/scan-state
+            git -C "$STATE_WORKTREE" rm -rf .
+            git -C "$STATE_WORKTREE" clean -fdx
+          fi
 
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add "$STATE"
-          if git diff --cached --quiet; then
+          mkdir -p "$STATE_WORKTREE/.github/refactoring-mining"
+          cp "$RUNNER_TEMP/mining-state.json" "$STATE_WORKTREE/$STATE"
+          cat > "$STATE_WORKTREE/README.md" <<'EOF'
+          # Mining scan state
+
+          This branch stores only resumable commit-scan progress for the nightly mining workflow.
+          It is deliberately not merged into `main` and contains no candidate JSON, reports, or productive hint files.
+          EOF
+
+          git -C "$STATE_WORKTREE" config user.name 'github-actions[bot]'
+          git -C "$STATE_WORKTREE" config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C "$STATE_WORKTREE" add -A
+          if ! git -C "$STATE_WORKTREE" diff --cached --quiet; then
+            git -C "$STATE_WORKTREE" commit -m "mining: persist resumable scan state ${{ github.run_number }}"
+            git -C "$STATE_WORKTREE" push origin mining/scan-state
+          else
             echo 'No scan-state changes to persist.'
-            exit 0
           fi
-
-          git commit -m "mining: update resumable scan state ${{ github.run_number }}"
-          git push origin mining/state-update --force
-
-          PR_NUMBER=$(gh pr list --head mining/state-update --state open --json number --jq '.[0].number' 2>/dev/null || true)
-          if [ -z "$PR_NUMBER" ]; then
-            gh pr create \
-              --base main \
-              --head mining/state-update \
-              --title "mining: Update resumable scan state (${{ github.run_number }})" \
-              --body 'Automated update containing only resumable commit-scan state. Candidate JSON, known-rule proposals, and productive hint files are deliberately excluded.'
-            PR_NUMBER=$(gh pr list --head mining/state-update --state open --json number --jq '.[0].number')
-          fi
-          gh pr merge "$PR_NUMBER" --squash --auto --delete-branch \
-            || gh pr merge "$PR_NUMBER" --squash --delete-branch
+          git worktree remove "$STATE_WORKTREE" --force
