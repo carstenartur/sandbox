@@ -173,6 +173,18 @@ class WorkflowSelectionTest(unittest.TestCase):
                 "run_attempt": 2,
             }
         )
+        runs.append(
+            {
+                "id": 102,
+                "name": "Java CI with Maven",
+                "head_sha": commit,
+                "event": "push",
+                "status": "completed",
+                "conclusion": "failure",
+                "run_number": 9,
+                "run_attempt": 5,
+            }
+        )
 
         selected, missing, incomplete = workflow_module.select_expected_runs(runs, commit)
 
