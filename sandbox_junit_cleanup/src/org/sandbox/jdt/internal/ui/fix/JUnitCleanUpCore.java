@@ -49,6 +49,7 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
@@ -115,6 +116,9 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
+		}
+		if (!JUnitScopeCandidateDetector.containsCandidate(project, currentScope, monitor)) {
+			return List.of();
 		}
 		return JavaProjectCompilationUnits.collect(project);
 	}
