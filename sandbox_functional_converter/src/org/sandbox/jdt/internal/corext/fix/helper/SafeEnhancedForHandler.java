@@ -204,11 +204,11 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		}
 		ITypeBinding componentType= arrayType.getComponentType();
 		ITypeBinding parameterType= parameterBinding.getType();
-		if (componentType == null || parameterType == null || !componentType.isPrimitive()) {
-			return true;
-		}
-		if (!componentType.isEqualTo(parameterType)) {
+		if (componentType == null || parameterType == null || !componentType.isEqualTo(parameterType)) {
 			return false;
+		}
+		if (!componentType.isPrimitive()) {
+			return true;
 		}
 		return switch (componentType.getName()) {
 			case "int", "long", "double" -> true; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
