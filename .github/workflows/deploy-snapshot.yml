@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 75
     env:
       VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      VALIDATED_REF: ${{ github.event_name == 'workflow_run' && format('refs/heads/{0}', github.event.workflow_run.head_branch) || github.ref }}
       SOURCE_JAVA_CI_RUN_ID: ${{ github.event.workflow_run.id }}
       SOURCE_JAVA_CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
 
@@ -59,7 +60,7 @@ jobs:
           python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
           python3 .github/scripts/generate_build_manifest.py \
             --commit-sha "$VALIDATED_SHA" \
-            --source-ref refs/heads/main \
+            --source-ref "$VALIDATED_REF" \
             --output build-manifest.json
           python3 -m json.tool build-manifest.json > /dev/null
 
