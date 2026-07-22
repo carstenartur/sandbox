@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -47,6 +48,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 /** Converts safe iterator while/for loops through the shared ULR pipeline. */
 public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 
+	private static final String JAVA_UTIL_LIST= "java.util.List"; //$NON-NLS-1$
+	private static final String JAVA_UTIL_SET= "java.util.Set"; //$NON-NLS-1$
+
 	private final IteratorPatternDetector patternDetector= new IteratorPatternDetector();
 	private final IteratorLoopAnalyzer loopAnalyzer= new IteratorLoopAnalyzer();
 	private final IteratorLoopBodyParser bodyParser= new IteratorLoopBodyParser();
@@ -69,7 +73,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 				Statement previousStatement= findPreviousStatement(node);
 				IteratorPattern pattern= patternDetector.detectWhilePattern(node, previousStatement);
 				IteratorConversion conversion= analyzeAndCreateConversion(pattern, compilationUnit);
-				if (conversion == null) {
+				if (conversion == null || !isSafeToSchedule(node, conversion)) {
 					return true;
 				}
 				data.put(node, conversion);
@@ -88,7 +92,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 				}
 				IteratorPattern pattern= patternDetector.detectForLoopPattern(node);
 				IteratorConversion conversion= analyzeAndCreateConversion(pattern, compilationUnit);
-				if (conversion == null) {
+				if (conversion == null || !isSafeToSchedule(node, conversion)) {
 					return true;
 				}
 				data.put(node, conversion);
@@ -119,6 +123,31 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 		return new IteratorConversion(pattern, parsedBody, extracted);
 	}
 
+	private boolean isSafeToSchedule(ASTNode loop, IteratorConversion conversion) {
+		TerminalOperation terminal= conversion.extractedLoop().model.getTerminal();
+		String liftedAccumulatorName= null;
+		if (terminal instanceof CollectTerminal collectTerminal) {
+			liftedAccumulatorName= collectTerminal.targetVariable();
+			VariableDeclarationStatement declaration= findAccumulatorDeclaration(loop, liftedAccumulatorName);
+			if (declaration == null
+					|| !liftedAccumulatorName.equals(CollectPatternDetector.isEmptyCollectionDeclaration(declaration))
+					|| !isCollectorResultAssignable(declaration, collectTerminal)) {
+				return false;
+			}
+		} else if (terminal instanceof ReduceTerminal reduceTerminal) {
+			liftedAccumulatorName= reduceTerminal.targetVariable();
+			VariableDeclarationStatement declaration= findAccumulatorDeclaration(loop, liftedAccumulatorName);
+			VariableDeclarationFragment fragment= singleFragment(declaration, liftedAccumulatorName);
+			if (fragment == null || fragment.getInitializer() == null) {
+				return false;
+			}
+		}
+		Set<String> liftedAccumulatorNames= liftedAccumulatorName == null
+				? Set.of()
+				: Set.of(liftedAccumulatorName);
+		return !LambdaCaptureSafety.hasUnsafeCapture(conversion.pattern().loopBody(), liftedAccumulatorNames);
+	}
+
 	private Statement findPreviousStatement(Statement statement) {
 		if (statement.getParent() instanceof Block block) {
 			return IteratorPatternDetector.findPreviousStatement(block, statement);
@@ -143,7 +172,8 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);
 			if (accumulatorDeclaration == null
 					|| !liftedAccumulatorName.equals(
-							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))) {
+							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))
+					|| !isCollectorResultAssignable(accumulatorDeclaration, collectTerminal)) {
 				return;
 			}
 		} else if (terminal instanceof ReduceTerminal reduceTerminal) {
@@ -155,13 +185,6 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 			}
 			model.setTerminal(new ReduceTerminal(fragment.getInitializer().toString(), reduceTerminal.accumulator(),
 					reduceTerminal.combiner(), reduceTerminal.reduceType(), liftedAccumulatorName));
-		}
-
-		Set<String> liftedAccumulatorNames= liftedAccumulatorName == null
-				? Set.of()
-				: Set.of(liftedAccumulatorName);
-		if (LambdaCaptureSafety.hasUnsafeCapture(conversion.pattern().loopBody(), liftedAccumulatorNames)) {
-			return;
 		}
 
 		AST ast= cuRewrite.getRoot().getAST();
@@ -218,6 +241,20 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 		VariableDeclarationFragment fragment=
 				(VariableDeclarationFragment) declaration.fragments().get(0);
 		return fragment.getName().getIdentifier().equals(targetVariable) ? fragment : null;
+	}
+
+	private boolean isCollectorResultAssignable(VariableDeclarationStatement declaration,
+			CollectTerminal terminal) {
+		ITypeBinding typeBinding= declaration.getType().resolveBinding();
+		if (typeBinding == null) {
+			return false;
+		}
+		String qualifiedName= typeBinding.getErasure().getQualifiedName();
+		return switch (terminal.collectorType()) {
+			case TO_LIST -> JAVA_UTIL_LIST.equals(qualifiedName);
+			case TO_SET -> JAVA_UTIL_SET.equals(qualifiedName);
+			default -> false;
+		};
 	}
 
 	private VariableDeclarationStatement createMergedDeclaration(AST ast,
