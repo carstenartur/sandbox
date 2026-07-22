@@ -47,7 +47,7 @@ All editable production and test roots are included. This remains available to i
 
 The resulting compilation-unit list is sorted by Java-element handle. Missing classpath metadata, missing bindings, and unsupported roots fail closed rather than broadening scope.
 
-Generated, derived, output, metadata-less, and non-source roots are excluded before any cleanup-specific policy is evaluated. A policy can therefore select only roots that are editable by default.
+Generated, derived, output, metadata-less, and non-source roots are excluded before any cleanup-specific policy is evaluated. A policy can therefore select only roots that are editable by default. Linked source folders follow the same classification rules as physical project folders; being linked does not bypass derived, output, generated, or classpath-metadata checks.
 
 ## Preview visibility
 
