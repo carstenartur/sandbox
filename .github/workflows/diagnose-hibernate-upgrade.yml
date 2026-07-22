@@ -1,0 +1,56 @@
+name: Diagnose Hibernate Upgrade
+
+on:
+  push:
+    branches:
+      - deps/hibernate-7.4-search-8.4
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Build storage module with full diagnostics
+        id: build
+        shell: bash
+        run: |
+          set +e
+          mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore -pl sandbox-jgit-storage-hibernate -am clean verify > hibernate-upgrade.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 500 hibernate-upgrade.log
+          exit 0
+      - name: Commit diagnostic or clean branch
+        run: |
+          set -euo pipefail
+          status='${{ steps.build.outputs.status }}'
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          if [ "$status" != '0' ]; then
+            {
+              echo "Focused Maven exit code: $status"
+              echo
+              tail -n 700 hibernate-upgrade.log
+            } > .github/hibernate-upgrade-diagnostic.txt
+          else
+            rm -f .github/hibernate-upgrade-diagnostic.txt
+          fi
+          rm -f .github/hibernate-upgrade-trigger.txt
+          rm -f .github/workflows/diagnose-hibernate-upgrade.yml
+          git add -A
+          git commit -m 'ci: record Hibernate upgrade diagnostics'
+          git push origin HEAD:deps/hibernate-7.4-search-8.4
