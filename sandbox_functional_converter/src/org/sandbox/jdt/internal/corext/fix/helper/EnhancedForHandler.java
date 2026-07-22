@@ -331,9 +331,6 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
                                 ? extracted.model.getElement().variableName() : "item"; //$NON-NLS-1$
                         Expression directForEach = renderer.renderDirectForEach(
                                 extracted.model.getSource(), java.util.List.of(), variableName, true);
-                        if (directForEach == null) {
-                            return;
-                        }
                         replacement = ast.newExpressionStatement(directForEach);
                         directCollectFallback = true;
                     } else {
