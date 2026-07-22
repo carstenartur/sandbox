@@ -86,8 +86,7 @@ public final class RuleFingerprintIndex {
 		}
 		List<Path> files;
 		try (Stream<Path> paths = Files.walk(hintDirectory)) {
-			files = paths.filter(Files::isRegularFile)
-					.filter(path -> path.getFileName().toString().endsWith(".sandbox-hint")) //$NON-NLS-1$
+			files = paths.filter(RuleFingerprintIndex::isHintFile)
 					.sorted()
 					.toList();
 		}
@@ -113,6 +112,13 @@ public final class RuleFingerprintIndex {
 			}
 		}
 		return Map.copyOf(index);
+	}
+
+	private static boolean isHintFile(Path path) {
+		Path fileName = path.getFileName();
+		return Files.isRegularFile(path)
+				&& fileName != null
+				&& fileName.toString().endsWith(".sandbox-hint"); //$NON-NLS-1$
 	}
 
 	private static String sha256(String value) {
