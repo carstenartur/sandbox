@@ -136,7 +136,7 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		List<String> result= new ArrayList<>();
 		if (isEnabled(INT_TO_ENUM_CLEANUP)) {
 			result.add(Messages.format(IntToEnumCleanUp_description,
-					new Object[] { String.join(",", computeFixSet().stream()) //$NON-NLS-1$
+					new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
 							.map(IntToEnumFixCore::toString)
 							.collect(Collectors.toList())) }));
 			if (isEnabled(PROJECT_WIDE)) {
