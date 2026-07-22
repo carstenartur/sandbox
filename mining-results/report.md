@@ -1,151 +1,289 @@
-# Refactoring Mining Report — 2026-03-02
+# Refactoring Mining Report — 2026-07-22
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
 |----------------|-------|---------|-------|
-| eclipse.jdt.core | 227 | 85 | 1 |
-| eclipse.jdt.ui | 1468 | 31 | 2 |
-| eclipse.platform.ui | 1144 | 11 | 2 |
-| sandbox | 842 | 0 | 0 |
+| eclipse.jdt.core | 227 | 0 | 0 |
+| eclipse.jdt.ui | 1474 | 52 | 9 |
+| eclipse.platform.ui | 1147 | 62 | 8 |
+| eclipse.platform | 313 | 62 | 3 |
+| eclipse.platform.text | 0 | 0 | 0 |
+| eclipse.platform.debug | 0 | 0 | 0 |
+| sandbox | 965 | 37 | 8 |
 
 ## Details
-### eclipse.jdt.core
-#### Rule: `performance` → `Unnecessary String constructor`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/internal/core/dom/rewrite/imports/TypeConflictingSimpleNameFinder.java:59` — `new String(simpleTypeName)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java:216` — `new String(this.binding.computeUniqueKey())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java:246` — `new String(compoundName[i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java:249` — `new String(compoundName[length - 1])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/Name.java:108` — `new String(buffer)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:635` — `new String(methodDeclaration.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:957` — `new String(typeDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:980` — `new String(annotationTypeMemberDeclaration.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:1011` — `new String(receiver.qualifyingName.getName()[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:1035` — `new String(argument.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:1420` — `new String(statement.label)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:1629` — `new String(component.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:1769` — `new String(statement.label)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:1810` — `new String(enumConstant.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2138` — `new String(reference.token)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2156` — `new String(reference.token)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2466` — `new String(statement.label)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2509` — `new String(expression.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2561` — `new String(expression.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2633` — `new String(argument.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:2680` — `new String(memberValuePair.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3005` — `new String(reference.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3094` — `new String(nameReference.token)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3290` — `new String(expression.source())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3435` — `new String(typeDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3520` — `new String(typeParameter.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3600` — `new String(typeName[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3705` — `new String(tokens[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3727` — `new String(tokens[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3788` — `new String(typeDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:3814` — `new String(typeDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4019` — `new String(localDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4067` — `new String(fieldDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4111` — `new String(localDeclaration.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4335` — `new String(name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4391` — `new String(name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4492` — `new String(tokens[i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:4745` — `new String(tokens[index])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6435` — `new String(typeName[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6442` — `new String(typeName[1])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6463` — `new String(typeName[i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6492` — `new String(typeName[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6499` — `new String(typeName[1])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6520` — `new String(typeName[i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java:6556` — `new String(singleTypeReference.token)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/AnnotationBinding.java:170` — `new String(this.binding.computeUniqueKey(recipientKey.toCharArray()))`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/AnnotationBinding.java:219` — `new String(this.binding.getAnnotationType().sourceName())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DefaultValuePairBinding.java:47` — `new String(this.method.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/NameEnvironmentWithProgress.java:59` — `new String(CharOperation.concatWith(packageName,'/'))`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/NameEnvironmentWithProgress.java:60` — `new String(CharOperation.concatWith(packageName,typeName,'/'))`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/RecoveredPackageBinding.java:125` — `new String(compoundName[i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/RecoveredPackageBinding.java:128` — `new String(compoundName[length - 1])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/RecoveredTypeBinding.java:211` — `new String(referenceBinding.compoundName[referenceBinding.compoundName.length...`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ModuleBinding.java:91` — `new String(tmp)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ModuleBinding.java:136` — `new String(k)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:173` — `new String(dotSeparated)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:548` — `new String(this.binding.sourceName())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:577` — `new String(this.binding.computeUniqueKey())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:658` — `new String(typeVariableBinding.sourceName)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:698` — `new String(((IntersectionTypeBinding18)this.binding).getIntersectingTypes()[0...`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:703` — `new String(baseTypeBinding.simpleName)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:708` — `new String(this.binding.sourceName())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:776` — `new String(typeVariableBinding.sourceName)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java:823` — `new String(baseTypeBinding.simpleName)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/VariableBinding.java:170` — `new String(this.binding.computeUniqueKey())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/VariableBinding.java:194` — `new String(this.binding.name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/VariableBinding.java:306` — `new String(typeSig)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTParser.java:1346` — `new String(sourceUnit.getFileName())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTParser.java:1371` — `new String(fileName)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:110` — `new String(name)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:159` — `new String(this.identifierStack[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:188` — `new String(this.identifierStack[length])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:536` — `new String(this.identifierStack[pos + i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:606` — `new String(this.identifierStack[i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:653` — `new String(this.identifierStack[pos + i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:655` — `new String(this.identifierStack[pos + i])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:1070` — `new String(this.identifierStack[idIndex])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:1079` — `new String(this.identifierStack[0])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java:1088` — `new String(this.identifierStack[2])`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TextBlock.java:254` — `new String(CharOperation.subarray(escaped,start,len - 3))`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/CompilationUnitResolver.java:259` — `new String(sourceUnit.getFileName())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/CompilationUnitResolver.java:1135` — `new String(source.getFileName())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/MethodBinding.java:124` — `new String(this.binding.selector)`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/MethodBinding.java:382` — `new String(this.binding.computeUniqueKey())`
-- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/MemberValuePairBinding.java:141` — `new String(membername)`
-
 ### eclipse.jdt.ui
-#### Rule: `modernize-java11` → `unnamed`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarimport/JarImportWizardPage.java:345` — `"".equals(path)` → `path != null && path.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarimport/RefactoringLocationControl.java:70` — `"".equals(key)` → `key != null && key.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarimport/RefactoringLocationControl.java:137` — `"".equals(text)` → `text != null && text.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UseStringIsBlankCleanUp.java:133` — `"".equals(arguments.get(0).resolveConstantExpressionValue())` → `arguments.get(0).resolveConstantExpressionValue() != null && arguments.get(0)...`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UseStringIsBlankCleanUp.java:144` — `"".equals(expression.resolveConstantExpressionValue())` → `expression.resolveConstantExpressionValue() != null && expression.resolveCons...`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/SpellCheckEngine.java:306` — `"".equals(locale.toString())` → `locale.toString() != null && locale.toString().isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/BuildPathsBlock.java:655` — `"".equals(text)` → `text != null && text.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/dialogfields/DialogField.java:158` — `"".equals(fLabelText)` → `fLabelText != null && fLabelText.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarPackageReader.java:185` — `"".equals(value)` → `value != null && value.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarPackageReader.java:199` — `"".equals(value)` → `value != null && value.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarRefactoringDialog.java:115` — `"".equals(project)` → `project != null && project.isEmpty()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/model/JavaModelLabelProvider.java:124` — `"".equals(text)` → `text != null && text.isEmpty()`
+#### Rule: `deprecations` → `deprecations.runtime-exec-string.consider-processbuilder`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javadocexport/JavadocWizard.java:315` — `Runtime.getRuntime().exec(args)`
 
-#### Rule: `performance` → `Unnecessary String constructor`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/java/CompletionProposalCollector.java:714` — `new String(declarationKey)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/JavaSourceViewerConfiguration.java:610` — `new String(spaces)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/JavaSourceViewerConfiguration.java:653` — `new String(spaceChars)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/JavaMethodCompletionProposal.java:417` — `new String(fProposal.getName())`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuessingProposal.java:112` — `new String(types[i])`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuessingProposal.java:382` — `new String(parameterNames[i])`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuessingProposal.java:407` — `new String(Signature.toCharArray(types[i]))`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/SmartSemicolonAutoEditStrategy.java:229` — `new String(new char[]{' ',character})`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/SmartSemicolonAutoEditStrategy.java:233` — `new String(new char[]{character})`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/OverrideCompletionProposal.java:109` — `new String(content)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java:380` — `new String(characters)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java:396` — `new String(characters)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java:415` — `new String(characters)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java:430` — `new String(characters)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/ClassPathDetector.java:203` — `new String(sourceAttribute.getSourceFileName())`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarFileExportOperation.java:864` — `new String(sourceAttribute.getSourceFileName())`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/DocumentAdapter.java:351` — `new String(text)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/DocumentAdapter.java:498` — `new String(text)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/DocumentAdapter.java:530` — `new String(contents)`
+#### Rule: `try-with-resources` → `Consider using try-with-resources for AutoCloseable resource`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/breadcrumb/BreadcrumbItemDropDown.java:574` — `shell.close()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/breadcrumb/BreadcrumbItemDropDown.java:585` — `shell.close()`
+
+#### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleDependenciesPage.java:639` — `allModulesToRemove.stream().filter(m -> !seedModules.contains(m)).sorted().co...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleDependenciesAdapter.java:861` — `unavailableSystemModules.stream().map(IJavaElement::getElementName).sorted()....`
+
+#### Rule: `arrays` → `arrays.clone.review`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/CustomFiltersActionGroup.java:557` — `patterns.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java:134` — `fields.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java:137` — `inheritedFields.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java:140` — `methods.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java:143` — `inheritedMethods.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UnboxingCleanUp.java:190` — `binding.getParameterTypes().clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javadocexport/ContributedJavadocWizardPage.java:130` — `sourceElements.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java:789` — `range.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java:827` — `styleRange.clone()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/JavaSourceHover.java:200` — `sourceLines.clone()`
+
+#### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/AddToClasspathAction.java:136` — `System.arraycopy(entries,0,newEntries,0,entries.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/wizards/NewJavaProjectWizardPage.java:168` — `System.arraycopy(entries,0,newEntries,0,entries.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/WorkingSetModel.java:719` — `System.arraycopy(workingSets,0,activeWorkingSets,0,workingSets.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/ConfigureWorkingSetAssignementAction.java:800` — `System.arraycopy(elements,0,newElements,0,elements.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/ConfigureContainerAction.java:90` — `System.arraycopy(entries,0,newEntries,0,entries.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/CompositeActionGroup.java:46` — `System.arraycopy(fGroups,0,newGroups,0,fGroups.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ClasspathContainerPreferencePage.java:104` — `System.arraycopy(entries,0,newEntries,0,entries.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ComplianceConfigurationBlock.java:222` — `System.arraycopy(keys,0,allKeys,0,keys.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/JavaOutlinePage.java:685` — `System.arraycopy(sortedObjects,0,sortedRegions,0,sortedObjects.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/CompoundEditExitStrategy.java:164` — `System.arraycopy(commandIds,0,fCommandIds,0,commandIds.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListElement.java:398` — `System.arraycopy(filters,0,newFilters,0,filters.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java:30` — `System.arraycopy(inc,0,fOrginalInclusion,0,inc.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java:34` — `System.arraycopy(excl,0,fOriginalExclusion,0,excl.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/BuildPathBasePage.java:253` — `System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.le...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/AbstractNewFolderWizardPage.java:483` — `System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.le...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/RowLayouter.java:143` — `System.arraycopy(fDefaultGridDatas,0,newDatas,0,fDefaultGridDatas.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/CombinedWordRule.java:144` — `System.arraycopy(old,0,fContent,0,old.length)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuesser.java:318` — `System.arraycopy(v.triggerChars,0,triggers,0,v.triggerChars.length)`
+
+#### Rule: `arrays` → `arrays.aslist-contains.review`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/WorkingSetModel.java:653` — `Arrays.asList(getAllWorkingSets()).contains(workingSet)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/ConfigureWorkingSetAssignementAction.java:774` — `Arrays.asList(VALID_WORKING_SET_IDS).contains(set.getId())`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/ConfigureWorkingSetAssignementAction.java:788` — `Arrays.asList(set.getElements()).contains(adaptedElement)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/LibrariesWorkbookPage.java:373` — `Arrays.asList(segments).contains(JavaRuntime.JRE_CONTAINER)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/typehierarchy/HierarchyLabelProvider.java:107` — `Arrays.asList(elements).contains(element)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/SelectionUtil.java:85` — `Arrays.asList(resources).contains(null)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/DefaultPhoneticHashProvider.java:167` — `Arrays.asList(candidates).contains(token)`
+
+#### Rule: `arrays` → `arrays.aslist-stream.to-arrays-stream`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewImplementationProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/NewInterfaceImplementationProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewJUnitTestCaseProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
+
+#### Rule: `string-isblank` → `string-isblank1`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/OverrideMethodDialog.java:450` — `searchText.trim().isEmpty()` → `searchText.isBlank()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/IndentAction.java:936` — `prevLineString.trim().isEmpty()` → `prevLineString.isBlank()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1014` — `filterText.trim().isEmpty()` → `filterText.isBlank()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1530` — `previewCode.trim().isEmpty()` → `previewCode.isBlank()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackagerfat/FatJarManifestProvider.java:105` — `manifestClasspath.trim().isEmpty()` → `manifestClasspath.isBlank()`
+
+#### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/codemining/JavaImplementationCodeMining.java:195` — `Stream.of(results).filter(t -> t.getAncestor(IJavaElement.COMPILATION_UNIT) !...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/codemining/JavaImplementationCodeMining.java:211` — `Stream.of(results).filter(t -> t.getAncestor(IJavaElement.COMPILATION_UNIT) !...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleDependenciesPage.java:762` — `Arrays.stream(fAllSystemRoots).map(pfr -> pfr.getModuleDescription().getEleme...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleSelectionDialog.java:345` — `fSelectedModules.stream().filter(m -> !fAllIncluded.contains(m)).map(fModules...`
 
 ### eclipse.platform.ui
-#### Rule: `modernize-java11` → `unnamed`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementCategory.java:58` — `"".equals(classString)` → `classString != null && classString.isEmpty()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/DynamicHelpAction.java:61` — `"".equals(overrideText)` → `overrideText != null && overrideText.isEmpty()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/HelpSearchAction.java:63` — `"".equals(overrideText)` → `overrideText != null && overrideText.isEmpty()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/HelpContentsAction.java:63` — `"".equals(overrideText)` → `overrideText != null && overrideText.isEmpty()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/Policy.java:186` — `"".equals(DEBUG_HANDLERS_VERBOSE_COMMAND_ID)` → `DEBUG_HANDLERS_VERBOSE_COMMAND_ID != null && DEBUG_HANDLERS_VERBOSE_COMMAND_I...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ExtensionActivityRegistry.java:181` — `"".equals(store.getDefaultString(preferenceKey))` → `store.getDefaultString(preferenceKey) != null && store.getDefaultString(prefe...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ActivityPersistanceHelper.java:213` — `"".equals(store.getDefaultString(preferenceKey))` → `store.getDefaultString(preferenceKey) != null && store.getDefaultString(prefe...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/PropertyDialog.java:69` — `"".equals(name)` → `name != null && name.isEmpty()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/EditorHistory.java:135` — `"".equals(item.getName())` → `item.getName() != null && item.getName().isEmpty()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/EditorHistory.java:135` — `"".equals(item.getToolTipText())` → `item.getToolTipText() != null && item.getToolTipText().isEmpty()`
+#### Rule: `deprecations` → `deprecations.runtime-exec-string.consider-processbuilder`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/ExternalEditor.java:126` — `Runtime.getRuntime().exec(new String[]{"open","-a",programFileName,path})`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/ExternalEditor.java:128` — `Runtime.getRuntime().exec(new String[]{programFileName,path})`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:70` — `Runtime.getRuntime().exec(new String[]{"/usr/bin/open",localHref})`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:85` — `Runtime.getRuntime().exec(new String[]{webBrowser,"-remote","openURL(" + enco...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:137` — `Runtime.getRuntime().exec(new String[]{webBrowser,href})`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:146` — `Runtime.getRuntime().exec(new String[]{webBrowser,href})`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:155` — `Runtime.getRuntime().exec(new String[]{webBrowser,href})`
 
-#### Rule: `performance` → `Unnecessary String constructor`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/preferences/WorkingCopyPreferences.java:382` — `new String(Base64.encode(value))`
+#### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:167` — `groupedEditorReferences.getValue().stream().forEach(editorReference -> editor...` → `groupedEditorReferences.getValue().forEach(editorReference -> editorReference...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:200` — `refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenc...` → `refsToMakeDistinguishableViaPathSegments.forEach(e -> editorReferenceLabelTex...`
 
+#### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/activities/ActivityCategoryPreferencePage.java:401` — `System.arraycopy(enabledCategories,0,allChecked,0,enabledCategories.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/WorkingSetConfigurationBlock.java:78` — `System.arraycopy(workingSetIds,0,workingSetIdsCopy,0,workingSetIds.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/EditorSelectionDialog.java:511` — `System.arraycopy(externalEditors,0,newEditors,0,externalEditors.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/FilteredList.java:255` — `System.arraycopy(elements,0,fElements,0,elements.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/LightweightDecoratorManager.java:165` — `System.arraycopy(oldDefs,0,lightweightDefinitions,0,oldDefs.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java:276` — `System.arraycopy(oldDefs,0,fullDefinitions,0,oldDefs.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java:639` — `System.arraycopy(fullDefinitions,0,returnValue,0,fullDefinitions.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:2298` — `System.arraycopy(parts,0,editors,0,parts.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/NewWizardNewPage.java:398` — `System.arraycopy(currentExpanded,0,expanded,0,currentExpanded.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/DecoratorsPreferencePage.java:147` — `System.arraycopy(elements,0,results,0,elements.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/SimpleWorkingSetSelectionDialog.java:156` — `System.arraycopy(checked,0,workingSets,0,checked.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/WorkingSetSelectionDialog.java:313` — `System.arraycopy(untypedResult,0,typedResult,0,untypedResult.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressInfoItem.java:588` — `System.arraycopy(children,0,infos,0,children.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/DetailedProgressViewer.java:563` — `System.arraycopy(children,0,progressInfoItems,0,children.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java:288` — `System.arraycopy(editorArray,0,newArray,0,editorArray.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/ModifyWorkingSetDelegate.java:231` — `System.arraycopy(selectedElements,0,adaptables,0,selectedElements.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java:65` — `System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java:177` — `System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java:239` — `System.arraycopy(allDefs,0,copy,0,allDefs.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java:1487` — `System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java:1532` — `System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AbstractWorkingSetManager.java:868` — `System.arraycopy(elements,0,newElements,0,elements.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java:49` — `System.arraycopy(components,0,componentCopy,0,components.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java:199` — `System.arraycopy(localComponents,0,copiedArray,0,localComponents.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/wizards/preferences/WizardPreferencesPage.java:590` — `System.arraycopy(checkedElements,0,transferElements,0,checkedElements.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/wizards/AbstractExtensionWizardRegistry.java:69` — `System.arraycopy(localPrimaryWizards,0,newPrimary,0,localPrimaryWizards.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/commands/CommandImageManagerEvent.java:95` — `System.arraycopy(changedCommandIds,0,copy,0,changedCommandIds.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/about/AboutFeaturesPage.java:165` — `System.arraycopy(clientArray,0,bundleGroupInfos,0,clientArray.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/KeysPreferencePage.java:191` — `System.arraycopy(sortOrder,0,newSortOrder,0,sortOrder.length)`
+
+#### Rule: `arrays` → `arrays.clone.review`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/part/PageBookView.java:471` — `((HashMap<IWorkbenchPart,PageRec>)mapPartToRec).clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ws/WorkbenchActivitySupport.java:397` — `mutableActivityManager.clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/FileEditorsPreferencePage.java:382` — `mapping.clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressManagerUtil.java:59` — `elements.clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java:1166` — `defaultMap.clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/FileEditorMapping.java:98` — `((ArrayList<IEditorDescriptor>)editors).clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/FileEditorMapping.java:99` — `((ArrayList<IEditorDescriptor>)deletedEditors).clone()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/FileEditorMapping.java:100` — `((ArrayList<IEditorDescriptor>)declaredDefaultEditors).clone()`
+
+#### Rule: `arrays` → `arrays.aslist-contains.review`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3777` — `Arrays.asList(models).contains(model)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3787` — `Arrays.asList(models).contains(model)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java:417` — `Arrays.asList(disabled).contains(fileExtension)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java:56` — `Arrays.asList(memento.getAttributeKeys()).contains(attribute)`
+
+#### Rule: `string-isblank` → `string-isblank1`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/menus/CommandContributionItem.java:569` — `tooltip.trim().isEmpty()` → `tooltip.isBlank()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/model/WorkbenchPartLabelProvider.java:81` — `path.trim().isEmpty()` → `path.isBlank()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/model/WorkbenchPartLabelProvider.java:88` — `path.trim().isEmpty()` → `path.isBlank()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/StatusUtil.java:119` — `message.trim().isEmpty()` → `message.isBlank()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressAnimationItem.java:241` — `tt.trim().isEmpty()` → `tt.isBlank()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/ImportExportPespectiveHandler.java:211` — `trimsData.trim().isEmpty()` → `trimsData.isBlank()`
+
+#### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessExtensionManager.java:177` — `Arrays.stream(Platform.getExtensionRegistry().getConfigurationElementsFor(EXT...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java:553` — `entry.getValue().stream().map(QuickAccessElement::getId).collect(Collectors.t...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java:583` — `elementsPerProvider.getValue().stream().map(element -> matcher.match(element,...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CycleViewHandler.java:56` — `modelService.findElements(currentPerspective,null,MPart.class,null,EModelServ...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CoolBarToTrimManager.java:313` — `workbenchTrimElements.stream().filter(e -> e instanceof MToolBar).map(e -> (M...`
+
+#### Rule: `modernize-java9` → `modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:356` — `Collections.unmodifiableList(Arrays.asList("Spacer Glue","SearchField","Searc...`
+
+### eclipse.platform
+#### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ContentDescriptionManager.java:505` — `Arrays.stream(bundleContext.getBundles()).map(bundle -> String.format("%d %s ...`
+
+#### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/DataDeltaNode.java:82` — `System.arraycopy(children,0,childrenCopy,0,children.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/NoDataDeltaNode.java:90` — `System.arraycopy(children,0,childrenCopy,0,children.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/DataTreeNode.java:134` — `System.arraycopy(children,0,childrenCopy,0,children.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/ObjectMap.java:172` — `System.arraycopy(elements,0,expanded,0,elements.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/UniversalUniqueIdentifier.java:292` — `System.arraycopy(fBits,0,result,0,fBits.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/ResourceDelta.java:242` — `System.arraycopy(children,0,result,0,children.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceRoot.java:192` — `System.arraycopy(roots,0,result,0,roots.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:936` — `System.arraycopy(order.vertexes,0,projects,0,order.vertexes.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:947` — `System.arraycopy(order.vertexes,0,buildConfigs,0,order.vertexes.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/SafeChunkyInputStream.java:43` — `System.arraycopy(chunk,0,result,0,chunk.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/PrefixPool.java:93` — `System.arraycopy(pool,0,newprefixList,0,pool.length)`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/HistoryBucket.java:73` — `System.arraycopy(uuidBytes,0,state,0,uuidBytes.length)`
+
+#### Rule: `arrays` → `arrays.clone.review`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildCommand.java:151` — `arguments.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java:1157` — `prereqs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildContext.java:68` — `requestedBuilt.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/InternalBuilder.java:108` — `((BuildCommand)command).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/MarkerSet.java:83` — `elements.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:324` — `((ProjectDescription)description).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:451` — `description.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:199` — `markers.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:228` — `sessionProperties.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:255` — `syncInfo.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:265` — `b.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:426` — `sessionProperties.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:438` — `sessionProperties.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java:469` — `value.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java:130` — `natures.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java:142` — `natures.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:1093` — `resources.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:1174` — `sourceInfo.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:1445` — `info.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:1499` — `resources.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:1544` — `markers.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:2158` — `resources.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java:278` — `markerInfo.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java:319` — `markerInfo.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java:350` — `markerInfo.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:142` — `variableDescriptions.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:145` — `dynamicConfigRefs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:272` — `projRefs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:314` — `refs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:338` — `configs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:351` — `dynamicConfigRefs.get(configName).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:359` — `dynamicConfigRefs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:378` — `((BuildCommand)oldCommands[i]).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:394` — `dynamicRefs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:475` — `natures.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:487` — `staticRefs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:671` — `((BuildCommand)value[i]).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:787` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:801` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:864` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:878` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:941` — `value.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java:68` — `buildOrder.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java:160` — `value.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java:189` — `oldNatures.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java:190` — `newNatures.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java:167` — `data.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java:694` — `oldData.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTreeReaderImpl_1.java:59` — `data.clone()`
+
+### sandbox
+#### Rule: `stream-performance` → `stream-performance.nested-flatmap.review`
+- `sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java:258` — `miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(Simple...`
+
+#### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
+- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach(pac...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:193` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey() ...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:241` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("============="...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:152` — `VisitorEnum.stream().forEach(ve -> {   hv.add(ve,(node,holder) -> {     holde...` → `VisitorEnum.forEach(ve -> {   hv.add(ve,(node,holder) -> {     holder.merge(V...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:188` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey()....`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:230` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("Posit...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("Position " + e...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:291` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(ASTNod...` → `dataholder.entrySet().forEach(entry -> {   System.out.println(ASTNode.nodeCla...`
+
+#### Rule: `arrays` → `arrays.aslist-contains.review`
+- `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
+- `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
+
+#### Rule: `arrays` → `arrays.clone.review`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java:94` — `compilationUnits.clone()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java:75` — `TEMPLATES.clone()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java:73` — `constraints.clone()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java:149` — `constraints.clone()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:343` — `BUNDLED_LIBRARIES.clone()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:352` — `DISABLED_BUNDLED_LIBRARIES.clone()`
+
+#### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java:157` — `System.arraycopy(defaults,0,result,0,defaults.length)`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:366` — `System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)`
+- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:396` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
+
+#### Rule: `arrays` → `arrays.aslist-stream.to-arrays-stream`
+- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()` → `java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())`
+
+#### Rule: `string-isblank` → `string-isblank1`
+- `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewRuleWizardPage.java:459` — `sourcePatternText.getText().trim().isEmpty()` → `sourcePatternText.getText().isBlank()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
+- `sandbox_xml_cleanup_test/src/test/java/org/sandbox/jdt/ui/tests/quickfix/XMLTestUtils.java:120` — `child.getTextContent().trim().isEmpty()` → `child.getTextContent().isBlank()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/RepositoryResource.java:87` — `name.trim().isEmpty()` → `name.isBlank()`
+- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java:329` — `newText.trim().isEmpty()` → `newText.isBlank()`
+- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:43` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
+- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:43` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
+
+#### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:127` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
+- `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java:107` — `computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Coll...`
+- `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
+- `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:92` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
+- `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
+- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:139` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:128` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
+- `sandbox_jface_cleanup/src/org/sandbox/jdt/internal/ui/fix/JFaceCleanUpCore.java:89` — `computeFixSet().stream().map(JfaceCleanUpFixCore::toString).collect(Collector...`
+
+
+<!-- report-hash: c1a4f6ba85b0d0a4cf524e54368f77948f40566657319abd857e8d1165a6c1a1 -->
