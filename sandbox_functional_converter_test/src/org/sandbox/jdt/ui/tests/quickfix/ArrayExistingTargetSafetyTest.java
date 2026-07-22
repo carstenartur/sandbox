@@ -99,6 +99,68 @@ public class ArrayExistingTargetSafetyTest {
 	}
 
 	@Test
+	public void supportedPrimitiveArrayWithMatchingLoopVariableConverts() throws CoreException {
+		assertExpected("""
+				package test1;
+
+				import java.util.List;
+
+				class MyTest {
+					void append(int[] items, List<Integer> target) {
+						for (int item : items) {
+							target.add(item);
+						}
+					}
+				}
+				""", """
+				package test1;
+
+				import java.util.Arrays;
+				import java.util.List;
+
+				class MyTest {
+					void append(int[] items, List<Integer> target) {
+						Arrays.stream(items).forEachOrdered(item -> target.add(item));
+					}
+				}
+				""");
+	}
+
+	@Test
+	public void boxedLoopVariableOverPrimitiveArrayRemainsUnchanged() throws CoreException {
+		assertNoChange("""
+				package test1;
+
+				import java.util.List;
+
+				class MyTest {
+					void append(int[] items, List<Integer> target) {
+						for (Integer item : items) {
+							target.add(item);
+						}
+					}
+				}
+				""");
+	}
+
+	@Test
+	public void primitiveArrayWithoutArraysStreamOverloadRemainsUnchanged() throws CoreException {
+		assertNoChange("""
+				package test1;
+
+				import java.util.List;
+
+				class MyTest {
+					void append(byte[] items, List<Byte> target) {
+						for (byte item : items) {
+							target.add(item);
+						}
+					}
+				}
+				""");
+	}
+
+	@Test
 	public void targetReassignedAfterLoopRemainsUnchanged() throws CoreException {
 		assertNoChange("""
 				package test1;
