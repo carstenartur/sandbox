@@ -17,8 +17,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Align final safety expectations
+        id: patch
+        shell: bash
         run: |
-          python3 <<'PY'
+          set +e
+          python3 <<'PY' > .github/functional-finalizer.log 2>&1
           from pathlib import Path
           import re
 
@@ -29,11 +32,11 @@ jobs:
 
           path = Path('sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AdditionalLoopPatternsTest.java')
           text = path.read_text(encoding='utf-8')
-          text = text.replace(
-              '@DisplayName("Multiple for-each loops populating same list should use Stream.concat()")\n\tpublic void testMultipleLoopsPopulatingList_streamConcat()',
-              '@DisplayName("Multiple for-each loops preserve concrete accumulator and source order")\n\tpublic void testMultipleLoopsPopulatingList_preservesConcreteAccumulator()',
-              1,
-          )
+          old = '@DisplayName("Multiple for-each loops populating same list should use Stream.concat()")\n\tpublic void testMultipleLoopsPopulatingList_streamConcat()'
+          new = '@DisplayName("Multiple for-each loops preserve concrete accumulator and source order")\n\tpublic void testMultipleLoopsPopulatingList_preservesConcreteAccumulator()'
+          if old not in text:
+              raise RuntimeError('Multiple-loop signature not found')
+          text = text.replace(old, new, 1)
           start, end = block(text, 'testMultipleLoopsPopulatingList_preservesConcreteAccumulator')
           method = text[start:end]
           expected = '''\t\tString expected = """
@@ -75,33 +78,47 @@ public class RuleChainBuilder {
 \t\t\t\t""";'''
           method, count = re.subn(r'\t\tString expected = """\n.*?\n\s*""";', expected, method, count=1, flags=re.S)
           if count != 1:
-              raise SystemExit('Could not replace multiple-loop expectation')
+              raise RuntimeError(f'Multiple-loop expected replacements: {count}')
           path.write_text(text[:start] + method + text[end:], encoding='utf-8')
 
           path = Path('sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/FunctionalLoopNullSafetyTest.java')
           text = path.read_text(encoding='utf-8')
-          text = text.replace(
-              '@DisplayName("Assignment to external variable converts to filter/forEachOrdered")',
-              '@DisplayName("Assignment to external variable - should NOT convert")',
-              1,
-          )
+          old_display = '@DisplayName("Assignment to external variable converts to filter/forEachOrdered")'
+          if old_display not in text:
+              raise RuntimeError('External-assignment display name not found')
+          text = text.replace(old_display, '@DisplayName("Assignment to external variable - should NOT convert")', 1)
           start, end = block(text, 'test_AssignNullToExternalVariable_ShouldNotConvert')
           method = text[start:end]
           method, count = re.subn(r'\n\s*String expected = """\n.*?\n\s*""";\n', '\n', method, count=1, flags=re.S)
           if count != 1:
-              raise SystemExit('Could not remove illegal external-assignment expectation')
-          method = method.replace(
-              'context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);',
-              'context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });',
-              1,
-          )
+              raise RuntimeError(f'External-assignment expected removals: {count}')
+          old_assert = 'context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);'
+          if old_assert not in method:
+              raise RuntimeError('External-assignment assertion not found')
+          method = method.replace(old_assert, 'context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });', 1)
           path.write_text(text[:start] + method + text[end:], encoding='utf-8')
           PY
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          cat .github/functional-finalizer.log
+          exit 0
+      - name: Commit finalizer diagnostics on failure
+        if: steps.patch.outputs.status != '0'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f .github/functional-finalizer.log
+          git commit -m 'ci: record Functional Converter finalizer failure'
+          git push origin HEAD:fix/functional-disabled-tests
+          exit 1
       - name: Remove all temporary scaffolding and commit
+        if: steps.patch.outputs.status == '0'
         run: |
           set -euo pipefail
           git fetch origin main
           git checkout origin/main -- .github/scripts/fix-nls.sh .github/workflows/fix-nls.yml
+          rm -f .github/functional-finalizer.log
           rm -f .github/functional-oracle-patch.log
           rm -f .github/one-shot-trigger.txt
           rm -f .github/scripts/sitecustomize.py
