@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "80a8879beff3141dbc2da105941c631799924aea",
-      "lastProcessedDate": "2026-07-21T03:16:09.797366742Z",
-      "totalProcessed": 2624,
+      "lastProcessedCommit": "ea2ec3561db90bdcec65b74efb4af7cb41e305bc",
+      "lastProcessedDate": "2026-07-22T03:16:08.249429401Z",
+      "totalProcessed": 2704,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2366,6 +2366,42 @@
           "deferredAt": "2026-07-21T03:15:49.087273691Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "1666ecb6f9bef6be89e7a6b9ea30816d5311a1c3",
+          "message": "Fixed bug 438956: [1.8][quick fix] Surround with try/catch quick fix on lambda expression surrounds wrong method",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-22T03:12:02.857908984Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d0a7f97de8a6bc6925deabc26b07c41fa3cbb1d",
+          "message": "Bug 477523: Provide new severity level \"information\" in the UI",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-22T03:12:49.727764371Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d11c46542d32fa82a972a39ca0bb788d757d06c0",
+          "message": "Bug 479838: Outline view not available for Java file",
+          "diffLines": 19,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-22T03:13:20.898049808Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e095667dfb3f41cc51e57c21543b4c8816b87254",
+          "message": "Bug 477523: Provide new severity level \"information\" in the UI",
+          "diffLines": 24,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-22T03:13:20.898125369Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2393,7 +2429,7 @@
         "Collection Performance": 1,
         "Null-Safety": 20,
         "Lambda-Simplification": 5,
-        "Architectural Refactoring": 1,
+        "Architectural Refactoring": 2,
         "Collections": 10,
         "JDT Internal Feature Enhancement": 7,
         "Clean-up Enhancement": 4,
@@ -2517,7 +2553,13 @@
         "Preference Configuration": 1,
         "Typo Fix": 1,
         "Unnecessary Call Removal": 1,
-        "String Literal Replacement": 1
+        "String Literal Replacement": 1,
+        "API Replacement": 2,
+        "API Modernization": 1,
+        "Rename Constant": 1,
+        "Structural Refactoring": 1,
+        "Extract Method Refactoring": 1,
+        "Generics": 1
       },
       "exhaustedCategories": []
     },
@@ -2558,5 +2600,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25283
+  "globalTotalProcessed": 25363
 }
