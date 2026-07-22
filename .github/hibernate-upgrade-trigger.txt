@@ -1,1 +1,0 @@
-Trigger branch-local Hibernate ORM/Search upgrade diagnostics.
