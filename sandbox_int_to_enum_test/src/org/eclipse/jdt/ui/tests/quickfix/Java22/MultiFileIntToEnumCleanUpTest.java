@@ -22,6 +22,7 @@ import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+import org.sandbox.jdt.ui.tests.quickfix.rules.MultiFileCleanUpLifecycleAssertions;
 
 /** Integration test for a package-scoped state API and a caller in another file. */
 public class MultiFileIntToEnumCleanUpTest {
@@ -63,7 +64,8 @@ public class MultiFileIntToEnumCleanUpTest {
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 
-		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { processor, client },
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+				new ICompilationUnit[] { processor, client },
 				new String[] {
 						"""
 						package test;
@@ -90,7 +92,7 @@ public class MultiFileIntToEnumCleanUpTest {
 								processor.process(test.OrderProcessor.Status.PENDING);
 							}
 						}
-						""" }, null);
+						""" });
 	}
 
 	@Test
