@@ -16,11 +16,18 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -45,6 +52,9 @@ class AbstractPlannedMultiFileCleanUpTest {
 
 	private static final class TestCleanUp extends AbstractPlannedMultiFileCleanUp<TestPlan> {
 		private final List<ICompilationUnit> fixedUnits= new ArrayList<>();
+		private final AtomicInteger planningCalls= new AtomicInteger();
+		private final AtomicInteger activePlanningCalls= new AtomicInteger();
+		private final AtomicInteger maximumConcurrentPlanningCalls= new AtomicInteger();
 		private ICompilationUnit[] plannedUnits;
 		private RefactoringStatus planningStatus= new RefactoringStatus();
 		private CoreException planningCoreFailure;
@@ -52,21 +62,38 @@ class AbstractPlannedMultiFileCleanUpTest {
 		private IJavaProject failingFixProject;
 		private CoreException fixFailure;
 		private CoreException postConditionFailure;
+		private CountDownLatch firstPlanningEntered;
+		private CountDownLatch releaseFirstPlanning;
+		private CountDownLatch secondPlanningEntered;
 
 		@Override
 		protected MultiFileCleanUpPlanResult<TestPlan> createPlan(IJavaProject project,
 				ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
-			if (planningCoreFailure != null) {
-				throw planningCoreFailure;
+			int call= planningCalls.incrementAndGet();
+			int activeCalls= activePlanningCalls.incrementAndGet();
+			maximumConcurrentPlanningCalls.accumulateAndGet(activeCalls, Math::max);
+			try {
+				if (call == 1 && firstPlanningEntered != null) {
+					firstPlanningEntered.countDown();
+					await(releaseFirstPlanning);
+				}
+				if (call == 2 && secondPlanningEntered != null) {
+					secondPlanningEntered.countDown();
+				}
+				if (planningCoreFailure != null) {
+					throw planningCoreFailure;
+				}
+				if (planningRuntimeFailure != null) {
+					throw planningRuntimeFailure;
+				}
+				plannedUnits= compilationUnits;
+				if (planningStatus.hasFatalError()) {
+					return new MultiFileCleanUpPlanResult<>(null, planningStatus);
+				}
+				return new MultiFileCleanUpPlanResult<>(new TestPlan(project, List.of(compilationUnits)), planningStatus);
+			} finally {
+				activePlanningCalls.decrementAndGet();
 			}
-			if (planningRuntimeFailure != null) {
-				throw planningRuntimeFailure;
-			}
-			plannedUnits= compilationUnits;
-			if (planningStatus.hasFatalError()) {
-				return new MultiFileCleanUpPlanResult<>(null, planningStatus);
-			}
-			return new MultiFileCleanUpPlanResult<>(new TestPlan(project, List.of(compilationUnits)), planningStatus);
 		}
 
 		@Override
@@ -215,6 +242,46 @@ class AbstractPlannedMultiFileCleanUpTest {
 	}
 
 	@Test
+	void serializesLifecycleCallsAcrossThreads() throws Exception {
+		IJavaProject firstProject= javaProject();
+		IJavaProject secondProject= javaProject();
+		ICompilationUnit first= compilationUnit(firstProject, "First.java"); //$NON-NLS-1$
+		ICompilationUnit second= compilationUnit(secondProject, "Second.java"); //$NON-NLS-1$
+		TestCleanUp cleanUp= new TestCleanUp();
+		cleanUp.firstPlanningEntered= new CountDownLatch(1);
+		cleanUp.releaseFirstPlanning= new CountDownLatch(1);
+		cleanUp.secondPlanningEntered= new CountDownLatch(1);
+		CountDownLatch secondWorkerStarted= new CountDownLatch(1);
+		ExecutorService executor= Executors.newFixedThreadPool(2);
+		try {
+			Future<RefactoringStatus> firstPlanning= executor.submit(() -> cleanUp.checkPreConditions(firstProject,
+					new ICompilationUnit[] { first }, new NullProgressMonitor()));
+			assertTrue(cleanUp.firstPlanningEntered.await(5, TimeUnit.SECONDS));
+
+			Future<RefactoringStatus> secondPlanning= executor.submit(() -> {
+				secondWorkerStarted.countDown();
+				return cleanUp.checkPreConditions(secondProject,
+						new ICompilationUnit[] { second }, new NullProgressMonitor());
+			});
+			assertTrue(secondWorkerStarted.await(5, TimeUnit.SECONDS));
+			assertFalse(cleanUp.secondPlanningEntered.await(1, TimeUnit.SECONDS),
+					"Second planning must wait for the first lifecycle call"); //$NON-NLS-1$
+
+			cleanUp.releaseFirstPlanning.countDown();
+			assertFalse(firstPlanning.get(5, TimeUnit.SECONDS).hasError());
+			assertFalse(secondPlanning.get(5, TimeUnit.SECONDS).hasError());
+			assertTrue(cleanUp.secondPlanningEntered.await(5, TimeUnit.SECONDS));
+			assertEquals(1, cleanUp.maximumConcurrentPlanningCalls.get());
+			assertEquals(List.of(first), cleanUp.retainedPlan(firstProject).units());
+			assertEquals(List.of(second), cleanUp.retainedPlan(secondProject).units());
+		} finally {
+			cleanUp.releaseFirstPlanning.countDown();
+			executor.shutdownNow();
+			assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+		}
+	}
+
+	@Test
 	void defaultScopeExpansionIsEmpty() throws CoreException {
 		IJavaProject project= javaProject();
 		ICompilationUnit unit= compilationUnit(project, "Only.java"); //$NON-NLS-1$
@@ -224,6 +291,17 @@ class AbstractPlannedMultiFileCleanUpTest {
 				new NullProgressMonitor());
 
 		assertEquals(List.of(), List.copyOf(expanded));
+	}
+
+	private static void await(CountDownLatch latch) {
+		try {
+			if (!latch.await(5, TimeUnit.SECONDS)) {
+				throw new AssertionError("Timed out waiting for lifecycle test latch"); //$NON-NLS-1$
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new OperationCanceledException();
+		}
 	}
 
 	private static IJavaProject javaProject() {

@@ -41,6 +41,19 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
  * for every target. The ordinary cleanup refactoring already combines all local
  * changes into one preview, apply operation, and undo.</p>
  *
+ * <p>The JDT cleanup orchestrator invokes one cleanup instance sequentially.
+ * Alternative callers must not assume that project plans can be built or
+ * resolved concurrently on the same instance. All lifecycle entry points that
+ * can access retained plan state are therefore serialized on a private lock.
+ * The lock is deliberately not the publicly reachable cleanup instance or class
+ * monitor. An instance may be reused after {@link #checkPostConditions(IProgressMonitor)}
+ * has completed and cleared all retained state.</p>
+ *
+ * <p>Overridable planning, scope-discovery, fix-resolution, and postcondition
+ * hooks execute while that private lifecycle lock is held. Implementations must
+ * therefore remain synchronous and must not wait for another thread to call a
+ * lifecycle method on the same cleanup instance.</p>
+ *
  * <p>Plans must not retain AST nodes from the planning parser. Previous cleanups
  * may change working copies before this cleanup receives its current AST. Store
  * Java model handles, binding keys, signatures, and semantic edit descriptions,
@@ -50,6 +63,8 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
  */
 public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		implements IMultiFileCleanUpScopeProvider {
+
+	private final Object lifecycleLock= new Object();
 
 	private final Map<IJavaProject, P> plansByProject= new HashMap<>();
 
@@ -88,45 +103,51 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	@Override
 	public final RefactoringStatus checkPreConditions(IJavaProject project, ICompilationUnit[] compilationUnits,
 			IProgressMonitor monitor) throws CoreException {
-		plansByProject.remove(project);
-		MultiFileCleanUpPlanResult<P> result;
-		try {
-			result= createPlan(project, compilationUnits.clone(), monitor);
-		} catch (CoreException | RuntimeException e) {
+		synchronized (lifecycleLock) {
 			plansByProject.remove(project);
-			throw e;
+			MultiFileCleanUpPlanResult<P> result;
+			try {
+				result= createPlan(project, compilationUnits.clone(), monitor);
+			} catch (CoreException | RuntimeException e) {
+				plansByProject.remove(project);
+				throw e;
+			}
+			if (!result.status().hasFatalError() && result.plan() != null) {
+				plansByProject.put(project, result.plan());
+			}
+			return result.status();
 		}
-		if (!result.status().hasFatalError() && result.plan() != null) {
-			plansByProject.put(project, result.plan());
-		}
-		return result.status();
 	}
 
 	@Override
 	public final ICleanUpFix createFix(CleanUpContext context) throws CoreException {
-		ICompilationUnit unit= context.getCompilationUnit();
-		if (unit == null) {
-			return null;
-		}
-		IJavaProject project= unit.getJavaProject();
-		P plan= plansByProject.get(project);
-		if (plan == null) {
-			return null;
-		}
-		try {
-			return createFixForPlan(plan, context);
-		} catch (CoreException | RuntimeException e) {
-			plansByProject.remove(project);
-			throw e;
+		synchronized (lifecycleLock) {
+			ICompilationUnit unit= context.getCompilationUnit();
+			if (unit == null) {
+				return null;
+			}
+			IJavaProject project= unit.getJavaProject();
+			P plan= plansByProject.get(project);
+			if (plan == null) {
+				return null;
+			}
+			try {
+				return createFixForPlan(plan, context);
+			} catch (CoreException | RuntimeException e) {
+				plansByProject.remove(project);
+				throw e;
+			}
 		}
 	}
 
 	@Override
 	public final RefactoringStatus checkPostConditions(IProgressMonitor monitor) throws CoreException {
-		try {
-			return checkPlanPostConditions(monitor);
-		} finally {
-			plansByProject.clear();
+		synchronized (lifecycleLock) {
+			try {
+				return checkPlanPostConditions(monitor);
+			} finally {
+				plansByProject.clear();
+			}
 		}
 	}
 
@@ -144,9 +165,11 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	@Override
 	public final Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
-		Collection<ICompilationUnit> result= discoverAdditionalCompilationUnits(project,
-				Collections.unmodifiableCollection(currentScope), monitor);
-		return result == null ? Collections.emptyList() : result;
+		synchronized (lifecycleLock) {
+			Collection<ICompilationUnit> result= discoverAdditionalCompilationUnits(project,
+					Collections.unmodifiableCollection(currentScope), monitor);
+			return result == null ? Collections.emptyList() : result;
+		}
 	}
 
 	/**
@@ -171,6 +194,8 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	 * @return plan or {@code null}
 	 */
 	protected final P getPlan(IJavaProject project) {
-		return plansByProject.get(project);
+		synchronized (lifecycleLock) {
+			return plansByProject.get(project);
+		}
 	}
 }
