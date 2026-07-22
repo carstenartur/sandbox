@@ -22,7 +22,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          python3 <<'PY' > .github/functional-oracle-patch.log 2>&1
+          python3 <<'PY' > functional-oracle-patch.log 2>&1
           from pathlib import Path
           import textwrap
 
@@ -35,18 +35,18 @@ jobs:
           PY
           status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          cat .github/functional-oracle-patch.log
+          cat functional-oracle-patch.log
           exit 0
-      - name: Commit patch diagnostics
+      - name: Upload patch diagnostics
         if: steps.patch.outputs.status != '0'
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f .github/functional-oracle-patch.log
-          git commit -m 'ci: record functional oracle patch failure'
-          git push origin HEAD:fix/functional-disabled-tests
-          exit 1
+        uses: actions/upload-artifact@v7
+        with:
+          name: functional-oracle-patch-diagnostics
+          path: functional-oracle-patch.log
+          if-no-files-found: error
+      - name: Fail after diagnostic upload
+        if: steps.patch.outputs.status != '0'
+        run: exit 1
       - name: Commit patched test oracles and remove helper workflows
         if: steps.patch.outputs.status == '0'
         run: |
@@ -55,7 +55,6 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git rm .github/workflows/patch-functional-test-oracles.yml
           git rm .github/workflows/run-functional-oracle-patch.yml
-          rm -f .github/functional-oracle-patch.log
           git add sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/
           git commit -m 'test: align functional expectations with canonical renderer'
           git push origin HEAD:fix/functional-disabled-tests
