@@ -1,0 +1,42 @@
+name: Run Functional Oracle Patch
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/functional-disabled-tests
+          fetch-depth: 0
+      - name: Execute versioned patch script
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/patch-functional-test-oracles.yml').read_text(encoding='utf-8')
+          marker = "          python3 <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          script = textwrap.dedent(workflow[start:end])
+          exec(compile(script, 'patch-functional-test-oracles.py', 'exec'))
+          PY
+      - name: Commit patched test oracles and remove helper workflows
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/patch-functional-test-oracles.yml
+          git rm .github/workflows/run-functional-oracle-patch.yml
+          git add sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/
+          git commit -m 'test: align functional expectations with canonical renderer'
+          git push origin HEAD:fix/functional-disabled-tests
