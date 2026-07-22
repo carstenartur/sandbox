@@ -1,1 +1,1 @@
-Trigger registered Functional Converter finalizer now.
+Trigger diagnosable Functional Converter finalizer.
