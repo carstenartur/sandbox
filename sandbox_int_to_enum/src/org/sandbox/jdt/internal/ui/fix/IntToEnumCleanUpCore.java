@@ -22,6 +22,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -51,9 +52,13 @@ import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
 
 /** Core cleanup implementation that converts integer constants to enums. */
 public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnumMigrationPlan> {
+
+	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();
+
 	public IntToEnumCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -124,7 +129,22 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		return JavaProjectCompilationUnits.collect(project);
+
+		Set<String> currentHandles= handles(currentScope);
+		Set<String> pendingScope= pendingExpandedScopes.remove(project);
+		if (pendingScope != null && currentHandles.containsAll(pendingScope)) {
+			return List.of();
+		}
+		if (!IntEnumScopeCandidateDetector.containsCandidate(project, currentScope, monitor)) {
+			return List.of();
+		}
+
+		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project);
+		Set<String> projectHandles= handles(projectUnits);
+		if (!currentHandles.containsAll(projectHandles)) {
+			pendingExpandedScopes.put(project, projectHandles);
+		}
+		return projectUnits;
 	}
 
 	@Override
@@ -156,5 +176,16 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 			fixSet= EnumSet.allOf(IntToEnumFixCore.class);
 		}
 		return fixSet;
+	}
+
+	private static Set<String> handles(Collection<ICompilationUnit> units) {
+		if (units == null || units.isEmpty()) {
+			return Set.of();
+		}
+		return units.stream()
+				.filter(java.util.Objects::nonNull)
+				.map(ICompilationUnit::getPrimary)
+				.map(ICompilationUnit::getHandleIdentifier)
+				.collect(Collectors.toSet());
 	}
 }

@@ -34,7 +34,7 @@ import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
-/** Tests that project-wide Int-to-Enum analysis requires explicit opt-in. */
+/** Tests candidate-gated project-wide Int-to-Enum analysis. */
 public class IntToEnumScopeExpansionTest {
 
 	@RegisterExtension
@@ -106,23 +106,56 @@ public class IntToEnumScopeExpansionTest {
 	}
 
 	@Test
-	public void projectWideOptionExpandsToAllProjectSources() throws CoreException {
+	public void projectWideOptionWithoutCandidateDoesNotExpandScope() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= createUnit(pack, "Selected.java"); //$NON-NLS-1$
-		ICompilationUnit related= createUnit(pack, "Related.java"); //$NON-NLS-1$
-		ICompilationUnit unrelated= createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
-		IntToEnumCleanUpCore cleanup= new IntToEnumCleanUpCore(Map.of(
-				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.TRUE,
-				IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.TRUE));
+		createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+		IntToEnumCleanUpCore cleanup= projectWideCleanup();
 
 		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
 				List.of(selected), null);
+
+		assertTrue(expanded.isEmpty(),
+				"An explicit project-wide option must not scan the project without a selected candidate owner");
+	}
+
+	@Test
+	public void selectedCandidateUsesConservativeProjectFallback() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class Selected {
+					static final int STATUS_PENDING = 0;
+					static final int STATUS_APPROVED = 1;
+
+					void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+		ICompilationUnit related= createUnit(pack, "Related.java"); //$NON-NLS-1$
+		ICompilationUnit unrelated= createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+
+		Collection<ICompilationUnit> expanded= projectWideCleanup().expandCleanUpScope(
+				selected.getJavaProject(), List.of(selected), null);
 		Set<String> expandedHandles= expanded.stream().map(ICompilationUnit::getHandleIdentifier)
 				.collect(Collectors.toSet());
 
 		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier(),
 				unrelated.getHandleIdentifier()), expandedHandles,
-				"The explicit project-wide option must include every project source unit");
+				"A selected coordinated candidate must retain the conservative complete-project fallback");
+	}
+
+	private static IntToEnumCleanUpCore projectWideCleanup() {
+		return new IntToEnumCleanUpCore(Map.of(
+				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.TRUE,
+				IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.TRUE));
 	}
 
 	private static ICompilationUnit createUnit(IPackageFragment pack, String name) throws CoreException {
