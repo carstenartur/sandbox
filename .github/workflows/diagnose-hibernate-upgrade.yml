@@ -20,17 +20,17 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
-      - name: Compile storage module and print concise failure context
+      - name: Verify storage module and print concise failure context
         shell: bash
         run: |
           set +e
           mvn --batch-mode -ntp \
             -pl sandbox-jgit-storage-hibernate \
-            -DskipTests -Dspotbugs.skip=true -Djacoco.skip=true \
-            compile > hibernate-upgrade.log 2>&1
+            -Djacoco.skip=true \
+            clean verify > hibernate-upgrade.log 2>&1
           status=$?
           echo '=== relevant diagnostics ==='
-          grep -E '(^|\]) (ERROR|WARNING)|COMPILATION|Could not resolve|Failed to execute|cannot find symbol|incompatible types|NoSuchMethod|Exception' hibernate-upgrade.log | tail -n 50 || true
+          grep -E '(^|\]) (ERROR|WARNING)|Tests run:|Failures:|Errors:|COMPILATION|Could not resolve|Failed to execute|cannot find symbol|incompatible types|NoSuchMethod|Exception|SpotBugs|BugInstance' hibernate-upgrade.log | tail -n 120 || true
           echo '=== final Maven output ==='
-          tail -n 80 hibernate-upgrade.log
+          tail -n 120 hibernate-upgrade.log
           exit "$status"
