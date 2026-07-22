@@ -251,15 +251,20 @@ class AbstractPlannedMultiFileCleanUpTest {
 		cleanUp.firstPlanningEntered= new CountDownLatch(1);
 		cleanUp.releaseFirstPlanning= new CountDownLatch(1);
 		cleanUp.secondPlanningEntered= new CountDownLatch(1);
+		CountDownLatch secondWorkerStarted= new CountDownLatch(1);
 		ExecutorService executor= Executors.newFixedThreadPool(2);
 		try {
 			Future<RefactoringStatus> firstPlanning= executor.submit(() -> cleanUp.checkPreConditions(firstProject,
 					new ICompilationUnit[] { first }, new NullProgressMonitor()));
 			assertTrue(cleanUp.firstPlanningEntered.await(5, TimeUnit.SECONDS));
 
-			Future<RefactoringStatus> secondPlanning= executor.submit(() -> cleanUp.checkPreConditions(secondProject,
-					new ICompilationUnit[] { second }, new NullProgressMonitor()));
-			assertFalse(cleanUp.secondPlanningEntered.await(250, TimeUnit.MILLISECONDS),
+			Future<RefactoringStatus> secondPlanning= executor.submit(() -> {
+				secondWorkerStarted.countDown();
+				return cleanUp.checkPreConditions(secondProject,
+						new ICompilationUnit[] { second }, new NullProgressMonitor());
+			});
+			assertTrue(secondWorkerStarted.await(5, TimeUnit.SECONDS));
+			assertFalse(cleanUp.secondPlanningEntered.await(1, TimeUnit.SECONDS),
 					"Second planning must wait for the first lifecycle call"); //$NON-NLS-1$
 
 			cleanUp.releaseFirstPlanning.countDown();
