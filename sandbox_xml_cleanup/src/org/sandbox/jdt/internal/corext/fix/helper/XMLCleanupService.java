@@ -7,23 +7,15 @@
  * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -31,236 +23,100 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 
-/**
- * Service for XML cleanup that can be used independently of JDT cleanup framework.
- * This allows XML cleanup to work without requiring Java compilation unit context.
- */
+/** Standalone service for conflict-safe XML workspace cleanup. */
 public class XMLCleanupService {
-	
-	private static final ILog LOG = Platform.getLog(XMLCleanupService.class);
-	private static final String PLUGIN_ID = "sandbox_xml_cleanup";
-	
-	// PDE-relevant file names
-	private static final Set<String> PDE_FILE_NAMES = Set.of(
-		"plugin.xml",
-		"feature.xml", 
-		"fragment.xml"
-	);
-	
-	// PDE-relevant file extensions
-	private static final Set<String> PDE_EXTENSIONS = Set.of("exsd", "xsd");
-	
-	// PDE-typical directories
-	private static final Set<String> PDE_DIRECTORIES = Set.of("OSGI-INF", "META-INF");
-	
-	// Indentation preference (default: false for size reduction)
-	private boolean enableIndent = false;
 
-	/**
-	 * Set whether to enable indentation in XML output.
-	 * 
-	 * @param enable true to enable indentation, false for compact output (default)
-	 */
+	private static final ILog LOG= Platform.getLog(XMLCleanupService.class);
+	private static final String PLUGIN_ID= "sandbox_xml_cleanup"; //$NON-NLS-1$
+	private static final Set<String> PDE_FILE_NAMES= Set.of(
+			"plugin.xml", "feature.xml", "fragment.xml"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	private static final Set<String> PDE_EXTENSIONS= Set.of("exsd", "xsd"); //$NON-NLS-1$ //$NON-NLS-2$
+	private static final Set<String> PDE_DIRECTORIES= Set.of("OSGI-INF", "META-INF"); //$NON-NLS-1$ //$NON-NLS-2$
+
+	private boolean enableIndent;
+
+	/** Sets whether transformed markup is indented. */
 	public void setEnableIndent(boolean enable) {
-		this.enableIndent = enable;
+		enableIndent= enable;
 	}
 
 	/**
-	 * Process a single XML file.
-	 * 
-	 * @param file the file to process
-	 * @param monitor progress monitor (can be null)
-	 * @return true if file was processed and changed, false otherwise
-	 * @throws CoreException if file access fails
+	 * Processes one relevant XML resource.
+	 *
+	 * @return {@code true} when bytes were changed
+	 * @throws CoreException when the resource is dirty, concurrently modified,
+	 *             too large, ambiguously encoded, malformed, or cannot be written
 	 */
 	public boolean processFile(IFile file, IProgressMonitor monitor) throws CoreException {
-		if (monitor != null && monitor.isCanceled()) {
+		if (monitor != null && monitor.isCanceled() || !isPDERelevantFile(file)) {
 			return false;
 		}
-		
-		if (!isPDERelevantFile(file)) {
+		XMLResourceSupport.Transformation transformation=
+				XMLResourceSupport.prepare(file, enableIndent, monitor);
+		if (!transformation.changed()) {
 			return false;
 		}
-		
-		// Read original content
-		String originalContent;
-		try (InputStream is = file.getContents()) {
-			originalContent = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
-				"Failed to read file: " + file.getName(), e));
-		}
-
-		// Detect original line ending style
-		String lineEnding = "\n";
-		if (originalContent.contains("\r\n")) {
-			lineEnding = "\r\n";
-		}
-
-		// Transform the file - check for null location
-		org.eclipse.core.runtime.IPath location = file.getLocation();
-		if (location == null) {
-			LOG.log(new Status(IStatus.WARNING, PLUGIN_ID,
-				"File does not have a physical location: " + file.getName()));
-			return false;
-		}
-
-		Path filePath = location.toFile().toPath();
-		String transformedContent;
-		try {
-			transformedContent = SchemaTransformationUtils.transform(filePath, enableIndent);
-		} catch (Exception e) {
-			throw new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
-				"Failed to transform file: " + file.getName(), e));
-		}
-
-		// Normalize line endings in transformed content to match original
-		if ("\r\n".equals(lineEnding)) {
-			// Convert all lone \n to \r\n (first normalize to \n, then replace)
-			transformedContent = transformedContent.replace("\r\n", "\n").replace("\n", "\r\n");
-		} else {
-			// Normalize to LF only
-			transformedContent = transformedContent.replace("\r\n", "\n");
-		}
-
-		// Only write if content actually changed
-		if (!originalContent.equals(transformedContent)) {
-			byte[] newContent = transformedContent.getBytes(StandardCharsets.UTF_8);
-			int originalBytes = originalContent.getBytes(StandardCharsets.UTF_8).length;
-			int newBytes = newContent.length;
-			int bytesSaved = originalBytes - newBytes;
-			double percentSaved = originalBytes > 0 ? (bytesSaved * 100.0) / originalBytes : 0.0;
-
-			ByteArrayInputStream inputStream = new ByteArrayInputStream(newContent);
-			// Update file (don't force, keep history)
-			file.setContents(inputStream, IResource.KEEP_HISTORY, monitor);
-			// Refresh the resource to sync with filesystem
-			file.refreshLocal(IResource.DEPTH_ZERO, monitor);
-
-			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,
-				"Applied transformation to: " + file.getName()
-				+ String.format(" | Size: %d → %d bytes, saved: %d bytes (%.1f%%)",
-					originalBytes, newBytes, bytesSaved, percentSaved)));
-
-			return true;
-		}
-		
-		return false;
+		int originalBytes= transformation.snapshot().originalBytes().length;
+		int newBytes= transformation.transformedBytes().length;
+		XMLResourceSupport.write(file, transformation, monitor);
+		int bytesSaved= originalBytes - newBytes;
+		double percentSaved= originalBytes > 0 ? bytesSaved * 100.0 / originalBytes : 0.0;
+		LOG.log(new Status(IStatus.INFO, PLUGIN_ID,
+				"Applied transformation to: " + file.getFullPath() //$NON-NLS-1$
+						+ String.format(" | Size: %d → %d bytes, saved: %d bytes (%.1f%%)", //$NON-NLS-1$
+								originalBytes, newBytes, bytesSaved, percentSaved)));
+		return true;
 	}
-	
-	/**
-	 * Process all PDE XML files in a project.
-	 * 
-	 * @param project the project to process
-	 * @param monitor progress monitor (can be null)
-	 * @return number of files processed and changed
-	 * @throws CoreException if resource traversal fails
-	 */
+
+	/** Processes all relevant XML files in a project. */
 	public int processProject(IProject project, IProgressMonitor monitor) throws CoreException {
-		final int[] filesProcessed = {0};
-		
-		project.accept(new IResourceVisitor() {
-			@Override
-			public boolean visit(IResource resource) throws CoreException {
-				if (monitor != null && monitor.isCanceled()) {
-					return false;
-				}
-				
-				if (resource instanceof IFile file) {
-					
-					if (isPDERelevantFile(file)) {
-						try {
-							if (monitor != null) {
-								monitor.subTask("Processing: " + file.getName());
-							}
-							
-							boolean changed = processFile(file, monitor);
-							if (changed) {
-								filesProcessed[0]++;
-							}
-							
-							if (monitor != null) {
-								monitor.worked(1);
-							}
-						} catch (CoreException e) {
-							LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, 
-								"Error processing file: " + file.getName(), e));
-						}
-					}
-				}
-				return true; // Continue iteration
+		int[] filesProcessed= { 0 };
+		project.accept(resource -> {
+			if (monitor != null && monitor.isCanceled()) {
+				return false;
 			}
+			if (resource instanceof IFile file && isPDERelevantFile(file)) {
+				try {
+					if (monitor != null) {
+						monitor.subTask("Processing: " + file.getFullPath()); //$NON-NLS-1$
+					}
+					if (processFile(file, monitor)) {
+						filesProcessed[0]++;
+					}
+				} catch (CoreException e) {
+					LOG.log(e.getStatus());
+				}
+				if (monitor != null) {
+					monitor.worked(1);
+				}
+			}
+			return true;
 		});
-		
 		return filesProcessed[0];
 	}
-	
-	/**
-	 * Check if file is PDE-relevant.
-	 * 
-	 * @param file the file to check
-	 * @return true if the file should be processed
-	 */
-	public boolean isPDERelevantFile(IFile file) {
-		String fileName = file.getName();
-		String extension = file.getFileExtension();
-		
-		// Check if it's a known PDE file name
-		if (PDE_FILE_NAMES.contains(fileName)) {
-			// Must be in project root, OSGI-INF, or META-INF
-			return isInPDELocation(file);
-		}
-		
-		// Check if it's a PDE extension (exsd, xsd)
-		if (extension != null && PDE_EXTENSIONS.contains(extension)) {
-			return isInPDELocation(file);
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Check if file is in a PDE-typical location.
-	 * 
-	 * @param file the file to check
-	 * @return true if in root, OSGI-INF, or META-INF
-	 */
-	private boolean isInPDELocation(IFile file) {
-		IResource parent = file.getParent();
 
-		// Check if in project root
-		if (parent instanceof IProject) {
+	/** Returns whether the resource belongs to the supported PDE XML scope. */
+	public boolean isPDERelevantFile(IFile file) {
+		String extension= file.getFileExtension();
+		return (PDE_FILE_NAMES.contains(file.getName())
+				|| extension != null && PDE_EXTENSIONS.contains(extension))
+				&& isInPDELocation(file);
+	}
+
+	private static boolean isInPDELocation(IFile file) {
+		IResource current= file.getParent();
+		if (current instanceof IProject) {
 			return true;
 		}
-
-		// Check if in OSGI-INF or META-INF
-		if (parent instanceof IFolder) {
-			String folderName = parent.getName();
-			if (PDE_DIRECTORIES.contains(folderName)) {
-				return true;
-			}
-
-			// Also check parent's parent (for nested structures)
-			IResource grandParent = parent.getParent();
-			if (grandParent instanceof IFolder) {
-				if (PDE_DIRECTORIES.contains(grandParent.getName())) {
-					return true;
-				}
-			}
-		}
-
-		// NEW: Allow any folder named 'schema' (case-insensitive) at any level
-		IResource current = parent;
 		while (current != null && !(current instanceof IProject)) {
-			if (current instanceof IFolder) {
-				String folderName = current.getName();
-				if (folderName != null && folderName.equalsIgnoreCase("schema")) {
+			if (current instanceof IFolder folder) {
+				String name= folder.getName();
+				if (PDE_DIRECTORIES.contains(name) || "schema".equalsIgnoreCase(name)) { //$NON-NLS-1$
 					return true;
 				}
 			}
-			current = current.getParent();
+			current= current.getParent();
 		}
-
 		return false;
 	}
 }
