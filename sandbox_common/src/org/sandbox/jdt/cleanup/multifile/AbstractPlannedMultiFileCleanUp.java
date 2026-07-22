@@ -108,8 +108,17 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		if (unit == null) {
 			return null;
 		}
-		P plan= plansByProject.get(unit.getJavaProject());
-		return plan == null ? null : createFixForPlan(plan, context);
+		IJavaProject project= unit.getJavaProject();
+		P plan= plansByProject.get(project);
+		if (plan == null) {
+			return null;
+		}
+		try {
+			return createFixForPlan(plan, context);
+		} catch (CoreException | RuntimeException e) {
+			plansByProject.remove(project);
+			throw e;
+		}
 	}
 
 	@Override
