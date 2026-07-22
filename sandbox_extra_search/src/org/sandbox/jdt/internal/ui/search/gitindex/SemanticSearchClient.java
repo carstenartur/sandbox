@@ -63,7 +63,9 @@ public class SemanticSearchClient {
 	/** Default base URL for the REST backend. */
 	public static final String DEFAULT_BASE_URL= "http://localhost:8080"; //$NON-NLS-1$
 
-	private static SemanticSearchClient instance;
+	private static final Object INSTANCE_LOCK= new Object();
+
+	private static volatile SemanticSearchClient instance;
 
 	private final String baseUrl;
 
@@ -81,11 +83,18 @@ public class SemanticSearchClient {
 	 *
 	 * @return the singleton instance
 	 */
-	public static synchronized SemanticSearchClient getInstance() {
-		if (instance == null) {
-			instance= new SemanticSearchClient(DEFAULT_BASE_URL);
+	public static SemanticSearchClient getInstance() {
+		SemanticSearchClient current= instance;
+		if (current == null) {
+			synchronized (INSTANCE_LOCK) {
+				current= instance;
+				if (current == null) {
+					current= new SemanticSearchClient(DEFAULT_BASE_URL);
+					instance= current;
+				}
+			}
 		}
-		return instance;
+		return current;
 	}
 
 	/**
@@ -95,9 +104,11 @@ public class SemanticSearchClient {
 	 * @param baseUrl the base URL for the REST backend (e.g.
 	 *            {@code http://localhost:8080})
 	 */
-	public static synchronized void initialize(String baseUrl) {
-		instance= new SemanticSearchClient(
-				baseUrl != null ? baseUrl : DEFAULT_BASE_URL);
+	public static void initialize(String baseUrl) {
+		synchronized (INSTANCE_LOCK) {
+			instance= new SemanticSearchClient(
+					baseUrl != null ? baseUrl : DEFAULT_BASE_URL);
+		}
 	}
 
 	/**
