@@ -47,6 +47,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
@@ -131,7 +132,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			return List.of();
 		}
 
-		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project);
+		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project, currentScope,
+				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);
 		Set<String> projectHandles= handles(projectUnits);
 		if (!currentHandles.containsAll(projectHandles)) {
 			pendingExpandedScopes.put(project, projectHandles);
