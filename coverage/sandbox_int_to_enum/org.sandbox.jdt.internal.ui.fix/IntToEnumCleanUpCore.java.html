@@ -18,6 +18,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUpF
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.IntToEnumCleanUp_description;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -27,89 +28,124 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.util.Messages;
-import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
-import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 
-/**
- * Core cleanup implementation that converts integer constants to enums.
- */
-public class IntToEnumCleanUpCore extends AbstractCleanUp {
+import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
+
+/** Core cleanup implementation that converts integer constants to enums. */
+public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;IntEnumMigrationPlan&gt; {
 	public IntToEnumCleanUpCore(final Map&lt;String, String&gt; options) {
-<span class="nc" id="L46">		super(options);</span>
-<span class="nc" id="L47">	}</span>
-	
-<span class="fc" id="L49">	public IntToEnumCleanUpCore() {</span>
-<span class="fc" id="L50">	}</span>
+<span class="nc" id="L55">		super(options);</span>
+<span class="nc" id="L56">	}</span>
+
+<span class="fc" id="L58">	public IntToEnumCleanUpCore() {</span>
+<span class="fc" id="L59">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L54">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L63">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="pc bpc" id="L58" title="1 of 4 branches missed.">		return isEnabled(INT_TO_ENUM_CLEANUP) &amp;&amp; !computeFixSet().isEmpty();</span>
+<span class="pc bpc" id="L67" title="1 of 4 branches missed.">		return isEnabled(INT_TO_ENUM_CLEANUP) &amp;&amp; !computeFixSet().isEmpty();</span>
 	}
 
 	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L63">		CompilationUnit compilationUnit = context.getAST();</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (compilationUnit == null) {</span>
-<span class="fc" id="L65">			return null;</span>
+	protected MultiFileCleanUpPlanResult&lt;IntEnumMigrationPlan&gt; createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet().isEmpty()) {</span>
+<span class="fc" id="L74">			return MultiFileCleanUpPlanResult.noPlan();</span>
 		}
-		
-<span class="fc" id="L68">		EnumSet&lt;IntToEnumFixCore&gt; computeFixSet = computeFixSet();</span>
-<span class="pc bpc" id="L69" title="2 of 4 branches missed.">		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet.isEmpty()) {</span>
-<span class="nc" id="L70">			return null;</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L77">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L79">		return IntEnumMultiFilePlanner.create(project, compilationUnits, monitor);</span>
+	}
+
+	@Override
+	protected ICleanUpFix createFixForPlan(IntEnumMigrationPlan plan, CleanUpContext context) throws CoreException {
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		if (!plan.contains(context.getCompilationUnit())) {</span>
+<span class="nc" id="L85">			return null;</span>
+		}
+<span class="fc" id="L87">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="nc" id="L89">			return null;</span>
 		}
 
-<span class="fc" id="L73">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations = new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L74">		Set&lt;ASTNode&gt; nodesProcessed = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L75">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesProcessed));</span>
-		
-<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L78">			return null;</span>
+<span class="fc" id="L92">		EnumSet&lt;IntToEnumFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet.isEmpty()) {</span>
+<span class="nc" id="L94">			return null;</span>
 		}
 
-<span class="fc" id="L81">		CompilationUnitRewriteOperationWithSourceRange[] array = operations.toArray(</span>
-<span class="fc" id="L82">				new CompilationUnitRewriteOperationWithSourceRange[0]);</span>
-<span class="fc" id="L83">		return new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);</span>
+<span class="fc" id="L97">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L98">		Set&lt;ASTNode&gt; nodesProcessed= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L99">		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, nodesProcessed);</span>
+<span class="fc" id="L100">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesProcessed));</span>
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
+<span class="fc" id="L103">			return null;</span>
+		}
+
+<span class="fc" id="L106">		CompilationUnitRewriteOperationWithSourceRange[] array= operations.toArray(</span>
+<span class="fc" id="L107">				new CompilationUnitRewriteOperationWithSourceRange[0]);</span>
+<span class="fc" id="L108">		return new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);</span>
+	}
+
+	@Override
+	protected Collection&lt;ICompilationUnit&gt; discoverAdditionalCompilationUnits(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		if (!isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
+<span class="nc" id="L115">			return List.of();</span>
+		}
+<span class="nc bnc" id="L117" title="All 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L118">			throw new OperationCanceledException();</span>
+		}
+<span class="nc" id="L120">		return JavaProjectCompilationUnits.collect(project);</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L88">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		if (isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
-<span class="nc" id="L90">			result.add(Messages.format(IntToEnumCleanUp_description,</span>
-<span class="nc" id="L91">					new Object[] { String.join(&quot;,&quot;, computeFixSet().stream()</span>
-<span class="nc" id="L92">							.map(IntToEnumFixCore::toString)</span>
-<span class="nc" id="L93">							.collect(Collectors.toList())) }));</span>
+<span class="fc" id="L125">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
+<span class="nc" id="L127">			result.add(Messages.format(IntToEnumCleanUp_description,</span>
+<span class="nc" id="L128">					new Object[] { String.join(&quot;,&quot;, computeFixSet().stream() //$NON-NLS-1$</span>
+<span class="nc" id="L129">							.map(IntToEnumFixCore::toString)</span>
+<span class="nc" id="L130">							.collect(Collectors.toList())) }));</span>
 		}
-<span class="fc" id="L95">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L132">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
 	public String getPreview() {
-<span class="nc" id="L100">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L101">		EnumSet&lt;IntToEnumFixCore&gt; computeFixSet = computeFixSet();</span>
-<span class="nc" id="L102">		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -&gt; </span>
-<span class="nc" id="L103">			sb.append(e.getPreview(computeFixSet.contains(e))));</span>
-<span class="nc" id="L104">		return sb.toString();</span>
+<span class="nc" id="L137">		StringBuilder sb= new StringBuilder();</span>
+<span class="nc" id="L138">		EnumSet&lt;IntToEnumFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="nc" id="L139">		EnumSet.allOf(IntToEnumFixCore.class).forEach(e -&gt; sb.append(e.getPreview(computeFixSet.contains(e))));</span>
+<span class="nc" id="L140">		return sb.toString();</span>
 	}
 
 	private EnumSet&lt;IntToEnumFixCore&gt; computeFixSet() {
-<span class="fc" id="L108">		EnumSet&lt;IntToEnumFixCore&gt; fixSet = EnumSet.noneOf(IntToEnumFixCore.class);</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
-<span class="fc" id="L110">			fixSet = EnumSet.allOf(IntToEnumFixCore.class);</span>
+<span class="fc" id="L144">		EnumSet&lt;IntToEnumFixCore&gt; fixSet= EnumSet.noneOf(IntToEnumFixCore.class);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (isEnabled(INT_TO_ENUM_CLEANUP)) {</span>
+<span class="fc" id="L146">			fixSet= EnumSet.allOf(IntToEnumFixCore.class);</span>
 		}
-<span class="fc" id="L112">		return fixSet;</span>
+<span class="fc" id="L148">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

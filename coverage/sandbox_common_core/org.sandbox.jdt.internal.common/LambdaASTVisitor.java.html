@@ -310,18 +310,18 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(EnumConstantDeclaration node) {
-<span class="nc bnc" id="L313" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.EnumConstantDeclaration)) {</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.EnumConstantDeclaration)) {</span>
 <span class="nc" id="L314">			return this.helperVisitor.testPredicate(VisitorEnum.EnumConstantDeclaration, node);</span>
 		}
-<span class="nc" id="L316">		return true;</span>
+<span class="fc" id="L316">		return true;</span>
 	}
 
 	@Override
 	public boolean visit(EnumDeclaration node) {
-<span class="nc bnc" id="L321" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.EnumDeclaration)) {</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.EnumDeclaration)) {</span>
 <span class="nc" id="L322">			return this.helperVisitor.testPredicate(VisitorEnum.EnumDeclaration, node);</span>
 		}
-<span class="nc" id="L324">		return true;</span>
+<span class="fc" id="L324">		return true;</span>
 	}
 
 	@Override
@@ -1422,17 +1422,17 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(EnumConstantDeclaration node) {
-<span class="nc bnc" id="L1425" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumConstantDeclaration)) {</span>
+<span class="pc bpc" id="L1425" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumConstantDeclaration)) {</span>
 <span class="nc" id="L1426">			this.helperVisitor.acceptConsumer(VisitorEnum.EnumConstantDeclaration, node);</span>
 		}
-<span class="nc" id="L1428">	}</span>
+<span class="fc" id="L1428">	}</span>
 
 	@Override
 	public void endVisit(EnumDeclaration node) {
-<span class="nc bnc" id="L1432" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumDeclaration)) {</span>
+<span class="pc bpc" id="L1432" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.EnumDeclaration)) {</span>
 <span class="nc" id="L1433">			this.helperVisitor.acceptConsumer(VisitorEnum.EnumDeclaration, node);</span>
 		}
-<span class="nc" id="L1435">	}</span>
+<span class="fc" id="L1435">	}</span>
 
 	@Override
 	public void endVisit(ExportsDirective node) {

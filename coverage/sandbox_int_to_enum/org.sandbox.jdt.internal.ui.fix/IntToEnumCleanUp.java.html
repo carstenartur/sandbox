@@ -13,21 +13,35 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
-/**
- * Cleanup that converts integer constants used in if-else chains to enum-based switch statements.
- */
-public class IntToEnumCleanUp extends AbstractCleanUpCoreWrapper&lt;IntToEnumCleanUpCore&gt; {
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
+
+/** Cleanup that converts integer state domains to enums. */
+public class IntToEnumCleanUp extends AbstractCleanUpCoreWrapper&lt;IntToEnumCleanUpCore&gt;
+		implements IMultiFileCleanUpScopeProvider {
 	public IntToEnumCleanUp(final Map&lt;String, String&gt; options) {
-<span class="fc" id="L26">		super(options, new IntToEnumCleanUpCore());</span>
-<span class="fc" id="L27">	}</span>
+<span class="fc" id="L34">		super(options, new IntToEnumCleanUpCore());</span>
+<span class="fc" id="L35">	}</span>
 
 	public IntToEnumCleanUp() {
-<span class="fc" id="L30">		this(Collections.emptyMap());</span>
-<span class="fc" id="L31">	}</span>
+<span class="fc" id="L38">		this(Collections.emptyMap());</span>
+<span class="fc" id="L39">	}</span>
+
+	@Override
+	public Collection&lt;ICompilationUnit&gt; expandCleanUpScope(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
+<span class="nc" id="L44">		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

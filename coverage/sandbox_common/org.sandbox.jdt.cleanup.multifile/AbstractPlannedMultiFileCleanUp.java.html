@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractPlannedMultiFileCleanUp.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">AbstractPlannedMultiFileCleanUp.java</span></div><h1>AbstractPlannedMultiFileCleanUp.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
+
+/**
+ * Base class for cleanups that first build one immutable semantic plan for all
+ * selected compilation units and then emit the local part of that plan for each
+ * {@link CleanUpContext}.
+ *
+ * &lt;p&gt;This uses the existing {@code ICleanUp} lifecycle. Eclipse calls
+ * {@code checkPreConditions} once with all selected compilation units in a Java
+ * project and subsequently calls {@code createFix} on the same cleanup instance
+ * for every target. The ordinary cleanup refactoring already combines all local
+ * changes into one preview, apply operation, and undo.&lt;/p&gt;
+ *
+ * &lt;p&gt;Plans must not retain AST nodes from the planning parser. Previous cleanups
+ * may change working copies before this cleanup receives its current AST. Store
+ * Java model handles, binding keys, signatures, and semantic edit descriptions,
+ * then resolve them again in {@link #createFixForPlan(Object, CleanUpContext)}.&lt;/p&gt;
+ *
+ * @param &lt;P&gt; immutable plan type
+ */
+public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractCleanUp
+		implements IMultiFileCleanUpScopeProvider {
+
+<span class="fc" id="L54">	private final Map&lt;IJavaProject, P&gt; plansByProject= new HashMap&lt;&gt;();</span>
+
+	/** Creates a base class without options. */
+<span class="fc" id="L57">	protected AbstractPlannedMultiFileCleanUp() {</span>
+<span class="fc" id="L58">	}</span>
+
+	/** Creates a base class with cleanup options. */
+	protected AbstractPlannedMultiFileCleanUp(Map&lt;String, String&gt; settings) {
+<span class="fc" id="L62">		super(settings);</span>
+<span class="fc" id="L63">	}</span>
+
+	/**
+	 * Analyses all selected units and creates the immutable run plan.
+	 *
+	 * @param project Java project being cleaned
+	 * @param compilationUnits complete selected scope for the project
+	 * @param monitor progress monitor
+	 * @return plan and diagnostics
+	 * @throws CoreException if analysis cannot be completed
+	 */
+	protected abstract MultiFileCleanUpPlanResult&lt;P&gt; createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException;
+
+	/**
+	 * Creates the local fix for the current compilation unit from the common plan.
+	 *
+	 * @param plan immutable project-wide plan
+	 * @param context current context, potentially containing a fresh AST after
+	 *                earlier cleanups
+	 * @return local fix or {@code null}
+	 * @throws CoreException if a planned edit can no longer be resolved safely
+	 */
+	protected abstract ICleanUpFix createFixForPlan(P plan, CleanUpContext context) throws CoreException;
+
+	@Override
+	public final RefactoringStatus checkPreConditions(IJavaProject project, ICompilationUnit[] compilationUnits,
+			IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L91">		plansByProject.remove(project);</span>
+		MultiFileCleanUpPlanResult&lt;P&gt; result;
+		try {
+<span class="fc" id="L94">			result= createPlan(project, compilationUnits.clone(), monitor);</span>
+<span class="pc" id="L95">		} catch (CoreException | RuntimeException e) {</span>
+<span class="nc" id="L96">			plansByProject.remove(project);</span>
+<span class="nc" id="L97">			throw e;</span>
+		}
+<span class="fc bfc" id="L99" title="All 4 branches covered.">		if (!result.status().hasFatalError() &amp;&amp; result.plan() != null) {</span>
+<span class="fc" id="L100">			plansByProject.put(project, result.plan());</span>
+		}
+<span class="fc" id="L102">		return result.status();</span>
+	}
+
+	@Override
+	public final ICleanUpFix createFix(CleanUpContext context) throws CoreException {
+<span class="fc" id="L107">		ICompilationUnit unit= context.getCompilationUnit();</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">		if (unit == null) {</span>
+<span class="nc" id="L109">			return null;</span>
+		}
+<span class="fc" id="L111">		P plan= plansByProject.get(unit.getJavaProject());</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		return plan == null ? null : createFixForPlan(plan, context);</span>
+	}
+
+	@Override
+	public final RefactoringStatus checkPostConditions(IProgressMonitor monitor) throws CoreException {
+		try {
+<span class="fc" id="L118">			return checkPlanPostConditions(monitor);</span>
+		} finally {
+<span class="fc" id="L120">			plansByProject.clear();</span>
+		}
+	}
+
+	/**
+	 * Hook for consumer-specific postcondition checks.
+	 *
+	 * @param monitor progress monitor
+	 * @return postcondition status
+	 * @throws CoreException if validation fails unexpectedly
+	 */
+	protected RefactoringStatus checkPlanPostConditions(IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L132">		return new RefactoringStatus();</span>
+	}
+
+	@Override
+	public final Collection&lt;ICompilationUnit&gt; expandCleanUpScope(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L138">		Collection&lt;ICompilationUnit&gt; result= discoverAdditionalCompilationUnits(project,</span>
+<span class="fc" id="L139">				Collections.unmodifiableCollection(currentScope), monitor);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		return result == null ? Collections.emptyList() : result;</span>
+	}
+
+	/**
+	 * Optional target-scope discovery used by a patched cleanup orchestrator.
+	 * The unpatched Eclipse cleanup framework simply never calls this method.
+	 *
+	 * @param project current Java project
+	 * @param currentScope immutable current target scope
+	 * @param monitor progress monitor
+	 * @return related compilation units, or an empty collection
+	 * @throws CoreException if discovery cannot be completed safely
+	 */
+	protected Collection&lt;ICompilationUnit&gt; discoverAdditionalCompilationUnits(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L155">		return Collections.emptyList();</span>
+	}
+
+	/**
+	 * Returns the currently retained plan for tests and specialised subclasses.
+	 *
+	 * @param project Java project
+	 * @return plan or {@code null}
+	 */
+	protected final P getPlan(IJavaProject project) {
+<span class="fc" id="L165">		return plansByProject.get(project);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

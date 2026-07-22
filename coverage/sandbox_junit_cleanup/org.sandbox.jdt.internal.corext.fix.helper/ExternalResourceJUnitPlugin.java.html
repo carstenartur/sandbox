@@ -89,8 +89,8 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, TypeDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (nodesprocessed.contains(node)) {</span>
-<span class="nc" id="L93">			return false;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (nodesprocessed.contains(node)) {</span>
+<span class="fc" id="L93">			return false;</span>
 		}
 
 		// For indirect subclasses, only process if they have lifecycle methods

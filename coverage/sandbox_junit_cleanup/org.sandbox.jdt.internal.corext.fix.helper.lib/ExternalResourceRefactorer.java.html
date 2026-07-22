@@ -198,12 +198,12 @@ public final class ExternalResourceRefactorer {
 			TextEditGroup group, ImportRewrite importRewriter) {
 <span class="fc" id="L199">		String ruleAnnotation = null;</span>
 
-<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_RULE)</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">		if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_RULE)</span>
 <span class="pc bpc" id="L202" title="1 of 2 branches missed.">				&amp;&amp; isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {</span>
 <span class="fc" id="L203">			ruleAnnotation = ORG_JUNIT_RULE;</span>
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		} else if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_CLASS_RULE)</span>
-<span class="pc bpc" id="L205" title="1 of 2 branches missed.">				&amp;&amp; isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {</span>
-<span class="fc" id="L206">			ruleAnnotation = ORG_JUNIT_CLASS_RULE;</span>
+<span class="pc bnc" id="L204" title="All 2 branches missed.">		} else if (AnnotationUtils.isAnnotatedWith(field, ORG_JUNIT_CLASS_RULE)</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">				&amp;&amp; isExternalResource(field, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {</span>
+<span class="nc" id="L206">			ruleAnnotation = ORG_JUNIT_CLASS_RULE;</span>
 		}
 
 <span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (ruleAnnotation != null) {</span>
@@ -475,8 +475,8 @@ public final class ExternalResourceRefactorer {
 <span class="fc" id="L475">		ImportHelper.addInterfaceCallback(listRewrite, ast, afterCallback, group, importRewriteToUse,</span>
 <span class="fc" id="L476">				importAfterCallback);</span>
 
-<span class="fc bfc" id="L478" title="All 2 branches covered.">		if (rewriteToUse != rewriter) {</span>
-<span class="fc" id="L479">			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);</span>
+<span class="pc bpc" id="L478" title="1 of 2 branches missed.">		if (rewriteToUse != rewriter) {</span>
+<span class="nc" id="L479">			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);</span>
 		}
 <span class="fc" id="L481">	}</span>
 

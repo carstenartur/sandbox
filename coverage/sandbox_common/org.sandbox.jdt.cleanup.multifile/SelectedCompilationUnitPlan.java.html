@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SelectedCompilationUnitPlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">SelectedCompilationUnitPlan.java</span></div><h1>SelectedCompilationUnitPlan.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+
+/**
+ * Minimal immutable plan describing the compilation units participating in one
+ * project cleanup run.
+ *
+ * @param projectHandle Java project handle
+ * @param compilationUnitHandles deterministic set of compilation-unit handles
+ */
+public record SelectedCompilationUnitPlan(String projectHandle, Set&lt;String&gt; compilationUnitHandles) {
+
+	/** Defensively copies plan data while retaining its deterministic order. */
+<span class="fc" id="L32">	public SelectedCompilationUnitPlan {</span>
+<span class="fc" id="L33">		compilationUnitHandles= Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;(compilationUnitHandles));</span>
+<span class="fc" id="L34">	}</span>
+
+	/**
+	 * Creates a plan from the selected units.
+	 *
+	 * @param project Java project
+	 * @param units selected compilation units
+	 * @return immutable selected-scope plan
+	 */
+	public static SelectedCompilationUnitPlan of(IJavaProject project, ICompilationUnit[] units) {
+<span class="fc" id="L44">		Set&lt;String&gt; handles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L45">		Arrays.stream(units).map(ICompilationUnit::getPrimary).map(IJavaElement::getHandleIdentifier).sorted()</span>
+<span class="fc" id="L46">				.forEach(handles::add);</span>
+<span class="fc" id="L47">		return new SelectedCompilationUnitPlan(project.getHandleIdentifier(), handles);</span>
+	}
+
+	/** Returns whether the unit belongs to this plan. */
+	public boolean contains(ICompilationUnit unit) {
+<span class="fc" id="L52">		return compilationUnitHandles.contains(unit.getPrimary().getHandleIdentifier());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

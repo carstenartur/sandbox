@@ -126,9 +126,9 @@ public final class ASTNavigationUtils {
 <span class="fc" id="L126">		cu.accept(new ASTVisitor() {</span>
 			private boolean checkAndMatchBinding(AbstractTypeDeclaration node, ITypeBinding typeBinding) {
 <span class="fc" id="L128">				ITypeBinding binding = node.resolveBinding();</span>
-<span class="pc bpc" id="L129" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ASTNodes.areBindingsEqual(binding, typeBinding)) {</span>
-<span class="fc" id="L130">					result[0] = (TypeDeclaration) node;</span>
-<span class="fc" id="L131">					return false;</span>
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ASTNodes.areBindingsEqual(binding, typeBinding)) {</span>
+<span class="nc" id="L130">					result[0] = (TypeDeclaration) node;</span>
+<span class="nc" id="L131">					return false;</span>
 				}
 <span class="fc" id="L133">				return true;</span>
 			}
@@ -171,14 +171,14 @@ public final class ASTNavigationUtils {
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
 	public static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
-<span class="fc bfc" id="L174" title="All 2 branches covered.">		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {</span>
 <span class="fc" id="L175">			return typeDecl;</span>
 		}
 
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		for (TypeDeclaration nestedType : typeDecl.getTypes()) {</span>
-<span class="fc" id="L179">			TypeDeclaration result = findTypeDeclarationInType(nestedType, qualifiedTypeName);</span>
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			if (result != null) {</span>
-<span class="fc" id="L181">				return result;</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">		for (TypeDeclaration nestedType : typeDecl.getTypes()) {</span>
+<span class="nc" id="L179">			TypeDeclaration result = findTypeDeclarationInType(nestedType, qualifiedTypeName);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">			if (result != null) {</span>
+<span class="nc" id="L181">				return result;</span>
 			}
 		}
 <span class="nc" id="L184">		return null;</span>
@@ -197,7 +197,7 @@ public final class ASTNavigationUtils {
 <span class="nc" id="L197">			return null;</span>
 
 <span class="fc" id="L199">		TypeDeclaration typeDecl = findTypeDeclarationInCompilationUnit(typeBinding, cu);</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">		return typeDecl != null ? typeDecl : findTypeDeclarationInProject(typeBinding);</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		return typeDecl != null ? typeDecl : findTypeDeclarationInProject(typeBinding);</span>
 	}
 
 	/**
@@ -211,9 +211,9 @@ public final class ASTNavigationUtils {
 <span class="fc" id="L211">		ASTNode parent = typeDecl.getParent();</span>
 
 		// Process nested classes
-<span class="fc bfc" id="L214" title="All 2 branches covered.">		while (parent instanceof TypeDeclaration parentType) {</span>
-<span class="fc" id="L215">			qualifiedName.insert(0, parentType.getName().getIdentifier() + &quot;$&quot;); // $ for nested classes //$NON-NLS-1$</span>
-<span class="fc" id="L216">			parent = parentType.getParent();</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		while (parent instanceof TypeDeclaration parentType) {</span>
+<span class="nc" id="L215">			qualifiedName.insert(0, parentType.getName().getIdentifier() + &quot;$&quot;); // $ for nested classes //$NON-NLS-1$</span>
+<span class="nc" id="L216">			parent = parentType.getParent();</span>
 		}
 
 		// Add package name

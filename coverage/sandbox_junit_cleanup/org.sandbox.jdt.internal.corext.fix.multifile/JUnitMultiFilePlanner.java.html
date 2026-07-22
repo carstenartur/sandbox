@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitMultiFilePlanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitMultiFilePlanner.java</span></div><h1>JUnitMultiFilePlanner.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
+
+/** Builds the source-wide JUnit migration plan before per-file rewrites start. */
+public final class JUnitMultiFilePlanner {
+
+	private record ResourceType(String compilationUnitHandle, String typeBindingKey) {
+	}
+
+	private record RuleField(String compilationUnitHandle, String fieldBindingKey, String resourceTypeKey,
+			boolean classRule) {
+	}
+
+<span class="fc" id="L64">	private enum RuleKind {</span>
+<span class="fc" id="L65">		NONE,</span>
+<span class="fc" id="L66">		INSTANCE,</span>
+<span class="fc" id="L67">		CLASS</span>
+	}
+
+	private JUnitMultiFilePlanner() {
+	}
+
+	/**
+	 * Plans named ExternalResource migrations when the cleanup scope contains every
+	 * Java source compilation unit in the project.
+	 */
+	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; create(IJavaProject project,
+			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, IProgressMonitor monitor)
+			throws CoreException {
+<span class="fc" id="L80">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
+<span class="pc bpc" id="L81" title="1 of 4 branches missed.">		if (!migrateExternalResourceRules || selectedUnits.length == 0) {</span>
+<span class="fc" id="L82">			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));</span>
+		}
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L85">			throw new OperationCanceledException();</span>
+		}
+
+<span class="fc" id="L88">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
+<span class="fc" id="L89">		Set&lt;String&gt; selectedHandles= selectedScope.compilationUnitHandles();</span>
+<span class="fc" id="L90">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (ICompilationUnit unit : allProjectUnits) {</span>
+<span class="fc" id="L92">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
+		}
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (!selectedHandles.equals(projectHandles)) {</span>
+<span class="nc" id="L95">			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));</span>
+		}
+
+<span class="fc" id="L98">		Map&lt;String, CompilationUnit&gt; rootsByHandle= parse(project, selectedUnits, monitor);</span>
+<span class="fc" id="L99">		Map&lt;String, ResourceType&gt; resourcesByTypeKey= collectResourceTypes(rootsByHandle);</span>
+<span class="fc" id="L100">		List&lt;RuleField&gt; ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey);</span>
+<span class="fc" id="L101">		RefactoringStatus status= new RefactoringStatus();</span>
+<span class="fc" id="L102">		List&lt;ExternalResourceRuleMigration&gt; migrations= createMigrations(ruleFields, resourcesByTypeKey, status);</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
+<span class="nc" id="L104">			return new MultiFileCleanUpPlanResult&lt;&gt;(null, status);</span>
+		}
+<span class="fc" id="L106">		return new MultiFileCleanUpPlanResult&lt;&gt;(new JUnitMigrationPlan(selectedScope, migrations), status);</span>
+	}
+
+	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, ICompilationUnit[] units,
+			IProgressMonitor monitor) {
+<span class="fc" id="L111">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L112">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L113">		parser.setProject(project);</span>
+<span class="fc" id="L114">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L115">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L116">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L117">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L118">		parser.createASTs(units, new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L121">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L122">			}</span>
+<span class="fc" id="L123">		}, monitor);</span>
+<span class="fc" id="L124">		return roots;</span>
+	}
+
+	private static Map&lt;String, ResourceType&gt; collectResourceTypes(Map&lt;String, CompilationUnit&gt; rootsByHandle) {
+<span class="fc" id="L128">		Map&lt;String, ResourceType&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
+<span class="fc" id="L130">			String unitHandle= entry.getKey();</span>
+<span class="fc" id="L131">			entry.getValue().accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L134">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">					if (directlyExtendsExternalResource(binding)) {</span>
+<span class="fc" id="L136">						String typeKey= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">						if (typeKey != null) {</span>
+<span class="fc" id="L138">							result.put(typeKey, new ResourceType(unitHandle, typeKey));</span>
+						}
+					}
+<span class="fc" id="L141">					return true;</span>
+				}
+			});
+		}
+<span class="fc" id="L145">		return result;</span>
+	}
+
+	private static List&lt;RuleField&gt; collectRuleFields(Map&lt;String, CompilationUnit&gt; rootsByHandle,
+			Map&lt;String, ResourceType&gt; resourcesByTypeKey) {
+<span class="fc" id="L150">		List&lt;RuleField&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
+<span class="fc" id="L152">			String unitHandle= entry.getKey();</span>
+<span class="fc" id="L153">			entry.getValue().accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(FieldDeclaration node) {
+<span class="fc" id="L156">					RuleKind kind= ruleKind(node);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">					boolean classRule= kind == RuleKind.CLASS;</span>
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">					if (kind == RuleKind.NONE || node.fragments().size() != 1</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">							|| classRule != Modifier.isStatic(node.getModifiers())) {</span>
+<span class="fc" id="L160">						return true;</span>
+					}
+<span class="fc" id="L162">					VariableDeclarationFragment fragment= (VariableDeclarationFragment) node.fragments().get(0);</span>
+<span class="fc" id="L163">					IVariableBinding fieldBinding= fragment.resolveBinding();</span>
+<span class="fc" id="L164">					ITypeBinding resourceBinding= resourceTypeBinding(fragment, fieldBinding);</span>
+<span class="fc" id="L165">					String resourceTypeKey= JUnitMigrationPlan.typeKey(resourceBinding);</span>
+<span class="fc" id="L166">					ResourceType resource= resourcesByTypeKey.get(resourceTypeKey);</span>
+<span class="pc bpc" id="L167" title="1 of 4 branches missed.">					if (fieldBinding == null || resource == null) {</span>
+<span class="fc" id="L168">						return true;</span>
+					}
+<span class="fc" id="L170">					String fieldKey= fieldBinding.getVariableDeclaration().getKey();</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">					if (fieldKey != null) {</span>
+<span class="fc" id="L172">						result.add(new RuleField(unitHandle, fieldKey, resourceTypeKey, classRule));</span>
+					}
+<span class="fc" id="L174">					return true;</span>
+				}
+			});
+		}
+<span class="fc" id="L178">		return result;</span>
+	}
+
+	private static List&lt;ExternalResourceRuleMigration&gt; createMigrations(List&lt;RuleField&gt; fields,
+			Map&lt;String, ResourceType&gt; resourcesByTypeKey, RefactoringStatus status) {
+<span class="fc" id="L183">		Map&lt;String, Boolean&gt; modeByResourceType= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L184">		List&lt;ExternalResourceRuleMigration&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">		for (RuleField field : fields) {</span>
+<span class="fc" id="L186">			Boolean previousMode= modeByResourceType.putIfAbsent(field.resourceTypeKey(), field.classRule());</span>
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">			if (previousMode != null &amp;&amp; previousMode.booleanValue() != field.classRule()) {</span>
+<span class="nc" id="L188">				status.addFatalError(&quot;The ExternalResource type is used by both @Rule and @ClassRule fields; &quot; //$NON-NLS-1$</span>
+						+ &quot;one callback lifecycle cannot safely represent both usages.&quot;); //$NON-NLS-1$
+<span class="nc" id="L190">				continue;</span>
+			}
+<span class="fc" id="L192">			ResourceType resource= resourcesByTypeKey.get(field.resourceTypeKey());</span>
+<span class="fc" id="L193">			result.add(new ExternalResourceRuleMigration(field.compilationUnitHandle(), field.fieldBindingKey(),</span>
+<span class="fc" id="L194">					resource.compilationUnitHandle(), resource.typeBindingKey(), field.classRule()));</span>
+		}
+<span class="fc" id="L196">		return List.copyOf(result);</span>
+	}
+
+	private static RuleKind ruleKind(FieldDeclaration field) {
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L202">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">				if (binding == null) {</span>
+<span class="nc" id="L204">					continue;</span>
+				}
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L207">					return RuleKind.INSTANCE;</span>
+				}
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">				if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L210">					return RuleKind.CLASS;</span>
+				}
+			}
+		}
+<span class="fc" id="L214">		return RuleKind.NONE;</span>
+	}
+
+	private static ITypeBinding resourceTypeBinding(VariableDeclarationFragment fragment,
+			IVariableBinding fieldBinding) {
+<span class="fc" id="L219">		Expression initializer= fragment.getInitializer();</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (initializer instanceof ClassInstanceCreation creation) {</span>
+<span class="fc" id="L221">			ITypeBinding binding= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">			if (binding != null) {</span>
+<span class="fc" id="L223">				return binding;</span>
+			}
+		}
+<span class="nc bnc" id="L226" title="All 2 branches missed.">		return fieldBinding == null ? null : fieldBinding.getType();</span>
+	}
+
+	private static boolean directlyExtendsExternalResource(ITypeBinding binding) {
+<span class="pc bpc" id="L230" title="2 of 4 branches missed.">		if (binding == null || binding.getSuperclass() == null) {</span>
+<span class="nc" id="L231">			return false;</span>
+		}
+<span class="fc" id="L233">		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getErasure().getQualifiedName());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
