@@ -137,21 +137,31 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 		LoopModel model= conversion.extractedLoop().model;
 		TerminalOperation terminal= model.getTerminal();
 		VariableDeclarationStatement accumulatorDeclaration= null;
+		String liftedAccumulatorName= null;
 		if (terminal instanceof CollectTerminal collectTerminal) {
-			accumulatorDeclaration= findAccumulatorDeclaration(visited, collectTerminal.targetVariable());
+			liftedAccumulatorName= collectTerminal.targetVariable();
+			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);
 			if (accumulatorDeclaration == null
-					|| !collectTerminal.targetVariable().equals(
+					|| !liftedAccumulatorName.equals(
 							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))) {
 				return;
 			}
 		} else if (terminal instanceof ReduceTerminal reduceTerminal) {
-			accumulatorDeclaration= findAccumulatorDeclaration(visited, reduceTerminal.targetVariable());
-			VariableDeclarationFragment fragment= singleFragment(accumulatorDeclaration, reduceTerminal.targetVariable());
+			liftedAccumulatorName= reduceTerminal.targetVariable();
+			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);
+			VariableDeclarationFragment fragment= singleFragment(accumulatorDeclaration, liftedAccumulatorName);
 			if (fragment == null || fragment.getInitializer() == null) {
 				return;
 			}
 			model.setTerminal(new ReduceTerminal(fragment.getInitializer().toString(), reduceTerminal.accumulator(),
-					reduceTerminal.combiner(), reduceTerminal.reduceType(), reduceTerminal.targetVariable()));
+					reduceTerminal.combiner(), reduceTerminal.reduceType(), liftedAccumulatorName));
+		}
+
+		Set<String> liftedAccumulatorNames= liftedAccumulatorName == null
+				? Set.of()
+				: Set.of(liftedAccumulatorName);
+		if (LambdaCaptureSafety.hasUnsafeCapture(conversion.pattern().loopBody(), liftedAccumulatorNames)) {
+			return;
 		}
 
 		AST ast= cuRewrite.getRoot().getAST();
