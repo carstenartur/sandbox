@@ -1,6 +1,9 @@
 name: Functional Converter Diagnostic
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - fix/functional-disabled-tests
