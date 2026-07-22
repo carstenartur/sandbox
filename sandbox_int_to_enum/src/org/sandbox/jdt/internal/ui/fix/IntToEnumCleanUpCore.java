@@ -49,6 +49,7 @@ import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
+import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
@@ -139,7 +140,8 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 			return List.of();
 		}
 
-		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project);
+		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project, currentScope,
+				SourceRootPolicy.PRODUCTION_WITH_DEPENDENT_TESTS);
 		Set<String> projectHandles= handles(projectUnits);
 		if (!currentHandles.containsAll(projectHandles)) {
 			pendingExpandedScopes.put(project, projectHandles);
