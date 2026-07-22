@@ -1,0 +1,311 @@
+name: Apply Int-to-Enum diagnostics
+
+on:
+  push:
+    branches: [ issue-1214-cleanup-diagnostics ]
+    paths:
+      - '.github/workflows/apply-int-enum-diagnostics.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: issue-1214-cleanup-diagnostics
+          fetch-depth: 0
+      - name: Apply verified candidate diagnostics patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/multifile/IntEnumMultiFilePlanner.java')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one match, found {count}: {old[:100]!r}')
+              text = text.replace(old, new)
+
+          replace_once(
+              '''import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+          import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
+          ''',
+              '''import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+          import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
+          import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
+          import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+          import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
+          import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
+          ''')
+
+          replace_once(
+              '''\tprivate static final class CandidateBuilder {
+          ''',
+              '''\tprivate record DiscoveryResult(List<CandidateBuilder> builders,
+          \t\t\tList<MultiFileCandidateDiagnostic> diagnostics) {
+          \t}
+
+          \tprivate static final class CandidateBuilder {
+          ''')
+
+          replace_once(
+              '''\t\tprivate final Set<String> constantBindingKeys= new LinkedHashSet<>();
+          \t\tprivate final Map<Expression, String> recognisedReferences= new LinkedHashMap<>();
+          \t\tprivate boolean invalid;
+          ''',
+              '''\t\tprivate final Set<String> constantBindingKeys= new LinkedHashSet<>();
+          \t\tprivate final Map<Expression, String> recognisedReferences= new LinkedHashMap<>();
+          \t\tprivate final Set<String> rejectionCodes= new LinkedHashSet<>();
+          \t\tprivate boolean invalid;
+          ''')
+
+          replace_once(
+              '''\t\tCandidateBuilder(String ownerTypeKey, String ownerUnitHandle, String ownerQualifiedName,
+          \t\t\t\tString enumName, String methodBindingKey, String methodUnitHandle, String parameterName,
+          \t\t\t\tList<IntEnumConstant> constants) {
+          ''',
+              '''\t\tCandidateBuilder(String ownerTypeKey, String ownerUnitHandle, String ownerQualifiedName,
+          \t\t\t\tString enumName, String methodBindingKey, String methodUnitHandle, String parameterName,
+          \t\t\t\tList<IntEnumConstant> constants) {
+          ''')
+
+          replace_once(
+              '''\t\t\tfor (IntEnumConstant constant : constants) {
+          \t\t\t\tconstantBindingKeys.add(constant.bindingKey());
+          \t\t\t}
+          \t\t}
+          \t}
+          ''',
+              '''\t\t\tfor (IntEnumConstant constant : constants) {
+          \t\t\t\tconstantBindingKeys.add(constant.bindingKey());
+          \t\t\t}
+          \t\t}
+
+          \t\tvoid reject(String reasonCode) {
+          \t\t\tinvalid= true;
+          \t\t\trejectionCodes.add(reasonCode);
+          \t\t}
+          \t}
+          ''')
+
+          replace_once(
+              '''\t\tList<CandidateBuilder> builders= discoverCandidates(roots, monitor);
+          \t\tMultiFilePlanningBudget.checkCanceled(monitor);
+          \t\tvalidateReferences(roots, builders, monitor);
+          \t\tMultiFilePlanningBudget.checkCanceled(monitor);
+          \t\tList<IntEnumCandidate> candidates= freeze(builders, monitor);
+          \t\tMultiFilePlanningMetrics metrics= budget.metrics()
+          ''',
+              '''\t\tDiscoveryResult discovery= discoverCandidates(roots, monitor);
+          \t\tList<CandidateBuilder> builders= discovery.builders();
+          \t\tList<MultiFileCandidateDiagnostic> candidateDiagnostics= new ArrayList<>(discovery.diagnostics());
+          \t\tMultiFilePlanningBudget.checkCanceled(monitor);
+          \t\tvalidateReferences(roots, builders, monitor);
+          \t\tMultiFilePlanningBudget.checkCanceled(monitor);
+          \t\tList<IntEnumCandidate> candidates= freeze(builders, candidateDiagnostics, monitor);
+          \t\tMultiFilePlanningMetrics metrics= budget.metrics()
+          ''')
+
+          replace_once(
+              '''\t\treturn MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, candidates),
+          \t\t\t\tbudget.status(), metrics);
+          ''',
+              '''\t\tMultiFileCleanUpDiagnostics diagnostics= new MultiFileCleanUpDiagnostics("int-to-enum", //$NON-NLS-1$
+          \t\t\t\tMultiFileScopeDiagnostic.empty(), candidateDiagnostics);
+          \t\treturn MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, candidates),
+          \t\t\t\tbudget.status(), metrics, diagnostics);
+          ''')
+
+          replace_once(
+              '''\tprivate static List<CandidateBuilder> discoverCandidates(Map<String, CompilationUnit> roots,
+          \t\t\tIProgressMonitor monitor) {
+          \t\tList<CandidateBuilder> result= new ArrayList<>();
+          \t\tSet<String> claimedConstants= new HashSet<>();
+          ''',
+              '''\tprivate static DiscoveryResult discoverCandidates(Map<String, CompilationUnit> roots,
+          \t\t\tIProgressMonitor monitor) {
+          \t\tList<CandidateBuilder> result= new ArrayList<>();
+          \t\tList<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>();
+          \t\tSet<String> claimedConstants= new HashSet<>();
+          ''')
+
+          replace_once(
+              '''\t\t\t\t\t\tString enumName= enumName(constants);
+          \t\t\t\t\t\tif (enumName == null || hasNestedTypeNamed(type, enumName)) {
+          \t\t\t\t\t\t\tcontinue;
+          \t\t\t\t\t\t}
+          \t\t\t\t\t\tConditionalChain chain= extractConditionalChain(method, parameter.getName().getIdentifier(),
+          \t\t\t\t\t\t\t\tconstantNames);
+          \t\t\t\t\t\tif (chain == null || chain.constants().size() < 2) {
+          \t\t\t\t\t\t\tcontinue;
+          \t\t\t\t\t\t}
+          ''',
+              '''\t\t\t\t\t\tString enumName= enumName(constants);
+          \t\t\t\t\t\tif (enumName == null) {
+          \t\t\t\t\t\t\tcontinue;
+          \t\t\t\t\t\t}
+          \t\t\t\t\t\tif (hasNestedTypeNamed(type, enumName)) {
+          \t\t\t\t\t\t\tdiagnostics.add(MultiFileCandidateDiagnostic.rejected(methodBinding.getKey(), unitHandle,
+          \t\t\t\t\t\t\t\t\t"NESTED_ENUM_NAME_CONFLICT", //$NON-NLS-1$
+          \t\t\t\t\t\t\t\t\t"A nested type already uses the generated enum name " + enumName + '.', //$NON-NLS-1$
+          \t\t\t\t\t\t\t\t\tList.of(unitHandle)));
+          \t\t\t\t\t\t\tcontinue;
+          \t\t\t\t\t\t}
+          \t\t\t\t\t\tConditionalChain chain= extractConditionalChain(method, parameter.getName().getIdentifier(),
+          \t\t\t\t\t\t\t\tconstantNames);
+          \t\t\t\t\t\tif (chain == null || chain.constants().size() < 2) {
+          \t\t\t\t\t\t\tdiagnostics.add(MultiFileCandidateDiagnostic.rejected(methodBinding.getKey(), unitHandle,
+          \t\t\t\t\t\t\t\t\t"UNSUPPORTED_CONDITIONAL_CHAIN", //$NON-NLS-1$
+          \t\t\t\t\t\t\t\t\t"The method does not contain one supported exhaustive constant comparison chain.", //$NON-NLS-1$
+          \t\t\t\t\t\t\t\t\tList.of(unitHandle)));
+          \t\t\t\t\t\t\tcontinue;
+          \t\t\t\t\t\t}
+          ''')
+
+          replace_once(
+              '''\t\t\t\t\t\tfor (IntEnumConstant constant : selectedConstants) {
+          \t\t\t\t\t\t\tif (!claimedConstants.add(constant.bindingKey())) {
+          \t\t\t\t\t\t\t\tcandidate.invalid= true;
+          \t\t\t\t\t\t\t}
+          \t\t\t\t\t\t}
+          \t\t\t\t\t\tresult.add(candidate);
+          ''',
+              '''\t\t\t\t\t\tfor (IntEnumConstant constant : selectedConstants) {
+          \t\t\t\t\t\t\tif (!claimedConstants.add(constant.bindingKey())) {
+          \t\t\t\t\t\t\t\tcandidate.reject("OVERLAPPING_CONSTANT_GROUP"); //$NON-NLS-1$
+          \t\t\t\t\t\t\t}
+          \t\t\t\t\t\t}
+          \t\t\t\t\t\tdiagnostics.add(new MultiFileCandidateDiagnostic(candidate.methodBindingKey,
+          \t\t\t\t\t\t\t\tunitHandle, MultiFileCandidateOutcome.FOUND, "CANDIDATE_FOUND", //$NON-NLS-1$
+          \t\t\t\t\t\t\t\t"A package-private int-state method and constant group were found.", //$NON-NLS-1$
+          \t\t\t\t\t\t\t\tList.of(unitHandle)));
+          \t\t\t\t\t\tresult.add(candidate);
+          ''')
+
+          replace_once(
+              '''\t\treturn result;
+          \t}
+
+          \tprivate static void validateReferences''',
+              '''\t\treturn new DiscoveryResult(List.copyOf(result), List.copyOf(diagnostics));
+          \t}
+
+          \tprivate static void validateReferences''')
+
+          replace_once(
+              '''\t\t\t\t\tif (Modifier.isPublic(candidate.methodModifiers)) {
+          \t\t\t\t\t\tcandidate.invalid= true;
+          \t\t\t\t\t\treturn true;
+          \t\t\t\t\t}
+          ''',
+              '''\t\t\t\t\tif (Modifier.isPublic(candidate.methodModifiers)) {
+          \t\t\t\t\t\tcandidate.reject("PUBLIC_API_BOUNDARY"); //$NON-NLS-1$
+          \t\t\t\t\t\treturn true;
+          \t\t\t\t\t}
+          ''')
+
+          replace_once(
+              '''\t\t\t\t\tif (!candidate.constantBindingKeys.contains(argumentBinding.getKey())) {
+          \t\t\t\t\t\tcandidate.invalid= true;
+          \t\t\t\t\t\treturn true;
+          \t\t\t\t\t}
+          ''',
+              '''\t\t\t\t\tif (!candidate.constantBindingKeys.contains(argumentBinding.getKey())) {
+          \t\t\t\t\t\tcandidate.reject("UNSUPPORTED_ARGUMENT_EXPRESSION"); //$NON-NLS-1$
+          \t\t\t\t\t\treturn true;
+          \t\t\t\t\t}
+          ''')
+
+          replace_once(
+              '''\t\t\t\t\t} else {
+          \t\t\t\t\t\tcandidate.invalid= true;
+          \t\t\t\t\t}
+          ''',
+              '''\t\t\t\t\t} else {
+          \t\t\t\t\t\tcandidate.reject("UNSUPPORTED_CONSTANT_USAGE"); //$NON-NLS-1$
+          \t\t\t\t\t}
+          ''')
+
+          replace_once(
+              '''\tprivate static List<IntEnumCandidate> freeze(List<CandidateBuilder> builders, IProgressMonitor monitor) {
+          \t\tList<IntEnumCandidate> result= new ArrayList<>();
+          \t\tfor (CandidateBuilder builder : builders) {
+          \t\t\tMultiFilePlanningBudget.checkCanceled(monitor);
+          \t\t\tif (builder.invalid || builder.recognisedReferences.isEmpty()) {
+          \t\t\t\tcontinue;
+          \t\t\t}
+          ''',
+              '''\tprivate static List<IntEnumCandidate> freeze(List<CandidateBuilder> builders,
+          \t\t\tList<MultiFileCandidateDiagnostic> diagnostics, IProgressMonitor monitor) {
+          \t\tList<IntEnumCandidate> result= new ArrayList<>();
+          \t\tfor (CandidateBuilder builder : builders) {
+          \t\t\tMultiFilePlanningBudget.checkCanceled(monitor);
+          \t\t\tList<String> relatedHandles= relatedHandles(builder);
+          \t\t\tif (builder.recognisedReferences.isEmpty()) {
+          \t\t\t\tbuilder.reject("NO_REFERENCE_REQUIRES_MIGRATION"); //$NON-NLS-1$
+          \t\t\t}
+          \t\t\tif (builder.invalid) {
+          \t\t\t\tString reasonCode= String.join("+", builder.rejectionCodes); //$NON-NLS-1$
+          \t\t\t\tdiagnostics.add(MultiFileCandidateDiagnostic.rejected(builder.methodBindingKey,
+          \t\t\t\t\t\tbuilder.ownerUnitHandle, reasonCode,
+          \t\t\t\t\t\t"The candidate was rejected because a complete source-compatible migration could not be proved.", //$NON-NLS-1$
+          \t\t\t\t\t\trelatedHandles));
+          \t\t\t\tcontinue;
+          \t\t\t}
+          \t\t\tdiagnostics.add(new MultiFileCandidateDiagnostic(builder.methodBindingKey,
+          \t\t\t\t\tbuilder.ownerUnitHandle, MultiFileCandidateOutcome.APPLICABLE, "SEMANTICALLY_APPLICABLE", //$NON-NLS-1$
+          \t\t\t\t\t"All recognised method and constant references can be migrated together.", relatedHandles)); //$NON-NLS-1$
+          ''')
+
+          replace_once(
+              '''\t\t\tresult.add(new IntEnumCandidate(builder.ownerTypeKey, builder.ownerUnitHandle,
+          \t\t\t\t\tbuilder.ownerQualifiedName, builder.enumName, builder.methodBindingKey, builder.methodUnitHandle,
+          \t\t\t\t\tbuilder.parameterName, builder.constants, references));
+          \t\t}
+          \t\treturn result;
+          \t}
+          ''',
+              '''\t\t\tresult.add(new IntEnumCandidate(builder.ownerTypeKey, builder.ownerUnitHandle,
+          \t\t\t\t\tbuilder.ownerQualifiedName, builder.enumName, builder.methodBindingKey, builder.methodUnitHandle,
+          \t\t\t\t\tbuilder.parameterName, builder.constants, references));
+          \t\t\tdiagnostics.add(MultiFileCandidateDiagnostic.transformed(builder.methodBindingKey,
+          \t\t\t\t\tbuilder.ownerUnitHandle,
+          \t\t\t\t\t"The enum declaration, method signature, constant references and callers are in the immutable plan.", //$NON-NLS-1$
+          \t\t\t\t\trelatedHandles));
+          \t\t}
+          \t\treturn result;
+          \t}
+
+          \tprivate static List<String> relatedHandles(CandidateBuilder builder) {
+          \t\tSet<String> handles= new LinkedHashSet<>();
+          \t\thandles.add(builder.ownerUnitHandle);
+          \t\thandles.add(builder.methodUnitHandle);
+          \t\tfor (Expression reference : builder.recognisedReferences.keySet()) {
+          \t\t\tCompilationUnit root= root(reference);
+          \t\t\tif (root != null && root.getJavaElement() instanceof ICompilationUnit unit) {
+          \t\t\t\thandles.add(unit.getPrimary().getHandleIdentifier());
+          \t\t\t}
+          \t\t}
+          \t\treturn handles.stream().sorted().toList();
+          \t}
+          ''')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          git diff --check
+      - name: Commit patch and remove one-shot workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/apply-int-enum-diagnostics.yml
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add sandbox_int_to_enum sandbox_common sandbox_common_test
+          git commit -m 'Report Int-to-Enum candidate decisions'
+          git push origin HEAD:issue-1214-cleanup-diagnostics
