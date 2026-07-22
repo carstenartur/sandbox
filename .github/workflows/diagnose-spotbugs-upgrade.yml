@@ -23,6 +23,8 @@ jobs:
         with:
           maven-version: 3.9.14
       - name: Run analyzer and publish concise failure context
+        id: analyze
+        continue-on-error: true
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,8 +40,22 @@ jobs:
             echo
             echo '```text'
             grep -E 'BugInstance|SpotBugs|spotbugs|High:|Medium:|Low:|Total bugs|\[ERROR\]|BUILD FAILURE|Failed to execute' \
-              spotbugs-upgrade.log | tail -n 80 || true
+              spotbugs-upgrade.log | tail -n 120 || true
             echo '```'
           } > diagnostics.md
           gh pr comment "${{ github.event.pull_request.number }}" --body-file diagnostics.md
+          echo "$status" > analyzer-status.txt
           exit "$status"
+      - name: Upload concise diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spotbugs-upgrade-diagnostics
+          path: |
+            diagnostics.md
+            analyzer-status.txt
+          retention-days: 1
+          if-no-files-found: error
+      - name: Fail when the analyzer failed
+        if: steps.analyze.outcome == 'failure'
+        run: exit 1
