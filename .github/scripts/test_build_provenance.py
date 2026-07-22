@@ -90,7 +90,7 @@ class BuildManifestTest(unittest.TestCase):
 
             environment = {
                 "GITHUB_REPOSITORY": "carstenartur/sandbox",
-                "GITHUB_SHA": "abc123",
+                "GITHUB_SHA": "workflow-context-sha",
                 "GITHUB_SERVER_URL": "https://github.com",
                 "GITHUB_RUN_ID": "99",
                 "GITHUB_WORKFLOW": "Post-merge Build Provenance",
@@ -98,15 +98,22 @@ class BuildManifestTest(unittest.TestCase):
             with patch.dict(os.environ, environment, clear=False), patch.object(
                 manifest_module, "command_version", return_value="tool version"
             ):
-                manifest = manifest_module.build_manifest(root, workflow_file)
+                manifest = manifest_module.build_manifest(
+                    root,
+                    workflow_file,
+                    commit_sha="validated-main-sha",
+                    source_ref="refs/heads/main",
+                )
 
-            self.assertEqual("abc123", manifest["commit_sha"])
+            self.assertEqual("validated-main-sha", manifest["commit_sha"])
+            self.assertEqual("refs/heads/main", manifest["ref"])
             self.assertEqual("5.0.3", manifest["toolchain"]["tycho_version"])
             self.assertEqual("2025-12", manifest["toolchain"]["eclipse_release"])
             self.assertEqual(10, manifest["tests"]["inventory"]["total_tests"])
             self.assertEqual(3, manifest["tests"]["executed"]["tests"])
             self.assertEqual(1, manifest["tests"]["executed"]["failures"])
             self.assertEqual("built", manifest["artifacts"]["product_status"])
+            self.assertEqual(1, manifest["artifacts"]["product_tree"]["file_count"])
             self.assertEqual("built", manifest["artifacts"]["update_site_status"])
             self.assertEqual(2, manifest["artifacts"]["update_site"]["file_count"])
             self.assertEqual(1, len(manifest["toolchain"]["target_definitions"]))
