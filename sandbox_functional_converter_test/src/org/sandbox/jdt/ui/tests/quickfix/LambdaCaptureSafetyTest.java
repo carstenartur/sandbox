@@ -100,6 +100,38 @@ public class LambdaCaptureSafetyTest {
 				""");
 	}
 
+	@Test
+	void iteratorEffectivelyFinalCaptureRemainsConvertible() throws CoreException {
+		String source= """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					void process(List<String> source) {
+						String prefix = "item=";
+						Iterator<String> iterator = source.iterator();
+						while (iterator.hasNext()) {
+							String item = iterator.next();
+							System.out.println(prefix + item);
+						}
+					}
+				}
+				""";
+		String expected= """
+				package test1;
+				import java.util.*;
+				class MyTest {
+					void process(List<String> source) {
+						String prefix = "item=";
+						source.stream().forEach(item -> System.out.println(prefix + item));
+					}
+				}
+				""";
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("MyTest.java", source, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { expected }, null);
+	}
+
 	private void assertNoChange(String source) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("MyTest.java", source, false, null); //$NON-NLS-1$
