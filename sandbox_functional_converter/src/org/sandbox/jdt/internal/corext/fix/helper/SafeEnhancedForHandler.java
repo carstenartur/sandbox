@@ -72,23 +72,23 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 
 	private boolean capturesNonEffectivelyFinalLocal(EnhancedForStatement loop, LoopModel model) {
 		Set<String> localBindingKeys= new HashSet<>();
-		IVariableBinding parameterBinding= loop.getParameter().resolveBinding();
-		if (parameterBinding != null) {
-			localBindingKeys.add(parameterBinding.getVariableDeclaration().getKey());
-		}
+		boolean[] incompleteBindings= { !addBindingKey(localBindingKeys, loop.getParameter().resolveBinding()) };
 		loop.getBody().accept(new ASTVisitor() {
 			@Override
 			public boolean visit(VariableDeclarationFragment node) {
-				addBindingKey(localBindingKeys, node.resolveBinding());
+				incompleteBindings[0]|= !addBindingKey(localBindingKeys, node.resolveBinding());
 				return true;
 			}
 
 			@Override
 			public boolean visit(SingleVariableDeclaration node) {
-				addBindingKey(localBindingKeys, node.resolveBinding());
+				incompleteBindings[0]|= !addBindingKey(localBindingKeys, node.resolveBinding());
 				return true;
 			}
 		});
+		if (incompleteBindings[0]) {
+			return true;
+		}
 
 		Set<String> liftedAccumulatorKeys= liftedAccumulatorKeys(loop, model);
 		boolean[] unsafe= { false };
@@ -101,6 +101,10 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 				}
 				IVariableBinding declaration= variableBinding.getVariableDeclaration();
 				String key= declaration.getKey();
+				if (key == null) {
+					unsafe[0]= true;
+					return false;
+				}
 				if (!declaration.isField() && !localBindingKeys.contains(key)
 						&& !liftedAccumulatorKeys.contains(key) && !declaration.isEffectivelyFinal()) {
 					unsafe[0]= true;
@@ -131,7 +135,10 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			public boolean visit(SimpleName node) {
 				if (expectedName.equals(node.getIdentifier())
 						&& node.resolveBinding() instanceof IVariableBinding variableBinding) {
-					result.add(variableBinding.getVariableDeclaration().getKey());
+					String key= variableBinding.getVariableDeclaration().getKey();
+					if (key != null) {
+						result.add(key);
+					}
 				}
 				return true;
 			}
@@ -156,9 +163,15 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		return targetVariable.equals(CollectPatternDetector.isEmptyCollectionDeclaration(declaration));
 	}
 
-	private static void addBindingKey(Set<String> keys, IVariableBinding binding) {
-		if (binding != null) {
-			keys.add(binding.getVariableDeclaration().getKey());
+	private static boolean addBindingKey(Set<String> keys, IVariableBinding binding) {
+		if (binding == null) {
+			return false;
 		}
+		String key= binding.getVariableDeclaration().getKey();
+		if (key == null) {
+			return false;
+		}
+		keys.add(key);
+		return true;
 	}
 }
