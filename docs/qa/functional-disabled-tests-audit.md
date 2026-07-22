@@ -8,8 +8,8 @@ Disabled tests are not automatically specifications. Each case was checked again
 
 All Functional Converter tests are active:
 
-- **554 total**
-- **554 enabled**
+- **558 total**
+- **558 enabled**
 - **0 disabled**
 
 The implementation now supports the legitimate positive cases and rejects the legitimate safety cases described below.
@@ -27,8 +27,9 @@ The implementation now supports the legitimate positive cases and rejects the le
 | `existingTargetReassignedAfterLoopIsNotCaptured` | Legitimate safety test | An existing target that is reassigned after the loop is not effectively final and cannot be captured by a generated `forEach` lambda. |
 | `additionalCollectCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | A non-accumulator local referenced by the collected expression must remain effectively final. |
 | `forEachCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | A simple side-effecting loop cannot become `forEach` when its lambda would capture a subsequently reassigned local. |
+| `iteratorCaptureReassignedAfterLoopBlocksConversion` | Legitimate safety test | Iterator-loop conversion must enforce the same effectively-final capture rule as enhanced-for conversion. |
 
-The implementation compares iterated-source and mutation receivers through bindings, normalizes map views to their backing map, rejects unsafe external iterator-state mutation, refuses non-terminal accumulator mutation, and validates Java's effectively-final rule for every local that remains in a generated lambda. Missing binding identities fail closed.
+The implementation compares iterated-source and mutation receivers through bindings, normalizes map views to their backing map, rejects unsafe external iterator-state mutation, refuses non-terminal accumulator mutation, and validates Java's effectively-final rule for every local that remains in any generated loop lambda. Missing binding identities fail closed.
 
 ## Positive iterator pipelines
 
@@ -42,7 +43,8 @@ Supported and enabled:
 - iterator method-call map+collect;
 - iterator filter+collect;
 - iterator filter+map+collect;
-- iterator sum reduction.
+- iterator sum reduction;
+- effectively-final external captures in iterator `forEach` conversion.
 
 Collect and reduce are applied only when the loop is preceded by a matching fresh local accumulator declaration. The declaration and loop are replaced together. A pre-existing, field-backed, or otherwise aliased target is not overwritten. For reductions, the original initializer becomes the reduce identity.
 
@@ -82,7 +84,7 @@ A final field mutation such as `counter++` is rendered as a sequential `forEach`
 
 - Iterators with `remove()`, multiple `next()` calls, `break`, labeled `continue`, nested loops, unsupported try/synchronized control flow, or unsafe external-local mutation are not converted.
 - Existing/aliased accumulator replacement is forbidden unless the handler can preserve the original object through direct `forEach`.
-- Enhanced-for conversions are rejected when local binding recovery is incomplete or a generated lambda would capture a non-effectively-final local.
+- Loop conversions are rejected when local binding recovery is incomplete or a generated lambda would capture a non-effectively-final local.
 - Array existing-target collect remains unchanged until the stream renderer has an AST-preserving body path for arrays.
 - Weakly consistent concurrent collection iteration is not generalized from the copy-on-write cases.
 - Parallelization is never introduced implicitly.
