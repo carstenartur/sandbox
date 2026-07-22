@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   diagnose:
@@ -20,17 +22,24 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
-      - name: Run analyzer and print concise failure context
+      - name: Run analyzer and publish concise failure context
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
           mvn --batch-mode -ntp -T 1C \
             -DskipTests -Djacoco.skip=true -Dtycho.localArtifacts=ignore \
             clean verify > spotbugs-upgrade.log 2>&1
           status=$?
-          echo '=== SpotBugs and Maven diagnostics ==='
-          grep -E 'BugInstance|SpotBugs|spotbugs|High:|Medium:|Low:|Total bugs|\[ERROR\]|BUILD FAILURE|Failed to execute' \
-            spotbugs-upgrade.log | tail -n 180 || true
-          echo '=== final Maven output ==='
-          tail -n 100 spotbugs-upgrade.log
+          {
+            echo '<!-- spotbugs-upgrade-diagnostics -->'
+            echo '## SpotBugs upgrade diagnostics'
+            echo
+            echo '```text'
+            grep -E 'BugInstance|SpotBugs|spotbugs|High:|Medium:|Low:|Total bugs|\[ERROR\]|BUILD FAILURE|Failed to execute' \
+              spotbugs-upgrade.log | tail -n 80 || true
+            echo '```'
+          } > diagnostics.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file diagnostics.md
           exit "$status"
