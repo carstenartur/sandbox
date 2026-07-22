@@ -2,460 +2,135 @@ name: Deploy Snapshot to GitHub Pages
 
 on:
   workflow_run:
-    workflows: ["Java CI with Maven"]
-    types:
-      - completed
-    branches: [main]
-  workflow_dispatch:
+    workflows: [ 'Java CI with Maven' ]
+    types: [ completed ]
+    branches: [ main ]
 
 permissions:
-  contents: write  # Required: push to gh-pages branch for snapshot deployment
+  contents: write
+
+concurrency:
+  group: deploy-snapshot-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    # Only run if maven workflow succeeded (for workflow_run trigger)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    
+    timeout-minutes: 75
+    env:
+      VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+      VALIDATED_REF: refs/heads/main
+      SOURCE_JAVA_CI_RUN_ID: ${{ github.event.workflow_run.id }}
+      SOURCE_JAVA_CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
+
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0  # Required for jgit timestamp provider
+      - name: Checkout the validated commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.VALIDATED_SHA }}
+          fetch-depth: 0
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v5
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
 
-    - name: Cache Maven dependencies
-      uses: actions/cache@v5
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
-        restore-keys: ${{ runner.os }}-maven-
+      - name: Cache Maven dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
+          restore-keys: ${{ runner.os }}-maven-
 
-    - name: Build Update Site
-      run: mvn -Pproduct,repo -T 1C clean verify -DskipTests
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
 
-    - name: Prepare snapshot directory
-      run: |
-        mkdir -p gh-pages-content/snapshots/latest
-        cp -r sandbox_updatesite/target/repository/* gh-pages-content/snapshots/latest/
+      - name: Build product and update site
+        run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
 
-    - name: Create or update composite metadata
-      run: |
-        cd gh-pages-content/snapshots
-        
-        # Use current timestamp as fallback for manual triggers
-        TIMESTAMP="${{ github.event.head_commit.timestamp }}"
-        if [ -z "$TIMESTAMP" ]; then
-          TIMESTAMP="$(date +%s)000"
-        fi
-        
-        # Create compositeContent.xml
-        cat > compositeContent.xml << EOF
-        <?xml version='1.0' encoding='UTF-8'?>
-        <?compositeMetadataRepository version='1.0.0'?>
-        <repository name='Sandbox Snapshots'
-                    type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
-                    version='1.0.0'>
-          <properties size='1'>
-            <property name='p2.timestamp' value='$TIMESTAMP'/>
-          </properties>
-          <children size='1'>
-            <child location='latest'/>
-          </children>
-        </repository>
-        EOF
-        
-        # Create compositeArtifacts.xml
-        cat > compositeArtifacts.xml << EOF
-        <?xml version='1.0' encoding='UTF-8'?>
-        <?compositeArtifactRepository version='1.0.0'?>
-        <repository name='Sandbox Snapshots'
-                    type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
-                    version='1.0.0'>
-          <properties size='1'>
-            <property name='p2.timestamp' value='$TIMESTAMP'/>
-          </properties>
-          <children size='1'>
-            <child location='latest'/>
-          </children>
-        </repository>
-        EOF
+      - name: Generate snapshot build manifest
+        run: |
+          python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
+          python3 .github/scripts/generate_build_manifest.py \
+            --commit-sha "$VALIDATED_SHA" \
+            --source-ref "$VALIDATED_REF" \
+            --output build-manifest.json
+          python3 -m json.tool build-manifest.json > /dev/null
 
-    - name: Create modern dashboard index.html
-      run: |
-        cat > gh-pages-content/index.html << 'EOF'
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Sandbox - Eclipse JDT Cleanups & Tools Dashboard</title>
-            <style>
-                :root {
-                    --primary: #3498db;
-                    --primary-dark: #2c3e50;
-                    --secondary: #2ecc71;
-                    --warning: #f39c12;
-                    --danger: #e74c3c;
-                    --light-bg: #f8f9fa;
-                    --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                    --card-hover-shadow: 0 4px 16px rgba(0,0,0,0.15);
-                }
-                
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    background: var(--light-bg);
-                }
-                
-                .hero {
-                    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-                    color: white;
-                    padding: 3rem 2rem;
-                    text-align: center;
-                }
-                
-                .hero h1 {
-                    font-size: 2.5rem;
-                    margin-bottom: 0.5rem;
-                }
-                
-                .hero p {
-                    font-size: 1.2rem;
-                    opacity: 0.9;
-                }
-                
-                .badges {
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    gap: 0.5rem;
-                    margin-top: 1.5rem;
-                }
-                
-                .badges img {
-                    height: 20px;
-                }
-                
-                .container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 2rem;
-                }
-                
-                .section {
-                    margin-bottom: 3rem;
-                }
-                
-                .section h2 {
-                    color: var(--primary-dark);
-                    font-size: 1.8rem;
-                    margin-bottom: 1.5rem;
-                    border-bottom: 3px solid var(--primary);
-                    padding-bottom: 0.5rem;
-                }
-                
-                .card-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 1.5rem;
-                }
-                
-                .card {
-                    background: white;
-                    border-radius: 8px;
-                    padding: 1.5rem;
-                    box-shadow: var(--card-shadow);
-                    transition: all 0.3s ease;
-                }
-                
-                .card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: var(--card-hover-shadow);
-                }
-                
-                .card h3 {
-                    color: var(--primary-dark);
-                    font-size: 1.3rem;
-                    margin-bottom: 0.5rem;
-                }
-                
-                .card p {
-                    color: #666;
-                    margin-bottom: 1rem;
-                }
-                
-                .card a {
-                    color: var(--primary);
-                    text-decoration: none;
-                    font-weight: 500;
-                }
-                
-                .card a:hover {
-                    text-decoration: underline;
-                }
-                
-                .url-display {
-                    background: var(--light-bg);
-                    padding: 0.75rem;
-                    border-radius: 4px;
-                    font-family: 'Courier New', monospace;
-                    font-size: 0.9rem;
-                    word-break: break-all;
-                    margin-top: 0.5rem;
-                    border-left: 4px solid var(--primary);
-                }
-                
-                .badge-label {
-                    display: inline-block;
-                    padding: 0.25rem 0.75rem;
-                    border-radius: 12px;
-                    font-size: 0.85rem;
-                    font-weight: 500;
-                    margin-top: 0.5rem;
-                }
-                
-                .label-stable {
-                    background: var(--secondary);
-                    color: white;
-                }
-                
-                .label-dev {
-                    background: var(--warning);
-                    color: white;
-                }
-                
-                .install-steps {
-                    background: white;
-                    border-radius: 8px;
-                    padding: 2rem;
-                    box-shadow: var(--card-shadow);
-                }
-                
-                .install-steps ol {
-                    margin-left: 1.5rem;
-                }
-                
-                .install-steps li {
-                    margin-bottom: 0.75rem;
-                }
-                
-                footer {
-                    background: var(--primary-dark);
-                    color: white;
-                    padding: 2rem;
-                    text-align: center;
-                    margin-top: 3rem;
-                }
-                
-                footer a {
-                    color: var(--primary);
-                    text-decoration: none;
-                }
-                
-                footer a:hover {
-                    text-decoration: underline;
-                }
-                
-                @media (max-width: 640px) {
-                    .hero h1 {
-                        font-size: 1.8rem;
-                    }
-                    
-                    .card-grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="hero">
-                <h1>🛠️ Sandbox</h1>
-                <p>Eclipse JDT Cleanups & Automated Code Modernization</p>
-                
-                <div class="badges">
-                    <a href="https://github.com/carstenartur/sandbox/actions/workflows/maven.yml">
-                        <img src="https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg" alt="Maven CI">
-                    </a>
-                    <a href="https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml">
-                        <img src="https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg" alt="CodeQL">
-                    </a>
-                    <a href="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml">
-                        <img src="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg" alt="Coverage">
-                    </a>
-                    <a href="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml">
-                        <img src="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg" alt="Tests">
-                    </a>
-                    <a href="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml">
-                        <img src="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg" alt="Benchmarks">
-                    </a>
-                    <a href="https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml">
-                        <img src="https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg" alt="Snapshot Deploy">
-                    </a>
-                    <a href="https://marketplace.eclipse.org/content/sandbox">
-                        <img src="https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue" alt="Eclipse Marketplace">
-                    </a>
-                </div>
-            </div>
-            
-            <div class="container">
-                <section class="section">
-                    <h2>📊 Quality & Reports</h2>
-                    <div class="card-grid">
-                        <div class="card">
-                            <h3>🧪 Test Results</h3>
-                            <p>JUnit test reports for all modules with detailed pass/fail statistics.</p>
-                            <p style="margin: 10px 0;">
-                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml">
-                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg" alt="Test Report Status" style="height: 20px;">
-                                </a>
-                            </p>
-                            <a href="tests/">View Test Reports →</a>
-                        </div>
-                        
-                        <div class="card">
-                            <h3>📈 Code Coverage</h3>
-                            <p>JaCoCo coverage reports showing test coverage across the entire codebase.</p>
-                            <p style="margin: 10px 0;">
-                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml">
-                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg" alt="Coverage Status" style="height: 20px;">
-                                </a>
-                            </p>
-                            <a href="coverage/">View Coverage Report →</a>
-                        </div>
-                        
-                        <div class="card">
-                            <h3>⚡ Performance Benchmarks</h3>
-                            <p>JMH benchmark results tracking performance over time.</p>
-                            <p style="margin: 10px 0;">
-                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml">
-                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg" alt="Benchmark Status" style="height: 20px;">
-                                </a>
-                            </p>
-                            <a href="dev/bench/">View Performance Charts →</a>
-                        </div>
-                        
-                        <div class="card">
-                            <h3>🔍 Refactoring Mining</h3>
-                            <p>LLM-powered commit analysis with DSL rule proposals</p>
-                            <p style="margin: 10px 0;">
-                                <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
-                                    <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Mining Status" style="height: 20px;">
-                                </a>
-                            </p>
-                            <a href="mining-report/">View Mining Results →</a>
-                        </div>
-                    </div>
-                </section>
-                
-                <section class="section">
-                    <h2>📦 Distribution</h2>
-                    <div class="card-grid">
-                        <div class="card">
-                            <h3>Stable Release</h3>
-                            <span class="badge-label label-stable">Recommended</span>
-                            <p>Production-ready release with all features tested and validated.</p>
-                            <div class="url-display">https://carstenartur.github.io/sandbox/releases/</div>
-                            <p style="margin-top: 1rem;">
-                                <a href="releases/">Browse Update Site →</a>
-                            </p>
-                        </div>
-                        
-                        <div class="card">
-                            <h3>Snapshot</h3>
-                            <span class="badge-label label-dev">Development</span>
-                            <p>Latest development snapshot, updated automatically on every commit.</p>
-                            <div class="url-display">https://carstenartur.github.io/sandbox/snapshots/latest/</div>
-                            <p style="margin-top: 1rem;">
-                                <a href="snapshots/latest/">Browse Snapshot →</a>
-                            </p>
-                        </div>
-                    </div>
-                </section>
-                
-                <section class="section">
-                    <h2>🚀 Quick Install</h2>
-                    <div class="install-steps">
-                        <ol>
-                            <li>Open <strong>Eclipse IDE</strong></li>
-                            <li>Go to <strong>Help → Install New Software...</strong></li>
-                            <li>Click <strong>Add...</strong> to add a new update site</li>
-                            <li>Enter a name (e.g., "Sandbox") and paste one of the update site URLs above</li>
-                            <li>Select the cleanup features you want to install</li>
-                            <li>Follow the installation wizard and accept the license</li>
-                            <li>Restart Eclipse when prompted</li>
-                        </ol>
-                    </div>
-                </section>
-                
-                <section class="section">
-                    <h2>📚 Documentation & Links</h2>
-                    <div class="card-grid">
-                        <div class="card">
-                            <h3>Source Code</h3>
-                            <p>Browse the source code, open issues, and contribute to the project.</p>
-                            <a href="https://github.com/carstenartur/sandbox">GitHub Repository →</a>
-                        </div>
-                        
-                        <div class="card">
-                            <h3>Issues & Feedback</h3>
-                            <p>Report bugs, request features, or ask questions.</p>
-                            <a href="https://github.com/carstenartur/sandbox/issues">GitHub Issues →</a>
-                        </div>
-                        
-                        <!-- Placeholder for future feature
-                        <div class="card">
-                            <h3>API Documentation</h3>
-                            <p>Javadoc documentation for all public APIs.</p>
-                            <a href="javadoc/">View Javadoc →</a>
-                        </div>
-                        -->
-                    </div>
-                </section>
-            </div>
-            
-            <footer>
-                <p>
-                    <strong>Sandbox Project</strong> | 
-                    Eclipse Public License 2.0 | 
-                    <a href="https://github.com/carstenartur/sandbox">Source Code</a> | 
-                    <a href="https://github.com/carstenartur/sandbox/issues">Report Issues</a>
-                </p>
-                <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-                    © 2024–present Carsten Hammer and Contributors
-                </p>
-            </footer>
-        </body>
-        </html>
-        EOF
+      - name: Prepare snapshot and dashboard
+        run: |
+          snapshot_dir="gh-pages-content/snapshots/latest"
+          mkdir -p "$snapshot_dir"
+          cp -a sandbox_updatesite/target/repository/. "$snapshot_dir/"
+          cp build-manifest.json "$snapshot_dir/build-manifest.json"
+          cp .github/pages/index.html gh-pages-content/index.html
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./gh-pages-content
-        publish_branch: gh-pages
-        keep_files: true  # Don't remove existing files (for releases)
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Deploy snapshot update site'
+          mkdir -p gh-pages-content/snapshots
+          timestamp="$(date +%s)000"
+          cat > gh-pages-content/snapshots/compositeContent.xml << EOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <?compositeMetadataRepository version='1.0.0'?>
+          <repository name='Sandbox Snapshots'
+                      type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
+                      version='1.0.0'>
+            <properties size='1'>
+              <property name='p2.timestamp' value='$timestamp'/>
+            </properties>
+            <children size='1'>
+              <child location='latest'/>
+            </children>
+          </repository>
+          EOF
+          cat > gh-pages-content/snapshots/compositeArtifacts.xml << EOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <?compositeArtifactRepository version='1.0.0'?>
+          <repository name='Sandbox Snapshots'
+                      type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
+                      version='1.0.0'>
+            <properties size='1'>
+              <property name='p2.timestamp' value='$timestamp'/>
+            </properties>
+            <children size='1'>
+              <child location='latest'/>
+            </children>
+          </repository>
+          EOF
 
-    - name: Report Deployed URLs
-      if: always()
-      run: |
-        echo "### 🔗 Deployed Resources" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📊 [View Dashboard](https://carstenartur.github.io/sandbox/)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📦 [Latest Snapshot Update Site](https://carstenartur.github.io/sandbox/snapshots/latest/)" >> $GITHUB_STEP_SUMMARY
+      - name: Upload immutable snapshot provenance
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshot-provenance-${{ env.VALIDATED_SHA }}
+          path: build-manifest.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Deploy snapshot and dashboard
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages-content
+          publish_branch: gh-pages
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: Deploy snapshot for ${{ env.VALIDATED_SHA }}
+
+      - name: Report deployed resources
+        if: always()
+        run: |
+          {
+            echo '### Deployed resources'
+            echo
+            echo "- [Validated commit](https://github.com/${GITHUB_REPOSITORY}/commit/${VALIDATED_SHA})"
+            echo "- [Source Java CI run](${SOURCE_JAVA_CI_RUN_URL})"
+            echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
+            echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
+            echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
+          } >> "$GITHUB_STEP_SUMMARY"

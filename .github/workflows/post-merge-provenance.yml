@@ -1,0 +1,128 @@
+name: Post-merge Build Provenance
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/scripts/generate_build_manifest.py'
+      - '.github/scripts/collect_commit_workflows.py'
+      - '.github/scripts/test_build_provenance.py'
+      - '.github/workflows/post-merge-provenance.yml'
+      - '.github/workflows/core-module-build.yml'
+      - '.github/workflows/deploy-snapshot.yml'
+      - '.github/pages/index.html'
+      - 'docs/build-provenance.md'
+  workflow_run:
+    workflows: [ 'Java CI with Maven' ]
+    types: [ completed ]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: post-merge-provenance-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  validate-scripts:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Run provenance unit tests
+        run: python3 .github/scripts/test_build_provenance.py
+      - name: Generate a local manifest fixture
+        run: |
+          python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
+          python3 .github/scripts/generate_build_manifest.py \
+            --output build-manifest.json \
+            --html-output build-provenance.html
+          python3 -m json.tool build-manifest.json > /dev/null
+
+  publish-main-provenance:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      actions: read
+      contents: write
+    env:
+      COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+      GITHUB_TOKEN: ${{ github.token }}
+      SOURCE_JAVA_CI_RUN_ID: ${{ github.event.workflow_run.id }}
+      SOURCE_JAVA_CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - name: Checkout validated main commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Run provenance unit tests
+        run: python3 .github/scripts/test_build_provenance.py
+      - name: Collect exact validation runs for the main commit
+        run: |
+          python3 .github/scripts/collect_commit_workflows.py \
+            --commit "$COMMIT_SHA" \
+            --output related-workflow-runs.json \
+            --timeout-seconds 3600 \
+            --interval-seconds 30
+      - name: Download executed Java CI test reports
+        run: |
+          mkdir -p source-java-ci-artifacts
+          gh run download "$SOURCE_JAVA_CI_RUN_ID" \
+            --pattern 'test-reports-*' \
+            --dir source-java-ci-artifacts
+      - name: Generate test inventory
+        run: python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
+      - name: Generate provenance manifest and dashboard
+        run: |
+          publish_dir="/tmp/gh-pages/provenance"
+          commit_dir="$publish_dir/$COMMIT_SHA"
+          mkdir -p "$commit_dir"
+          python3 .github/scripts/generate_build_manifest.py \
+            --commit-sha "$COMMIT_SHA" \
+            --source-ref refs/heads/main \
+            --related-workflows related-workflow-runs.json \
+            --output "$commit_dir/build-manifest.json" \
+            --html-output "$publish_dir/index.html"
+          cp "$commit_dir/build-manifest.json" "$publish_dir/latest.json"
+          cp test-report.json "$commit_dir/test-report.json"
+          cp related-workflow-runs.json "$commit_dir/related-workflow-runs.json"
+      - name: Upload immutable provenance artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-provenance-${{ github.event.workflow_run.head_sha }}
+          path: |
+            /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/build-manifest.json
+            /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/test-report.json
+            /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/related-workflow-runs.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Publish provenance dashboard
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: /tmp/gh-pages/provenance
+          destination_dir: provenance
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: Publish build provenance for ${{ github.event.workflow_run.head_sha }}
