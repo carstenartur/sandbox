@@ -55,12 +55,11 @@ jobs:
         run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
 
       - name: Generate snapshot build manifest
-        env:
-          GITHUB_SHA: ${{ env.VALIDATED_SHA }}
-          GITHUB_REF: refs/heads/main
         run: |
           python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
           python3 .github/scripts/generate_build_manifest.py \
+            --commit-sha "$VALIDATED_SHA" \
+            --source-ref refs/heads/main \
             --output build-manifest.json
           python3 -m json.tool build-manifest.json > /dev/null
 
