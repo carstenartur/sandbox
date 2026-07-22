@@ -24,6 +24,12 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
+      - name: Install the local target definition
+        run: >-
+          mvn --batch-mode -ntp
+          -pl sandbox_target -am
+          -DskipTests -Dspotbugs.skip=true -Djacoco.skip=true
+          install
       - name: Verify XML cleanup and tests
         shell: bash
         run: |
@@ -33,7 +39,7 @@ jobs:
             -Djacoco.skip=true \
             clean verify > xml-resource-safety.log 2>&1
           status=$?
-          tail -n 160 xml-resource-safety.log
+          tail -n 200 xml-resource-safety.log
           exit "$status"
       - name: Upload focused build log
         if: always()
