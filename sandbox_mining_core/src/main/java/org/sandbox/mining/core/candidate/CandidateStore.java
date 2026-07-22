@@ -217,7 +217,9 @@ public class CandidateStore {
 	}
 
 	private static boolean isCandidateFile(Path path) {
+		Path fileName = path.getFileName();
 		return Files.isRegularFile(path)
-				&& path.getFileName().toString().endsWith("-candidate.json"); //$NON-NLS-1$
+				&& fileName != null
+				&& fileName.toString().endsWith("-candidate.json"); //$NON-NLS-1$
 	}
 }
