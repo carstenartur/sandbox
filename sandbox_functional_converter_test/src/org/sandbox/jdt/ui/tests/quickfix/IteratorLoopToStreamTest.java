@@ -177,10 +177,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.stream().forEach(item -> {
-							String upper = item.toUpperCase();
-							System.out.println(upper);
-						});
+						items.stream().map(item -> item.toUpperCase()).forEachOrdered(upper -> System.out.println(upper));
 					}
 				}
 				""";
@@ -328,9 +325,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> transformAll(List<Integer> numbers) {
-						List<String> result = numbers.stream()
-							.map(num -> num.toString())
-							.collect(Collectors.toList());
+						List<String> result = numbers.stream().map(num -> num.toString()).collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -377,9 +372,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> toUpperAll(List<String> items) {
-						List<String> result = items.stream()
-							.map(String::toUpperCase)
-							.collect(Collectors.toList());
+						List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -432,9 +425,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> filterNonEmpty(List<String> items) {
-						List<String> result = items.stream()
-							.filter(item -> !item.isEmpty())
-							.collect(Collectors.toList());
+						List<String> result = items.stream().filter(item -> (!item.isEmpty())).collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -487,10 +478,8 @@ public class IteratorLoopToStreamTest {
 				import java.util.stream.Collectors;
 				public class MyTest {
 					List<String> processPositive(List<Integer> numbers) {
-						List<String> result = numbers.stream()
-							.filter(num -> num > 0)
-							.map(num -> num.toString())
-							.collect(Collectors.toList());
+						List<String> result = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+								.collect(Collectors.toList());
 						return result;
 					}
 				}
@@ -540,9 +529,7 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				public class MyTest {
 					int calculateSum(List<Integer> numbers) {
-						int sum = numbers.stream()
-							.mapToInt(num -> num)
-							.sum();
+						int sum = numbers.stream().reduce(0, Integer::sum);
 						return sum;
 					}
 				}

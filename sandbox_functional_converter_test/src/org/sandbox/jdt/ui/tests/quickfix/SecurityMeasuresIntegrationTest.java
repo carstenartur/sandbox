@@ -43,9 +43,9 @@ public class SecurityMeasuresIntegrationTest {
 	AbstractEclipseJava context = new EclipseJava22();
 
 	/**
-	 * Tests that loops over CopyOnWriteArrayList are blocked from conversion.
-	 * Concurrent collections have snapshot-based or weakly-consistent iterator
-	 * semantics that may not translate correctly to stream operations (Issue #670).
+	 * Tests that read-only traversal over CopyOnWriteArrayList can be converted.
+	 * Its stream and iterator traverse a stable snapshot; mutating iterator operations
+	 * remain blocked separately.
 	 */
 	@Test
 	@DisplayName("CopyOnWriteArrayList - should NOT convert (concurrent collection)")
@@ -64,9 +64,19 @@ public class SecurityMeasuresIntegrationTest {
 				}
 				""";
 
+		String expected = """
+				package test;
+				import java.util.concurrent.CopyOnWriteArrayList;
+				public class E {
+					public void foo(CopyOnWriteArrayList<String> list) {
+						list.forEach(item -> System.out.println(item));
+					}
+				}
+				""";
+
 		ICompilationUnit cu = pack.createCompilationUnit("E.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
 	/**

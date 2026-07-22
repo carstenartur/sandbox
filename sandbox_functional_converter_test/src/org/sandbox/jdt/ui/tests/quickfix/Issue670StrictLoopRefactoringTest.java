@@ -451,9 +451,7 @@ public class Issue670StrictLoopRefactoringTest {
 				import java.util.concurrent.CopyOnWriteArrayList;
 				public class MyTest {
 					void process(CopyOnWriteArrayList<String> list) {
-						for (String item : list) {
-							System.out.println(item);
-						}
+						list.stream().forEach(item -> System.out.println(item));
 					}
 				}
 				""";
