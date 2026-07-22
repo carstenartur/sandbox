@@ -13,13 +13,26 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
@@ -38,10 +51,11 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * Enhanced-for handler that rejects unsafe conversions before a rewrite operation
  * is scheduled.
  *
- * <p>Array collect into an existing target remains unchanged until the renderer
- * can copy the original body into the array stream lambda. Generated lambdas may
- * capture only effectively-final locals. A fresh collect accumulator is replaced
- * only when the collector result is assignable to its declared interface type;
+ * <p>Array collect into an existing target is rendered as a sequential
+ * {@code Arrays.stream(...).forEachOrdered(...)} operation that copies the
+ * original loop body through {@link ASTRewrite}. Generated lambdas may capture
+ * only effectively-final locals. A fresh collect accumulator is replaced only
+ * when the collector result is assignable to its declared interface type;
  * concrete collection implementations remain unchanged until an explicit
  * {@code Collectors.toCollection(...)} model exists.</p>
  */
@@ -81,6 +95,18 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			operations.add(fixCore.rewrite(loop, dataHolder));
 			nodesProcessed.add(loop);
 		}
+	}
+
+	@Override
+	public void rewrite(UseFunctionalCallFixCore fixCore, EnhancedForStatement visited,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> data) throws CoreException {
+		JdtLoopExtractor.ExtractedLoop extracted= (JdtLoopExtractor.ExtractedLoop) data.get(visited);
+		if (isExistingArrayCollect(visited, extracted)) {
+			rewriteExistingArrayCollect(visited, cuRewrite, group);
+			return;
+		}
+		super.rewrite(fixCore, visited, cuRewrite, group, data);
 	}
 
 	private boolean visitLoop(EnhancedForStatement loop, ReferenceHolder<String, Object> treeHolder,
@@ -146,18 +172,108 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return false;
 		}
 		LoopModel model= extracted.model;
+		if (isExistingArrayCollect(loop, extracted) && !hasCompatibleArrayStreamElementType(loop)) {
+			return false;
+		}
 		if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
 			VariableDeclarationStatement accumulator= findFreshAccumulator(loop, collectTerminal.targetVariable());
 			if (accumulator != null && !isCollectorResultAssignable(accumulator, collectTerminal)) {
 				return false;
 			}
-			if (model.getSource() != null && model.getSource().type() == SourceDescriptor.SourceType.ARRAY
-					&& accumulator == null) {
-				return false;
-			}
 		}
 		return !LambdaCaptureSafety.hasUnsafeCapture(loop.getBody(), liftedAccumulatorNames(loop, model),
 				loop.getParameter().resolveBinding());
+	}
+
+	private boolean isExistingArrayCollect(EnhancedForStatement loop,
+			JdtLoopExtractor.ExtractedLoop extracted) {
+		if (extracted == null || extracted.model == null
+				|| extracted.model.getSource() == null
+				|| extracted.model.getSource().type() != SourceDescriptor.SourceType.ARRAY
+				|| !(extracted.model.getTerminal() instanceof CollectTerminal collectTerminal)) {
+			return false;
+		}
+		return findFreshAccumulator(loop, collectTerminal.targetVariable()) == null;
+	}
+
+	private boolean hasCompatibleArrayStreamElementType(EnhancedForStatement loop) {
+		ITypeBinding arrayType= loop.getExpression().resolveTypeBinding();
+		IVariableBinding parameterBinding= loop.getParameter().resolveBinding();
+		if (arrayType == null || !arrayType.isArray() || parameterBinding == null) {
+			return false;
+		}
+		ITypeBinding componentType= arrayType.getComponentType();
+		ITypeBinding parameterType= parameterBinding.getType();
+		if (componentType == null || parameterType == null || !componentType.isEqualTo(parameterType)) {
+			return false;
+		}
+		if (!componentType.isPrimitive()) {
+			return true;
+		}
+		return switch (componentType.getName()) {
+			case "int", "long", "double" -> true; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			default -> false;
+		};
+	}
+
+	@SuppressWarnings("unchecked")
+	private void rewriteExistingArrayCollect(EnhancedForStatement loop,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		AST ast= cuRewrite.getRoot().getAST();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+
+		MethodInvocation stream= ast.newMethodInvocation();
+		String arraysReference= cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
+		stream.setExpression(ast.newName(arraysReference));
+		stream.setName(ast.newSimpleName("stream")); //$NON-NLS-1$
+		stream.arguments().add(ASTNode.copySubtree(ast, loop.getExpression()));
+
+		MethodInvocation forEach= ast.newMethodInvocation();
+		forEach.setExpression(stream);
+		forEach.setName(ast.newSimpleName("forEachOrdered")); //$NON-NLS-1$
+
+		LambdaExpression lambda= ast.newLambdaExpression();
+		VariableDeclarationFragment parameter= ast.newVariableDeclarationFragment();
+		parameter.setName(ast.newSimpleName(loop.getParameter().getName().getIdentifier()));
+		lambda.parameters().add(parameter);
+		lambda.setParentheses(false);
+
+		Statement originalBody= loop.getBody();
+		if (originalBody instanceof Block block) {
+			ExpressionStatement expressionStatement= singleExpressionWithoutComments(block, cuRewrite.getRoot());
+			if (expressionStatement != null) {
+				lambda.setBody(rewrite.createCopyTarget(expressionStatement.getExpression()));
+			} else {
+				lambda.setBody(rewrite.createCopyTarget(block));
+			}
+		} else if (originalBody instanceof ExpressionStatement expressionStatement) {
+			lambda.setBody(rewrite.createCopyTarget(expressionStatement.getExpression()));
+		} else {
+			Block lambdaBody= ast.newBlock();
+			lambdaBody.statements().add(rewrite.createCopyTarget(originalBody));
+			lambda.setBody(lambdaBody);
+		}
+
+		forEach.arguments().add(lambda);
+		rewrite.replace(loop, ast.newExpressionStatement(forEach), group);
+	}
+
+	@SuppressWarnings("unchecked")
+	private ExpressionStatement singleExpressionWithoutComments(Block block, CompilationUnit compilationUnit) {
+		List<Statement> statements= block.statements();
+		if (statements.size() != 1 || !(statements.get(0) instanceof ExpressionStatement expressionStatement)) {
+			return null;
+		}
+		int blockStart= block.getStartPosition();
+		int blockEnd= blockStart + block.getLength();
+		List<Comment> comments= compilationUnit.getCommentList();
+		for (Comment comment : comments) {
+			int commentStart= comment.getStartPosition();
+			if (commentStart > blockStart && commentStart < blockEnd) {
+				return null;
+			}
+		}
+		return expressionStatement;
 	}
 
 	private Set<String> liftedAccumulatorNames(EnhancedForStatement loop, LoopModel model) {
@@ -175,7 +291,7 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 	}
 
 	private VariableDeclarationStatement findFreshAccumulator(EnhancedForStatement loop, String targetVariable) {
-		if (targetVariable == null || !(loop.getParent() instanceof org.eclipse.jdt.core.dom.Block block)) {
+		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {
 			return null;
 		}
 		@SuppressWarnings("unchecked") //$NON-NLS-1$
