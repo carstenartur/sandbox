@@ -48,6 +48,8 @@ class JavaProjectCompilationUnitsTest {
 						IPackageFragmentRoot.K_SOURCE),
 				new RootSpec("entryOutput", "/project/target/test-classes/generated", false, false, //$NON-NLS-1$ //$NON-NLS-2$
 						IPackageFragmentRoot.K_SOURCE, "/project/target/test-classes"), //$NON-NLS-1$
+				new RootSpec("missingMetadata", "/project/src/broken/java", false, false, //$NON-NLS-1$ //$NON-NLS-2$
+						IPackageFragmentRoot.K_SOURCE, null, false),
 				new RootSpec("binary", "/project/lib", false, false, IPackageFragmentRoot.K_BINARY)); //$NON-NLS-1$ //$NON-NLS-2$
 
 		assertEquals(SourceRootKind.PRODUCTION, JavaProjectCompilationUnits.classify(fixture.root("main"))); //$NON-NLS-1$
@@ -57,6 +59,8 @@ class JavaProjectCompilationUnitsTest {
 		assertEquals(SourceRootKind.DERIVED, JavaProjectCompilationUnits.classify(fixture.root("derived"))); //$NON-NLS-1$
 		assertEquals(SourceRootKind.OUTPUT, JavaProjectCompilationUnits.classify(fixture.root("projectOutput"))); //$NON-NLS-1$
 		assertEquals(SourceRootKind.OUTPUT, JavaProjectCompilationUnits.classify(fixture.root("entryOutput"))); //$NON-NLS-1$
+		assertEquals(SourceRootKind.EXCLUDED,
+				JavaProjectCompilationUnits.classify(fixture.root("missingMetadata"))); //$NON-NLS-1$
 		assertEquals(SourceRootKind.EXCLUDED, JavaProjectCompilationUnits.classify(fixture.root("binary"))); //$NON-NLS-1$
 	}
 
@@ -93,9 +97,13 @@ class JavaProjectCompilationUnitsTest {
 	}
 
 	private record RootSpec(String handle, String path, boolean test, boolean derived, int kind,
-			String entryOutputPath) {
+			String entryOutputPath, boolean classpathMetadataPresent) {
 		RootSpec(String handle, String path, boolean test, boolean derived, int kind) {
-			this(handle, path, test, derived, kind, null);
+			this(handle, path, test, derived, kind, null, true);
+		}
+
+		RootSpec(String handle, String path, boolean test, boolean derived, int kind, String entryOutputPath) {
+			this(handle, path, test, derived, kind, entryOutputPath, true);
 		}
 	}
 
@@ -174,7 +182,9 @@ class JavaProjectCompilationUnitsTest {
 				case "getHandleIdentifier" -> spec.handle(); //$NON-NLS-1$
 				case "getPath" -> new Path(spec.path()); //$NON-NLS-1$
 				case "getResource" -> resource; //$NON-NLS-1$
-				case "getResolvedClasspathEntry", "getRawClasspathEntry" -> entry; //$NON-NLS-1$ //$NON-NLS-2$
+				case "getResolvedClasspathEntry", "getRawClasspathEntry" -> spec.classpathMetadataPresent() //$NON-NLS-1$ //$NON-NLS-2$
+						? entry
+						: null;
 				case "getJavaProject" -> projectHolder[0]; //$NON-NLS-1$
 				case "getChildren" -> new IJavaElement[] { fragment }; //$NON-NLS-1$
 				default -> defaultValue(proxy, method, arguments);

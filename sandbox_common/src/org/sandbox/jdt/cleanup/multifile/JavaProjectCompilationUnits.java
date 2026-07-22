@@ -110,7 +110,10 @@ public final class JavaProjectCompilationUnits {
 		if (entry == null) {
 			entry= root.getRawClasspathEntry();
 		}
-		if (entry != null && entry.isTest()) {
+		if (entry == null) {
+			return SourceRootKind.EXCLUDED;
+		}
+		if (entry.isTest()) {
 			return SourceRootKind.TEST;
 		}
 		return containsSegment(rootPath, TEST_SEGMENTS) ? SourceRootKind.TEST : SourceRootKind.PRODUCTION;
