@@ -103,9 +103,7 @@ def collect(
         selected, missing, incomplete = select_expected_runs(runs, commit_sha)
         if not missing and not incomplete:
             failures = [
-                run
-                for run in selected
-                if run.get("conclusion") not in {"success", "neutral", "skipped"}
+                run for run in selected if run.get("conclusion") != "success"
             ]
             if failures:
                 summary = ", ".join(
