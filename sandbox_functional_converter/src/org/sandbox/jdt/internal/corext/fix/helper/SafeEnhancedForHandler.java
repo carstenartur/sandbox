@@ -18,10 +18,12 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
@@ -170,6 +172,9 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return false;
 		}
 		LoopModel model= extracted.model;
+		if (isExistingArrayCollect(loop, extracted) && !hasCompatibleArrayStreamElementType(loop)) {
+			return false;
+		}
 		if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
 			VariableDeclarationStatement accumulator= findFreshAccumulator(loop, collectTerminal.targetVariable());
 			if (accumulator != null && !isCollectorResultAssignable(accumulator, collectTerminal)) {
@@ -189,6 +194,26 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return false;
 		}
 		return findFreshAccumulator(loop, collectTerminal.targetVariable()) == null;
+	}
+
+	private boolean hasCompatibleArrayStreamElementType(EnhancedForStatement loop) {
+		ITypeBinding arrayType= loop.getExpression().resolveTypeBinding();
+		IVariableBinding parameterBinding= loop.getParameter().resolveBinding();
+		if (arrayType == null || !arrayType.isArray() || parameterBinding == null) {
+			return false;
+		}
+		ITypeBinding componentType= arrayType.getComponentType();
+		ITypeBinding parameterType= parameterBinding.getType();
+		if (componentType == null || parameterType == null || !componentType.isPrimitive()) {
+			return true;
+		}
+		if (!componentType.isEqualTo(parameterType)) {
+			return false;
+		}
+		return switch (componentType.getName()) {
+			case "int", "long", "double" -> true; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			default -> false;
+		};
 	}
 
 	@SuppressWarnings("unchecked")
@@ -214,8 +239,13 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		lambda.setParentheses(false);
 
 		Statement originalBody= loop.getBody();
-		if (originalBody instanceof Block) {
-			lambda.setBody(rewrite.createCopyTarget(originalBody));
+		if (originalBody instanceof Block block) {
+			ExpressionStatement expressionStatement= singleExpressionWithoutComments(block, cuRewrite.getRoot());
+			if (expressionStatement != null) {
+				lambda.setBody(rewrite.createCopyTarget(expressionStatement.getExpression()));
+			} else {
+				lambda.setBody(rewrite.createCopyTarget(block));
+			}
 		} else if (originalBody instanceof ExpressionStatement expressionStatement) {
 			lambda.setBody(rewrite.createCopyTarget(expressionStatement.getExpression()));
 		} else {
@@ -226,6 +256,24 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 
 		forEach.arguments().add(lambda);
 		rewrite.replace(loop, ast.newExpressionStatement(forEach), group);
+	}
+
+	@SuppressWarnings("unchecked")
+	private ExpressionStatement singleExpressionWithoutComments(Block block, CompilationUnit compilationUnit) {
+		List<Statement> statements= block.statements();
+		if (statements.size() != 1 || !(statements.get(0) instanceof ExpressionStatement expressionStatement)) {
+			return null;
+		}
+		int blockStart= block.getStartPosition();
+		int blockEnd= blockStart + block.getLength();
+		List<Comment> comments= compilationUnit.getCommentList();
+		for (Comment comment : comments) {
+			int commentStart= comment.getStartPosition();
+			if (commentStart > blockStart && commentStart < blockEnd) {
+				return null;
+			}
+		}
+		return expressionStatement;
 	}
 
 	private Set<String> liftedAccumulatorNames(EnhancedForStatement loop, LoopModel model) {
