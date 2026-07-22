@@ -21,6 +21,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JUnitCleanUp_desc
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,6 +55,9 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
 public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigrationPlan> {
+
+	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();
+
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -117,10 +121,22 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
+
+		Set<String> currentHandles= handles(currentScope);
+		Set<String> pendingScope= pendingExpandedScopes.remove(project);
+		if (pendingScope != null && currentHandles.containsAll(pendingScope)) {
+			return List.of();
+		}
 		if (!JUnitScopeCandidateDetector.containsCandidate(project, currentScope, monitor)) {
 			return List.of();
 		}
-		return JavaProjectCompilationUnits.collect(project);
+
+		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project);
+		Set<String> projectHandles= handles(projectUnits);
+		if (!currentHandles.containsAll(projectHandles)) {
+			pendingExpandedScopes.put(project, projectHandles);
+		}
+		return projectUnits;
 	}
 
 	@Override
@@ -202,5 +218,16 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 
 	private EnumSet<JUnitCleanUpFixCore> allOfJunit3() {
 		return EnumSet.of(JUnitCleanUpFixCore.TEST3);
+	}
+
+	private static Set<String> handles(Collection<ICompilationUnit> units) {
+		if (units == null || units.isEmpty()) {
+			return Set.of();
+		}
+		return units.stream()
+				.filter(java.util.Objects::nonNull)
+				.map(ICompilationUnit::getPrimary)
+				.map(ICompilationUnit::getHandleIdentifier)
+				.collect(Collectors.toSet());
 	}
 }
