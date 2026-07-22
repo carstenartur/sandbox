@@ -1,0 +1,144 @@
+name: Apply lifecycle selection patch
+
+on:
+  push:
+    branches: [ issue-1212-candidate-scope ]
+    paths:
+      - '.github/workflows/apply-lifecycle-selection-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: issue-1212-candidate-scope
+          fetch-depth: 0
+      - name: Add selected-versus-affected assertion overload
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/MultiFileCleanUpLifecycleAssertions.java')
+          text = path.read_text(encoding='utf-8')
+          old = '''\tpublic static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] compilationUnits,
+          \t\t\tString[] expectedAfterApply) throws CoreException {
+          \t\tassertEquals(compilationUnits.length, expectedAfterApply.length,
+          \t\t\t\t"Each compilation unit needs one expected post-apply source"); //$NON-NLS-1$
+          \t\tString[] originals= contents(compilationUnits);
+          \t\tMap<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(compilationUnits);
+
+          \t\tCleanUpRefactoring refactoring= new CleanUpRefactoring();
+          \t\trefactoring.setUseOptionsFromProfile(true);
+          \t\tfor (ICompilationUnit unit : compilationUnits) {
+          \t\t\trefactoring.addCompilationUnit(unit);
+          \t\t}
+          \t\tfor (ICleanUp cleanup : JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps()) {
+          \t\t\trefactoring.addCleanUp(cleanup);
+          \t\t}
+
+          \t\tIUndoManager undoManager= RefactoringCore.getUndoManager();
+          \t\tundoManager.flush();
+          \t\tCreateChangeOperation create= new CreateChangeOperation(
+          \t\t\t\tnew CheckConditionsOperation(refactoring, CheckConditionsOperation.ALL_CONDITIONS),
+          \t\t\t\tRefactoringStatus.FATAL);
+          \t\tPerformChangeOperation apply= new PerformChangeOperation(create);
+          \t\tapply.setUndoManager(undoManager, refactoring.getName());
+          \t\tIWorkspace workspace= ResourcesPlugin.getWorkspace();
+          \t\tworkspace.run(apply, new NullProgressMonitor());
+
+          \t\tRefactoringStatus status= create.getConditionCheckingStatus();
+          \t\tassertFalse(status.hasFatalError(), () -> "Cleanup final conditions failed: " + status); //$NON-NLS-1$
+          \t\tassertTrue(apply.changeExecuted(), "The coordinated cleanup change was not executed"); //$NON-NLS-1$
+          \t\tChange undo= apply.getUndoChange();
+          \t\tassertNotNull(undo, "The coordinated cleanup did not create an undo change"); //$NON-NLS-1$
+
+          \t\tassertPostApplyContents(compilationUnits, expectedAfterApply);
+          \t\tassertNoNewErrors(compilationUnits, baselineProblems, "after apply"); //$NON-NLS-1$
+
+          \t\tPerformChangeOperation performUndo= new PerformChangeOperation(undo);
+          \t\tworkspace.run(performUndo, new NullProgressMonitor());
+          \t\tassertTrue(performUndo.changeExecuted(), "The coordinated cleanup undo change was not executed"); //$NON-NLS-1$
+          \t\tassertRestoredContents(compilationUnits, originals);
+          \t\tassertEquals(baselineProblems, errorCounts(compilationUnits),
+          \t\t\t\t"Undo must restore the original Java error set"); //$NON-NLS-1$
+          \t\treturn status;
+          \t}
+          '''
+          new = '''\tpublic static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] compilationUnits,
+          \t\t\tString[] expectedAfterApply) throws CoreException {
+          \t\treturn assertApplyCompileAndUndo(compilationUnits, compilationUnits, expectedAfterApply);
+          \t}
+
+          \t/**
+          \t * Applies a cleanup to an initial selection and verifies the complete set of
+          \t * units expected to be affected after coordinated scope expansion.
+          \t *
+          \t * @param selectedUnits compilation units explicitly added to the refactoring
+          \t * @param verifiedUnits units whose source and Java errors must be verified
+          \t * @param expectedAfterApply expected source contents for {@code verifiedUnits}
+          \t * @return the final-condition status of the cleanup refactoring
+          \t * @throws CoreException if Eclipse cannot create or execute either change
+          \t */
+          \tpublic static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] selectedUnits,
+          \t\t\tICompilationUnit[] verifiedUnits, String[] expectedAfterApply) throws CoreException {
+          \t\tassertEquals(verifiedUnits.length, expectedAfterApply.length,
+          \t\t\t\t"Each verified compilation unit needs one expected post-apply source"); //$NON-NLS-1$
+          \t\tString[] originals= contents(verifiedUnits);
+          \t\tMap<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(verifiedUnits);
+
+          \t\tCleanUpRefactoring refactoring= new CleanUpRefactoring();
+          \t\trefactoring.setUseOptionsFromProfile(true);
+          \t\tfor (ICompilationUnit unit : selectedUnits) {
+          \t\t\trefactoring.addCompilationUnit(unit);
+          \t\t}
+          \t\tfor (ICleanUp cleanup : JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps()) {
+          \t\t\trefactoring.addCleanUp(cleanup);
+          \t\t}
+
+          \t\tIUndoManager undoManager= RefactoringCore.getUndoManager();
+          \t\tundoManager.flush();
+          \t\tCreateChangeOperation create= new CreateChangeOperation(
+          \t\t\t\tnew CheckConditionsOperation(refactoring, CheckConditionsOperation.ALL_CONDITIONS),
+          \t\t\t\tRefactoringStatus.FATAL);
+          \t\tPerformChangeOperation apply= new PerformChangeOperation(create);
+          \t\tapply.setUndoManager(undoManager, refactoring.getName());
+          \t\tIWorkspace workspace= ResourcesPlugin.getWorkspace();
+          \t\tworkspace.run(apply, new NullProgressMonitor());
+
+          \t\tRefactoringStatus status= create.getConditionCheckingStatus();
+          \t\tassertFalse(status.hasFatalError(), () -> "Cleanup final conditions failed: " + status); //$NON-NLS-1$
+          \t\tassertTrue(apply.changeExecuted(), "The coordinated cleanup change was not executed"); //$NON-NLS-1$
+          \t\tChange undo= apply.getUndoChange();
+          \t\tassertNotNull(undo, "The coordinated cleanup did not create an undo change"); //$NON-NLS-1$
+
+          \t\tassertPostApplyContents(verifiedUnits, expectedAfterApply);
+          \t\tassertNoNewErrors(verifiedUnits, baselineProblems, "after apply"); //$NON-NLS-1$
+
+          \t\tPerformChangeOperation performUndo= new PerformChangeOperation(undo);
+          \t\tworkspace.run(performUndo, new NullProgressMonitor());
+          \t\tassertTrue(performUndo.changeExecuted(), "The coordinated cleanup undo change was not executed"); //$NON-NLS-1$
+          \t\tassertRestoredContents(verifiedUnits, originals);
+          \t\tassertEquals(baselineProblems, errorCounts(verifiedUnits),
+          \t\t\t\t"Undo must restore the original Java error set"); //$NON-NLS-1$
+          \t\treturn status;
+          \t}
+          '''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one lifecycle method, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          git diff --check
+      - name: Commit helper change and remove one-shot workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/apply-lifecycle-selection-patch.yml
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add sandbox_test_commons
+          git commit -m 'Verify coordinated scope expansion from a selection'
+          git push origin HEAD:issue-1212-candidate-scope
