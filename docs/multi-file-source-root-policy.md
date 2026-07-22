@@ -15,9 +15,9 @@ A Java project can contain production sources, tests, test fixtures, generated s
 | `GENERATED` | Conventional generated-source path segment | Never edited by default |
 | `DERIVED` | Workspace resource marked derived | Never edited by default |
 | `OUTPUT` | Root inside the project or source-entry output location | Never edited by default |
-| `EXCLUDED` | Missing, binary, or unsupported root | Never edited |
+| `EXCLUDED` | Missing, binary, unsupported, or lacking classpath metadata | Never edited |
 
-JDT classpath metadata is authoritative for test roots. Conventional path names are a fallback for build layouts that do not expose the test attribute, including Maven/Gradle-style `src/test/java`, test fixtures, and integration-test roots.
+JDT classpath metadata is authoritative for whether a source root is usable and whether it is a test root. Conventional path names classify test layouts only after a resolved or raw classpath entry has been obtained; they never make a root with missing classpath metadata editable. This covers Maven/Gradle-style `src/test/java`, test fixtures, and integration-test roots without broadening a broken Java model.
 
 Generated-source detection is intentionally conservative. A cleanup must not rewrite generated code merely because the generator output happens to be represented as a source root. Users must change the generator or explicitly copy generated code into an ordinary editable source root.
 
@@ -47,7 +47,7 @@ All editable production and test roots are included. This remains available to i
 
 The resulting compilation-unit list is sorted by Java-element handle. Missing classpath metadata, missing bindings, and unsupported roots fail closed rather than broadening scope.
 
-Generated, derived, output, and non-source roots are excluded before any cleanup-specific policy is evaluated. A policy can therefore select only roots that are editable by default.
+Generated, derived, output, metadata-less, and non-source roots are excluded before any cleanup-specific policy is evaluated. A policy can therefore select only roots that are editable by default.
 
 ## Preview visibility
 
@@ -60,10 +60,11 @@ The policy itself is part of the cleanup contract and is covered by common-layer
 - production and test roots;
 - Maven/Gradle-style test roots and test fixtures;
 - generated and derived roots;
-- project output roots and binary roots;
+- project and source-entry output roots;
+- missing classpath metadata and binary roots;
 - test-only versus production-origin Int-to-Enum expansion;
 - JUnit test-root expansion with an explicitly selected support root;
 - explicit-root and complete-project policies;
-- deterministic omission of generated roots from every policy.
+- deterministic omission of non-editable roots from every policy.
 
 Related issues: #1224, #1212, #1214, #1221.
