@@ -51,6 +51,7 @@ import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
 
 /** Core cleanup implementation that converts integer constants to enums. */
 public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnumMigrationPlan> {
@@ -124,6 +125,9 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
+		if (!IntEnumScopeCandidateDetector.containsCandidate(project, currentScope, monitor)) {
+			return List.of();
+		}
 		return JavaProjectCompilationUnits.collect(project);
 	}
 
@@ -132,7 +136,7 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		List<String> result= new ArrayList<>();
 		if (isEnabled(INT_TO_ENUM_CLEANUP)) {
 			result.add(Messages.format(IntToEnumCleanUp_description,
-					new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
+					new Object[] { String.join(",", computeFixSet().stream()) //$NON-NLS-1$
 							.map(IntToEnumFixCore::toString)
 							.collect(Collectors.toList())) }));
 			if (isEnabled(PROJECT_WIDE)) {
