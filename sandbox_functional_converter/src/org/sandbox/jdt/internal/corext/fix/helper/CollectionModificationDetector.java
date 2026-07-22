@@ -33,8 +33,9 @@ import org.eclipse.jdt.core.dom.ThisExpression;
  * iterated.
  *
  * <p>The production API compares Java bindings rather than spelling. It handles
- * local variables, fields, repeated getter invocations, and map view expressions
- * such as {@code map.keySet()} whose structural owner is {@code map}.</p>
+ * local variables, fields, repeated getter invocations, conventional no-argument
+ * getters for an iterated field, and map view expressions such as
+ * {@code map.keySet()} whose structural owner is {@code map}.</p>
  *
  * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
  * @since 1.0.0
@@ -124,6 +125,9 @@ public final class CollectionModificationDetector {
 	private static boolean referencesSameTarget(Expression first, Expression second) {
 		Expression left= unwrap(first);
 		Expression right= unwrap(second);
+		if (matchesGetterAlias(left, right) || matchesGetterAlias(right, left)) {
+			return true;
+		}
 		IBinding leftBinding= resolveIdentityBinding(left);
 		IBinding rightBinding= resolveIdentityBinding(right);
 		if (leftBinding != null && rightBinding != null) {
@@ -135,6 +139,31 @@ public final class CollectionModificationDetector {
 			return false;
 		}
 		return left.subtreeMatch(new ASTMatcher(), right);
+	}
+
+	private static boolean matchesGetterAlias(Expression possibleGetter, Expression possibleVariable) {
+		if (!(possibleGetter instanceof MethodInvocation invocation)) {
+			return false;
+		}
+		String variableName= variableName(possibleVariable);
+		return variableName != null && matchesGetterPattern(invocation, variableName);
+	}
+
+	private static String variableName(Expression expression) {
+		if (expression instanceof SimpleName name) {
+			return name.getIdentifier();
+		}
+		if (expression instanceof FieldAccess fieldAccess) {
+			return fieldAccess.getName().getIdentifier();
+		}
+		if (expression instanceof QualifiedName qualifiedName
+				&& qualifiedName.resolveBinding() instanceof IVariableBinding) {
+			return qualifiedName.getName().getIdentifier();
+		}
+		if (expression instanceof SuperFieldAccess superFieldAccess) {
+			return superFieldAccess.getName().getIdentifier();
+		}
+		return null;
 	}
 
 	private static IBinding resolveIdentityBinding(Expression expression) {
