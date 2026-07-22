@@ -1,1 +1,1 @@
-Trigger deterministic Functional Converter finalization.
+Trigger registered Functional Converter finalizer now.
