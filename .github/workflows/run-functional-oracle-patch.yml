@@ -24,13 +24,13 @@ jobs:
           set +e
           python3 <<'PY' > functional-oracle-patch.log 2>&1
           from pathlib import Path
-          import textwrap
 
           workflow = Path('.github/workflows/patch-functional-test-oracles.yml').read_text(encoding='utf-8')
           marker = "          python3 <<'PY'\n"
           start = workflow.index(marker) + len(marker)
           end = workflow.index("\n          PY", start)
-          script = textwrap.dedent(workflow[start:end])
+          embedded = workflow[start:end]
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in embedded.splitlines())
           exec(compile(script, 'patch-functional-test-oracles.py', 'exec'))
           PY
           status=$?
