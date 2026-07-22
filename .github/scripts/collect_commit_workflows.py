@@ -60,7 +60,7 @@ def select_expected_runs(
             and run.get("event") == "push"
         ]
         candidates.sort(
-            key=lambda run: (run.get("run_attempt", 0), run.get("run_number", 0)),
+            key=lambda run: (run.get("run_number", 0), run.get("run_attempt", 0)),
             reverse=True,
         )
         if not candidates:
