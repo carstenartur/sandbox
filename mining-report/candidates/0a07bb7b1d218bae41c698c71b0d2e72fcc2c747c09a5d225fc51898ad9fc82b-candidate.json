@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0a07bb7b1d218bae41c698c71b0d2e72fcc2c747c09a5d225fc51898ad9fc82b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.getFormattedAssignmentOperator($project)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.CONSTANT_VALUE_SEPARATOR\n;;",
+  "beforeExample": "package org.eclipse.jdt.core;\npublic interface IJavaProject {}\n\npackage org.eclipse.jdt.internal.ui.text.java.hover;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class JavadocHover {\n    public static final String CONSTANT_VALUE_SEPARATOR \u003d \" : \";\n    public static String getFormattedAssignmentOperator(IJavaProject javaProject) {\n        return \" \u003d \"; // Simplified mock behavior\n    }\n}\n\npackage test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover;\n\npublic class MyConsumerClass {\n    public void someMethod(IJavaProject project) {\n        StringBuffer label \u003d new StringBuffer();\n        label.append(\"Field\");\n        label.append(JavadocHover.getFormattedAssignmentOperator(project)); // Target line\n        label.append(\"someValue\");\n        System.out.println(label.toString());\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.core;\npublic interface IJavaProject {}\n\npackage org.eclipse.jdt.internal.ui.text.java.hover;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class JavadocHover {\n    public static final String CONSTANT_VALUE_SEPARATOR \u003d \" : \";\n    // The getFormattedAssignmentOperator method is removed in the actual commit\n    // but for the purpose of showing the \u0027after\u0027 state for the rule, it is omitted.\n}\n\npackage test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover;\n\npublic class MyConsumerClass {\n    public void someMethod(IJavaProject project) {\n        StringBuffer label \u003d new StringBuffer();\n        label.append(\"Field\");\n        label.append(JavadocHover.CONSTANT_VALUE_SEPARATOR); // Changed line\n        label.append(\"someValue\");\n        System.out.println(label.toString());\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.core;\npublic interface IJavaProject {}\n\npackage org.eclipse.jdt.internal.ui.text.java.hover;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class JavadocHover {\n    public static final String CONSTANT_VALUE_SEPARATOR \u003d \" : \";\n    public static String someOtherStaticMethod() {\n        return \"something else\";\n    }\n}\n\npackage test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover;\n\npublic class MyConsumerClass {\n    public void someMethod(IJavaProject project) {\n        StringBuffer label \u003d new StringBuffer();\n        label.append(\"Field\");\n        label.append(JavadocHover.CONSTANT_VALUE_SEPARATOR); // Should not match (already the target)\n        label.append(JavadocHover.someOtherStaticMethod()); // Should not match (different method)\n        label.append(\"someValue\");\n        System.out.println(label.toString());\n    }\n}",
+  "targetHintFile": "jdt-ui-internal.sandbox-hint",
+  "sourceCommit": "229dd7c1ca62dec24aee34f17cc58ce9179ee84d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Replacement",
+  "summary": "Replaces calls to the internal JavadocHover.getFormattedAssignmentOperator() static method with the new JavadocHover.CONSTANT_VALUE_SEPARATOR static final field, standardizing the constant value display.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-22T03:16:09.594598818Z",
+  "ruleFingerprint": "sha256:45ea76c2b275baa2d5cec08c5c6052e7b514644936bbab2528569c23b76cca87",
+  "behaviorFingerprint": "sha256:037acafc521a324eebc06ef4a5cf9fa0b1b68c77ae3763721e697e03d4b54a4b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-07-22T03:16:10.991792561Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

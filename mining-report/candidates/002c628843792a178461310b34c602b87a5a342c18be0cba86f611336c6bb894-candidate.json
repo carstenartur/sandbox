@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "002c628843792a178461310b34c602b87a5a342c18be0cba86f611336c6bb894",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-diamond-operator-collections\u003e\n\u003c!description: Replace explicit type arguments in collection/map constructor calls with diamond operator if inferable (Java 7+).\u003e\n\u003c!severity: HINT\u003e\nnew $ConcreteType$\u003c$TypeArg$\u003e() :: subtypeOf($ConcreteType$, \"java.util.Collection\") || subtypeOf($ConcreteType$, \"java.util.Map\")\n\u003d\u003e new $ConcreteType$()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.HashMap;\nimport java.util.Map;\n\nclass Test {\n    List\u003cString\u003e stringList \u003d new ArrayList\u003cString\u003e();\n    Map\u003cInteger, String\u003e intStringMap \u003d new HashMap\u003cInteger, String\u003e();\n\n    void foo() {\n        List\u003cDouble\u003e doubleList \u003d new ArrayList\u003cDouble\u003e();\n        System.out.println(doubleList);\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.HashMap;\nimport java.util.Map;\n\nclass Test {\n    List\u003cString\u003e stringList \u003d new ArrayList\u003c\u003e();\n    Map\u003cInteger, String\u003e intStringMap \u003d new HashMap\u003c\u003e();\n\n    void foo() {\n        List\u003cDouble\u003e doubleList \u003d new ArrayList\u003c\u003e();\n        System.out.println(doubleList);\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.Date;\n\nclass Test {\n    List\u003cString\u003e list1 \u003d new ArrayList\u003c\u003e(); // Already uses diamond operator\n    Date d \u003d new Date(); // Not a collection/map type\n    String s \u003d new String(\"hello\"); // Not a collection/map type\n}",
+  "targetHintFile": "modernize-java7.sandbox-hint",
+  "sourceCommit": "a18c2e9d81f57df53bb97e8e710c95581849310b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Generics",
+  "summary": "Replace explicit type arguments in constructor calls for Collection/Map types with the diamond operator.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-22T03:16:09.604678664Z",
+  "ruleFingerprint": "sha256:c04fedf7c9d46387bbad1d42636262c864a73c6318bab851839d5e77cf73eeac",
+  "behaviorFingerprint": "sha256:77642c645438b6d4f74d7ba9b7955ba23c590d02c426b6ada40366d0304e7378",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-22T03:16:11.048857973Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
