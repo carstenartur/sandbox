@@ -44,12 +44,16 @@ public class EmbeddedSearchService {
 
 	private static final ILog LOG= Platform.getLog(EmbeddedSearchService.class);
 
-	private static EmbeddedSearchService instance;
+	private final Object lifecycleLock= new Object();
 
-	private boolean initialized;
+	private volatile boolean initialized;
 
 	private EmbeddedSearchService() {
 		// singleton
+	}
+
+	private static final class Holder {
+		private static final EmbeddedSearchService INSTANCE= new EmbeddedSearchService();
 	}
 
 	/**
@@ -57,11 +61,8 @@ public class EmbeddedSearchService {
 	 *
 	 * @return the embedded search service instance
 	 */
-	public static synchronized EmbeddedSearchService getInstance() {
-		if (instance == null) {
-			instance= new EmbeddedSearchService();
-		}
-		return instance;
+	public static EmbeddedSearchService getInstance() {
+		return Holder.INSTANCE;
 	}
 
 	/**
@@ -72,13 +73,15 @@ public class EmbeddedSearchService {
 	 *            API compatibility)
 	 */
 	public void initialize(IPath stateLocation) {
-		if (initialized) {
-			return;
+		synchronized (lifecycleLock) {
+			if (initialized) {
+				return;
+			}
+			SemanticSearchClient.getInstance();
+			LOG.info("Git Search: REST client initialized (backend: " //$NON-NLS-1$
+					+ SemanticSearchClient.DEFAULT_BASE_URL + ")"); //$NON-NLS-1$
+			initialized= true;
 		}
-		SemanticSearchClient.getInstance();
-		LOG.info("Git Search: REST client initialized (backend: " //$NON-NLS-1$
-				+ SemanticSearchClient.DEFAULT_BASE_URL + ")"); //$NON-NLS-1$
-		initialized= true;
 	}
 
 	/**
@@ -104,11 +107,13 @@ public class EmbeddedSearchService {
 	 * stopped.
 	 */
 	public void shutdown() {
-		if (!initialized) {
-			return;
+		synchronized (lifecycleLock) {
+			if (!initialized) {
+				return;
+			}
+			initialized= false;
+			LOG.info("Git Search: REST search service shut down"); //$NON-NLS-1$
 		}
-		initialized= false;
-		LOG.info("Git Search: REST search service shut down"); //$NON-NLS-1$
 	}
 
 	/**
