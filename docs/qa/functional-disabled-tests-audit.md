@@ -8,8 +8,8 @@ Disabled tests are not automatically specifications. Each case was checked again
 
 All Functional Converter tests are active:
 
-- **551 total**
-- **551 enabled**
+- **554 total**
+- **554 enabled**
 - **0 disabled**
 
 The implementation now supports the legitimate positive cases and rejects the legitimate safety cases described below.
