@@ -10,56 +10,64 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 
-/** Lightweight pre-scan used before requesting complete-project Int-to-Enum scope. */
+/** Lightweight selected-scope detector for project-wide Int-to-Enum planning. */
 public final class IntEnumScopeCandidateDetector {
+
+	/** Binding-derived elements whose references define the required source closure. */
+	public record SearchSeeds(boolean candidateFound, boolean complete, List<IJavaElement> elements) {
+		public SearchSeeds {
+			elements= List.copyOf(elements);
+		}
+	}
 
 	private IntEnumScopeCandidateDetector() {
 		// utility class
 	}
 
-	/**
-	 * Returns whether the current selection contains the structural prerequisites of
-	 * the coordinated package-scoped migration.
-	 * <p>
-	 * This is deliberately a conservative gate rather than the semantic planner. A
-	 * positive result may still be rejected after complete-project analysis; a
-	 * negative result proves that the selected units contain no owner declaration
-	 * that the current coordinated planner could migrate.
-	 * </p>
-	 *
-	 * @param project Java project owning the current cleanup scope
-	 * @param currentScope compilation units currently selected by the user or an
-	 *            earlier scope-expansion iteration
-	 * @param monitor progress monitor, may be {@code null}
-	 * @return {@code true} when complete-project fallback analysis may be required
-	 */
+	/** Returns whether the current selection contains a structural candidate. */
 	public static boolean containsCandidate(IJavaProject project, Collection<ICompilationUnit> currentScope,
 			IProgressMonitor monitor) {
-		if (currentScope == null || currentScope.isEmpty()) {
-			return false;
+		return findSearchSeeds(project, currentScope, monitor).candidateFound();
+	}
+
+	/**
+	 * Finds the candidate methods and constants whose references define the
+	 * coordinated source closure. A structural candidate with a missing binding is
+	 * reported as incomplete so the caller can use its conservative fallback.
+	 */
+	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection<ICompilationUnit> currentScope,
+			IProgressMonitor monitor) {
+		if (project == null || currentScope == null || currentScope.isEmpty()) {
+			return new SearchSeeds(false, true, List.of());
 		}
 		checkCanceled(monitor);
 		Set<ICompilationUnit> units= new LinkedHashSet<>();
@@ -69,20 +77,20 @@ public final class IntEnumScopeCandidateDetector {
 			}
 		}
 		if (units.isEmpty()) {
-			return false;
+			return new SearchSeeds(false, true, List.of());
 		}
 
-		AtomicBoolean candidate= new AtomicBoolean();
+		boolean[] candidateFound= { false };
+		boolean[] complete= { true };
+		Set<IJavaElement> elements= new LinkedHashSet<>();
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
 		parser.setProject(project);
-		parser.setResolveBindings(false);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
 		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
 		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-				if (candidate.get()) {
-					return;
-				}
 				ast.accept(new ASTVisitor() {
 					@Override
 					public boolean visit(TypeDeclaration type) {
@@ -90,8 +98,19 @@ public final class IntEnumScopeCandidateDetector {
 								|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty()) {
 							return false;
 						}
-						if (countPackagePrivateIntConstants(type) >= 2 && hasPackagePrivateIntStateMethod(type)) {
-							candidate.set(true);
+						List<VariableDeclarationFragment> constants= packagePrivateIntConstants(type);
+						List<MethodDeclaration> methods= packagePrivateIntStateMethods(type);
+						if (constants.size() < 2 || methods.isEmpty()) {
+							return false;
+						}
+						candidateFound[0]= true;
+						for (VariableDeclarationFragment constant : constants) {
+							IVariableBinding binding= constant.resolveBinding();
+							complete[0]&= addJavaElement(binding, elements);
+						}
+						for (MethodDeclaration method : methods) {
+							IMethodBinding binding= method.resolveBinding();
+							complete[0]&= addJavaElement(binding, elements);
 						}
 						return false;
 					}
@@ -99,22 +118,26 @@ public final class IntEnumScopeCandidateDetector {
 			}
 		}, monitor);
 		checkCanceled(monitor);
-		return candidate.get();
+		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
 	}
 
-	private static int countPackagePrivateIntConstants(TypeDeclaration type) {
-		int count= 0;
+	private static List<VariableDeclarationFragment> packagePrivateIntConstants(TypeDeclaration type) {
+		List<VariableDeclarationFragment> result= new ArrayList<>();
 		for (FieldDeclaration field : type.getFields()) {
 			int modifiers= field.getModifiers();
-			if (isPackagePrivate(modifiers) && Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)
-					&& isPlainInt(field.getType())) {
-				count+= field.fragments().size();
+			if (!isPackagePrivate(modifiers) || !Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)
+					|| !isPlainInt(field.getType())) {
+				continue;
+			}
+			for (Object fragment : field.fragments()) {
+				result.add((VariableDeclarationFragment) fragment);
 			}
 		}
-		return count;
+		return result;
 	}
 
-	private static boolean hasPackagePrivateIntStateMethod(TypeDeclaration type) {
+	private static List<MethodDeclaration> packagePrivateIntStateMethods(TypeDeclaration type) {
+		List<MethodDeclaration> result= new ArrayList<>();
 		for (MethodDeclaration method : type.getMethods()) {
 			if (method.isConstructor() || method.getBody() == null || !isPackagePrivate(method.getModifiers())) {
 				continue;
@@ -122,11 +145,21 @@ public final class IntEnumScopeCandidateDetector {
 			for (Object parameterObject : method.parameters()) {
 				SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;
 				if (parameter.getExtraDimensions() == 0 && !parameter.isVarargs() && isPlainInt(parameter.getType())) {
-					return true;
+					result.add(method);
+					break;
 				}
 			}
 		}
-		return false;
+		return result;
+	}
+
+	private static boolean addJavaElement(IBinding binding, Set<IJavaElement> elements) {
+		IJavaElement element= binding == null ? null : binding.getJavaElement();
+		if (element == null || !element.exists()) {
+			return false;
+		}
+		elements.add(element);
+		return true;
 	}
 
 	private static boolean isPlainInt(Type type) {
