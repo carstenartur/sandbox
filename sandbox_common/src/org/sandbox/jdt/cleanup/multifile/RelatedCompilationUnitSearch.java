@@ -53,6 +53,58 @@ public final class RelatedCompilationUnitSearch {
 		}
 	}
 
+	/** Package-visible deterministic match classifier used by common-layer tests. */
+	static final class MatchAccumulator {
+		private final IJavaProject project;
+		private final Map<String, ICompilationUnit> allowedByHandle;
+		private final Map<String, ICompilationUnit> resultByHandle= new LinkedHashMap<>();
+		private final Set<String> reasons= new LinkedHashSet<>();
+
+		MatchAccumulator(IJavaProject project, Collection<ICompilationUnit> initialUnits,
+				Collection<ICompilationUnit> allowedUnits) {
+			this.project= project;
+			allowedByHandle= byHandle(allowedUnits);
+			addUnits(project, initialUnits, allowedByHandle, resultByHandle, reasons,
+					"The initial cleanup scope contains a source unit outside the permitted root policy."); //$NON-NLS-1$
+		}
+
+		void addTarget(IJavaElement target) {
+			ICompilationUnit declarationUnit= compilationUnit(target);
+			if (declarationUnit == null) {
+				reasons.add("A search target is declared outside an editable source compilation unit."); //$NON-NLS-1$
+				return;
+			}
+			addUnit(project, declarationUnit, allowedByHandle, resultByHandle, reasons,
+					"A search-target declaration is outside the permitted source-root policy."); //$NON-NLS-1$
+		}
+
+		void accept(Object element, int accuracy) {
+			if (accuracy != SearchMatch.A_ACCURATE) {
+				reasons.add("JDT reported an inaccurate reference match."); //$NON-NLS-1$
+				return;
+			}
+			if (!(element instanceof IJavaElement javaElement)) {
+				reasons.add("A reference match has no Java-model element."); //$NON-NLS-1$
+				return;
+			}
+			ICompilationUnit unit= compilationUnit(javaElement);
+			if (unit == null) {
+				reasons.add("A reference exists in a binary or otherwise non-source element."); //$NON-NLS-1$
+				return;
+			}
+			addUnit(project, unit, allowedByHandle, resultByHandle, reasons,
+					"A reference exists outside the permitted project source-root policy."); //$NON-NLS-1$
+		}
+
+		void reject(String reason) {
+			reasons.add(reason);
+		}
+
+		Result finish() {
+			return result(resultByHandle, reasons);
+		}
+	}
+
 	private RelatedCompilationUnitSearch() {
 	}
 
@@ -78,29 +130,18 @@ public final class RelatedCompilationUnitSearch {
 					List.of("No binding-derived search target is available.")); //$NON-NLS-1$
 		}
 
-		Map<String, ICompilationUnit> allowedByHandle= byHandle(allowedUnits);
-		Map<String, ICompilationUnit> resultByHandle= new LinkedHashMap<>();
-		Set<String> reasons= new LinkedHashSet<>();
-		addUnits(project, initialUnits, allowedByHandle, resultByHandle, reasons,
-				"The initial cleanup scope contains a source unit outside the permitted root policy."); //$NON-NLS-1$
-
+		MatchAccumulator accumulator= new MatchAccumulator(project, initialUnits, allowedUnits);
 		SearchPattern combinedPattern= null;
 		for (IJavaElement target : targets) {
 			checkCanceled(monitor);
 			if (target == null || !target.exists()) {
-				reasons.add("A binding-derived search target is missing or no longer exists."); //$NON-NLS-1$
+				accumulator.reject("A binding-derived search target is missing or no longer exists."); //$NON-NLS-1$
 				continue;
 			}
-			ICompilationUnit declarationUnit= compilationUnit(target);
-			if (declarationUnit == null) {
-				reasons.add("A search target is declared outside an editable source compilation unit."); //$NON-NLS-1$
-			} else {
-				addUnit(project, declarationUnit, allowedByHandle, resultByHandle, reasons,
-						"A search-target declaration is outside the permitted source-root policy."); //$NON-NLS-1$
-			}
+			accumulator.addTarget(target);
 			SearchPattern pattern= SearchPattern.createPattern(target, IJavaSearchConstants.REFERENCES);
 			if (pattern == null) {
-				reasons.add("JDT could not create an exact reference-search pattern."); //$NON-NLS-1$
+				accumulator.reject("JDT could not create an exact reference-search pattern."); //$NON-NLS-1$
 				continue;
 			}
 			combinedPattern= combinedPattern == null
@@ -108,35 +149,20 @@ public final class RelatedCompilationUnitSearch {
 					: SearchPattern.createOrPattern(combinedPattern, pattern);
 		}
 		if (combinedPattern == null) {
-			return result(resultByHandle, reasons);
+			return accumulator.finish();
 		}
 
 		SearchRequestor requestor= new SearchRequestor() {
 			@Override
 			public void acceptSearchMatch(SearchMatch match) {
-				if (match.getAccuracy() != SearchMatch.A_ACCURATE) {
-					reasons.add("JDT reported an inaccurate reference match."); //$NON-NLS-1$
-					return;
-				}
-				Object element= match.getElement();
-				if (!(element instanceof IJavaElement javaElement)) {
-					reasons.add("A reference match has no Java-model element."); //$NON-NLS-1$
-					return;
-				}
-				ICompilationUnit unit= compilationUnit(javaElement);
-				if (unit == null) {
-					reasons.add("A reference exists in a binary or otherwise non-source element."); //$NON-NLS-1$
-					return;
-				}
-				addUnit(project, unit, allowedByHandle, resultByHandle, reasons,
-						"A reference exists outside the permitted project source-root policy."); //$NON-NLS-1$
+				accumulator.accept(match.getElement(), match.getAccuracy());
 			}
 		};
 		new SearchEngine().search(combinedPattern,
 				new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
 				SearchEngine.createWorkspaceScope(), requestor, monitor);
 		checkCanceled(monitor);
-		return result(resultByHandle, reasons);
+		return accumulator.finish();
 	}
 
 	private static Result result(Map<String, ICompilationUnit> resultByHandle, Set<String> reasons) {
@@ -194,6 +220,9 @@ public final class RelatedCompilationUnitSearch {
 	}
 
 	private static ICompilationUnit compilationUnit(IJavaElement element) {
+		if (element == null) {
+			return null;
+		}
 		IJavaElement ancestor= element.getAncestor(IJavaElement.COMPILATION_UNIT);
 		return ancestor instanceof ICompilationUnit unit ? unit.getPrimary() : null;
 	}
