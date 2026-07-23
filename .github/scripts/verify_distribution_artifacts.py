@@ -12,7 +12,6 @@ import xml.etree.ElementTree as ET
 import zipfile
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -51,8 +50,11 @@ def feature_ids(path: Path) -> list[str]:
 
 
 def manifest(path: Path) -> dict[str, str]:
-    with zipfile.ZipFile(path) as archive:
-        raw = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
+    if path.is_dir():
+        raw = (path / "META-INF" / "MANIFEST.MF").read_bytes().decode("utf-8")
+    else:
+        with zipfile.ZipFile(path) as archive:
+            raw = archive.read("META-INF/MANIFEST.MF").decode("utf-8")
     logical: list[str] = []
     for line in raw.splitlines():
         if line.startswith(" ") and logical:
@@ -176,20 +178,44 @@ def find_product_root(products: Path) -> Path:
     return candidates[0]
 
 
+def installed_bundles(root: Path) -> list[Path]:
+    plugins = root / "plugins"
+    if not plugins.is_dir():
+        return []
+    return sorted(
+        path for path in plugins.iterdir()
+        if (path.is_file() and path.suffix == ".jar")
+        or (path.is_dir() and (path / "META-INF" / "MANIFEST.MF").is_file())
+    )
+
+
+def installed_feature_matches(root: Path, feature_id: str) -> list[Path]:
+    features = root / "features"
+    if not features.is_dir():
+        return []
+    result: list[Path] = []
+    for path in features.glob(f"{feature_id}_*"):
+        if path.is_file() and path.suffix == ".jar":
+            result.append(path)
+        elif path.is_dir() and (path / "feature.xml").is_file():
+            result.append(path)
+    return sorted(result)
+
+
 def verify_product(products: Path, published_features: list[str]) -> dict[str, object]:
     if not products.is_dir():
         fail(f"Materialized product directory does not exist: {products}")
     root = find_product_root(products)
-    plugins = sorted((root / "plugins").glob("*.jar"))
+    plugins = installed_bundles(root)
     if not plugins:
-        fail(f"Materialized product contains no plug-in JARs: {root}")
+        fail(f"Materialized product contains no plug-in bundles: {root}")
 
     singleton_versions: dict[str, list[tuple[str, str]]] = defaultdict(list)
     symbolic_names: set[str] = set()
     for plugin in plugins:
         try:
             headers = manifest(plugin)
-        except (KeyError, zipfile.BadZipFile):
+        except (KeyError, OSError, UnicodeDecodeError, zipfile.BadZipFile):
             continue
         declaration = headers.get("Bundle-SymbolicName", "")
         name = declaration.split(";", 1)[0].strip()
@@ -206,13 +232,18 @@ def verify_product(products: Path, published_features: list[str]) -> dict[str, o
     if duplicates:
         fail(f"Duplicate singleton bundles in materialized product: {duplicates}")
 
-    missing_bundles: list[str] = []
+    missing_features: list[str] = []
+    ambiguous_features: dict[str, list[str]] = {}
     for feature in published_features:
-        feature_jar = list((root / "features").glob(f"{feature}_*.jar"))
-        if len(feature_jar) != 1:
-            missing_bundles.append(feature)
-    if missing_bundles:
-        fail(f"Published features missing from materialized product: {missing_bundles}")
+        matches = installed_feature_matches(root, feature)
+        if not matches:
+            missing_features.append(feature)
+        elif len(matches) != 1:
+            ambiguous_features[feature] = [match.name for match in matches]
+    if missing_features:
+        fail(f"Published features missing from materialized product: {missing_features}")
+    if ambiguous_features:
+        fail(f"Published features occur more than once in materialized product: {ambiguous_features}")
 
     launchers = sorted((root / "plugins").glob("org.eclipse.equinox.launcher_*.jar"))
     if len(launchers) != 1:
@@ -229,10 +260,14 @@ def verify_product(products: Path, published_features: list[str]) -> dict[str, o
 
 def repositories_from_target(path: Path) -> list[str]:
     target = ET.parse(path).getroot()
-    repositories = sorted({element.attrib["location"] for element in target.findall(".//repository")
-                           if element.attrib.get("location")})
+    repositories = sorted({
+        repository.attrib["location"]
+        for location in target.findall(".//location[@type='InstallableUnit']")
+        for repository in location.findall("repository")
+        if repository.attrib.get("location")
+    })
     if not repositories:
-        fail(f"No repositories found in {path}")
+        fail(f"No InstallableUnit repositories found in {path}")
     return repositories
 
 
