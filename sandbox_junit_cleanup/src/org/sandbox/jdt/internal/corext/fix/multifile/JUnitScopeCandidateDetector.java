@@ -59,34 +59,23 @@ public final class JUnitScopeCandidateDetector {
 
 	/**
 	 * Finds source resource types referenced by selected declarations or Rule fields.
-	 * Syntactically recognizable candidates with missing bindings are marked
-	 * incomplete so callers preserve the existing complete-policy fallback.
+	 * Candidate recognition deliberately runs first without binding resolution. The
+	 * second pass refines that structural result into exact Java elements. Missing
+	 * bindings therefore produce an incomplete candidate and conservative fallback,
+	 * never a false negative that suppresses scope expansion entirely.
 	 */
 	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection<ICompilationUnit> currentScope,
 			IProgressMonitor monitor) {
-		if (project == null || currentScope == null || currentScope.isEmpty()) {
-			return new SearchSeeds(false, true, List.of());
-		}
-		checkCanceled(monitor);
-		Set<ICompilationUnit> units= new LinkedHashSet<>();
-		for (ICompilationUnit unit : currentScope) {
-			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
-				units.add(unit.getPrimary());
-			}
-		}
-		if (units.isEmpty()) {
+		Set<ICompilationUnit> units= normalize(project, currentScope);
+		if (units.isEmpty() || !containsStructuralCandidate(project, units, monitor)) {
 			return new SearchSeeds(false, true, List.of());
 		}
 
-		boolean[] candidateFound= { false };
+		checkCanceled(monitor);
+		boolean[] resolvedCandidate= { false };
 		boolean[] complete= { true };
 		Set<IJavaElement> elements= new LinkedHashSet<>();
-		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setProject(project);
-		parser.setResolveBindings(true);
-		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
-		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
-		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
+		ASTParser parser= newParser(project, true);
 		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
@@ -97,13 +86,13 @@ public final class JUnitScopeCandidateDetector {
 						ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
 						if (superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(
 								superclass.getErasure().getQualifiedName())) {
-							candidateFound[0]= true;
+							resolvedCandidate[0]= true;
 							complete[0]&= addJavaElement(binding, elements);
 							return false;
 						}
-						if (binding == null && node.getSuperclassType() != null
+						if (node.getSuperclassType() != null
 								&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$
-							candidateFound[0]= true;
+							resolvedCandidate[0]= true;
 							complete[0]= false;
 						}
 						return true;
@@ -130,7 +119,7 @@ public final class JUnitScopeCandidateDetector {
 						if (!ruleField) {
 							return true;
 						}
-						candidateFound[0]= true;
+						resolvedCandidate[0]= true;
 						if (unresolvedRuleAnnotation) {
 							complete[0]= false;
 						}
@@ -142,7 +131,70 @@ public final class JUnitScopeCandidateDetector {
 			}
 		}, monitor);
 		checkCanceled(monitor);
-		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
+		return new SearchSeeds(true, complete[0] && resolvedCandidate[0], new ArrayList<>(elements));
+	}
+
+	private static boolean containsStructuralCandidate(IJavaProject project, Set<ICompilationUnit> units,
+			IProgressMonitor monitor) {
+		checkCanceled(monitor);
+		boolean[] candidate= { false };
+		ASTParser parser= newParser(project, false);
+		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+				if (candidate[0]) {
+					return;
+				}
+				ast.accept(new ASTVisitor() {
+					@Override
+					public boolean visit(TypeDeclaration node) {
+						if (node.getSuperclassType() != null
+								&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$
+							candidate[0]= true;
+							return false;
+						}
+						return true;
+					}
+
+					@Override
+					public boolean visit(FieldDeclaration node) {
+						for (Object modifier : node.modifiers()) {
+							if (modifier instanceof Annotation annotation
+									&& isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
+								candidate[0]= true;
+								break;
+							}
+						}
+						return !candidate[0];
+					}
+				});
+			}
+		}, monitor);
+		checkCanceled(monitor);
+		return candidate[0];
+	}
+
+	private static ASTParser newParser(IJavaProject project, boolean resolveBindings) {
+		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
+		parser.setProject(project);
+		parser.setResolveBindings(resolveBindings);
+		parser.setBindingsRecovery(resolveBindings && IASTSharedValues.SHARED_BINDING_RECOVERY);
+		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
+		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
+		return parser;
+	}
+
+	private static Set<ICompilationUnit> normalize(IJavaProject project,
+			Collection<ICompilationUnit> currentScope) {
+		Set<ICompilationUnit> units= new LinkedHashSet<>();
+		if (project == null || currentScope == null) {
+			return units;
+		}
+		for (ICompilationUnit unit : currentScope) {
+			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
+				units.add(unit.getPrimary());
+			}
+		return units;
 	}
 
 	private static boolean isSyntacticRuleName(String name) {
