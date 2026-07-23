@@ -44,43 +44,38 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	private static final Set<String> PDE_EXTENSIONS= Set.of("exsd", "xsd"); //$NON-NLS-1$ //$NON-NLS-2$
 	private static final Set<String> PDE_DIRECTORIES= Set.of("OSGI-INF", "META-INF"); //$NON-NLS-1$ //$NON-NLS-2$
 
-	private final Object runLock= new Object();
 	private final Set<IPath> processedFiles= new HashSet<>();
 	private WeakReference<Set<CompilationUnitRewriteOperation>> activeOperations= new WeakReference<>(null);
 	private boolean enableIndent;
 
 	/** Sets whether transformed markup is indented. */
 	public void setEnableIndent(boolean enable) {
-		synchronized (runLock) {
-			enableIndent= enable;
-		}
+		enableIndent= enable;
 	}
 
 	@Override
-	public void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+	public synchronized void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesProcessed,
 			boolean createForOnlyIfVarUsed) {
-		synchronized (runLock) {
-			beginRun(operations);
-			try {
-				IResource resource= compilationUnit.getJavaElement().getResource();
-				if (!(resource instanceof IFile) || !resource.exists()) {
-					return;
-				}
-				IProject project= resource.getProject();
-				project.accept(candidate -> {
-					if (candidate instanceof IFile file && isPDERelevantFile(file)) {
-						try {
-							processFile(fixcore, file, operations, compilationUnit);
-						} catch (CoreException e) {
-							LOG.log(e.getStatus());
-						}
-					}
-					return true;
-				});
-			} catch (CoreException e) {
-				LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, "Error during XML cleanup", e)); //$NON-NLS-1$
+		beginRun(operations);
+		try {
+			IResource resource= compilationUnit.getJavaElement().getResource();
+			if (!(resource instanceof IFile) || !resource.exists()) {
+				return;
 			}
+			IProject project= resource.getProject();
+			project.accept(candidate -> {
+				if (candidate instanceof IFile file && isPDERelevantFile(file)) {
+					try {
+						processFile(fixcore, file, operations, compilationUnit);
+					} catch (CoreException e) {
+						LOG.log(e.getStatus());
+					}
+				}
+				return true;
+			});
+		} catch (CoreException e) {
+			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, "Error during XML cleanup", e)); //$NON-NLS-1$
 		}
 	}
 
