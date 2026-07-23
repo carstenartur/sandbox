@@ -78,7 +78,7 @@ public class JUnitScopeExpansionTest {
 	}
 
 	@Test
-	public void selectedExternalResourceUsesConservativeProjectFallback() throws CoreException {
+	public void selectedExternalResourceFindsOnlyRequiredRuleUser() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
 				"""
@@ -92,7 +92,17 @@ public class JUnitScopeExpansionTest {
 					}
 				}
 				""", false, null);
-		ICompilationUnit related= createUnit(pack, "SelectedTest.java"); //$NON-NLS-1$
+		ICompilationUnit related= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import org.junit.Rule;
+
+				public class SelectedTest {
+					@Rule
+					public SharedResource resource = new SharedResource();
+				}
+				""", false, null);
 		ICompilationUnit unrelated= createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
 
 		Collection<ICompilationUnit> expanded= externalResourceCleanup().expandCleanUpScope(
@@ -100,9 +110,9 @@ public class JUnitScopeExpansionTest {
 		Set<String> expandedHandles= expanded.stream().map(ICompilationUnit::getHandleIdentifier)
 				.collect(Collectors.toSet());
 
-		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier(),
-				unrelated.getHandleIdentifier()), expandedHandles,
-				"A selected resource candidate must retain the conservative complete-project fallback");
+		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier()), expandedHandles,
+				"The exact closure must add the Rule user without broadening to unrelated source");
+		assertTrue(!expanded.contains(unrelated));
 	}
 
 	private static JUnitCleanUpCore externalResourceCleanup() {

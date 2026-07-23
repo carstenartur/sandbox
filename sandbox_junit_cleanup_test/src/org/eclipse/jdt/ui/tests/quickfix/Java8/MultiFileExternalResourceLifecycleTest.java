@@ -43,7 +43,7 @@ public class MultiFileExternalResourceLifecycleTest {
 	}
 
 	@Test
-	public void resourceOnlySelectionMigratesRequiredRuleUserButNotUnrelatedSource() throws CoreException {
+	public void completeSelectionMigratesResourceAndRuleUserAtomically() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit resource= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
 				"""
@@ -87,7 +87,7 @@ public class MultiFileExternalResourceLifecycleTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
 
 		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
-				new ICompilationUnit[] { resource },
+				new ICompilationUnit[] { resource, test, unrelated },
 				new ICompilationUnit[] { resource, test, unrelated },
 				new String[] {
 						"""

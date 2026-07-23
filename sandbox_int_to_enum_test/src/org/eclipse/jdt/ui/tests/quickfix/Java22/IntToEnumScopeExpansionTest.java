@@ -120,7 +120,7 @@ public class IntToEnumScopeExpansionTest {
 	}
 
 	@Test
-	public void selectedCandidateUsesConservativeProjectFallback() throws CoreException {
+	public void selectedCandidateFindsOnlyRequiredCaller() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", //$NON-NLS-1$
 				"""
@@ -139,7 +139,16 @@ public class IntToEnumScopeExpansionTest {
 					}
 				}
 				""", false, null);
-		ICompilationUnit related= createUnit(pack, "Related.java"); //$NON-NLS-1$
+		ICompilationUnit related= pack.createCompilationUnit("Related.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class Related {
+					void run(Selected selected) {
+						selected.process(Selected.STATUS_PENDING);
+					}
+				}
+				""", false, null);
 		ICompilationUnit unrelated= createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
 
 		Collection<ICompilationUnit> expanded= projectWideCleanup().expandCleanUpScope(
@@ -147,9 +156,9 @@ public class IntToEnumScopeExpansionTest {
 		Set<String> expandedHandles= expanded.stream().map(ICompilationUnit::getHandleIdentifier)
 				.collect(Collectors.toSet());
 
-		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier(),
-				unrelated.getHandleIdentifier()), expandedHandles,
-				"A selected coordinated candidate must retain the conservative complete-project fallback");
+		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier()), expandedHandles,
+				"The exact closure must add the caller without broadening to unrelated source");
+		assertTrue(!expanded.contains(unrelated));
 	}
 
 	private static IntToEnumCleanUpCore projectWideCleanup() {

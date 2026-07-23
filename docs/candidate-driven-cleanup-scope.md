@@ -73,16 +73,18 @@ The coordinated migration is refused when any exact closure search reports:
 
 The cleanup does not silently broaden to unrelated workspace content and does not produce a partial migration.
 
-## Lifecycle ownership
+## Host integration and lifecycle ownership
+
+`IMultiFileCleanUpScopeProvider` is an optional integration point. A host that supports candidate-driven expansion must call `expandCleanUpScope(...)`, add the returned compilation units, and repeat until the provider reaches its fixed point.
+
+The ordinary unpatched Eclipse `CleanUpRefactoring` does not call this provider API. Callers using that standard lifecycle must therefore supply the complete coordinated compilation-unit scope explicitly. The original complete-scope planner entry points remain supported for this path.
 
 Scope decisions are stored only for the serialized cleanup lifecycle established by `AbstractPlannedMultiFileCleanUp`:
 
-- a pending handle set describes the additional units requested from the host cleanup engine;
+- a pending handle set describes the source closure requested from a supporting host;
 - a verified handle set records the fixed point once those units are present;
 - a rejected decision forces the coordinated planner to return an empty migration plan;
 - the decision is consumed and cleared when planning begins.
-
-An explicit complete-project caller that does not use scope expansion remains supported through the original planner entry point.
 
 ## Verification
 
@@ -95,11 +97,17 @@ The common-layer tests cover deterministic admission and fail-closed handling fo
 - policy-excluded source units;
 - declarations outside the allow-list.
 
-The cleanup integration tests start from owner-only selections and verify that:
+The cleanup scope tests start from owner-only selections with real source users and verify that:
 
-- the required Int-to-Enum caller is automatically migrated;
-- the required JUnit Rule user is automatically migrated;
-- an unrelated source unit remains unchanged;
+- the exact Int-to-Enum caller closure is returned;
+- the exact JUnit Rule-user closure is returned;
+- unrelated editable source is not admitted;
+- each closure is emitted once and reaches a stable fixed point.
+
+The lifecycle tests exercise the ordinary Eclipse path with an explicit complete scope and verify that:
+
+- all semantically coupled sources are migrated atomically;
+- unrelated selected source remains unchanged;
 - apply and undo preserve the complete verified source/error baseline.
 
 Related issues: #1212, #1214, #1221, #1224.
