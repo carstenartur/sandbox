@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -89,6 +90,15 @@ public final class MultiFileCleanUpLifecycleAssertions {
 			ICompilationUnit[] verifiedUnits, String[] expectedAfterApply) throws CoreException {
 		assertEquals(verifiedUnits.length, expectedAfterApply.length,
 				"Each verified compilation unit needs one expected post-apply source"); //$NON-NLS-1$
+		Set<String> verifiedHandles= Arrays.stream(verifiedUnits)
+				.map(ICompilationUnit::getPrimary)
+				.map(ICompilationUnit::getHandleIdentifier)
+				.collect(Collectors.toSet());
+		assertTrue(Arrays.stream(selectedUnits)
+				.map(ICompilationUnit::getPrimary)
+				.map(ICompilationUnit::getHandleIdentifier)
+				.allMatch(verifiedHandles::contains),
+				"Each selected compilation unit must be included in verifiedUnits"); //$NON-NLS-1$
 		String[] originals= contents(verifiedUnits);
 		Map<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(verifiedUnits);
 
