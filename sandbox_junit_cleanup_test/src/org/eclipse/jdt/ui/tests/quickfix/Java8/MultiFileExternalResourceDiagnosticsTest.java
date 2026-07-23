@@ -107,7 +107,7 @@ public class MultiFileExternalResourceDiagnosticsTest {
 				context.getJavaProject(), units, true, true, null);
 
 		assertFalse(first.status().hasFatalError());
-		assertEquals(1, first.plan().migrations().size());
+		assertEquals(1, first.plan().externalResourceRules().size());
 		assertEquals(MultiFileCandidateOutcome.TRANSFORMED,
 				first.diagnostics().candidates().get(0).outcome());
 		assertEquals(first.diagnostics().toJson(), second.diagnostics().toJson());
