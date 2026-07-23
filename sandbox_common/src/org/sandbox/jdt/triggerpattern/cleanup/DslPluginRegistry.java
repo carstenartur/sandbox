@@ -14,7 +14,6 @@
 package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,12 +22,12 @@ import java.util.Map;
  * Registry for {@link AbstractPatternCleanupPlugin} instances, grouped by bundle ID.
  *
  * <p>Plugins register themselves (or are registered on their behalf) by calling
- * {@link #register(AbstractPatternCleanupPlugin)}.  Consumers such as
+ * {@link #register(AbstractPatternCleanupPlugin)}. Consumers such as
  * {@code HintFileCleanUpCore} can then retrieve all plugins for a given bundle via
  * {@link #getPluginsForBundle(String)}.</p>
  *
  * <p>Bundle IDs are derived from the plugin's {@code cleanupId} through
- * {@link AbstractPatternCleanupPlugin#getBundleId()}.  For example, a plugin
+ * {@link AbstractPatternCleanupPlugin#getBundleId()}. For example, a plugin
  * whose {@code cleanupId} is {@code "cleanup.encoding.charset.forname.utf8"} will
  * be associated with the bundle {@code "encoding"}.</p>
  *
@@ -36,11 +35,13 @@ import java.util.Map;
  */
 public final class DslPluginRegistry {
 
-	/** All registered plugins keyed by their cleanup ID (preserves registration order). */
-	private static final Map<String, AbstractPatternCleanupPlugin<?>> BY_CLEANUP_ID = new LinkedHashMap<>();
+	private static final Object LOCK= new Object();
+
+	/** All registered plugins keyed by cleanup ID, preserving registration order. */
+	private static final Map<String, AbstractPatternCleanupPlugin<?>> BY_CLEANUP_ID= new LinkedHashMap<>();
 
 	/** Plugins grouped by bundle ID. */
-	private static final Map<String, List<AbstractPatternCleanupPlugin<?>>> BY_BUNDLE_ID = new LinkedHashMap<>();
+	private static final Map<String, List<AbstractPatternCleanupPlugin<?>>> BY_BUNDLE_ID= new LinkedHashMap<>();
 
 	private DslPluginRegistry() {
 		// utility class
@@ -57,46 +58,49 @@ public final class DslPluginRegistry {
 	 * @throws IllegalArgumentException if {@code plugin} is {@code null}, or if its
 	 *             cleanup ID or bundle ID is {@code null} or empty
 	 */
-	public static synchronized void register(AbstractPatternCleanupPlugin<?> plugin) {
+	public static void register(AbstractPatternCleanupPlugin<?> plugin) {
 		if (plugin == null) {
 			throw new IllegalArgumentException("plugin must not be null"); //$NON-NLS-1$
 		}
-		String id = plugin.getCleanupId();
+		String id= plugin.getCleanupId();
 		if (id == null || id.isEmpty()) {
 			throw new IllegalArgumentException("cleanupId must not be null or empty"); //$NON-NLS-1$
 		}
-		if (BY_CLEANUP_ID.containsKey(id)) {
-			return; // already registered
-		}
-		String bundleId = plugin.getBundleId();
+		String bundleId= plugin.getBundleId();
 		if (bundleId == null || bundleId.isEmpty()) {
 			throw new IllegalArgumentException(
 					"bundleId must not be null or empty for cleanupId " + id); //$NON-NLS-1$
 		}
-		BY_CLEANUP_ID.put(id, plugin);
-		BY_BUNDLE_ID.computeIfAbsent(bundleId, k -> new ArrayList<>()).add(plugin);
-	}
-
-	/**
-	 * Returns all registered plugins.
-	 *
-	 * @return an unmodifiable view of all registered plugins (never {@code null})
-	 */
-	public static synchronized List<AbstractPatternCleanupPlugin<?>> getAllPlugins() {
-		return Collections.unmodifiableList(new ArrayList<>(BY_CLEANUP_ID.values()));
-	}
-
-	/**
-	 * Returns all registered plugins whose bundle ID matches {@code bundleId}.
-	 *
-	 * @param bundleId the bundle identifier (e.g., {@code "encoding"})
-	 * @return an unmodifiable view of matching plugins (never {@code null})
-	 */
-	public static synchronized List<AbstractPatternCleanupPlugin<?>> getPluginsForBundle(String bundleId) {
-		List<AbstractPatternCleanupPlugin<?>> plugins = BY_BUNDLE_ID.get(bundleId);
-		if (plugins == null) {
-			return Collections.emptyList();
+		synchronized (LOCK) {
+			if (BY_CLEANUP_ID.containsKey(id)) {
+				return;
+			}
+			BY_CLEANUP_ID.put(id, plugin);
+			BY_BUNDLE_ID.computeIfAbsent(bundleId, key -> new ArrayList<>()).add(plugin);
 		}
-		return Collections.unmodifiableList(plugins);
+	}
+
+	/**
+	 * Returns a stable snapshot of all registered plugins.
+	 *
+	 * @return immutable snapshot of all registered plugins, never {@code null}
+	 */
+	public static List<AbstractPatternCleanupPlugin<?>> getAllPlugins() {
+		synchronized (LOCK) {
+			return List.copyOf(BY_CLEANUP_ID.values());
+		}
+	}
+
+	/**
+	 * Returns a stable snapshot of all registered plugins for {@code bundleId}.
+	 *
+	 * @param bundleId bundle identifier, for example {@code "encoding"}
+	 * @return immutable snapshot of matching plugins, never {@code null}
+	 */
+	public static List<AbstractPatternCleanupPlugin<?>> getPluginsForBundle(String bundleId) {
+		synchronized (LOCK) {
+			List<AbstractPatternCleanupPlugin<?>> plugins= BY_BUNDLE_ID.get(bundleId);
+			return plugins == null ? List.of() : List.copyOf(plugins);
+		}
 	}
 }
