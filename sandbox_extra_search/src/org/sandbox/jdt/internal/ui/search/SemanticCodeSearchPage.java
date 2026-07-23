@@ -134,13 +134,6 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 			return false;
 		}
 
-		EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();
-		searchService.getSearchClient();
-		if (!searchService.isAvailable()) {
-			setErrorMessage(Messages.SemanticSearchClient_BackendNotAvailable);
-			return false;
-		}
-
 		SearchMode mode;
 		if (hybridRadio != null && hybridRadio.getSelection()) {
 			mode= SearchMode.HYBRID;
