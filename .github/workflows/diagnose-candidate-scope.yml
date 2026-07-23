@@ -32,13 +32,7 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
-      - name: Install target definition
-        run: >-
-          mvn --batch-mode -ntp
-          -pl sandbox_target -am
-          -DskipTests -Dspotbugs.skip=true -Djacoco.skip=true
-          install
-      - name: Compile affected reactor
+      - name: Compile affected reactor and capture failure
         shell: bash
         run: |
           set +e
