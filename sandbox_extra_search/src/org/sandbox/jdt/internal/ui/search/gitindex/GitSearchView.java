@@ -122,8 +122,9 @@ public class GitSearchView extends ViewPart {
 		if (query.isEmpty()) {
 			return;
 		}
-		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-		if (client == null) {
+		EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();
+		SemanticSearchClient client= searchService.getSearchClient();
+		if (!searchService.isAvailable()) {
 			tableViewer.setInput(new Object[0]);
 			return;
 		}
