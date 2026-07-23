@@ -1,0 +1,517 @@
+{
+  "summary": {
+    "total_modules": 15,
+    "total_tests": 2011,
+    "enabled_tests": 1971,
+    "disabled_tests": 40
+  },
+  "plugins": {
+    "sandbox_cleanup_application_test": {
+      "plugin_name": "sandbox_cleanup_application_test",
+      "total_tests": 36,
+      "disabled_tests": 0,
+      "enabled_tests": 36,
+      "test_files": 1
+    },
+    "sandbox_common_test": {
+      "plugin_name": "sandbox_common_test",
+      "total_tests": 381,
+      "disabled_tests": 2,
+      "enabled_tests": 379,
+      "test_files": 39
+    },
+    "sandbox_css_cleanup_test": {
+      "plugin_name": "sandbox_css_cleanup_test",
+      "total_tests": 28,
+      "disabled_tests": 0,
+      "enabled_tests": 28,
+      "test_files": 4
+    },
+    "sandbox_encoding_quickfix_test": {
+      "plugin_name": "sandbox_encoding_quickfix_test",
+      "total_tests": 16,
+      "disabled_tests": 0,
+      "enabled_tests": 16,
+      "test_files": 4
+    },
+    "sandbox_functional_converter_test": {
+      "plugin_name": "sandbox_functional_converter_test",
+      "total_tests": 576,
+      "disabled_tests": 0,
+      "enabled_tests": 576,
+      "test_files": 34
+    },
+    "sandbox_int_to_enum_test": {
+      "plugin_name": "sandbox_int_to_enum_test",
+      "total_tests": 30,
+      "disabled_tests": 0,
+      "enabled_tests": 30,
+      "test_files": 6
+    },
+    "sandbox_jface_cleanup_test": {
+      "plugin_name": "sandbox_jface_cleanup_test",
+      "total_tests": 15,
+      "disabled_tests": 1,
+      "enabled_tests": 14,
+      "test_files": 2
+    },
+    "sandbox_junit_cleanup_test": {
+      "plugin_name": "sandbox_junit_cleanup_test",
+      "total_tests": 656,
+      "disabled_tests": 36,
+      "enabled_tests": 620,
+      "test_files": 33
+    },
+    "sandbox_method_reuse_test": {
+      "plugin_name": "sandbox_method_reuse_test",
+      "total_tests": 1,
+      "disabled_tests": 0,
+      "enabled_tests": 1,
+      "test_files": 1
+    },
+    "sandbox_platform_helper_test": {
+      "plugin_name": "sandbox_platform_helper_test",
+      "total_tests": 6,
+      "disabled_tests": 1,
+      "enabled_tests": 5,
+      "test_files": 2
+    },
+    "sandbox_tools_test": {
+      "plugin_name": "sandbox_tools_test",
+      "total_tests": 2,
+      "disabled_tests": 0,
+      "enabled_tests": 2,
+      "test_files": 1
+    },
+    "sandbox_triggerpattern_test": {
+      "plugin_name": "sandbox_triggerpattern_test",
+      "total_tests": 161,
+      "disabled_tests": 0,
+      "enabled_tests": 161,
+      "test_files": 8
+    },
+    "sandbox_usage_view_test": {
+      "plugin_name": "sandbox_usage_view_test",
+      "total_tests": 23,
+      "disabled_tests": 0,
+      "enabled_tests": 23,
+      "test_files": 2
+    },
+    "sandbox_use_general_type_test": {
+      "plugin_name": "sandbox_use_general_type_test",
+      "total_tests": 29,
+      "disabled_tests": 0,
+      "enabled_tests": 29,
+      "test_files": 1
+    },
+    "sandbox_xml_cleanup_test": {
+      "plugin_name": "sandbox_xml_cleanup_test",
+      "total_tests": 51,
+      "disabled_tests": 0,
+      "enabled_tests": 51,
+      "test_files": 5
+    }
+  },
+  "disabled_tests": [
+    {
+      "plugin": "sandbox_common_test",
+      "file_path": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ClassInstanceCreationVisitorTest.java",
+      "class_name": "org.sandbox.jdt.ui.tests.quickfix.addresses",
+      "method_name": "testChainedVisitorWithoutFirstMatchBug",
+      "is_disabled": true,
+      "disabled_reason": "AstProcessorBuilder bug: chained ClassInstanceCreation visitor not called when first MethodInvocation visitor has no match (PR #678)",
+      "test_type": "Test",
+      "line_number": 549
+    },
+    {
+      "plugin": "sandbox_common_test",
+      "file_path": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ClassInstanceCreationVisitorTest.java",
+      "class_name": "org.sandbox.jdt.ui.tests.quickfix.addresses",
+      "method_name": "doWork",
+      "is_disabled": true,
+      "disabled_reason": "AstProcessorBuilder bug: chained ClassInstanceCreation visitor not called when first MethodInvocation visitor has no match (PR #678)",
+      "test_type": "Test",
+      "line_number": 557
+    },
+    {
+      "plugin": "sandbox_jface_cleanup_test",
+      "file_path": "sandbox_jface_cleanup_test/src/org/sandbox/jdt/ui/tests/quickfix/MissingSuperDisposePluginTest.java",
+      "class_name": "org.sandbox.jdt.ui.tests.quickfix.method",
+      "method_name": "testMissingSuperDisposeCleanup",
+      "is_disabled": true,
+      "disabled_reason": "Requires TriggerPattern engine enhancements: override detection and body constraints",
+      "test_type": "Test",
+      "line_number": 233
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSomething",
+      "is_disabled": true,
+      "disabled_reason": "not implemented",
+      "test_type": "Test",
+      "line_number": 181
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSomething",
+      "is_disabled": true,
+      "disabled_reason": "not ready",
+      "test_type": "Test",
+      "line_number": 253
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSingleMemberAnnotation_IgnoreToDisabled",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 428
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testFeature",
+      "is_disabled": true,
+      "disabled_reason": "Feature not ready",
+      "test_type": "Test",
+      "line_number": 457
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSomething",
+      "is_disabled": true,
+      "disabled_reason": "TODO: implement",
+      "test_type": "Test",
+      "line_number": 495
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSomething",
+      "is_disabled": true,
+      "disabled_reason": "not ready",
+      "test_type": "Test",
+      "line_number": 651
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSomething",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 689
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testSomething",
+      "is_disabled": true,
+      "disabled_reason": "TODO: fix\\\\nline breaks & special chars",
+      "test_type": "Test",
+      "line_number": 758
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testDsl_ignoreAnnotation_preservesValue",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 908
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/TriggerPatternCleanupFrameworkTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.verifies",
+      "method_name": "testFeature",
+      "is_disabled": true,
+      "disabled_reason": "Feature not ready",
+      "test_type": "Test",
+      "line_number": 937
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/helper/RewriteRuleTest.java",
+      "class_name": "org.sandbox.jdt.internal.corext.fix.helper.RewriteRuleTest",
+      "method_name": "testRewriteRule_defaultValues",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 130
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationCombinationsTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationCombinationsTest",
+      "method_name": "ignoredTest",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 131
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationCombinationsTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationCombinationsTest",
+      "method_name": "testWithAssertions",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 136
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationCombinationsTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationCombinationsTest",
+      "method_name": "migrates_suite_with_assertions_and_lifecycle",
+      "is_disabled": true,
+      "disabled_reason": "@RunWith(Suite.class) to @Suite transformation not fully working - actual output retains @RunWith",
+      "test_type": "Test",
+      "line_number": 216
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationCombinationsTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationCombinationsTest",
+      "method_name": "testIgnored",
+      "is_disabled": true,
+      "disabled_reason": "Not ready",
+      "test_type": "Test",
+      "line_number": 434
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRulesToExtensionsTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationRulesToExtensionsTest",
+      "method_name": "migrates_junit4_rules_to_junit5_extensions",
+      "is_disabled": true,
+      "disabled_reason": "Rule migration parameterized test - TemporaryFolder output mismatch, ErrorCollector requires hamcrest not on test classpath",
+      "test_type": "ParameterizedTest",
+      "line_number": 50
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "ignoredTest",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 73
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "migrates_ignore_with_message",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 81
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "ignoredTestWithMessage",
+      "is_disabled": true,
+      "disabled_reason": "Not yet implemented",
+      "test_type": "Test",
+      "line_number": 110
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "migrates_multiple_ignored_tests",
+      "is_disabled": true,
+      "disabled_reason": "Not yet implemented",
+      "test_type": "Test",
+      "line_number": 118
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "ignoredTest1",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 156
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "ignoredTest2",
+      "is_disabled": true,
+      "disabled_reason": "Temporarily disabled",
+      "test_type": "Test",
+      "line_number": 161
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "activeTest",
+      "is_disabled": true,
+      "disabled_reason": "Temporarily disabled",
+      "test_type": "Test",
+      "line_number": 165
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationIgnoreTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationIgnoreTest",
+      "method_name": "ignoredTestWithExplicitValue",
+      "is_disabled": true,
+      "disabled_reason": "explicit value attribute",
+      "test_type": "Test",
+      "line_number": 202
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.TriggerPatternPluginTest",
+      "method_name": "testIgnored",
+      "is_disabled": true,
+      "disabled_reason": "Not ready yet",
+      "test_type": "Test",
+      "line_number": 296
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.TriggerPatternPluginTest",
+      "method_name": "ignoreJUnitPlugin_migrates_without_reason",
+      "is_disabled": true,
+      "disabled_reason": "Not ready yet",
+      "test_type": "Test",
+      "line_number": 304
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.TriggerPatternPluginTest",
+      "method_name": "testIgnored",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 333
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.TriggerPatternPluginTest",
+      "method_name": "v2_plugins_work_together_in_complex_class",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 341
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/TriggerPatternPluginTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.TriggerPatternPluginTest",
+      "method_name": "testIgnored",
+      "is_disabled": true,
+      "disabled_reason": "Not ready",
+      "test_type": "Test",
+      "line_number": 422
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationTestAnnotationTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationTestAnnotationTest",
+      "method_name": "migrates_test_timeout_with_other_parameters",
+      "is_disabled": true,
+      "disabled_reason": "Combined @Test(expected + timeout) transformation not yet implemented - both parameters need simultaneous migration",
+      "test_type": "Test",
+      "line_number": 299
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRunnersAdvancedTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationRunnersAdvancedTest",
+      "method_name": "migrates_runWith_theories_to_parameterizedTest",
+      "is_disabled": true,
+      "disabled_reason": "@RunWith(Theories.class) to @ParameterizedTest transformation not yet implemented",
+      "test_type": "Test",
+      "line_number": 106
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRunnersAdvancedTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationRunnersAdvancedTest",
+      "method_name": "migrates_runWith_categories_to_suite_with_tags",
+      "is_disabled": true,
+      "disabled_reason": "@RunWith(Categories.class) to @Suite with @IncludeTags/@ExcludeTags transformation not yet implemented",
+      "test_type": "Test",
+      "line_number": 157
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/LostTestFinderTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.LostTestFinderTest",
+      "method_name": "testNotYetImplemented",
+      "is_disabled": true,
+      "disabled_reason": "No reason specified",
+      "test_type": "Test",
+      "line_number": 186
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationEdgeCasesTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationEdgeCasesTest",
+      "method_name": "handles_combined_test_expected_and_timeout",
+      "is_disabled": true,
+      "disabled_reason": "Combined @Test(expected + timeout) transformation not yet implemented - both parameters need simultaneous migration",
+      "test_type": "Test",
+      "line_number": 52
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationEdgeCasesTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationEdgeCasesTest",
+      "method_name": "testIgnored",
+      "is_disabled": true,
+      "disabled_reason": "Not yet implemented",
+      "test_type": "Test",
+      "line_number": 176
+    },
+    {
+      "plugin": "sandbox_junit_cleanup_test",
+      "file_path": "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationEdgeCasesTest.java",
+      "class_name": "org.eclipse.jdt.ui.tests.quickfix.Java8.MigrationEdgeCasesTest",
+      "method_name": "handles_wildcard_static_imports",
+      "is_disabled": true,
+      "disabled_reason": "Not yet implemented",
+      "test_type": "Test",
+      "line_number": 184
+    },
+    {
+      "plugin": "sandbox_platform_helper_test",
+      "file_path": "sandbox_platform_helper_test/src/org/sandbox/jdt/ui/tests/quickfix/Java9CleanUpTest.java",
+      "class_name": "org.sandbox.jdt.ui.tests.quickfix.Java9CleanUpTest",
+      "method_name": "testPlatformStatusParametrized",
+      "is_disabled": true,
+      "disabled_reason": "Temporary disable - import handling needs investigation",
+      "test_type": "ParameterizedTest",
+      "line_number": 90
+    }
+  ]
+}
