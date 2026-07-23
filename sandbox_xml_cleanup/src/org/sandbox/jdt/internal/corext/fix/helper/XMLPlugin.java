@@ -44,6 +44,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	private static final Set<String> PDE_DIRECTORIES= Set.of("OSGI-INF", "META-INF"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final Set<IPath> processedFiles= new HashSet<>();
+	private Set<CompilationUnitRewriteOperation> activeOperations;
 	private boolean enableIndent;
 
 	/** Sets whether transformed markup is indented. */
@@ -52,9 +53,10 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	}
 
 	@Override
-	public void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+	public synchronized void find(XMLCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesProcessed,
 			boolean createForOnlyIfVarUsed) {
+		beginRun(operations);
 		try {
 			IResource resource= compilationUnit.getJavaElement().getResource();
 			if (!(resource instanceof IFile) || !resource.exists()) {
@@ -73,6 +75,13 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 			});
 		} catch (CoreException e) {
 			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID, "Error during XML cleanup", e)); //$NON-NLS-1$
+		}
+	}
+
+	private void beginRun(Set<CompilationUnitRewriteOperation> operations) {
+		if (activeOperations != operations) {
+			activeOperations= operations;
+			processedFiles.clear();
 		}
 	}
 
@@ -130,7 +139,6 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 		if (current instanceof IProject) {
 			return true;
 		}
-		int depth= 0;
 		while (current != null && !(current instanceof IProject)) {
 			if (current instanceof IFolder folder) {
 				String name= folder.getName();
@@ -139,9 +147,6 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 				}
 			}
 			current= current.getParent();
-			if (++depth > 2 && current != null && !(current instanceof IProject)) {
-				continue;
-			}
 		}
 		return false;
 	}
