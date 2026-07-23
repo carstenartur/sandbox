@@ -28,7 +28,10 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
@@ -141,6 +144,12 @@ public class IntToEnumScopeExpansionTest {
 				""", false, null);
 		ICompilationUnit related= createUnit(pack, "Related.java"); //$NON-NLS-1$
 		ICompilationUnit unrelated= createUnit(pack, "Unrelated.java"); //$NON-NLS-1$
+
+		assertTrue(IntEnumScopeCandidateDetector.containsCandidate(selected.getJavaProject(), List.of(selected), null),
+				"The selected source must be recognized as an Int-to-Enum candidate owner");
+		assertEquals(3, JavaProjectCompilationUnits.collect(selected.getJavaProject(), List.of(selected),
+				SourceRootPolicy.PRODUCTION_WITH_DEPENDENT_TESTS).size(),
+				"The selected source root must remain editable under the Int-to-Enum expansion policy");
 
 		Collection<ICompilationUnit> expanded= projectWideCleanup().expandCleanUpScope(
 				selected.getJavaProject(), List.of(selected), null);
