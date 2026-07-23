@@ -1,0 +1,54 @@
+name: Patched JDT UI Bundle
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/patched-jdt-ui.env'
+      - '.github/scripts/build_patched_jdt_ui.sh'
+      - '.github/workflows/patched-jdt-ui-bundle.yml'
+      - 'docs/patched-jdt-ui-delivery.md'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Build and verify pinned replacement bundle
+        shell: bash
+        run: |
+          set +e
+          bash .github/scripts/build_patched_jdt_ui.sh "$RUNNER_TEMP/patched-jdt-ui" \
+            > patched-jdt-ui-build.log 2>&1
+          status=$?
+          tail -n 250 patched-jdt-ui-build.log
+          exit "$status"
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-build-log
+          path: patched-jdt-ui-build.log
+          retention-days: 2
+          if-no-files-found: error
+      - name: Upload verified bundle and provenance
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui/
+          retention-days: 14
+          if-no-files-found: error
