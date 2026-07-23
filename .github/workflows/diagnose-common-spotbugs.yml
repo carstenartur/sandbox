@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'sandbox_common/**'
+      - 'sandbox_extra_search/**'
       - '.github/workflows/diagnose-common-spotbugs.yml'
 
 permissions:
