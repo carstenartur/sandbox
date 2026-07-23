@@ -5,6 +5,7 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 EVIDENCE_DIR=${1:-"$ROOT_DIR/target/distribution-verification"}
 VERIFY_JSON="$EVIDENCE_DIR/verification.json"
 UPDATE_SITE="$ROOT_DIR/sandbox_updatesite/target/repository"
+TARGET_FILE="$ROOT_DIR/sandbox_target/eclipse.target"
 SMOKE_ROOT=${DISTRIBUTION_SMOKE_ROOT:-"${RUNNER_TEMP:-${TMPDIR:-/tmp}}/sandbox-distribution-smoke"}
 
 for command in java python3 timeout xvfb-run; do
@@ -12,17 +13,28 @@ for command in java python3 timeout xvfb-run; do
 done
 [[ -f "$VERIFY_JSON" ]] || { echo "Missing distribution verification evidence: $VERIFY_JSON" >&2; exit 1; }
 
-readarray -t values < <(python3 - "$VERIFY_JSON" "$UPDATE_SITE" <<'PY'
+readarray -t values < <(python3 - "$VERIFY_JSON" "$UPDATE_SITE" "$TARGET_FILE" <<'PY'
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 with open(sys.argv[1], encoding='utf-8') as stream:
     report = json.load(stream)
 print(report['product']['root'])
 print(report['product']['launcher'])
-repositories = [Path(sys.argv[2]).resolve().as_uri(), *report['targetRepositories']]
-print(','.join(repositories))
+
+target = ET.parse(sys.argv[3]).getroot()
+p2_repositories = sorted({
+    repository.attrib['location']
+    for location in target.findall(".//location[@type='InstallableUnit']")
+    for repository in location.findall('repository')
+    if repository.attrib.get('location')
+})
+if not p2_repositories:
+    raise SystemExit('The target definition contains no InstallableUnit repositories')
+repositories = [Path(sys.argv[2]).resolve().as_uri(), *p2_repositories]
+print(','.join(dict.fromkeys(repositories)))
 roots = ['org.eclipse.sdk.ide', 'org.eclipse.equinox.p2.extras.feature.feature.group',
          *report['publishedFeatureIUs']]
 print(','.join(dict.fromkeys(roots)))
@@ -57,7 +69,7 @@ grep -Eq 'org\.eclipse\.|sandbox_' "$EVIDENCE_DIR/materialized-product.log"
 
 # Provision every published feature into a new destination. The built product is
 # only the director host; the destination is resolved from the local update site
-# plus the exact repositories declared by sandbox_target/eclipse.target.
+# plus the actual p2 InstallableUnit repositories in sandbox_target/eclipse.target.
 FRESH_INSTALL="$SMOKE_ROOT/fresh-install"
 (
   cd "$PRODUCT_ROOT"
