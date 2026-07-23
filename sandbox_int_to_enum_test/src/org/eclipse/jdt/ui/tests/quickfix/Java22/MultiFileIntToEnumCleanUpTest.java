@@ -31,7 +31,7 @@ public class MultiFileIntToEnumCleanUpTest {
 	AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
-	public void ownerOnlySelectionMigratesRequiredCallerButNotUnrelatedSource() throws CoreException {
+	public void completeSelectionMigratesOwnerAndCallerButNotUnrelatedSource() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
 				"""
@@ -75,7 +75,7 @@ public class MultiFileIntToEnumCleanUpTest {
 		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 
 		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
-				new ICompilationUnit[] { processor },
+				new ICompilationUnit[] { processor, client, unrelated },
 				new ICompilationUnit[] { processor, client, unrelated },
 				new String[] {
 						"""
