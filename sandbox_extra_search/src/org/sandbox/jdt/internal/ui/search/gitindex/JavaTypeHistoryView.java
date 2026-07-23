@@ -98,8 +98,9 @@ public class JavaTypeHistoryView extends ViewPart {
 		if (typeName.isEmpty()) {
 			return;
 		}
-		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-		if (client == null) {
+		EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();
+		SemanticSearchClient client= searchService.getSearchClient();
+		if (!searchService.isAvailable()) {
 			tableViewer.setInput(new Object[0]);
 			return;
 		}
