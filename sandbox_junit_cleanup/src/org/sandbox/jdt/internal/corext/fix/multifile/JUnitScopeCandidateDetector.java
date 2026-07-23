@@ -194,6 +194,7 @@ public final class JUnitScopeCandidateDetector {
 			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
 				units.add(unit.getPrimary());
 			}
+		}
 		return units;
 	}
 
