@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,7 +40,7 @@ public class IntToEnumCandidateGateFixedPointTest {
 	AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
-	public void fallbackIsReturnedOnceAndDoesNotLeakIntoLaterScope() throws CoreException {
+	public void exactClosureIsReturnedOnceAndDoesNotLeakIntoLaterScope() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit candidate= pack.createCompilationUnit("Candidate.java", //$NON-NLS-1$
 				"""
@@ -51,6 +52,15 @@ public class IntToEnumCandidateGateFixedPointTest {
 					}
 				}
 				""", false, null);
+		ICompilationUnit caller= pack.createCompilationUnit("Caller.java", //$NON-NLS-1$
+				"""
+				package test;
+				public class Caller {
+					void run(Candidate candidate) {
+						candidate.consume(Candidate.STATE_ONE);
+					}
+				}
+				""", false, null);
 		ICompilationUnit unrelated= pack.createCompilationUnit("Unrelated.java", //$NON-NLS-1$
 				"package test; public class Unrelated {}", false, null); //$NON-NLS-1$
 		IntToEnumCleanUpCore cleanup= new IntToEnumCleanUpCore(Map.of(
@@ -59,14 +69,13 @@ public class IntToEnumCandidateGateFixedPointTest {
 
 		Collection<ICompilationUnit> first= cleanup.expandCleanUpScope(candidate.getJavaProject(),
 				List.of(candidate), null);
-		assertEquals(2, first.size());
-		assertTrue(first.contains(unrelated));
+		assertEquals(Set.of(candidate, caller), Set.copyOf(first));
 
 		Collection<ICompilationUnit> fixedPoint= cleanup.expandCleanUpScope(candidate.getJavaProject(), first, null);
-		assertTrue(fixedPoint.isEmpty(), "The complete-project fallback must be emitted only once");
+		assertTrue(fixedPoint.isEmpty(), "The exact closure must be emitted only once");
 
 		Collection<ICompilationUnit> laterUnrelatedScope= cleanup.expandCleanUpScope(candidate.getJavaProject(),
 				List.of(unrelated), null);
-		assertTrue(laterUnrelatedScope.isEmpty(), "A completed fallback must not leak into a later candidate-free scope");
+		assertTrue(laterUnrelatedScope.isEmpty(), "A completed closure must not leak into a later candidate-free scope");
 	}
 }
