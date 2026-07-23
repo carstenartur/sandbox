@@ -20,7 +20,7 @@ jobs:
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 100
     env:
       VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
       VALIDATED_REF: refs/heads/main
@@ -52,8 +52,19 @@ jobs:
         with:
           maven-version: 3.9.14
 
+      - name: Install Linux product runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+
       - name: Build product and update site
         run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
+
+      - name: Validate repository metadata, artifacts and product layout
+        run: python3 .github/scripts/verify_distribution_artifacts.py
+
+      - name: Provision and start the built distribution
+        run: bash .github/scripts/smoke_test_distribution.sh
 
       - name: Generate snapshot build manifest
         run: |
@@ -70,6 +81,8 @@ jobs:
           mkdir -p "$snapshot_dir"
           cp -a sandbox_updatesite/target/repository/. "$snapshot_dir/"
           cp build-manifest.json "$snapshot_dir/build-manifest.json"
+          cp target/distribution-verification/verification.json "$snapshot_dir/distribution-verification.json"
+          cp target/distribution-verification/verification.md "$snapshot_dir/distribution-verification.md"
           cp .github/pages/index.html gh-pages-content/index.html
 
           mkdir -p gh-pages-content/snapshots
@@ -107,7 +120,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: snapshot-provenance-${{ env.VALIDATED_SHA }}
-          path: build-manifest.json
+          path: |
+            build-manifest.json
+            target/distribution-verification/
           retention-days: 90
           if-no-files-found: error
 
@@ -120,7 +135,7 @@ jobs:
           keep_files: true
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
-          commit_message: Deploy snapshot for ${{ env.VALIDATED_SHA }}
+          commit_message: Deploy verified snapshot for ${{ env.VALIDATED_SHA }}
 
       - name: Report deployed resources
         if: always()
@@ -133,4 +148,5 @@ jobs:
             echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
             echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
             echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
+            echo '- [Distribution verification](https://carstenartur.github.io/sandbox/snapshots/latest/distribution-verification.md)'
           } >> "$GITHUB_STEP_SUMMARY"
