@@ -1,1067 +1,1780 @@
 {
   "summary": {
-    "totalMatches": 127,
+    "totalMatches": 213,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
-        "matches": 85,
-        "rules": 1
-      },
-      "eclipse.jdt.ui": {
-        "files": 1468,
-        "matches": 31,
-        "rules": 2
-      },
-      "eclipse.platform.ui": {
-        "files": 1144,
-        "matches": 11,
-        "rules": 2
-      },
-      "sandbox": {
-        "files": 842,
         "matches": 0,
         "rules": 0
+      },
+      "eclipse.jdt.ui": {
+        "files": 1474,
+        "matches": 52,
+        "rules": 9
+      },
+      "eclipse.platform.ui": {
+        "files": 1147,
+        "matches": 62,
+        "rules": 8
+      },
+      "eclipse.platform": {
+        "files": 313,
+        "matches": 62,
+        "rules": 3
+      },
+      "eclipse.platform.text": {
+        "files": 0,
+        "matches": 0,
+        "rules": 0
+      },
+      "eclipse.platform.debug": {
+        "files": 0,
+        "matches": 0,
+        "rules": 0
+      },
+      "sandbox": {
+        "files": 983,
+        "matches": 37,
+        "rules": 8
       }
     }
   },
   "matches": [
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/internal/core/dom/rewrite/imports/TypeConflictingSimpleNameFinder.java",
-      "line": 59,
-      "matchedCode": "new String(simpleTypeName)"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javadocexport/JavadocWizard.java",
+      "line": 315,
+      "matchedCode": "Runtime.getRuntime().exec(args)"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java",
-      "line": 216,
-      "matchedCode": "new String(this.binding.computeUniqueKey())"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "try-with-resources",
+      "rule": "Consider using try-with-resources for AutoCloseable resource",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/breadcrumb/BreadcrumbItemDropDown.java",
+      "line": 574,
+      "matchedCode": "shell.close()"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java",
-      "line": 246,
-      "matchedCode": "new String(compoundName[i])"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "try-with-resources",
+      "rule": "Consider using try-with-resources for AutoCloseable resource",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/breadcrumb/BreadcrumbItemDropDown.java",
+      "line": 585,
+      "matchedCode": "shell.close()"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java",
-      "line": 249,
-      "matchedCode": "new String(compoundName[length - 1])"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.sorted-before-collect.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleDependenciesPage.java",
+      "line": 639,
+      "matchedCode": "allModulesToRemove.stream().filter(m -> !seedModules.contains(m)).sorted().collect(Collectors.joining(\"\\n\\t\",\"\\t\",\"\"))"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/Name.java",
-      "line": 108,
-      "matchedCode": "new String(buffer)"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.sorted-before-collect.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleDependenciesAdapter.java",
+      "line": 861,
+      "matchedCode": "unavailableSystemModules.stream().map(IJavaElement::getElementName).sorted().collect(Collectors.joining(\"\\n\\t\",\"\\t\",\"\"))"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 635,
-      "matchedCode": "new String(methodDeclaration.selector)"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/CustomFiltersActionGroup.java",
+      "line": 557,
+      "matchedCode": "patterns.clone()"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 957,
-      "matchedCode": "new String(typeDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 980,
-      "matchedCode": "new String(annotationTypeMemberDeclaration.selector)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 1011,
-      "matchedCode": "new String(receiver.qualifyingName.getName()[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 1035,
-      "matchedCode": "new String(argument.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 1420,
-      "matchedCode": "new String(statement.label)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 1629,
-      "matchedCode": "new String(component.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 1769,
-      "matchedCode": "new String(statement.label)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 1810,
-      "matchedCode": "new String(enumConstant.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2138,
-      "matchedCode": "new String(reference.token)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2156,
-      "matchedCode": "new String(reference.token)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2466,
-      "matchedCode": "new String(statement.label)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2509,
-      "matchedCode": "new String(expression.selector)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2561,
-      "matchedCode": "new String(expression.selector)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2633,
-      "matchedCode": "new String(argument.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 2680,
-      "matchedCode": "new String(memberValuePair.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3005,
-      "matchedCode": "new String(reference.selector)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3094,
-      "matchedCode": "new String(nameReference.token)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3290,
-      "matchedCode": "new String(expression.source())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3435,
-      "matchedCode": "new String(typeDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3520,
-      "matchedCode": "new String(typeParameter.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3600,
-      "matchedCode": "new String(typeName[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3705,
-      "matchedCode": "new String(tokens[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3727,
-      "matchedCode": "new String(tokens[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3788,
-      "matchedCode": "new String(typeDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 3814,
-      "matchedCode": "new String(typeDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4019,
-      "matchedCode": "new String(localDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4067,
-      "matchedCode": "new String(fieldDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4111,
-      "matchedCode": "new String(localDeclaration.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4335,
-      "matchedCode": "new String(name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4391,
-      "matchedCode": "new String(name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4492,
-      "matchedCode": "new String(tokens[i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 4745,
-      "matchedCode": "new String(tokens[index])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6435,
-      "matchedCode": "new String(typeName[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6442,
-      "matchedCode": "new String(typeName[1])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6463,
-      "matchedCode": "new String(typeName[i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6492,
-      "matchedCode": "new String(typeName[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6499,
-      "matchedCode": "new String(typeName[1])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6520,
-      "matchedCode": "new String(typeName[i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTConverter.java",
-      "line": 6556,
-      "matchedCode": "new String(singleTypeReference.token)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/AnnotationBinding.java",
-      "line": 170,
-      "matchedCode": "new String(this.binding.computeUniqueKey(recipientKey.toCharArray()))"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/AnnotationBinding.java",
-      "line": 219,
-      "matchedCode": "new String(this.binding.getAnnotationType().sourceName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DefaultValuePairBinding.java",
-      "line": 47,
-      "matchedCode": "new String(this.method.selector)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/NameEnvironmentWithProgress.java",
-      "line": 59,
-      "matchedCode": "new String(CharOperation.concatWith(packageName,'/'))"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/NameEnvironmentWithProgress.java",
-      "line": 60,
-      "matchedCode": "new String(CharOperation.concatWith(packageName,typeName,'/'))"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/RecoveredPackageBinding.java",
-      "line": 125,
-      "matchedCode": "new String(compoundName[i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/RecoveredPackageBinding.java",
-      "line": 128,
-      "matchedCode": "new String(compoundName[length - 1])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/RecoveredTypeBinding.java",
-      "line": 211,
-      "matchedCode": "new String(referenceBinding.compoundName[referenceBinding.compoundName.length - 1])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ModuleBinding.java",
-      "line": 91,
-      "matchedCode": "new String(tmp)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ModuleBinding.java",
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/AddToClasspathAction.java",
       "line": 136,
-      "matchedCode": "new String(k)"
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 173,
-      "matchedCode": "new String(dotSeparated)"
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/wizards/NewJavaProjectWizardPage.java",
+      "line": 168,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
     },
     {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 548,
-      "matchedCode": "new String(this.binding.sourceName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 577,
-      "matchedCode": "new String(this.binding.computeUniqueKey())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 658,
-      "matchedCode": "new String(typeVariableBinding.sourceName)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 698,
-      "matchedCode": "new String(((IntersectionTypeBinding18)this.binding).getIntersectingTypes()[0].sourceName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 703,
-      "matchedCode": "new String(baseTypeBinding.simpleName)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 708,
-      "matchedCode": "new String(this.binding.sourceName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 776,
-      "matchedCode": "new String(typeVariableBinding.sourceName)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TypeBinding.java",
-      "line": 823,
-      "matchedCode": "new String(baseTypeBinding.simpleName)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/VariableBinding.java",
-      "line": 170,
-      "matchedCode": "new String(this.binding.computeUniqueKey())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/VariableBinding.java",
-      "line": 194,
-      "matchedCode": "new String(this.binding.name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/VariableBinding.java",
-      "line": 306,
-      "matchedCode": "new String(typeSig)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTParser.java",
-      "line": 1346,
-      "matchedCode": "new String(sourceUnit.getFileName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/ASTParser.java",
-      "line": 1371,
-      "matchedCode": "new String(fileName)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 110,
-      "matchedCode": "new String(name)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 159,
-      "matchedCode": "new String(this.identifierStack[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 188,
-      "matchedCode": "new String(this.identifierStack[length])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 536,
-      "matchedCode": "new String(this.identifierStack[pos + i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 606,
-      "matchedCode": "new String(this.identifierStack[i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/WorkingSetModel.java",
       "line": 653,
-      "matchedCode": "new String(this.identifierStack[pos + i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 655,
-      "matchedCode": "new String(this.identifierStack[pos + i])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 1070,
-      "matchedCode": "new String(this.identifierStack[idIndex])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 1079,
-      "matchedCode": "new String(this.identifierStack[0])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/DocCommentParser.java",
-      "line": 1088,
-      "matchedCode": "new String(this.identifierStack[2])"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/TextBlock.java",
-      "line": 254,
-      "matchedCode": "new String(CharOperation.subarray(escaped,start,len - 3))"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/CompilationUnitResolver.java",
-      "line": 259,
-      "matchedCode": "new String(sourceUnit.getFileName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/CompilationUnitResolver.java",
-      "line": 1135,
-      "matchedCode": "new String(source.getFileName())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/MethodBinding.java",
-      "line": 124,
-      "matchedCode": "new String(this.binding.selector)"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/MethodBinding.java",
-      "line": 382,
-      "matchedCode": "new String(this.binding.computeUniqueKey())"
-    },
-    {
-      "repository": "eclipse.jdt.core",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/MemberValuePairBinding.java",
-      "line": 141,
-      "matchedCode": "new String(membername)"
+      "matchedCode": "Arrays.asList(getAllWorkingSets()).contains(workingSet)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarimport/JarImportWizardPage.java",
-      "line": 345,
-      "matchedCode": "\"\".equals(path)",
-      "suggestedReplacement": "path != null && path.isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/WorkingSetModel.java",
+      "line": 719,
+      "matchedCode": "System.arraycopy(workingSets,0,activeWorkingSets,0,workingSets.length)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarimport/RefactoringLocationControl.java",
-      "line": 70,
-      "matchedCode": "\"\".equals(key)",
-      "suggestedReplacement": "key != null && key.isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/ConfigureWorkingSetAssignementAction.java",
+      "line": 774,
+      "matchedCode": "Arrays.asList(VALID_WORKING_SET_IDS).contains(set.getId())"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarimport/RefactoringLocationControl.java",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/ConfigureWorkingSetAssignementAction.java",
+      "line": 788,
+      "matchedCode": "Arrays.asList(set.getElements()).contains(adaptedElement)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/ConfigureWorkingSetAssignementAction.java",
+      "line": 800,
+      "matchedCode": "System.arraycopy(elements,0,newElements,0,elements.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 134,
+      "matchedCode": "fields.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
       "line": 137,
-      "matchedCode": "\"\".equals(text)",
-      "suggestedReplacement": "text != null && text.isEmpty()"
+      "matchedCode": "inheritedFields.clone()"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UseStringIsBlankCleanUp.java",
-      "line": 133,
-      "matchedCode": "\"\".equals(arguments.get(0).resolveConstantExpressionValue())",
-      "suggestedReplacement": "arguments.get(0).resolveConstantExpressionValue() != null && arguments.get(0).resolveConstantExpressionValue().isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 140,
+      "matchedCode": "methods.clone()"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UseStringIsBlankCleanUp.java",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 143,
+      "matchedCode": "inheritedMethods.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/ConfigureContainerAction.java",
+      "line": 90,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/CompositeActionGroup.java",
+      "line": 46,
+      "matchedCode": "System.arraycopy(fGroups,0,newGroups,0,fGroups.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ClasspathContainerPreferencePage.java",
+      "line": 104,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ComplianceConfigurationBlock.java",
+      "line": 222,
+      "matchedCode": "System.arraycopy(keys,0,allKeys,0,keys.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UnboxingCleanUp.java",
+      "line": 190,
+      "matchedCode": "binding.getParameterTypes().clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/JavaOutlinePage.java",
+      "line": 685,
+      "matchedCode": "System.arraycopy(sortedObjects,0,sortedRegions,0,sortedObjects.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/CompoundEditExitStrategy.java",
+      "line": 164,
+      "matchedCode": "System.arraycopy(commandIds,0,fCommandIds,0,commandIds.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javadocexport/ContributedJavadocWizardPage.java",
+      "line": 130,
+      "matchedCode": "sourceElements.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListElement.java",
+      "line": 398,
+      "matchedCode": "System.arraycopy(filters,0,newFilters,0,filters.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java",
+      "line": 30,
+      "matchedCode": "System.arraycopy(inc,0,fOrginalInclusion,0,inc.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java",
+      "line": 34,
+      "matchedCode": "System.arraycopy(excl,0,fOriginalExclusion,0,excl.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/BuildPathBasePage.java",
+      "line": 253,
+      "matchedCode": "System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/LibrariesWorkbookPage.java",
+      "line": 373,
+      "matchedCode": "Arrays.asList(segments).contains(JavaRuntime.JRE_CONTAINER)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/AbstractNewFolderWizardPage.java",
+      "line": 483,
+      "matchedCode": "System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/typehierarchy/HierarchyLabelProvider.java",
+      "line": 107,
+      "matchedCode": "Arrays.asList(elements).contains(element)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/SelectionUtil.java",
+      "line": 85,
+      "matchedCode": "Arrays.asList(resources).contains(null)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/RowLayouter.java",
+      "line": 143,
+      "matchedCode": "System.arraycopy(fDefaultGridDatas,0,newDatas,0,fDefaultGridDatas.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/CombinedWordRule.java",
       "line": 144,
-      "matchedCode": "\"\".equals(expression.resolveConstantExpressionValue())",
-      "suggestedReplacement": "expression.resolveConstantExpressionValue() != null && expression.resolveConstantExpressionValue().isEmpty()"
+      "matchedCode": "System.arraycopy(old,0,fContent,0,old.length)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/SpellCheckEngine.java",
-      "line": 306,
-      "matchedCode": "\"\".equals(locale.toString())",
-      "suggestedReplacement": "locale.toString() != null && locale.toString().isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewImplementationProposal.java",
+      "line": 46,
+      "matchedCode": "Arrays.asList(actions).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(actions)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/BuildPathsBlock.java",
-      "line": 655,
-      "matchedCode": "\"\".equals(text)",
-      "suggestedReplacement": "text != null && text.isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/NewInterfaceImplementationProposal.java",
+      "line": 46,
+      "matchedCode": "Arrays.asList(actions).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(actions)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/dialogfields/DialogField.java",
-      "line": 158,
-      "matchedCode": "\"\".equals(fLabelText)",
-      "suggestedReplacement": "fLabelText != null && fLabelText.isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewJUnitTestCaseProposal.java",
+      "line": 46,
+      "matchedCode": "Arrays.asList(actions).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(actions)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarPackageReader.java",
-      "line": 185,
-      "matchedCode": "\"\".equals(value)",
-      "suggestedReplacement": "value != null && value.isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/DefaultPhoneticHashProvider.java",
+      "line": 167,
+      "matchedCode": "Arrays.asList(candidates).contains(token)"
     },
     {
       "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarPackageReader.java",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java",
+      "line": 789,
+      "matchedCode": "range.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java",
+      "line": 827,
+      "matchedCode": "styleRange.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/JavaSourceHover.java",
+      "line": 200,
+      "matchedCode": "sourceLines.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuesser.java",
+      "line": 318,
+      "matchedCode": "System.arraycopy(v.triggerChars,0,triggers,0,v.triggerChars.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/OverrideMethodDialog.java",
+      "line": 450,
+      "matchedCode": "searchText.trim().isEmpty()",
+      "suggestedReplacement": "searchText.isBlank()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/IndentAction.java",
+      "line": 936,
+      "matchedCode": "prevLineString.trim().isEmpty()",
+      "suggestedReplacement": "prevLineString.isBlank()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java",
+      "line": 1014,
+      "matchedCode": "filterText.trim().isEmpty()",
+      "suggestedReplacement": "filterText.isBlank()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java",
+      "line": 1530,
+      "matchedCode": "previewCode.trim().isEmpty()",
+      "suggestedReplacement": "previewCode.isBlank()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackagerfat/FatJarManifestProvider.java",
+      "line": 105,
+      "matchedCode": "manifestClasspath.trim().isEmpty()",
+      "suggestedReplacement": "manifestClasspath.isBlank()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/codemining/JavaImplementationCodeMining.java",
+      "line": 195,
+      "matchedCode": "Stream.of(results).filter(t -> t.getAncestor(IJavaElement.COMPILATION_UNIT) != null).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/codemining/JavaImplementationCodeMining.java",
+      "line": 211,
+      "matchedCode": "Stream.of(results).filter(t -> t.getAncestor(IJavaElement.COMPILATION_UNIT) != null).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleDependenciesPage.java",
+      "line": 762,
+      "matchedCode": "Arrays.stream(fAllSystemRoots).map(pfr -> pfr.getModuleDescription().getElementName()).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleSelectionDialog.java",
+      "line": 345,
+      "matchedCode": "fSelectedModules.stream().filter(m -> !fAllIncluded.contains(m)).map(fModulesByName::get).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/ExternalEditor.java",
+      "line": 126,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{\"open\",\"-a\",programFileName,path})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/ExternalEditor.java",
+      "line": 128,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{programFileName,path})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java",
+      "line": 70,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{\"/usr/bin/open\",localHref})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java",
+      "line": 85,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{webBrowser,\"-remote\",\"openURL(\" + encodedLocalHref + \")\"})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java",
+      "line": 137,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{webBrowser,href})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java",
+      "line": 146,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{webBrowser,href})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "deprecations",
+      "rule": "deprecations.runtime-exec-string.consider-processbuilder",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java",
+      "line": 155,
+      "matchedCode": "Runtime.getRuntime().exec(new String[]{webBrowser,href})"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java",
+      "line": 167,
+      "matchedCode": "groupedEditorReferences.getValue().stream().forEach(editorReference -> editorReferenceLabelTexts.put(editorReference,getWorkbenchPartReferenceText(editorReference)))",
+      "suggestedReplacement": "groupedEditorReferences.getValue().forEach(editorReference -> editorReferenceLabelTexts.put(editorReference,getWorkbenchPartReferenceText(editorReference)))"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java",
+      "line": 200,
+      "matchedCode": "refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenceLabelTexts.put(e.getKey(),getWorkbenchPartReferenceText(e.getKey())))",
+      "suggestedReplacement": "refsToMakeDistinguishableViaPathSegments.forEach(e -> editorReferenceLabelTexts.put(e.getKey(),getWorkbenchPartReferenceText(e.getKey())))"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/activities/ActivityCategoryPreferencePage.java",
+      "line": 401,
+      "matchedCode": "System.arraycopy(enabledCategories,0,allChecked,0,enabledCategories.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/WorkingSetConfigurationBlock.java",
+      "line": 78,
+      "matchedCode": "System.arraycopy(workingSetIds,0,workingSetIdsCopy,0,workingSetIds.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/EditorSelectionDialog.java",
+      "line": 511,
+      "matchedCode": "System.arraycopy(externalEditors,0,newEditors,0,externalEditors.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/FilteredList.java",
+      "line": 255,
+      "matchedCode": "System.arraycopy(elements,0,fElements,0,elements.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/part/PageBookView.java",
+      "line": 471,
+      "matchedCode": "((HashMap<IWorkbenchPart,PageRec>)mapPartToRec).clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ws/WorkbenchActivitySupport.java",
+      "line": 397,
+      "matchedCode": "mutableActivityManager.clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/LightweightDecoratorManager.java",
+      "line": 165,
+      "matchedCode": "System.arraycopy(oldDefs,0,lightweightDefinitions,0,oldDefs.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java",
+      "line": 276,
+      "matchedCode": "System.arraycopy(oldDefs,0,fullDefinitions,0,oldDefs.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java",
+      "line": 639,
+      "matchedCode": "System.arraycopy(fullDefinitions,0,returnValue,0,fullDefinitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
+      "line": 2298,
+      "matchedCode": "System.arraycopy(parts,0,editors,0,parts.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
+      "line": 3777,
+      "matchedCode": "Arrays.asList(models).contains(model)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
+      "line": 3787,
+      "matchedCode": "Arrays.asList(models).contains(model)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/NewWizardNewPage.java",
+      "line": 398,
+      "matchedCode": "System.arraycopy(currentExpanded,0,expanded,0,currentExpanded.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/FileEditorsPreferencePage.java",
+      "line": 382,
+      "matchedCode": "mapping.clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/DecoratorsPreferencePage.java",
+      "line": 147,
+      "matchedCode": "System.arraycopy(elements,0,results,0,elements.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/SimpleWorkingSetSelectionDialog.java",
+      "line": 156,
+      "matchedCode": "System.arraycopy(checked,0,workingSets,0,checked.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/WorkingSetSelectionDialog.java",
+      "line": 313,
+      "matchedCode": "System.arraycopy(untypedResult,0,typedResult,0,untypedResult.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressInfoItem.java",
+      "line": 588,
+      "matchedCode": "System.arraycopy(children,0,infos,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/DetailedProgressViewer.java",
+      "line": 563,
+      "matchedCode": "System.arraycopy(children,0,progressInfoItems,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressManagerUtil.java",
+      "line": 59,
+      "matchedCode": "elements.clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java",
+      "line": 288,
+      "matchedCode": "System.arraycopy(editorArray,0,newArray,0,editorArray.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java",
+      "line": 1166,
+      "matchedCode": "defaultMap.clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/FileEditorMapping.java",
+      "line": 98,
+      "matchedCode": "((ArrayList<IEditorDescriptor>)editors).clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/FileEditorMapping.java",
+      "line": 99,
+      "matchedCode": "((ArrayList<IEditorDescriptor>)deletedEditors).clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/FileEditorMapping.java",
+      "line": 100,
+      "matchedCode": "((ArrayList<IEditorDescriptor>)declaredDefaultEditors).clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/ModifyWorkingSetDelegate.java",
+      "line": 231,
+      "matchedCode": "System.arraycopy(selectedElements,0,adaptables,0,selectedElements.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
+      "line": 65,
+      "matchedCode": "System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
+      "line": 177,
+      "matchedCode": "System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
+      "line": 239,
+      "matchedCode": "System.arraycopy(allDefs,0,copy,0,allDefs.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java",
+      "line": 1487,
+      "matchedCode": "System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java",
+      "line": 1532,
+      "matchedCode": "System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AbstractWorkingSetManager.java",
+      "line": 868,
+      "matchedCode": "System.arraycopy(elements,0,newElements,0,elements.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java",
+      "line": 49,
+      "matchedCode": "System.arraycopy(components,0,componentCopy,0,components.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java",
       "line": 199,
-      "matchedCode": "\"\".equals(value)",
-      "suggestedReplacement": "value != null && value.isEmpty()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarRefactoringDialog.java",
-      "line": 115,
-      "matchedCode": "\"\".equals(project)",
-      "suggestedReplacement": "project != null && project.isEmpty()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/model/JavaModelLabelProvider.java",
-      "line": 124,
-      "matchedCode": "\"\".equals(text)",
-      "suggestedReplacement": "text != null && text.isEmpty()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/java/CompletionProposalCollector.java",
-      "line": 714,
-      "matchedCode": "new String(declarationKey)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/JavaSourceViewerConfiguration.java",
-      "line": 610,
-      "matchedCode": "new String(spaces)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/JavaSourceViewerConfiguration.java",
-      "line": 653,
-      "matchedCode": "new String(spaceChars)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/JavaMethodCompletionProposal.java",
-      "line": 417,
-      "matchedCode": "new String(fProposal.getName())"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuessingProposal.java",
-      "line": 112,
-      "matchedCode": "new String(types[i])"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuessingProposal.java",
-      "line": 382,
-      "matchedCode": "new String(parameterNames[i])"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuessingProposal.java",
-      "line": 407,
-      "matchedCode": "new String(Signature.toCharArray(types[i]))"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/SmartSemicolonAutoEditStrategy.java",
-      "line": 229,
-      "matchedCode": "new String(new char[]{' ',character})"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/SmartSemicolonAutoEditStrategy.java",
-      "line": 233,
-      "matchedCode": "new String(new char[]{character})"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/OverrideCompletionProposal.java",
-      "line": 109,
-      "matchedCode": "new String(content)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java",
-      "line": 380,
-      "matchedCode": "new String(characters)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java",
-      "line": 396,
-      "matchedCode": "new String(characters)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java",
-      "line": 415,
-      "matchedCode": "new String(characters)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/AbstractSpellDictionary.java",
-      "line": 430,
-      "matchedCode": "new String(characters)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/ClassPathDetector.java",
-      "line": 203,
-      "matchedCode": "new String(sourceAttribute.getSourceFileName())"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarFileExportOperation.java",
-      "line": 864,
-      "matchedCode": "new String(sourceAttribute.getSourceFileName())"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/DocumentAdapter.java",
-      "line": 351,
-      "matchedCode": "new String(text)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/DocumentAdapter.java",
-      "line": 498,
-      "matchedCode": "new String(text)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/DocumentAdapter.java",
-      "line": 530,
-      "matchedCode": "new String(contents)"
+      "matchedCode": "System.arraycopy(localComponents,0,copiedArray,0,localComponents.length)"
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementCategory.java",
-      "line": 58,
-      "matchedCode": "\"\".equals(classString)",
-      "suggestedReplacement": "classString != null && classString.isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/wizards/preferences/WizardPreferencesPage.java",
+      "line": 590,
+      "matchedCode": "System.arraycopy(checkedElements,0,transferElements,0,checkedElements.length)"
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/DynamicHelpAction.java",
-      "line": 61,
-      "matchedCode": "\"\".equals(overrideText)",
-      "suggestedReplacement": "overrideText != null && overrideText.isEmpty()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/HelpSearchAction.java",
-      "line": 63,
-      "matchedCode": "\"\".equals(overrideText)",
-      "suggestedReplacement": "overrideText != null && overrideText.isEmpty()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/HelpContentsAction.java",
-      "line": 63,
-      "matchedCode": "\"\".equals(overrideText)",
-      "suggestedReplacement": "overrideText != null && overrideText.isEmpty()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/Policy.java",
-      "line": 186,
-      "matchedCode": "\"\".equals(DEBUG_HANDLERS_VERBOSE_COMMAND_ID)",
-      "suggestedReplacement": "DEBUG_HANDLERS_VERBOSE_COMMAND_ID != null && DEBUG_HANDLERS_VERBOSE_COMMAND_ID.isEmpty()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ExtensionActivityRegistry.java",
-      "line": 181,
-      "matchedCode": "\"\".equals(store.getDefaultString(preferenceKey))",
-      "suggestedReplacement": "store.getDefaultString(preferenceKey) != null && store.getDefaultString(preferenceKey).isEmpty()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ActivityPersistanceHelper.java",
-      "line": 213,
-      "matchedCode": "\"\".equals(store.getDefaultString(preferenceKey))",
-      "suggestedReplacement": "store.getDefaultString(preferenceKey) != null && store.getDefaultString(preferenceKey).isEmpty()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/PropertyDialog.java",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/wizards/AbstractExtensionWizardRegistry.java",
       "line": 69,
-      "matchedCode": "\"\".equals(name)",
-      "suggestedReplacement": "name != null && name.isEmpty()"
+      "matchedCode": "System.arraycopy(localPrimaryWizards,0,newPrimary,0,localPrimaryWizards.length)"
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/EditorHistory.java",
-      "line": 135,
-      "matchedCode": "\"\".equals(item.getName())",
-      "suggestedReplacement": "item.getName() != null && item.getName().isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java",
+      "line": 417,
+      "matchedCode": "Arrays.asList(disabled).contains(fileExtension)"
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java11",
-      "rule": "unnamed",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/EditorHistory.java",
-      "line": 135,
-      "matchedCode": "\"\".equals(item.getToolTipText())",
-      "suggestedReplacement": "item.getToolTipText() != null && item.getToolTipText().isEmpty()"
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/commands/CommandImageManagerEvent.java",
+      "line": 95,
+      "matchedCode": "System.arraycopy(changedCommandIds,0,copy,0,changedCommandIds.length)"
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "performance",
-      "rule": "Unnecessary String constructor",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/preferences/WorkingCopyPreferences.java",
-      "line": 382,
-      "matchedCode": "new String(Base64.encode(value))"
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/about/AboutFeaturesPage.java",
+      "line": 165,
+      "matchedCode": "System.arraycopy(clientArray,0,bundleGroupInfos,0,clientArray.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/KeysPreferencePage.java",
+      "line": 191,
+      "matchedCode": "System.arraycopy(sortOrder,0,newSortOrder,0,sortOrder.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java",
+      "line": 56,
+      "matchedCode": "Arrays.asList(memento.getAttributeKeys()).contains(attribute)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/menus/CommandContributionItem.java",
+      "line": 569,
+      "matchedCode": "tooltip.trim().isEmpty()",
+      "suggestedReplacement": "tooltip.isBlank()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/model/WorkbenchPartLabelProvider.java",
+      "line": 81,
+      "matchedCode": "path.trim().isEmpty()",
+      "suggestedReplacement": "path.isBlank()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/model/WorkbenchPartLabelProvider.java",
+      "line": 88,
+      "matchedCode": "path.trim().isEmpty()",
+      "suggestedReplacement": "path.isBlank()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/StatusUtil.java",
+      "line": 119,
+      "matchedCode": "message.trim().isEmpty()",
+      "suggestedReplacement": "message.isBlank()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressAnimationItem.java",
+      "line": 241,
+      "matchedCode": "tt.trim().isEmpty()",
+      "suggestedReplacement": "tt.isBlank()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/ImportExportPespectiveHandler.java",
+      "line": 211,
+      "matchedCode": "trimsData.trim().isEmpty()",
+      "suggestedReplacement": "trimsData.isBlank()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessExtensionManager.java",
+      "line": 177,
+      "matchedCode": "Arrays.stream(Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)).filter(element -> COMPUTER_TAG.equals(element.getName())).map(element -> new QuickAccessProviderExtensionProxy(element,onActivate)).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java",
+      "line": 553,
+      "matchedCode": "entry.getValue().stream().map(QuickAccessElement::getId).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java",
+      "line": 583,
+      "matchedCode": "elementsPerProvider.getValue().stream().map(element -> matcher.match(element,finalFilter,provider)).filter(Objects::nonNull).sorted(BY_RELEVANCE).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CycleViewHandler.java",
+      "line": 56,
+      "matchedCode": "modelService.findElements(currentPerspective,null,MPart.class,null,EModelService.PRESENTATION).stream().filter(p -> !(p.getObject() instanceof SplitHost)).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CoolBarToTrimManager.java",
+      "line": 313,
+      "matchedCode": "workbenchTrimElements.stream().filter(e -> e instanceof MToolBar).map(e -> (MToolBar)e).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
+      "line": 356,
+      "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.sorted-before-collect.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ContentDescriptionManager.java",
+      "line": 505,
+      "matchedCode": "Arrays.stream(bundleContext.getBundles()).map(bundle -> String.format(\"%d %s %s\",bundle.getBundleId(),bundle.getSymbolicName(),bundle.getVersion())).sorted().collect(Collectors.joining(System.lineSeparator()))"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/DataDeltaNode.java",
+      "line": 82,
+      "matchedCode": "System.arraycopy(children,0,childrenCopy,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/NoDataDeltaNode.java",
+      "line": 90,
+      "matchedCode": "System.arraycopy(children,0,childrenCopy,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/DataTreeNode.java",
+      "line": 134,
+      "matchedCode": "System.arraycopy(children,0,childrenCopy,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/ObjectMap.java",
+      "line": 172,
+      "matchedCode": "System.arraycopy(elements,0,expanded,0,elements.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/UniversalUniqueIdentifier.java",
+      "line": 292,
+      "matchedCode": "System.arraycopy(fBits,0,result,0,fBits.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildCommand.java",
+      "line": 151,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/ResourceDelta.java",
+      "line": 242,
+      "matchedCode": "System.arraycopy(children,0,result,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java",
+      "line": 1157,
+      "matchedCode": "prereqs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildContext.java",
+      "line": 68,
+      "matchedCode": "requestedBuilt.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/InternalBuilder.java",
+      "line": 108,
+      "matchedCode": "((BuildCommand)command).clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceRoot.java",
+      "line": 192,
+      "matchedCode": "System.arraycopy(roots,0,result,0,roots.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/MarkerSet.java",
+      "line": 83,
+      "matchedCode": "elements.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java",
+      "line": 324,
+      "matchedCode": "((ProjectDescription)description).clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java",
+      "line": 451,
+      "matchedCode": "description.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 199,
+      "matchedCode": "markers.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 228,
+      "matchedCode": "sessionProperties.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 255,
+      "matchedCode": "syncInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 265,
+      "matchedCode": "b.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 426,
+      "matchedCode": "sessionProperties.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 438,
+      "matchedCode": "sessionProperties.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 469,
+      "matchedCode": "value.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java",
+      "line": 130,
+      "matchedCode": "natures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java",
+      "line": 142,
+      "matchedCode": "natures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 936,
+      "matchedCode": "System.arraycopy(order.vertexes,0,projects,0,order.vertexes.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 947,
+      "matchedCode": "System.arraycopy(order.vertexes,0,buildConfigs,0,order.vertexes.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 1093,
+      "matchedCode": "resources.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 1174,
+      "matchedCode": "sourceInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 1445,
+      "matchedCode": "info.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 1499,
+      "matchedCode": "resources.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 1544,
+      "matchedCode": "markers.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java",
+      "line": 2158,
+      "matchedCode": "resources.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
+      "line": 278,
+      "matchedCode": "markerInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
+      "line": 319,
+      "matchedCode": "markerInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
+      "line": 350,
+      "matchedCode": "markerInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 142,
+      "matchedCode": "variableDescriptions.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 145,
+      "matchedCode": "dynamicConfigRefs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 272,
+      "matchedCode": "projRefs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 314,
+      "matchedCode": "refs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 338,
+      "matchedCode": "configs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 351,
+      "matchedCode": "dynamicConfigRefs.get(configName).clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 359,
+      "matchedCode": "dynamicConfigRefs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 378,
+      "matchedCode": "((BuildCommand)oldCommands[i]).clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 394,
+      "matchedCode": "dynamicRefs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 475,
+      "matchedCode": "natures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 487,
+      "matchedCode": "staticRefs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 671,
+      "matchedCode": "((BuildCommand)value[i]).clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 787,
+      "matchedCode": "tempMap.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 801,
+      "matchedCode": "tempMap.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 864,
+      "matchedCode": "tempMap.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 878,
+      "matchedCode": "tempMap.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
+      "line": 941,
+      "matchedCode": "value.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java",
+      "line": 68,
+      "matchedCode": "buildOrder.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java",
+      "line": 160,
+      "matchedCode": "value.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java",
+      "line": 189,
+      "matchedCode": "oldNatures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java",
+      "line": 190,
+      "matchedCode": "newNatures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/SafeChunkyInputStream.java",
+      "line": 43,
+      "matchedCode": "System.arraycopy(chunk,0,result,0,chunk.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/PrefixPool.java",
+      "line": 93,
+      "matchedCode": "System.arraycopy(pool,0,newprefixList,0,pool.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/HistoryBucket.java",
+      "line": 73,
+      "matchedCode": "System.arraycopy(uuidBytes,0,state,0,uuidBytes.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
+      "line": 167,
+      "matchedCode": "data.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
+      "line": 694,
+      "matchedCode": "oldData.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTreeReaderImpl_1.java",
+      "line": 59,
+      "matchedCode": "data.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.nested-flatmap.review",
+      "file": "sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java",
+      "line": 258,
+      "matchedCode": "miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(SimpleNameExpr::resolveVariable)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
+      "line": 103,
+      "matchedCode": "Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().forEach(packageFragment -> {\n  try {\n    if (packageFragment.containsJavaResources()) {\n      processPackageFragment(variableVisitor,packageFragment);\n    }\n  }\n catch (  JavaModelException e) {\n    logger.log(new Status(Status.ERROR,UsageViewPlugin.PLUGIN_ID,\"Failed to process package fragment\",e));\n  }\n}\n)",
+      "suggestedReplacement": "Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach(packageFragment -> {\n  try {\n    if (packageFragment.containsJavaResources()) {\n      processPackageFragment(variableVisitor,packageFragment);\n    }\n  }\n catch (  JavaModelException e) {\n    logger.log(new Status(Status.ERROR,UsageViewPlugin.PLUGIN_ID,\"Failed to process package fragment\",e));\n  }\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
+      "line": 193,
+      "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(entry.getKey() + \"\\t\" + ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n  System.out.println(\"===>\" + entry.getValue().get(\"init\"));\n  System.out.println();\n}\n)",
+      "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(entry.getKey() + \"\\\\t\" + ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n  System.out.println(\"===>\" + entry.getValue().get(\"init\"));\n  System.out.println();\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
+      "line": 241,
+      "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(\"=============\");\n  System.out.println(entry.getKey());\n  System.out.println(\"init ===>\" + entry.getValue().get(\"init\"));\n  System.out.println(\"while ===>\" + entry.getValue().get(\"while\"));\n  System.out.println(\"next ===>\" + entry.getValue().get(\"next\"));\n  System.out.println(\"name ===>\" + entry.getValue().get(\"name\"));\n  System.out.println();\n}\n)",
+      "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(\"=============\");\n  System.out.println(entry.getKey());\n  System.out.println(\"init ===>\" + entry.getValue().get(\"init\"));\n  System.out.println(\"while ===>\" + entry.getValue().get(\"while\"));\n  System.out.println(\"next ===>\" + entry.getValue().get(\"next\"));\n  System.out.println(\"name ===>\" + entry.getValue().get(\"name\"));\n  System.out.println();\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java",
+      "line": 152,
+      "matchedCode": "VisitorEnum.stream().forEach(ve -> {\n  hv.add(ve,(node,holder) -> {\n    holder.merge(VisitorEnum.fromNode(node),1,Integer::sum);\n    return true;\n  }\n);\n}\n)",
+      "suggestedReplacement": "VisitorEnum.forEach(ve -> {\n  hv.add(ve,(node,holder) -> {\n    holder.merge(VisitorEnum.fromNode(node),1,Integer::sum);\n    return true;\n  }\n);\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java",
+      "line": 188,
+      "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(entry.getKey().name() + \": \" + entry.getValue());\n}\n)",
+      "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(entry.getKey().name() + \": \" + entry.getValue());\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java",
+      "line": 230,
+      "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(\"Position \" + entry.getValue() + \": \"+ ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n}\n)",
+      "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(\"Position \" + entry.getValue() + \": \"+ ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
+      "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java",
+      "line": 291,
+      "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n  System.out.println(\"  Data: \" + entry.getValue());\n}\n)",
+      "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n  System.out.println(\"  Data: \" + entry.getValue());\n}\n)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org/eclipse/jdt/internal/corext/dom/ASTNodes.java",
+      "line": 1591,
+      "matchedCode": "Arrays.asList(additionalExpectedOperators).contains(actualOperator)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org/eclipse/jdt/internal/corext/dom/ASTNodes.java",
+      "line": 3301,
+      "matchedCode": "Arrays.asList(fieldNames).contains(node.getName().getIdentifier())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java",
+      "line": 110,
+      "matchedCode": "compilationUnits.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java",
+      "line": 75,
+      "matchedCode": "TEMPLATES.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java",
+      "line": 157,
+      "matchedCode": "System.arraycopy(defaults,0,result,0,defaults.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java",
+      "line": 73,
+      "matchedCode": "constraints.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java",
+      "line": 149,
+      "matchedCode": "constraints.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
+      "line": 343,
+      "matchedCode": "BUNDLED_LIBRARIES.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
+      "line": 352,
+      "matchedCode": "DISABLED_BUNDLED_LIBRARIES.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
+      "line": 366,
+      "matchedCode": "System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
+      "line": 396,
+      "matchedCode": "System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
+      "line": 103,
+      "matchedCode": "Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewRuleWizardPage.java",
+      "line": 459,
+      "matchedCode": "sourcePatternText.getText().trim().isEmpty()",
+      "suggestedReplacement": "sourcePatternText.getText().isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
+      "line": 101,
+      "matchedCode": "parts[0].trim().isEmpty()",
+      "suggestedReplacement": "parts[0].isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
+      "line": 101,
+      "matchedCode": "parts[1].trim().isEmpty()",
+      "suggestedReplacement": "parts[1].isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_xml_cleanup_test/src/test/java/org/sandbox/jdt/ui/tests/quickfix/XMLTestUtils.java",
+      "line": 120,
+      "matchedCode": "child.getTextContent().trim().isEmpty()",
+      "suggestedReplacement": "child.getTextContent().isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/RepositoryResource.java",
+      "line": 87,
+      "matchedCode": "name.trim().isEmpty()",
+      "suggestedReplacement": "name.isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java",
+      "line": 329,
+      "matchedCode": "newText.trim().isEmpty()",
+      "suggestedReplacement": "newText.isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java",
+      "line": 43,
+      "matchedCode": "parts[0].trim().isEmpty()",
+      "suggestedReplacement": "parts[0].isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java",
+      "line": 43,
+      "matchedCode": "parts[1].trim().isEmpty()",
+      "suggestedReplacement": "parts[1].isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
+      "line": 149,
+      "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java",
+      "line": 94,
+      "matchedCode": "computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java",
+      "line": 107,
+      "matchedCode": "computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java",
+      "line": 87,
+      "matchedCode": "computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java",
+      "line": 92,
+      "matchedCode": "computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java",
+      "line": 83,
+      "matchedCode": "computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
+      "line": 139,
+      "matchedCode": "computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
+      "line": 157,
+      "matchedCode": "computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/ui/fix/JFaceCleanUpCore.java",
+      "line": 89,
+      "matchedCode": "computeFixSet().stream().map(JfaceCleanUpFixCore::toString).collect(Collectors.toList())"
     }
   ],
   "errors": {
