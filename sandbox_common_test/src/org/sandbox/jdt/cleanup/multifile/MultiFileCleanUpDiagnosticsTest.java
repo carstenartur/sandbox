@@ -59,8 +59,11 @@ class MultiFileCleanUpDiagnosticsTest {
 		diagnostics.appendSummary(status);
 
 		assertTrue(status.hasInfo());
-		assertTrue(status.getMessageMatchingSeverity(RefactoringStatus.INFO).contains("1 transformed")); //$NON-NLS-1$
-		assertTrue(status.getMessageMatchingSeverity(RefactoringStatus.INFO).contains("1 rejected")); //$NON-NLS-1$
-		assertTrue(status.getMessageMatchingSeverity(RefactoringStatus.INFO).contains("1 compilation units added")); //$NON-NLS-1$
+		String message= status.getMessageMatchingSeverity(RefactoringStatus.INFO);
+		assertTrue(message.contains("1 selected")); //$NON-NLS-1$
+		assertTrue(message.contains("1 added")); //$NON-NLS-1$
+		assertTrue(message.contains("1 transformed")); //$NON-NLS-1$
+		assertTrue(message.contains("1 rejected")); //$NON-NLS-1$
+		assertTrue(message.contains("MIXED_RULE_MODES=1")); //$NON-NLS-1$
 	}
 }
