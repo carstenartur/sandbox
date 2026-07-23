@@ -10,8 +10,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,15 +62,21 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 				+ " compilation units added to the selected scope."); //$NON-NLS-1$
 	}
 
-	/** @return deterministic JSON suitable for CI artifacts and headless callers */
+	/**
+	 * Returns deterministic JSON suitable for CI artifacts and headless callers.
+	 * Compilation-unit handles are replaced with stable opaque identifiers so the
+	 * explicit export does not disclose workspace paths or Java model handles.
+	 *
+	 * @return privacy-preserving deterministic JSON
+	 */
 	public String toJson() {
 		StringBuilder json= new StringBuilder(512);
 		json.append('{');
 		property(json, "schemaVersion", "1").append(','); //$NON-NLS-1$ //$NON-NLS-2$
 		property(json, "cleanupId", cleanupId).append(','); //$NON-NLS-1$
 		json.append("\"scope\":{"); //$NON-NLS-1$
-		arrayProperty(json, "selectedCompilationUnits", scope.selectedCompilationUnitHandles()).append(','); //$NON-NLS-1$
-		arrayProperty(json, "addedCompilationUnits", scope.addedCompilationUnitHandles()).append(','); //$NON-NLS-1$
+		arrayProperty(json, "selectedCompilationUnits", externalUnitIds(scope.selectedCompilationUnitHandles())).append(','); //$NON-NLS-1$
+		arrayProperty(json, "addedCompilationUnits", externalUnitIds(scope.addedCompilationUnitHandles())).append(','); //$NON-NLS-1$
 		property(json, "reasonCode", scope.reasonCode()).append(','); //$NON-NLS-1$
 		property(json, "explanation", scope.explanation()).append(','); //$NON-NLS-1$
 		json.append("\"complete\":").append(scope.complete()).append("},"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -78,14 +88,27 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 			MultiFileCandidateDiagnostic candidate= candidates.get(index);
 			json.append('{');
 			property(json, "candidateId", candidate.candidateId()).append(','); //$NON-NLS-1$
-			property(json, "ownerCompilationUnit", candidate.ownerCompilationUnitHandle()).append(','); //$NON-NLS-1$
+			property(json, "ownerCompilationUnit", externalUnitId(candidate.ownerCompilationUnitHandle())).append(','); //$NON-NLS-1$
 			property(json, "outcome", candidate.outcome().name()).append(','); //$NON-NLS-1$
 			property(json, "reasonCode", candidate.reasonCode()).append(','); //$NON-NLS-1$
 			property(json, "message", candidate.message()).append(','); //$NON-NLS-1$
-			arrayProperty(json, "relatedCompilationUnits", candidate.relatedCompilationUnitHandles()); //$NON-NLS-1$
+			arrayProperty(json, "relatedCompilationUnits", externalUnitIds(candidate.relatedCompilationUnitHandles())); //$NON-NLS-1$
 			json.append('}');
 		}
 		return json.append("]}").toString(); //$NON-NLS-1$
+	}
+
+	private static List<String> externalUnitIds(List<String> handles) {
+		return handles.stream().map(MultiFileCleanUpDiagnostics::externalUnitId).sorted().toList();
+	}
+
+	private static String externalUnitId(String handle) {
+		try {
+			byte[] digest= MessageDigest.getInstance("SHA-256").digest(handle.getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
+			return "cu-" + HexFormat.of().formatHex(digest, 0, 6); //$NON-NLS-1$
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 is unavailable", e); //$NON-NLS-1$
+		}
 	}
 
 	private static StringBuilder property(StringBuilder json, String name, String value) {
@@ -123,6 +146,7 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 						escaped.append(character);
 					}
 				}
+			}
 		}
 		return escaped.toString();
 	}
