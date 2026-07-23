@@ -123,10 +123,6 @@ public class GitSearchView extends ViewPart {
 			return;
 		}
 		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-		if (client == null) {
-			tableViewer.setInput(new Object[0]);
-			return;
-		}
 		int searchType= searchTypeCombo.getSelectionIndex();
 		List<SearchHit> results;
 		switch (searchType) {

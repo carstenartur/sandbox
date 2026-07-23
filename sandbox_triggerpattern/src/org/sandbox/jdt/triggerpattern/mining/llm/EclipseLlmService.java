@@ -44,7 +44,11 @@ import org.sandbox.jdt.triggerpattern.llm.LlmProvider;
  */
 public class EclipseLlmService {
 
+	private static final Object INSTANCE_LOCK= new Object();
+
 	private static volatile EclipseLlmService instance;
+
+	private final Object lifecycleLock= new Object();
 
 	private LlmClient llmClient;
 	private AiRuleInferenceEngine engine;
@@ -59,14 +63,17 @@ public class EclipseLlmService {
 	 * @return the service instance
 	 */
 	public static EclipseLlmService getInstance() {
-		if (instance == null) {
-			synchronized (EclipseLlmService.class) {
-				if (instance == null) {
-					instance = new EclipseLlmService();
+		EclipseLlmService current= instance;
+		if (current == null) {
+			synchronized (INSTANCE_LOCK) {
+				current= instance;
+				if (current == null) {
+					current= new EclipseLlmService();
+					instance= current;
 				}
 			}
 		}
-		return instance;
+		return current;
 	}
 
 	/**
@@ -82,12 +89,14 @@ public class EclipseLlmService {
 	 *
 	 * @return the inference engine
 	 */
-	public synchronized AiRuleInferenceEngine getEngine() {
-		if (engine == null) {
-			llmClient = createClientFromPreferences();
-			engine = new AiRuleInferenceEngine(llmClient);
+	public AiRuleInferenceEngine getEngine() {
+		synchronized (lifecycleLock) {
+			if (engine == null) {
+				llmClient= createClientFromPreferences();
+				engine= new AiRuleInferenceEngine(llmClient);
+			}
+			return engine;
 		}
-		return engine;
 	}
 
 	/**
@@ -104,21 +113,27 @@ public class EclipseLlmService {
 	/**
 	 * Shuts down the service and releases the underlying LLM client.
 	 */
-	public synchronized void shutdown() {
-		if (llmClient != null) {
-			llmClient.close();
-			llmClient = null;
-			engine = null;
+	public void shutdown() {
+		synchronized (lifecycleLock) {
+			if (llmClient != null) {
+				llmClient.close();
+				llmClient= null;
+				engine= null;
+			}
 		}
 	}
 
 	/**
 	 * Resets the singleton (useful for testing or after preference changes).
 	 */
-	public static synchronized void reset() {
-		if (instance != null) {
-			instance.shutdown();
-			instance = null;
+	public static void reset() {
+		EclipseLlmService current;
+		synchronized (INSTANCE_LOCK) {
+			current= instance;
+			instance= null;
+		}
+		if (current != null) {
+			current.shutdown();
 		}
 	}
 
@@ -131,9 +146,9 @@ public class EclipseLlmService {
 	 * If neither is set, auto-detection from environment variables is used.</p>
 	 */
 	private static LlmClient createClientFromPreferences() {
-		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-		String apiKey = prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
+		IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
+		String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
+		String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
 
 		if (!provider.isBlank()) {
 			// Use preference provider and API key (key may be blank → client reads env)
@@ -147,9 +162,9 @@ public class EclipseLlmService {
 	}
 
 	private static boolean hasPreferenceApiKey() {
-		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-		String apiKey = prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
-		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
+		IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
+		String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
+		String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
 		return !apiKey.isBlank() && !provider.isBlank();
 	}
 
@@ -163,7 +178,7 @@ public class EclipseLlmService {
 	}
 
 	private static boolean envSet(String key) {
-		String value = System.getenv(key);
+		String value= System.getenv(key);
 		return value != null && !value.isBlank();
 	}
 }

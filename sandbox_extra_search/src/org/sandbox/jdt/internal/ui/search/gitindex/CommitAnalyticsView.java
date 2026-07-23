@@ -109,11 +109,6 @@ public class CommitAnalyticsView extends ViewPart {
 			return;
 		}
 		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-		if (client == null) {
-			statsLabel.setText(Messages.CommitAnalyticsView_ServiceNotInitialized);
-			authorTableViewer.setInput(new Object[0]);
-			return;
-		}
 		List<AuthorStats> authors= client.getAuthorStatistics(repoName);
 		authorTableViewer.setInput(authors);
 		statsLabel.setText(Messages.bind(Messages.CommitAnalyticsView_ShowingAuthors,

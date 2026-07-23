@@ -99,10 +99,6 @@ public class JavaTypeHistoryView extends ViewPart {
 			return;
 		}
 		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-		if (client == null) {
-			tableViewer.setInput(new Object[0]);
-			return;
-		}
 		List<SearchHit> results= client.getFileHistory("", typeName); //$NON-NLS-1$
 		tableViewer.setInput(results);
 	}
