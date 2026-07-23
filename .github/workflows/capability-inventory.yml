@@ -1,0 +1,43 @@
+name: Capability Inventory
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/capabilities.json'
+      - 'docs/capabilities.md'
+      - '.github/scripts/validate_capability_inventory.py'
+      - '.github/workflows/capability-inventory.yml'
+      - 'pom.xml'
+      - 'README.md'
+      - 'sandbox_*/META-INF/MANIFEST.MF'
+      - 'sandbox_*_feature/feature.xml'
+      - 'sandbox_product/sandbox.product'
+      - 'sandbox_updatesite/category.xml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/capabilities.json'
+      - 'docs/capabilities.md'
+      - '.github/scripts/validate_capability_inventory.py'
+      - '.github/workflows/capability-inventory.yml'
+      - 'pom.xml'
+      - 'README.md'
+      - 'sandbox_*/META-INF/MANIFEST.MF'
+      - 'sandbox_*_feature/feature.xml'
+      - 'sandbox_product/sandbox.product'
+      - 'sandbox_updatesite/category.xml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Validate inventory and generated documentation
+        run: python3 .github/scripts/validate_capability_inventory.py --check
