@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,10 +27,22 @@ public record MultiFileScopeDiagnostic(List<String> selectedCompilationUnitHandl
 		explanation= Objects.requireNonNull(explanation);
 	}
 
+	/** Creates a diagnostic from general collections while retaining deterministic order. */
+	public MultiFileScopeDiagnostic(Collection<String> selectedCompilationUnitHandles,
+			Collection<String> addedCompilationUnitHandles, String reasonCode, String explanation,
+			boolean complete) {
+		this(toList(selectedCompilationUnitHandles), toList(addedCompilationUnitHandles), reasonCode, explanation,
+				complete);
+	}
+
 	/** @return an empty, complete scope diagnostic */
 	public static MultiFileScopeDiagnostic empty() {
 		return new MultiFileScopeDiagnostic(List.of(), List.of(), "NO_EXPANSION", //$NON-NLS-1$
 				"No coordinated source-scope expansion was required.", true); //$NON-NLS-1$
+	}
+
+	private static List<String> toList(Collection<String> handles) {
+		return handles == null ? null : List.copyOf(handles);
 	}
 
 	private static List<String> normalize(List<String> handles) {
