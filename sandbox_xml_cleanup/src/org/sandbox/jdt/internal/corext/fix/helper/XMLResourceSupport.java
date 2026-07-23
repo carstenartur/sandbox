@@ -150,10 +150,6 @@ public final class XMLResourceSupport {
 
 	static Snapshot read(IFile file) throws CoreException {
 		byte[] bytes= readBytes(file);
-		if (bytes.length > MAX_INPUT_BYTES) {
-			throw error("XML resource exceeds the 16 MiB cleanup limit: " //$NON-NLS-1$
-					+ file.getFullPath(), null);
-		}
 		String resourceCharset= file.getCharset(true);
 		Decoded decoded= decode(bytes, resourceCharset);
 		return new Snapshot(bytes, decoded.content, decoded.charset, decoded.bom,
@@ -211,6 +207,11 @@ public final class XMLResourceSupport {
 		Decoded {
 			bom= bom.clone();
 		}
+
+		@Override
+		public byte[] bom() {
+			return bom.clone();
+		}
 	}
 
 	static void validateWellFormed(String content) throws CoreException {
@@ -232,7 +233,12 @@ public final class XMLResourceSupport {
 
 	private static byte[] readBytes(IFile file) throws CoreException {
 		try (InputStream input= file.getContents()) {
-			return input.readAllBytes();
+			byte[] bytes= input.readNBytes(MAX_INPUT_BYTES + 1);
+			if (bytes.length > MAX_INPUT_BYTES) {
+				throw error("XML resource exceeds the 16 MiB cleanup limit: " //$NON-NLS-1$
+						+ file.getFullPath(), null);
+			}
+			return bytes;
 		} catch (IOException e) {
 			throw error("Failed to read XML resource: " + file.getFullPath(), e); //$NON-NLS-1$
 		}
@@ -321,6 +327,7 @@ public final class XMLResourceSupport {
 			if (content[i] != prefix[i]) {
 				return false;
 			}
+		}
 		return true;
 	}
 
