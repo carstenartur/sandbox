@@ -13,7 +13,9 @@ package org.sandbox.jdt.cleanup.multifile;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -64,11 +66,52 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		implements IMultiFileCleanUpScopeProvider {
 
+	private static final String UNKNOWN_CLEANUP_ID= "unknown"; //$NON-NLS-1$
+
+	private static final class ScopeAccumulator {
+		private final Set<String> selectedHandles= new LinkedHashSet<>();
+		private final Set<String> addedHandles= new LinkedHashSet<>();
+
+		void record(Collection<ICompilationUnit> currentScope, Collection<ICompilationUnit> additions) {
+			if (selectedHandles.isEmpty()) {
+				addHandles(selectedHandles, currentScope);
+			}
+			Set<String> discovered= new LinkedHashSet<>();
+			addHandles(discovered, additions);
+			discovered.removeAll(selectedHandles);
+			addedHandles.addAll(discovered);
+		}
+
+		MultiFileScopeDiagnostic merge(MultiFileScopeDiagnostic existing) {
+			if (addedHandles.isEmpty()) {
+				return new MultiFileScopeDiagnostic(selectedHandles, existing.addedCompilationUnitHandles(),
+						existing.reasonCode(), existing.explanation(), existing.complete());
+			}
+			Set<String> allAdded= new LinkedHashSet<>(existing.addedCompilationUnitHandles());
+			allAdded.addAll(addedHandles);
+			return new MultiFileScopeDiagnostic(selectedHandles, allAdded, "RELATED_SOURCE_CLOSURE", //$NON-NLS-1$
+					"Related source compilation units were added to close coordinated cleanup references.", //$NON-NLS-1$
+					existing.complete());
+		}
+
+		private static void addHandles(Set<String> target, Collection<ICompilationUnit> units) {
+			if (units == null) {
+				return;
+			}
+			for (ICompilationUnit unit : units) {
+				if (unit != null) {
+					target.add(unit.getPrimary().getHandleIdentifier());
+				}
+			}
+		}
+	}
+
 	private final Object lifecycleLock= new Object();
 
 	private final Map<IJavaProject, P> plansByProject= new HashMap<>();
 	private final Map<IJavaProject, MultiFilePlanningMetrics> metricsByProject= new HashMap<>();
 	private final Map<IJavaProject, MultiFileCleanUpDiagnostics> diagnosticsByProject= new HashMap<>();
+	private final Map<IJavaProject, ScopeAccumulator> scopesByProject= new HashMap<>();
 
 	/** Creates a base class without options. */
 	protected AbstractPlannedMultiFileCleanUp() {
@@ -106,7 +149,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	public final RefactoringStatus checkPreConditions(IJavaProject project, ICompilationUnit[] compilationUnits,
 			IProgressMonitor monitor) throws CoreException {
 		synchronized (lifecycleLock) {
-			clearProjectState(project);
+			clearPlanningState(project);
 			MultiFileCleanUpPlanResult<P> result;
 			try {
 				result= createPlan(project, compilationUnits.clone(), monitor);
@@ -114,9 +157,18 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 				clearProjectState(project);
 				throw e;
 			}
+			MultiFileCleanUpDiagnostics diagnostics= result.diagnostics();
+			ScopeAccumulator scope= scopesByProject.remove(project);
+			if (scope != null) {
+				MultiFileScopeDiagnostic mergedScope= scope.merge(diagnostics.scope());
+				String cleanupId= UNKNOWN_CLEANUP_ID.equals(diagnostics.cleanupId())
+						? getClass().getSimpleName()
+						: diagnostics.cleanupId();
+				diagnostics= new MultiFileCleanUpDiagnostics(cleanupId, mergedScope, diagnostics.candidates());
+			}
 			metricsByProject.put(project, result.metrics());
-			diagnosticsByProject.put(project, result.diagnostics());
-			result.diagnostics().appendSummary(result.status());
+			diagnosticsByProject.put(project, diagnostics);
+			diagnostics.appendSummary(result.status());
 			if (!result.status().hasFatalError() && result.plan() != null) {
 				plansByProject.put(project, result.plan());
 			}
@@ -154,6 +206,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 				plansByProject.clear();
 				metricsByProject.clear();
 				diagnosticsByProject.clear();
+				scopesByProject.clear();
 			}
 		}
 	}
@@ -175,7 +228,9 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		synchronized (lifecycleLock) {
 			Collection<ICompilationUnit> result= discoverAdditionalCompilationUnits(project,
 					Collections.unmodifiableCollection(currentScope), monitor);
-			return result == null ? Collections.emptyList() : result;
+			Collection<ICompilationUnit> normalized= result == null ? Collections.emptyList() : result;
+			scopesByProject.computeIfAbsent(project, ignored -> new ScopeAccumulator()).record(currentScope, normalized);
+			return normalized;
 		}
 	}
 
@@ -234,9 +289,14 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		}
 	}
 
-	private void clearProjectState(IJavaProject project) {
+	private void clearPlanningState(IJavaProject project) {
 		plansByProject.remove(project);
 		metricsByProject.remove(project);
 		diagnosticsByProject.remove(project);
+	}
+
+	private void clearProjectState(IJavaProject project) {
+		clearPlanningState(project);
+		scopesByProject.remove(project);
 	}
 }
