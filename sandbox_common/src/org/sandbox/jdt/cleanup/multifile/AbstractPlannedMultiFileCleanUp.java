@@ -68,6 +68,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 
 	private final Map<IJavaProject, P> plansByProject= new HashMap<>();
 	private final Map<IJavaProject, MultiFilePlanningMetrics> metricsByProject= new HashMap<>();
+	private final Map<IJavaProject, MultiFileCleanUpDiagnostics> diagnosticsByProject= new HashMap<>();
 
 	/** Creates a base class without options. */
 	protected AbstractPlannedMultiFileCleanUp() {
@@ -105,17 +106,17 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	public final RefactoringStatus checkPreConditions(IJavaProject project, ICompilationUnit[] compilationUnits,
 			IProgressMonitor monitor) throws CoreException {
 		synchronized (lifecycleLock) {
-			plansByProject.remove(project);
-			metricsByProject.remove(project);
+			clearProjectState(project);
 			MultiFileCleanUpPlanResult<P> result;
 			try {
 				result= createPlan(project, compilationUnits.clone(), monitor);
 			} catch (CoreException | RuntimeException e) {
-				plansByProject.remove(project);
-				metricsByProject.remove(project);
+				clearProjectState(project);
 				throw e;
 			}
 			metricsByProject.put(project, result.metrics());
+			diagnosticsByProject.put(project, result.diagnostics());
+			result.diagnostics().appendSummary(result.status());
 			if (!result.status().hasFatalError() && result.plan() != null) {
 				plansByProject.put(project, result.plan());
 			}
@@ -138,8 +139,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			try {
 				return createFixForPlan(plan, context);
 			} catch (CoreException | RuntimeException e) {
-				plansByProject.remove(project);
-				metricsByProject.remove(project);
+				clearProjectState(project);
 				throw e;
 			}
 		}
@@ -153,6 +153,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			} finally {
 				plansByProject.clear();
 				metricsByProject.clear();
+				diagnosticsByProject.clear();
 			}
 		}
 	}
@@ -217,5 +218,25 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		synchronized (lifecycleLock) {
 			return metricsByProject.getOrDefault(project, MultiFilePlanningMetrics.empty());
 		}
+	}
+
+	/**
+	 * Returns structured diagnostics from the current project's most recent planning
+	 * attempt. Diagnostics remain available through fix creation and postcondition
+	 * checks and are cleared with the rest of the lifecycle state.
+	 *
+	 * @param project Java project
+	 * @return retained diagnostics or empty diagnostics when no planning run exists
+	 */
+	protected final MultiFileCleanUpDiagnostics getPlanningDiagnostics(IJavaProject project) {
+		synchronized (lifecycleLock) {
+			return diagnosticsByProject.getOrDefault(project, MultiFileCleanUpDiagnostics.empty());
+		}
+	}
+
+	private void clearProjectState(IJavaProject project) {
+		plansByProject.remove(project);
+		metricsByProject.remove(project);
+		diagnosticsByProject.remove(project);
 	}
 }
