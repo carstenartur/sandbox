@@ -57,17 +57,18 @@ jobs:
   target-compatibility:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
+      - name: Prepare compatibility evidence directory
+        run: mkdir -p "$RUNNER_TEMP/patched-jdt-ui-compatibility"
       - name: Download verified replacement bundle
         uses: actions/download-artifact@v7
         with:
@@ -80,18 +81,34 @@ jobs:
             "$RUNNER_TEMP/patched-jdt-ui" \
             "$RUNNER_TEMP/patched-jdt-ui-compatibility"
       - name: Publish compatibility summary
+        if: always()
         shell: bash
         run: |
-          cat "$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.md" >> "$GITHUB_STEP_SUMMARY"
-          if ! python3 - "$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json" <<'PY'
+          report="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.md"
+          result="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json"
+          log="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility-build.log"
+          if [[ -s "$report" && -s "$result" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+            if ! python3 - "$result" <<'PY'
           import json
           import sys
           with open(sys.argv[1], encoding='utf-8') as stream:
               compatible = json.load(stream)['compatibleForReplacement']
           raise SystemExit(0 if compatible else 1)
           PY
-          then
-            echo '::warning::The pinned bundle is not yet eligible for p2 replacement. The report records the exact stock-target incompatibility; publication remains disabled.'
+            then
+              echo '::warning::The pinned bundle is not yet eligible for p2 replacement. The report records the exact stock-target incompatibility; publication remains disabled.'
+            fi
+          else
+            {
+              echo '### Patched JDT UI target compatibility'
+              echo
+              echo '**ERROR:** target resolution or manifest inspection did not produce a compatibility report.'
+              echo
+              echo '```text'
+              tail -n 120 "$log" 2>/dev/null || echo 'No compatibility log was produced.'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Upload stock-target compatibility report
         if: always()
@@ -100,4 +117,4 @@ jobs:
           name: patched-jdt-ui-target-compatibility-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui-compatibility/
           retention-days: 14
-          if-no-files-found: error
+          if-no-files-found: warn
