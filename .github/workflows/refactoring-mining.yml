@@ -20,6 +20,8 @@ jobs:
   mine:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      REQUESTED_REPO_URL: ${{ inputs.repo_url }}
 
     steps:
       - uses: actions/checkout@v6
@@ -44,8 +46,8 @@ jobs:
           # The legacy CLI's normal mode writes only report files below --output.
           # It never edits the scanned repositories or promotes productive DSL rules.
           ARGS=(--config .github/refactoring-mining/repos.yml --output mining-results/ --format both)
-          if [ -n "${{ github.event.inputs.repo_url }}" ]; then
-            ARGS=(--repo "${{ github.event.inputs.repo_url }}" --output mining-results/ --format both)
+          if [ -n "$REQUESTED_REPO_URL" ]; then
+            ARGS=(--repo "$REQUESTED_REPO_URL" --output mining-results/ --format both)
           fi
           java -jar sandbox_mining_cli/target/sandbox-mining-cli.jar "${ARGS[@]}"
 
