@@ -47,6 +47,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
@@ -58,6 +59,8 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigrationPlan> {
 
 	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();
+	private final Map<IJavaProject, Set<String>> verifiedClosedScopes= new HashMap<>();
+	private final Set<IJavaProject> rejectedScopes= new HashSet<>();
 
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
@@ -85,8 +88,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		return JUnitMultiFilePlanner.create(project, compilationUnits,
-				fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE), monitor);
+		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
+		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+		return closedScope == null
+				? JUnitMultiFilePlanner.create(project, compilationUnits, migrateExternalResourceRules, monitor)
+				: JUnitMultiFilePlanner.create(project, compilationUnits, migrateExternalResourceRules,
+						closedScope.booleanValue(), monitor);
 	}
 
 	@Override
@@ -124,21 +131,36 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 
 		Set<String> currentHandles= handles(currentScope);
-		Set<String> pendingScope= pendingExpandedScopes.remove(project);
+		Set<String> pendingScope= pendingExpandedScopes.get(project);
 		if (pendingScope != null && currentHandles.containsAll(pendingScope)) {
+			pendingExpandedScopes.remove(project);
+			verifiedClosedScopes.put(project, pendingScope);
 			return List.of();
 		}
-		if (!JUnitScopeCandidateDetector.containsCandidate(project, currentScope, monitor)) {
+		rejectedScopes.remove(project);
+		JUnitScopeCandidateDetector.SearchSeeds seeds=
+				JUnitScopeCandidateDetector.findSearchSeeds(project, currentScope, monitor);
+		if (!seeds.candidateFound()) {
+			clearScopeDecision(project);
 			return List.of();
 		}
 
-		List<ICompilationUnit> projectUnits= JavaProjectCompilationUnits.collect(project, currentScope,
+		List<ICompilationUnit> allowedUnits= JavaProjectCompilationUnits.collect(project, currentScope,
 				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);
-		Set<String> projectHandles= handles(projectUnits);
-		if (!currentHandles.containsAll(projectHandles)) {
-			pendingExpandedScopes.put(project, projectHandles);
+		List<ICompilationUnit> requiredUnits;
+		if (!seeds.complete()) {
+			requiredUnits= allowedUnits;
+		} else {
+			RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(project,
+					seeds.elements(), currentScope, allowedUnits, monitor);
+			if (!related.complete()) {
+				clearScopeDecision(project);
+				rejectedScopes.add(project);
+				return List.of();
+			}
+			requiredUnits= related.compilationUnits();
 		}
-		return projectUnits;
+		return registerRequiredScope(project, currentHandles, requiredUnits);
 	}
 
 	@Override
@@ -220,6 +242,37 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 
 	private EnumSet<JUnitCleanUpFixCore> allOfJunit3() {
 		return EnumSet.of(JUnitCleanUpFixCore.TEST3);
+	}
+
+	private Collection<ICompilationUnit> registerRequiredScope(IJavaProject project,
+			Set<String> currentHandles, Collection<ICompilationUnit> requiredUnits) {
+		Set<String> requiredHandles= handles(requiredUnits);
+		if (currentHandles.containsAll(requiredHandles)) {
+			verifiedClosedScopes.put(project, requiredHandles);
+			pendingExpandedScopes.remove(project);
+			return List.of();
+		}
+		pendingExpandedScopes.put(project, requiredHandles);
+		verifiedClosedScopes.remove(project);
+		return requiredUnits;
+	}
+
+	private Boolean consumeClosedScopeDecision(IJavaProject project, ICompilationUnit[] compilationUnits) {
+		if (rejectedScopes.remove(project)) {
+			clearScopeDecision(project);
+			return Boolean.FALSE;
+		}
+		Set<String> expected= verifiedClosedScopes.remove(project);
+		Set<String> pending= pendingExpandedScopes.remove(project);
+		if (expected == null) {
+			expected= pending;
+		}
+		return expected == null ? null : Boolean.valueOf(handles(List.of(compilationUnits)).containsAll(expected));
+	}
+
+	private void clearScopeDecision(IJavaProject project) {
+		pendingExpandedScopes.remove(project);
+		verifiedClosedScopes.remove(project);
 	}
 
 	private static Set<String> handles(Collection<ICompilationUnit> units) {

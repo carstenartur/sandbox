@@ -72,14 +72,29 @@ public final class MultiFileCleanUpLifecycleAssertions {
 	 */
 	public static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] compilationUnits,
 			String[] expectedAfterApply) throws CoreException {
-		assertEquals(compilationUnits.length, expectedAfterApply.length,
-				"Each compilation unit needs one expected post-apply source"); //$NON-NLS-1$
-		String[] originals= contents(compilationUnits);
-		Map<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(compilationUnits);
+		return assertApplyCompileAndUndo(compilationUnits, compilationUnits, expectedAfterApply);
+	}
+
+	/**
+	 * Applies a cleanup to an initial selection and verifies the complete set of
+	 * units expected to be affected after coordinated scope expansion.
+	 *
+	 * @param selectedUnits compilation units explicitly added to the refactoring
+	 * @param verifiedUnits units whose source and Java errors must be verified
+	 * @param expectedAfterApply expected source contents for {@code verifiedUnits}
+	 * @return the final-condition status of the cleanup refactoring
+	 * @throws CoreException if Eclipse cannot create or execute either change
+	 */
+	public static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] selectedUnits,
+			ICompilationUnit[] verifiedUnits, String[] expectedAfterApply) throws CoreException {
+		assertEquals(verifiedUnits.length, expectedAfterApply.length,
+				"Each verified compilation unit needs one expected post-apply source"); //$NON-NLS-1$
+		String[] originals= contents(verifiedUnits);
+		Map<String, Map<ProblemSignature, Long>> baselineProblems= errorCounts(verifiedUnits);
 
 		CleanUpRefactoring refactoring= new CleanUpRefactoring();
 		refactoring.setUseOptionsFromProfile(true);
-		for (ICompilationUnit unit : compilationUnits) {
+		for (ICompilationUnit unit : selectedUnits) {
 			refactoring.addCompilationUnit(unit);
 		}
 		for (ICleanUp cleanup : JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps()) {
@@ -102,14 +117,14 @@ public final class MultiFileCleanUpLifecycleAssertions {
 		Change undo= apply.getUndoChange();
 		assertNotNull(undo, "The coordinated cleanup did not create an undo change"); //$NON-NLS-1$
 
-		assertPostApplyContents(compilationUnits, expectedAfterApply);
-		assertNoNewErrors(compilationUnits, baselineProblems, "after apply"); //$NON-NLS-1$
+		assertPostApplyContents(verifiedUnits, expectedAfterApply);
+		assertNoNewErrors(verifiedUnits, baselineProblems, "after apply"); //$NON-NLS-1$
 
 		PerformChangeOperation performUndo= new PerformChangeOperation(undo);
 		workspace.run(performUndo, new NullProgressMonitor());
 		assertTrue(performUndo.changeExecuted(), "The coordinated cleanup undo change was not executed"); //$NON-NLS-1$
-		assertRestoredContents(compilationUnits, originals);
-		assertEquals(baselineProblems, errorCounts(compilationUnits),
+		assertRestoredContents(verifiedUnits, originals);
+		assertEquals(baselineProblems, errorCounts(verifiedUnits),
 				"Undo must restore the original Java error set"); //$NON-NLS-1$
 		return status;
 	}

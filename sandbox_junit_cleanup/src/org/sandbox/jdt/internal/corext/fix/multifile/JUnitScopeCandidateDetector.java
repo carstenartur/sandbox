@@ -14,15 +14,17 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
@@ -35,32 +37,35 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
-/** Lightweight pre-scan used before requesting complete-project JUnit scope. */
+/** Lightweight selected-scope detector for coordinated JUnit resource migration. */
 public final class JUnitScopeCandidateDetector {
+
+	/** Binding-derived resource types whose references define the required closure. */
+	public record SearchSeeds(boolean candidateFound, boolean complete, List<IJavaElement> elements) {
+		public SearchSeeds {
+			elements= List.copyOf(elements);
+		}
+	}
 
 	private JUnitScopeCandidateDetector() {
 		// utility class
 	}
 
-	/**
-	 * Returns whether the current selection contains either side of the coordinated
-	 * named {@code ExternalResource} migration: a resource declaration or a
-	 * {@code @Rule}/{@code @ClassRule} field.
-	 * <p>
-	 * A positive result only enables the existing conservative complete-project
-	 * fallback. The semantic planner remains responsible for proving that a closed,
-	 * lifecycle-compatible migration exists.
-	 * </p>
-	 *
-	 * @param project Java project owning the cleanup scope
-	 * @param currentScope currently selected compilation units
-	 * @param monitor progress monitor, may be {@code null}
-	 * @return {@code true} when coordinated fallback analysis may be required
-	 */
+	/** Returns whether the selection contains either side of a resource migration. */
 	public static boolean containsCandidate(IJavaProject project, Collection<ICompilationUnit> currentScope,
 			IProgressMonitor monitor) {
-		if (currentScope == null || currentScope.isEmpty()) {
-			return false;
+		return findSearchSeeds(project, currentScope, monitor).candidateFound();
+	}
+
+	/**
+	 * Finds source resource types referenced by selected declarations or Rule fields.
+	 * Syntactically recognizable candidates with missing bindings are marked
+	 * incomplete so callers preserve the existing complete-policy fallback.
+	 */
+	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection<ICompilationUnit> currentScope,
+			IProgressMonitor monitor) {
+		if (project == null || currentScope == null || currentScope.isEmpty()) {
+			return new SearchSeeds(false, true, List.of());
 		}
 		checkCanceled(monitor);
 		Set<ICompilationUnit> units= new LinkedHashSet<>();
@@ -70,10 +75,12 @@ public final class JUnitScopeCandidateDetector {
 			}
 		}
 		if (units.isEmpty()) {
-			return false;
+			return new SearchSeeds(false, true, List.of());
 		}
 
-		AtomicBoolean candidate= new AtomicBoolean();
+		boolean[] candidateFound= { false };
+		boolean[] complete= { true };
+		Set<IJavaElement> elements= new LinkedHashSet<>();
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
 		parser.setProject(project);
 		parser.setResolveBindings(true);
@@ -83,45 +90,78 @@ public final class JUnitScopeCandidateDetector {
 		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-				if (candidate.get()) {
-					return;
-				}
 				ast.accept(new ASTVisitor() {
 					@Override
 					public boolean visit(TypeDeclaration node) {
 						ITypeBinding binding= node.resolveBinding();
-						if (binding != null && binding.getSuperclass() != null
-								&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(
-										binding.getSuperclass().getErasure().getQualifiedName())) {
-							candidate.set(true);
+						ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
+						if (superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(
+								superclass.getErasure().getQualifiedName())) {
+							candidateFound[0]= true;
+							complete[0]&= addJavaElement(binding, elements);
 							return false;
 						}
-						return !candidate.get();
+						if (binding == null && node.getSuperclassType() != null
+								&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$
+							candidateFound[0]= true;
+							complete[0]= false;
+						}
+						return true;
 					}
 
 					@Override
 					public boolean visit(FieldDeclaration node) {
+						boolean ruleField= false;
+						boolean unresolvedRuleAnnotation= false;
 						for (Object modifier : node.modifiers()) {
 							if (!(modifier instanceof Annotation annotation)) {
 								continue;
 							}
-							ITypeBinding binding= annotation.resolveTypeBinding();
-							if (binding == null) {
-								continue;
-							}
-							String qualifiedName= binding.getQualifiedName();
-							if (ORG_JUNIT_RULE.equals(qualifiedName) || ORG_JUNIT_CLASS_RULE.equals(qualifiedName)) {
-								candidate.set(true);
-								return false;
+							ITypeBinding annotationBinding= annotation.resolveTypeBinding();
+							if (annotationBinding != null) {
+								String qualifiedName= annotationBinding.getQualifiedName();
+								ruleField|= ORG_JUNIT_RULE.equals(qualifiedName)
+										|| ORG_JUNIT_CLASS_RULE.equals(qualifiedName);
+							} else if (isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
+								ruleField= true;
+								unresolvedRuleAnnotation= true;
 							}
 						}
-						return !candidate.get();
+						if (!ruleField) {
+							return true;
+						}
+						candidateFound[0]= true;
+						if (unresolvedRuleAnnotation) {
+							complete[0]= false;
+						}
+						ITypeBinding fieldType= node.getType().resolveBinding();
+						complete[0]&= addJavaElement(fieldType, elements);
+						return true;
 					}
 				});
 			}
 		}, monitor);
 		checkCanceled(monitor);
-		return candidate.get();
+		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
+	}
+
+	private static boolean isSyntacticRuleName(String name) {
+		String simple= simpleName(name);
+		return "Rule".equals(simple) || "ClassRule".equals(simple); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static String simpleName(String name) {
+		int separator= name.lastIndexOf('.');
+		return separator < 0 ? name : name.substring(separator + 1);
+	}
+
+	private static boolean addJavaElement(ITypeBinding binding, Set<IJavaElement> elements) {
+		IJavaElement element= binding == null ? null : binding.getErasure().getJavaElement();
+		if (element == null || !element.exists()) {
+			return false;
+		}
+		elements.add(element);
+		return true;
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
