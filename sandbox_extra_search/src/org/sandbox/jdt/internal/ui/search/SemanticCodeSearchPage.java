@@ -134,7 +134,9 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 			return false;
 		}
 
-		if (EmbeddedSearchService.getInstance().getSearchClient() == null) {
+		EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();
+		searchService.getSearchClient();
+		if (!searchService.isAvailable()) {
 			setErrorMessage(Messages.SemanticSearchClient_BackendNotAvailable);
 			return false;
 		}
