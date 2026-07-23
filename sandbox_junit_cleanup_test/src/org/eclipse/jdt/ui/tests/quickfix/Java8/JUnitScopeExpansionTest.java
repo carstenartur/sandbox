@@ -31,9 +31,6 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 
-import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
-import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
-import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
@@ -81,7 +78,7 @@ public class JUnitScopeExpansionTest {
 	}
 
 	@Test
-	public void selectedExternalResourceUsesConservativeProjectFallback() throws CoreException {
+	public void selectedExternalResourceFindsOnlyRequiredRuleUser() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
 				"""
@@ -95,23 +92,27 @@ public class JUnitScopeExpansionTest {
 					}
 				}
 				""", false, null);
-		ICompilationUnit related= createUnit(pack, "SelectedTest.java"); //$NON-NLS-1$
-		ICompilationUnit unrelated= createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
+		ICompilationUnit related= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
 
-		assertTrue(JUnitScopeCandidateDetector.containsCandidate(selected.getJavaProject(), List.of(selected), null),
-				"The selected source must be recognized as an ExternalResource candidate");
-		assertEquals(3, JavaProjectCompilationUnits.collect(selected.getJavaProject(), List.of(selected),
-				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT).size(),
-				"The selected source root must remain editable under the JUnit expansion policy");
+				import org.junit.Rule;
+
+				public class SelectedTest {
+					@Rule
+					public SharedResource resource = new SharedResource();
+				}
+				""", false, null);
+		ICompilationUnit unrelated= createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
 
 		Collection<ICompilationUnit> expanded= externalResourceCleanup().expandCleanUpScope(
 				selected.getJavaProject(), List.of(selected), null);
 		Set<String> expandedHandles= expanded.stream().map(ICompilationUnit::getHandleIdentifier)
 				.collect(Collectors.toSet());
 
-		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier(),
-				unrelated.getHandleIdentifier()), expandedHandles,
-				"A selected resource candidate must retain the conservative complete-project fallback");
+		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier()), expandedHandles,
+				"The exact closure must add the Rule user without broadening to unrelated source");
+		assertTrue(!expanded.contains(unrelated));
 	}
 
 	private static JUnitCleanUpCore externalResourceCleanup() {
