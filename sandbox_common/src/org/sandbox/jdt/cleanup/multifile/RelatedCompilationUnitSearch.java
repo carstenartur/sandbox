@@ -37,12 +37,10 @@ import org.eclipse.jdt.core.search.SearchRequestor;
  * Resolves the source compilation units related to binding-derived Java elements.
  *
  * <p>The search is workspace-wide so references outside the selected project or
- * in binary inputs are visible as safety failures. Permitted source units are
- * also supplied as working copies, so fresh or unsaved source is searched without
- * waiting for the workspace index. Only accurate matches in the explicitly
- * allowed source units of the owning project are admitted to the returned closure.
- * Any unresolved, external, generated, derived, output, or otherwise excluded
- * match makes the result incomplete.</p>
+ * in binary inputs are visible as safety failures. Only accurate matches in the
+ * explicitly allowed source units of the owning project are admitted to the
+ * returned closure. Any unresolved, external, generated, derived, output, or
+ * otherwise excluded match makes the result incomplete.</p>
  */
 public final class RelatedCompilationUnitSearch {
 
@@ -160,8 +158,7 @@ public final class RelatedCompilationUnitSearch {
 				accumulator.accept(match.getElement(), match.getAccuracy());
 			}
 		};
-		ICompilationUnit[] workingCopies= normalize(allowedUnits).toArray(ICompilationUnit[]::new);
-		new SearchEngine(workingCopies).search(combinedPattern,
+		new SearchEngine().search(combinedPattern,
 				new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
 				SearchEngine.createWorkspaceScope(), requestor, monitor);
 		checkCanceled(monitor);
