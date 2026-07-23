@@ -36,8 +36,8 @@ jobs:
         shell: bash
         run: |
           set +e
-          mvn --batch-mode -ntp \
-            -pl sandbox_common,sandbox_common_test,sandbox_test_commons,sandbox_int_to_enum,sandbox_int_to_enum_test,sandbox_junit_cleanup,sandbox_junit_cleanup_test -am \
+          mvn --batch-mode -ntp -U \
+            -pl sandbox_target,sandbox_common,sandbox_common_test,sandbox_test_commons,sandbox_int_to_enum,sandbox_int_to_enum_test,sandbox_junit_cleanup,sandbox_junit_cleanup_test -am \
             -DskipTests -Dspotbugs.skip=true -Djacoco.skip=true \
             clean package > candidate-scope-reactor.log 2>&1
           status=$?
