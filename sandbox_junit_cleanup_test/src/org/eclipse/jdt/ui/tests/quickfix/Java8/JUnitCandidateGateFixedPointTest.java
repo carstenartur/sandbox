@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,13 +49,22 @@ public class JUnitCandidateGateFixedPointTest {
 	}
 
 	@Test
-	public void fallbackIsReturnedOnceAndDoesNotLeakIntoLaterScope() throws CoreException {
+	public void exactClosureIsReturnedOnceAndDoesNotLeakIntoLaterScope() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit candidate= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
 				"""
 				package test;
 				import org.junit.rules.ExternalResource;
 				public class SharedResource extends ExternalResource {
+				}
+				""", false, null);
+		ICompilationUnit ruleUser= pack.createCompilationUnit("RuleUser.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				public class RuleUser {
+					@Rule
+					public SharedResource resource = new SharedResource();
 				}
 				""", false, null);
 		ICompilationUnit unrelated= pack.createCompilationUnit("UnrelatedTest.java", //$NON-NLS-1$
@@ -65,14 +75,13 @@ public class JUnitCandidateGateFixedPointTest {
 
 		Collection<ICompilationUnit> first= cleanup.expandCleanUpScope(candidate.getJavaProject(),
 				List.of(candidate), null);
-		assertEquals(2, first.size());
-		assertTrue(first.contains(unrelated));
+		assertEquals(Set.of(candidate, ruleUser), Set.copyOf(first));
 
 		Collection<ICompilationUnit> fixedPoint= cleanup.expandCleanUpScope(candidate.getJavaProject(), first, null);
-		assertTrue(fixedPoint.isEmpty(), "The complete-project fallback must be emitted only once");
+		assertTrue(fixedPoint.isEmpty(), "The exact closure must be emitted only once");
 
 		Collection<ICompilationUnit> laterUnrelatedScope= cleanup.expandCleanUpScope(candidate.getJavaProject(),
 				List.of(unrelated), null);
-		assertTrue(laterUnrelatedScope.isEmpty(), "A completed fallback must not leak into a later candidate-free scope");
+		assertTrue(laterUnrelatedScope.isEmpty(), "A completed closure must not leak into a later candidate-free scope");
 	}
 }
