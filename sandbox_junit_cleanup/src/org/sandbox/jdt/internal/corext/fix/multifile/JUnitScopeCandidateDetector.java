@@ -95,12 +95,14 @@ public final class JUnitScopeCandidateDetector {
 					public boolean visit(TypeDeclaration node) {
 						ITypeBinding binding= node.resolveBinding();
 						ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
-						if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(superclass))) {
+						boolean incompleteSuperclass= hasIncompleteIdentity(superclass);
+						if (!incompleteSuperclass
+								&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(superclass))) {
 							candidateFound[0]= true;
 							complete[0]&= addJavaElement(binding, elements);
 							return false;
 						}
-						if (hasIncompleteIdentity(superclass) && node.getSuperclassType() != null
+						if (incompleteSuperclass && node.getSuperclassType() != null
 								&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$
 							candidateFound[0]= true;
 							complete[0]= false;
@@ -118,10 +120,12 @@ public final class JUnitScopeCandidateDetector {
 								continue;
 							}
 							ITypeBinding annotationBinding= annotation.resolveTypeBinding();
+							boolean incompleteAnnotation= hasIncompleteIdentity(annotationBinding);
 							String qualifiedName= qualifiedName(annotationBinding);
-							if (ORG_JUNIT_RULE.equals(qualifiedName) || ORG_JUNIT_CLASS_RULE.equals(qualifiedName)) {
+							if (!incompleteAnnotation
+									&& (ORG_JUNIT_RULE.equals(qualifiedName) || ORG_JUNIT_CLASS_RULE.equals(qualifiedName))) {
 								ruleField= true;
-							} else if (hasIncompleteIdentity(annotationBinding)
+							} else if (incompleteAnnotation
 									&& isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
 								ruleField= true;
 								unresolvedRuleAnnotation= true;
@@ -160,16 +164,22 @@ public final class JUnitScopeCandidateDetector {
 	}
 
 	private static String qualifiedName(ITypeBinding binding) {
-		return binding == null ? "" : binding.getErasure().getQualifiedName(); //$NON-NLS-1$
+		ITypeBinding erasure= erasure(binding);
+		return erasure == null ? "" : erasure.getQualifiedName(); //$NON-NLS-1$
 	}
 
 	private static boolean addJavaElement(ITypeBinding binding, Set<IJavaElement> elements) {
-		IJavaElement element= binding == null ? null : binding.getErasure().getJavaElement();
+		ITypeBinding erasure= erasure(binding);
+		IJavaElement element= erasure == null ? null : erasure.getJavaElement();
 		if (element == null || !element.exists()) {
 			return false;
 		}
 		elements.add(element);
 		return true;
+	}
+
+	private static ITypeBinding erasure(ITypeBinding binding) {
+		return binding == null ? null : binding.getErasure();
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
