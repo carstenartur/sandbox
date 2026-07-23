@@ -15,11 +15,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Path;
 
 class XMLResourceSupportTest {
 
@@ -49,6 +54,17 @@ class XMLResourceSupportTest {
 
 		assertEquals(StandardCharsets.UTF_8, decoded.charset());
 		assertEquals(xml, decoded.content());
+		assertArrayEquals(new byte[] { (byte) 0xef, (byte) 0xbb, (byte) 0xbf }, decoded.bom());
+	}
+
+	@Test
+	void decodedBomAccessorDoesNotExposeMutableState() throws CoreException {
+		byte[] bytes= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf, '<', 'p', '/', '>' };
+		XMLResourceSupport.Decoded decoded= XMLResourceSupport.decode(bytes, StandardCharsets.UTF_8.name());
+
+		byte[] returned= decoded.bom();
+		returned[0]= 0;
+
 		assertArrayEquals(new byte[] { (byte) 0xef, (byte) 0xbb, (byte) 0xbf }, decoded.bom());
 	}
 
@@ -95,6 +111,21 @@ class XMLResourceSupportTest {
 	}
 
 	@Test
+	void rejectsOversizedResourceWithoutReadingUnboundedContent() {
+		IFile file= (IFile) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] { IFile.class },
+				(proxy, method, arguments) -> switch (method.getName()) {
+					case "getContents" -> new FixedLengthInputStream(16 * 1024 * 1024 + 1); //$NON-NLS-1$
+					case "getFullPath" -> new Path("/project/oversized.xml"); //$NON-NLS-1$ //$NON-NLS-2$
+					case "hashCode" -> System.identityHashCode(proxy); //$NON-NLS-1$
+					case "equals" -> proxy == arguments[0]; //$NON-NLS-1$
+					default -> primitiveDefault(method.getReturnType());
+				});
+
+		CoreException exception= assertThrows(CoreException.class, () -> XMLResourceSupport.read(file));
+		assertTrue(exception.getMessage().contains("16 MiB")); //$NON-NLS-1$
+	}
+
+	@Test
 	void rejectsMalformedTransformationOutput() {
 		assertThrows(CoreException.class,
 				() -> XMLResourceSupport.validateWellFormed("<plugin><extension></plugin>")); //$NON-NLS-1$
@@ -106,5 +137,61 @@ class XMLResourceSupportTest {
 				<?xml version="1.0" encoding="UTF-8"?>
 				<root xmlns:x="urn:test" xml:space="preserve">before<x:item><![CDATA[a < b]]></x:item>after</root>
 				""");
+	}
+
+	private static Object primitiveDefault(Class<?> type) {
+		if (type == boolean.class) {
+			return false;
+		}
+		if (type == byte.class) {
+			return (byte) 0;
+		}
+		if (type == short.class) {
+			return (short) 0;
+		}
+		if (type == int.class) {
+			return 0;
+		}
+		if (type == long.class) {
+			return 0L;
+		}
+		if (type == float.class) {
+			return 0F;
+		}
+		if (type == double.class) {
+			return 0D;
+		}
+		if (type == char.class) {
+			return '\0';
+		}
+		return null;
+	}
+
+	private static final class FixedLengthInputStream extends InputStream {
+		private int remaining;
+
+		FixedLengthInputStream(int length) {
+			remaining= length;
+		}
+
+		@Override
+		public int read() {
+			if (remaining == 0) {
+				return -1;
+			}
+			remaining--;
+			return 0;
+		}
+
+		@Override
+		public int read(byte[] target, int offset, int length) throws IOException {
+			if (remaining == 0) {
+				return -1;
+			}
+			int count= Math.min(remaining, length);
+			java.util.Arrays.fill(target, offset, offset + count, (byte) 0);
+			remaining-= count;
+			return count;
+		}
 	}
 }
