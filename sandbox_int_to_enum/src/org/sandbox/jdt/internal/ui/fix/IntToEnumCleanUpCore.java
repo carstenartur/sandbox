@@ -138,9 +138,8 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		}
 
 		Set<String> currentHandles= handles(currentScope);
-		Set<String> pendingScope= pendingExpandedScopes.get(project);
+		Set<String> pendingScope= pendingExpandedScopes.remove(project);
 		if (pendingScope != null && currentHandles.containsAll(pendingScope)) {
-			pendingExpandedScopes.remove(project);
 			verifiedClosedScopes.put(project, pendingScope);
 			return List.of();
 		}
