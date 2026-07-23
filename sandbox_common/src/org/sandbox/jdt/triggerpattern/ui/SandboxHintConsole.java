@@ -41,98 +41,80 @@ import org.eclipse.ui.console.MessageConsoleStream;
  */
 public final class SandboxHintConsole {
 
-	private static final String CONSOLE_NAME = "Sandbox Hint Execution"; //$NON-NLS-1$
+	private static final String CONSOLE_NAME= "Sandbox Hint Execution"; //$NON-NLS-1$
 
-	private static SandboxHintConsole instance;
+	private static final class Holder {
+		static final SandboxHintConsole INSTANCE= new SandboxHintConsole();
+
+		private Holder() {
+		}
+	}
 
 	private final MessageConsole console;
 
 	private SandboxHintConsole() {
-		console = new MessageConsole(CONSOLE_NAME, null);
-		ConsolePlugin plugin = ConsolePlugin.getDefault();
+		console= new MessageConsole(CONSOLE_NAME, null);
+		ConsolePlugin plugin= ConsolePlugin.getDefault();
 		if (plugin != null) {
-			IConsoleManager manager = plugin.getConsoleManager();
+			IConsoleManager manager= plugin.getConsoleManager();
 			manager.addConsoles(new IConsole[] { console });
 		}
 	}
 
 	/**
-	 * Returns the singleton console instance.
+	 * Returns the lazily initialized singleton console instance.
 	 *
 	 * @return the console instance
 	 */
-	public static synchronized SandboxHintConsole getInstance() {
-		if (instance == null) {
-			instance = new SandboxHintConsole();
-		}
-		return instance;
+	public static SandboxHintConsole getInstance() {
+		return Holder.INSTANCE;
 	}
 
-	/**
-	 * Logs a successful guard execution (green text).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a successful guard execution using green text. */
 	public void logSuccess(String message) {
 		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN));
 	}
 
-	/**
-	 * Logs a skipped guard execution (yellow/dark yellow text).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a skipped guard execution using yellow text. */
 	public void logSkipped(String message) {
 		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_YELLOW));
 	}
 
-	/**
-	 * Logs a failed execution (red text).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a failed execution using red text. */
 	public void logError(String message) {
 		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_RED));
 	}
 
-	/**
-	 * Logs a general info message (default color).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a general information message using the default color. */
 	public void logInfo(String message) {
-		try (MessageConsoleStream stream = console.newMessageStream()) {
+		try (MessageConsoleStream stream= console.newMessageStream()) {
 			stream.println(message);
 		} catch (IOException e) {
-			ILog log = Platform.getLog(SandboxHintConsole.class);
+			ILog log= Platform.getLog(SandboxHintConsole.class);
 			log.warn("Failed to write to console", e); //$NON-NLS-1$
 		}
 	}
 
-	/**
-	 * Reveals the console in the Console view.
-	 */
+	/** Reveals the console in the Console view. */
 	public void reveal() {
-		ConsolePlugin plugin = ConsolePlugin.getDefault();
+		ConsolePlugin plugin= ConsolePlugin.getDefault();
 		if (plugin != null) {
-			IConsoleManager manager = plugin.getConsoleManager();
+			IConsoleManager manager= plugin.getConsoleManager();
 			manager.showConsoleView(console);
 		}
 	}
 
-	/**
-	 * Clears the console output.
-	 */
+	/** Clears the console output. */
 	public void clear() {
 		console.clearConsole();
 	}
 
 	private void writeColored(String message, Color color) {
-		try (MessageConsoleStream stream = console.newMessageStream()) {
+		try (MessageConsoleStream stream= console.newMessageStream()) {
 			stream.setColor(color);
 			stream.println(message);
 		} catch (IOException e) {
-			ILog log = Platform.getLog(SandboxHintConsole.class);
+			ILog log= Platform.getLog(SandboxHintConsole.class);
 			log.warn("Failed to write to console", e); //$NON-NLS-1$
 		}
 	}
