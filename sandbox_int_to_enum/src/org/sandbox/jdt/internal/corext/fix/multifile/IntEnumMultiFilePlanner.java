@@ -89,18 +89,31 @@ public final class IntEnumMultiFilePlanner {
 	private IntEnumMultiFilePlanner() {
 	}
 
-	/** Creates a plan for complete-project source selections. */
+	/** Creates a plan for an explicitly complete project selection. */
 	public static MultiFileCleanUpPlanResult<IntEnumMigrationPlan> create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, IProgressMonitor monitor) throws CoreException {
-		SelectedCompilationUnitPlan scope= SelectedCompilationUnitPlan.of(project, selectedUnits);
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
+		SelectedCompilationUnitPlan scope= SelectedCompilationUnitPlan.of(project, selectedUnits);
 		Set<String> allHandles= new LinkedHashSet<>();
 		for (ICompilationUnit unit : JavaProjectCompilationUnits.collect(project)) {
 			allHandles.add(unit.getHandleIdentifier());
 		}
-		if (!scope.compilationUnitHandles().equals(allHandles)) {
+		return create(project, selectedUnits, scope.compilationUnitHandles().equals(allHandles), monitor);
+	}
+
+	/**
+	 * Creates a plan after the caller has proved that the selected source units
+	 * form a closed migration scope.
+	 */
+	public static MultiFileCleanUpPlanResult<IntEnumMigrationPlan> create(IJavaProject project,
+			ICompilationUnit[] selectedUnits, boolean closedScope, IProgressMonitor monitor) throws CoreException {
+		SelectedCompilationUnitPlan scope= SelectedCompilationUnitPlan.of(project, selectedUnits);
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
+		}
+		if (!closedScope) {
 			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, List.of()));
 		}
 

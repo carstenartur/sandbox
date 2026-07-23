@@ -31,7 +31,7 @@ public class MultiFileIntToEnumCleanUpTest {
 	AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
-	public void migratesPackageScopedStateMethodAndExternalCaller() throws CoreException {
+	public void ownerOnlySelectionMigratesRequiredCallerButNotUnrelatedSource() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
 				"""
@@ -60,12 +60,23 @@ public class MultiFileIntToEnumCleanUpTest {
 					}
 				}
 				""", false, null);
+		ICompilationUnit unrelated= pack.createCompilationUnit("Unrelated.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class Unrelated {
+					String value() {
+						return "unchanged";
+					}
+				}
+				""", false, null);
 
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 
 		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
-				new ICompilationUnit[] { processor, client },
+				new ICompilationUnit[] { processor },
+				new ICompilationUnit[] { processor, client, unrelated },
 				new String[] {
 						"""
 						package test;
@@ -90,6 +101,15 @@ public class MultiFileIntToEnumCleanUpTest {
 						public class OrderClient {
 							void run(OrderProcessor processor) {
 								processor.process(test.OrderProcessor.Status.PENDING);
+							}
+						}
+						""",
+						"""
+						package test;
+
+						public class Unrelated {
+							String value() {
+								return "unchanged";
 							}
 						}
 						""" });

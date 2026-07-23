@@ -43,7 +43,7 @@ public class MultiFileExternalResourceLifecycleTest {
 	}
 
 	@Test
-	public void appliesCompilesAndUndoesNamedExternalResourceMigration() throws CoreException {
+	public void resourceOnlySelectionMigratesRequiredRuleUserButNotUnrelatedSource() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit resource= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
 				"""
@@ -72,12 +72,23 @@ public class MultiFileExternalResourceLifecycleTest {
 					public SharedResource resource = new SharedResource();
 				}
 				""", false, null);
+		ICompilationUnit unrelated= pack.createCompilationUnit("UnrelatedTestSupport.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class UnrelatedTestSupport {
+					String value() {
+						return "unchanged";
+					}
+				}
+				""", false, null);
 
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
 
 		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
-				new ICompilationUnit[] { resource, test },
+				new ICompilationUnit[] { resource },
+				new ICompilationUnit[] { resource, test, unrelated },
 				new String[] {
 						"""
 						package test;
@@ -104,6 +115,15 @@ public class MultiFileExternalResourceLifecycleTest {
 						public class MyTest {
 							@RegisterExtension
 							public SharedResource resource = new SharedResource();
+						}
+						""",
+						"""
+						package test;
+
+						public class UnrelatedTestSupport {
+							String value() {
+								return "unchanged";
+							}
 						}
 						""" });
 	}

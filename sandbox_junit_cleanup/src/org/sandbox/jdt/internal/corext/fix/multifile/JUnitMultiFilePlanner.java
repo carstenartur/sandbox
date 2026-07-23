@@ -70,10 +70,7 @@ public final class JUnitMultiFilePlanner {
 	private JUnitMultiFilePlanner() {
 	}
 
-	/**
-	 * Plans named ExternalResource migrations when the cleanup scope contains every
-	 * Java source compilation unit in the project.
-	 */
+	/** Plans named ExternalResource migrations for a complete project selection. */
 	public static MultiFileCleanUpPlanResult<JUnitMigrationPlan> create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, IProgressMonitor monitor)
 			throws CoreException {
@@ -84,15 +81,28 @@ public final class JUnitMultiFilePlanner {
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-
 		List<ICompilationUnit> allProjectUnits= JavaProjectCompilationUnits.collect(project);
-		Set<String> selectedHandles= selectedScope.compilationUnitHandles();
 		Set<String> projectHandles= new LinkedHashSet<>();
 		for (ICompilationUnit unit : allProjectUnits) {
 			projectHandles.add(unit.getPrimary().getHandleIdentifier());
 		}
-		if (!selectedHandles.equals(projectHandles)) {
+		return create(project, selectedUnits, migrateExternalResourceRules,
+				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);
+	}
+
+	/**
+	 * Plans named ExternalResource migrations after the caller has proved that the
+	 * selected source units form a closed migration scope.
+	 */
+	public static MultiFileCleanUpPlanResult<JUnitMigrationPlan> create(IJavaProject project,
+			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean closedScope,
+			IProgressMonitor monitor) throws CoreException {
+		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);
+		if (!migrateExternalResourceRules || selectedUnits.length == 0 || !closedScope) {
 			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
+		}
+		if (monitor != null && monitor.isCanceled()) {
+			throw new OperationCanceledException();
 		}
 
 		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
