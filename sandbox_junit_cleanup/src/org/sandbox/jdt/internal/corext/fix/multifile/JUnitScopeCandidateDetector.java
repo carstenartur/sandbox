@@ -147,7 +147,7 @@ public final class JUnitScopeCandidateDetector {
 				});
 			}
 		}, monitor);
-		if (!candidateFound[0] && containsSyntacticCandidate(project, sourceUnits, monitor)) {
+		if (!candidateFound[0] && containsSourceCandidate(project, sourceUnits, monitor)) {
 			candidateFound[0]= true;
 			complete[0]= false;
 		}
@@ -155,7 +155,7 @@ public final class JUnitScopeCandidateDetector {
 		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
 	}
 
-	private static boolean containsSyntacticCandidate(IJavaProject project,
+	private static boolean containsSourceCandidate(IJavaProject project,
 			Collection<ICompilationUnit> units, IProgressMonitor monitor) {
 		for (ICompilationUnit unit : units) {
 			checkCanceled(monitor);
@@ -164,8 +164,13 @@ public final class JUnitScopeCandidateDetector {
 			ast.accept(new ASTVisitor() {
 				@Override
 				public boolean visit(TypeDeclaration node) {
-					if (node.getSuperclassType() != null
-							&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$
+					ITypeBinding binding= node.resolveBinding();
+					ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
+					boolean incompleteSuperclass= hasIncompleteIdentity(superclass);
+					if ((!incompleteSuperclass
+							&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(superclass)))
+							|| (incompleteSuperclass && node.getSuperclassType() != null
+									&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString())))) { //$NON-NLS-1$
 						found[0]= true;
 						return false;
 					}
@@ -175,8 +180,16 @@ public final class JUnitScopeCandidateDetector {
 				@Override
 				public boolean visit(FieldDeclaration node) {
 					for (Object modifier : node.modifiers()) {
-						if (modifier instanceof Annotation annotation
-								&& isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
+						if (!(modifier instanceof Annotation annotation)) {
+							continue;
+						}
+						ITypeBinding annotationBinding= annotation.resolveTypeBinding();
+						boolean incompleteAnnotation= hasIncompleteIdentity(annotationBinding);
+						String qualifiedName= qualifiedName(annotationBinding);
+						if ((!incompleteAnnotation && (ORG_JUNIT_RULE.equals(qualifiedName)
+								|| ORG_JUNIT_CLASS_RULE.equals(qualifiedName)))
+								|| (incompleteAnnotation
+										&& isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName()))) {
 							found[0]= true;
 							return false;
 						}
@@ -196,7 +209,8 @@ public final class JUnitScopeCandidateDetector {
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
 		parser.setSource(unit);
 		parser.setProject(project);
-		parser.setResolveBindings(false);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
 		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
 		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
 		return (CompilationUnit) parser.createAST(monitor);
