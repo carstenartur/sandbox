@@ -15,8 +15,6 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +29,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -43,25 +42,37 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningLimits;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
+import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Builds the source-wide JUnit migration plan before per-file rewrites start. */
 public final class JUnitMultiFilePlanner {
 
-	private record ResourceType(String compilationUnitHandle, String typeBindingKey) {
+	private static final String CLEANUP_ID= "junit-external-resource"; //$NON-NLS-1$
+
+	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName) {
 	}
 
 	private record RuleField(String compilationUnitHandle, String fieldBindingKey, String resourceTypeKey,
 			boolean classRule) {
+	}
+
+	private record MigrationResult(List<ExternalResourceRuleMigration> migrations,
+			List<MultiFileCandidateDiagnostic> diagnostics) {
+		MigrationResult {
+			migrations= List.copyOf(migrations);
+			diagnostics= List.copyOf(diagnostics);
+		}
 	}
 
 	private enum RuleKind {
@@ -101,8 +112,13 @@ public final class JUnitMultiFilePlanner {
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean closedScope,
 			IProgressMonitor monitor) throws CoreException {
 		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);
-		if (!migrateExternalResourceRules || selectedUnits.length == 0 || !closedScope) {
+		if (!migrateExternalResourceRules || selectedUnits.length == 0) {
 			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
+		}
+		if (!closedScope) {
+			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());
+			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()),
+					new RefactoringStatus(), MultiFilePlanningMetrics.empty(), diagnostics);
 		}
 		MultiFilePlanningBudget.checkCanceled(monitor);
 
@@ -110,7 +126,8 @@ public final class JUnitMultiFilePlanner {
 		MultiFilePlanningBudget.Assessment budget= MultiFilePlanningBudget.assess(selectedUnits,
 				MultiFilePlanningLimits.fromSystemProperties(), monitor);
 		if (!budget.mayProceed()) {
-			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics());
+			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics(),
+					diagnostics(selectedUnits, true, List.of()));
 		}
 		long parseStarted= System.nanoTime();
 		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
@@ -121,16 +138,31 @@ public final class JUnitMultiFilePlanner {
 		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey, monitor);
 		RefactoringStatus status= budget.status();
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		List<ExternalResourceRuleMigration> migrations= createMigrations(ruleFields, resourcesByTypeKey, status,
-				monitor);
+		MigrationResult migrationResult= createMigrations(ruleFields, resourcesByTypeKey, status, monitor);
 		MultiFilePlanningMetrics metrics= budget.metrics()
 				.withDurations(parseNanos, System.nanoTime() - planningStarted)
-				.withRetainedPlanEntries(migrations.size());
+				.withRetainedPlanEntries(migrationResult.migrations().size());
+		MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, true, migrationResult.diagnostics());
 		if (status.hasFatalError()) {
-			return new MultiFileCleanUpPlanResult<>(null, status, metrics);
+			return new MultiFileCleanUpPlanResult<>(null, status, metrics, diagnostics);
 		}
-		return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, migrations), status,
-				metrics);
+		return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, migrationResult.migrations()),
+				status, metrics, diagnostics);
+	}
+
+	private static MultiFileCleanUpDiagnostics diagnostics(ICompilationUnit[] selectedUnits, boolean complete,
+			List<MultiFileCandidateDiagnostic> candidates) {
+		List<String> selectedHandles= java.util.Arrays.stream(selectedUnits)
+				.map(ICompilationUnit::getPrimary)
+				.map(ICompilationUnit::getHandleIdentifier)
+				.toList();
+		MultiFileScopeDiagnostic scope= complete
+				? new MultiFileScopeDiagnostic(selectedHandles, List.of(), "CLOSED_SOURCE_SCOPE", //$NON-NLS-1$
+						"The selected compilation units form a closed ExternalResource migration scope.", true) //$NON-NLS-1$
+				: new MultiFileScopeDiagnostic(selectedHandles, List.of(), "INCOMPLETE_SOURCE_SCOPE", //$NON-NLS-1$
+						"The selected compilation units do not contain every required ExternalResource declaration and user.", //$NON-NLS-1$
+						false);
+		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
 	}
 
 	private static Map<String, CompilationUnit> parse(IJavaProject project, ICompilationUnit[] units,
@@ -165,7 +197,7 @@ public final class JUnitMultiFilePlanner {
 					if (directlyExtendsExternalResource(binding)) {
 						String typeKey= JUnitMigrationPlan.typeKey(binding);
 						if (typeKey != null) {
-							result.put(typeKey, new ResourceType(unitHandle, typeKey));
+							result.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName()));
 						}
 					}
 					return true;
@@ -210,23 +242,42 @@ public final class JUnitMultiFilePlanner {
 		return result;
 	}
 
-	private static List<ExternalResourceRuleMigration> createMigrations(List<RuleField> fields,
+	private static MigrationResult createMigrations(List<RuleField> fields,
 			Map<String, ResourceType> resourcesByTypeKey, RefactoringStatus status, IProgressMonitor monitor) {
-		Map<String, Boolean> modeByResourceType= new HashMap<>();
-		List<ExternalResourceRuleMigration> result= new ArrayList<>();
+		Map<String, List<RuleField>> fieldsByResourceType= new LinkedHashMap<>();
 		for (RuleField field : fields) {
+			fieldsByResourceType.computeIfAbsent(field.resourceTypeKey(), ignored -> new ArrayList<>()).add(field);
+		}
+		List<ExternalResourceRuleMigration> migrations= new ArrayList<>();
+		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>();
+		for (Map.Entry<String, List<RuleField>> entry : fieldsByResourceType.entrySet()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
-			Boolean previousMode= modeByResourceType.putIfAbsent(field.resourceTypeKey(), field.classRule());
-			if (previousMode != null && previousMode.booleanValue() != field.classRule()) {
-				status.addFatalError("The ExternalResource type is used by both @Rule and @ClassRule fields; " //$NON-NLS-1$
-						+ "one callback lifecycle cannot safely represent both usages."); //$NON-NLS-1$
+			ResourceType resource= resourcesByTypeKey.get(entry.getKey());
+			List<RuleField> resourceFields= entry.getValue();
+			boolean hasRule= resourceFields.stream().anyMatch(field -> !field.classRule());
+			boolean hasClassRule= resourceFields.stream().anyMatch(RuleField::classRule);
+			List<String> relatedHandles= new ArrayList<>();
+			relatedHandles.add(resource.compilationUnitHandle());
+			resourceFields.stream().map(RuleField::compilationUnitHandle).forEach(relatedHandles::add);
+			String candidateId= "external-resource:" + resource.typeName(); //$NON-NLS-1$
+			if (hasRule && hasClassRule) {
+				String message= "ExternalResource type " + resource.typeName() //$NON-NLS-1$
+						+ " is used by both @Rule and @ClassRule fields; one callback lifecycle cannot safely represent both usages."; //$NON-NLS-1$
+				status.addFatalError(message);
+				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId,
+						resource.compilationUnitHandle(), "MIXED_RULE_LIFECYCLE", message, relatedHandles)); //$NON-NLS-1$
 				continue;
 			}
-			ResourceType resource= resourcesByTypeKey.get(field.resourceTypeKey());
-			result.add(new ExternalResourceRuleMigration(field.compilationUnitHandle(), field.fieldBindingKey(),
-					resource.compilationUnitHandle(), resource.typeBindingKey(), field.classRule()));
+			for (RuleField field : resourceFields) {
+				migrations.add(new ExternalResourceRuleMigration(field.compilationUnitHandle(), field.fieldBindingKey(),
+						resource.compilationUnitHandle(), resource.typeBindingKey(), field.classRule()));
+			}
+			String lifecycle= hasClassRule ? "class" : "instance"; //$NON-NLS-1$ //$NON-NLS-2$
+			diagnostics.add(MultiFileCandidateDiagnostic.transformed(candidateId,
+					resource.compilationUnitHandle(), "Migrates " + resourceFields.size() + " " + lifecycle //$NON-NLS-1$ //$NON-NLS-2$
+							+ " rule field(s) together with " + resource.typeName() + ".", relatedHandles)); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return List.copyOf(result);
+		return new MigrationResult(migrations, diagnostics);
 	}
 
 	private static RuleKind ruleKind(FieldDeclaration field) {
