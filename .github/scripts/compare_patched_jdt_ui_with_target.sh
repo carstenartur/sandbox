@@ -5,7 +5,7 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 CONFIG_FILE=${PATCHED_JDT_UI_CONFIG:-"$ROOT_DIR/.github/patched-jdt-ui.env"}
 PATCH_DIR=${1:?usage: compare_patched_jdt_ui_with_target.sh PATCH_DIR [REPORT_DIR]}
 REPORT_DIR=${2:-"$ROOT_DIR/target/patched-jdt-ui-compatibility"}
-MAVEN_REPOSITORY=${MAVEN_REPOSITORY:-"$REPORT_DIR/maven-repository"}
+MAVEN_REPOSITORY=${MAVEN_REPOSITORY:-"$(dirname "$REPORT_DIR")/patched-jdt-ui-compat-m2"}
 
 mkdir -p "$REPORT_DIR"
 exec > >(tee "$REPORT_DIR/compatibility-build.log") 2>&1
@@ -33,9 +33,13 @@ PATCHED_JAR=${patched_candidates[0]}
 rm -rf "$MAVEN_REPOSITORY"
 mkdir -p "$MAVEN_REPOSITORY"
 
+# The target definition is referenced as a Maven artifact by Tycho and therefore
+# must be present in the selected reactor when using an otherwise empty local
+# repository. A normal full build includes it implicitly; this focused build must
+# name it explicitly.
 mvn --batch-mode -ntp -f "$ROOT_DIR/pom.xml" \
   -Dmaven.repo.local="$MAVEN_REPOSITORY" \
-  -pl sandbox_common -am \
+  -pl sandbox_target,sandbox_common -am \
   -DskipTests -DskipITs -Dspotbugs.skip=true -Dlicense.skip=true \
   package
 
