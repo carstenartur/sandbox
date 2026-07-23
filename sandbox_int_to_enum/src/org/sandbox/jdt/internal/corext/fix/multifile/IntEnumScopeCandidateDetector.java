@@ -22,7 +22,6 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -37,8 +36,8 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
-import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
 /** Lightweight selected-scope detector for project-wide Int-to-Enum planning. */
 public final class IntEnumScopeCandidateDetector {
@@ -62,9 +61,8 @@ public final class IntEnumScopeCandidateDetector {
 
 	/**
 	 * Finds the candidate methods and constants whose references define the
-	 * coordinated source closure. A structural candidate with a missing or
-	 * recovered binding is reported as incomplete so the caller can use its
-	 * conservative fallback.
+	 * coordinated source closure. A structural candidate with a missing binding is
+	 * reported as incomplete so the caller can use its conservative fallback.
 	 */
 	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection<ICompilationUnit> currentScope,
 			IProgressMonitor monitor) {
@@ -72,15 +70,13 @@ public final class IntEnumScopeCandidateDetector {
 			return new SearchSeeds(false, true, List.of());
 		}
 		checkCanceled(monitor);
-		Set<ICompilationUnit> sourceUnits= new LinkedHashSet<>();
-		Set<ICompilationUnit> primaryUnits= new LinkedHashSet<>();
+		Set<ICompilationUnit> units= new LinkedHashSet<>();
 		for (ICompilationUnit unit : currentScope) {
 			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
-				sourceUnits.add(unit);
-				primaryUnits.add(unit.getPrimary());
+				units.add(unit.getPrimary());
 			}
 		}
-		if (primaryUnits.isEmpty()) {
+		if (units.isEmpty()) {
 			return new SearchSeeds(false, true, List.of());
 		}
 
@@ -92,22 +88,27 @@ public final class IntEnumScopeCandidateDetector {
 		parser.setResolveBindings(true);
 		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
 		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
-		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
-		parser.createASTs(primaryUnits.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
+		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
 				ast.accept(new ASTVisitor() {
 					@Override
 					public boolean visit(TypeDeclaration type) {
-						if (!isStructuralCandidate(type)) {
+						if (!(type.getParent() instanceof CompilationUnit) || type.isInterface()
+								|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty()) {
+							return false;
+						}
+						List<VariableDeclarationFragment> constants= packagePrivateIntConstants(type);
+						List<MethodDeclaration> methods= packagePrivateIntStateMethods(type);
+						if (constants.size() < 2 || methods.isEmpty()) {
 							return false;
 						}
 						candidateFound[0]= true;
-						for (VariableDeclarationFragment constant : packagePrivateIntConstants(type)) {
+						for (VariableDeclarationFragment constant : constants) {
 							IVariableBinding binding= constant.resolveBinding();
 							complete[0]&= addJavaElement(binding, elements);
 						}
-						for (MethodDeclaration method : packagePrivateIntStateMethods(type)) {
+						for (MethodDeclaration method : methods) {
 							IMethodBinding binding= method.resolveBinding();
 							complete[0]&= addJavaElement(binding, elements);
 						}
@@ -116,53 +117,8 @@ public final class IntEnumScopeCandidateDetector {
 				});
 			}
 		}, monitor);
-		if (!candidateFound[0] && containsSyntacticCandidate(project, sourceUnits, monitor)) {
-			candidateFound[0]= true;
-			complete[0]= false;
-		}
 		checkCanceled(monitor);
 		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
-	}
-
-	private static boolean containsSyntacticCandidate(IJavaProject project,
-			Collection<ICompilationUnit> units, IProgressMonitor monitor) {
-		for (ICompilationUnit unit : units) {
-			checkCanceled(monitor);
-			CompilationUnit ast= parseSource(project, unit, monitor);
-			boolean[] found= { false };
-			ast.accept(new ASTVisitor() {
-				@Override
-				public boolean visit(TypeDeclaration type) {
-					if (isStructuralCandidate(type)) {
-						found[0]= true;
-						return false;
-					}
-					return true;
-				}
-			});
-			if (found[0]) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static CompilationUnit parseSource(IJavaProject project, ICompilationUnit unit,
-			IProgressMonitor monitor) {
-		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setProject(project);
-		parser.setSource(unit);
-		parser.setResolveBindings(false);
-		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
-		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
-		return (CompilationUnit) parser.createAST(monitor);
-	}
-
-	private static boolean isStructuralCandidate(TypeDeclaration type) {
-		return type.getParent() instanceof CompilationUnit && !type.isInterface()
-				&& type.getSuperclassType() == null && type.superInterfaceTypes().isEmpty()
-				&& packagePrivateIntConstants(type).size() >= 2
-				&& !packagePrivateIntStateMethods(type).isEmpty();
 	}
 
 	private static List<VariableDeclarationFragment> packagePrivateIntConstants(TypeDeclaration type) {
@@ -198,10 +154,7 @@ public final class IntEnumScopeCandidateDetector {
 	}
 
 	private static boolean addJavaElement(IBinding binding, Set<IJavaElement> elements) {
-		if (binding == null || binding.isRecovered()) {
-			return false;
-		}
-		IJavaElement element= binding.getJavaElement();
+		IJavaElement element= binding == null ? null : binding.getJavaElement();
 		if (element == null || !element.exists()) {
 			return false;
 		}
