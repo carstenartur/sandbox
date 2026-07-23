@@ -1,0 +1,55 @@
+name: Distribution Smoke Test
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '30 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: distribution-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  product-and-update-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Install Linux product runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+      - name: Build stock product and update site from clean checkout
+        run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
+      - name: Validate repository metadata, artifacts and product layout
+        run: python3 .github/scripts/verify_distribution_artifacts.py
+      - name: Provision and start the built distribution
+        run: bash .github/scripts/smoke_test_distribution.sh
+      - name: Publish verification summary
+        if: always() && hashFiles('target/distribution-verification/verification.md') != ''
+        run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload distribution evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: distribution-smoke-${{ github.sha }}
+          path: target/distribution-verification/
+          retention-days: 30
+          if-no-files-found: error
