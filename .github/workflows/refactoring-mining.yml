@@ -1,21 +1,25 @@
-name: Nightly Refactoring Mining (Eclipse Projects)
+name: Nightly Refactoring Pattern Report
 
 on:
   schedule:
-    - cron: '0 2 * * 1-5'    # Mon-Fri at 2 AM
+    - cron: '0 2 * * 1-5' # Monday-Friday at 02:00 UTC
   workflow_dispatch:
     inputs:
       repo_url:
-        description: 'Single Eclipse repo to scan (overrides config)'
+        description: 'Single Eclipse repository to scan instead of the configured set'
         required: false
+
+concurrency:
+  group: refactoring-pattern-report
+  cancel-in-progress: false
+
+permissions:
+  contents: write # publish the report below gh-pages; never write report commits to main
 
 jobs:
   mine:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: write       # Required: commit mining results
-      pull-requests: write  # Required: create PR with mining report
 
     steps:
       - uses: actions/checkout@v6
@@ -23,72 +27,86 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
           cache: maven
 
-      # Build only core + CLI (< 60s, no Tycho)
-      - name: Build Mining CLI
+      - name: Build mining CLI
         run: |
+          set -euo pipefail
           mvn install -N -q
           mvn install -pl sandbox_common_core -DskipTests -q
           mvn package -pl sandbox_mining_cli -DskipTests -q
 
-      # Run mining against Eclipse projects
-      - name: Run Mining
+      - name: Generate triage-only pattern report
+        shell: bash
         run: |
-          ARGS="--config .github/refactoring-mining/repos.yml --output mining-results/ --format both"
+          set -euo pipefail
+          # The legacy CLI's normal mode writes only report files below --output.
+          # It never edits the scanned repositories or promotes productive DSL rules.
+          ARGS=(--config .github/refactoring-mining/repos.yml --output mining-results/ --format both)
           if [ -n "${{ github.event.inputs.repo_url }}" ]; then
-            ARGS="--repo ${{ github.event.inputs.repo_url }} --output mining-results/ --format both"
+            ARGS=(--repo "${{ github.event.inputs.repo_url }}" --output mining-results/ --format both)
           fi
-          java -jar sandbox_mining_cli/target/sandbox-mining-cli.jar $ARGS
+          java -jar sandbox_mining_cli/target/sandbox-mining-cli.jar "${ARGS[@]}"
 
-      # Upload report as artifact
-      - name: Upload Report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: mining-report-${{ github.run_number }}
-          path: mining-results/
+          test -s mining-results/report.json
+          test -s mining-results/report.md
 
-      # Create PR if matches found (with deduplication)
-      - name: Create PR
+          cat > mining-results/README.md <<'EOF'
+          # Refactoring pattern report
+
+          This report is untrusted triage output from deterministic pattern matching.
+          A match is not an approved cleanup, quick fix, or source change. Productive
+          DSL candidates are managed separately by the staged `mining/candidates`
+          workflow and require deterministic verification plus human review.
+          EOF
+
+      - name: Add compact report summary
         if: hashFiles('mining-results/report.json') != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Compute hash of the report for dedup
-          REPORT_HASH=$(sha256sum mining-results/report.json | cut -d' ' -f1)
-          echo "Report hash: $REPORT_HASH"
+          python3 <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
 
-          # Check for existing open mining PRs with the same report hash
-          EXISTING_PRS=$(gh pr list --label "refactoring-mining" --state open --json number,body -q '.[].number' 2>/dev/null || true)
-          for PR_NUM in $EXISTING_PRS; do
-            PR_BODY=$(gh pr view "$PR_NUM" --json body -q '.body' 2>/dev/null || true)
-            if echo "$PR_BODY" | grep -q "$REPORT_HASH"; then
-              echo "Duplicate report detected (matches PR #$PR_NUM). Skipping PR creation."
-              exit 0
-            fi
-          done
+          report = json.loads(Path('mining-results/report.json').read_text(encoding='utf-8'))
+          summary = report.get('summary')
+          if not isinstance(summary, dict):
+              raise SystemExit('report.json is missing the summary object')
 
-          # Close stale open mining report PRs to avoid accumulation
-          for PR_NUM in $EXISTING_PRS; do
-            echo "Closing stale mining PR #$PR_NUM"
-            gh pr close "$PR_NUM" --comment "Superseded by mining run #${{ github.run_number }}" 2>/dev/null || true
-          done
+          repositories = summary.get('repositories')
+          if not isinstance(repositories, dict):
+              raise SystemExit('report.json summary is missing the repositories object')
 
-          # Embed the report hash in the PR body markdown for future dedup checks
-          echo "" >> mining-results/report.md
-          echo "<!-- report-hash: $REPORT_HASH -->" >> mining-results/report.md
+          total = summary.get('totalMatches')
+          if not isinstance(total, int):
+              raise SystemExit('report.json summary is missing the totalMatches integer')
 
-      - name: Open PR
-        if: hashFiles('mining-results/report.json') != ''
-        uses: peter-evans/create-pull-request@v8
+          print('### Refactoring pattern report')
+          print('')
+          print('This is triage-only output; no productive rule or source file was changed.')
+          print('')
+          print(f'- Matches: {total}')
+          print(f'- Repository entries: {len(repositories)}')
+          PY
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
-          title: "🔍 Refactoring Mining: Eclipse Projects (${{ github.run_number }})"
-          body-path: mining-results/report.md
-          branch: mining/report-${{ github.run_number }}
-          commit-message: "mining: add report from run ${{ github.run_number }}"
-          labels: refactoring-mining
-          add-paths: |
-            mining-results/report.json
-            mining-results/report.md
+          name: refactoring-pattern-report-${{ github.run_number }}
+          path: mining-results/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Publish report outside main
+        if: hashFiles('mining-results/report.json') != ''
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: mining-results
+          publish_branch: gh-pages
+          destination_dir: mining-pattern-report
+          keep_files: true
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
+          commit_message: 'mining: publish triage pattern report ${{ github.run_number }}'
