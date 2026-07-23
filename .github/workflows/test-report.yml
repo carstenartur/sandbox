@@ -75,7 +75,8 @@ jobs:
 
             const botComment = comments.data.find(comment =>
               comment.user.type === 'Bot' &&
-              comment.body.includes('<!-- sandbox-test-source-inventory -->')
+              (comment.body.includes('<!-- sandbox-test-source-inventory -->') ||
+               comment.body.includes('# JUnit Test Overview Report'))
             );
 
             const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
