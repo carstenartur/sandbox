@@ -1,350 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sandbox - Eclipse JDT Cleanups & Tools Dashboard</title>
-    <style>
-        :root {
-            --primary: #3498db;
-            --primary-dark: #2c3e50;
-            --secondary: #2ecc71;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --light-bg: #f8f9fa;
-            --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            --card-hover-shadow: 0 4px 16px rgba(0,0,0,0.15);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: var(--light-bg);
-        }
-        
-        .hero {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-            color: white;
-            padding: 3rem 2rem;
-            text-align: center;
-        }
-        
-        .hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-        
-        .badges {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-        }
-        
-        .badges img {
-            height: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        .section {
-            margin-bottom: 3rem;
-        }
-        
-        .section h2 {
-            color: var(--primary-dark);
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 3px solid var(--primary);
-            padding-bottom: 0.5rem;
-        }
-        
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: var(--card-shadow);
-            transition: all 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--card-hover-shadow);
-        }
-        
-        .card h3 {
-            color: var(--primary-dark);
-            font-size: 1.3rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .card p {
-            color: #666;
-            margin-bottom: 1rem;
-        }
-        
-        .card a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .card a:hover {
-            text-decoration: underline;
-        }
-        
-        .url-display {
-            background: var(--light-bg);
-            padding: 0.75rem;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            word-break: break-all;
-            margin-top: 0.5rem;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .badge-label {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-top: 0.5rem;
-        }
-        
-        .label-stable {
-            background: var(--secondary);
-            color: white;
-        }
-        
-        .label-dev {
-            background: var(--warning);
-            color: white;
-        }
-        
-        .install-steps {
-            background: white;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: var(--card-shadow);
-        }
-        
-        .install-steps ol {
-            margin-left: 1.5rem;
-        }
-        
-        .install-steps li {
-            margin-bottom: 0.75rem;
-        }
-        
-        footer {
-            background: var(--primary-dark);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-            margin-top: 3rem;
-        }
-        
-        footer a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        
-        footer a:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 640px) {
-            .hero h1 {
-                font-size: 1.8rem;
-            }
-            
-            .card-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sandbox Eclipse JDT cleanup project dashboard">
+  <title>Sandbox — Eclipse JDT Cleanups & Tools</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --background: #f5f7fa;
+      --surface: #ffffff;
+      --text: #172033;
+      --muted: #5f6b7a;
+      --primary: #1769aa;
+      --border: #dbe2ea;
+      --shadow: 0 8px 24px rgba(23, 32, 51, 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #111722;
+        --surface: #1a2332;
+        --text: #eef3f8;
+        --muted: #b5c0cd;
+        --primary: #76b9ed;
+        --border: #344155;
+        --shadow: none;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--background);
+    }
+    header {
+      padding: 4rem 1.5rem 3rem;
+      text-align: center;
+      color: white;
+      background: linear-gradient(135deg, #182848, #1769aa);
+    }
+    header h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.4rem); }
+    header p { margin: .75rem auto 1.5rem; max-width: 760px; font-size: 1.1rem; }
+    .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
+    .badges img { height: 20px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+    section { margin-bottom: 2.8rem; }
+    h2 { margin: 0 0 1.2rem; font-size: 1.65rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.1rem; }
+    .card {
+      display: flex;
+      flex-direction: column;
+      min-height: 190px;
+      padding: 1.35rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin: 0 0 .5rem; font-size: 1.18rem; }
+    .card p { margin: 0 0 1rem; color: var(--muted); }
+    .card a { margin-top: auto; color: var(--primary); font-weight: 650; text-decoration: none; }
+    .card a:hover, .card a:focus-visible { text-decoration: underline; }
+    code {
+      display: block;
+      padding: .65rem;
+      overflow-wrap: anywhere;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--background);
+      font-size: .86rem;
+    }
+    footer { padding: 2rem 1rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+  </style>
 </head>
 <body>
-    <div class="hero">
-        <h1>🛠️ Sandbox</h1>
-        <p>Eclipse JDT Cleanups & Automated Code Modernization</p>
-        
-        <div class="badges">
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/maven.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg" alt="Maven CI">
-            </a>
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg" alt="CodeQL">
-            </a>
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg" alt="Coverage">
-            </a>
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg" alt="Tests">
-            </a>
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg" alt="Benchmarks">
-            </a>
-            <a href="https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml">
-                <img src="https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg" alt="Snapshot Deploy">
-            </a>
-            <a href="https://marketplace.eclipse.org/content/sandbox">
-                <img src="https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue" alt="Eclipse Marketplace">
-            </a>
-        </div>
+  <header>
+    <h1>Sandbox</h1>
+    <p>Experimental Eclipse JDT cleanups, coordinated refactorings, developer tooling, and reproducible product builds.</p>
+    <div class="badges" aria-label="Build status">
+      <a href="https://github.com/carstenartur/sandbox/actions/workflows/maven.yml"><img src="https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=main" alt="Java CI status"></a>
+      <a href="https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml"><img src="https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL status"></a>
+      <a href="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml"><img src="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg?branch=main" alt="Test report status"></a>
+      <a href="https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml"><img src="https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main" alt="Snapshot deployment status"></a>
     </div>
-    
-    <div class="container">
-        <section class="section">
-            <h2>📊 Quality & Reports</h2>
-            <div class="card-grid">
-                <div class="card">
-                    <h3>🧪 Test Results</h3>
-                    <p>JUnit test reports for all modules with detailed pass/fail statistics.</p>
-                    <p style="margin: 10px 0;">
-                        <a href="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml">
-                            <img src="https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg" alt="Test Report Status" style="height: 20px;">
-                        </a>
-                    </p>
-                    <a href="tests/">View Test Reports →</a>
-                </div>
-                
-                <div class="card">
-                    <h3>📈 Code Coverage</h3>
-                    <p>JaCoCo coverage reports showing test coverage across the entire codebase.</p>
-                    <p style="margin: 10px 0;">
-                        <a href="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml">
-                            <img src="https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg" alt="Coverage Status" style="height: 20px;">
-                        </a>
-                    </p>
-                    <a href="coverage/">View Coverage Report →</a>
-                </div>
-                
-                <div class="card">
-                    <h3>⚡ Performance Benchmarks</h3>
-                    <p>JMH benchmark results tracking performance over time.</p>
-                    <p style="margin: 10px 0;">
-                        <a href="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml">
-                            <img src="https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg" alt="Benchmark Status" style="height: 20px;">
-                        </a>
-                    </p>
-                    <a href="dev/bench/">View Performance Charts →</a>
-                </div>
-                
-                <div class="card">
-                    <h3>🔍 Refactoring Mining</h3>
-                    <p>LLM-powered commit analysis with DSL rule proposals</p>
-                    <p style="margin: 10px 0;">
-                        <a href="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml">
-                            <img src="https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg" alt="Mining Status" style="height: 20px;">
-                        </a>
-                    </p>
-                    <a href="mining-report/">View Mining Results →</a>
-                </div>
-            </div>
-        </section>
-        
-        <section class="section">
-            <h2>📦 Distribution</h2>
-            <div class="card-grid">
-                <div class="card">
-                    <h3>Stable Release</h3>
-                    <span class="badge-label label-stable">Recommended</span>
-                    <p>Production-ready release with all features tested and validated.</p>
-                    <div class="url-display">https://carstenartur.github.io/sandbox/releases/</div>
-                    <p style="margin-top: 1rem;">
-                        <a href="releases/">Browse Update Site →</a>
-                    </p>
-                </div>
-                
-                <div class="card">
-                    <h3>Snapshot</h3>
-                    <span class="badge-label label-dev">Development</span>
-                    <p>Latest development snapshot, updated automatically on every commit.</p>
-                    <div class="url-display">https://carstenartur.github.io/sandbox/snapshots/latest/</div>
-                    <p style="margin-top: 1rem;">
-                        <a href="snapshots/latest/">Browse Snapshot →</a>
-                    </p>
-                </div>
-            </div>
-        </section>
-        
-        <section class="section">
-            <h2>🚀 Quick Install</h2>
-            <div class="install-steps">
-                <ol>
-                    <li>Open <strong>Eclipse IDE</strong></li>
-                    <li>Go to <strong>Help → Install New Software...</strong></li>
-                    <li>Click <strong>Add...</strong> to add a new update site</li>
-                    <li>Enter a name (e.g., "Sandbox") and paste one of the update site URLs above</li>
-                    <li>Select the cleanup features you want to install</li>
-                    <li>Follow the installation wizard and accept the license</li>
-                    <li>Restart Eclipse when prompted</li>
-                </ol>
-            </div>
-        </section>
-        
-        <section class="section">
-            <h2>📚 Documentation & Links</h2>
-            <div class="card-grid">
-                <div class="card">
-                    <h3>Source Code</h3>
-                    <p>Browse the source code, open issues, and contribute to the project.</p>
-                    <a href="https://github.com/carstenartur/sandbox">GitHub Repository →</a>
-                </div>
-                
-                <div class="card">
-                    <h3>Issues & Feedback</h3>
-                    <p>Report bugs, request features, or ask questions.</p>
-                    <a href="https://github.com/carstenartur/sandbox/issues">GitHub Issues →</a>
-                </div>
-                
-                <!-- Placeholder for future feature
-                <div class="card">
-                    <h3>API Documentation</h3>
-                    <p>Javadoc documentation for all public APIs.</p>
-                    <a href="javadoc/">View Javadoc →</a>
-                </div>
-                -->
-            </div>
-        </section>
-    </div>
-    
-    <footer>
-        <p>
-            <strong>Sandbox Project</strong> | 
-            Eclipse Public License 2.0 | 
-            <a href="https://github.com/carstenartur/sandbox">Source Code</a> | 
-            <a href="https://github.com/carstenartur/sandbox/issues">Report Issues</a>
-        </p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-            © 2024–present Carsten Hammer and Contributors
-        </p>
-    </footer>
+  </header>
+
+  <main>
+    <section>
+      <h2>Quality and provenance</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Build provenance</h3>
+          <p>Exact main commit, workflow runs, toolchain versions, test inventory, target-definition hashes, and distribution digests.</p>
+          <a href="provenance/">Open provenance dashboard →</a>
+        </article>
+        <article class="card">
+          <h3>Test results</h3>
+          <p>HTML reports for all Maven/Tycho test modules, including failures and module totals.</p>
+          <a href="tests/">Open test reports →</a>
+        </article>
+        <article class="card">
+          <h3>Code coverage</h3>
+          <p>JaCoCo coverage reports for the maintained core and Eclipse plugin modules.</p>
+          <a href="coverage/">Open coverage reports →</a>
+        </article>
+        <article class="card">
+          <h3>Performance</h3>
+          <p>JMH benchmark history for performance-sensitive transformation and analysis components.</p>
+          <a href="dev/bench/">Open benchmark charts →</a>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Distribution</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Versioned releases</h3>
+          <p>Stable, immutable p2 repositories published for tagged releases.</p>
+          <code>https://carstenartur.github.io/sandbox/releases/</code>
+          <a href="releases/">Browse releases →</a>
+        </article>
+        <article class="card">
+          <h3>Latest snapshot</h3>
+          <p>Development update site built from the exact successful Java CI commit recorded in its manifest.</p>
+          <code>https://carstenartur.github.io/sandbox/snapshots/latest/</code>
+          <a href="snapshots/latest/">Browse snapshot →</a>
+        </article>
+        <article class="card">
+          <h3>Snapshot manifest</h3>
+          <p>Machine-readable commit, source CI run, Maven/Tycho/Java versions, and p2 repository digest.</p>
+          <a href="snapshots/latest/build-manifest.json">View snapshot manifest →</a>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Project resources</h2>
+      <div class="grid">
+        <article class="card"><h3>Source code</h3><p>Repository, architecture, implementation, and contribution history.</p><a href="https://github.com/carstenartur/sandbox">Open repository →</a></article>
+        <article class="card"><h3>Issues</h3><p>Tracked defects, implementation plans, and release-quality work.</p><a href="https://github.com/carstenartur/sandbox/issues">Open issues →</a></article>
+        <article class="card"><h3>Eclipse Marketplace</h3><p>Install the published Sandbox features through Eclipse Marketplace.</p><a href="https://marketplace.eclipse.org/content/sandbox">Open listing →</a></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>Sandbox Project · Eclipse Public License 2.0 · © 2024–present Carsten Hammer and contributors</footer>
 </body>
 </html>

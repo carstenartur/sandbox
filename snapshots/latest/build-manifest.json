@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-23T20:43:04.464114+00:00",
+  "repository": "carstenartur/sandbox",
+  "commit_sha": "e9f1973affb59d564e1e207f4bbd0f5da8151eba",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/e9f1973affb59d564e1e207f4bbd0f5da8151eba",
+  "ref": "refs/heads/main",
+  "event_name": "workflow_run",
+  "provenance_workflow": {
+    "name": "Deploy Snapshot to GitHub Pages",
+    "run_id": "30042125679",
+    "run_number": "519",
+    "run_attempt": "1",
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/30042125679",
+    "source_java_ci_run_id": "30040512386",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/30040512386"
+  },
+  "toolchain": {
+    "project_version": "1.3.2-SNAPSHOT",
+    "java_version": "21",
+    "java_execution_environment": "JavaSE-21",
+    "tycho_version": "5.0.3",
+    "spotbugs_maven_plugin_version": "4.10.3.0",
+    "eclipse_release": "2025-12",
+    "p2_repositories": [
+      "https://download.eclipse.org/releases/2025-12/",
+      "https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/",
+      "https://download.eclipse.org/cbi/updates/license/",
+      "https://download.eclipse.org/egit/updates/",
+      "https://download.eclipse.org/justj/jres/21/updates/release/latest/",
+      "https://download.eclipse.org/technology/babel/update-site/latest/"
+    ],
+    "runtime_python": "3.12.3",
+    "runtime_java": "openjdk version \"21.0.11\" 2026-04-21 LTS",
+    "runtime_maven": "Apache Maven 3.9.14 (996c630dbc656c76214ce58821dcc58be960875b)",
+    "target_definitions": [
+      {
+        "path": "sandbox_target/eclipse.target",
+        "size_bytes": 3823,
+        "sha256": "e8d7ddb91fa4a4b897fa7766cad16fe6142875f648c7684ec81c09fe2d82957f"
+      }
+    ]
+  },
+  "tests": {
+    "inventory": {
+      "total_modules": 15,
+      "total_tests": 2011,
+      "enabled_tests": 1971,
+      "disabled_tests": 40
+    },
+    "executed": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "report_files": 0
+    }
+  },
+  "artifacts": {
+    "products": [
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-linux.gtk.x86_64.tar.gz",
+        "size_bytes": 192227733,
+        "sha256": "81e8dce4009acd9c087c151555a329d6e48c6581c8741d5af6f147e0bb88506d"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-macosx.cocoa.x86_64.tar.gz",
+        "size_bytes": 192625040,
+        "sha256": "834a46d736cdce35e0cd8102782e0f8fe741b964019ac0888311f17da3ed701d"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-win32.win32.x86_64.zip",
+        "size_bytes": 193301025,
+        "sha256": "150b9ef2ab65836f536ca0d89255afdc1c9e699e884ec53ea9eb8e90ba15e4cc"
+      }
+    ],
+    "product_tree": {
+      "path": "sandbox_product/target/products",
+      "file_count": 2868,
+      "total_bytes": 1221859148,
+      "sha256_tree": "9078a4fbc582c48af8743d19ba0ca0fb69744140fa20fa5e0f345ee65aa18b96"
+    },
+    "product_status": "built",
+    "update_site": {
+      "path": "sandbox_updatesite/target/repository",
+      "file_count": 282,
+      "total_bytes": 138838623,
+      "sha256_tree": "e1ae07fa3bd05d692d032985749ba9a123f3427b193450adaf993b6663d91de2",
+      "metadata": [
+        {
+          "path": "sandbox_updatesite/target/repository/artifacts.jar",
+          "size_bytes": 67250,
+          "sha256": "79527718bb4acda620db8b14637b59c19463ae140bc97d6fe678c2aa9095f595"
+        },
+        {
+          "path": "sandbox_updatesite/target/repository/content.jar",
+          "size_bytes": 190529,
+          "sha256": "de38c15ab09752931fe338007fca7b065f847c0f3d81c209553d55809aab7e80"
+        }
+      ]
+    },
+    "update_site_status": "built"
+  },
+  "related_workflows": [],
+  "patched_jdt_ui": {
+    "commit": null,
+    "version": null
+  }
+}
