@@ -5,7 +5,10 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 CONFIG_FILE=${PATCHED_JDT_UI_CONFIG:-"$ROOT_DIR/.github/patched-jdt-ui.env"}
 PATCH_DIR=${1:?usage: compare_patched_jdt_ui_with_target.sh PATCH_DIR [REPORT_DIR]}
 REPORT_DIR=${2:-"$ROOT_DIR/target/patched-jdt-ui-compatibility"}
-MAVEN_REPOSITORY=${MAVEN_REPOSITORY:-"$HOME/.m2/repository"}
+MAVEN_REPOSITORY=${MAVEN_REPOSITORY:-"$REPORT_DIR/maven-repository"}
+
+mkdir -p "$REPORT_DIR"
+exec > >(tee "$REPORT_DIR/compatibility-build.log") 2>&1
 
 # shellcheck disable=SC1090
 source "$CONFIG_FILE"
@@ -24,29 +27,27 @@ if (( ${#patched_candidates[@]} != 1 )); then
 fi
 PATCHED_JAR=${patched_candidates[0]}
 
-# Remove only cached JDT UI binary/source artifacts so the following Tycho
-# resolution proves what the checked-in 2025-12 target selects in this run.
-while IFS= read -r cached; do
-  rm -f "$cached"
-done < <(find "$MAVEN_REPOSITORY" -type f \
-  \( -name 'org.eclipse.jdt.ui_*.jar' -o -name 'org.eclipse.jdt.ui-*.jar' \) 2>/dev/null)
+# Use an isolated local Maven repository. Scanning a shared Actions cache cannot
+# prove which JDT UI version the checked-in target selected because stale target
+# artifacts from earlier Eclipse releases may coexist there.
+rm -rf "$MAVEN_REPOSITORY"
+mkdir -p "$MAVEN_REPOSITORY"
 
 mvn --batch-mode -ntp -f "$ROOT_DIR/pom.xml" \
+  -Dmaven.repo.local="$MAVEN_REPOSITORY" \
   -pl sandbox_common -am \
   -DskipTests -DskipITs -Dspotbugs.skip=true -Dlicense.skip=true \
   package
 
-mapfile -t named_candidates < <(find "$MAVEN_REPOSITORY" -type f \
-  \( -name 'org.eclipse.jdt.ui_*.jar' -o -name 'org.eclipse.jdt.ui-*.jar' \) \
-  ! -name '*-sources.jar' ! -name '*-javadoc.jar' 2>/dev/null | sort)
-if (( ${#named_candidates[@]} == 0 )); then
-  echo "Tycho resolved the target, but no cached org.eclipse.jdt.ui candidate was found" >&2
+# Tycho's p2 cache does not guarantee Maven-style artifact file names. Inspect
+# manifests from every freshly resolved JAR and select the exact symbolic name.
+CANDIDATE_LIST="$REPORT_DIR/resolved-jars.txt"
+find "$MAVEN_REPOSITORY" -type f -name '*.jar' \
+  ! -name '*-sources.jar' ! -name '*-javadoc.jar' -print | sort > "$CANDIDATE_LIST"
+if [[ ! -s "$CANDIDATE_LIST" ]]; then
+  echo "Tycho resolved no JAR artifacts into the isolated Maven repository" >&2
   exit 1
 fi
-
-mkdir -p "$REPORT_DIR"
-CANDIDATE_LIST="$REPORT_DIR/stock-candidates.txt"
-printf '%s\n' "${named_candidates[@]}" > "$CANDIDATE_LIST"
 
 python3 - "$PATCHED_JAR" "$CANDIDATE_LIST" "$REPORT_DIR" "$PATCHED_JDT_UI_BUNDLE" <<'PY'
 import hashlib
@@ -132,6 +133,7 @@ def split_clauses(value: str) -> list[str]:
 def clause_names(value: str) -> set[str]:
     return {clause.split(';', 1)[0].strip() for clause in split_clauses(value)}
 
+
 patched_manifest = manifest(patched_path)
 if symbolic_name(patched_manifest) != expected_symbolic_name:
     raise SystemExit(f'Patched bundle has unexpected symbolic name: {symbolic_name(patched_manifest)!r}')
@@ -140,14 +142,18 @@ stock: list[tuple[Path, dict[str, str]]] = []
 for candidate in candidate_paths:
     try:
         headers = manifest(candidate)
-    except (KeyError, zipfile.BadZipFile):
+    except (KeyError, UnicodeDecodeError, zipfile.BadZipFile):
         continue
     if symbolic_name(headers) == expected_symbolic_name:
         stock.append((candidate, headers))
 
 versions = sorted({headers.get('Bundle-Version', '') for _, headers in stock})
 if len(versions) != 1:
-    raise SystemExit(f'Expected exactly one resolved stock {expected_symbolic_name} version, found {versions}')
+    locations = [str(path) for path, _ in stock]
+    raise SystemExit(
+        f'Expected exactly one freshly resolved stock {expected_symbolic_name} version, '
+        f'found {versions}; matching artifacts={locations}'
+    )
 stock_version = versions[0]
 stock_candidates = [(path, headers) for path, headers in stock if headers.get('Bundle-Version', '') == stock_version]
 stock_path, stock_manifest = stock_candidates[0]
@@ -155,8 +161,10 @@ patched_version = patched_manifest.get('Bundle-Version', '')
 
 checks: list[dict[str, object]] = []
 
+
 def check(name: str, passed: bool, detail: str) -> None:
     checks.append({'name': name, 'passed': passed, 'detail': detail})
+
 
 try:
     newer = version_key(patched_version) > version_key(stock_version)
