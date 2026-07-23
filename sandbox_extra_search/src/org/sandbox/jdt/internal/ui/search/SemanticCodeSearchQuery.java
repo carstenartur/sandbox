@@ -80,8 +80,9 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 			if (monitor.isCanceled()) {
 				return Status.CANCEL_STATUS;
 			}
-			SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-			if (client == null) {
+			EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();
+			SemanticSearchClient client= searchService.getSearchClient();
+			if (!searchService.isAvailable()) {
 				return Status.error("Semantic search service is not available. " //$NON-NLS-1$
 						+ "Please ensure the search backend is running."); //$NON-NLS-1$
 			}
