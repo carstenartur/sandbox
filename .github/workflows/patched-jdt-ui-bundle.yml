@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/patched-jdt-ui.env'
       - '.github/scripts/build_patched_jdt_ui.sh'
+      - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/workflows/patched-jdt-ui-bundle.yml'
       - 'docs/patched-jdt-ui-delivery.md'
 
@@ -50,5 +51,53 @@ jobs:
         with:
           name: patched-jdt-ui-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui/
+          retention-days: 14
+          if-no-files-found: error
+
+  target-compatibility:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Download verified replacement bundle
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-ui-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui
+      - name: Resolve the Sandbox target and compare manifests
+        shell: bash
+        run: |
+          bash .github/scripts/compare_patched_jdt_ui_with_target.sh \
+            "$RUNNER_TEMP/patched-jdt-ui" \
+            "$RUNNER_TEMP/patched-jdt-ui-compatibility"
+      - name: Publish compatibility summary
+        shell: bash
+        run: |
+          cat "$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.md" >> "$GITHUB_STEP_SUMMARY"
+          if ! python3 - "$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], encoding='utf-8') as stream:
+              compatible = json.load(stream)['compatibleForReplacement']
+          raise SystemExit(0 if compatible else 1)
+          PY
+          then
+            echo '::warning::The pinned bundle is not yet eligible for p2 replacement. The report records the exact stock-target incompatibility; publication remains disabled.'
+          fi
+      - name: Upload stock-target compatibility report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-target-compatibility-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-compatibility/
           retention-days: 14
           if-no-files-found: error
