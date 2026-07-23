@@ -17,7 +17,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
@@ -54,12 +56,30 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 		}
 		long transformed= candidates.stream()
 				.filter(candidate -> candidate.outcome() == MultiFileCandidateOutcome.TRANSFORMED).count();
-		long rejected= candidates.stream()
-				.filter(candidate -> candidate.outcome() == MultiFileCandidateOutcome.REJECTED).count();
-		status.addInfo("Coordinated cleanup " + cleanupId + ": " + candidates.size() //$NON-NLS-1$ //$NON-NLS-2$
-				+ " candidate diagnostics, " + transformed + " transformed, " + rejected //$NON-NLS-1$ //$NON-NLS-2$
-				+ " rejected; " + scope.addedCompilationUnitHandles().size() //$NON-NLS-1$
-				+ " compilation units added to the selected scope."); //$NON-NLS-1$
+		Map<String, Long> rejectedByReason= new TreeMap<>();
+		for (MultiFileCandidateDiagnostic candidate : candidates) {
+			if (candidate.outcome() == MultiFileCandidateOutcome.REJECTED) {
+				rejectedByReason.merge(candidate.reasonCode(), Long.valueOf(1), Long::sum);
+			}
+		}
+		long rejected= rejectedByReason.values().stream().mapToLong(Long::longValue).sum();
+		StringBuilder summary= new StringBuilder(160)
+				.append("Coordinated cleanup ").append(cleanupId).append(": ") //$NON-NLS-1$ //$NON-NLS-2$
+				.append(scope.selectedCompilationUnitHandles().size()).append(" selected, ") //$NON-NLS-1$
+				.append(scope.addedCompilationUnitHandles().size()).append(" added; ") //$NON-NLS-1$
+				.append(transformed).append(" transformed, ").append(rejected).append(" rejected"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (!rejectedByReason.isEmpty()) {
+			summary.append(" ("); //$NON-NLS-1$
+			int index= 0;
+			for (Map.Entry<String, Long> entry : rejectedByReason.entrySet()) {
+				if (index++ > 0) {
+					summary.append(", "); //$NON-NLS-1$
+				}
+				summary.append(entry.getKey()).append('=').append(entry.getValue());
+			}
+			summary.append(')');
+		}
+		status.addInfo(summary.append('.').toString());
 	}
 
 	/**
