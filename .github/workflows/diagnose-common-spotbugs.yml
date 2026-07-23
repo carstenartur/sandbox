@@ -6,6 +6,7 @@ on:
     paths:
       - 'sandbox_common/**'
       - 'sandbox_extra_search/**'
+      - 'sandbox_triggerpattern/**'
       - '.github/workflows/diagnose-common-spotbugs.yml'
 
 permissions:
