@@ -14,7 +14,7 @@ All status and support fields are explicit. `not-assessed` means that the reposi
 | `extra-search` | tool | workspace | `sandbox_extra_search` / `sandbox_extra_search_feature` | 0/0 enabled | product, update site | no / no | read-only | experimental | — |
 | `functional-converter` | cleanup | local | `sandbox_functional_converter` / `sandbox_functional_converter_feature` | 576/576 enabled | product, update site | not-assessed / not-assessed | conservative | experimental | [#1251](https://github.com/carstenartur/sandbox/issues/1251) |
 | `platform-helper` | cleanup | local | `sandbox_platform_helper` / `sandbox_platform_helper_feature` | 5/6 enabled | product, update site | not-assessed / not-assessed | experimental | experimental | — |
-| `tools` | cleanup | local | `sandbox_tools` / `sandbox_tools_feature` | 2/2 enabled | product, update site | yes / yes | conservative | upstream | — |
+| `tools` | cleanup | local | `sandbox_tools` / `sandbox_tools_feature` | 2/2 enabled | product, update site | not-assessed / not-assessed | conservative | upstream | — |
 | `trigger-pattern` | framework | local | `sandbox_triggerpattern` / `sandbox_triggerpattern_feature` | 161/161 enabled | product, update site | not-assessed / not-assessed | conservative | experimental | — |
 | `xml-cleanup` | cleanup | project | `sandbox_xml_cleanup` / `sandbox_xml_cleanup_feature` | 41/41 enabled | product, update site | not-assessed / not-assessed | conservative | experimental | [#1240](https://github.com/carstenartur/sandbox/issues/1240) |
 | `jface-cleanup` | cleanup | local | `sandbox_jface_cleanup` / `sandbox_jface_cleanup_feature` | 14/15 enabled | product, update site | not-assessed / not-assessed | experimental | experimental | — |
