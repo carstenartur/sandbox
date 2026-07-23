@@ -59,8 +59,8 @@ public final class JUnitScopeCandidateDetector {
 
 	/**
 	 * Finds source resource types referenced by selected declarations or Rule fields.
-	 * Syntactically recognizable candidates with missing bindings are marked
-	 * incomplete so callers preserve the existing complete-policy fallback.
+	 * Syntactically recognizable candidates with missing or recovered bindings are
+	 * marked incomplete so callers preserve the existing complete-policy fallback.
 	 */
 	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection<ICompilationUnit> currentScope,
 			IProgressMonitor monitor) {
@@ -95,16 +95,16 @@ public final class JUnitScopeCandidateDetector {
 					public boolean visit(TypeDeclaration node) {
 						ITypeBinding binding= node.resolveBinding();
 						ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
-						if (superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(
-								superclass.getErasure().getQualifiedName())) {
+						if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(superclass))) {
 							candidateFound[0]= true;
 							complete[0]&= addJavaElement(binding, elements);
 							return false;
 						}
-						if (binding == null && node.getSuperclassType() != null
+						if (hasIncompleteIdentity(superclass) && node.getSuperclassType() != null
 								&& "ExternalResource".equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$
 							candidateFound[0]= true;
 							complete[0]= false;
+							return false;
 						}
 						return true;
 					}
@@ -118,11 +118,11 @@ public final class JUnitScopeCandidateDetector {
 								continue;
 							}
 							ITypeBinding annotationBinding= annotation.resolveTypeBinding();
-							if (annotationBinding != null) {
-								String qualifiedName= annotationBinding.getQualifiedName();
-								ruleField|= ORG_JUNIT_RULE.equals(qualifiedName)
-										|| ORG_JUNIT_CLASS_RULE.equals(qualifiedName);
-							} else if (isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
+							String qualifiedName= qualifiedName(annotationBinding);
+							if (ORG_JUNIT_RULE.equals(qualifiedName) || ORG_JUNIT_CLASS_RULE.equals(qualifiedName)) {
+								ruleField= true;
+							} else if (hasIncompleteIdentity(annotationBinding)
+									&& isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
 								ruleField= true;
 								unresolvedRuleAnnotation= true;
 							}
@@ -153,6 +153,14 @@ public final class JUnitScopeCandidateDetector {
 	private static String simpleName(String name) {
 		int separator= name.lastIndexOf('.');
 		return separator < 0 ? name : name.substring(separator + 1);
+	}
+
+	private static boolean hasIncompleteIdentity(ITypeBinding binding) {
+		return binding == null || binding.isRecovered() || qualifiedName(binding).isEmpty();
+	}
+
+	private static String qualifiedName(ITypeBinding binding) {
+		return binding == null ? "" : binding.getErasure().getQualifiedName(); //$NON-NLS-1$
 	}
 
 	private static boolean addJavaElement(ITypeBinding binding, Set<IJavaElement> elements) {
