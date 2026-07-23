@@ -51,7 +51,8 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 
 	/** Adds one concise, nonfatal planning summary to the cleanup preview status. */
 	public void appendSummary(RefactoringStatus status) {
-		if (status == null || candidates.isEmpty() && scope.addedCompilationUnitHandles().isEmpty()) {
+		if (status == null || candidates.isEmpty() && scope.addedCompilationUnitHandles().isEmpty()
+				&& scope.complete()) {
 			return;
 		}
 		long transformed= candidates.stream()
@@ -68,6 +69,9 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 				.append(scope.selectedCompilationUnitHandles().size()).append(" selected, ") //$NON-NLS-1$
 				.append(scope.addedCompilationUnitHandles().size()).append(" added; ") //$NON-NLS-1$
 				.append(transformed).append(" transformed, ").append(rejected).append(" rejected"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (!scope.complete()) {
+			summary.append("; scope incomplete (").append(scope.reasonCode()).append(')'); //$NON-NLS-1$
+		}
 		if (!rejectedByReason.isEmpty()) {
 			summary.append(" ("); //$NON-NLS-1$
 			int index= 0;
