@@ -1,0 +1,44 @@
+name: Verify sandbox_common SpotBugs
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'sandbox_common/**'
+      - '.github/workflows/diagnose-common-spotbugs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Verify common bundle and SpotBugs
+        shell: bash
+        run: |
+          set +e
+          mvn --batch-mode -ntp -U \
+            -pl sandbox_target,sandbox_common -am \
+            -DskipTests -Djacoco.skip=true \
+            clean verify > common-spotbugs.log 2>&1
+          status=$?
+          tail -n 250 common-spotbugs.log
+          exit "$status"
+      - name: Upload focused log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: common-spotbugs-log
+          path: common-spotbugs.log
+          retention-days: 2
+          if-no-files-found: error
