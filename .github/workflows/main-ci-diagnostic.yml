@@ -50,8 +50,8 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode \
-            -pl sandbox_junit_cleanup_test,sandbox_int_to_enum_test -am \
+          xvfb-run --auto-servernum mvn -U -e -V -T 1C --batch-mode \
+            -pl sandbox_target,sandbox_junit_cleanup_test,sandbox_int_to_enum_test -am \
             -Dtycho.localArtifacts=ignore clean verify 2>&1 | tee maven-build.log
       - name: Upload Maven log
         if: always()
