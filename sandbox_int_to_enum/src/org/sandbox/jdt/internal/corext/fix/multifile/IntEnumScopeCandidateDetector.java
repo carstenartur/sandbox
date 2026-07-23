@@ -150,8 +150,8 @@ public final class IntEnumScopeCandidateDetector {
 	private static CompilationUnit parseSource(IJavaProject project, ICompilationUnit unit,
 			IProgressMonitor monitor) {
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setSource(unit);
 		parser.setProject(project);
+		parser.setSource(unit);
 		parser.setResolveBindings(false);
 		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
 		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
