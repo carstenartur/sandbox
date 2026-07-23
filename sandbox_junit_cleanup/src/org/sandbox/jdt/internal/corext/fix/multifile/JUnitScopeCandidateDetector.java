@@ -207,8 +207,8 @@ public final class JUnitScopeCandidateDetector {
 	private static CompilationUnit parseSource(IJavaProject project, ICompilationUnit unit,
 			IProgressMonitor monitor) {
 		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setSource(unit);
 		parser.setProject(project);
+		parser.setSource(unit);
 		parser.setResolveBindings(true);
 		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
 		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
