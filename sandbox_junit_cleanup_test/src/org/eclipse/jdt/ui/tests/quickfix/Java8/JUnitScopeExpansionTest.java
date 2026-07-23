@@ -31,6 +31,9 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
@@ -94,6 +97,12 @@ public class JUnitScopeExpansionTest {
 				""", false, null);
 		ICompilationUnit related= createUnit(pack, "SelectedTest.java"); //$NON-NLS-1$
 		ICompilationUnit unrelated= createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
+
+		assertTrue(JUnitScopeCandidateDetector.containsCandidate(selected.getJavaProject(), List.of(selected), null),
+				"The selected source must be recognized as an ExternalResource candidate");
+		assertEquals(3, JavaProjectCompilationUnits.collect(selected.getJavaProject(), List.of(selected),
+				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT).size(),
+				"The selected source root must remain editable under the JUnit expansion policy");
 
 		Collection<ICompilationUnit> expanded= externalResourceCleanup().expandCleanUpScope(
 				selected.getJavaProject(), List.of(selected), null);
