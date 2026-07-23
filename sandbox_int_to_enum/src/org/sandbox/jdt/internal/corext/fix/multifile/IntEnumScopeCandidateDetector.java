@@ -158,6 +158,7 @@ public final class IntEnumScopeCandidateDetector {
 			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
 				units.add(unit.getPrimary());
 			}
+		}
 		return units;
 	}
 
