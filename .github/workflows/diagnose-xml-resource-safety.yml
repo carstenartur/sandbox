@@ -34,8 +34,11 @@ jobs:
         shell: bash
         run: |
           set +e
+          # Tycho does not infer reactor inclusion for Require-Bundle/Fragment-Host
+          # dependencies from Maven -am. Select the local prerequisite bundles
+          # explicitly so the focused reactor matches the OSGi dependency graph.
           mvn --batch-mode -ntp \
-            -pl sandbox_xml_cleanup_test -am \
+            -pl sandbox_common,sandbox_test_commons,sandbox_xml_cleanup_test -am \
             -Djacoco.skip=true \
             clean verify > xml-resource-safety.log 2>&1
           status=$?
