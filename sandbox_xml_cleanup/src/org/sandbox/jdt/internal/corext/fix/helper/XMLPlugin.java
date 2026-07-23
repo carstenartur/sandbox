@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.lang.ref.WeakReference;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,7 +45,7 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	private static final Set<String> PDE_DIRECTORIES= Set.of("OSGI-INF", "META-INF"); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private final Set<IPath> processedFiles= new HashSet<>();
-	private Set<CompilationUnitRewriteOperation> activeOperations;
+	private WeakReference<Set<CompilationUnitRewriteOperation>> activeOperations= new WeakReference<>(null);
 	private boolean enableIndent;
 
 	/** Sets whether transformed markup is indented. */
@@ -79,8 +80,8 @@ public class XMLPlugin extends AbstractTool<XMLCandidateHit> {
 	}
 
 	private void beginRun(Set<CompilationUnitRewriteOperation> operations) {
-		if (activeOperations != operations) {
-			activeOperations= operations;
+		if (activeOperations.get() != operations) {
+			activeOperations= new WeakReference<>(operations);
 			processedFiles.clear();
 		}
 	}
