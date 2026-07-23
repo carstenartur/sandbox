@@ -40,4 +40,19 @@ jobs:
         with:
           python-version: '3.13'
       - name: Validate inventory and generated documentation
-        run: python3 .github/scripts/validate_capability_inventory.py --check
+        shell: bash
+        run: |
+          set +e
+          python3 .github/scripts/validate_capability_inventory.py --check \
+            > capability-inventory-validation.log 2>&1
+          status=$?
+          cat capability-inventory-validation.log
+          exit "$status"
+      - name: Upload validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: capability-inventory-validation
+          path: capability-inventory-validation.log
+          retention-days: 2
+          if-no-files-found: error
