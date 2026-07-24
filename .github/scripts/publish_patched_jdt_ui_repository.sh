@@ -145,6 +145,9 @@ mvn --batch-mode -ntp -f "$WORK_DIR/pom.xml" \
   -Dsource.location="$SOURCE_DIR" \
   -Drepository.location="$REPOSITORY_DIR"
 
+python3 "$ROOT_DIR/.github/scripts/add_p2_sha256_checksums.py" \
+  --repository "$REPOSITORY_DIR" \
+  > "$EVIDENCE_DIR/checksum-normalization.json"
 cp "$PROVENANCE" "$EVIDENCE_DIR/bundle-provenance.json"
 cp "$COMPATIBILITY" "$EVIDENCE_DIR/target-compatibility.json"
 cp "$FEATURE_DIR/feature.xml" "$EVIDENCE_DIR/feature.xml"
