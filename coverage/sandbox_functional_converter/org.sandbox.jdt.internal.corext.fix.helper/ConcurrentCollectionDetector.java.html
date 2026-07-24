@@ -17,90 +17,52 @@ import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ITypeBinding;
 
-/**
- * Detects concurrent collection types that require special handling during
- * loop-to-stream conversions.
- * 
- * &lt;p&gt;Concurrent collections like {@link java.util.concurrent.CopyOnWriteArrayList}
- * and {@link java.util.concurrent.ConcurrentHashMap} have different iteration
- * semantics than standard collections:&lt;/p&gt;
- * 
- * &lt;ul&gt;
- * &lt;li&gt;&lt;b&gt;CopyOnWrite collections:&lt;/b&gt; Iterators provide a snapshot of the collection
- * at the time the iterator was created. Modifications during iteration do not throw
- * {@code ConcurrentModificationException} but are not visible to the iterator.&lt;/li&gt;
- * 
- * &lt;li&gt;&lt;b&gt;Concurrent collections:&lt;/b&gt; Weakly consistent iterators that may reflect
- * modifications made after iterator creation, but never throw {@code ConcurrentModificationException}.&lt;/li&gt;
- * 
- * &lt;li&gt;&lt;b&gt;iterator.remove() not supported:&lt;/b&gt; Many concurrent collections do not support
- * {@code iterator.remove()}, and attempting to call it will throw
- * {@code UnsupportedOperationException}.&lt;/li&gt;
- * &lt;/ul&gt;
- * 
- * &lt;p&gt;&lt;b&gt;Safety Rules for Concurrent Collections:&lt;/b&gt;&lt;/p&gt;
- * &lt;ul&gt;
- * &lt;li&gt;Never generate {@code iterator.remove()} for concurrent collections&lt;/li&gt;
- * &lt;li&gt;Be aware that modifications may not be visible during iteration&lt;/li&gt;
- * &lt;li&gt;Consider the threading context (field vs local variable)&lt;/li&gt;
- * &lt;/ul&gt;
- * 
- * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670 - Point 2.4&lt;/a&gt;
- * @since 1.0.0
- */
+/** Detects concurrent collection iteration semantics relevant to loop conversion. */
 public final class ConcurrentCollectionDetector {
 
-	/**
-	 * Fully qualified names of concurrent collection types.
-	 * These collections have special iteration semantics and do not support iterator.remove().
-	 */
-<span class="fc" id="L57">	private static final Set&lt;String&gt; CONCURRENT_COLLECTION_TYPES = Set.of(</span>
-<span class="fc" id="L58">			&quot;java.util.concurrent.CopyOnWriteArrayList&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L59">			&quot;java.util.concurrent.CopyOnWriteArraySet&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L60">			&quot;java.util.concurrent.ConcurrentHashMap&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L61">			&quot;java.util.concurrent.ConcurrentSkipListMap&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L62">			&quot;java.util.concurrent.ConcurrentSkipListSet&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L63">			&quot;java.util.concurrent.ConcurrentLinkedQueue&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L64">			&quot;java.util.concurrent.ConcurrentLinkedDeque&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L65">			&quot;java.util.concurrent.LinkedBlockingQueue&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L66">			&quot;java.util.concurrent.LinkedBlockingDeque&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L67">			&quot;java.util.concurrent.ArrayBlockingQueue&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L68">			&quot;java.util.concurrent.PriorityBlockingQueue&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L69">			&quot;java.util.concurrent.DelayQueue&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L70">			&quot;java.util.concurrent.SynchronousQueue&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L71">	);</span>
+<span class="fc" id="L23">	private static final Set&lt;String&gt; SNAPSHOT_COLLECTION_TYPES= Set.of(</span>
+<span class="fc" id="L24">			&quot;java.util.concurrent.CopyOnWriteArrayList&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L25">			&quot;java.util.concurrent.CopyOnWriteArraySet&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L27">	private static final Set&lt;String&gt; CONCURRENT_COLLECTION_TYPES= Set.of(</span>
+<span class="fc" id="L28">			&quot;java.util.concurrent.CopyOnWriteArrayList&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L29">			&quot;java.util.concurrent.CopyOnWriteArraySet&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L30">			&quot;java.util.concurrent.ConcurrentHashMap&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L31">			&quot;java.util.concurrent.ConcurrentSkipListMap&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L32">			&quot;java.util.concurrent.ConcurrentSkipListSet&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L33">			&quot;java.util.concurrent.ConcurrentLinkedQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L34">			&quot;java.util.concurrent.ConcurrentLinkedDeque&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L35">			&quot;java.util.concurrent.LinkedBlockingQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L36">			&quot;java.util.concurrent.LinkedBlockingDeque&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L37">			&quot;java.util.concurrent.ArrayBlockingQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L38">			&quot;java.util.concurrent.PriorityBlockingQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L39">			&quot;java.util.concurrent.DelayQueue&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L40">			&quot;java.util.concurrent.SynchronousQueue&quot;); //$NON-NLS-1$</span>
 
 	private ConcurrentCollectionDetector() {
 		// utility class
 	}
 
-	/**
-	 * Checks if the given type is a concurrent collection.
-	 * 
-	 * @param typeBinding the type to check (may be null)
-	 * @return {@code true} if the type is a concurrent collection
-	 */
 	public static boolean isConcurrentCollection(ITypeBinding typeBinding) {
-<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (typeBinding == null) {</span>
-<span class="fc" id="L85">			return false;</span>
-		}
+<span class="fc bfc" id="L47" title="All 4 branches covered.">		return typeBinding != null &amp;&amp; isConcurrentCollection(typeBinding.getErasure().getQualifiedName());</span>
+	}
 
-		// Check the erasure (raw type) to handle generics
-<span class="fc" id="L89">		String qualifiedName = typeBinding.getErasure().getQualifiedName();</span>
-<span class="fc" id="L90">		return CONCURRENT_COLLECTION_TYPES.contains(qualifiedName);</span>
+	public static boolean isConcurrentCollection(String qualifiedTypeName) {
+<span class="fc bfc" id="L51" title="All 4 branches covered.">		return qualifiedTypeName != null &amp;&amp; CONCURRENT_COLLECTION_TYPES.contains(qualifiedTypeName);</span>
 	}
 
 	/**
-	 * Checks if the given qualified type name is a concurrent collection.
-	 * 
-	 * @param qualifiedTypeName the fully qualified type name (may be null)
-	 * @return {@code true} if the type name matches a concurrent collection
+	 * Copy-on-write iterators and spliterators traverse a stable array snapshot.
+	 * Read-only sequential enhanced-for conversion can therefore retain their
+	 * iteration semantics. Other concurrent collections remain conservatively
+	 * blocked because their iterators are weakly consistent.
 	 */
-	public static boolean isConcurrentCollection(String qualifiedTypeName) {
-<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (qualifiedTypeName == null) {</span>
-<span class="fc" id="L101">			return false;</span>
-		}
-<span class="fc" id="L103">		return CONCURRENT_COLLECTION_TYPES.contains(qualifiedTypeName);</span>
+	public static boolean hasSnapshotIteration(ITypeBinding typeBinding) {
+<span class="pc bpc" id="L61" title="1 of 4 branches missed.">		return typeBinding != null &amp;&amp; hasSnapshotIteration(typeBinding.getErasure().getQualifiedName());</span>
+	}
+
+	public static boolean hasSnapshotIteration(String qualifiedTypeName) {
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">		return qualifiedTypeName != null &amp;&amp; SNAPSHOT_COLLECTION_TYPES.contains(qualifiedTypeName);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

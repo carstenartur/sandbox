@@ -123,44 +123,40 @@ import org.eclipse.ui.part.ViewPart;
 <span class="nc" id="L123">			return;</span>
 		}
 <span class="nc" id="L125">		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();</span>
-<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (client == null) {</span>
-<span class="nc" id="L127">			tableViewer.setInput(new Object[0]);</span>
-<span class="nc" id="L128">			return;</span>
-		}
-<span class="nc" id="L130">		int searchType= searchTypeCombo.getSelectionIndex();</span>
+<span class="nc" id="L126">		int searchType= searchTypeCombo.getSelectionIndex();</span>
 		List&lt;SearchHit&gt; results;
-<span class="nc bnc" id="L132" title="All 6 branches missed.">		switch (searchType) {</span>
+<span class="nc bnc" id="L128" title="All 6 branches missed.">		switch (searchType) {</span>
 			case 1: // Java Types
-<span class="nc" id="L134">				results= client.searchByType(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-<span class="nc" id="L135">				break;</span>
+<span class="nc" id="L130">				results= client.searchByType(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
+<span class="nc" id="L131">				break;</span>
 			case 2: // Paths
-<span class="nc" id="L137">				results= client.searchByChangedPath(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-<span class="nc" id="L138">				break;</span>
+<span class="nc" id="L133">				results= client.searchByChangedPath(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
+<span class="nc" id="L134">				break;</span>
 			case 3: // Annotations
 			case 4: // Methods
 			case 5: // Fields
-<span class="nc" id="L142">				results= client.searchBySymbol(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-<span class="nc" id="L143">				break;</span>
+<span class="nc" id="L138">				results= client.searchBySymbol(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
+<span class="nc" id="L139">				break;</span>
 			case 6: // Semantic
 				// Note: result count for semantic search is fixed at 10 in this view.
 				// Use SemanticCodeSearchPage for configurable result counts.
-<span class="nc" id="L147">				results= client.semanticSearch(&quot;&quot;, query, 10); //$NON-NLS-1$</span>
-<span class="nc" id="L148">				break;</span>
+<span class="nc" id="L143">				results= client.semanticSearch(&quot;&quot;, query, 10); //$NON-NLS-1$</span>
+<span class="nc" id="L144">				break;</span>
 			case 7: // Hybrid
 				// Note: result count for hybrid search is fixed at 10 in this view.
 				// Use SemanticCodeSearchPage for configurable result counts.
-<span class="nc" id="L152">				results= client.hybridSearch(&quot;&quot;, query, 10); //$NON-NLS-1$</span>
-<span class="nc" id="L153">				break;</span>
+<span class="nc" id="L148">				results= client.hybridSearch(&quot;&quot;, query, 10); //$NON-NLS-1$</span>
+<span class="nc" id="L149">				break;</span>
 			default: // Commits
-<span class="nc" id="L155">				results= client.searchCommitMessages(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
+<span class="nc" id="L151">				results= client.searchCommitMessages(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
 				break;
 		}
-<span class="nc" id="L158">		tableViewer.setInput(results);</span>
-<span class="nc" id="L159">	}</span>
+<span class="nc" id="L154">		tableViewer.setInput(results);</span>
+<span class="nc" id="L155">	}</span>
 
 	@Override
 	public void setFocus() {
-<span class="nc" id="L163">		searchText.setFocus();</span>
-<span class="nc" id="L164">	}</span>
+<span class="nc" id="L159">		searchText.setFocus();</span>
+<span class="nc" id="L160">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

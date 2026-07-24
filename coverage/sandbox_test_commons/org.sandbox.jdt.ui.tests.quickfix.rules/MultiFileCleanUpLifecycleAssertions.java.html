@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MultiFileCleanUpLifecycleAssertions.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">MultiFileCleanUpLifecycleAssertions.java</span></div><h1>MultiFileCleanUpLifecycleAssertions.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.ui.tests.quickfix.rules;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
+
+import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.CheckConditionsOperation;
+import org.eclipse.ltk.core.refactoring.CreateChangeOperation;
+import org.eclipse.ltk.core.refactoring.IUndoManager;
+import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
+import org.eclipse.jdt.ui.cleanup.ICleanUp;
+
+/**
+ * Assertions for the complete lifecycle of one coordinated multi-file cleanup.
+ *
+ * &lt;p&gt;The helper executes one {@link CleanUpRefactoring}, verifies every affected
+ * compilation unit and its Java error set after apply, performs the returned undo
+ * change, and finally proves that source and semantic state returned to the
+ * original per-file baseline.&lt;/p&gt;
+ */
+public final class MultiFileCleanUpLifecycleAssertions {
+
+	private record ProblemSignature(int id, String message) {
+	}
+
+	private MultiFileCleanUpLifecycleAssertions() {
+		// assertions only
+	}
+
+	/**
+	 * Applies the configured cleanup profile atomically and verifies compilation and
+	 * undo for the complete source set.
+	 *
+	 * @param compilationUnits all units participating in the coordinated cleanup
+	 * @param expectedAfterApply expected source contents after the common change, in
+	 *            the same order as {@code compilationUnits}
+	 * @return the final-condition status of the cleanup refactoring
+	 * @throws CoreException if Eclipse cannot create or execute either change
+	 */
+	public static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] compilationUnits,
+			String[] expectedAfterApply) throws CoreException {
+<span class="nc" id="L76">		return assertApplyCompileAndUndo(compilationUnits, compilationUnits, expectedAfterApply);</span>
+	}
+
+	/**
+	 * Applies a cleanup to an initial selection and verifies the complete set of
+	 * units expected to be affected after coordinated scope expansion.
+	 *
+	 * @param selectedUnits compilation units explicitly added to the refactoring
+	 * @param verifiedUnits units whose source and Java errors must be verified
+	 * @param expectedAfterApply expected source contents for {@code verifiedUnits}
+	 * @return the final-condition status of the cleanup refactoring
+	 * @throws CoreException if Eclipse cannot create or execute either change
+	 */
+	public static RefactoringStatus assertApplyCompileAndUndo(ICompilationUnit[] selectedUnits,
+			ICompilationUnit[] verifiedUnits, String[] expectedAfterApply) throws CoreException {
+<span class="fc" id="L91">		assertEquals(verifiedUnits.length, expectedAfterApply.length,</span>
+<span class="fc" id="L92">				&quot;Each verified compilation unit needs one expected post-apply source&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L93">		Set&lt;String&gt; verifiedHandles= Arrays.stream(verifiedUnits)</span>
+<span class="fc" id="L94">				.map(ICompilationUnit::getPrimary)</span>
+<span class="fc" id="L95">				.map(ICompilationUnit::getHandleIdentifier)</span>
+<span class="fc" id="L96">				.collect(Collectors.toSet());</span>
+<span class="fc" id="L97">		assertTrue(Arrays.stream(selectedUnits)</span>
+<span class="fc" id="L98">				.map(ICompilationUnit::getPrimary)</span>
+<span class="fc" id="L99">				.map(ICompilationUnit::getHandleIdentifier)</span>
+<span class="fc" id="L100">				.allMatch(verifiedHandles::contains),</span>
+<span class="fc" id="L101">				&quot;Each selected compilation unit must be included in verifiedUnits&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L102">		String[] originals= contents(verifiedUnits);</span>
+<span class="fc" id="L103">		Map&lt;String, Map&lt;ProblemSignature, Long&gt;&gt; baselineProblems= errorCounts(verifiedUnits);</span>
+
+<span class="fc" id="L105">		CleanUpRefactoring refactoring= new CleanUpRefactoring();</span>
+<span class="fc" id="L106">		refactoring.setUseOptionsFromProfile(true);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		for (ICompilationUnit unit : selectedUnits) {</span>
+<span class="fc" id="L108">			refactoring.addCompilationUnit(unit);</span>
+		}
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		for (ICleanUp cleanup : JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps()) {</span>
+<span class="fc" id="L111">			refactoring.addCleanUp(cleanup);</span>
+		}
+
+<span class="fc" id="L114">		IUndoManager undoManager= RefactoringCore.getUndoManager();</span>
+<span class="fc" id="L115">		undoManager.flush();</span>
+<span class="fc" id="L116">		CreateChangeOperation create= new CreateChangeOperation(</span>
+<span class="fc" id="L117">				new CheckConditionsOperation(refactoring, CheckConditionsOperation.ALL_CONDITIONS),</span>
+<span class="fc" id="L118">				RefactoringStatus.FATAL);</span>
+<span class="fc" id="L119">		PerformChangeOperation apply= new PerformChangeOperation(create);</span>
+<span class="fc" id="L120">		apply.setUndoManager(undoManager, refactoring.getName());</span>
+<span class="fc" id="L121">		IWorkspace workspace= ResourcesPlugin.getWorkspace();</span>
+<span class="fc" id="L122">		workspace.run(apply, new NullProgressMonitor());</span>
+
+<span class="fc" id="L124">		RefactoringStatus status= create.getConditionCheckingStatus();</span>
+<span class="pc" id="L125">		assertFalse(status.hasFatalError(), () -&gt; &quot;Cleanup final conditions failed: &quot; + status); //$NON-NLS-1$</span>
+<span class="fc" id="L126">		assertTrue(apply.changeExecuted(), &quot;The coordinated cleanup change was not executed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L127">		Change undo= apply.getUndoChange();</span>
+<span class="fc" id="L128">		assertNotNull(undo, &quot;The coordinated cleanup did not create an undo change&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L130">		assertPostApplyContents(verifiedUnits, expectedAfterApply);</span>
+<span class="fc" id="L131">		assertNoNewErrors(verifiedUnits, baselineProblems, &quot;after apply&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L133">		PerformChangeOperation performUndo= new PerformChangeOperation(undo);</span>
+<span class="fc" id="L134">		workspace.run(performUndo, new NullProgressMonitor());</span>
+<span class="fc" id="L135">		assertTrue(performUndo.changeExecuted(), &quot;The coordinated cleanup undo change was not executed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L136">		assertRestoredContents(verifiedUnits, originals);</span>
+<span class="fc" id="L137">		assertEquals(baselineProblems, errorCounts(verifiedUnits),</span>
+<span class="fc" id="L138">				&quot;Undo must restore the original Java error set&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L139">		return status;</span>
+	}
+
+	private static void assertPostApplyContents(ICompilationUnit[] units, String[] expected) throws CoreException {
+<span class="fc" id="L143">		String[] actual= contents(units);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		for (int i= 0; i &lt; units.length; i++) {</span>
+<span class="fc" id="L145">			String unitName= units[i].getElementName();</span>
+<span class="fc" id="L146">			assertEquals(normalizeWhitespace(expected[i]), normalizeWhitespace(actual[i]),</span>
+<span class="pc" id="L147">					() -&gt; unitName + &quot; has unexpected content after the coordinated cleanup&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L149">	}</span>
+
+	private static void assertRestoredContents(ICompilationUnit[] units, String[] originals) throws CoreException {
+<span class="fc" id="L152">		String[] actual= contents(units);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		for (int i= 0; i &lt; units.length; i++) {</span>
+<span class="fc" id="L154">			String unitName= units[i].getElementName();</span>
+<span class="fc" id="L155">			assertEquals(normalizeLineEndings(originals[i]), normalizeLineEndings(actual[i]),</span>
+<span class="pc" id="L156">					() -&gt; unitName + &quot; was not restored exactly by undo&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L158">	}</span>
+
+	private static String[] contents(ICompilationUnit[] units) throws CoreException {
+<span class="fc" id="L161">		String[] result= new String[units.length];</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">		for (int i= 0; i &lt; units.length; i++) {</span>
+<span class="fc" id="L163">			result[i]= units[i].getBuffer().getContents();</span>
+		}
+<span class="fc" id="L165">		return result;</span>
+	}
+
+	private static void assertNoNewErrors(ICompilationUnit[] units,
+			Map&lt;String, Map&lt;ProblemSignature, Long&gt;&gt; baseline, String phase) {
+<span class="fc" id="L170">		Map&lt;String, Map&lt;ProblemSignature, Long&gt;&gt; current= errorCounts(units);</span>
+<span class="fc" id="L171">		StringBuilder newErrors= new StringBuilder();</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		for (Map.Entry&lt;String, Map&lt;ProblemSignature, Long&gt;&gt; unitEntry : current.entrySet()) {</span>
+<span class="fc" id="L173">			Map&lt;ProblemSignature, Long&gt; previous= baseline.getOrDefault(unitEntry.getKey(), Map.of());</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			for (Map.Entry&lt;ProblemSignature, Long&gt; problemEntry : unitEntry.getValue().entrySet()) {</span>
+<span class="nc" id="L175">				long added= problemEntry.getValue() - previous.getOrDefault(problemEntry.getKey(), 0L);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">				if (added &gt; 0) {</span>
+<span class="nc" id="L177">					newErrors.append(unitEntry.getKey()).append(&quot;: &quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L178">							.append(problemEntry.getKey().message()).append(&quot; [id=&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L179">							.append(problemEntry.getKey().id()).append(&quot;] x&quot;).append(added).append('\n'); //$NON-NLS-1$</span>
+				}
+			}
+		}
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		if (!newErrors.isEmpty()) {</span>
+<span class="nc" id="L184">			fail(&quot;New Java errors &quot; + phase + &quot;:\n&quot; + newErrors); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L186">	}</span>
+
+	private static Map&lt;String, Map&lt;ProblemSignature, Long&gt;&gt; errorCounts(ICompilationUnit[] units) {
+<span class="fc" id="L189">		Map&lt;String, Map&lt;ProblemSignature, Long&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L191">			ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L192">			parser.setSource(unit);</span>
+<span class="fc" id="L193">			parser.setProject(unit.getJavaProject());</span>
+<span class="fc" id="L194">			parser.setResolveBindings(true);</span>
+<span class="fc" id="L195">			parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L196">			parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L197">			CompilationUnit root= (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L198">			Map&lt;ProblemSignature, Long&gt; problems= Arrays.stream(root.getProblems())</span>
+<span class="pc bnc" id="L199" title="All 4 branches missed.">					.filter(problem -&gt; !problem.isWarning() &amp;&amp; !problem.isInfo())</span>
+<span class="pc" id="L200">					.map(problem -&gt; new ProblemSignature(problem.getID(), problem.getMessage()))</span>
+<span class="fc" id="L201">					.collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));</span>
+<span class="fc" id="L202">			result.put(unit.getPrimary().getHandleIdentifier(), problems);</span>
+		}
+<span class="fc" id="L204">		return result;</span>
+	}
+
+	private static String normalizeWhitespace(String source) {
+<span class="fc" id="L208">		return Arrays.stream(normalizeLineEndings(source).split(&quot;\n&quot;, -1)) //$NON-NLS-1$</span>
+<span class="fc" id="L209">				.map(MultiFileCleanUpLifecycleAssertions::normalizeIndentation)</span>
+<span class="fc" id="L210">				.map(String::stripTrailing)</span>
+<span class="fc" id="L211">				.collect(Collectors.joining(&quot;\n&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L212">				.replaceAll(&quot;\n{3,}&quot;, &quot;\n\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L213">				.strip();</span>
+	}
+
+	private static String normalizeIndentation(String line) {
+<span class="fc" id="L217">		int endOfIndent= 0;</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		while (endOfIndent &lt; line.length()</span>
+<span class="pc bpc" id="L219" title="1 of 4 branches missed.">				&amp;&amp; (line.charAt(endOfIndent) == ' ' || line.charAt(endOfIndent) == '\t')) {</span>
+<span class="fc" id="L220">			endOfIndent++;</span>
+		}
+<span class="fc bfc" id="L222" title="All 2 branches covered.">		if (endOfIndent == 0) {</span>
+<span class="fc" id="L223">			return line;</span>
+		}
+<span class="fc" id="L225">		String leading= line.substring(0, endOfIndent).replace(&quot;\t&quot;, &quot;    &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L226">		return leading + line.substring(endOfIndent);</span>
+	}
+
+	private static String normalizeLineEndings(String source) {
+<span class="fc" id="L230">		return source.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace(&quot;\r&quot;, &quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

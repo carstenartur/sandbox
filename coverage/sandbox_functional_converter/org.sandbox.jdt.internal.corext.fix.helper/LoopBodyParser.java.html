@@ -89,25 +89,25 @@ public class LoopBodyParser {
 	 * @param isNoneMatchPattern whether noneMatch pattern is detected
 	 * @param isAllMatchPattern whether allMatch pattern is detected
 	 */
-<span class="fc" id="L92">	public LoopBodyParser(EnhancedForStatement forLoop, </span>
+<span class="nc" id="L92">	public LoopBodyParser(EnhancedForStatement forLoop, </span>
 			ReducePatternDetector reduceDetector,
 			CollectPatternDetector collectDetector,
 			IfStatementAnalyzer ifAnalyzer,
 			boolean isAnyMatchPattern, 
 			boolean isNoneMatchPattern, 
 			boolean isAllMatchPattern) {
-<span class="fc" id="L99">		this.ast = forLoop.getAST();</span>
-<span class="fc" id="L100">		this.reduceDetector = reduceDetector;</span>
-<span class="fc" id="L101">		this.collectDetector = collectDetector;</span>
-<span class="fc" id="L102">		this.ifAnalyzer = ifAnalyzer;</span>
-<span class="fc" id="L103">		this.isAnyMatchPattern = isAnyMatchPattern;</span>
-<span class="fc" id="L104">		this.isNoneMatchPattern = isNoneMatchPattern;</span>
-<span class="fc" id="L105">		this.isAllMatchPattern = isAllMatchPattern;</span>
+<span class="nc" id="L99">		this.ast = forLoop.getAST();</span>
+<span class="nc" id="L100">		this.reduceDetector = reduceDetector;</span>
+<span class="nc" id="L101">		this.collectDetector = collectDetector;</span>
+<span class="nc" id="L102">		this.ifAnalyzer = ifAnalyzer;</span>
+<span class="nc" id="L103">		this.isAnyMatchPattern = isAnyMatchPattern;</span>
+<span class="nc" id="L104">		this.isNoneMatchPattern = isNoneMatchPattern;</span>
+<span class="nc" id="L105">		this.isAllMatchPattern = isAllMatchPattern;</span>
 		
 		// Initialize handler context
-<span class="fc" id="L108">		this.sideEffectChecker = new SideEffectChecker();</span>
-<span class="fc" id="L109">		this.handlerContext = new StatementHandlerContext(this, sideEffectChecker);</span>
-<span class="fc" id="L110">	}</span>
+<span class="nc" id="L108">		this.sideEffectChecker = new SideEffectChecker();</span>
+<span class="nc" id="L109">		this.handlerContext = new StatementHandlerContext(this, sideEffectChecker);</span>
+<span class="nc" id="L110">	}</span>
 
 	/**
 	 * Parses the loop body and extracts stream operations.
@@ -117,11 +117,11 @@ public class LoopBodyParser {
 	 * @return list of prospective operations, empty if parsing fails
 	 */
 	public List&lt;ProspectiveOperation&gt; parse(Statement body, String loopVarName) {
-<span class="fc" id="L120">		List&lt;ProspectiveOperation&gt; ops = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L121">		String currentVarName = loopVarName;</span>
+<span class="nc" id="L120">		List&lt;ProspectiveOperation&gt; ops = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L121">		String currentVarName = loopVarName;</span>
 
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (body instanceof Block) {</span>
-<span class="fc" id="L124">			return parseBlock((Block) body, loopVarName, currentVarName, ops);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		if (body instanceof Block) {</span>
+<span class="nc" id="L124">			return parseBlock((Block) body, loopVarName, currentVarName, ops);</span>
 <span class="nc bnc" id="L125" title="All 2 branches missed.">		} else if (body instanceof IfStatement) {</span>
 <span class="nc" id="L126">			return parseIfStatement((IfStatement) body, loopVarName, currentVarName, ops);</span>
 		} else {
@@ -134,10 +134,10 @@ public class LoopBodyParser {
 	 */
 	private List&lt;ProspectiveOperation&gt; parseBlock(Block block, String loopVarName, 
 			String currentVarName, List&lt;ProspectiveOperation&gt; ops) {
-<span class="fc" id="L137">		List&lt;Statement&gt; statements = block.statements();</span>
+<span class="nc" id="L137">		List&lt;Statement&gt; statements = block.statements();</span>
 
 		// Check if the entire block should be treated as a single forEach
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		if (shouldTreatAsSimpleForEach(statements, loopVarName)) {</span>
 			// For single-statement blocks, unwrap to allow expression lambda
 			Statement forEachStatement;
 <span class="nc bnc" id="L143" title="All 2 branches missed.">			if (statements.size() == 1) {</span>
@@ -151,23 +151,23 @@ public class LoopBodyParser {
 <span class="nc" id="L151">			return ops;</span>
 		}
 
-<span class="fc bfc" id="L154" title="All 2 branches covered.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
-<span class="fc" id="L155">			Statement stmt = statements.get(i);</span>
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">			boolean isLast = (i == statements.size() - 1);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">		for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="nc" id="L155">			Statement stmt = statements.get(i);</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">			boolean isLast = (i == statements.size() - 1);</span>
 
-<span class="fc" id="L158">			ParseResult result = parseStatement(stmt, currentVarName, ops, isLast, statements, i, loopVarName);</span>
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">			if (result.shouldAbort()) {</span>
+<span class="nc" id="L158">			ParseResult result = parseStatement(stmt, currentVarName, ops, isLast, statements, i, loopVarName);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">			if (result.shouldAbort()) {</span>
 <span class="nc" id="L160">				return new ArrayList&lt;&gt;();</span>
 			}
-<span class="fc" id="L162">			currentVarName = result.getCurrentVarName();</span>
+<span class="nc" id="L162">			currentVarName = result.getCurrentVarName();</span>
 			
 			// Handle skip index for wrapped statements
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">			if (result.getSkipToIndex() &gt;= 0) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">			if (result.getSkipToIndex() &gt;= 0) {</span>
 <span class="nc" id="L166">				i = result.getSkipToIndex();</span>
 			}
 		}
 
-<span class="fc" id="L170">		return ops;</span>
+<span class="nc" id="L170">		return ops;</span>
 	}
 
 	/**
@@ -179,24 +179,24 @@ public class LoopBodyParser {
 			List&lt;Statement&gt; statements, int currentIndex, String loopVarName) {
 		
 		// Create parsing context
-<span class="fc" id="L182">		StatementParsingContext context = new StatementParsingContext(</span>
-<span class="fc" id="L183">				loopVarName,</span>
-<span class="fc" id="L184">				currentVarName,</span>
-<span class="fc" id="L185">				isLast,</span>
-<span class="fc" id="L186">				currentIndex,</span>
-<span class="fc" id="L187">				statements,</span>
-<span class="fc" id="L188">				ast,</span>
-<span class="fc" id="L189">				ifAnalyzer,</span>
-<span class="fc" id="L190">				reduceDetector,</span>
-<span class="fc" id="L191">				collectDetector,</span>
-<span class="fc" id="L192">				isAnyMatchPattern,</span>
-<span class="fc" id="L193">				isNoneMatchPattern,</span>
-<span class="fc" id="L194">				isAllMatchPattern);</span>
+<span class="nc" id="L182">		StatementParsingContext context = new StatementParsingContext(</span>
+<span class="nc" id="L183">				loopVarName,</span>
+<span class="nc" id="L184">				currentVarName,</span>
+<span class="nc" id="L185">				isLast,</span>
+<span class="nc" id="L186">				currentIndex,</span>
+<span class="nc" id="L187">				statements,</span>
+<span class="nc" id="L188">				ast,</span>
+<span class="nc" id="L189">				ifAnalyzer,</span>
+<span class="nc" id="L190">				reduceDetector,</span>
+<span class="nc" id="L191">				collectDetector,</span>
+<span class="nc" id="L192">				isAnyMatchPattern,</span>
+<span class="nc" id="L193">				isNoneMatchPattern,</span>
+<span class="nc" id="L194">				isAllMatchPattern);</span>
 		
 		// Find and execute the appropriate handler using the enum
-<span class="fc" id="L197">		StatementHandlerType handler = StatementHandlerType.findHandler(stmt, context);</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (handler != null) {</span>
-<span class="fc" id="L199">			return handler.handle(stmt, context, ops, handlerContext);</span>
+<span class="nc" id="L197">		StatementHandlerType handler = StatementHandlerType.findHandler(stmt, context);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		if (handler != null) {</span>
+<span class="nc" id="L199">			return handler.handle(stmt, context, ops, handlerContext);</span>
 		}
 		
 		// Fallback: no handler found - should not happen with proper handlers
@@ -283,20 +283,20 @@ public class LoopBodyParser {
 	 * Determines if the loop body should be treated as a single forEach.
 	 */
 	private boolean shouldTreatAsSimpleForEach(List&lt;Statement&gt; statements, String loopVarName) {
-<span class="pc bpc" id="L286" title="1 of 2 branches missed.">		if (statements.isEmpty()) {</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">		if (statements.isEmpty()) {</span>
 <span class="nc" id="L287">			return false;</span>
 		}
 
-<span class="pc bpc" id="L290" title="2 of 4 branches missed.">		if (statements.size() &gt;= 1 &amp;&amp; statements.get(0) instanceof IfStatement) {</span>
+<span class="nc bnc" id="L290" title="All 4 branches missed.">		if (statements.size() &gt;= 1 &amp;&amp; statements.get(0) instanceof IfStatement) {</span>
 <span class="nc" id="L291">			return false;</span>
 		}
 
-<span class="fc" id="L294">		Set&lt;String&gt; declaredVariables = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L295">		IfStatement ifStatementAfterVarDecls = null;</span>
-<span class="fc" id="L296">		boolean allSafeSideEffects = true;</span>
+<span class="nc" id="L294">		Set&lt;String&gt; declaredVariables = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L295">		IfStatement ifStatementAfterVarDecls = null;</span>
+<span class="nc" id="L296">		boolean allSafeSideEffects = true;</span>
 
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		for (Statement stmt : statements) {</span>
-<span class="pc bpc" id="L299" title="1 of 2 branches missed.">			if (stmt instanceof VariableDeclarationStatement) {</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">		for (Statement stmt : statements) {</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">			if (stmt instanceof VariableDeclarationStatement) {</span>
 <span class="nc" id="L300">				VariableDeclarationStatement varDecl = (VariableDeclarationStatement) stmt;</span>
 <span class="nc bnc" id="L301" title="All 2 branches missed.">				for (Object frag : varDecl.fragments()) {</span>
 <span class="nc bnc" id="L302" title="All 2 branches missed.">					if (frag instanceof VariableDeclarationFragment) {</span>
@@ -305,7 +305,7 @@ public class LoopBodyParser {
 				}
 				// Variable declarations are not simple side-effects
 <span class="nc" id="L307">				allSafeSideEffects = false;</span>
-<span class="pc bpc" id="L308" title="1 of 2 branches missed.">			} else if (stmt instanceof IfStatement) {</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">			} else if (stmt instanceof IfStatement) {</span>
 <span class="nc" id="L309">				IfStatement ifStmt = (IfStatement) stmt;</span>
 <span class="nc bnc" id="L310" title="All 2 branches missed.">				if (ifAnalyzer.isEarlyReturnIf(ifStmt, isAnyMatchPattern, isNoneMatchPattern, isAllMatchPattern)</span>
 <span class="nc bnc" id="L311" title="All 2 branches missed.">						|| ifAnalyzer.isIfWithContinue(ifStmt)) {</span>
@@ -316,22 +316,22 @@ public class LoopBodyParser {
 				}
 				// IF statements are not simple side-effects
 <span class="nc" id="L318">				allSafeSideEffects = false;</span>
-<span class="pc bpc" id="L319" title="2 of 4 branches missed.">			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement </span>
-<span class="pc bpc" id="L320" title="1 of 2 branches missed.">					|| stmt instanceof BreakStatement) {</span>
+<span class="nc bnc" id="L319" title="All 4 branches missed.">			} else if (stmt instanceof ReturnStatement || stmt instanceof ContinueStatement </span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">					|| stmt instanceof BreakStatement) {</span>
 <span class="nc" id="L321">				return false;</span>
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">			} else if (stmt instanceof ExpressionStatement) {</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">			} else if (stmt instanceof ExpressionStatement) {</span>
 				// Check if this is a method call or other safe side-effect
-<span class="fc" id="L324">				ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L325">				Expression expr = exprStmt.getExpression();</span>
+<span class="nc" id="L324">				ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="nc" id="L325">				Expression expr = exprStmt.getExpression();</span>
 				
-<span class="pc bpc" id="L327" title="1 of 2 branches missed.">				if (expr instanceof MethodInvocation) {</span>
-<span class="fc" id="L328">					MethodInvocation methodInv = (MethodInvocation) expr;</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">				if (expr instanceof MethodInvocation) {</span>
+<span class="nc" id="L328">					MethodInvocation methodInv = (MethodInvocation) expr;</span>
 					// Check if this is a COLLECT pattern (collection.add())
 					// If so, don't treat as simple forEach - let COLLECT handling take over
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">					if (&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
-<span class="fc" id="L332">						ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
-<span class="pc bpc" id="L333" title="1 of 2 branches missed.">						if (collectOp != null) {</span>
-<span class="fc" id="L334">							return false;  // NOT a simple forEach - it's a COLLECT pattern</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">					if (&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="nc" id="L332">						ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">						if (collectOp != null) {</span>
+<span class="nc" id="L334">							return false;  // NOT a simple forEach - it's a COLLECT pattern</span>
 						}
 					}
 					// Other method invocations are safe side-effects

@@ -72,8 +72,8 @@ public final class ReducePatternDetector {
 	private static final String JAVA_LANG_STRING = StreamConstants.JAVA_LANG_STRING;
 
 	private final ASTNode contextNode;
-<span class="fc" id="L75">	private String accumulatorVariable = null;</span>
-<span class="fc" id="L76">	private String accumulatorType = null;</span>
+<span class="nc" id="L75">	private String accumulatorVariable = null;</span>
+<span class="nc" id="L76">	private String accumulatorType = null;</span>
 
 	/**
 	 * Creates a new ReducePatternDetector.
@@ -81,12 +81,12 @@ public final class ReducePatternDetector {
 	 * @param contextNode the context node (typically the for-loop) for type resolution
 	 * @throws IllegalArgumentException if contextNode is null
 	 */
-<span class="fc" id="L84">	public ReducePatternDetector(ASTNode contextNode) {</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (contextNode == null) {</span>
+<span class="nc" id="L84">	public ReducePatternDetector(ASTNode contextNode) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">		if (contextNode == null) {</span>
 <span class="nc" id="L86">			throw new IllegalArgumentException(&quot;contextNode cannot be null&quot;);</span>
 		}
-<span class="fc" id="L88">		this.contextNode = contextNode;</span>
-<span class="fc" id="L89">	}</span>
+<span class="nc" id="L88">		this.contextNode = contextNode;</span>
+<span class="nc" id="L89">	}</span>
 
 	/**
 	 * Returns the accumulator variable name detected during the last

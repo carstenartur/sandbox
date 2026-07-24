@@ -109,20 +109,15 @@ import org.sandbox.jdt.internal.ui.search.Messages;
 <span class="nc" id="L109">			return;</span>
 		}
 <span class="nc" id="L111">		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (client == null) {</span>
-<span class="nc" id="L113">			statsLabel.setText(Messages.CommitAnalyticsView_ServiceNotInitialized);</span>
-<span class="nc" id="L114">			authorTableViewer.setInput(new Object[0]);</span>
-<span class="nc" id="L115">			return;</span>
-		}
-<span class="nc" id="L117">		List&lt;AuthorStats&gt; authors= client.getAuthorStatistics(repoName);</span>
-<span class="nc" id="L118">		authorTableViewer.setInput(authors);</span>
-<span class="nc" id="L119">		statsLabel.setText(Messages.bind(Messages.CommitAnalyticsView_ShowingAuthors,</span>
-<span class="nc" id="L120">				new Object[] {Integer.valueOf(authors.size()), repoName}));</span>
-<span class="nc" id="L121">	}</span>
+<span class="nc" id="L112">		List&lt;AuthorStats&gt; authors= client.getAuthorStatistics(repoName);</span>
+<span class="nc" id="L113">		authorTableViewer.setInput(authors);</span>
+<span class="nc" id="L114">		statsLabel.setText(Messages.bind(Messages.CommitAnalyticsView_ShowingAuthors,</span>
+<span class="nc" id="L115">				new Object[] {Integer.valueOf(authors.size()), repoName}));</span>
+<span class="nc" id="L116">	}</span>
 
 	@Override
 	public void setFocus() {
-<span class="nc" id="L125">		repositoryCombo.setFocus();</span>
-<span class="nc" id="L126">	}</span>
+<span class="nc" id="L120">		repositoryCombo.setFocus();</span>
+<span class="nc" id="L121">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

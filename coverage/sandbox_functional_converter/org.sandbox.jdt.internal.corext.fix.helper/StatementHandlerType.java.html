@@ -62,9 +62,9 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
  * @see StatementParsingContext
  * @see StatementHandlerContext
  */
-<span class="fc" id="L65">public enum StatementHandlerType {</span>
+<span class="nc" id="L65">public enum StatementHandlerType {</span>
 
-<span class="fc" id="L67">	/**</span>
+<span class="nc" id="L67">	/**</span>
 	 * Handles variable declaration statements.
 	 * 
 	 * &lt;p&gt;Variable declarations with initializers are converted to MAP operations
@@ -78,10 +78,10 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * }
 	 * }&lt;/pre&gt;
 	 */
-<span class="fc" id="L81">	VARIABLE_DECLARATION {</span>
+<span class="nc" id="L81">	VARIABLE_DECLARATION {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
-<span class="fc" id="L84">			return stmt instanceof VariableDeclarationStatement;</span>
+<span class="nc" id="L84">			return stmt instanceof VariableDeclarationStatement;</span>
 		}
 
 		@Override
@@ -252,7 +252,7 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		}
 	},
 
-<span class="fc" id="L255">	/**</span>
+<span class="nc" id="L255">	/**</span>
 	 * Handles assignment statements that transform local variables into MAP operations.
 	 * 
 	 * &lt;p&gt;This handler recognizes patterns where a variable declared within the loop body
@@ -268,12 +268,12 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * }
 	 * }&lt;/pre&gt;
 	 */
-<span class="fc" id="L271">	ASSIGNMENT_MAP {</span>
+<span class="nc" id="L271">	ASSIGNMENT_MAP {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
 			// Only handle non-last statements
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">			if (context.isLastStatement()) {</span>
-<span class="fc" id="L276">				return false;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">			if (context.isLastStatement()) {</span>
+<span class="nc" id="L276">				return false;</span>
 			}
 			
 			// Must be an ExpressionStatement with an Assignment
@@ -321,7 +321,7 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		}
 	},
 
-<span class="fc" id="L324">	/**</span>
+<span class="nc" id="L324">	/**</span>
 	 * Handles IF statements during loop body parsing.
 	 * 
 	 * &lt;p&gt;This handler processes IF statements and converts them to appropriate
@@ -333,10 +333,10 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * &lt;li&gt;&lt;b&gt;Regular IFs&lt;/b&gt;: Converted to filter operations with nested processing&lt;/li&gt;
 	 * &lt;/ul&gt;
 	 */
-<span class="fc" id="L336">	IF_STATEMENT {</span>
+<span class="nc" id="L336">	IF_STATEMENT {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
-<span class="fc" id="L339">			return stmt instanceof IfStatement;</span>
+<span class="nc" id="L339">			return stmt instanceof IfStatement;</span>
 		}
 
 		@Override
@@ -445,18 +445,18 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		}
 	},
 
-<span class="fc" id="L448">	/**</span>
+<span class="nc" id="L448">	/**</span>
 	 * Handles non-terminal statements (not the last statement in a block).
 	 * 
 	 * &lt;p&gt;Non-terminal statements that are not variable declarations or IF statements
 	 * are typically side-effect statements that need to be wrapped in a MAP operation
 	 * that returns the current variable.&lt;/p&gt;
 	 */
-<span class="fc" id="L455">	NON_TERMINAL {</span>
+<span class="nc" id="L455">	NON_TERMINAL {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
 			// This handler is for non-last statements that are not IF or VariableDeclaration
-<span class="pc bpc" id="L459" title="1 of 2 branches missed.">			return !context.isLastStatement() </span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">			return !context.isLastStatement() </span>
 <span class="nc bnc" id="L460" title="All 2 branches missed.">					&amp;&amp; !(stmt instanceof IfStatement)</span>
 <span class="nc bnc" id="L461" title="All 2 branches missed.">					&amp;&amp; !(stmt instanceof VariableDeclarationStatement);</span>
 		}
@@ -490,7 +490,7 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		}
 	},
 
-<span class="fc" id="L493">	/**</span>
+<span class="nc" id="L493">	/**</span>
 	 * Handles terminal statements (last statement in a block).
 	 * 
 	 * &lt;p&gt;Terminal statements can be:&lt;/p&gt;
@@ -500,34 +500,34 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * &lt;li&gt;&lt;b&gt;Unconvertible&lt;/b&gt;: Return, continue, throw statements&lt;/li&gt;
 	 * &lt;/ul&gt;
 	 */
-<span class="fc" id="L503">	TERMINAL {</span>
+<span class="nc" id="L503">	TERMINAL {</span>
 		@Override
 		public boolean canHandle(Statement stmt, StatementParsingContext context) {
 			// This handler is for last statements only
-<span class="fc" id="L507">			return context.isLastStatement();</span>
+<span class="nc" id="L507">			return context.isLastStatement();</span>
 		}
 
 		@Override
 		public LoopBodyParser.ParseResult handle(Statement stmt, StatementParsingContext context,
 				List&lt;ProspectiveOperation&gt; ops, StatementHandlerContext handlerContext) {
 			
-<span class="fc" id="L514">			CollectPatternDetector collectDetector = context.getCollectDetector();</span>
-<span class="fc" id="L515">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
-<span class="fc" id="L516">			String currentVarName = context.getCurrentVariableName();</span>
-<span class="fc" id="L517">			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();</span>
+<span class="nc" id="L514">			CollectPatternDetector collectDetector = context.getCollectDetector();</span>
+<span class="nc" id="L515">			ReducePatternDetector reduceDetector = context.getReduceDetector();</span>
+<span class="nc" id="L516">			String currentVarName = context.getCurrentVariableName();</span>
+<span class="nc" id="L517">			SideEffectChecker sideEffectChecker = handlerContext.getSideEffectChecker();</span>
 
 			// Try COLLECT pattern first
-<span class="fc" id="L520">			ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
-<span class="pc bpc" id="L521" title="1 of 2 branches missed.">			if (collectOp != null) {</span>
+<span class="nc" id="L520">			ProspectiveOperation collectOp = collectDetector.detectCollectOperation(stmt);</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">			if (collectOp != null) {</span>
 				// For COLLECT, we might need a MAP operation before it if the added expression is not identity
-<span class="fc" id="L523">				Expression addedExpr = collectDetector.extractCollectExpression(stmt);</span>
-<span class="pc bpc" id="L524" title="2 of 4 branches missed.">				if (addedExpr != null &amp;&amp; !isIdentityMapping(addedExpr, currentVarName)) {</span>
+<span class="nc" id="L523">				Expression addedExpr = collectDetector.extractCollectExpression(stmt);</span>
+<span class="nc bnc" id="L524" title="All 4 branches missed.">				if (addedExpr != null &amp;&amp; !isIdentityMapping(addedExpr, currentVarName)) {</span>
 					// Create a MAP operation for the transformation
-<span class="fc" id="L526">					ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);</span>
-<span class="fc" id="L527">					ops.add(mapOp);</span>
+<span class="nc" id="L526">					ProspectiveOperation mapOp = new ProspectiveOperation(addedExpr, OperationType.MAP, currentVarName);</span>
+<span class="nc" id="L527">					ops.add(mapOp);</span>
 				}
-<span class="fc" id="L529">				ops.add(collectOp);</span>
-<span class="fc" id="L530">				return new LoopBodyParser.ParseResult(currentVarName);</span>
+<span class="nc" id="L529">				ops.add(collectOp);</span>
+<span class="nc" id="L530">				return new LoopBodyParser.ParseResult(currentVarName);</span>
 			}
 
 			// Try REDUCE pattern
@@ -560,10 +560,10 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 		 * Checks if an expression is an identity mapping (just returns the variable unchanged).
 		 */
 		private boolean isIdentityMapping(Expression expr, String varName) {
-<span class="pc bpc" id="L563" title="1 of 2 branches missed.">			if (expr instanceof SimpleName) {</span>
+<span class="nc bnc" id="L563" title="All 2 branches missed.">			if (expr instanceof SimpleName) {</span>
 <span class="nc" id="L564">				return varName.equals(((SimpleName) expr).getIdentifier());</span>
 			}
-<span class="fc" id="L566">			return false;</span>
+<span class="nc" id="L566">			return false;</span>
 		}
 		
 		/**
@@ -605,9 +605,9 @@ import org.sandbox.jdt.internal.corext.util.ExpressionHelper;
 	 * @return the handler type, or null if no handler can handle the statement
 	 */
 	public static StatementHandlerType findHandler(Statement stmt, StatementParsingContext context) {
-<span class="pc bpc" id="L608" title="1 of 2 branches missed.">		for (StatementHandlerType handler : values()) {</span>
-<span class="fc bfc" id="L609" title="All 2 branches covered.">			if (handler.canHandle(stmt, context)) {</span>
-<span class="fc" id="L610">				return handler;</span>
+<span class="nc bnc" id="L608" title="All 2 branches missed.">		for (StatementHandlerType handler : values()) {</span>
+<span class="nc bnc" id="L609" title="All 2 branches missed.">			if (handler.canHandle(stmt, context)) {</span>
+<span class="nc" id="L610">				return handler;</span>
 			}
 		}
 <span class="nc" id="L613">		return null;</span>

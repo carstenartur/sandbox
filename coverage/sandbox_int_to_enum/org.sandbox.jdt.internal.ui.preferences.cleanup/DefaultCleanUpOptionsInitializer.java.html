@@ -15,16 +15,18 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
+import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
  * Default initializer for int to enum cleanup options.
  */
-<span class="fc" id="L23">public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitializer {</span>
+<span class="fc" id="L24">public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitializer {</span>
 
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
-<span class="fc" id="L27">		options.setOption(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.FALSE);</span>
-<span class="fc" id="L28">	}</span>
+<span class="fc" id="L28">		options.setOption(MYCleanUpConstants.INT_TO_ENUM_CLEANUP, CleanUpOptions.FALSE);</span>
+<span class="fc" id="L29">		options.setOption(IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.FALSE);</span>
+<span class="fc" id="L30">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

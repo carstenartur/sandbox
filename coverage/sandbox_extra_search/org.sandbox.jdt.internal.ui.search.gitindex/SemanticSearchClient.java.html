@@ -63,29 +63,38 @@ public class SemanticSearchClient {
 	/** Default base URL for the REST backend. */
 	public static final String DEFAULT_BASE_URL= &quot;http://localhost:8080&quot;; //$NON-NLS-1$
 
-<span class="nc" id="L66">	private static SemanticSearchClient instance;</span>
+<span class="nc" id="L66">	private static final Object INSTANCE_LOCK= new Object();</span>
+
+<span class="nc" id="L68">	private static volatile SemanticSearchClient instance;</span>
 
 	private final String baseUrl;
 
 	private final HttpClient httpClient;
 
-<span class="nc" id="L72">	private SemanticSearchClient(String baseUrl) {</span>
-<span class="nc" id="L73">		this.baseUrl= baseUrl;</span>
-<span class="nc" id="L74">		this.httpClient= HttpClient.newBuilder()</span>
-<span class="nc" id="L75">				.connectTimeout(Duration.ofSeconds(5))</span>
-<span class="nc" id="L76">				.build();</span>
-<span class="nc" id="L77">	}</span>
+<span class="nc" id="L74">	private SemanticSearchClient(String baseUrl) {</span>
+<span class="nc" id="L75">		this.baseUrl= baseUrl;</span>
+<span class="nc" id="L76">		this.httpClient= HttpClient.newBuilder()</span>
+<span class="nc" id="L77">				.connectTimeout(Duration.ofSeconds(5))</span>
+<span class="nc" id="L78">				.build();</span>
+<span class="nc" id="L79">	}</span>
 
 	/**
 	 * Returns the singleton instance using the default base URL.
 	 *
 	 * @return the singleton instance
 	 */
-	public static synchronized SemanticSearchClient getInstance() {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">		if (instance == null) {</span>
-<span class="nc" id="L86">			instance= new SemanticSearchClient(DEFAULT_BASE_URL);</span>
+	public static SemanticSearchClient getInstance() {
+<span class="nc" id="L87">		SemanticSearchClient current= instance;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		if (current == null) {</span>
+<span class="nc" id="L89">			synchronized (INSTANCE_LOCK) {</span>
+<span class="nc" id="L90">				current= instance;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">				if (current == null) {</span>
+<span class="nc" id="L92">					current= new SemanticSearchClient(DEFAULT_BASE_URL);</span>
+<span class="nc" id="L93">					instance= current;</span>
+				}
+			}
 		}
-<span class="nc" id="L88">		return instance;</span>
+<span class="nc" id="L97">		return current;</span>
 	}
 
 	/**
@@ -95,10 +104,12 @@ public class SemanticSearchClient {
 	 * @param baseUrl the base URL for the REST backend (e.g.
 	 *            {@code http://localhost:8080})
 	 */
-	public static synchronized void initialize(String baseUrl) {
-<span class="nc" id="L99">		instance= new SemanticSearchClient(</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">				baseUrl != null ? baseUrl : DEFAULT_BASE_URL);</span>
-<span class="nc" id="L101">	}</span>
+	public static void initialize(String baseUrl) {
+<span class="nc" id="L108">		synchronized (INSTANCE_LOCK) {</span>
+<span class="nc" id="L109">			instance= new SemanticSearchClient(</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">					baseUrl != null ? baseUrl : DEFAULT_BASE_URL);</span>
+		}
+<span class="nc" id="L112">	}</span>
 
 	/**
 	 * Checks whether the REST backend is reachable.
@@ -107,19 +118,19 @@ public class SemanticSearchClient {
 	 */
 	public boolean isAvailable() {
 		try {
-<span class="nc" id="L110">			HttpRequest req= HttpRequest.newBuilder()</span>
-<span class="nc" id="L111">					.uri(URI.create(baseUrl + &quot;/api/health&quot;)) //$NON-NLS-1$</span>
-<span class="nc" id="L112">					.timeout(Duration.ofSeconds(3))</span>
-<span class="nc" id="L113">					.GET()</span>
-<span class="nc" id="L114">					.build();</span>
-<span class="nc" id="L115">			HttpResponse&lt;String&gt; resp= httpClient.send(req,</span>
-<span class="nc" id="L116">					HttpResponse.BodyHandlers.ofString());</span>
-<span class="nc bnc" id="L117" title="All 2 branches missed.">			return resp.statusCode() == 200;</span>
-<span class="nc" id="L118">		} catch (InterruptedException e) {</span>
-<span class="nc" id="L119">			Thread.currentThread().interrupt();</span>
-<span class="nc" id="L120">			return false;</span>
-<span class="nc" id="L121">		} catch (IOException e) {</span>
-<span class="nc" id="L122">			return false;</span>
+<span class="nc" id="L121">			HttpRequest req= HttpRequest.newBuilder()</span>
+<span class="nc" id="L122">					.uri(URI.create(baseUrl + &quot;/api/health&quot;)) //$NON-NLS-1$</span>
+<span class="nc" id="L123">					.timeout(Duration.ofSeconds(3))</span>
+<span class="nc" id="L124">					.GET()</span>
+<span class="nc" id="L125">					.build();</span>
+<span class="nc" id="L126">			HttpResponse&lt;String&gt; resp= httpClient.send(req,</span>
+<span class="nc" id="L127">					HttpResponse.BodyHandlers.ofString());</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">			return resp.statusCode() == 200;</span>
+<span class="nc" id="L129">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L130">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L131">			return false;</span>
+<span class="nc" id="L132">		} catch (IOException e) {</span>
+<span class="nc" id="L133">			return false;</span>
 		}
 	}
 
@@ -133,8 +144,8 @@ public class SemanticSearchClient {
 	 */
 	public List&lt;SearchHit&gt; searchByType(String repoName, String query,
 			int maxResults) {
-<span class="nc" id="L136">		String url= buildUrl(&quot;/api/search/types&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
-<span class="nc" id="L137">		return getSearchHits(url);</span>
+<span class="nc" id="L147">		String url= buildUrl(&quot;/api/search/types&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
+<span class="nc" id="L148">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -147,8 +158,8 @@ public class SemanticSearchClient {
 	 */
 	public List&lt;SearchHit&gt; searchBySymbol(String repoName, String query,
 			int maxResults) {
-<span class="nc" id="L150">		String url= buildUrl(&quot;/api/search/symbols&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
-<span class="nc" id="L151">		return getSearchHits(url);</span>
+<span class="nc" id="L161">		String url= buildUrl(&quot;/api/search/symbols&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
+<span class="nc" id="L162">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -161,8 +172,8 @@ public class SemanticSearchClient {
 	 */
 	public List&lt;SearchHit&gt; searchByChangedPath(String repoName, String query,
 			int maxResults) {
-<span class="nc" id="L164">		String url= buildUrl(&quot;/api/search/paths&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
-<span class="nc" id="L165">		return getSearchHits(url);</span>
+<span class="nc" id="L175">		String url= buildUrl(&quot;/api/search/paths&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
+<span class="nc" id="L176">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -175,8 +186,8 @@ public class SemanticSearchClient {
 	 */
 	public List&lt;SearchHit&gt; searchCommitMessages(String repoName, String query,
 			int maxResults) {
-<span class="nc" id="L178">		String url= buildUrl(&quot;/api/search/commits&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
-<span class="nc" id="L179">		return getSearchHits(url);</span>
+<span class="nc" id="L189">		String url= buildUrl(&quot;/api/search/commits&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
+<span class="nc" id="L190">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -189,8 +200,8 @@ public class SemanticSearchClient {
 	 */
 	public List&lt;SearchHit&gt; semanticSearch(String repoName, String query,
 			int maxResults) {
-<span class="nc" id="L192">		String url= buildUrl(&quot;/api/search/semantic&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
-<span class="nc" id="L193">		return getSearchHits(url);</span>
+<span class="nc" id="L203">		String url= buildUrl(&quot;/api/search/semantic&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
+<span class="nc" id="L204">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -203,8 +214,8 @@ public class SemanticSearchClient {
 	 */
 	public List&lt;SearchHit&gt; hybridSearch(String repoName, String query,
 			int maxResults) {
-<span class="nc" id="L206">		String url= buildUrl(&quot;/api/search/hybrid&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
-<span class="nc" id="L207">		return getSearchHits(url);</span>
+<span class="nc" id="L217">		String url= buildUrl(&quot;/api/search/hybrid&quot;, repoName, query, maxResults); //$NON-NLS-1$</span>
+<span class="nc" id="L218">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -219,10 +230,10 @@ public class SemanticSearchClient {
 			int maxResults) {
 		// q= is sent alongside blobId= because the backend validates that
 		// both repo and q are present for all /api/search/* requests.
-<span class="nc" id="L222">		String url= baseUrl + &quot;/api/search/similar?repo=&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L223">				+ encode(repoName) + &quot;&amp;q=&quot; + encode(blobId) //$NON-NLS-1$</span>
-<span class="nc" id="L224">				+ &quot;&amp;blobId=&quot; + encode(blobId) + &quot;&amp;limit=&quot; + maxResults; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L225">		return getSearchHits(url);</span>
+<span class="nc" id="L233">		String url= baseUrl + &quot;/api/search/similar?repo=&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L234">				+ encode(repoName) + &quot;&amp;q=&quot; + encode(blobId) //$NON-NLS-1$</span>
+<span class="nc" id="L235">				+ &quot;&amp;blobId=&quot; + encode(blobId) + &quot;&amp;limit=&quot; + maxResults; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L236">		return getSearchHits(url);</span>
 	}
 
 	/**
@@ -236,10 +247,10 @@ public class SemanticSearchClient {
 	public List&lt;SearchHit&gt; getFileHistory(String repoName, String path) {
 		// q= is sent alongside path= because the backend validates that
 		// both repo and q are present for all /api/search/* requests.
-<span class="nc" id="L239">		String url= baseUrl + &quot;/api/search/filehistory?repo=&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L240">				+ encode(repoName) + &quot;&amp;path=&quot; + encode(path) //$NON-NLS-1$</span>
-<span class="nc" id="L241">				+ &quot;&amp;q=&quot; + encode(path); //$NON-NLS-1$</span>
-<span class="nc" id="L242">		return getFileHistoryHits(url);</span>
+<span class="nc" id="L250">		String url= baseUrl + &quot;/api/search/filehistory?repo=&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L251">				+ encode(repoName) + &quot;&amp;path=&quot; + encode(path) //$NON-NLS-1$</span>
+<span class="nc" id="L252">				+ &quot;&amp;q=&quot; + encode(path); //$NON-NLS-1$</span>
+<span class="nc" id="L253">		return getFileHistoryHits(url);</span>
 	}
 
 	/**
@@ -249,92 +260,92 @@ public class SemanticSearchClient {
 	 * @return list of author statistics
 	 */
 	public List&lt;AuthorStats&gt; getAuthorStatistics(String repoName) {
-<span class="nc" id="L252">		String url= baseUrl + &quot;/api/analytics/authors?repo=&quot; + encode(repoName); //$NON-NLS-1$</span>
-<span class="nc" id="L253">		return getAuthorStats(url);</span>
+<span class="nc" id="L263">		String url= baseUrl + &quot;/api/analytics/authors?repo=&quot; + encode(repoName); //$NON-NLS-1$</span>
+<span class="nc" id="L264">		return getAuthorStats(url);</span>
 	}
 
 	// ---- private helpers ---------------------------------------------------
 
 	private String buildUrl(String path, String repoName, String query,
 			int limit) {
-<span class="nc" id="L260">		return baseUrl + path + &quot;?repo=&quot; + encode(repoName) //$NON-NLS-1$</span>
-<span class="nc" id="L261">				+ &quot;&amp;q=&quot; + encode(query) + &quot;&amp;limit=&quot; + limit; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L271">		return baseUrl + path + &quot;?repo=&quot; + encode(repoName) //$NON-NLS-1$</span>
+<span class="nc" id="L272">				+ &quot;&amp;q=&quot; + encode(query) + &quot;&amp;limit=&quot; + limit; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static String encode(String value) {
-<span class="nc bnc" id="L265" title="All 2 branches missed.">		if (value == null) {</span>
-<span class="nc" id="L266">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L277">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L268">		return URLEncoder.encode(value, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L279">		return URLEncoder.encode(value, StandardCharsets.UTF_8);</span>
 	}
 
 	private List&lt;SearchHit&gt; getSearchHits(String url) {
 		try {
-<span class="nc" id="L273">			String body= get(url);</span>
-<span class="nc bnc" id="L274" title="All 2 branches missed.">			if (body == null) {</span>
-<span class="nc" id="L275">				return Collections.emptyList();</span>
+<span class="nc" id="L284">			String body= get(url);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">			if (body == null) {</span>
+<span class="nc" id="L286">				return Collections.emptyList();</span>
 			}
-<span class="nc" id="L277">			return parseSearchHits(body);</span>
-<span class="nc" id="L278">		} catch (InterruptedException e) {</span>
-<span class="nc" id="L279">			Thread.currentThread().interrupt();</span>
-<span class="nc" id="L280">			LOG.error(&quot;SemanticSearchClient: request interrupted: &quot; + url, e); //$NON-NLS-1$</span>
-<span class="nc" id="L281">			return Collections.emptyList();</span>
-<span class="nc" id="L282">		} catch (IOException e) {</span>
-<span class="nc" id="L283">			LOG.error(&quot;SemanticSearchClient: request failed: &quot; + url, e); //$NON-NLS-1$</span>
-<span class="nc" id="L284">			return Collections.emptyList();</span>
+<span class="nc" id="L288">			return parseSearchHits(body);</span>
+<span class="nc" id="L289">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L290">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L291">			LOG.error(&quot;SemanticSearchClient: request interrupted: &quot; + url, e); //$NON-NLS-1$</span>
+<span class="nc" id="L292">			return Collections.emptyList();</span>
+<span class="nc" id="L293">		} catch (IOException e) {</span>
+<span class="nc" id="L294">			LOG.error(&quot;SemanticSearchClient: request failed: &quot; + url, e); //$NON-NLS-1$</span>
+<span class="nc" id="L295">			return Collections.emptyList();</span>
 		}
 	}
 
 	private List&lt;SearchHit&gt; getFileHistoryHits(String url) {
 		try {
-<span class="nc" id="L290">			String body= get(url);</span>
-<span class="nc bnc" id="L291" title="All 2 branches missed.">			if (body == null) {</span>
-<span class="nc" id="L292">				return Collections.emptyList();</span>
+<span class="nc" id="L301">			String body= get(url);</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">			if (body == null) {</span>
+<span class="nc" id="L303">				return Collections.emptyList();</span>
 			}
-<span class="nc" id="L294">			return parseFileHistoryHits(body);</span>
-<span class="nc" id="L295">		} catch (InterruptedException e) {</span>
-<span class="nc" id="L296">			Thread.currentThread().interrupt();</span>
-<span class="nc" id="L297">			LOG.error(&quot;SemanticSearchClient: request interrupted: &quot; + url, e); //$NON-NLS-1$</span>
-<span class="nc" id="L298">			return Collections.emptyList();</span>
-<span class="nc" id="L299">		} catch (IOException e) {</span>
-<span class="nc" id="L300">			LOG.error(&quot;SemanticSearchClient: request failed: &quot; + url, e); //$NON-NLS-1$</span>
-<span class="nc" id="L301">			return Collections.emptyList();</span>
+<span class="nc" id="L305">			return parseFileHistoryHits(body);</span>
+<span class="nc" id="L306">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L307">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L308">			LOG.error(&quot;SemanticSearchClient: request interrupted: &quot; + url, e); //$NON-NLS-1$</span>
+<span class="nc" id="L309">			return Collections.emptyList();</span>
+<span class="nc" id="L310">		} catch (IOException e) {</span>
+<span class="nc" id="L311">			LOG.error(&quot;SemanticSearchClient: request failed: &quot; + url, e); //$NON-NLS-1$</span>
+<span class="nc" id="L312">			return Collections.emptyList();</span>
 		}
 	}
 
 	private List&lt;AuthorStats&gt; getAuthorStats(String url) {
 		try {
-<span class="nc" id="L307">			String body= get(url);</span>
-<span class="nc bnc" id="L308" title="All 2 branches missed.">			if (body == null) {</span>
-<span class="nc" id="L309">				return Collections.emptyList();</span>
+<span class="nc" id="L318">			String body= get(url);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">			if (body == null) {</span>
+<span class="nc" id="L320">				return Collections.emptyList();</span>
 			}
-<span class="nc" id="L311">			return parseAuthorStats(body);</span>
-<span class="nc" id="L312">		} catch (InterruptedException e) {</span>
-<span class="nc" id="L313">			Thread.currentThread().interrupt();</span>
-<span class="nc" id="L314">			LOG.error(&quot;SemanticSearchClient: request interrupted: &quot; + url, e); //$NON-NLS-1$</span>
-<span class="nc" id="L315">			return Collections.emptyList();</span>
-<span class="nc" id="L316">		} catch (IOException e) {</span>
-<span class="nc" id="L317">			LOG.error(&quot;SemanticSearchClient: request failed: &quot; + url, e); //$NON-NLS-1$</span>
-<span class="nc" id="L318">			return Collections.emptyList();</span>
+<span class="nc" id="L322">			return parseAuthorStats(body);</span>
+<span class="nc" id="L323">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L324">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L325">			LOG.error(&quot;SemanticSearchClient: request interrupted: &quot; + url, e); //$NON-NLS-1$</span>
+<span class="nc" id="L326">			return Collections.emptyList();</span>
+<span class="nc" id="L327">		} catch (IOException e) {</span>
+<span class="nc" id="L328">			LOG.error(&quot;SemanticSearchClient: request failed: &quot; + url, e); //$NON-NLS-1$</span>
+<span class="nc" id="L329">			return Collections.emptyList();</span>
 		}
 	}
 
 	private String get(String url)
 			throws IOException, InterruptedException {
-<span class="nc" id="L324">		HttpRequest req= HttpRequest.newBuilder()</span>
-<span class="nc" id="L325">				.uri(URI.create(url))</span>
-<span class="nc" id="L326">				.timeout(Duration.ofSeconds(30))</span>
-<span class="nc" id="L327">				.header(&quot;Accept&quot;, &quot;application/json&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L328">				.GET()</span>
-<span class="nc" id="L329">				.build();</span>
-<span class="nc" id="L330">		HttpResponse&lt;String&gt; resp= httpClient.send(req,</span>
-<span class="nc" id="L331">				HttpResponse.BodyHandlers.ofString());</span>
-<span class="nc bnc" id="L332" title="All 2 branches missed.">		if (resp.statusCode() != 200) {</span>
-<span class="nc" id="L333">			LOG.warn(&quot;SemanticSearchClient: HTTP &quot; + resp.statusCode() //$NON-NLS-1$</span>
-<span class="nc" id="L334">					+ &quot; for &quot; + url); //$NON-NLS-1$</span>
-<span class="nc" id="L335">			return null;</span>
+<span class="nc" id="L335">		HttpRequest req= HttpRequest.newBuilder()</span>
+<span class="nc" id="L336">				.uri(URI.create(url))</span>
+<span class="nc" id="L337">				.timeout(Duration.ofSeconds(30))</span>
+<span class="nc" id="L338">				.header(&quot;Accept&quot;, &quot;application/json&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L339">				.GET()</span>
+<span class="nc" id="L340">				.build();</span>
+<span class="nc" id="L341">		HttpResponse&lt;String&gt; resp= httpClient.send(req,</span>
+<span class="nc" id="L342">				HttpResponse.BodyHandlers.ofString());</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">		if (resp.statusCode() != 200) {</span>
+<span class="nc" id="L344">			LOG.warn(&quot;SemanticSearchClient: HTTP &quot; + resp.statusCode() //$NON-NLS-1$</span>
+<span class="nc" id="L345">					+ &quot; for &quot; + url); //$NON-NLS-1$</span>
+<span class="nc" id="L346">			return null;</span>
 		}
-<span class="nc" id="L337">		return resp.body();</span>
+<span class="nc" id="L348">		return resp.body();</span>
 	}
 
 	/**
@@ -347,79 +358,79 @@ public class SemanticSearchClient {
 	 * &lt;/p&gt;
 	 */
 	private static List&lt;SearchHit&gt; parseSearchHits(String json) {
-<span class="nc" id="L350">		List&lt;SearchHit&gt; hits= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L351">		int resultsStart= json.indexOf(&quot;\&quot;results\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L352" title="All 2 branches missed.">		if (resultsStart &lt; 0) {</span>
-<span class="nc" id="L353">			return hits;</span>
+<span class="nc" id="L361">		List&lt;SearchHit&gt; hits= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L362">		int resultsStart= json.indexOf(&quot;\&quot;results\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">		if (resultsStart &lt; 0) {</span>
+<span class="nc" id="L364">			return hits;</span>
 		}
-<span class="nc" id="L355">		int arrayStart= json.indexOf('[', resultsStart);</span>
-<span class="nc" id="L356">		int arrayEnd= findMatchingBracket(json, arrayStart);</span>
-<span class="nc bnc" id="L357" title="All 4 branches missed.">		if (arrayStart &lt; 0 || arrayEnd &lt; 0) {</span>
-<span class="nc" id="L358">			return hits;</span>
+<span class="nc" id="L366">		int arrayStart= json.indexOf('[', resultsStart);</span>
+<span class="nc" id="L367">		int arrayEnd= findMatchingBracket(json, arrayStart);</span>
+<span class="nc bnc" id="L368" title="All 4 branches missed.">		if (arrayStart &lt; 0 || arrayEnd &lt; 0) {</span>
+<span class="nc" id="L369">			return hits;</span>
 		}
-<span class="nc" id="L360">		String array= json.substring(arrayStart + 1, arrayEnd);</span>
-<span class="nc" id="L361">		List&lt;String&gt; objects= splitJsonObjects(array);</span>
-<span class="nc bnc" id="L362" title="All 2 branches missed.">		for (String obj : objects) {</span>
-<span class="nc" id="L363">			SearchHit hit= new SearchHit();</span>
-<span class="nc" id="L364">			hit.setPath(extractString(obj, &quot;filePath&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L365">			hit.setClassName(extractString(obj, &quot;declaredTypes&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L366">			hit.setMethodName(extractString(obj, &quot;declaredMethods&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L367">			hit.setCommitHash(extractString(obj, &quot;commitObjectId&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L368">			hit.setContent(extractString(obj, &quot;packageName&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L369">			hits.add(hit);</span>
+<span class="nc" id="L371">		String array= json.substring(arrayStart + 1, arrayEnd);</span>
+<span class="nc" id="L372">		List&lt;String&gt; objects= splitJsonObjects(array);</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">		for (String obj : objects) {</span>
+<span class="nc" id="L374">			SearchHit hit= new SearchHit();</span>
+<span class="nc" id="L375">			hit.setPath(extractString(obj, &quot;filePath&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L376">			hit.setClassName(extractString(obj, &quot;declaredTypes&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L377">			hit.setMethodName(extractString(obj, &quot;declaredMethods&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L378">			hit.setCommitHash(extractString(obj, &quot;commitObjectId&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L379">			hit.setContent(extractString(obj, &quot;packageName&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L380">			hits.add(hit);</span>
 		}
-<span class="nc" id="L371">		return hits;</span>
+<span class="nc" id="L382">		return hits;</span>
 	}
 
 	/**
 	 * Parses file history results (from the {@code /filehistory} endpoint).
 	 */
 	private static List&lt;SearchHit&gt; parseFileHistoryHits(String json) {
-<span class="nc" id="L378">		List&lt;SearchHit&gt; hits= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L379">		int resultsStart= json.indexOf(&quot;\&quot;results\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L380" title="All 2 branches missed.">		if (resultsStart &lt; 0) {</span>
-<span class="nc" id="L381">			return hits;</span>
+<span class="nc" id="L389">		List&lt;SearchHit&gt; hits= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L390">		int resultsStart= json.indexOf(&quot;\&quot;results\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">		if (resultsStart &lt; 0) {</span>
+<span class="nc" id="L392">			return hits;</span>
 		}
-<span class="nc" id="L383">		int arrayStart= json.indexOf('[', resultsStart);</span>
-<span class="nc" id="L384">		int arrayEnd= findMatchingBracket(json, arrayStart);</span>
-<span class="nc bnc" id="L385" title="All 4 branches missed.">		if (arrayStart &lt; 0 || arrayEnd &lt; 0) {</span>
-<span class="nc" id="L386">			return hits;</span>
+<span class="nc" id="L394">		int arrayStart= json.indexOf('[', resultsStart);</span>
+<span class="nc" id="L395">		int arrayEnd= findMatchingBracket(json, arrayStart);</span>
+<span class="nc bnc" id="L396" title="All 4 branches missed.">		if (arrayStart &lt; 0 || arrayEnd &lt; 0) {</span>
+<span class="nc" id="L397">			return hits;</span>
 		}
-<span class="nc" id="L388">		String array= json.substring(arrayStart + 1, arrayEnd);</span>
-<span class="nc" id="L389">		List&lt;String&gt; objects= splitJsonObjects(array);</span>
-<span class="nc bnc" id="L390" title="All 2 branches missed.">		for (String obj : objects) {</span>
-<span class="nc" id="L391">			SearchHit hit= new SearchHit();</span>
-<span class="nc" id="L392">			hit.setPath(extractString(obj, &quot;filePath&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L393">			hit.setCommitHash(extractString(obj, &quot;commitObjectId&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L394">			hits.add(hit);</span>
+<span class="nc" id="L399">		String array= json.substring(arrayStart + 1, arrayEnd);</span>
+<span class="nc" id="L400">		List&lt;String&gt; objects= splitJsonObjects(array);</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">		for (String obj : objects) {</span>
+<span class="nc" id="L402">			SearchHit hit= new SearchHit();</span>
+<span class="nc" id="L403">			hit.setPath(extractString(obj, &quot;filePath&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L404">			hit.setCommitHash(extractString(obj, &quot;commitObjectId&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L405">			hits.add(hit);</span>
 		}
-<span class="nc" id="L396">		return hits;</span>
+<span class="nc" id="L407">		return hits;</span>
 	}
 
 	/**
 	 * Parses author statistics from the {@code /analytics/authors} endpoint.
 	 */
 	private static List&lt;AuthorStats&gt; parseAuthorStats(String json) {
-<span class="nc" id="L403">		List&lt;AuthorStats&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L404">		int authorsStart= json.indexOf(&quot;\&quot;authors\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L405" title="All 2 branches missed.">		if (authorsStart &lt; 0) {</span>
-<span class="nc" id="L406">			return result;</span>
+<span class="nc" id="L414">		List&lt;AuthorStats&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L415">		int authorsStart= json.indexOf(&quot;\&quot;authors\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">		if (authorsStart &lt; 0) {</span>
+<span class="nc" id="L417">			return result;</span>
 		}
-<span class="nc" id="L408">		int arrayStart= json.indexOf('[', authorsStart);</span>
-<span class="nc" id="L409">		int arrayEnd= findMatchingBracket(json, arrayStart);</span>
-<span class="nc bnc" id="L410" title="All 4 branches missed.">		if (arrayStart &lt; 0 || arrayEnd &lt; 0) {</span>
-<span class="nc" id="L411">			return result;</span>
+<span class="nc" id="L419">		int arrayStart= json.indexOf('[', authorsStart);</span>
+<span class="nc" id="L420">		int arrayEnd= findMatchingBracket(json, arrayStart);</span>
+<span class="nc bnc" id="L421" title="All 4 branches missed.">		if (arrayStart &lt; 0 || arrayEnd &lt; 0) {</span>
+<span class="nc" id="L422">			return result;</span>
 		}
-<span class="nc" id="L413">		String array= json.substring(arrayStart + 1, arrayEnd);</span>
-<span class="nc" id="L414">		List&lt;String&gt; objects= splitJsonObjects(array);</span>
-<span class="nc bnc" id="L415" title="All 2 branches missed.">		for (String obj : objects) {</span>
-<span class="nc" id="L416">			AuthorStats stats= new AuthorStats();</span>
-<span class="nc" id="L417">			stats.setAuthor(extractString(obj, &quot;name&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L418">			stats.setAuthorEmail(extractString(obj, &quot;email&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L419">			stats.setCommitCount(extractInt(obj, &quot;commits&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L420">			result.add(stats);</span>
+<span class="nc" id="L424">		String array= json.substring(arrayStart + 1, arrayEnd);</span>
+<span class="nc" id="L425">		List&lt;String&gt; objects= splitJsonObjects(array);</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">		for (String obj : objects) {</span>
+<span class="nc" id="L427">			AuthorStats stats= new AuthorStats();</span>
+<span class="nc" id="L428">			stats.setAuthor(extractString(obj, &quot;name&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L429">			stats.setAuthorEmail(extractString(obj, &quot;email&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L430">			stats.setCommitCount(extractInt(obj, &quot;commits&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L431">			result.add(stats);</span>
 		}
-<span class="nc" id="L422">		return result;</span>
+<span class="nc" id="L433">		return result;</span>
 	}
 
 	/**
@@ -427,33 +438,33 @@ public class SemanticSearchClient {
 	 * {@code start}.
 	 */
 	private static int findMatchingBracket(String s, int start) {
-<span class="nc bnc" id="L430" title="All 4 branches missed.">		if (start &lt; 0 || start &gt;= s.length()) {</span>
-<span class="nc" id="L431">			return -1;</span>
+<span class="nc bnc" id="L441" title="All 4 branches missed.">		if (start &lt; 0 || start &gt;= s.length()) {</span>
+<span class="nc" id="L442">			return -1;</span>
 		}
-<span class="nc" id="L433">		char open= s.charAt(start);</span>
-<span class="nc bnc" id="L434" title="All 2 branches missed.">		char close= open == '[' ? ']' : '}';</span>
-<span class="nc" id="L435">		int depth= 0;</span>
-<span class="nc" id="L436">		boolean inString= false;</span>
-<span class="nc bnc" id="L437" title="All 2 branches missed.">		for (int i= start; i &lt; s.length(); i++) {</span>
-<span class="nc" id="L438">			char c= s.charAt(i);</span>
-<span class="nc bnc" id="L439" title="All 4 branches missed.">			if (c == '\\' &amp;&amp; inString) {</span>
-<span class="nc" id="L440">				i++; // skip escaped character</span>
-<span class="nc" id="L441">				continue;</span>
+<span class="nc" id="L444">		char open= s.charAt(start);</span>
+<span class="nc bnc" id="L445" title="All 2 branches missed.">		char close= open == '[' ? ']' : '}';</span>
+<span class="nc" id="L446">		int depth= 0;</span>
+<span class="nc" id="L447">		boolean inString= false;</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">		for (int i= start; i &lt; s.length(); i++) {</span>
+<span class="nc" id="L449">			char c= s.charAt(i);</span>
+<span class="nc bnc" id="L450" title="All 4 branches missed.">			if (c == '\\' &amp;&amp; inString) {</span>
+<span class="nc" id="L451">				i++; // skip escaped character</span>
+<span class="nc" id="L452">				continue;</span>
 			}
-<span class="nc bnc" id="L443" title="All 2 branches missed.">			if (c == '&quot;') {</span>
-<span class="nc bnc" id="L444" title="All 2 branches missed.">				inString= !inString;</span>
-<span class="nc bnc" id="L445" title="All 2 branches missed.">			} else if (!inString) {</span>
-<span class="nc bnc" id="L446" title="All 2 branches missed.">				if (c == open) {</span>
-<span class="nc" id="L447">					depth++;</span>
-<span class="nc bnc" id="L448" title="All 2 branches missed.">				} else if (c == close) {</span>
-<span class="nc" id="L449">					depth--;</span>
-<span class="nc bnc" id="L450" title="All 2 branches missed.">					if (depth == 0) {</span>
-<span class="nc" id="L451">						return i;</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">			if (c == '&quot;') {</span>
+<span class="nc bnc" id="L455" title="All 2 branches missed.">				inString= !inString;</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">			} else if (!inString) {</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">				if (c == open) {</span>
+<span class="nc" id="L458">					depth++;</span>
+<span class="nc bnc" id="L459" title="All 2 branches missed.">				} else if (c == close) {</span>
+<span class="nc" id="L460">					depth--;</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">					if (depth == 0) {</span>
+<span class="nc" id="L462">						return i;</span>
 					}
 				}
 			}
 		}
-<span class="nc" id="L456">		return -1;</span>
+<span class="nc" id="L467">		return -1;</span>
 	}
 
 	/**
@@ -461,21 +472,21 @@ public class SemanticSearchClient {
 	 * strings.
 	 */
 	private static List&lt;String&gt; splitJsonObjects(String arrayBody) {
-<span class="nc" id="L464">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L465">		int i= 0;</span>
-<span class="nc bnc" id="L466" title="All 2 branches missed.">		while (i &lt; arrayBody.length()) {</span>
-<span class="nc" id="L467">			int objStart= arrayBody.indexOf('{', i);</span>
-<span class="nc bnc" id="L468" title="All 2 branches missed.">			if (objStart &lt; 0) {</span>
-<span class="nc" id="L469">				break;</span>
+<span class="nc" id="L475">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L476">		int i= 0;</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">		while (i &lt; arrayBody.length()) {</span>
+<span class="nc" id="L478">			int objStart= arrayBody.indexOf('{', i);</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">			if (objStart &lt; 0) {</span>
+<span class="nc" id="L480">				break;</span>
 			}
-<span class="nc" id="L471">			int objEnd= findMatchingBracket(arrayBody, objStart);</span>
-<span class="nc bnc" id="L472" title="All 2 branches missed.">			if (objEnd &lt; 0) {</span>
-<span class="nc" id="L473">				break;</span>
+<span class="nc" id="L482">			int objEnd= findMatchingBracket(arrayBody, objStart);</span>
+<span class="nc bnc" id="L483" title="All 2 branches missed.">			if (objEnd &lt; 0) {</span>
+<span class="nc" id="L484">				break;</span>
 			}
-<span class="nc" id="L475">			result.add(arrayBody.substring(objStart, objEnd + 1));</span>
-<span class="nc" id="L476">			i= objEnd + 1;</span>
+<span class="nc" id="L486">			result.add(arrayBody.substring(objStart, objEnd + 1));</span>
+<span class="nc" id="L487">			i= objEnd + 1;</span>
 		}
-<span class="nc" id="L478">		return result;</span>
+<span class="nc" id="L489">		return result;</span>
 	}
 
 	/**
@@ -483,45 +494,45 @@ public class SemanticSearchClient {
 	 * fragment.
 	 */
 	private static String extractString(String obj, String key) {
-<span class="nc" id="L486">		String search= &quot;\&quot;&quot; + key + &quot;\&quot;:\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L487">		int start= obj.indexOf(search);</span>
-<span class="nc bnc" id="L488" title="All 2 branches missed.">		if (start &lt; 0) {</span>
-<span class="nc" id="L489">			return null;</span>
+<span class="nc" id="L497">		String search= &quot;\&quot;&quot; + key + &quot;\&quot;:\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L498">		int start= obj.indexOf(search);</span>
+<span class="nc bnc" id="L499" title="All 2 branches missed.">		if (start &lt; 0) {</span>
+<span class="nc" id="L500">			return null;</span>
 		}
-<span class="nc" id="L491">		start+= search.length();</span>
-<span class="nc" id="L492">		StringBuilder sb= new StringBuilder();</span>
-<span class="nc bnc" id="L493" title="All 2 branches missed.">		for (int i= start; i &lt; obj.length(); i++) {</span>
-<span class="nc" id="L494">			char c= obj.charAt(i);</span>
-<span class="nc bnc" id="L495" title="All 4 branches missed.">			if (c == '\\' &amp;&amp; i + 1 &lt; obj.length()) {</span>
-<span class="nc" id="L496">				char next= obj.charAt(i + 1);</span>
-<span class="nc bnc" id="L497" title="All 6 branches missed.">				switch (next) {</span>
+<span class="nc" id="L502">		start+= search.length();</span>
+<span class="nc" id="L503">		StringBuilder sb= new StringBuilder();</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">		for (int i= start; i &lt; obj.length(); i++) {</span>
+<span class="nc" id="L505">			char c= obj.charAt(i);</span>
+<span class="nc bnc" id="L506" title="All 4 branches missed.">			if (c == '\\' &amp;&amp; i + 1 &lt; obj.length()) {</span>
+<span class="nc" id="L507">				char next= obj.charAt(i + 1);</span>
+<span class="nc bnc" id="L508" title="All 6 branches missed.">				switch (next) {</span>
 					case '&quot;':
-<span class="nc" id="L499">						sb.append('&quot;');</span>
-<span class="nc" id="L500">						break;</span>
+<span class="nc" id="L510">						sb.append('&quot;');</span>
+<span class="nc" id="L511">						break;</span>
 					case '\\':
-<span class="nc" id="L502">						sb.append('\\');</span>
-<span class="nc" id="L503">						break;</span>
+<span class="nc" id="L513">						sb.append('\\');</span>
+<span class="nc" id="L514">						break;</span>
 					case 'n':
-<span class="nc" id="L505">						sb.append('\n');</span>
-<span class="nc" id="L506">						break;</span>
+<span class="nc" id="L516">						sb.append('\n');</span>
+<span class="nc" id="L517">						break;</span>
 					case 'r':
-<span class="nc" id="L508">						sb.append('\r');</span>
-<span class="nc" id="L509">						break;</span>
+<span class="nc" id="L519">						sb.append('\r');</span>
+<span class="nc" id="L520">						break;</span>
 					case 't':
-<span class="nc" id="L511">						sb.append('\t');</span>
-<span class="nc" id="L512">						break;</span>
+<span class="nc" id="L522">						sb.append('\t');</span>
+<span class="nc" id="L523">						break;</span>
 					default:
-<span class="nc" id="L514">						sb.append(next);</span>
+<span class="nc" id="L525">						sb.append(next);</span>
 						break;
 				}
-<span class="nc" id="L517">				i++;</span>
-<span class="nc bnc" id="L518" title="All 2 branches missed.">			} else if (c == '&quot;') {</span>
-<span class="nc" id="L519">				break;</span>
+<span class="nc" id="L528">				i++;</span>
+<span class="nc bnc" id="L529" title="All 2 branches missed.">			} else if (c == '&quot;') {</span>
+<span class="nc" id="L530">				break;</span>
 			} else {
-<span class="nc" id="L521">				sb.append(c);</span>
+<span class="nc" id="L532">				sb.append(c);</span>
 			}
 		}
-<span class="nc" id="L524">		return sb.toString();</span>
+<span class="nc" id="L535">		return sb.toString();</span>
 	}
 
 	/**
@@ -529,32 +540,32 @@ public class SemanticSearchClient {
 	 * fragment.
 	 */
 	private static int extractInt(String obj, String key) {
-<span class="nc" id="L532">		String search= &quot;\&quot;&quot; + key + &quot;\&quot;:&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L533">		int start= obj.indexOf(search);</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">		if (start &lt; 0) {</span>
-<span class="nc" id="L535">			return 0;</span>
+<span class="nc" id="L543">		String search= &quot;\&quot;&quot; + key + &quot;\&quot;:&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L544">		int start= obj.indexOf(search);</span>
+<span class="nc bnc" id="L545" title="All 2 branches missed.">		if (start &lt; 0) {</span>
+<span class="nc" id="L546">			return 0;</span>
 		}
-<span class="nc" id="L537">		start+= search.length();</span>
+<span class="nc" id="L548">		start+= search.length();</span>
 		// skip optional whitespace
-<span class="nc bnc" id="L539" title="All 4 branches missed.">		while (start &lt; obj.length() &amp;&amp; obj.charAt(start) == ' ') {</span>
-<span class="nc" id="L540">			start++;</span>
+<span class="nc bnc" id="L550" title="All 4 branches missed.">		while (start &lt; obj.length() &amp;&amp; obj.charAt(start) == ' ') {</span>
+<span class="nc" id="L551">			start++;</span>
 		}
-<span class="nc" id="L542">		int end= start;</span>
-<span class="nc bnc" id="L543" title="All 2 branches missed.">		while (end &lt; obj.length()) {</span>
-<span class="nc" id="L544">			char c= obj.charAt(end);</span>
-<span class="nc bnc" id="L545" title="All 4 branches missed.">			if (c &gt;= '0' &amp;&amp; c &lt;= '9') {</span>
-<span class="nc" id="L546">				end++;</span>
+<span class="nc" id="L553">		int end= start;</span>
+<span class="nc bnc" id="L554" title="All 2 branches missed.">		while (end &lt; obj.length()) {</span>
+<span class="nc" id="L555">			char c= obj.charAt(end);</span>
+<span class="nc bnc" id="L556" title="All 4 branches missed.">			if (c &gt;= '0' &amp;&amp; c &lt;= '9') {</span>
+<span class="nc" id="L557">				end++;</span>
 			} else {
 				break;
 			}
 		}
-<span class="nc bnc" id="L551" title="All 2 branches missed.">		if (start == end) {</span>
-<span class="nc" id="L552">			return 0;</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">		if (start == end) {</span>
+<span class="nc" id="L563">			return 0;</span>
 		}
 		try {
-<span class="nc" id="L555">			return Integer.parseInt(obj.substring(start, end));</span>
-<span class="nc" id="L556">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L557">			return 0;</span>
+<span class="nc" id="L566">			return Integer.parseInt(obj.substring(start, end));</span>
+<span class="nc" id="L567">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L568">			return 0;</span>
 		}
 	}
 }

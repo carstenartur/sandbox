@@ -14,7 +14,6 @@
 package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,12 +22,12 @@ import java.util.Map;
  * Registry for {@link AbstractPatternCleanupPlugin} instances, grouped by bundle ID.
  *
  * &lt;p&gt;Plugins register themselves (or are registered on their behalf) by calling
- * {@link #register(AbstractPatternCleanupPlugin)}.  Consumers such as
+ * {@link #register(AbstractPatternCleanupPlugin)}. Consumers such as
  * {@code HintFileCleanUpCore} can then retrieve all plugins for a given bundle via
  * {@link #getPluginsForBundle(String)}.&lt;/p&gt;
  *
  * &lt;p&gt;Bundle IDs are derived from the plugin's {@code cleanupId} through
- * {@link AbstractPatternCleanupPlugin#getBundleId()}.  For example, a plugin
+ * {@link AbstractPatternCleanupPlugin#getBundleId()}. For example, a plugin
  * whose {@code cleanupId} is {@code &quot;cleanup.encoding.charset.forname.utf8&quot;} will
  * be associated with the bundle {@code &quot;encoding&quot;}.&lt;/p&gt;
  *
@@ -36,11 +35,13 @@ import java.util.Map;
  */
 public final class DslPluginRegistry {
 
-	/** All registered plugins keyed by their cleanup ID (preserves registration order). */
-<span class="fc" id="L40">	private static final Map&lt;String, AbstractPatternCleanupPlugin&lt;?&gt;&gt; BY_CLEANUP_ID = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L38">	private static final Object LOCK= new Object();</span>
+
+	/** All registered plugins keyed by cleanup ID, preserving registration order. */
+<span class="fc" id="L41">	private static final Map&lt;String, AbstractPatternCleanupPlugin&lt;?&gt;&gt; BY_CLEANUP_ID= new LinkedHashMap&lt;&gt;();</span>
 
 	/** Plugins grouped by bundle ID. */
-<span class="fc" id="L43">	private static final Map&lt;String, List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt;&gt; BY_BUNDLE_ID = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L44">	private static final Map&lt;String, List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt;&gt; BY_BUNDLE_ID= new LinkedHashMap&lt;&gt;();</span>
 
 	private DslPluginRegistry() {
 		// utility class
@@ -57,47 +58,50 @@ public final class DslPluginRegistry {
 	 * @throws IllegalArgumentException if {@code plugin} is {@code null}, or if its
 	 *             cleanup ID or bundle ID is {@code null} or empty
 	 */
-	public static synchronized void register(AbstractPatternCleanupPlugin&lt;?&gt; plugin) {
-<span class="pc bpc" id="L61" title="1 of 2 branches missed.">		if (plugin == null) {</span>
-<span class="nc" id="L62">			throw new IllegalArgumentException(&quot;plugin must not be null&quot;); //$NON-NLS-1$</span>
+	public static void register(AbstractPatternCleanupPlugin&lt;?&gt; plugin) {
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">		if (plugin == null) {</span>
+<span class="nc" id="L63">			throw new IllegalArgumentException(&quot;plugin must not be null&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L64">		String id = plugin.getCleanupId();</span>
-<span class="pc bpc" id="L65" title="2 of 4 branches missed.">		if (id == null || id.isEmpty()) {</span>
-<span class="nc" id="L66">			throw new IllegalArgumentException(&quot;cleanupId must not be null or empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		String id= plugin.getCleanupId();</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">		if (id == null || id.isEmpty()) {</span>
+<span class="nc" id="L67">			throw new IllegalArgumentException(&quot;cleanupId must not be null or empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (BY_CLEANUP_ID.containsKey(id)) {</span>
-<span class="nc" id="L69">			return; // already registered</span>
+<span class="fc" id="L69">		String bundleId= plugin.getBundleId();</span>
+<span class="pc bpc" id="L70" title="2 of 4 branches missed.">		if (bundleId == null || bundleId.isEmpty()) {</span>
+<span class="nc" id="L71">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L72">					&quot;bundleId must not be null or empty for cleanupId &quot; + id); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L71">		String bundleId = plugin.getBundleId();</span>
-<span class="pc bpc" id="L72" title="2 of 4 branches missed.">		if (bundleId == null || bundleId.isEmpty()) {</span>
-<span class="nc" id="L73">			throw new IllegalArgumentException(</span>
-<span class="nc" id="L74">					&quot;bundleId must not be null or empty for cleanupId &quot; + id); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		synchronized (LOCK) {</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">			if (BY_CLEANUP_ID.containsKey(id)) {</span>
+<span class="nc" id="L76">				return;</span>
+			}
+<span class="fc" id="L78">			BY_CLEANUP_ID.put(id, plugin);</span>
+<span class="fc" id="L79">			BY_BUNDLE_ID.computeIfAbsent(bundleId, key -&gt; new ArrayList&lt;&gt;()).add(plugin);</span>
 		}
-<span class="fc" id="L76">		BY_CLEANUP_ID.put(id, plugin);</span>
-<span class="fc" id="L77">		BY_BUNDLE_ID.computeIfAbsent(bundleId, k -&gt; new ArrayList&lt;&gt;()).add(plugin);</span>
-<span class="fc" id="L78">	}</span>
+<span class="fc" id="L81">	}</span>
 
 	/**
-	 * Returns all registered plugins.
+	 * Returns a stable snapshot of all registered plugins.
 	 *
-	 * @return an unmodifiable view of all registered plugins (never {@code null})
+	 * @return immutable snapshot of all registered plugins, never {@code null}
 	 */
-	public static synchronized List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; getAllPlugins() {
-<span class="nc" id="L86">		return Collections.unmodifiableList(new ArrayList&lt;&gt;(BY_CLEANUP_ID.values()));</span>
+	public static List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; getAllPlugins() {
+<span class="nc" id="L89">		synchronized (LOCK) {</span>
+<span class="nc" id="L90">			return List.copyOf(BY_CLEANUP_ID.values());</span>
+		}
 	}
 
 	/**
-	 * Returns all registered plugins whose bundle ID matches {@code bundleId}.
+	 * Returns a stable snapshot of all registered plugins for {@code bundleId}.
 	 *
-	 * @param bundleId the bundle identifier (e.g., {@code &quot;encoding&quot;})
-	 * @return an unmodifiable view of matching plugins (never {@code null})
+	 * @param bundleId bundle identifier, for example {@code &quot;encoding&quot;}
+	 * @return immutable snapshot of matching plugins, never {@code null}
 	 */
-	public static synchronized List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; getPluginsForBundle(String bundleId) {
-<span class="nc" id="L96">		List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; plugins = BY_BUNDLE_ID.get(bundleId);</span>
-<span class="nc bnc" id="L97" title="All 2 branches missed.">		if (plugins == null) {</span>
-<span class="nc" id="L98">			return Collections.emptyList();</span>
+	public static List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; getPluginsForBundle(String bundleId) {
+<span class="nc" id="L101">		synchronized (LOCK) {</span>
+<span class="nc" id="L102">			List&lt;AbstractPatternCleanupPlugin&lt;?&gt;&gt; plugins= BY_BUNDLE_ID.get(bundleId);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">			return plugins == null ? List.of() : List.copyOf(plugins);</span>
 		}
-<span class="nc" id="L100">		return Collections.unmodifiableList(plugins);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

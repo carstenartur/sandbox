@@ -16,38 +16,26 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.core.dom.ASTNode;
 
-/**
- * Represents a candidate XML file for cleanup transformation.
- */
+/** Represents a prepared XML cleanup candidate. */
 public class XMLCandidateHit {
 
-	/** The AST node (used for Eclipse cleanup framework integration) */
+	/** The AST node used for Eclipse cleanup framework integration. */
 	public ASTNode whileStatement;
-	
-	/** The XML file to be processed */
+
+	/** The XML file to be processed. */
 	public IFile file;
-	
-	/** Original content before transformation */
-	public String originalContent;
-	
-	/** Transformed content after processing */
-	public String transformedContent;
-	
-	/**
-	 * Create a hit with file information.
-	 * 
-	 * @param file the file to process
-	 * @param originalContent the original file content
-	 */
-<span class="nc" id="L42">	public XMLCandidateHit(IFile file, String originalContent) {</span>
-<span class="nc" id="L43">		this.file = file;</span>
-<span class="nc" id="L44">		this.originalContent = originalContent;</span>
-<span class="nc" id="L45">	}</span>
-	
-	/**
-	 * Default constructor for backward compatibility.
-	 */
-<span class="nc" id="L50">	public XMLCandidateHit() {</span>
-<span class="nc" id="L51">	}</span>
+
+	/** Prepared transformation including original bytes and conflict stamp. */
+	public XMLResourceSupport.Transformation transformation;
+
+	/** Create a hit with a safely prepared transformation. */
+<span class="nc" id="L32">	public XMLCandidateHit(IFile file, XMLResourceSupport.Transformation transformation) {</span>
+<span class="nc" id="L33">		this.file= file;</span>
+<span class="nc" id="L34">		this.transformation= transformation;</span>
+<span class="nc" id="L35">	}</span>
+
+	/** Default constructor for framework compatibility. */
+<span class="nc" id="L38">	public XMLCandidateHit() {</span>
+<span class="nc" id="L39">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

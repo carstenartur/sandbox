@@ -36,23 +36,23 @@ import java.util.*;
 public final class PreconditionsChecker {
 	private final Statement loop;
 //    private final CompilationUnit compilationUnit;
-<span class="fc" id="L39">	private final Set&lt;VariableDeclarationFragment&gt; innerVariables = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L40">	private boolean containsBreak = false;</span>
-<span class="fc" id="L41">	private boolean containsLabeledContinue = false;</span>
-<span class="fc" id="L42">	private boolean containsReturn = false;</span>
-<span class="fc" id="L43">	private boolean throwsException = false;</span>
-<span class="fc" id="L44">	private boolean containsNEFs = false;</span>
-<span class="fc" id="L45">	private boolean containsNestedLoop = false;</span>
-<span class="fc" id="L46">	private boolean hasReducer = false;</span>
-<span class="fc" id="L47">	private Statement reducerStatement = null;</span>
-<span class="fc" id="L48">	private boolean isAnyMatchPattern = false;</span>
-<span class="fc" id="L49">	private boolean isNoneMatchPattern = false;</span>
-<span class="fc" id="L50">	private boolean isAllMatchPattern = false;</span>
-<span class="fc" id="L51">	private boolean hasCollectPattern = false;</span>
-<span class="fc" id="L52">	private Statement collectStatement = null;</span>
-<span class="fc" id="L53">	private String collectTargetVariable = null;</span>
-<span class="fc" id="L54">	private boolean modifiesIteratedCollection = false;</span>
-<span class="fc" id="L55">	private boolean isConcurrentCollection = false;</span>
+<span class="nc" id="L39">	private final Set&lt;VariableDeclarationFragment&gt; innerVariables = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L40">	private boolean containsBreak = false;</span>
+<span class="nc" id="L41">	private boolean containsLabeledContinue = false;</span>
+<span class="nc" id="L42">	private boolean containsReturn = false;</span>
+<span class="nc" id="L43">	private boolean throwsException = false;</span>
+<span class="nc" id="L44">	private boolean containsNEFs = false;</span>
+<span class="nc" id="L45">	private boolean containsNestedLoop = false;</span>
+<span class="nc" id="L46">	private boolean hasReducer = false;</span>
+<span class="nc" id="L47">	private Statement reducerStatement = null;</span>
+<span class="nc" id="L48">	private boolean isAnyMatchPattern = false;</span>
+<span class="nc" id="L49">	private boolean isNoneMatchPattern = false;</span>
+<span class="nc" id="L50">	private boolean isAllMatchPattern = false;</span>
+<span class="nc" id="L51">	private boolean hasCollectPattern = false;</span>
+<span class="nc" id="L52">	private Statement collectStatement = null;</span>
+<span class="nc" id="L53">	private String collectTargetVariable = null;</span>
+<span class="nc" id="L54">	private boolean modifiesIteratedCollection = false;</span>
+<span class="nc" id="L55">	private boolean isConcurrentCollection = false;</span>
 	/**
 	 * Constructor for PreconditionsChecker.
 	 * 
@@ -60,18 +60,18 @@ public final class PreconditionsChecker {
 	 *                        be null)
 	 * @param compilationUnit the compilation unit containing the loop
 	 */
-<span class="fc" id="L63">	public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {</span>
+<span class="nc" id="L63">	public PreconditionsChecker(Statement loop, CompilationUnit compilationUnit) {</span>
 		// Set loop field first - if null, we'll handle it gracefully in the catch block
-<span class="fc" id="L65">		this.loop = loop;</span>
+<span class="nc" id="L65">		this.loop = loop;</span>
 //        this.compilationUnit = compilationUnit;
 
 		// Analyze the loop in a try-catch to prevent partial initialization
 		// if any exception occurs during analysis
 		try {
 			// Perform analysis only if loop is not null
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">			if (loop != null) {</span>
-<span class="fc" id="L73">				analyzeLoop();</span>
-<span class="fc" id="L74">			} else {</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">			if (loop != null) {</span>
+<span class="nc" id="L73">				analyzeLoop();</span>
+<span class="nc" id="L74">			} else {</span>
 				// Null loop - treat as unsafe to refactor
 <span class="nc" id="L76">				this.containsBreak = true;</span>
 			}
@@ -80,7 +80,7 @@ public final class PreconditionsChecker {
 			// Set flags to prevent conversion
 <span class="nc" id="L81">			this.containsBreak = true; // Conservatively block conversion</span>
 		}
-<span class="fc" id="L83">	}</span>
+<span class="nc" id="L83">	}</span>
 
 	/**
 	 * Checks if the loop is safe to refactor to stream operations.
@@ -127,14 +127,14 @@ public final class PreconditionsChecker {
 	 */
 	public boolean isSafeToRefactor() {
 		// Allow early returns if they match anyMatch/noneMatch/allMatch patterns
-<span class="pc bpc" id="L130" title="7 of 8 branches missed.">		boolean allowedReturn = containsReturn &amp;&amp; (isAnyMatchPattern || isNoneMatchPattern || isAllMatchPattern);</span>
+<span class="nc bnc" id="L130" title="All 8 branches missed.">		boolean allowedReturn = containsReturn &amp;&amp; (isAnyMatchPattern || isNoneMatchPattern || isAllMatchPattern);</span>
 		// Note: Unlabeled continues are allowed and will be converted to filters by
 		// StreamPipelineBuilder
 		// Only labeled continues are rejected here
 		// Issue #670: Block conversion when the iterated collection is modified (add/remove/put/clear)
 		// Issue #670: Block conversion when iterating over concurrent collections (conservative approach)
-<span class="pc bpc" id="L136" title="6 of 10 branches missed.">		return !throwsException &amp;&amp; !containsBreak &amp;&amp; !containsLabeledContinue &amp;&amp; (!containsReturn || allowedReturn)</span>
-<span class="pc bpc" id="L137" title="4 of 8 branches missed.">				&amp;&amp; !containsNEFs &amp;&amp; !containsNestedLoop &amp;&amp; !modifiesIteratedCollection &amp;&amp; !isConcurrentCollection;</span>
+<span class="nc bnc" id="L136" title="All 10 branches missed.">		return !throwsException &amp;&amp; !containsBreak &amp;&amp; !containsLabeledContinue &amp;&amp; (!containsReturn || allowedReturn)</span>
+<span class="nc bnc" id="L137" title="All 8 branches missed.">				&amp;&amp; !containsNEFs &amp;&amp; !containsNestedLoop &amp;&amp; !modifiesIteratedCollection &amp;&amp; !isConcurrentCollection;</span>
 	}
 
 	/**
@@ -183,7 +183,7 @@ public final class PreconditionsChecker {
 	 * @return true if anyMatch pattern is detected
 	 */
 	public boolean isAnyMatchPattern() {
-<span class="fc" id="L186">		return isAnyMatchPattern;</span>
+<span class="nc" id="L186">		return isAnyMatchPattern;</span>
 	}
 
 	/**
@@ -196,7 +196,7 @@ public final class PreconditionsChecker {
 	 * @return true if noneMatch pattern is detected
 	 */
 	public boolean isNoneMatchPattern() {
-<span class="fc" id="L199">		return isNoneMatchPattern;</span>
+<span class="nc" id="L199">		return isNoneMatchPattern;</span>
 	}
 
 	/**
@@ -211,7 +211,7 @@ public final class PreconditionsChecker {
 	 * @return true if allMatch pattern is detected
 	 */
 	public boolean isAllMatchPattern() {
-<span class="fc" id="L214">		return isAllMatchPattern;</span>
+<span class="nc" id="L214">		return isAllMatchPattern;</span>
 	}
 
 	/**
@@ -340,33 +340,33 @@ public final class PreconditionsChecker {
 	 */
 	private void analyzeLoop() {
 		// Extract the iterated collection name and type for modification detection (Issue #670)
-<span class="fc" id="L343">		String iteratedCollectionName = extractIteratedCollectionName();</span>
-<span class="fc" id="L344">		ITypeBinding iteratedCollectionType = extractIteratedCollectionType();</span>
+<span class="nc" id="L343">		Expression iteratedCollectionExpression = extractIteratedCollectionExpression();</span>
+<span class="nc" id="L344">		ITypeBinding iteratedCollectionType = extractIteratedCollectionType();</span>
 		
 		// Check if iterating over a concurrent collection (Issue #670 - Point 2.4)
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">		if (iteratedCollectionType != null) {</span>
-<span class="fc" id="L348">			isConcurrentCollection = ConcurrentCollectionDetector.isConcurrentCollection(iteratedCollectionType);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">		if (iteratedCollectionType != null) {</span>
+<span class="nc" id="L348">			isConcurrentCollection = ConcurrentCollectionDetector.isConcurrentCollection(iteratedCollectionType);</span>
 		}
 		
-<span class="fc" id="L351">		AstProcessorBuilder&lt;String, Object&gt; builder = AstProcessorBuilder.with(new ReferenceHolder&lt;String, Object&gt;());</span>
+<span class="nc" id="L351">		AstProcessorBuilder&lt;String, Object&gt; builder = AstProcessorBuilder.with(new ReferenceHolder&lt;String, Object&gt;());</span>
 
-<span class="fc" id="L353">		builder.onVariableDeclarationFragment((node, h) -&gt; {</span>
+<span class="nc" id="L353">		builder.onVariableDeclarationFragment((node, h) -&gt; {</span>
 <span class="nc" id="L354">			innerVariables.add(node);</span>
 <span class="nc" id="L355">			return true;</span>
-<span class="fc" id="L356">		}).onBreakStatement((node, h) -&gt; {</span>
+<span class="nc" id="L356">		}).onBreakStatement((node, h) -&gt; {</span>
 <span class="nc" id="L357">			containsBreak = true;</span>
 <span class="nc" id="L358">			return true;</span>
-<span class="fc" id="L359">		}).onLabeledContinue((node, h) -&gt; {</span>
+<span class="nc" id="L359">		}).onLabeledContinue((node, h) -&gt; {</span>
 			// Labeled continue should prevent conversion (unlabeled continues are allowed)
 <span class="nc" id="L361">			containsLabeledContinue = true;</span>
 <span class="nc" id="L362">			return true;</span>
-<span class="fc" id="L363">		}).onReturnStatement((node, h) -&gt; {</span>
+<span class="nc" id="L363">		}).onReturnStatement((node, h) -&gt; {</span>
 <span class="nc" id="L364">			containsReturn = true;</span>
 <span class="nc" id="L365">			return true;</span>
-<span class="fc" id="L366">		}).onThrowStatement((node, h) -&gt; {</span>
+<span class="nc" id="L366">		}).onThrowStatement((node, h) -&gt; {</span>
 <span class="nc" id="L367">			throwsException = true;</span>
 <span class="nc" id="L368">			return true;</span>
-<span class="fc" id="L369">		}).onEnhancedForStatement((node, h) -&gt; {</span>
+<span class="nc" id="L369">		}).onEnhancedForStatement((node, h) -&gt; {</span>
 			// If we encounter another EnhancedForStatement inside the loop body,
 			// it's a nested loop.
 			// PHASE 9: With LoopTree, nested loops are handled separately in the tree.
@@ -378,98 +378,98 @@ public final class PreconditionsChecker {
 			// Found a nested loop - don't descend into it (return false)
 			// The LoopTree will handle this nested loop separately
 <span class="nc" id="L380">			return false;</span>
-<span class="fc" id="L381">		}).onForStatement((node, h) -&gt; {</span>
+<span class="nc" id="L381">		}).onForStatement((node, h) -&gt; {</span>
 			// Traditional for loops inside the enhanced-for also prevent conversion
 <span class="nc" id="L383">			containsNestedLoop = true;</span>
 <span class="nc" id="L384">			return true;</span>
-<span class="fc" id="L385">		}).onWhileStatement((node, h) -&gt; {</span>
+<span class="nc" id="L385">		}).onWhileStatement((node, h) -&gt; {</span>
 			// While loops inside the enhanced-for also prevent conversion
 <span class="nc" id="L387">			containsNestedLoop = true;</span>
 <span class="nc" id="L388">			return true;</span>
-<span class="fc" id="L389">		}).onDoStatement((node, h) -&gt; {</span>
+<span class="nc" id="L389">		}).onDoStatement((node, h) -&gt; {</span>
 			// Do-while loops inside the enhanced-for also prevent conversion
 <span class="nc" id="L391">			containsNestedLoop = true;</span>
 <span class="nc" id="L392">			return true;</span>
-<span class="fc" id="L393">		}).onTryStatement((node, h) -&gt; {</span>
+<span class="nc" id="L393">		}).onTryStatement((node, h) -&gt; {</span>
 			// Try-catch blocks inside the loop prevent conversion
 			// (exception handling in lambdas is complex)
 <span class="nc" id="L396">			containsNEFs = true;</span>
 <span class="nc" id="L397">			return true;</span>
-<span class="fc" id="L398">		}).onSwitchStatement((node, h) -&gt; {</span>
+<span class="nc" id="L398">		}).onSwitchStatement((node, h) -&gt; {</span>
 			// Switch statements inside the loop prevent conversion
 <span class="nc" id="L400">			containsNEFs = true;</span>
 <span class="nc" id="L401">			return true;</span>
-<span class="fc" id="L402">		}).onSynchronizedStatement((node, h) -&gt; {</span>
+<span class="nc" id="L402">		}).onSynchronizedStatement((node, h) -&gt; {</span>
 			// Synchronized blocks inside the loop prevent conversion
 <span class="nc" id="L404">			containsNEFs = true;</span>
 <span class="nc" id="L405">			return true;</span>
-<span class="fc" id="L406">		}).onCompoundAssignment((node, h) -&gt; {</span>
+<span class="nc" id="L406">		}).onCompoundAssignment((node, h) -&gt; {</span>
 			// Compound assignments: +=, -=, *=, /=, |=, &amp;=, etc.
 <span class="nc" id="L408">			markAsReducer(node);</span>
 <span class="nc" id="L409">			return true;</span>
-<span class="fc" id="L410">		}).onAssignment((node, h) -&gt; {</span>
+<span class="nc" id="L410">		}).onAssignment((node, h) -&gt; {</span>
 			// Check for Math.max/Math.min patterns: max = Math.max(max, x)
 <span class="nc bnc" id="L412" title="All 4 branches missed.">			if (node.getOperator() == Assignment.Operator.ASSIGN &amp;&amp; isMathMinMaxReducerPattern(node)) {</span>
 <span class="nc" id="L413">				markAsReducer(node);</span>
 			}
 <span class="nc" id="L415">			return true;</span>
-<span class="fc" id="L416">		}).onPostfixIncrementOrDecrement((node, h) -&gt; {</span>
+<span class="nc" id="L416">		}).onPostfixIncrementOrDecrement((node, h) -&gt; {</span>
 			// Detect i++, i--
 <span class="nc" id="L418">			markAsReducer(node);</span>
 <span class="nc" id="L419">			return true;</span>
-<span class="fc" id="L420">		}).onPrefixIncrementOrDecrement((node, h) -&gt; {</span>
+<span class="nc" id="L420">		}).onPrefixIncrementOrDecrement((node, h) -&gt; {</span>
 			// Detect ++i, --i
 <span class="nc" id="L422">			markAsReducer(node);</span>
 <span class="nc" id="L423">			return true;</span>
-<span class="fc" id="L424">		}).onMethodInvocation((node, h) -&gt; {</span>
+<span class="nc" id="L424">		}).onMethodInvocation((node, h) -&gt; {</span>
 			// Detect collection.add() patterns for collect operation
 <span class="nc bnc" id="L426" title="All 2 branches missed.">			if (isCollectPattern(node)) {</span>
 <span class="nc" id="L427">				markAsCollectPattern(node);</span>
 			}
 			// Issue #670: Detect structural modifications on the iterated collection
-<span class="nc bnc" id="L430" title="All 2 branches missed.">			if (iteratedCollectionName != null</span>
-<span class="nc bnc" id="L431" title="All 2 branches missed.">					&amp;&amp; CollectionModificationDetector.isModification(node, iteratedCollectionName)) {</span>
+<span class="nc bnc" id="L430" title="All 2 branches missed.">			if (iteratedCollectionExpression != null</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">					&amp;&amp; CollectionModificationDetector.isModification(node, iteratedCollectionExpression)) {</span>
 <span class="nc" id="L432">				modifiesIteratedCollection = true;</span>
 			}
 <span class="nc" id="L434">			return true;</span>
 		});
 
 		// First, analyze just the loop itself
-<span class="fc" id="L438">		builder.build(loop);</span>
+<span class="nc" id="L438">		builder.build(loop);</span>
 
 		// Save the containsReturn flag state after analyzing only the loop body
 		// This is important because we want to distinguish between:
 		// 1. Returns INSIDE the loop (which may prevent conversion, except for match patterns)
 		// 2. Returns AFTER the loop (which are just part of the method and shouldn't prevent conversion)
-<span class="fc" id="L444">		boolean containsReturnInsideLoop = containsReturn;</span>
+<span class="nc" id="L444">		boolean containsReturnInsideLoop = containsReturn;</span>
 
 		// Then, if the loop is inside a Block, analyze only the immediately following
 		// statement (if any). This lets us detect patterns that depend on the statement
 		// right after the loop without pulling in unrelated statements.
-<span class="fc" id="L449">		ASTNode parent = loop.getParent();</span>
-<span class="pc bpc" id="L450" title="1 of 2 branches missed.">		if (parent instanceof Block block) {</span>
-<span class="fc" id="L451">			List&lt;Statement&gt; statements = block.statements();</span>
-<span class="fc" id="L452">			int loopIndex = statements.indexOf(loop);</span>
-<span class="pc bpc" id="L453" title="2 of 4 branches missed.">			if (loopIndex != -1 &amp;&amp; loopIndex + 1 &lt; statements.size()) {</span>
-<span class="fc" id="L454">				Statement followingStatement = statements.get(loopIndex + 1);</span>
-<span class="fc" id="L455">				builder.build(followingStatement);</span>
+<span class="nc" id="L449">		ASTNode parent = loop.getParent();</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">		if (parent instanceof Block block) {</span>
+<span class="nc" id="L451">			List&lt;Statement&gt; statements = block.statements();</span>
+<span class="nc" id="L452">			int loopIndex = statements.indexOf(loop);</span>
+<span class="nc bnc" id="L453" title="All 4 branches missed.">			if (loopIndex != -1 &amp;&amp; loopIndex + 1 &lt; statements.size()) {</span>
+<span class="nc" id="L454">				Statement followingStatement = statements.get(loopIndex + 1);</span>
+<span class="nc" id="L455">				builder.build(followingStatement);</span>
 			}
 		}
 
 		// Detect anyMatch/noneMatch patterns
 		// This needs to see if there's a return statement after the loop,
 		// so containsReturn may be true from analyzing the following statement
-<span class="fc" id="L462">		detectEarlyReturnPatterns();</span>
+<span class="nc" id="L462">		detectEarlyReturnPatterns();</span>
 
 		// Restore the containsReturn flag to only reflect returns INSIDE the loop
 		// This ensures that isSafeToRefactor() only rejects loops with returns inside,
 		// not loops followed by return statements (like reducers)
-<span class="fc" id="L467">		containsReturn = containsReturnInsideLoop;</span>
+<span class="nc" id="L467">		containsReturn = containsReturnInsideLoop;</span>
 		
 		// NOTE: Effectively-final variable checks for nested loops are now handled
 		// by EnhancedForHandler.endVisitLoop() using LoopTree/ScopeInfo, which properly
 		// tracks modifications in ancestor scopes while allowing reducer patterns.
-<span class="fc" id="L472">	}</span>
+<span class="nc" id="L472">	}</span>
 
 	/**
 	 * Marks an AST node as a reducer pattern and records its statement.
@@ -568,7 +568,7 @@ public final class PreconditionsChecker {
 		}
 		
 <span class="nc" id="L570">		String methodName = methodInv.getName().getIdentifier();</span>
-<span class="nc bnc" id="L571" title="All 4 branches missed.">		return &quot;max&quot;.equals(methodName) || &quot;min&quot;.equals(methodName);</span>
+<span class="nc bnc" id="L571" title="All 4 branches missed.">		return &quot;max&quot;.equals(methodName) || &quot;min&quot;.equals(methodName); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	/**
@@ -617,8 +617,8 @@ public final class PreconditionsChecker {
 	 * &lt;/pre&gt;
 	 */
 	private void detectEarlyReturnPatterns() {
-<span class="pc bpc" id="L620" title="3 of 4 branches missed.">		if (!containsReturn || !(loop instanceof EnhancedForStatement forLoop)) {</span>
-<span class="fc" id="L621">			return;</span>
+<span class="nc bnc" id="L620" title="All 4 branches missed.">		if (!containsReturn || !(loop instanceof EnhancedForStatement forLoop)) {</span>
+<span class="nc" id="L621">			return;</span>
 		}
 
 <span class="nc" id="L624">		Statement body = forLoop.getBody();</span>
@@ -796,35 +796,16 @@ public final class PreconditionsChecker {
 	}
 
 	/**
-	 * Extracts the name of the iterated collection from the loop statement.
-	 * 
-	 * &lt;p&gt;For enhanced for-loops: {@code for (String item : list)} → &quot;list&quot;&lt;/p&gt;
-	 * 
-	 * @return the collection variable name, or null if not determinable
+	 * Returns the iterated source expression used for binding-based mutation checks.
+	 * Map views are normalized to their backing map.
+	 *
+	 * @return the normalized iterated expression, or null when unavailable
 	 */
-	private String extractIteratedCollectionName() {
-<span class="pc bpc" id="L806" title="1 of 2 branches missed.">		if (loop instanceof EnhancedForStatement enhancedFor) {</span>
-<span class="fc" id="L807">			Expression expression = enhancedFor.getExpression();</span>
-<span class="pc bpc" id="L808" title="1 of 2 branches missed.">			if (expression instanceof SimpleName simpleName) {</span>
-<span class="fc" id="L809">				return simpleName.getIdentifier();</span>
-			}
-			// Unwrap common map view-producing calls like map.entrySet(), map.keySet(), map.values()
-<span class="nc bnc" id="L812" title="All 2 branches missed.">			if (expression instanceof MethodInvocation methodInvocation) {</span>
-<span class="nc" id="L813">				SimpleName name = methodInvocation.getName();</span>
-<span class="nc bnc" id="L814" title="All 2 branches missed.">				if (name != null) {</span>
-<span class="nc" id="L815">					String identifier = name.getIdentifier();</span>
-<span class="nc bnc" id="L816" title="All 6 branches missed.">					if (&quot;entrySet&quot;.equals(identifier) || &quot;keySet&quot;.equals(identifier) || &quot;values&quot;.equals(identifier)) {</span>
-<span class="nc bnc" id="L817" title="All 2 branches missed.">						if (methodInvocation.arguments().isEmpty()) {</span>
-<span class="nc" id="L818">							Expression qualifier = methodInvocation.getExpression();</span>
-<span class="nc bnc" id="L819" title="All 2 branches missed.">							if (qualifier instanceof SimpleName qualifierName) {</span>
-<span class="nc" id="L820">								return qualifierName.getIdentifier();</span>
-							}
-						}
-					}
-				}
-			}
+	private Expression extractIteratedCollectionExpression() {
+<span class="nc bnc" id="L805" title="All 2 branches missed.">		if (loop instanceof EnhancedForStatement enhancedFor) {</span>
+<span class="nc" id="L806">			return CollectionModificationDetector.normalizeIteratedExpression(enhancedFor.getExpression());</span>
 		}
-<span class="nc" id="L827">		return null;</span>
+<span class="nc" id="L808">		return null;</span>
 	}
 	
 	/**
@@ -837,22 +818,22 @@ public final class PreconditionsChecker {
 	 * @return the collection type binding, or null if not determinable
 	 */
 	private ITypeBinding extractIteratedCollectionType() {
-<span class="pc bpc" id="L840" title="1 of 2 branches missed.">		if (loop instanceof EnhancedForStatement enhancedFor) {</span>
-<span class="fc" id="L841">			Expression expression = enhancedFor.getExpression();</span>
+<span class="nc bnc" id="L821" title="All 2 branches missed.">		if (loop instanceof EnhancedForStatement enhancedFor) {</span>
+<span class="nc" id="L822">			Expression expression = enhancedFor.getExpression();</span>
 			
 			// Unwrap common map view-producing calls like map.entrySet(), map.keySet(), map.values()
-<span class="pc bpc" id="L844" title="1 of 2 branches missed.">			if (expression instanceof MethodInvocation methodInvocation) {</span>
-<span class="nc" id="L845">				SimpleName name = methodInvocation.getName();</span>
-<span class="nc bnc" id="L846" title="All 2 branches missed.">				if (name != null) {</span>
-<span class="nc" id="L847">					String identifier = name.getIdentifier();</span>
-<span class="nc bnc" id="L848" title="All 6 branches missed.">					if (&quot;entrySet&quot;.equals(identifier) || &quot;keySet&quot;.equals(identifier) || &quot;values&quot;.equals(identifier)) {</span>
+<span class="nc bnc" id="L825" title="All 2 branches missed.">			if (expression instanceof MethodInvocation methodInvocation) {</span>
+<span class="nc" id="L826">				SimpleName name = methodInvocation.getName();</span>
+<span class="nc bnc" id="L827" title="All 2 branches missed.">				if (name != null) {</span>
+<span class="nc" id="L828">					String identifier = name.getIdentifier();</span>
+<span class="nc bnc" id="L829" title="All 6 branches missed.">					if (&quot;entrySet&quot;.equals(identifier) || &quot;keySet&quot;.equals(identifier) || &quot;values&quot;.equals(identifier)) {</span>
 						// Only consider the simple, no-arg variants
-<span class="nc bnc" id="L850" title="All 2 branches missed.">						if (methodInvocation.arguments().isEmpty()) {</span>
-<span class="nc" id="L851">							Expression qualifier = methodInvocation.getExpression();</span>
-<span class="nc bnc" id="L852" title="All 2 branches missed.">							if (qualifier != null) {</span>
-<span class="nc" id="L853">								ITypeBinding qualifierBinding = qualifier.resolveTypeBinding();</span>
-<span class="nc bnc" id="L854" title="All 2 branches missed.">								if (qualifierBinding != null) {</span>
-<span class="nc" id="L855">									return qualifierBinding;</span>
+<span class="nc bnc" id="L831" title="All 2 branches missed.">						if (methodInvocation.arguments().isEmpty()) {</span>
+<span class="nc" id="L832">							Expression qualifier = methodInvocation.getExpression();</span>
+<span class="nc bnc" id="L833" title="All 2 branches missed.">							if (qualifier != null) {</span>
+<span class="nc" id="L834">								ITypeBinding qualifierBinding = qualifier.resolveTypeBinding();</span>
+<span class="nc bnc" id="L835" title="All 2 branches missed.">								if (qualifierBinding != null) {</span>
+<span class="nc" id="L836">									return qualifierBinding;</span>
 								}
 							}
 						}
@@ -860,9 +841,9 @@ public final class PreconditionsChecker {
 				}
 			}
 			
-<span class="fc" id="L863">			return expression.resolveTypeBinding();</span>
+<span class="nc" id="L844">			return expression.resolveTypeBinding();</span>
 		}
-<span class="nc" id="L865">		return null;</span>
+<span class="nc" id="L846">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

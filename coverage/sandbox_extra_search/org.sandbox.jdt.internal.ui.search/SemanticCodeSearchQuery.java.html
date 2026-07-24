@@ -80,53 +80,54 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 <span class="nc bnc" id="L80" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
 <span class="nc" id="L81">				return Status.CANCEL_STATUS;</span>
 			}
-<span class="nc" id="L83">			SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();</span>
-<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (client == null) {</span>
-<span class="nc" id="L85">				return Status.error(&quot;Semantic search service is not available. &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L83">			EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();</span>
+<span class="nc" id="L84">			SemanticSearchClient client= searchService.getSearchClient();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">			if (!searchService.isAvailable()) {</span>
+<span class="nc" id="L86">				return Status.error(&quot;Semantic search service is not available. &quot; //$NON-NLS-1$</span>
 						+ &quot;Please ensure the search backend is running.&quot;); //$NON-NLS-1$
 			}
 			List&lt;SearchHit&gt; hits;
-<span class="nc bnc" id="L89" title="All 3 branches missed.">			switch (mode) {</span>
+<span class="nc bnc" id="L90" title="All 3 branches missed.">			switch (mode) {</span>
 				case HYBRID:
-<span class="nc" id="L91">					hits= client.hybridSearch(repoName, queryText, maxResults);</span>
-<span class="nc" id="L92">					break;</span>
+<span class="nc" id="L92">					hits= client.hybridSearch(repoName, queryText, maxResults);</span>
+<span class="nc" id="L93">					break;</span>
 				case SIMILAR:
 					// queryText is treated as a blob object ID for similar code search
-<span class="nc" id="L95">					hits= client.findSimilarCode(repoName, queryText, maxResults);</span>
-<span class="nc" id="L96">					break;</span>
+<span class="nc" id="L96">					hits= client.findSimilarCode(repoName, queryText, maxResults);</span>
+<span class="nc" id="L97">					break;</span>
 				case SEMANTIC:
 				default:
-<span class="nc" id="L99">					hits= client.semanticSearch(repoName, queryText, maxResults);</span>
+<span class="nc" id="L100">					hits= client.semanticSearch(repoName, queryText, maxResults);</span>
 					break;
 			}
-<span class="nc bnc" id="L102" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
-<span class="nc" id="L103">				return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
+<span class="nc" id="L104">				return Status.CANCEL_STATUS;</span>
 			}
-<span class="nc" id="L105">			result.setMatches(hits);</span>
-<span class="nc" id="L106">			return Status.OK_STATUS;</span>
+<span class="nc" id="L106">			result.setMatches(hits);</span>
+<span class="nc" id="L107">			return Status.OK_STATUS;</span>
 		} finally {
-<span class="nc" id="L108">			monitor.done();</span>
+<span class="nc" id="L109">			monitor.done();</span>
 		}
 	}
 
 	@Override
 	public String getLabel() {
-<span class="nc" id="L114">		return &quot;Semantic Search: '&quot; + queryText + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L115">		return &quot;Semantic Search: '&quot; + queryText + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	@Override
 	public boolean canRerun() {
-<span class="nc" id="L119">		return true;</span>
+<span class="nc" id="L120">		return true;</span>
 	}
 
 	@Override
 	public boolean canRunInBackground() {
-<span class="nc" id="L124">		return true;</span>
+<span class="nc" id="L125">		return true;</span>
 	}
 
 	@Override
 	public ISearchResult getSearchResult() {
-<span class="nc" id="L129">		return result;</span>
+<span class="nc" id="L130">		return result;</span>
 	}
 
 	/**
@@ -135,7 +136,7 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 	 * @return the natural language query text
 	 */
 	public String getQueryText() {
-<span class="nc" id="L138">		return queryText;</span>
+<span class="nc" id="L139">		return queryText;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -217,8 +217,10 @@ public class CandidateStore {
 	}
 
 	private static boolean isCandidateFile(Path path) {
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		return Files.isRegularFile(path)</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">				&amp;&amp; path.getFileName().toString().endsWith(&quot;-candidate.json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L220">		Path fileName = path.getFileName();</span>
+<span class="pc bpc" id="L221" title="2 of 4 branches missed.">		return Files.isRegularFile(path)</span>
+				&amp;&amp; fileName != null
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">				&amp;&amp; fileName.toString().endsWith(&quot;-candidate.json&quot;); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

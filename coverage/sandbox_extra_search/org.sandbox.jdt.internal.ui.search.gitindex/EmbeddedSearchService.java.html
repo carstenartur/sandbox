@@ -44,12 +44,16 @@ public class EmbeddedSearchService {
 
 <span class="nc" id="L45">	private static final ILog LOG= Platform.getLog(EmbeddedSearchService.class);</span>
 
-<span class="nc" id="L47">	private static EmbeddedSearchService instance;</span>
+<span class="nc" id="L47">	private final Object lifecycleLock= new Object();</span>
 
-	private boolean initialized;
+	private volatile boolean initialized;
 
-	private EmbeddedSearchService() {
+<span class="nc" id="L51">	private EmbeddedSearchService() {</span>
 		// singleton
+<span class="nc" id="L53">	}</span>
+
+	private static final class Holder {
+<span class="nc" id="L56">		private static final EmbeddedSearchService INSTANCE= new EmbeddedSearchService();</span>
 	}
 
 	/**
@@ -57,11 +61,8 @@ public class EmbeddedSearchService {
 	 *
 	 * @return the embedded search service instance
 	 */
-	public static synchronized EmbeddedSearchService getInstance() {
-<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (instance == null) {</span>
-<span class="nc" id="L62">			instance= new EmbeddedSearchService();</span>
-		}
-<span class="nc" id="L64">		return instance;</span>
+	public static EmbeddedSearchService getInstance() {
+<span class="nc" id="L65">		return Holder.INSTANCE;</span>
 	}
 
 	/**
@@ -72,14 +73,16 @@ public class EmbeddedSearchService {
 	 *            API compatibility)
 	 */
 	public void initialize(IPath stateLocation) {
-<span class="nc bnc" id="L75" title="All 2 branches missed.">		if (initialized) {</span>
-<span class="nc" id="L76">			return;</span>
+<span class="nc" id="L76">		synchronized (lifecycleLock) {</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">			if (initialized) {</span>
+<span class="nc" id="L78">				return;</span>
+			}
+<span class="nc" id="L80">			SemanticSearchClient.getInstance();</span>
+<span class="nc" id="L81">			LOG.info(&quot;Git Search: REST client initialized (backend: &quot; //$NON-NLS-1$</span>
+					+ SemanticSearchClient.DEFAULT_BASE_URL + &quot;)&quot;); //$NON-NLS-1$
+<span class="nc" id="L83">			initialized= true;</span>
 		}
-<span class="nc" id="L78">		SemanticSearchClient.getInstance();</span>
-<span class="nc" id="L79">		LOG.info(&quot;Git Search: REST client initialized (backend: &quot; //$NON-NLS-1$</span>
-				+ SemanticSearchClient.DEFAULT_BASE_URL + &quot;)&quot;); //$NON-NLS-1$
-<span class="nc" id="L81">		initialized= true;</span>
-<span class="nc" id="L82">	}</span>
+<span class="nc" id="L85">	}</span>
 
 	/**
 	 * Returns whether the service has been initialized.
@@ -87,7 +90,7 @@ public class EmbeddedSearchService {
 	 * @return {@code true} if initialized
 	 */
 	public boolean isInitialized() {
-<span class="nc" id="L90">		return initialized;</span>
+<span class="nc" id="L93">		return initialized;</span>
 	}
 
 	/**
@@ -96,7 +99,7 @@ public class EmbeddedSearchService {
 	 * @return {@code true} if the health endpoint responds with HTTP 200
 	 */
 	public boolean isAvailable() {
-<span class="nc bnc" id="L99" title="All 4 branches missed.">		return initialized &amp;&amp; SemanticSearchClient.getInstance().isAvailable();</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">		return initialized &amp;&amp; SemanticSearchClient.getInstance().isAvailable();</span>
 	}
 
 	/**
@@ -104,12 +107,14 @@ public class EmbeddedSearchService {
 	 * stopped.
 	 */
 	public void shutdown() {
-<span class="nc bnc" id="L107" title="All 2 branches missed.">		if (!initialized) {</span>
-<span class="nc" id="L108">			return;</span>
+<span class="nc" id="L110">		synchronized (lifecycleLock) {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			if (!initialized) {</span>
+<span class="nc" id="L112">				return;</span>
+			}
+<span class="nc" id="L114">			initialized= false;</span>
+<span class="nc" id="L115">			LOG.info(&quot;Git Search: REST search service shut down&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L110">		initialized= false;</span>
-<span class="nc" id="L111">		LOG.info(&quot;Git Search: REST search service shut down&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L112">	}</span>
+<span class="nc" id="L117">	}</span>
 
 	/**
 	 * Returns the REST search client, lazily initializing the service on first
@@ -118,10 +123,10 @@ public class EmbeddedSearchService {
 	 * @return the {@link SemanticSearchClient} instance
 	 */
 	public SemanticSearchClient getSearchClient() {
-<span class="nc bnc" id="L121" title="All 2 branches missed.">		if (!initialized) {</span>
-<span class="nc" id="L122">			initialize(null);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (!initialized) {</span>
+<span class="nc" id="L127">			initialize(null);</span>
 		}
-<span class="nc" id="L124">		return SemanticSearchClient.getInstance();</span>
+<span class="nc" id="L129">		return SemanticSearchClient.getInstance();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -167,11 +167,11 @@ public final class ExpressionHelper {
 	 * @return list of expression strings (without trailing semicolons)
 	 */
 	public static List&lt;String&gt; bodyStatementsToStrings(List&lt;Statement&gt; statements) {
-<span class="fc" id="L170">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L171" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
-<span class="fc" id="L172">			result.add(stripTrailingSemicolon(stmt.toString()));</span>
+<span class="nc" id="L170">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">		for (Statement stmt : statements) {</span>
+<span class="nc" id="L172">			result.add(stripTrailingSemicolon(stmt.toString()));</span>
 		}
-<span class="fc" id="L174">		return result;</span>
+<span class="nc" id="L174">		return result;</span>
 	}
 
 	/**

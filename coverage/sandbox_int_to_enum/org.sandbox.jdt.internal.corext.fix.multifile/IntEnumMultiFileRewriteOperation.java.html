@@ -157,9 +157,9 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 <span class="fc" id="L157">						return true;</span>
 					}
 <span class="fc" id="L159">					Expression expression= containingExpression(node);</span>
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">					if (!isRecognisedReference(expression, candidate)) {</span>
-<span class="nc" id="L161">						throw new StalePlanRuntimeException(</span>
-<span class="nc" id="L162">								stale(unit, &quot;unexpected use of &quot; + node.getIdentifier())); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">					if (!isRecognisedReference(expression, candidate)) {</span>
+<span class="fc" id="L161">						throw new StalePlanRuntimeException(</span>
+<span class="fc" id="L162">								stale(unit, &quot;unexpected use of &quot; + node.getIdentifier())); //$NON-NLS-1$</span>
 					}
 <span class="fc" id="L164">					IntEnumConstant constant= candidate.constant(constantKey);</span>
 <span class="fc bfc" id="L165" title="All 2 branches covered.">					String qualifier= unitHandle.equals(candidate.ownerCompilationUnitHandle())</span>
@@ -172,8 +172,8 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 <span class="fc" id="L172">					return true;</span>
 				}
 			});
-<span class="pc" id="L175">		} catch (StalePlanRuntimeException exception) {</span>
-<span class="nc" id="L176">			throw exception.coreException;</span>
+<span class="fc" id="L175">		} catch (StalePlanRuntimeException exception) {</span>
+<span class="fc" id="L176">			throw exception.coreException;</span>
 		}
 
 <span class="fc" id="L179">		List&lt;ResolvedOwner&gt; owners= new ArrayList&lt;&gt;();</span>
@@ -212,9 +212,9 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 		private static final long serialVersionUID= 1L;
 		private final CoreException coreException;
 
-<span class="nc" id="L215">		StalePlanRuntimeException(CoreException coreException) {</span>
-<span class="nc" id="L216">			this.coreException= coreException;</span>
-<span class="nc" id="L217">		}</span>
+<span class="fc" id="L215">		StalePlanRuntimeException(CoreException coreException) {</span>
+<span class="fc" id="L216">			this.coreException= coreException;</span>
+<span class="fc" id="L217">		}</span>
 	}
 
 	@Override
@@ -287,7 +287,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 <span class="fc bfc" id="L287" title="All 2 branches covered.">		if (parent instanceof MethodInvocation invocation) {</span>
 <span class="fc" id="L288">			IMethodBinding binding= invocation.resolveMethodBinding();</span>
 <span class="pc bpc" id="L289" title="1 of 2 branches missed.">			String key= binding == null ? null : binding.getMethodDeclaration().getKey();</span>
-<span class="pc bpc" id="L290" title="2 of 4 branches missed.">			return candidate.methodBindingKey().equals(key) &amp;&amp; candidate.parameterIndex() &lt; invocation.arguments().size()</span>
+<span class="pc bpc" id="L290" title="1 of 4 branches missed.">			return candidate.methodBindingKey().equals(key) &amp;&amp; candidate.parameterIndex() &lt; invocation.arguments().size()</span>
 <span class="pc bpc" id="L291" title="1 of 2 branches missed.">					&amp;&amp; outerExpression((Expression) invocation.arguments().get(candidate.parameterIndex())) == outer;</span>
 		}
 <span class="fc" id="L293">		ASTNode current= outer.getParent();</span>
@@ -377,8 +377,8 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 	}
 
 	private static CoreException stale(ICompilationUnit unit, String detail) {
-<span class="nc" id="L380">		String message= &quot;The project-wide int-to-enum plan is stale for &quot; + unit.getElementName() + &quot;: &quot; + detail; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L381">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_int_to_enum&quot;, message)); //$NON-NLS-1$</span>
+<span class="fc" id="L380">		String message= &quot;The project-wide int-to-enum plan is stale for &quot; + unit.getElementName() + &quot;: &quot; + detail; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L381">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_int_to_enum&quot;, message)); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

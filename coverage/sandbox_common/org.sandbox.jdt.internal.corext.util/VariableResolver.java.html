@@ -252,18 +252,18 @@ public final class VariableResolver {
 	 * @throws IllegalArgumentException if startNode or varName is null
 	 */
 	public static ITypeBinding getTypeBinding(ASTNode startNode, String varName) {
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">		if (startNode == null) {</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">		if (startNode == null) {</span>
 <span class="nc" id="L256">			throw new IllegalArgumentException(&quot;startNode cannot be null&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L258" title="1 of 2 branches missed.">		if (varName == null) {</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">		if (varName == null) {</span>
 <span class="nc" id="L259">			throw new IllegalArgumentException(&quot;varName cannot be null&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L262">		VariableDeclarationFragment frag = findVariableDeclaration(startNode, varName);</span>
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">		if (frag != null) {</span>
-<span class="fc" id="L264">			IVariableBinding binding = frag.resolveBinding();</span>
-<span class="pc bpc" id="L265" title="1 of 2 branches missed.">			if (binding != null) {</span>
-<span class="fc" id="L266">				return binding.getType();</span>
+<span class="nc" id="L262">		VariableDeclarationFragment frag = findVariableDeclaration(startNode, varName);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">		if (frag != null) {</span>
+<span class="nc" id="L264">			IVariableBinding binding = frag.resolveBinding();</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">			if (binding != null) {</span>
+<span class="nc" id="L266">				return binding.getType();</span>
 			}
 		}
 <span class="nc" id="L269">		return null;</span>

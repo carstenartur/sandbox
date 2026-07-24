@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IntEnumScopeCandidateDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">IntEnumScopeCandidateDetector.java</span></div><h1>IntEnumScopeCandidateDetector.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+
+/** Lightweight selected-scope detector for project-wide Int-to-Enum planning. */
+public final class IntEnumScopeCandidateDetector {
+
+	/** Binding-derived elements whose references define the required source closure. */
+	public record SearchSeeds(boolean candidateFound, boolean complete, List&lt;IJavaElement&gt; elements) {
+<span class="fc" id="L47">		public SearchSeeds {</span>
+<span class="fc" id="L48">			elements= List.copyOf(elements);</span>
+<span class="fc" id="L49">		}</span>
+	}
+
+	private IntEnumScopeCandidateDetector() {
+		// utility class
+	}
+
+	/** Returns whether the current selection contains a structural candidate. */
+	public static boolean containsCandidate(IJavaProject project, Collection&lt;ICompilationUnit&gt; currentScope,
+			IProgressMonitor monitor) {
+<span class="nc" id="L59">		return findSearchSeeds(project, currentScope, monitor).candidateFound();</span>
+	}
+
+	/**
+	 * Finds the candidate methods and constants whose references define the
+	 * coordinated source closure. A structural candidate with a missing binding is
+	 * reported as incomplete so the caller can use its conservative fallback.
+	 */
+	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection&lt;ICompilationUnit&gt; currentScope,
+			IProgressMonitor monitor) {
+<span class="pc bpc" id="L69" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()) {</span>
+<span class="nc" id="L70">			return new SearchSeeds(false, true, List.of());</span>
+		}
+<span class="fc" id="L72">		checkCanceled(monitor);</span>
+<span class="fc" id="L73">		Set&lt;ICompilationUnit&gt; units= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		for (ICompilationUnit unit : currentScope) {</span>
+<span class="pc bpc" id="L75" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L76">				units.add(unit.getPrimary());</span>
+			}
+		}
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (units.isEmpty()) {</span>
+<span class="nc" id="L80">			return new SearchSeeds(false, true, List.of());</span>
+		}
+
+<span class="fc" id="L83">		boolean[] candidateFound= { false };</span>
+<span class="fc" id="L84">		boolean[] complete= { true };</span>
+<span class="fc" id="L85">		Set&lt;IJavaElement&gt; elements= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L86">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L87">		parser.setProject(project);</span>
+<span class="fc" id="L88">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L89">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L90">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L91">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L94">				ast.accept(new ASTVisitor() {</span>
+					@Override
+					public boolean visit(TypeDeclaration type) {
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">						if (!(type.getParent() instanceof CompilationUnit) || type.isInterface()</span>
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">								|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty()) {</span>
+<span class="nc" id="L99">							return false;</span>
+						}
+<span class="fc" id="L101">						List&lt;VariableDeclarationFragment&gt; constants= packagePrivateIntConstants(type);</span>
+<span class="fc" id="L102">						List&lt;MethodDeclaration&gt; methods= packagePrivateIntStateMethods(type);</span>
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">						if (constants.size() &lt; 2 || methods.isEmpty()) {</span>
+<span class="fc" id="L104">							return false;</span>
+						}
+<span class="fc" id="L106">						candidateFound[0]= true;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">						for (VariableDeclarationFragment constant : constants) {</span>
+<span class="fc" id="L108">							IVariableBinding binding= constant.resolveBinding();</span>
+<span class="fc" id="L109">							complete[0]&amp;= addJavaElement(binding, elements);</span>
+						}
+<span class="fc bfc" id="L111" title="All 2 branches covered.">						for (MethodDeclaration method : methods) {</span>
+<span class="fc" id="L112">							IMethodBinding binding= method.resolveBinding();</span>
+<span class="fc" id="L113">							complete[0]&amp;= addJavaElement(binding, elements);</span>
+						}
+<span class="fc" id="L115">						return false;</span>
+					}
+				});
+<span class="fc" id="L118">			}</span>
+<span class="fc" id="L119">		}, monitor);</span>
+<span class="fc" id="L120">		checkCanceled(monitor);</span>
+<span class="fc" id="L121">		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList&lt;&gt;(elements));</span>
+	}
+
+	private static List&lt;VariableDeclarationFragment&gt; packagePrivateIntConstants(TypeDeclaration type) {
+<span class="fc" id="L125">		List&lt;VariableDeclarationFragment&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (FieldDeclaration field : type.getFields()) {</span>
+<span class="fc" id="L127">			int modifiers= field.getModifiers();</span>
+<span class="pc bpc" id="L128" title="3 of 6 branches missed.">			if (!isPackagePrivate(modifiers) || !Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">					|| !isPlainInt(field.getType())) {</span>
+<span class="nc" id="L130">				continue;</span>
+			}
+<span class="fc bfc" id="L132" title="All 2 branches covered.">			for (Object fragment : field.fragments()) {</span>
+<span class="fc" id="L133">				result.add((VariableDeclarationFragment) fragment);</span>
+			}
+		}
+<span class="fc" id="L136">		return result;</span>
+	}
+
+	private static List&lt;MethodDeclaration&gt; packagePrivateIntStateMethods(TypeDeclaration type) {
+<span class="fc" id="L140">		List&lt;MethodDeclaration&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="pc bpc" id="L142" title="3 of 6 branches missed.">			if (method.isConstructor() || method.getBody() == null || !isPackagePrivate(method.getModifiers())) {</span>
+<span class="nc" id="L143">				continue;</span>
+			}
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">			for (Object parameterObject : method.parameters()) {</span>
+<span class="fc" id="L146">				SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;</span>
+<span class="pc bpc" id="L147" title="3 of 6 branches missed.">				if (parameter.getExtraDimensions() == 0 &amp;&amp; !parameter.isVarargs() &amp;&amp; isPlainInt(parameter.getType())) {</span>
+<span class="fc" id="L148">					result.add(method);</span>
+<span class="fc" id="L149">					break;</span>
+				}
+			}
+		}
+<span class="fc" id="L153">		return result;</span>
+	}
+
+	private static boolean addJavaElement(IBinding binding, Set&lt;IJavaElement&gt; elements) {
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		IJavaElement element= binding == null ? null : binding.getJavaElement();</span>
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">		if (element == null || !element.exists()) {</span>
+<span class="nc" id="L159">			return false;</span>
+		}
+<span class="fc" id="L161">		elements.add(element);</span>
+<span class="fc" id="L162">		return true;</span>
+	}
+
+	private static boolean isPlainInt(Type type) {
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		return type instanceof PrimitiveType primitive</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">				&amp;&amp; primitive.getPrimitiveTypeCode() == PrimitiveType.INT;</span>
+	}
+
+	private static boolean isPackagePrivate(int modifiers) {
+<span class="pc bpc" id="L171" title="3 of 6 branches missed.">		return !Modifier.isPublic(modifiers) &amp;&amp; !Modifier.isProtected(modifiers) &amp;&amp; !Modifier.isPrivate(modifiers);</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L175" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L176">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L178">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

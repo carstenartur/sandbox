@@ -86,47 +86,53 @@ public final class RuleFingerprintIndex {
 		}
 		List&lt;Path&gt; files;
 <span class="fc" id="L88">		try (Stream&lt;Path&gt; paths = Files.walk(hintDirectory)) {</span>
-<span class="fc" id="L89">			files = paths.filter(Files::isRegularFile)</span>
-<span class="fc" id="L90">					.filter(path -&gt; path.getFileName().toString().endsWith(&quot;.sandbox-hint&quot;)) //$NON-NLS-1$</span>
-<span class="fc" id="L91">					.sorted()</span>
-<span class="fc" id="L92">					.toList();</span>
+<span class="fc" id="L89">			files = paths.filter(RuleFingerprintIndex::isHintFile)</span>
+<span class="fc" id="L90">					.sorted()</span>
+<span class="fc" id="L91">					.toList();</span>
 		}
 
-<span class="fc" id="L95">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L96">		HintFileParser parser = new HintFileParser();</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (Path file : files) {</span>
+<span class="fc" id="L94">		Map&lt;String, String&gt; index = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L95">		HintFileParser parser = new HintFileParser();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		for (Path file : files) {</span>
 			HintFile hintFile;
 			try {
-<span class="fc" id="L100">				hintFile = parser.parse(Files.readString(file, StandardCharsets.UTF_8));</span>
-<span class="nc" id="L101">			} catch (Exception e) {</span>
-<span class="nc" id="L102">				throw new IOException(&quot;Could not parse curated hint file &quot; + file + &quot;: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L103">						+ e.getMessage(), e);</span>
-<span class="fc" id="L104">			}</span>
-<span class="fc bfc" id="L105" title="All 2 branches covered.">			for (int i = 0; i &lt; hintFile.getRules().size(); i++) {</span>
-<span class="fc" id="L106">				TransformationRule rule = hintFile.getRules().get(i);</span>
-<span class="pc bpc" id="L107" title="3 of 4 branches missed.">				String ruleName = rule.getRuleId() == null || rule.getRuleId().isBlank()</span>
-<span class="pc" id="L108">						? &quot;rule &quot; + (i + 1) : rule.getRuleId(); //$NON-NLS-1$</span>
-<span class="fc" id="L109">				String relativeFile = hintDirectory.relativize(file).toString()</span>
-<span class="fc" id="L110">						.replace(File.separatorChar, '/');</span>
-<span class="fc" id="L111">				String reference = relativeFile + &quot;#&quot; + ruleName; //$NON-NLS-1$</span>
-<span class="fc" id="L112">				index.putIfAbsent(fingerprintRule(rule), reference);</span>
+<span class="fc" id="L99">				hintFile = parser.parse(Files.readString(file, StandardCharsets.UTF_8));</span>
+<span class="nc" id="L100">			} catch (Exception e) {</span>
+<span class="nc" id="L101">				throw new IOException(&quot;Could not parse curated hint file &quot; + file + &quot;: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L102">						+ e.getMessage(), e);</span>
+<span class="fc" id="L103">			}</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">			for (int i = 0; i &lt; hintFile.getRules().size(); i++) {</span>
+<span class="fc" id="L105">				TransformationRule rule = hintFile.getRules().get(i);</span>
+<span class="pc bpc" id="L106" title="3 of 4 branches missed.">				String ruleName = rule.getRuleId() == null || rule.getRuleId().isBlank()</span>
+<span class="pc" id="L107">						? &quot;rule &quot; + (i + 1) : rule.getRuleId(); //$NON-NLS-1$</span>
+<span class="fc" id="L108">				String relativeFile = hintDirectory.relativize(file).toString()</span>
+<span class="fc" id="L109">						.replace(File.separatorChar, '/');</span>
+<span class="fc" id="L110">				String reference = relativeFile + &quot;#&quot; + ruleName; //$NON-NLS-1$</span>
+<span class="fc" id="L111">				index.putIfAbsent(fingerprintRule(rule), reference);</span>
 			}
-<span class="fc" id="L114">		}</span>
-<span class="fc" id="L115">		return Map.copyOf(index);</span>
+<span class="fc" id="L113">		}</span>
+<span class="fc" id="L114">		return Map.copyOf(index);</span>
+	}
+
+	private static boolean isHintFile(Path path) {
+<span class="fc" id="L118">		Path fileName = path.getFileName();</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">		return Files.isRegularFile(path)</span>
+				&amp;&amp; fileName != null
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">				&amp;&amp; fileName.toString().endsWith(&quot;.sandbox-hint&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static String sha256(String value) {
 		try {
-<span class="fc" id="L120">			MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L121">			byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L122">			StringBuilder hex = new StringBuilder(hash.length * 2);</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">			for (byte b : hash) {</span>
-<span class="fc" id="L124">				hex.append(Character.forDigit((b &gt;&gt;&gt; 4) &amp; 0x0f, 16));</span>
-<span class="fc" id="L125">				hex.append(Character.forDigit(b &amp; 0x0f, 16));</span>
+<span class="fc" id="L126">			MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L127">			byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L128">			StringBuilder hex = new StringBuilder(hash.length * 2);</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">			for (byte b : hash) {</span>
+<span class="fc" id="L130">				hex.append(Character.forDigit((b &gt;&gt;&gt; 4) &amp; 0x0f, 16));</span>
+<span class="fc" id="L131">				hex.append(Character.forDigit(b &amp; 0x0f, 16));</span>
 			}
-<span class="fc" id="L127">			return hex.toString();</span>
-<span class="nc" id="L128">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L129">			throw new IllegalStateException(&quot;SHA-256 algorithm not available&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L133">			return hex.toString();</span>
+<span class="nc" id="L134">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L135">			throw new IllegalStateException(&quot;SHA-256 algorithm not available&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 }

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitScopeCandidateDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitScopeCandidateDetector.java</span></div><h1>JUnitScopeCandidateDetector.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+/** Lightweight selected-scope detector for coordinated JUnit resource migration. */
+public final class JUnitScopeCandidateDetector {
+
+	/** Binding-derived resource types whose references define the required closure. */
+	public record SearchSeeds(boolean candidateFound, boolean complete, List&lt;IJavaElement&gt; elements) {
+<span class="fc" id="L45">		public SearchSeeds {</span>
+<span class="fc" id="L46">			elements= List.copyOf(elements);</span>
+<span class="fc" id="L47">		}</span>
+	}
+
+	private JUnitScopeCandidateDetector() {
+		// utility class
+	}
+
+	/** Returns whether the selection contains either side of a resource migration. */
+	public static boolean containsCandidate(IJavaProject project, Collection&lt;ICompilationUnit&gt; currentScope,
+			IProgressMonitor monitor) {
+<span class="nc" id="L57">		return findSearchSeeds(project, currentScope, monitor).candidateFound();</span>
+	}
+
+	/**
+	 * Finds source resource types referenced by selected declarations or Rule fields.
+	 * Syntactically recognizable candidates with missing bindings are marked
+	 * incomplete so callers preserve the existing complete-policy fallback.
+	 */
+	public static SearchSeeds findSearchSeeds(IJavaProject project, Collection&lt;ICompilationUnit&gt; currentScope,
+			IProgressMonitor monitor) {
+<span class="pc bpc" id="L67" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()) {</span>
+<span class="nc" id="L68">			return new SearchSeeds(false, true, List.of());</span>
+		}
+<span class="fc" id="L70">		checkCanceled(monitor);</span>
+<span class="fc" id="L71">		Set&lt;ICompilationUnit&gt; units= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		for (ICompilationUnit unit : currentScope) {</span>
+<span class="pc bpc" id="L73" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L74">				units.add(unit.getPrimary());</span>
+			}
+		}
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		if (units.isEmpty()) {</span>
+<span class="nc" id="L78">			return new SearchSeeds(false, true, List.of());</span>
+		}
+
+<span class="fc" id="L81">		boolean[] candidateFound= { false };</span>
+<span class="fc" id="L82">		boolean[] complete= { true };</span>
+<span class="fc" id="L83">		Set&lt;IJavaElement&gt; elements= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L84">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L85">		parser.setProject(project);</span>
+<span class="fc" id="L86">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L87">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L88">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L89">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L90">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L93">				ast.accept(new ASTVisitor() {</span>
+					@Override
+					public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L96">						ITypeBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">						ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">						if (superclass != null &amp;&amp; ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">								superclass.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L100">							candidateFound[0]= true;</span>
+<span class="fc" id="L101">							complete[0]&amp;= addJavaElement(binding, elements);</span>
+<span class="fc" id="L102">							return false;</span>
+						}
+<span class="pc bpc" id="L104" title="3 of 4 branches missed.">						if (binding == null &amp;&amp; node.getSuperclassType() != null</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">								&amp;&amp; &quot;ExternalResource&quot;.equals(simpleName(node.getSuperclassType().toString()))) { //$NON-NLS-1$</span>
+<span class="nc" id="L106">							candidateFound[0]= true;</span>
+<span class="nc" id="L107">							complete[0]= false;</span>
+						}
+<span class="fc" id="L109">						return true;</span>
+					}
+
+					@Override
+					public boolean visit(FieldDeclaration node) {
+<span class="nc" id="L114">						boolean ruleField= false;</span>
+<span class="nc" id="L115">						boolean unresolvedRuleAnnotation= false;</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">						for (Object modifier : node.modifiers()) {</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">							if (!(modifier instanceof Annotation annotation)) {</span>
+								continue;
+							}
+<span class="nc" id="L120">							ITypeBinding annotationBinding= annotation.resolveTypeBinding();</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">							if (annotationBinding != null) {</span>
+<span class="nc" id="L122">								String qualifiedName= annotationBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">								ruleField|= ORG_JUNIT_RULE.equals(qualifiedName)</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">										|| ORG_JUNIT_CLASS_RULE.equals(qualifiedName);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">							} else if (isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {</span>
+<span class="nc" id="L126">								ruleField= true;</span>
+<span class="nc" id="L127">								unresolvedRuleAnnotation= true;</span>
+							}
+						}
+<span class="nc bnc" id="L130" title="All 2 branches missed.">						if (!ruleField) {</span>
+<span class="nc" id="L131">							return true;</span>
+						}
+<span class="nc" id="L133">						candidateFound[0]= true;</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">						if (unresolvedRuleAnnotation) {</span>
+<span class="nc" id="L135">							complete[0]= false;</span>
+						}
+<span class="nc" id="L137">						ITypeBinding fieldType= node.getType().resolveBinding();</span>
+<span class="nc" id="L138">						complete[0]&amp;= addJavaElement(fieldType, elements);</span>
+<span class="nc" id="L139">						return true;</span>
+					}
+				});
+<span class="fc" id="L142">			}</span>
+<span class="fc" id="L143">		}, monitor);</span>
+<span class="fc" id="L144">		checkCanceled(monitor);</span>
+<span class="fc" id="L145">		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList&lt;&gt;(elements));</span>
+	}
+
+	private static boolean isSyntacticRuleName(String name) {
+<span class="nc" id="L149">		String simple= simpleName(name);</span>
+<span class="nc bnc" id="L150" title="All 4 branches missed.">		return &quot;Rule&quot;.equals(simple) || &quot;ClassRule&quot;.equals(simple); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static String simpleName(String name) {
+<span class="nc" id="L154">		int separator= name.lastIndexOf('.');</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">		return separator &lt; 0 ? name : name.substring(separator + 1);</span>
+	}
+
+	private static boolean addJavaElement(ITypeBinding binding, Set&lt;IJavaElement&gt; elements) {
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		IJavaElement element= binding == null ? null : binding.getErasure().getJavaElement();</span>
+<span class="pc bpc" id="L160" title="2 of 4 branches missed.">		if (element == null || !element.exists()) {</span>
+<span class="nc" id="L161">			return false;</span>
+		}
+<span class="fc" id="L163">		elements.add(element);</span>
+<span class="fc" id="L164">		return true;</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L168" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L169">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L171">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -54,8 +54,8 @@ import org.sandbox.jdt.internal.corext.util.VariableResolver;
 public final class CollectPatternDetector {
 
 	private final ASTNode contextNode;
-<span class="fc" id="L57">	private String targetVariable = null;</span>
-<span class="fc" id="L58">	private CollectorType collectorType = null;</span>
+<span class="nc" id="L57">	private String targetVariable = null;</span>
+<span class="nc" id="L58">	private CollectorType collectorType = null;</span>
 
 	/**
 	 * Creates a new CollectPatternDetector.
@@ -63,12 +63,12 @@ public final class CollectPatternDetector {
 	 * @param contextNode the context node (typically the for-loop) for type resolution
 	 * @throws IllegalArgumentException if contextNode is null
 	 */
-<span class="fc" id="L66">	public CollectPatternDetector(ASTNode contextNode) {</span>
-<span class="pc bpc" id="L67" title="1 of 2 branches missed.">		if (contextNode == null) {</span>
+<span class="nc" id="L66">	public CollectPatternDetector(ASTNode contextNode) {</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">		if (contextNode == null) {</span>
 <span class="nc" id="L68">			throw new IllegalArgumentException(&quot;contextNode cannot be null&quot;);</span>
 		}
-<span class="fc" id="L70">		this.contextNode = contextNode;</span>
-<span class="fc" id="L71">	}</span>
+<span class="nc" id="L70">		this.contextNode = contextNode;</span>
+<span class="nc" id="L71">	}</span>
 
 	/**
 	 * Returns the target collection variable name detected during the last
@@ -77,7 +77,7 @@ public final class CollectPatternDetector {
 	 * @return the target variable name, or null if no collect was detected
 	 */
 	public String getTargetVariable() {
-<span class="fc" id="L80">		return targetVariable;</span>
+<span class="nc" id="L80">		return targetVariable;</span>
 	}
 
 	/**
@@ -111,14 +111,14 @@ public final class CollectPatternDetector {
 	 * @return a COLLECT operation if detected, null otherwise
 	 */
 	public ProspectiveOperation detectCollectOperation(Statement stmt) {
-<span class="fc" id="L114">		final ProspectiveOperation[] result = {null};</span>
-<span class="fc" id="L115">		NodeMatcher.on(stmt)</span>
-<span class="fc" id="L116">			.ifExpressionStatement(exprStmt -&gt; {</span>
-<span class="fc" id="L117">				Expression expr = exprStmt.getExpression();</span>
-<span class="fc" id="L118">				NodeMatcher.on(expr)</span>
-<span class="fc" id="L119">					.ifMethodInvocation(mi -&gt; result[0] = detectAddMethodPattern(mi, stmt));</span>
-<span class="fc" id="L120">			});</span>
-<span class="fc" id="L121">		return result[0];</span>
+<span class="nc" id="L114">		final ProspectiveOperation[] result = {null};</span>
+<span class="nc" id="L115">		NodeMatcher.on(stmt)</span>
+<span class="nc" id="L116">			.ifExpressionStatement(exprStmt -&gt; {</span>
+<span class="nc" id="L117">				Expression expr = exprStmt.getExpression();</span>
+<span class="nc" id="L118">				NodeMatcher.on(expr)</span>
+<span class="nc" id="L119">					.ifMethodInvocation(mi -&gt; result[0] = detectAddMethodPattern(mi, stmt));</span>
+<span class="nc" id="L120">			});</span>
+<span class="nc" id="L121">		return result[0];</span>
 	}
 
 	/**
@@ -127,46 +127,46 @@ public final class CollectPatternDetector {
 	 */
 	private ProspectiveOperation detectAddMethodPattern(MethodInvocation methodInv, Statement stmt) {
 		// Check if method name is &quot;add&quot;
-<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">		if (!&quot;add&quot;.equals(methodInv.getName().getIdentifier())) {</span>
 <span class="nc" id="L131">			return null;</span>
 		}
 
 		// Check if invoked on a SimpleName (the collection variable)
-<span class="fc" id="L135">		Expression receiver = methodInv.getExpression();</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (!(receiver instanceof SimpleName)) {</span>
+<span class="nc" id="L135">		Expression receiver = methodInv.getExpression();</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (!(receiver instanceof SimpleName)) {</span>
 <span class="nc" id="L137">			return null;</span>
 		}
 
-<span class="fc" id="L140">		String varName = ((SimpleName) receiver).getIdentifier();</span>
+<span class="nc" id="L140">		String varName = ((SimpleName) receiver).getIdentifier();</span>
 
 		// Resolve the type of the collection variable
-<span class="fc" id="L143">		ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (varType == null) {</span>
+<span class="nc" id="L143">		ITypeBinding varType = VariableResolver.getTypeBinding(contextNode, varName);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">		if (varType == null) {</span>
 <span class="nc" id="L145">			return null;</span>
 		}
 
 		// Determine the collector type based on the collection type
-<span class="fc" id="L149">		CollectorType type = CollectorType.fromCollectionType(varType.getErasure().getQualifiedName());</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L149">		CollectorType type = CollectorType.fromCollectionType(varType.getErasure().getQualifiedName());</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (type == null) {</span>
 <span class="nc" id="L151">			return null;</span>
 		}
 
 		// Extract the expression being added (the argument to add())
-<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (methodInv.arguments().isEmpty()) {</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (methodInv.arguments().isEmpty()) {</span>
 <span class="nc" id="L156">			return null;</span>
 		}
 
-<span class="fc" id="L159">		Expression addedExpr = (Expression) methodInv.arguments().get(0);</span>
+<span class="nc" id="L159">		Expression addedExpr = (Expression) methodInv.arguments().get(0);</span>
 
-<span class="fc" id="L161">		targetVariable = varName;</span>
-<span class="fc" id="L162">		collectorType = type;</span>
+<span class="nc" id="L161">		targetVariable = varName;</span>
+<span class="nc" id="L162">		collectorType = type;</span>
 
 		// Create a COLLECT operation with the added expression
-<span class="fc" id="L165">		ProspectiveOperation op = new ProspectiveOperation(addedExpr, OperationType.COLLECT, null);</span>
-<span class="fc" id="L166">		op.setCollectorType(type);</span>
-<span class="fc" id="L167">		op.setTargetVariable(varName);</span>
+<span class="nc" id="L165">		ProspectiveOperation op = new ProspectiveOperation(addedExpr, OperationType.COLLECT, null);</span>
+<span class="nc" id="L166">		op.setCollectorType(type);</span>
+<span class="nc" id="L167">		op.setTargetVariable(varName);</span>
 
-<span class="fc" id="L169">		return op;</span>
+<span class="nc" id="L169">		return op;</span>
 	}
 
 	/**
@@ -219,17 +219,17 @@ public final class CollectPatternDetector {
 	 * @return the expression to be collected, or null if none
 	 */
 	public Expression extractCollectExpression(Statement stmt) {
-<span class="fc" id="L222">		final Expression[] result = {null};</span>
-<span class="fc" id="L223">		NodeMatcher.on(stmt)</span>
-<span class="fc" id="L224">			.ifExpressionStatement(exprStmt -&gt; {</span>
-<span class="fc" id="L225">				NodeMatcher.on(exprStmt.getExpression())</span>
-<span class="fc" id="L226">					.ifMethodInvocation(methodInv -&gt; {</span>
-<span class="pc bpc" id="L227" title="2 of 4 branches missed.">						if (&quot;add&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; !methodInv.arguments().isEmpty()) { //$NON-NLS-1$</span>
-<span class="fc" id="L228">							result[0] = (Expression) methodInv.arguments().get(0);</span>
+<span class="nc" id="L222">		final Expression[] result = {null};</span>
+<span class="nc" id="L223">		NodeMatcher.on(stmt)</span>
+<span class="nc" id="L224">			.ifExpressionStatement(exprStmt -&gt; {</span>
+<span class="nc" id="L225">				NodeMatcher.on(exprStmt.getExpression())</span>
+<span class="nc" id="L226">					.ifMethodInvocation(methodInv -&gt; {</span>
+<span class="nc bnc" id="L227" title="All 4 branches missed.">						if (&quot;add&quot;.equals(methodInv.getName().getIdentifier()) &amp;&amp; !methodInv.arguments().isEmpty()) { //$NON-NLS-1$</span>
+<span class="nc" id="L228">							result[0] = (Expression) methodInv.arguments().get(0);</span>
 						}
-<span class="fc" id="L230">					});</span>
-<span class="fc" id="L231">			});</span>
-<span class="fc" id="L232">		return result[0];</span>
+<span class="nc" id="L230">					});</span>
+<span class="nc" id="L231">			});</span>
+<span class="nc" id="L232">		return result[0];</span>
 	}
 
 	/**
@@ -250,51 +250,51 @@ public final class CollectPatternDetector {
 	 * @return true if the target variable is read during iteration
 	 */
 	public boolean isTargetReadDuringIteration(Statement loopBody, String collectTargetVar) {
-<span class="pc bpc" id="L253" title="2 of 4 branches missed.">		if (loopBody == null || collectTargetVar == null) {</span>
+<span class="nc bnc" id="L253" title="All 4 branches missed.">		if (loopBody == null || collectTargetVar == null) {</span>
 <span class="nc" id="L254">			return false;</span>
 		}
 		
-<span class="fc" id="L257">		final boolean[] hasRead = {false};</span>
+<span class="nc" id="L257">		final boolean[] hasRead = {false};</span>
 		
-<span class="fc" id="L259">		loopBody.accept(new ASTVisitor() {</span>
+<span class="nc" id="L259">		loopBody.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation node) {
-<span class="fc" id="L262">				Expression receiver = node.getExpression();</span>
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">				if (receiver instanceof SimpleName) {</span>
-<span class="fc" id="L264">					String varName = ((SimpleName) receiver).getIdentifier();</span>
-<span class="fc bfc" id="L265" title="All 2 branches covered.">					if (varName.equals(collectTargetVar)) {</span>
-<span class="fc" id="L266">						String methodName = node.getName().getIdentifier();</span>
+<span class="nc" id="L262">				Expression receiver = node.getExpression();</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">				if (receiver instanceof SimpleName) {</span>
+<span class="nc" id="L264">					String varName = ((SimpleName) receiver).getIdentifier();</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">					if (varName.equals(collectTargetVar)) {</span>
+<span class="nc" id="L266">						String methodName = node.getName().getIdentifier();</span>
 						// &quot;add&quot; is a write operation, anything else is a read
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">						if (!&quot;add&quot;.equals(methodName)) {</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">						if (!&quot;add&quot;.equals(methodName)) {</span>
 <span class="nc" id="L269">							hasRead[0] = true;</span>
 						}
 					}
 				}
-<span class="fc" id="L273">				return true;</span>
+<span class="nc" id="L273">				return true;</span>
 			}
 			
 			@Override
 			public boolean visit(SimpleName node) {
 				// Check if this is a direct reference to the target variable
 				// that is not part of a method invocation on that variable
-<span class="fc bfc" id="L280" title="All 2 branches covered.">				if (node.getIdentifier().equals(collectTargetVar)) {</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">				if (node.getIdentifier().equals(collectTargetVar)) {</span>
 					// Check if parent is a method invocation where this is the receiver
-<span class="fc" id="L282">					ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">					if (parent instanceof MethodInvocation) {</span>
-<span class="fc" id="L284">						MethodInvocation parentMethod = (MethodInvocation) parent;</span>
-<span class="pc bpc" id="L285" title="1 of 2 branches missed.">						if (parentMethod.getExpression() == node) {</span>
+<span class="nc" id="L282">					ASTNode parent = node.getParent();</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">					if (parent instanceof MethodInvocation) {</span>
+<span class="nc" id="L284">						MethodInvocation parentMethod = (MethodInvocation) parent;</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">						if (parentMethod.getExpression() == node) {</span>
 							// This is the receiver of a method call - handled above
-<span class="fc" id="L287">							return true;</span>
+<span class="nc" id="L287">							return true;</span>
 						}
 					}
 					// Direct reference to the variable (e.g., passing it to a method) is a read
 <span class="nc" id="L291">					hasRead[0] = true;</span>
 				}
-<span class="fc" id="L293">				return true;</span>
+<span class="nc" id="L293">				return true;</span>
 			}
 		});
 		
-<span class="fc" id="L297">		return hasRead[0];</span>
+<span class="nc" id="L297">		return hasRead[0];</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

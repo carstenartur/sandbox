@@ -42,8 +42,8 @@ public record IntEnumMigrationPlan(SelectedCompilationUnitPlan selectedScope, Li
 <span class="fc" id="L42">		String handle= unit.getPrimary().getHandleIdentifier();</span>
 <span class="fc" id="L43">		List&lt;IntEnumCandidate&gt; relevant= candidates.stream()</span>
 <span class="fc bfc" id="L44" title="All 2 branches covered.">				.filter(candidate -&gt; handle.equals(candidate.ownerCompilationUnitHandle())</span>
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">						|| candidate.expectedReferenceCountsByUnit().containsKey(handle)</span>
-<span class="pc bnc" id="L46" title="All 2 branches missed.">						|| candidate.expectedCallCountsByUnit().containsKey(handle))</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">						|| candidate.expectedReferenceCountsByUnit().containsKey(handle)</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">						|| candidate.expectedCallCountsByUnit().containsKey(handle))</span>
 <span class="fc" id="L47">				.toList();</span>
 <span class="fc bfc" id="L48" title="All 2 branches covered.">		if (relevant.isEmpty()) {</span>
 <span class="fc" id="L49">			return;</span>

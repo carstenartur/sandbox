@@ -44,14 +44,18 @@ import org.sandbox.jdt.triggerpattern.llm.LlmProvider;
  */
 public class EclipseLlmService {
 
-	private static volatile EclipseLlmService instance;
+<span class="nc" id="L47">	private static final Object INSTANCE_LOCK= new Object();</span>
+
+<span class="nc" id="L49">	private static volatile EclipseLlmService instance;</span>
+
+<span class="nc" id="L51">	private final Object lifecycleLock= new Object();</span>
 
 	private LlmClient llmClient;
 	private AiRuleInferenceEngine engine;
 
-	private EclipseLlmService() {
+<span class="nc" id="L56">	private EclipseLlmService() {</span>
 		// lazy initialization
-	}
+<span class="nc" id="L58">	}</span>
 
 	/**
 	 * Returns the singleton instance.
@@ -59,14 +63,17 @@ public class EclipseLlmService {
 	 * @return the service instance
 	 */
 	public static EclipseLlmService getInstance() {
-<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (instance == null) {</span>
-<span class="nc" id="L63">			synchronized (EclipseLlmService.class) {</span>
-<span class="nc bnc" id="L64" title="All 2 branches missed.">				if (instance == null) {</span>
-<span class="nc" id="L65">					instance = new EclipseLlmService();</span>
+<span class="nc" id="L66">		EclipseLlmService current= instance;</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">		if (current == null) {</span>
+<span class="nc" id="L68">			synchronized (INSTANCE_LOCK) {</span>
+<span class="nc" id="L69">				current= instance;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">				if (current == null) {</span>
+<span class="nc" id="L71">					current= new EclipseLlmService();</span>
+<span class="nc" id="L72">					instance= current;</span>
 				}
 			}
 		}
-<span class="nc" id="L69">		return instance;</span>
+<span class="nc" id="L76">		return current;</span>
 	}
 
 	/**
@@ -82,12 +89,14 @@ public class EclipseLlmService {
 	 *
 	 * @return the inference engine
 	 */
-	public synchronized AiRuleInferenceEngine getEngine() {
-<span class="nc bnc" id="L86" title="All 2 branches missed.">		if (engine == null) {</span>
-<span class="nc" id="L87">			llmClient = createClientFromPreferences();</span>
-<span class="nc" id="L88">			engine = new AiRuleInferenceEngine(llmClient);</span>
+	public AiRuleInferenceEngine getEngine() {
+<span class="nc" id="L93">		synchronized (lifecycleLock) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">			if (engine == null) {</span>
+<span class="nc" id="L95">				llmClient= createClientFromPreferences();</span>
+<span class="nc" id="L96">				engine= new AiRuleInferenceEngine(llmClient);</span>
+			}
+<span class="nc" id="L98">			return engine;</span>
 		}
-<span class="nc" id="L90">		return engine;</span>
 	}
 
 	/**
@@ -98,29 +107,35 @@ public class EclipseLlmService {
 	 * @return {@code true} if an LLM provider can be configured
 	 */
 	public boolean isAvailable() {
-<span class="nc bnc" id="L101" title="All 4 branches missed.">		return hasPreferenceApiKey() || hasAnyEnvApiKey();</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">		return hasPreferenceApiKey() || hasAnyEnvApiKey();</span>
 	}
 
 	/**
 	 * Shuts down the service and releases the underlying LLM client.
 	 */
-	public synchronized void shutdown() {
-<span class="nc bnc" id="L108" title="All 2 branches missed.">		if (llmClient != null) {</span>
-<span class="nc" id="L109">			llmClient.close();</span>
-<span class="nc" id="L110">			llmClient = null;</span>
-<span class="nc" id="L111">			engine = null;</span>
+	public void shutdown() {
+<span class="nc" id="L117">		synchronized (lifecycleLock) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			if (llmClient != null) {</span>
+<span class="nc" id="L119">				llmClient.close();</span>
+<span class="nc" id="L120">				llmClient= null;</span>
+<span class="nc" id="L121">				engine= null;</span>
+			}
 		}
-<span class="nc" id="L113">	}</span>
+<span class="nc" id="L124">	}</span>
 
 	/**
 	 * Resets the singleton (useful for testing or after preference changes).
 	 */
-	public static synchronized void reset() {
-<span class="nc bnc" id="L119" title="All 2 branches missed.">		if (instance != null) {</span>
-<span class="nc" id="L120">			instance.shutdown();</span>
-<span class="nc" id="L121">			instance = null;</span>
+	public static void reset() {
+		EclipseLlmService current;
+<span class="nc" id="L131">		synchronized (INSTANCE_LOCK) {</span>
+<span class="nc" id="L132">			current= instance;</span>
+<span class="nc" id="L133">			instance= null;</span>
 		}
-<span class="nc" id="L123">	}</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (current != null) {</span>
+<span class="nc" id="L136">			current.shutdown();</span>
+		}
+<span class="nc" id="L138">	}</span>
 
 	/**
 	 * Creates an LLM client using Eclipse preferences, falling back to env vars.
@@ -131,40 +146,40 @@ public class EclipseLlmService {
 	 * If neither is set, auto-detection from environment variables is used.&lt;/p&gt;
 	 */
 	private static LlmClient createClientFromPreferences() {
-<span class="nc" id="L134">		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);</span>
-<span class="nc" id="L135">		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L136">		String apiKey = prefs.get(LlmPreferencePage.PREF_API_KEY, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L149">		IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);</span>
+<span class="nc" id="L150">		String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L151">		String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, &quot;&quot;); //$NON-NLS-1$</span>
 
-<span class="nc bnc" id="L138" title="All 2 branches missed.">		if (!provider.isBlank()) {</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">		if (!provider.isBlank()) {</span>
 			// Use preference provider and API key (key may be blank → client reads env)
-<span class="nc" id="L140">			return LlmClientFactory.create(</span>
-<span class="nc" id="L141">					LlmProvider.fromString(provider),</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">					apiKey.isBlank() ? null : apiKey);</span>
+<span class="nc" id="L155">			return LlmClientFactory.create(</span>
+<span class="nc" id="L156">					LlmProvider.fromString(provider),</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">					apiKey.isBlank() ? null : apiKey);</span>
 		}
 
 		// Fallback to environment variables for both provider and API key
-<span class="nc" id="L146">		return LlmClientFactory.createFromEnvironment(null);</span>
+<span class="nc" id="L161">		return LlmClientFactory.createFromEnvironment(null);</span>
 	}
 
 	private static boolean hasPreferenceApiKey() {
-<span class="nc" id="L150">		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);</span>
-<span class="nc" id="L151">		String apiKey = prefs.get(LlmPreferencePage.PREF_API_KEY, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L152">		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L153" title="All 4 branches missed.">		return !apiKey.isBlank() &amp;&amp; !provider.isBlank();</span>
+<span class="nc" id="L165">		IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);</span>
+<span class="nc" id="L166">		String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L167">		String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L168" title="All 4 branches missed.">		return !apiKey.isBlank() &amp;&amp; !provider.isBlank();</span>
 	}
 
 	private static boolean hasAnyEnvApiKey() {
-<span class="nc bnc" id="L157" title="All 2 branches missed.">		return envSet(&quot;GEMINI_API_KEY&quot;) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">				|| envSet(&quot;OPENAI_API_KEY&quot;) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L159" title="All 2 branches missed.">				|| envSet(&quot;DEEPSEEK_API_KEY&quot;) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L160" title="All 2 branches missed.">				|| envSet(&quot;DASHSCOPE_API_KEY&quot;) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">				|| envSet(&quot;LLAMA_API_KEY&quot;) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">				|| envSet(&quot;MISTRAL_API_KEY&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">		return envSet(&quot;GEMINI_API_KEY&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">				|| envSet(&quot;OPENAI_API_KEY&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">				|| envSet(&quot;DEEPSEEK_API_KEY&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">				|| envSet(&quot;DASHSCOPE_API_KEY&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">				|| envSet(&quot;LLAMA_API_KEY&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">				|| envSet(&quot;MISTRAL_API_KEY&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static boolean envSet(String key) {
-<span class="nc" id="L166">		String value = System.getenv(key);</span>
-<span class="nc bnc" id="L167" title="All 4 branches missed.">		return value != null &amp;&amp; !value.isBlank();</span>
+<span class="nc" id="L181">		String value= System.getenv(key);</span>
+<span class="nc bnc" id="L182" title="All 4 branches missed.">		return value != null &amp;&amp; !value.isBlank();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

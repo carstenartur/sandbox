@@ -20,38 +20,49 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUp;
 
 /**
  * Cleanup tab page for int to enum conversion options.
  */
-<span class="nc" id="L29">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L30">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L34">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L35">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L36">			CleanUpOptions.TRUE</span>
+<span class="nc" id="L35">	static final String[] FALSE_TRUE = {</span>
+<span class="nc" id="L36">			CleanUpOptions.FALSE,</span>
+<span class="nc" id="L37">			CleanUpOptions.TRUE</span>
 	};
 
-<span class="nc" id="L39">	public static final String ID = &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.int_to_enum&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L40">	public static final String ID = &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.int_to_enum&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L43">		return new AbstractCleanUp[] {</span>
-<span class="nc" id="L44">				new IntToEnumCleanUp(values)</span>
+<span class="nc" id="L44">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L45">				new IntToEnumCleanUp(values)</span>
 		};
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L50">		Group intToEnumGroup = createGroup(numColumns, composite, CleanUpMessages.IntToEnumTabPage_GroupName_IntToEnum);</span>
-<span class="nc" id="L51">		createCheckboxPref(intToEnumGroup, numColumns, </span>
-<span class="nc" id="L52">				CleanUpMessages.IntToEnumTabPage_CheckboxName_IntToEnum, </span>
-<span class="nc" id="L53">				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, </span>
-<span class="nc" id="L54">				FALSE_TRUE);</span>
-<span class="nc" id="L55">	}</span>
+<span class="nc" id="L51">		Group intToEnumGroup = createGroup(numColumns, composite, CleanUpMessages.IntToEnumTabPage_GroupName_IntToEnum);</span>
+<span class="nc" id="L52">		CheckboxPreference intToEnum= createCheckboxPref(intToEnumGroup, numColumns,</span>
+<span class="nc" id="L53">				CleanUpMessages.IntToEnumTabPage_CheckboxName_IntToEnum,</span>
+<span class="nc" id="L54">				MYCleanUpConstants.INT_TO_ENUM_CLEANUP,</span>
+<span class="nc" id="L55">				FALSE_TRUE);</span>
+
+<span class="nc" id="L57">		intent(intToEnumGroup);</span>
+<span class="nc" id="L58">		CheckboxPreference projectWide= createCheckboxPref(intToEnumGroup, numColumns - 1,</span>
+<span class="nc" id="L59">				CleanUpMessages.IntToEnumTabPage_CheckboxName_ProjectWide,</span>
+<span class="nc" id="L60">				IntToEnumCleanUpOptions.PROJECT_WIDE,</span>
+<span class="nc" id="L61">				FALSE_TRUE);</span>
+<span class="nc" id="L62">		registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });</span>
+
+<span class="nc" id="L64">		intent(intToEnumGroup);</span>
+<span class="nc" id="L65">		registerPreference(intToEnum);</span>
+<span class="nc" id="L66">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>XMLResourceSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">XMLResourceSupport.java</span></div><h1>XMLResourceSupport.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.ITextFileBuffer;
+import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+/**
+ * Safe workspace boundary for XML cleanup reads, transformations and writes.
+ *
+ * &lt;p&gt;The effective charset is resolved in this order: byte-order mark, an
+ * unambiguous UTF-16 byte signature, XML declaration, Eclipse resource charset,
+ * then UTF-8. A BOM and XML declaration must agree. Supported BOMs are UTF-8,
+ * UTF-16LE and UTF-16BE and are preserved exactly.&lt;/p&gt;
+ *
+ * &lt;p&gt;Dirty connected text buffers are refused. A prepared transformation stores
+ * both the resource modification stamp and the original bytes; both are checked
+ * again immediately before writing so external changes cannot be overwritten
+ * silently.&lt;/p&gt;
+ */
+public final class XMLResourceSupport {
+
+	private static final String PLUGIN_ID= &quot;sandbox_xml_cleanup&quot;; //$NON-NLS-1$
+	private static final int MAX_INPUT_BYTES= 16 * 1024 * 1024;
+<span class="fc" id="L60">	private static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };</span>
+<span class="fc" id="L61">	private static final byte[] UTF_16_BE_BOM= { (byte) 0xfe, (byte) 0xff };</span>
+<span class="fc" id="L62">	private static final byte[] UTF_16_LE_BOM= { (byte) 0xff, (byte) 0xfe };</span>
+<span class="fc" id="L63">	private static final Pattern XML_ENCODING= Pattern.compile(</span>
+<span class="fc" id="L64">			&quot;(?is)^\\s*&lt;\\?xml\\s+[^&gt;]*?encoding\\s*=\\s*(['\&quot;])([^'\&quot;]+)\\1&quot;); //$NON-NLS-1$</span>
+
+	private XMLResourceSupport() {
+	}
+
+	/** Immutable source snapshot used for optimistic conflict detection. */
+	public record Snapshot(byte[] originalBytes, String content, Charset charset,
+			byte[] bom, long modificationStamp, String lineDelimiter) {
+<span class="nc" id="L72">		public Snapshot {</span>
+<span class="nc" id="L73">			originalBytes= originalBytes.clone();</span>
+<span class="nc" id="L74">			bom= bom.clone();</span>
+<span class="nc" id="L75">		}</span>
+
+		@Override
+		public byte[] originalBytes() {
+<span class="nc" id="L79">			return originalBytes.clone();</span>
+		}
+
+		@Override
+		public byte[] bom() {
+<span class="nc" id="L84">			return bom.clone();</span>
+		}
+	}
+
+	/** Prepared, validated transformation that can later be applied safely. */
+	public record Transformation(Snapshot snapshot, String transformedContent,
+			byte[] transformedBytes) {
+<span class="nc" id="L91">		public Transformation {</span>
+<span class="nc" id="L92">			transformedBytes= transformedBytes.clone();</span>
+<span class="nc" id="L93">		}</span>
+
+		@Override
+		public byte[] transformedBytes() {
+<span class="nc" id="L97">			return transformedBytes.clone();</span>
+		}
+
+		public boolean changed() {
+<span class="nc bnc" id="L101" title="All 2 branches missed.">			return !Arrays.equals(snapshot.originalBytes, transformedBytes);</span>
+		}
+	}
+
+	/** Reads, transforms and validates an XML resource without changing it. */
+	public static Transformation prepare(IFile file, boolean enableIndent,
+			IProgressMonitor monitor) throws CoreException {
+<span class="nc" id="L108">		checkCanceled(monitor);</span>
+<span class="nc" id="L109">		ensureNoDirtyBuffer(file);</span>
+<span class="nc" id="L110">		Snapshot snapshot= read(file);</span>
+<span class="nc" id="L111">		checkCanceled(monitor);</span>
+		String transformed;
+		try {
+<span class="nc" id="L114">			transformed= SchemaTransformationUtils.transform(snapshot.content,</span>
+<span class="nc" id="L115">					snapshot.charset, enableIndent);</span>
+<span class="nc" id="L116">		} catch (Exception e) {</span>
+<span class="nc" id="L117">			throw error(&quot;Failed to transform XML resource: &quot; + file.getFullPath(), e); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L119">		transformed= normalizeLineDelimiters(transformed, snapshot.lineDelimiter);</span>
+<span class="nc" id="L120">		validateWellFormed(transformed);</span>
+<span class="nc" id="L121">		byte[] encoded= encode(transformed, snapshot.charset, snapshot.bom);</span>
+<span class="nc" id="L122">		return new Transformation(snapshot, transformed, encoded);</span>
+	}
+
+	/** Applies a prepared transformation after rechecking dirty state and content. */
+	public static void write(IFile file, Transformation transformation,
+			IProgressMonitor monitor) throws CoreException {
+<span class="nc" id="L128">		checkCanceled(monitor);</span>
+<span class="nc" id="L129">		ensureNoDirtyBuffer(file);</span>
+<span class="nc" id="L130">		Snapshot snapshot= transformation.snapshot;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (!file.exists()) {</span>
+<span class="nc" id="L132">			throw error(&quot;XML resource no longer exists: &quot; + file.getFullPath(), null); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L134">		byte[] current= readBytes(file);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (file.getModificationStamp() != snapshot.modificationStamp</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">				|| !Arrays.equals(current, snapshot.originalBytes)) {</span>
+<span class="nc" id="L137">			throw error(&quot;XML resource changed after analysis: &quot; + file.getFullPath(), null); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L139">		validateWellFormed(transformation.transformedContent);</span>
+<span class="nc" id="L140">		try (ByteArrayInputStream input= new ByteArrayInputStream(transformation.transformedBytes)) {</span>
+<span class="nc" id="L141">			file.setContents(input, IResource.KEEP_HISTORY, monitor);</span>
+<span class="nc" id="L142">			String currentCharset= file.getCharset(true);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">			if (!snapshot.charset.name().equalsIgnoreCase(currentCharset)) {</span>
+<span class="nc" id="L144">				file.setCharset(snapshot.charset.name(), monitor);</span>
+			}
+<span class="nc" id="L146">		} catch (IOException e) {</span>
+<span class="nc" id="L147">			throw error(&quot;Failed to close XML content stream&quot;, e); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L149">	}</span>
+
+	static Snapshot read(IFile file) throws CoreException {
+<span class="nc" id="L152">		byte[] bytes= readBytes(file);</span>
+<span class="nc" id="L153">		String resourceCharset= file.getCharset(true);</span>
+<span class="nc" id="L154">		Decoded decoded= decode(bytes, resourceCharset);</span>
+<span class="nc" id="L155">		return new Snapshot(bytes, decoded.content, decoded.charset, decoded.bom,</span>
+<span class="nc" id="L156">				file.getModificationStamp(), detectLineDelimiter(decoded.content));</span>
+	}
+
+	static Decoded decode(byte[] bytes, String resourceCharset) throws CoreException {
+<span class="fc" id="L160">		byte[] bom= new byte[0];</span>
+<span class="fc" id="L161">		Charset byteCharset= null;</span>
+<span class="fc" id="L162">		int offset= 0;</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		if (startsWith(bytes, UTF_8_BOM)) {</span>
+<span class="fc" id="L164">			bom= UTF_8_BOM;</span>
+<span class="fc" id="L165">			byteCharset= StandardCharsets.UTF_8;</span>
+<span class="fc" id="L166">			offset= UTF_8_BOM.length;</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		} else if (startsWith(bytes, UTF_16_BE_BOM)) {</span>
+<span class="nc" id="L168">			bom= UTF_16_BE_BOM;</span>
+<span class="nc" id="L169">			byteCharset= StandardCharsets.UTF_16BE;</span>
+<span class="nc" id="L170">			offset= UTF_16_BE_BOM.length;</span>
+<span class="pc bfc" id="L171" title="All 2 branches covered.">		} else if (startsWith(bytes, UTF_16_LE_BOM)) {</span>
+<span class="fc" id="L172">			bom= UTF_16_LE_BOM;</span>
+<span class="fc" id="L173">			byteCharset= StandardCharsets.UTF_16LE;</span>
+<span class="fc" id="L174">			offset= UTF_16_LE_BOM.length;</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		} else if (startsWith(bytes, new byte[] { 0x00, 0x3c, 0x00, 0x3f })) {</span>
+<span class="nc" id="L176">			byteCharset= StandardCharsets.UTF_16BE;</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		} else if (startsWith(bytes, new byte[] { 0x3c, 0x00, 0x3f, 0x00 })) {</span>
+<span class="nc" id="L178">			byteCharset= StandardCharsets.UTF_16LE;</span>
+		}
+
+<span class="fc" id="L181">		String declaredEncoding= declaredEncoding(bytes, offset, byteCharset);</span>
+<span class="fc" id="L182">		Charset declaredCharset= toCharset(declaredEncoding, &quot;XML declaration&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L183">		Charset metadataCharset= toCharset(resourceCharset, &quot;resource metadata&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		Charset effective= byteCharset != null ? byteCharset</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">				: declaredCharset != null ? declaredCharset</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				: metadataCharset != null ? metadataCharset : StandardCharsets.UTF_8;</span>
+
+<span class="fc bfc" id="L188" title="All 4 branches covered.">		if (byteCharset != null &amp;&amp; declaredCharset != null</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				&amp;&amp; !equivalent(byteCharset, declaredCharset)) {</span>
+<span class="fc" id="L190">			throw error(&quot;XML byte order and declaration disagree: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L191">					+ byteCharset.name() + &quot; vs &quot; + declaredCharset.name(), null); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L194">		byte[] contentBytes= Arrays.copyOfRange(bytes, offset, bytes.length);</span>
+		try {
+<span class="fc" id="L196">			String content= effective.newDecoder()</span>
+<span class="fc" id="L197">					.onMalformedInput(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L198">					.onUnmappableCharacter(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L199">					.decode(ByteBuffer.wrap(contentBytes)).toString();</span>
+<span class="fc" id="L200">			return new Decoded(content, effective, bom);</span>
+<span class="nc" id="L201">		} catch (CharacterCodingException e) {</span>
+<span class="nc" id="L202">			throw error(&quot;XML bytes are not valid &quot; + effective.name(), e); //$NON-NLS-1$</span>
+		}
+	}
+
+	static record Decoded(String content, Charset charset, byte[] bom) {
+<span class="fc" id="L207">		Decoded {</span>
+<span class="fc" id="L208">			bom= bom.clone();</span>
+<span class="fc" id="L209">		}</span>
+
+		@Override
+		public byte[] bom() {
+<span class="fc" id="L213">			return bom.clone();</span>
+		}
+	}
+
+	static void validateWellFormed(String content) throws CoreException {
+		try {
+<span class="fc" id="L219">			DocumentBuilderFactory factory= DocumentBuilderFactory.newInstance();</span>
+<span class="fc" id="L220">			factory.setNamespaceAware(true);</span>
+<span class="fc" id="L221">			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);</span>
+<span class="fc" id="L222">			factory.setFeature(&quot;http://apache.org/xml/features/disallow-doctype-decl&quot;, true); //$NON-NLS-1$</span>
+<span class="fc" id="L223">			factory.setFeature(&quot;http://xml.org/sax/features/external-general-entities&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L224">			factory.setFeature(&quot;http://xml.org/sax/features/external-parameter-entities&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L225">			factory.setFeature(&quot;http://apache.org/xml/features/nonvalidating/load-external-dtd&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L226">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L227">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L228">			factory.newDocumentBuilder().parse(new InputSource(new StringReader(content)));</span>
+<span class="fc" id="L229">		} catch (ParserConfigurationException | SAXException | IOException e) {</span>
+<span class="fc" id="L230">			throw error(&quot;XML cleanup output is not well-formed&quot;, e); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L232">	}</span>
+
+	private static byte[] readBytes(IFile file) throws CoreException {
+<span class="fc" id="L235">		try (InputStream input= file.getContents()) {</span>
+<span class="fc" id="L236">			byte[] bytes= input.readNBytes(MAX_INPUT_BYTES + 1);</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">			if (bytes.length &gt; MAX_INPUT_BYTES) {</span>
+<span class="fc" id="L238">				throw error(&quot;XML resource exceeds the 16 MiB cleanup limit: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L239">						+ file.getFullPath(), null);</span>
+			}
+<span class="nc" id="L241">			return bytes;</span>
+<span class="nc" id="L242">		} catch (IOException e) {</span>
+<span class="nc" id="L243">			throw error(&quot;Failed to read XML resource: &quot; + file.getFullPath(), e); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static void ensureNoDirtyBuffer(IFile file) throws CoreException {
+<span class="nc" id="L248">		ITextFileBuffer buffer= FileBuffers.getTextFileBufferManager()</span>
+<span class="nc" id="L249">				.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);</span>
+<span class="nc bnc" id="L250" title="All 4 branches missed.">		if (buffer != null &amp;&amp; buffer.isDirty()) {</span>
+<span class="nc" id="L251">			throw error(&quot;XML resource has unsaved editor changes: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L252">					+ file.getFullPath(), null);</span>
+		}
+<span class="nc" id="L254">	}</span>
+
+	private static String declaredEncoding(byte[] bytes, int offset,
+			Charset byteCharset) throws CoreException {
+<span class="fc" id="L258">		int length= Math.min(bytes.length - offset, 1024);</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">		if (length &lt;= 0) {</span>
+<span class="nc" id="L260">			return null;</span>
+		}
+<span class="fc bfc" id="L262" title="All 2 branches covered.">		Charset probeCharset= byteCharset != null ? byteCharset : StandardCharsets.ISO_8859_1;</span>
+		String prefix;
+		try {
+<span class="fc" id="L265">			prefix= probeCharset.newDecoder().decode(</span>
+<span class="fc" id="L266">					ByteBuffer.wrap(bytes, offset, length)).toString();</span>
+<span class="pc" id="L267">		} catch (CharacterCodingException e) {</span>
+<span class="nc" id="L268">			throw error(&quot;Could not inspect XML declaration&quot;, e); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L270">		Matcher matcher= XML_ENCODING.matcher(prefix);</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">		return matcher.find() ? matcher.group(2).trim() : null;</span>
+	}
+
+	private static Charset toCharset(String name, String source) throws CoreException {
+<span class="pc bpc" id="L275" title="1 of 4 branches missed.">		if (name == null || name.isBlank()) {</span>
+<span class="fc" id="L276">			return null;</span>
+		}
+		try {
+<span class="fc" id="L279">			return Charset.forName(name);</span>
+<span class="nc" id="L280">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L281">			throw error(&quot;Unsupported XML charset in &quot; + source + &quot;: &quot; + name, e); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+	}
+
+	private static boolean equivalent(Charset first, Charset second) {
+<span class="fc" id="L286">		String firstName= first.name().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L287">		String secondName= second.name().toUpperCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">		if (firstName.equals(secondName)) {</span>
+<span class="fc" id="L289">			return true;</span>
+		}
+<span class="pc bpc" id="L291" title="1 of 4 branches missed.">		return firstName.startsWith(&quot;UTF-16&quot;) &amp;&amp; secondName.equals(&quot;UTF-16&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L292" title="3 of 4 branches missed.">				|| secondName.startsWith(&quot;UTF-16&quot;) &amp;&amp; firstName.equals(&quot;UTF-16&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static byte[] encode(String content, Charset charset, byte[] bom)
+			throws CoreException {
+		byte[] body;
+		try {
+<span class="nc" id="L299">			ByteBuffer encoded= charset.newEncoder()</span>
+<span class="nc" id="L300">					.onMalformedInput(CodingErrorAction.REPORT)</span>
+<span class="nc" id="L301">					.onUnmappableCharacter(CodingErrorAction.REPORT)</span>
+<span class="nc" id="L302">					.encode(java.nio.CharBuffer.wrap(content));</span>
+<span class="nc" id="L303">			body= new byte[encoded.remaining()];</span>
+<span class="nc" id="L304">			encoded.get(body);</span>
+<span class="nc" id="L305">		} catch (CharacterCodingException e) {</span>
+<span class="nc" id="L306">			throw error(&quot;Transformed XML cannot be represented as &quot; + charset.name(), e); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L308">		byte[] result= Arrays.copyOf(bom, bom.length + body.length);</span>
+<span class="nc" id="L309">		System.arraycopy(body, 0, result, bom.length, body.length);</span>
+<span class="nc" id="L310">		return result;</span>
+	}
+
+	private static String detectLineDelimiter(String content) {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">		return content.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+	}
+
+	private static String normalizeLineDelimiters(String content, String delimiter) {
+<span class="nc" id="L318">		String normalized= content.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">		return &quot;\n&quot;.equals(delimiter) ? normalized : normalized.replace(&quot;\n&quot;, delimiter); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static boolean startsWith(byte[] content, byte[] prefix) {
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">		if (content.length &lt; prefix.length) {</span>
+<span class="nc" id="L324">			return false;</span>
+		}
+<span class="fc bfc" id="L326" title="All 2 branches covered.">		for (int i= 0; i &lt; prefix.length; i++) {</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">			if (content[i] != prefix[i]) {</span>
+<span class="fc" id="L328">				return false;</span>
+			}
+		}
+<span class="fc" id="L331">		return true;</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="nc bnc" id="L335" title="All 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L336">			throw new org.eclipse.core.runtime.OperationCanceledException();</span>
+		}
+<span class="nc" id="L338">	}</span>
+
+	private static CoreException error(String message, Throwable cause) {
+<span class="fc" id="L341">		return new CoreException(new Status(IStatus.ERROR, PLUGIN_ID, message, cause));</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

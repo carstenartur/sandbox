@@ -99,17 +99,13 @@ import org.eclipse.ui.part.ViewPart;
 <span class="nc" id="L99">			return;</span>
 		}
 <span class="nc" id="L101">		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (client == null) {</span>
-<span class="nc" id="L103">			tableViewer.setInput(new Object[0]);</span>
-<span class="nc" id="L104">			return;</span>
-		}
-<span class="nc" id="L106">		List&lt;SearchHit&gt; results= client.getFileHistory(&quot;&quot;, typeName); //$NON-NLS-1$</span>
-<span class="nc" id="L107">		tableViewer.setInput(results);</span>
-<span class="nc" id="L108">	}</span>
+<span class="nc" id="L102">		List&lt;SearchHit&gt; results= client.getFileHistory(&quot;&quot;, typeName); //$NON-NLS-1$</span>
+<span class="nc" id="L103">		tableViewer.setInput(results);</span>
+<span class="nc" id="L104">	}</span>
 
 	@Override
 	public void setFocus() {
-<span class="nc" id="L112">		typeNameText.setFocus();</span>
-<span class="nc" id="L113">	}</span>
+<span class="nc" id="L108">		typeNameText.setFocus();</span>
+<span class="nc" id="L109">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

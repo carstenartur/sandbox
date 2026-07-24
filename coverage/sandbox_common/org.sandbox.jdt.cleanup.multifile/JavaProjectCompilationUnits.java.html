@@ -11,9 +11,18 @@
 package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
+import org.eclipse.core.resources.IResource;
+
+import org.eclipse.core.runtime.IPath;
+
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -21,38 +30,175 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaModelException;
 
-/** Utility for obtaining a stable list of all source compilation units. */
+/** Utility for obtaining stable, policy-aware source compilation-unit scopes. */
 public final class JavaProjectCompilationUnits {
+
+<span class="fc" id="L36">	private static final Set&lt;String&gt; GENERATED_SEGMENTS= Set.of(</span>
+<span class="fc" id="L37">			&quot;generated&quot;, &quot;generated-sources&quot;, &quot;generated-test-sources&quot;, &quot;generated-src&quot;, &quot;src-gen&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+<span class="fc" id="L38">	private static final Set&lt;String&gt; TEST_SEGMENTS= Set.of(</span>
+<span class="fc" id="L39">			&quot;test&quot;, &quot;tests&quot;, &quot;testfixtures&quot;, &quot;integrationtest&quot;, &quot;integration-test&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
 
 	private JavaProjectCompilationUnits() {
 	}
 
 	/**
-	 * Collects all existing compilation units in source package-fragment roots.
-	 * The result is sorted by Java element handle for deterministic planning.
+	 * Collects all editable production and test compilation units. Generated,
+	 * derived, output, missing, and non-source roots are excluded by default.
 	 *
 	 * @param project Java project
-	 * @return stable list of source compilation units
+	 * @return stable list of editable source compilation units
 	 * @throws JavaModelException if the Java model cannot be read
 	 */
 	public static List&lt;ICompilationUnit&gt; collect(IJavaProject project) throws JavaModelException {
-<span class="fc" id="L39">		List&lt;ICompilationUnit&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L40" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
-<span class="pc bpc" id="L41" title="1 of 4 branches missed.">			if (root.getKind() != IPackageFragmentRoot.K_SOURCE || !root.exists()) {</span>
-<span class="nc" id="L42">				continue;</span>
+<span class="fc" id="L53">		return collect(project, List.of(), SourceRootPolicy.COMPLETE_PROJECT);</span>
+	}
+
+	/**
+	 * Collects compilation units according to an explicit coordinated-cleanup
+	 * source-root policy. The result is sorted by Java element handle for
+	 * deterministic planning.
+	 *
+	 * @param project Java project
+	 * @param currentScope explicitly selected cleanup scope
+	 * @param policy source-root expansion policy
+	 * @return stable list of compilation units allowed by the policy
+	 * @throws JavaModelException if the Java model cannot be read
+	 */
+	public static List&lt;ICompilationUnit&gt; collect(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, SourceRootPolicy policy) throws JavaModelException {
+<span class="pc bpc" id="L69" title="2 of 4 branches missed.">		if (project == null || policy == null) {</span>
+<span class="nc" id="L70">			return List.of();</span>
+		}
+<span class="fc" id="L72">		Set&lt;String&gt; selectedRootHandles= selectedRootHandles(currentScope);</span>
+<span class="fc" id="L73">		boolean productionSelected= hasSelectedRootOfKind(project, selectedRootHandles, SourceRootKind.PRODUCTION);</span>
+<span class="fc" id="L74">		List&lt;ICompilationUnit&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
+<span class="fc" id="L76">			SourceRootKind kind= classify(root);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			if (!kind.isEditableByDefault()</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">					|| !includes(policy, root.getHandleIdentifier(), kind, selectedRootHandles, productionSelected)) {</span>
+<span class="fc" id="L79">				continue;</span>
 			}
-<span class="fc bfc" id="L44" title="All 2 branches covered.">			for (IJavaElement child : root.getChildren()) {</span>
-<span class="pc bpc" id="L45" title="2 of 4 branches missed.">				if (child instanceof IPackageFragment fragment &amp;&amp; fragment.exists()) {</span>
-<span class="fc bfc" id="L46" title="All 2 branches covered.">					for (ICompilationUnit unit : fragment.getCompilationUnits()) {</span>
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">						if (unit.exists()) {</span>
-<span class="fc" id="L48">							result.add(unit);</span>
-						}
+<span class="fc" id="L81">			collectRootUnits(root, result);</span>
+		}
+<span class="fc" id="L83">		result.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
+<span class="fc" id="L84">		return List.copyOf(result);</span>
+	}
+
+	/**
+	 * Classifies a package-fragment root for cleanup scope decisions.
+	 *
+	 * @param root package-fragment root
+	 * @return conservative source-root classification
+	 * @throws JavaModelException if classpath metadata cannot be read
+	 */
+	public static SourceRootKind classify(IPackageFragmentRoot root) throws JavaModelException {
+<span class="pc bpc" id="L95" title="2 of 6 branches missed.">		if (root == null || !root.exists() || root.getKind() != IPackageFragmentRoot.K_SOURCE) {</span>
+<span class="fc" id="L96">			return SourceRootKind.EXCLUDED;</span>
+		}
+<span class="fc" id="L98">		IResource resource= root.getResource();</span>
+<span class="pc bpc" id="L99" title="1 of 4 branches missed.">		if (resource != null &amp;&amp; resource.isDerived()) {</span>
+<span class="fc" id="L100">			return SourceRootKind.DERIVED;</span>
+		}
+<span class="fc" id="L102">		IPath rootPath= root.getPath();</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (isOutputRoot(root, rootPath)) {</span>
+<span class="fc" id="L104">			return SourceRootKind.OUTPUT;</span>
+		}
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (containsSegment(rootPath, GENERATED_SEGMENTS)) {</span>
+<span class="fc" id="L107">			return SourceRootKind.GENERATED;</span>
+		}
+<span class="fc" id="L109">		IClasspathEntry entry= root.getResolvedClasspathEntry();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (entry == null) {</span>
+<span class="fc" id="L111">			entry= root.getRawClasspathEntry();</span>
+		}
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (entry == null) {</span>
+<span class="fc" id="L114">			return SourceRootKind.EXCLUDED;</span>
+		}
+<span class="fc bfc" id="L116" title="All 2 branches covered.">		if (entry.isTest()) {</span>
+<span class="fc" id="L117">			return SourceRootKind.TEST;</span>
+		}
+<span class="fc bfc" id="L119" title="All 2 branches covered.">		return containsSegment(rootPath, TEST_SEGMENTS) ? SourceRootKind.TEST : SourceRootKind.PRODUCTION;</span>
+	}
+
+	private static boolean includes(SourceRootPolicy policy, String rootHandle, SourceRootKind kind,
+			Set&lt;String&gt; selectedRootHandles, boolean productionSelected) {
+<span class="fc bfc" id="L124" title="All 4 branches covered.">		return switch (policy) {</span>
+<span class="fc" id="L125">			case EXPLICIT_SELECTED_ROOTS -&gt; selectedRootHandles.contains(rootHandle);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			case TEST_ROOTS_AND_SELECTED_SUPPORT -&gt; kind == SourceRootKind.TEST</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">					|| selectedRootHandles.contains(rootHandle);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			case PRODUCTION_WITH_DEPENDENT_TESTS -&gt; productionSelected</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">					? kind == SourceRootKind.PRODUCTION || kind == SourceRootKind.TEST</span>
+<span class="fc" id="L130">					: selectedRootHandles.contains(rootHandle);</span>
+<span class="fc" id="L131">			case COMPLETE_PROJECT -&gt; true;</span>
+		};
+	}
+
+	private static Set&lt;String&gt; selectedRootHandles(Collection&lt;ICompilationUnit&gt; currentScope) {
+<span class="pc bpc" id="L136" title="1 of 4 branches missed.">		if (currentScope == null || currentScope.isEmpty()) {</span>
+<span class="fc" id="L137">			return Set.of();</span>
+		}
+<span class="fc" id="L139">		Set&lt;String&gt; handles= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		for (ICompilationUnit unit : currentScope) {</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">			if (unit == null) {</span>
+<span class="nc" id="L142">				continue;</span>
+			}
+<span class="fc" id="L144">			IJavaElement ancestor= unit.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">			if (ancestor instanceof IPackageFragmentRoot root) {</span>
+<span class="fc" id="L146">				handles.add(root.getHandleIdentifier());</span>
+			}
+		}
+<span class="fc" id="L149">		return Set.copyOf(handles);</span>
+	}
+
+	private static boolean hasSelectedRootOfKind(IJavaProject project, Set&lt;String&gt; selectedRootHandles,
+			SourceRootKind expected) throws JavaModelException {
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		if (selectedRootHandles.isEmpty()) {</span>
+<span class="fc" id="L155">			return false;</span>
+		}
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
+<span class="fc bfc" id="L158" title="All 4 branches covered.">			if (selectedRootHandles.contains(root.getHandleIdentifier()) &amp;&amp; classify(root) == expected) {</span>
+<span class="fc" id="L159">				return true;</span>
+			}
+		}
+<span class="fc" id="L162">		return false;</span>
+	}
+
+	private static void collectRootUnits(IPackageFragmentRoot root, List&lt;ICompilationUnit&gt; result)
+			throws JavaModelException {
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (IJavaElement child : root.getChildren()) {</span>
+<span class="pc bpc" id="L168" title="2 of 4 branches missed.">			if (child instanceof IPackageFragment fragment &amp;&amp; fragment.exists()) {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">				for (ICompilationUnit unit : fragment.getCompilationUnits()) {</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">					if (unit.exists()) {</span>
+<span class="fc" id="L171">						result.add(unit);</span>
 					}
 				}
 			}
 		}
-<span class="fc" id="L54">		result.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
-<span class="fc" id="L55">		return List.copyOf(result);</span>
+<span class="fc" id="L176">	}</span>
+
+	private static boolean isOutputRoot(IPackageFragmentRoot root, IPath rootPath) throws JavaModelException {
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (rootPath == null) {</span>
+<span class="nc" id="L180">			return false;</span>
+		}
+<span class="fc" id="L182">		IJavaProject project= root.getJavaProject();</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		IPath projectOutput= project == null ? null : project.getOutputLocation();</span>
+<span class="pc bpc" id="L184" title="1 of 4 branches missed.">		if (projectOutput != null &amp;&amp; projectOutput.isPrefixOf(rootPath)) {</span>
+<span class="fc" id="L185">			return true;</span>
+		}
+<span class="fc" id="L187">		IClasspathEntry rawEntry= root.getRawClasspathEntry();</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		IPath entryOutput= rawEntry == null ? null : rawEntry.getOutputLocation();</span>
+<span class="pc bpc" id="L189" title="1 of 4 branches missed.">		return entryOutput != null &amp;&amp; entryOutput.isPrefixOf(rootPath);</span>
+	}
+
+	private static boolean containsSegment(IPath path, Set&lt;String&gt; candidates) {
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (path == null) {</span>
+<span class="nc" id="L194">			return false;</span>
+		}
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		for (String segment : path.segments()) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">			if (candidates.contains(segment.toLowerCase(Locale.ROOT))) {</span>
+<span class="fc" id="L198">				return true;</span>
+			}
+		}
+<span class="fc" id="L201">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IteratorWhileHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">IteratorWhileHandler.java</span></div><h1>IteratorWhileHandler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IteratorWhileHandler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">IteratorWhileHandler.java</span></div><h1>IteratorWhileHandler.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -15,241 +15,280 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.List;
 import java.util.Set;
+
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.functional.core.builder.LoopModelBuilder;
-import org.sandbox.functional.core.model.ElementDescriptor;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
-import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.terminal.CollectTerminal;
+import org.sandbox.functional.core.terminal.ReduceTerminal;
+import org.sandbox.functional.core.terminal.TerminalOperation;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
-import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopAnalyzer.SafetyAnalysis;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorLoopBodyParser.ParsedBody;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
 
-/**
- * Handler for converting iterator-based while-loops to functional stream operations.
- * 
- * &lt;p&gt;This handler processes:&lt;/p&gt;
- * &lt;ul&gt;
- *   &lt;li&gt;while-iterator pattern: {@code Iterator&lt;T&gt; it = coll.iterator(); while (it.hasNext()) { T item = it.next(); ... }}&lt;/li&gt;
- *   &lt;li&gt;for-loop-iterator pattern: {@code for (Iterator&lt;T&gt; it = coll.iterator(); it.hasNext(); ) { T item = it.next(); ... }}&lt;/li&gt;
- * &lt;/ul&gt;
- * 
- * &lt;p&gt;Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer}.&lt;/p&gt;
- * 
- * &lt;p&gt;&lt;b&gt;Naming Note:&lt;/b&gt; This class is named after the &lt;i&gt;source&lt;/i&gt; loop type (iterator while-loop),
- * not the target format. The architecture supports bidirectional transformations, so the name
- * describes what loop pattern this handler processes.&lt;/p&gt;
- * 
- * @see LoopModel
- * @see ASTStreamRenderer
- * @see LoopModelTransformer
- */
-<span class="fc" id="L55">public class IteratorWhileHandler extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
-    
-<span class="fc" id="L57">    private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();</span>
-<span class="fc" id="L58">    private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();</span>
-<span class="fc" id="L59">    private final IteratorLoopBodyParser bodyParser = new IteratorLoopBodyParser();</span>
-    
-    @Override
-    public void find(UseFunctionalCallFixCore fixCore, CompilationUnit compilationUnit,
-                     Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesProcessed) {
-        
-<span class="fc" id="L65">        compilationUnit.accept(new ASTVisitor() {</span>
-            
-            @Override
-            public boolean visit(WhileStatement node) {
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">                if (nodesProcessed.contains(node)) {</span>
-<span class="nc" id="L70">                    return false;</span>
-                }
-                
-                // Find previous statement for while-iterator pattern
-<span class="fc bfc" id="L74" title="All 2 branches covered.">                if (!IteratorPatternDetector.isStatementInBlock(node)) {</span>
-<span class="fc" id="L75">                    return true;</span>
-                }
-                
-<span class="fc" id="L78">                Block parentBlock = (Block) node.getParent();</span>
-<span class="fc" id="L79">                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, node);</span>
-                
-<span class="fc" id="L81">                IteratorPattern pattern = patternDetector.detectWhilePattern(node, previousStmt);</span>
-<span class="fc bfc" id="L82" title="All 2 branches covered.">                if (pattern == null) {</span>
-<span class="fc" id="L83">                    return true;</span>
-                }
-                
-<span class="fc bfc" id="L86" title="All 2 branches covered.">                if (!analyzeAndValidate(pattern)) {</span>
-<span class="fc" id="L87">                    return true;</span>
-                }
-                
-                // Mark both the iterator declaration and the while loop as processed
-<span class="fc" id="L91">                nodesProcessed.add(previousStmt);</span>
-<span class="fc" id="L92">                nodesProcessed.add(node);</span>
-                
-<span class="fc" id="L94">                ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
-<span class="fc" id="L95">                holder.put(node, pattern);</span>
-                
-<span class="fc" id="L97">                operations.add(fixCore.rewrite(node, holder));</span>
-                
-<span class="fc" id="L99">                return false;</span>
-            }
-            
-            @Override
-            public boolean visit(ForStatement node) {
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">                if (nodesProcessed.contains(node)) {</span>
-<span class="nc" id="L105">                    return false;</span>
-                }
-                
-<span class="fc" id="L108">                IteratorPattern pattern = patternDetector.detectForLoopPattern(node);</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">                if (pattern == null) {</span>
-<span class="fc" id="L110">                    return true;</span>
-                }
-                
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">                if (!analyzeAndValidate(pattern)) {</span>
-<span class="nc" id="L114">                    return true;</span>
-                }
-                
-<span class="fc" id="L117">                nodesProcessed.add(node);</span>
-                
-<span class="fc" id="L119">                ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
-<span class="fc" id="L120">                holder.put(node, pattern);</span>
-                
-<span class="fc" id="L122">                operations.add(fixCore.rewrite(node, holder));</span>
-                
-<span class="fc" id="L124">                return false;</span>
-            }
-        });
-<span class="fc" id="L127">    }</span>
-    
-    /**
-     * Analyzes and validates that the pattern can be safely converted.
-     */
-    private boolean analyzeAndValidate(IteratorPattern pattern) {
-        // Analyze for safety
-<span class="fc" id="L134">        SafetyAnalysis analysis = loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (!analysis.isSafe()) {</span>
-            // Cannot convert unsafe patterns
-<span class="fc" id="L137">            return false;</span>
-        }
-        
-        // Parse body to ensure it has the expected structure
-<span class="fc" id="L141">        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());</span>
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (parsedBody == null) {</span>
-<span class="nc" id="L143">            return false;</span>
-        }
-        
-<span class="fc" id="L146">        return true;</span>
-    }
-    
-    @Override
-    public void rewrite(UseFunctionalCallFixCore fixCore, ASTNode node, 
-                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
-                        ReferenceHolder&lt;ASTNode, Object&gt; holder) throws CoreException {
-        
-<span class="fc" id="L154">        Object data = holder.get(node);</span>
-<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        if (!(data instanceof IteratorPattern pattern)) {</span>
-<span class="nc" id="L156">            return;</span>
-        }
-        
-<span class="fc" id="L159">        ParsedBody parsedBody = bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());</span>
-        
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        if (parsedBody == null) {</span>
-<span class="nc" id="L162">            return;</span>
-        }
-        
-<span class="fc" id="L165">        AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L166">        ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-        
-        // Build LoopModel using the ULR pipeline
-<span class="fc" id="L169">        LoopModel model = buildLoopModel(pattern, parsedBody);</span>
-        
-        // Create renderer with the original loop body for AST node access
-<span class="fc" id="L172">        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.loopBody());</span>
-        
-        // Transform using LoopModelTransformer
-<span class="fc" id="L175">        LoopModelTransformer&lt;Expression&gt; transformer = new LoopModelTransformer&lt;&gt;(renderer);</span>
-<span class="fc" id="L176">        Expression streamExpression = transformer.transform(model);</span>
-        
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (streamExpression != null) {</span>
-            // For while pattern, also remove the iterator declaration
-<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (node instanceof WhileStatement whileStmt) {</span>
-<span class="fc" id="L181">                Block parentBlock = (Block) whileStmt.getParent();</span>
-<span class="fc" id="L182">                Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);</span>
-                
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">                if (previousStmt != null) {</span>
-<span class="fc" id="L185">                    rewrite.remove(previousStmt, group);</span>
-                }
-            }
-            
-            // Wrap in ExpressionStatement and replace the loop
-<span class="fc" id="L190">            ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);</span>
-<span class="fc" id="L191">            rewrite.replace(node, newStatement, group);</span>
-        }
-<span class="fc" id="L193">    }</span>
-    
-    /**
-     * Builds a LoopModel from the iterator pattern using the ULR pipeline.
-     * Uses COLLECTION source type since the iterator comes from collection.iterator().
-     */
-    private LoopModel buildLoopModel(IteratorPattern pattern, ParsedBody parsedBody) {
-        // Build COLLECTION source descriptor using the collection expression
-<span class="fc" id="L201">        SourceDescriptor source = new SourceDescriptor(</span>
-<span class="fc" id="L202">            SourceDescriptor.SourceType.COLLECTION,</span>
-<span class="fc" id="L203">            pattern.collectionExpression().toString(),</span>
-<span class="fc" id="L204">            parsedBody.elementType()</span>
-        );
-        
-        // Build element descriptor for the loop variable
-<span class="fc" id="L208">        ElementDescriptor element = new ElementDescriptor(</span>
-<span class="fc" id="L209">            parsedBody.elementVariableName(),</span>
-<span class="fc" id="L210">            parsedBody.elementType(),</span>
-<span class="fc" id="L211">            true // is a collection element</span>
-        );
-        
-        // Extract body statements as expression strings (strip trailing semicolons)
-<span class="fc" id="L215">        List&lt;String&gt; bodyStatements = extractBodyStatementsAsStrings(parsedBody.actualBodyStatements());</span>
-        
-        // Build ForEachTerminal
-<span class="fc" id="L218">        ForEachTerminal terminal = new ForEachTerminal(bodyStatements, false);</span>
-        
-        // Build and return LoopModel
-<span class="fc" id="L221">        return new LoopModelBuilder()</span>
-<span class="fc" id="L222">            .source(source)</span>
-<span class="fc" id="L223">            .element(element)</span>
-<span class="fc" id="L224">            .terminal(terminal)</span>
-<span class="fc" id="L225">            .build();</span>
-    }
-    
-    /**
-     * Converts body statements to expression strings for the ForEachTerminal.
-     * Trailing semicolons are stripped because ForEachTerminal / ASTStreamRenderer.createExpression()
-     * expects pure expressions, not statements.
-     */
-    private List&lt;String&gt; extractBodyStatementsAsStrings(List&lt;Statement&gt; statements) {
-<span class="fc" id="L234">        return ExpressionHelper.bodyStatementsToStrings(statements);</span>
-    }
-    
-    @Override
-    public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (afterRefactoring) {</span>
-<span class="nc" id="L240">            return &quot;&quot;&quot;</span>
-                   items.stream()
-                       .forEach(item -&gt; System.out.println(item));
-                   &quot;&quot;&quot;;
-        } else {
-<span class="nc" id="L245">            return &quot;&quot;&quot;</span>
-                   Iterator&lt;String&gt; it = items.iterator();
-                   while (it.hasNext()) {
-                       String item = it.next();
-                       System.out.println(item);
-                   }
-                   &quot;&quot;&quot;;
-        }
-    }
+/** Converts safe iterator while/for loops through the shared ULR pipeline. */
+<span class="fc" id="L49">public class IteratorWhileHandler extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
+
+	private static final String JAVA_UTIL_LIST= &quot;java.util.List&quot;; //$NON-NLS-1$
+	private static final String JAVA_UTIL_SET= &quot;java.util.Set&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L54">	private final IteratorPatternDetector patternDetector= new IteratorPatternDetector();</span>
+<span class="fc" id="L55">	private final IteratorLoopAnalyzer loopAnalyzer= new IteratorLoopAnalyzer();</span>
+<span class="fc" id="L56">	private final IteratorLoopBodyParser bodyParser= new IteratorLoopBodyParser();</span>
+<span class="fc" id="L57">	private final JdtLoopExtractor loopExtractor= new JdtLoopExtractor();</span>
+
+	private record IteratorConversion(IteratorPattern pattern, ParsedBody parsedBody,
+			JdtLoopExtractor.ExtractedLoop extractedLoop) {
+	}
+
+	@Override
+	public void find(UseFunctionalCallFixCore fixCore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesProcessed) {
+<span class="fc" id="L66">		ReferenceHolder&lt;ASTNode, Object&gt; data= ReferenceHolder.create();</span>
+<span class="fc" id="L67">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(WhileStatement node) {
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">				if (nodesProcessed.contains(node)) {</span>
+<span class="nc" id="L71">					return false;</span>
+				}
+<span class="fc" id="L73">				Statement previousStatement= findPreviousStatement(node);</span>
+<span class="fc" id="L74">				IteratorPattern pattern= patternDetector.detectWhilePattern(node, previousStatement);</span>
+<span class="fc" id="L75">				IteratorConversion conversion= analyzeAndCreateConversion(pattern, compilationUnit);</span>
+<span class="fc bfc" id="L76" title="All 4 branches covered.">				if (conversion == null || !isSafeToSchedule(node, conversion)) {</span>
+<span class="fc" id="L77">					return true;</span>
+				}
+<span class="fc" id="L79">				data.put(node, conversion);</span>
+<span class="fc" id="L80">				operations.add(fixCore.rewrite(node, data));</span>
+<span class="fc" id="L81">				nodesProcessed.add(node);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">				if (previousStatement != null) {</span>
+<span class="fc" id="L83">					nodesProcessed.add(previousStatement);</span>
+				}
+<span class="fc" id="L85">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(ForStatement node) {
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				if (nodesProcessed.contains(node)) {</span>
+<span class="nc" id="L91">					return false;</span>
+				}
+<span class="fc" id="L93">				IteratorPattern pattern= patternDetector.detectForLoopPattern(node);</span>
+<span class="fc" id="L94">				IteratorConversion conversion= analyzeAndCreateConversion(pattern, compilationUnit);</span>
+<span class="pc bpc" id="L95" title="1 of 4 branches missed.">				if (conversion == null || !isSafeToSchedule(node, conversion)) {</span>
+<span class="fc" id="L96">					return true;</span>
+				}
+<span class="fc" id="L98">				data.put(node, conversion);</span>
+<span class="fc" id="L99">				operations.add(fixCore.rewrite(node, data));</span>
+<span class="fc" id="L100">				nodesProcessed.add(node);</span>
+<span class="fc" id="L101">				return false;</span>
+			}
+		});
+<span class="fc" id="L104">	}</span>
+
+	private IteratorConversion analyzeAndCreateConversion(IteratorPattern pattern, CompilationUnit compilationUnit) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (pattern == null) {</span>
+<span class="fc" id="L108">			return null;</span>
+		}
+<span class="fc" id="L110">		IteratorLoopAnalyzer.SafetyAnalysis safety=</span>
+<span class="fc" id="L111">				loopAnalyzer.analyze(pattern.loopBody(), pattern.iteratorVariableName());</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (!safety.isSafe()) {</span>
+<span class="fc" id="L113">			return null;</span>
+		}
+<span class="fc" id="L115">		ParsedBody parsedBody= bodyParser.parse(pattern.loopBody(), pattern.iteratorVariableName());</span>
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">		if (parsedBody == null || parsedBody.actualBodyStatements().isEmpty()) {</span>
+<span class="nc" id="L117">			return null;</span>
+		}
+<span class="fc" id="L119">		JdtLoopExtractor.ExtractedLoop extracted= loopExtractor.extractIterator(pattern, parsedBody, compilationUnit);</span>
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">		if (extracted.model == null || extracted.model.getTerminal() == null) {</span>
+<span class="nc" id="L121">			return null;</span>
+		}
+<span class="fc" id="L123">		return new IteratorConversion(pattern, parsedBody, extracted);</span>
+	}
+
+	private boolean isSafeToSchedule(ASTNode loop, IteratorConversion conversion) {
+<span class="fc" id="L127">		TerminalOperation terminal= conversion.extractedLoop().model.getTerminal();</span>
+<span class="fc" id="L128">		String liftedAccumulatorName= null;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (terminal instanceof CollectTerminal collectTerminal) {</span>
+<span class="fc" id="L130">			liftedAccumulatorName= collectTerminal.targetVariable();</span>
+<span class="fc" id="L131">			VariableDeclarationStatement declaration= findAccumulatorDeclaration(loop, liftedAccumulatorName);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">			if (declaration == null</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">					|| !liftedAccumulatorName.equals(CollectPatternDetector.isEmptyCollectionDeclaration(declaration))</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">					|| !isCollectorResultAssignable(declaration, collectTerminal)) {</span>
+<span class="fc" id="L135">				return false;</span>
+			}
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		} else if (terminal instanceof ReduceTerminal reduceTerminal) {</span>
+<span class="fc" id="L138">			liftedAccumulatorName= reduceTerminal.targetVariable();</span>
+<span class="fc" id="L139">			VariableDeclarationStatement declaration= findAccumulatorDeclaration(loop, liftedAccumulatorName);</span>
+<span class="fc" id="L140">			VariableDeclarationFragment fragment= singleFragment(declaration, liftedAccumulatorName);</span>
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">			if (fragment == null || fragment.getInitializer() == null) {</span>
+<span class="nc" id="L142">				return false;</span>
+			}
+		}
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		Set&lt;String&gt; liftedAccumulatorNames= liftedAccumulatorName == null</span>
+<span class="fc" id="L146">				? Set.of()</span>
+<span class="fc" id="L147">				: Set.of(liftedAccumulatorName);</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		return !LambdaCaptureSafety.hasUnsafeCapture(conversion.pattern().loopBody(), liftedAccumulatorNames);</span>
+	}
+
+	private Statement findPreviousStatement(Statement statement) {
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		if (statement.getParent() instanceof Block block) {</span>
+<span class="fc" id="L153">			return IteratorPatternDetector.findPreviousStatement(block, statement);</span>
+		}
+<span class="fc" id="L155">		return null;</span>
+	}
+
+	@Override
+	public void rewrite(UseFunctionalCallFixCore fixCore, ASTNode visited, CompilationUnitRewrite cuRewrite,
+			TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
+<span class="fc" id="L161">		Object stored= data.get(visited);</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		if (!(stored instanceof IteratorConversion conversion)) {</span>
+<span class="nc" id="L163">			return;</span>
+		}
+
+<span class="fc" id="L166">		LoopModel model= conversion.extractedLoop().model;</span>
+<span class="fc" id="L167">		TerminalOperation terminal= model.getTerminal();</span>
+<span class="fc" id="L168">		VariableDeclarationStatement accumulatorDeclaration= null;</span>
+<span class="fc" id="L169">		String liftedAccumulatorName= null;</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (terminal instanceof CollectTerminal collectTerminal) {</span>
+<span class="fc" id="L171">			liftedAccumulatorName= collectTerminal.targetVariable();</span>
+<span class="fc" id="L172">			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">			if (accumulatorDeclaration == null</span>
+<span class="fc" id="L174">					|| !liftedAccumulatorName.equals(</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">					|| !isCollectorResultAssignable(accumulatorDeclaration, collectTerminal)) {</span>
+<span class="nc" id="L177">				return;</span>
+			}
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		} else if (terminal instanceof ReduceTerminal reduceTerminal) {</span>
+<span class="fc" id="L180">			liftedAccumulatorName= reduceTerminal.targetVariable();</span>
+<span class="fc" id="L181">			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);</span>
+<span class="fc" id="L182">			VariableDeclarationFragment fragment= singleFragment(accumulatorDeclaration, liftedAccumulatorName);</span>
+<span class="pc bpc" id="L183" title="2 of 4 branches missed.">			if (fragment == null || fragment.getInitializer() == null) {</span>
+<span class="nc" id="L184">				return;</span>
+			}
+<span class="fc" id="L186">			model.setTerminal(new ReduceTerminal(fragment.getInitializer().toString(), reduceTerminal.accumulator(),</span>
+<span class="fc" id="L187">					reduceTerminal.combiner(), reduceTerminal.reduceType(), liftedAccumulatorName));</span>
+		}
+
+<span class="fc" id="L190">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L191">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L192">		ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(),</span>
+<span class="fc" id="L193">				conversion.extractedLoop().originalBody);</span>
+<span class="fc" id="L194">		Expression streamExpression= new LoopModelTransformer&lt;&gt;(renderer).transform(model);</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		if (streamExpression == null) {</span>
+<span class="nc" id="L196">			return;</span>
+		}
+
+		Statement replacement;
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		if (accumulatorDeclaration != null) {</span>
+<span class="fc" id="L201">			replacement= createMergedDeclaration(ast, accumulatorDeclaration, streamExpression);</span>
+<span class="fc" id="L202">			rewrite.remove(accumulatorDeclaration, group);</span>
+<span class="fc" id="L203">		} else {</span>
+<span class="fc" id="L204">			replacement= ast.newExpressionStatement(streamExpression);</span>
+		}
+
+<span class="fc" id="L207">		rewrite.replace(visited, replacement, group);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">		if (visited instanceof WhileStatement) {</span>
+<span class="fc" id="L209">			Statement iteratorDeclaration= findPreviousStatement((Statement) visited);</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">			if (iteratorDeclaration != null) {</span>
+<span class="fc" id="L211">				rewrite.remove(iteratorDeclaration, group);</span>
+			}
+		}
+<span class="fc" id="L214">		addRequiredImports(cuRewrite, model);</span>
+<span class="fc" id="L215">	}</span>
+
+	private VariableDeclarationStatement findAccumulatorDeclaration(ASTNode loop, String targetVariable) {
+<span class="pc bpc" id="L218" title="2 of 4 branches missed.">		if (targetVariable == null || !(loop instanceof Statement statement)</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">				|| !(statement.getParent() instanceof Block block)) {</span>
+<span class="nc" id="L220">			return null;</span>
+		}
+		@SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
+<span class="fc" id="L223">		List&lt;Statement&gt; statements= block.statements();</span>
+<span class="fc" id="L224">		int loopIndex= statements.indexOf(statement);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">		int candidateIndex= loopIndex - (statement instanceof WhileStatement ? 2 : 1);</span>
+<span class="pc bpc" id="L226" title="2 of 4 branches missed.">		if (candidateIndex &lt; 0 || candidateIndex &gt;= statements.size()) {</span>
+<span class="nc" id="L227">			return null;</span>
+		}
+<span class="fc" id="L229">		Statement candidate= statements.get(candidateIndex);</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		if (!(candidate instanceof VariableDeclarationStatement declaration)) {</span>
+<span class="nc" id="L231">			return null;</span>
+		}
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">		return singleFragment(declaration, targetVariable) == null ? null : declaration;</span>
+	}
+
+	private VariableDeclarationFragment singleFragment(VariableDeclarationStatement declaration,
+			String targetVariable) {
+<span class="pc bpc" id="L238" title="2 of 4 branches missed.">		if (declaration == null || declaration.fragments().size() != 1) {</span>
+<span class="nc" id="L239">			return null;</span>
+		}
+<span class="fc" id="L241">		VariableDeclarationFragment fragment=</span>
+<span class="fc" id="L242">				(VariableDeclarationFragment) declaration.fragments().get(0);</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">		return fragment.getName().getIdentifier().equals(targetVariable) ? fragment : null;</span>
+	}
+
+	private boolean isCollectorResultAssignable(VariableDeclarationStatement declaration,
+			CollectTerminal terminal) {
+<span class="fc" id="L248">		ITypeBinding typeBinding= declaration.getType().resolveBinding();</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L250">			return false;</span>
+		}
+<span class="fc" id="L252">		String qualifiedName= typeBinding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L253" title="1 of 3 branches missed.">		return switch (terminal.collectorType()) {</span>
+<span class="fc" id="L254">			case TO_LIST -&gt; JAVA_UTIL_LIST.equals(qualifiedName);</span>
+<span class="fc" id="L255">			case TO_SET -&gt; JAVA_UTIL_SET.equals(qualifiedName);</span>
+<span class="nc" id="L256">			default -&gt; false;</span>
+		};
+	}
+
+	private VariableDeclarationStatement createMergedDeclaration(AST ast,
+			VariableDeclarationStatement original, Expression initializer) {
+<span class="fc" id="L262">		VariableDeclarationFragment originalFragment=</span>
+<span class="fc" id="L263">				(VariableDeclarationFragment) original.fragments().get(0);</span>
+<span class="fc" id="L264">		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L265">		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));</span>
+<span class="fc" id="L266">		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));</span>
+<span class="fc" id="L267">		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);</span>
+<span class="fc" id="L268">		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));</span>
+<span class="fc" id="L269">		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));</span>
+<span class="fc" id="L270">		return declaration;</span>
+	}
+
+	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">		if (model.getSource().type() == SourceDescriptor.SourceType.ITERABLE) {</span>
+<span class="nc" id="L275">			cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.StreamSupport&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L277" title="All 2 branches covered.">		if (model.getTerminal() instanceof CollectTerminal) {</span>
+<span class="fc" id="L278">			cuRewrite.getImportRewrite().addImport(&quot;java.util.stream.Collectors&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L280">	}</span>
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L285">			return &quot;items.stream().forEach(item -&gt; System.out.println(item));\n&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L287">		return &quot;Iterator&lt;String&gt; it = items.iterator();\n&quot; //$NON-NLS-1$</span>
+				+ &quot;while (it.hasNext()) {\n&quot; //$NON-NLS-1$
+				+ &quot;    String item = it.next();\n&quot; //$NON-NLS-1$
+				+ &quot;    System.out.println(item);\n&quot; //$NON-NLS-1$
+				+ &quot;}\n&quot;; //$NON-NLS-1$
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

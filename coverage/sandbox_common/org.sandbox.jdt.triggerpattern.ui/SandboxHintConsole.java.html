@@ -41,100 +41,82 @@ import org.eclipse.ui.console.MessageConsoleStream;
  */
 public final class SandboxHintConsole {
 
-	private static final String CONSOLE_NAME = &quot;Sandbox Hint Execution&quot;; //$NON-NLS-1$
+	private static final String CONSOLE_NAME= &quot;Sandbox Hint Execution&quot;; //$NON-NLS-1$
 
-	private static SandboxHintConsole instance;
+	private static final class Holder {
+<span class="nc" id="L47">		static final SandboxHintConsole INSTANCE= new SandboxHintConsole();</span>
+
+		private Holder() {
+		}
+	}
 
 	private final MessageConsole console;
 
-<span class="nc" id="L50">	private SandboxHintConsole() {</span>
-<span class="nc" id="L51">		console = new MessageConsole(CONSOLE_NAME, null);</span>
-<span class="nc" id="L52">		ConsolePlugin plugin = ConsolePlugin.getDefault();</span>
-<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (plugin != null) {</span>
-<span class="nc" id="L54">			IConsoleManager manager = plugin.getConsoleManager();</span>
-<span class="nc" id="L55">			manager.addConsoles(new IConsole[] { console });</span>
+<span class="nc" id="L55">	private SandboxHintConsole() {</span>
+<span class="nc" id="L56">		console= new MessageConsole(CONSOLE_NAME, null);</span>
+<span class="nc" id="L57">		ConsolePlugin plugin= ConsolePlugin.getDefault();</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">		if (plugin != null) {</span>
+<span class="nc" id="L59">			IConsoleManager manager= plugin.getConsoleManager();</span>
+<span class="nc" id="L60">			manager.addConsoles(new IConsole[] { console });</span>
 		}
-<span class="nc" id="L57">	}</span>
+<span class="nc" id="L62">	}</span>
 
 	/**
-	 * Returns the singleton console instance.
+	 * Returns the lazily initialized singleton console instance.
 	 *
 	 * @return the console instance
 	 */
-	public static synchronized SandboxHintConsole getInstance() {
-<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (instance == null) {</span>
-<span class="nc" id="L66">			instance = new SandboxHintConsole();</span>
-		}
-<span class="nc" id="L68">		return instance;</span>
+	public static SandboxHintConsole getInstance() {
+<span class="nc" id="L70">		return Holder.INSTANCE;</span>
 	}
 
-	/**
-	 * Logs a successful guard execution (green text).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a successful guard execution using green text. */
 	public void logSuccess(String message) {
-<span class="nc" id="L77">		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN));</span>
-<span class="nc" id="L78">	}</span>
+<span class="nc" id="L75">		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN));</span>
+<span class="nc" id="L76">	}</span>
 
-	/**
-	 * Logs a skipped guard execution (yellow/dark yellow text).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a skipped guard execution using yellow text. */
 	public void logSkipped(String message) {
-<span class="nc" id="L86">		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_YELLOW));</span>
-<span class="nc" id="L87">	}</span>
+<span class="nc" id="L80">		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_YELLOW));</span>
+<span class="nc" id="L81">	}</span>
 
-	/**
-	 * Logs a failed execution (red text).
-	 *
-	 * @param message the message to log
-	 */
+	/** Logs a failed execution using red text. */
 	public void logError(String message) {
-<span class="nc" id="L95">		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_RED));</span>
+<span class="nc" id="L85">		writeColored(message, Display.getDefault().getSystemColor(SWT.COLOR_DARK_RED));</span>
+<span class="nc" id="L86">	}</span>
+
+	/** Logs a general information message using the default color. */
+	public void logInfo(String message) {
+<span class="nc" id="L90">		try (MessageConsoleStream stream= console.newMessageStream()) {</span>
+<span class="nc" id="L91">			stream.println(message);</span>
+<span class="nc" id="L92">		} catch (IOException e) {</span>
+<span class="nc" id="L93">			ILog log= Platform.getLog(SandboxHintConsole.class);</span>
+<span class="nc" id="L94">			log.warn(&quot;Failed to write to console&quot;, e); //$NON-NLS-1$</span>
+		}
 <span class="nc" id="L96">	}</span>
 
-	/**
-	 * Logs a general info message (default color).
-	 *
-	 * @param message the message to log
-	 */
-	public void logInfo(String message) {
-<span class="nc" id="L104">		try (MessageConsoleStream stream = console.newMessageStream()) {</span>
-<span class="nc" id="L105">			stream.println(message);</span>
-<span class="nc" id="L106">		} catch (IOException e) {</span>
-<span class="nc" id="L107">			ILog log = Platform.getLog(SandboxHintConsole.class);</span>
-<span class="nc" id="L108">			log.warn(&quot;Failed to write to console&quot;, e); //$NON-NLS-1$</span>
+	/** Reveals the console in the Console view. */
+	public void reveal() {
+<span class="nc" id="L100">		ConsolePlugin plugin= ConsolePlugin.getDefault();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (plugin != null) {</span>
+<span class="nc" id="L102">			IConsoleManager manager= plugin.getConsoleManager();</span>
+<span class="nc" id="L103">			manager.showConsoleView(console);</span>
 		}
+<span class="nc" id="L105">	}</span>
+
+	/** Clears the console output. */
+	public void clear() {
+<span class="nc" id="L109">		console.clearConsole();</span>
 <span class="nc" id="L110">	}</span>
 
-	/**
-	 * Reveals the console in the Console view.
-	 */
-	public void reveal() {
-<span class="nc" id="L116">		ConsolePlugin plugin = ConsolePlugin.getDefault();</span>
-<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (plugin != null) {</span>
-<span class="nc" id="L118">			IConsoleManager manager = plugin.getConsoleManager();</span>
-<span class="nc" id="L119">			manager.showConsoleView(console);</span>
-		}
-<span class="nc" id="L121">	}</span>
-
-	/**
-	 * Clears the console output.
-	 */
-	public void clear() {
-<span class="nc" id="L127">		console.clearConsole();</span>
-<span class="nc" id="L128">	}</span>
-
 	private void writeColored(String message, Color color) {
-<span class="nc" id="L131">		try (MessageConsoleStream stream = console.newMessageStream()) {</span>
-<span class="nc" id="L132">			stream.setColor(color);</span>
-<span class="nc" id="L133">			stream.println(message);</span>
-<span class="nc" id="L134">		} catch (IOException e) {</span>
-<span class="nc" id="L135">			ILog log = Platform.getLog(SandboxHintConsole.class);</span>
-<span class="nc" id="L136">			log.warn(&quot;Failed to write to console&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L113">		try (MessageConsoleStream stream= console.newMessageStream()) {</span>
+<span class="nc" id="L114">			stream.setColor(color);</span>
+<span class="nc" id="L115">			stream.println(message);</span>
+<span class="nc" id="L116">		} catch (IOException e) {</span>
+<span class="nc" id="L117">			ILog log= Platform.getLog(SandboxHintConsole.class);</span>
+<span class="nc" id="L118">			log.warn(&quot;Failed to write to console&quot;, e); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L138">	}</span>
+<span class="nc" id="L120">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

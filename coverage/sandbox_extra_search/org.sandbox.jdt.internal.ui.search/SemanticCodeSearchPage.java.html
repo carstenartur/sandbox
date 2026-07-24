@@ -134,32 +134,27 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
 <span class="nc" id="L134">			return false;</span>
 		}
 
-<span class="nc bnc" id="L137" title="All 2 branches missed.">		if (EmbeddedSearchService.getInstance().getSearchClient() == null) {</span>
-<span class="nc" id="L138">			setErrorMessage(Messages.SemanticSearchClient_BackendNotAvailable);</span>
-<span class="nc" id="L139">			return false;</span>
-		}
-
 		SearchMode mode;
-<span class="nc bnc" id="L143" title="All 4 branches missed.">		if (hybridRadio != null &amp;&amp; hybridRadio.getSelection()) {</span>
-<span class="nc" id="L144">			mode= SearchMode.HYBRID;</span>
-<span class="nc bnc" id="L145" title="All 4 branches missed.">		} else if (similarRadio != null &amp;&amp; similarRadio.getSelection()) {</span>
-<span class="nc" id="L146">			mode= SearchMode.SIMILAR;</span>
-<span class="nc" id="L147">		} else {</span>
-<span class="nc" id="L148">			mode= SearchMode.SEMANTIC;</span>
+<span class="nc bnc" id="L138" title="All 4 branches missed.">		if (hybridRadio != null &amp;&amp; hybridRadio.getSelection()) {</span>
+<span class="nc" id="L139">			mode= SearchMode.HYBRID;</span>
+<span class="nc bnc" id="L140" title="All 4 branches missed.">		} else if (similarRadio != null &amp;&amp; similarRadio.getSelection()) {</span>
+<span class="nc" id="L141">			mode= SearchMode.SIMILAR;</span>
+<span class="nc" id="L142">		} else {</span>
+<span class="nc" id="L143">			mode= SearchMode.SEMANTIC;</span>
 		}
 
-<span class="nc bnc" id="L151" title="All 2 branches missed.">		String repo= repoText != null ? repoText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">		int maxResults= maxResultsSpinner != null ? maxResultsSpinner.getSelection() : 10;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		String repo= repoText != null ? repoText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">		int maxResults= maxResultsSpinner != null ? maxResultsSpinner.getSelection() : 10;</span>
 
-<span class="nc" id="L154">		SemanticCodeSearchQuery query= new SemanticCodeSearchQuery(text, repo, maxResults, mode);</span>
-<span class="nc" id="L155">		NewSearchUI.runQueryInBackground(query);</span>
-<span class="nc" id="L156">		return true;</span>
+<span class="nc" id="L149">		SemanticCodeSearchQuery query= new SemanticCodeSearchQuery(text, repo, maxResults, mode);</span>
+<span class="nc" id="L150">		NewSearchUI.runQueryInBackground(query);</span>
+<span class="nc" id="L151">		return true;</span>
 	}
 
 	@Override
 	public void setContainer(ISearchPageContainer container) {
-<span class="nc" id="L161">		this.container= container;</span>
-<span class="nc" id="L162">	}</span>
+<span class="nc" id="L156">		this.container= container;</span>
+<span class="nc" id="L157">	}</span>
 
 	/**
 	 * Returns the search page container.
@@ -167,7 +162,7 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
 	 * @return the container
 	 */
 	protected ISearchPageContainer getContainer() {
-<span class="nc" id="L170">		return container;</span>
+<span class="nc" id="L165">		return container;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
