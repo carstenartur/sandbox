@@ -1,0 +1,2632 @@
+{
+  "repositories": {
+    "https://github.com/eclipse-platform/eclipse.platform.ui": {
+      "lastProcessedCommit": "4f771f0b79fc7193e72bc1309340ed9ea39eca16",
+      "lastProcessedDate": "2026-07-20T03:16:52.746236842Z",
+      "totalProcessed": 9997,
+      "status": "CATCHING_UP",
+      "deferredCommits": [
+        {
+          "hash": "6c459ccbb59d9b18bd9e2df71a9fcfbcd9ba2374",
+          "message": "PropertyPageNode: log full exception if any instead of popup only\n\nThis issue did not show the root exception:\nhttps://g",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T05:48:31.966518670Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "98ff2aa8d6b8487c882e3e24fd73ce80284ecc53",
+          "message": "CSS: Allow Color And Font Definitions To Be Marked As Not Editable\n\nColor and Fonts can be defined as not editable if do",
+          "diffLines": 31,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T05:48:31.966891605Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "532c0fb9b6851d77e3a7cc9f70a85c77a9ba3826",
+          "message": "Restore ability to filter views by category\n\nThe ability to sort by categories was previously possible, but broke as\npar",
+          "diffLines": 43,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T05:52:32.101776035Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5c65cbc0026b4b5403a937081e3030d1d341fbfe",
+          "message": "Mark deprecated and unsupported constants for deletion in\nIWorkbenchPreferenceConstants\n\nAlso remove initialization of u",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T05:56:23.524437953Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d58c50e418597d74a9852369ed980df884c1d317",
+          "message": "Remove special flattening-behavior for Wizard content providers\n\nThis removes the feature from the \"New\" and \"Import/Exp",
+          "diffLines": 28,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T05:56:23.524466516Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4bc50304d1b7adf0fbcc83b262443281a5597a41",
+          "message": "Delete Unused Image",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T07:24:26.221216409Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ca298d672596d295922dc4c24ed4667524ddb2bd",
+          "message": "Fix javadoc errors/warnings\n\nAs pointed at\nhttps://ci.eclipse.org/platform/job/eclipse.platform.ui/job/master/810/javado",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-23T07:29:27.935058888Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "db41fb4a1a8edb434df83d273c22fa7bc572ed4d",
+          "message": "Replace TextMatcher in favor of extended StringMatcher",
+          "diffLines": 366,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T03:42:20.418695534Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "176f5030b1ed724274f88552b8bec14e43111832",
+          "message": "Extract shared code of FilteredTrees to abstract base class",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T03:42:54.685604725Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b0b460f10326b39a94dca6dee304c7c084bef639",
+          "message": "Deprecate \"fastViewWidthRatio\" extension point attribute \u0026 friends\n\nFast views are unsupported and the attribute is not ",
+          "diffLines": 22,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T04:27:25.506666088Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "58e4313fbf9bb7cd254f1a0cc01ffebafc1fae70",
+          "message": "Replace PNGs with SVGs in org.eclipse.ui.workbench (incl. shared images)",
+          "diffLines": 338,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T04:27:50.784457414Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "70589accf31b48fba37eb414c55bbb95ba1769d3",
+          "message": "Use on-the-fly disabled icons in org.eclipse.ui.workbench (incl. shared)\n\nThis replaces the usage of pre-generated disab",
+          "diffLines": 239,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T04:31:26.425871016Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0fe6c94d0df2f54f45af091bb234f9d090454ab1",
+          "message": "Convert control statement bodies to block in PerspectiveSwitcher",
+          "diffLines": 301,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-24T16:46:34.596512736Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ccafe58e7e349047507d7d5878beec826c19e124",
+          "message": "Fix ProgressManager.run(boolean, boolean, IRunnableWithProgress)\n\nFixed regression from ccd8bab0d789e7c3fb23d92018809548",
+          "diffLines": 20,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T20:13:31.674311988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0f5ed4595309cdcdeff65668e85823631581bd42",
+          "message": "Show ProgressMonitorJobsDialog after delay in ProgressManager.run\n\nEven for the backwards compatible mode (when the runn",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T20:18:45.484320829Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bb9d6232f6d57d3717bc92f2f4adc1267dd915da",
+          "message": "Perform clean code of bundles/org.eclipse.ui.workbench\n",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-24T20:22:21.287116118Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7d6a8087fea7b21c80452669cf04c8dda113b505",
+          "message": "Fix Javadoc errors\n",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-02-25T04:27:03.794684674Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/carstenartur/sandbox": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-jdt/eclipse.jdt.core": {
+      "lastProcessedDate": "2026-04-14T03:17:38.732912618Z",
+      "totalProcessed": 12662,
+      "status": "EPOCH_COMPLETE",
+      "deferredCommits": [
+        {
+          "hash": "488811f5b30befaaae3f5995fcfa0b0505629e6e",
+          "message": "Bug 429813 - [1.8][dom ast] IMethodBinding#getJavaElement() should return IMethod for lambda",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-26T05:42:35.941836444Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "57a9abe5f870a62060af37c83812c87231d59ce6",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-26T05:42:51.539041114Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cf31d55db9c4d7da6ad4a761218621111070f7e1",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-26T16:43:33.741396275Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "efbb87073d9dbcb7374efd4fcb6785889c57a494",
+          "message": "Fix for bug 496123 Fix for bug 496123 Fix for bug 496123 [9] DOM AST for ModuleDeclaration in module-info.java - convers",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T03:58:43.371591874Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "122497a51cb174b2d7497c5e397e8863b22e637a",
+          "message": "Revert \"Fix for bug 496123 Fix for bug 496123 Fix for bug 496123 [9] DOM AST for ModuleDeclaration in module-info.java -",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T03:58:43.396466572Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "af85a90374c262057daf6363bb015406bf214326",
+          "message": "Fix for bug 496123 Fix for bug 496123 [9] DOM AST for ModuleDeclaration in module-info.java - conversion part",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T03:58:43.418570167Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28130b72f04a744007c69105ea085ddd296adbc3",
+          "message": "module modifier part of fix for 516731 [9] DOM AST for restricted keywords in ModuleDeclaration",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T04:01:50.959497740Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "12060a89a038be2ae8b77c65d492846c318015e3",
+          "message": "Fix for bug 515875  [1.9] [dom ast] Module Binding for modules - part1",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-02-28T04:02:06.291454167Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "911d33fcf73cf50d25fee7b3e39062c93c0d7abb",
+          "message": "Fix for Bug 518301: [1.9] [dom]Change ModuleStatements to ModuleDirectives  - dom ast part",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-01T04:25:08.548107816Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b4a92afd579d4c65bb42b8e593ce89a80b355f1a",
+          "message": "Bug 518301: [9] [dom] Change ModuleStatements to ModuleDirectives",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-01T04:25:19.942660189Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8a1071fd0c22ca461a7868b29e9af8a866b80cd2",
+          "message": "Bug 542558 - [12][dom ast] DOM AST Support for Switch Expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-04T04:13:19.716763782Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "896cb38596980efacd9f1a3858de3d5249bab258",
+          "message": "Merge branch \u0027BETA_JAVA_12\u0027 to master for 4.12 builds",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-05T04:15:59.831183857Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "008ef1f94c166e1cb14f1cb24614e365aac0586e",
+          "message": "Bug 549106 - [dom] Impact of preview enabled flag on DOM AST",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-05T04:19:13.290951692Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a3466b0f64e8842e5ed6a3a28165da341fb76cc0",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA13\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-05T04:19:26.325050231Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ec0f4460548fe60c84b2460bdc763f8ed7750418",
+          "message": "Bug 552719 - [14] Making Switch Expressions available as Standard feature in DOM AST",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-06T04:14:04.787483987Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ccf6e4b85f958e25ff2d828d9211acab530a13f4",
+          "message": "Bug 553154 - [14] Records - DOM AST Support",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-06T04:14:31.923912Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ac501ce52b87c123d5cc8164d8865aff590f4be1",
+          "message": "Bug 418795 - [compiler] Unnecessary cast warning is wrong when casting\nprimitive to object type\n\nChange-Id: If1ff8dcb9d5",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-07T04:08:11.634226581Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b1726cc34dd20361deadb6957c48231603ab6c09",
+          "message": "Bug 563919 - [15][dom ast] DOM AST Support for JEP 360 - Sealed Types",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-08T04:16:47.594264543Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1fc8eb207b22bcf0985d573bf20a60a2d712c535",
+          "message": "Bug 566057 - [15] [javadoc] [DOM] Dom AST support for module in @see, @link and @linkplain javadoc tags.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-09T04:21:57.945126498Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1ca4eb954b2f5cf4838f31435ebd13e9e27ee981",
+          "message": "Bug 568287 - [16] DOM Support for JLS16",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-09T04:25:31.674746927Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7744b1ebb9582f7f915951b6ebfc4a79830e785e",
+          "message": "Bug 571024 - [performance] Avoid replaceAll(regExp,)\n\nAvoiding regular expressions for simple character replacements.\nSt",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-10T04:18:45.972452392Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "34929f1c228d3386f97bcbf8696572f27bb44da5",
+          "message": "Bug 570690 - [16] DOM AST Support for JEP 394: Pattern Matching for instanceof (final)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-11T04:13:21.796692641Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cec0a287b5a459f4cc7bae17178fe496fdf9bfa6",
+          "message": "Bug 568291 - [16] Remove JCP disclaimers from code, UI and marketplace",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-11T04:14:08.713099694Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fd6db01a1ee874ef9fe027d48fc549331ceea29a",
+          "message": "Merge branch \u0027BETA_JAVA16\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-11T04:14:08.741031860Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "58e496e94689961fc9b268ef7314bda7fe578f4a",
+          "message": "Bug 573941 - [17][switch pattern][ast dom] AST DOM changes for JEP 406",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:19:38.944811519Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "87e350400c3a7d43be13201711e30b6362530a5b",
+          "message": "Revert \"Bug 573941 - [17][switch pattern][ast dom] AST DOM changes for JEP 406\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:19:38.961341826Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e5ce37ef547e0df9caf65afe4f4cf6d76488e36a",
+          "message": "Bug 573941 - [17][switch pattern][ast dom] AST DOM changes for JEP 406",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:19:56.512878789Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f8768b6899a6a2ccc560388e8854ed8a3391ad7e",
+          "message": "Bug 575890 - [17] Remove Beta disclaimers in JDT.Core",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:21:13.004796224Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bb70f2ed26d59005ce6d53ed3852d9fbd59f716a",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA17\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-12T04:21:13.040230035Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "df306199ee19c4901db26c04130c3cb6ef685a81",
+          "message": "Bug 576978 - Use LF as line endings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:15:39.192173804Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "98f7e89ad55dee7c08d20df173f22a4690599133",
+          "message": "Bug 577544 - [18] Merge from master to BETA_JAVA18",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:16:03.798620929Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6f1972e75c51563ec8a12b37c8519ad15f1daf23",
+          "message": "Bug 578242 - [18] DOM AST support for JEP 413",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:16:34.809301668Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c0124251d58d7d5f50d358d589825a08bd4755e2",
+          "message": "Bug 578608 - [18] [DOM AST]Support for Regions and Multiple tags on Text element in JavaDoc from DOM",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-13T04:18:39.344204065Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d3a80f1f9b2f8ae1a0044470e640c4fd56289a5f",
+          "message": "Bug 577723 - [18] Remove JCP disclaimers from code, UI and marketplace",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-14T04:14:04.033616603Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b1754bad44aaf79b2977b6721b0705e761e04595",
+          "message": "Bug 577682 - Merge remote-tracking branch \u0027origin/BETA_JAVA18\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-14T04:14:04.082860471Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b50dbb7b0ee50919ce82832b18ea609119129440",
+          "message": "RecordPattern DOM AST changes (#174)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-14T04:17:33.381451971Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a31ce93959ddf80823e1ad1d3c656ae3d50e3ed7",
+          "message": "Adding new JavaDocTextElement after carving out AbstractTextElement (#328)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:21.024743562Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fcf57ddae7e15a28a572f3021acd0f725d2fef2b",
+          "message": "Merge branch \u0027master\u0027 into merge_master after 4.25 RC1",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:35.740801374Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "beb3fcc0c9739215d018f8e710cac66645ebdb54",
+          "message": "Merge pull request #357 from sravanlakkimsetti/merge_master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:35.782433920Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c453562a668ae55480cb807ac80c609b5587e458",
+          "message": "Revert \"Merge master\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.185600619Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c629d6bbecf94f42dbc352301f30a47d6578c4e9",
+          "message": "Merge pull request #361 from eclipse-jdt/revert-357-merge_master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.211155585Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e2a23afd9eb20521e4cc8e7d41f8cca636cd256f",
+          "message": "Merge pull request #362 from sravanlakkimsetti/merge_master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.225469761Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ecd24c483047682ca28164ff8c2db365b2826a47",
+          "message": "Revert \"Revert \"Merge master\"\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:35:44.296405641Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0668a4b0b63f6e76e1b92e6b4431628a9bfc6ecc",
+          "message": "Merge branch \u0027BETA_JAVA20\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:37:11.466819370Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "802a7b27b14c2b4356d9181a469906a7d428c570",
+          "message": "Merge pull request #898 from iloveeclipse/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-15T04:37:32.030073893Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "dee4eb5e069d1c304085dcef0260a2a40984bfe3",
+          "message": "Merge remote-tracking branch \u0027upstream/BETA_JAVA21\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:42:53.334332656Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c983f425332d9075622a445914c249a2344645b3",
+          "message": "Merge the Java 21 work from BETA_JAVA21 to master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:42:53.374827055Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d8ff450bfe80c447cab1d595caf006a55bb1cd6",
+          "message": "Use diamond operator in jdt.core repo",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:45:31.090107325Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aa1a02d82b31a8ecfdd7aed71ecd79178299735e",
+          "message": "JEP 430 - DOM API and converter changes for String Template expressions (#1684)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-16T04:46:02.158483336Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "21f8969a3ad24c3c9aae08d799a7acf1cee769c7",
+          "message": "[JEP-445] Grammar, parser and AST for unnamed classes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:24:22.908850374Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a5c1a0d0441f796508a8df87acce894faf241163",
+          "message": "Merge commit \u00274e46b78c91fee91dba084d8c4326c47c2d26be52\u0027 into BETA_JAVA22",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:25:06.312500112Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "df543ef70f9f270d476c58fdfb3d9451907d6e89",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA22\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:26:25.578304709Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b2705b00e91be7b06d36d75bdd6e052450991021",
+          "message": "Merge pull request #2181 from jarthana/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-17T04:26:25.598738620Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "73ff8a5363260940265a62f40cf998051a1f7799",
+          "message": "[23] Remove String Template preview feature #2353 (#2362)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:28:37.721841896Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ac81e89eca51bf80016e59e49fdc9fddbbead291",
+          "message": "[Patterns][DOM/AST] Withdraw class EnhancedForWithRecordPattern (#2397)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:29:24.850367019Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "93f5bd2fe6cf5dbd2f8767f99a56739a8662a91e",
+          "message": "Merge remote-tracking branch \u0027upstream/master\u0027 into BETA_JAVA23",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:29:24.869118575Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "07c9984a89001c1c1197b542579c1615211e58ee",
+          "message": "An extension point allowing third parties to override source to dom tree implementations (#2560)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:32:36.701900094Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ee35373d90b32a90abcd9c2427b2319b22279407",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA23",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-18T04:32:36.891830325Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f8fb58210e5a04aa17773fe757e7e02b2b9ac5cd",
+          "message": "Merge branch \u0027BETA_JAVA23\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-19T04:28:43.625903957Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "983f530a7889db194c64f9dcf2ff2f8172771cb6",
+          "message": "Merge pull request #2979 from jarthana/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-19T04:28:55.672019919Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5b5a17b4d15383cafccdf7911c880c170e7abb6b",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-21T04:09:00.530745103Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "80a4a864e693f8446a56c117b8785cf980fa1390",
+          "message": "Represent scanner tokens as enums internally (#3303) (#3772)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-21T04:09:43.912784145Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "24a15bf3c165b7e1ae7fb575d7748bd5b6dafc55",
+          "message": "Add import module support to ImportRewrite (#4313)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-22T04:27:18.918882525Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f25c58d5f3ca16a7a8a26a8ab98864e48d408488",
+          "message": "Merge branch \u0027BETA_JAVA25\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-22T04:27:30.098724334Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "187b1d1b53963b8ff74a6967dde73a8737e3eb94",
+          "message": "Merge from BETA_JAVA25 to master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-22T04:27:41.478475240Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "21ed59be85d950a8844c3ab14127f1216e0ceaff",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9\n\nAdded comment in IProblem and filed Bug 509643: [api] Ensu",
+          "diffLines": 209,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-03-26T04:41:04.422397950Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "07ab76f69fbeeb2f2fd54cdf3d01ee69344b9ae0",
+          "message": "HEAD - Fix for 206391",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-03T04:36:25.191133248Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "96939eb0492ec1cb13ddd5bdcba40000acf3e910",
+          "message": "HEAD - Fix for 328115",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-04T04:30:04.320818504Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c3894f02481a65e7c5a6b2e211e3716b20cd9dd8",
+          "message": "DOM/AST API work",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-07T03:10:12.093739094Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b7bb9d2950572af77f85c2c708c3816367817930",
+          "message": "Part 1 of fix for bug 395886",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-07T03:11:52.627351305Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ebf5deb17f462a2a1a50c9b4076f1d52394081e1",
+          "message": "Fix for bug 391895 - [1.8][dom ast] Annotation support for extended dimensions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-07T03:12:45.089879893Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7df061f9da0ab96be87e5851cb157a28c5f5bca0",
+          "message": "Fix for bug 391895 - Rename DimensionInfo to ExtraDimension and remove expression from same.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-07T03:13:28.332622576Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "85d82ef92c86e257cfcb71c0ec95b6b64432a5cb",
+          "message": "Fixed Bug 399793 - [1.8][dom ast] Add a new node type for compiler node LambdaExpression",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-08T03:10:37.900923463Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "11bdf7ee83fa535bb4e922a4f202eec91a5eb529",
+          "message": "Bug 404986: [dom ast] Add a debug option to verify proper nesting of ASTNodes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-08T03:17:20.212321587Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2c5129ccdeb3bec0116f7310eb4a5f7c456e0788",
+          "message": "Bug 404986: [dom ast] Add a debug option to verify proper nesting of ASTNodes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-08T03:17:20.222849503Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "23d1bc466b4877bf5eceb83f88acf63af19c0d70",
+          "message": "better formatting of annotations on varargs",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:10:23.696704701Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aade06a7dde9bdd68930bb7332e79ee5b41e5db9",
+          "message": "Bug 395612: [1.8] Implement AST Rewrite for Receiver",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:10:23.697352255Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "acc3e872f413b4237eeb7d6d9e3f49d61ce6d84c",
+          "message": "cleanup for bug 399792 - [1.8][dom ast] AST APIs should support casts with intersection types",
+          "diffLines": 395,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:12:24.612453256Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6a514a348b687707873fde0f6184e6b09d1607ee",
+          "message": "AST#createInstance(..) can also fail due to bad API level",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:12:24.612541790Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e6029c8b1adfe1296ee554ed42f00e5a663cecbf",
+          "message": "Bug 217966: Flags#toString API deserves improvements",
+          "diffLines": 42,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-09T03:12:24.612592636Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d3d92e370789aaaed8a46c804d74e3cb2b4bb167",
+          "message": "Fix for bug 404489 - [1.8][dom ast] Incorrect conversion of JSR308 TYPE_USE annotations on qualified name",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-09T03:12:24.636123104Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a9a2f610dbfd1c80acbe2670e60eb850641763f6",
+          "message": "Fix for bug 403810 - [1.8] @since tags need adjusting",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-09T03:12:53.027949040Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "80351fb8a54757084b1b27c49cb8b0584bf78834",
+          "message": "Bug 399794: [1.8][dom ast] Add a new node type for the compiler node ReferenceExpression",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-09T03:18:43.341483268Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c0d735bb59d0292c44074a58c867bfe7a8670833",
+          "message": "Fix for Bug 407131 [1.8][dom ast]ASTRewrite support for\nReferenceExpression nodes family",
+          "diffLines": 163,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:11:31.837407375Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e25c9b26d300c446da4be62b1b00d52eb2940f61",
+          "message": "Bug 405517: [1.8] IMethod#getFlags() and IMethodBinding#getModifiers(): What about default flags?",
+          "diffLines": 49,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:12:46.360564298Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b3031b3455034eac76b444fd20cbebeea6a2f5ff",
+          "message": "Fix for 417659 - [dom][ast][1.8] test failures - ast structure - when debug tracing is on (fixes 5 rewrite failures)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-10T03:13:02.984449433Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1ca61ba390ea54fcabd09223853d7a3d6816c249",
+          "message": "[1.8] Cleanups to DOM ArrayType conversion work",
+          "diffLines": 104,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528778840Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5663a1e0521003a6152962cf3fce8cc9ca6a4647",
+          "message": "Fixed Bug 418096 - [1.8][compiler] Misattribution of annotations with C\nstyle array declarations\n\nSigned-off-by: ssankar",
+          "diffLines": 80,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528850805Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c611850252ecccb24f660547467e0d555dd4fb70",
+          "message": "Fixed remaining issue in Bug 418096 - [1.8][compiler] Misattribution of\nannotations with C style array declarations",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528884639Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8d3c2646ec0224ab936125ae7e1adde5786e1231",
+          "message": "1.8, minor cleanup",
+          "diffLines": 37,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:11.528939312Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bea430fec612168745d91278c4d6f4fccc5c2fd4",
+          "message": "Fix for Bug 413592 - [1.8] Default method not formatted via\nASTRewriteFormatter\n\nSigned-off-by: Anirban Chakraborty \u003canc",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:14:36.872067525Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "80b12656ac31b339fd22081301db662b77277ac4",
+          "message": "Bug 418924: [dom ast] ASTRewrite should allow removing left and right operands of infix expression",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:15:54.274243071Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "43bf242c384a6b4ad5daf26c5b4617ec68564235",
+          "message": "Bug 413569 comment 30: renamed ExtraDimension node to Dimension",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-10T03:15:54.334578889Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f7827a25b6388e441fee9e49f93f5e181fbb94ca",
+          "message": "[1.8] Tag identity comparisons with //$IDENTITY-COMPARISON$",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:17:29.731227817Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6c3b6971f88c7f6d5be3c70fdaf936700dc7f94b",
+          "message": "Bug 419748: [1.8][dom ast] MethodDeclaration\u0027s receiverType cannot be AnnotatableType",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:17:44.181813746Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "66b64feede726295fd7895916d71772cc3c15672",
+          "message": "Javadocs",
+          "diffLines": 57,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:19:23.672506133Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4c909758dccf4ee3c4897b3d8d65f492795c9578",
+          "message": "Bug 420413: [1.8] AST#newArrayType(Type, int) should allow to create zero-dimension array",
+          "diffLines": 91,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:19:36.248100227Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e56e767173dc5b5ba970e3e7ca9256e9541ebffc",
+          "message": "Bug 413569 [1.8][dom ast] AST for annotated multi-dimensional array type\nis not well-formed review",
+          "diffLines": 114,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034361434Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "071c3a7154f042f1dac67e366b91c1f1b510f2e9",
+          "message": "Bug 420458: [1.8][dom ast] JLS8 ASTParser gives up on multi-dimensional array reference in Javadoc",
+          "diffLines": 52,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034414634Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "db9f959a935f205a7a7a5ac245a707865595ee87",
+          "message": "Bug 420458: [1.8][dom ast] JLS8 ASTParser gives up on multi-dimensional array reference in Javadoc",
+          "diffLines": 16,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034434081Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0d3451e9a7c942ed5f2531f8cbfba408096982ef",
+          "message": "Bug 395886: [1.8][DOM/AST] Withdraw annotations property from Name nodes.",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:07.034455802Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "91f3edc5382142e13f8351418b65563536c6670f",
+          "message": "identify the invalid identifier in the IllegalArgumentException",
+          "diffLines": 26,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:20:47.661184498Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2077a29bc8cfe42c01e5c07aa5d0c90e2eceb36b",
+          "message": "Fix for 417659 - [dom][ast][1.8] test failures - ast structure - when\ndebug tracing is on (fixes a failure)",
+          "diffLines": 47,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:21:11.707406277Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ba2b33c0750d6d7311c1eadcadc15015d0ae8f36",
+          "message": "417659 Bug 417659 Fix for 417659 - [dom][ast][1.8] test failures - ast\nstructure - when\ndebug tracing is on (see comment",
+          "diffLines": 93,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:22:30.302255686Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "57b3e1abeb63c771e6bdc37b05f8550c215d97c4",
+          "message": "Javadoc fixes",
+          "diffLines": 192,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-10T03:22:30.302377595Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "25dbd9e17c7b6920dccf1b458296dbbe00f382de",
+          "message": "Fix for Bug 418979 [1.8][dom ast] Bad source ranges for annotated QualifiedType as type of ParameterizedType",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-11T03:14:35.998494624Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 3,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
+      ],
+      "categoryHitCounts": {
+        "JDT AST Infrastructure": 2,
+        "JDT Language Support": 3,
+        "JDT Internal Refactoring": 247,
+        "Unnecessary Annotation Removal": 1,
+        "Collections": 2,
+        "Java-Modernization": 5,
+        "JDT Internal Bug Fix": 92,
+        "Logging Simplification": 1,
+        "Robustness/Defensive Programming": 1,
+        "String-API": 1,
+        "Deprecation": 3,
+        "Eclipse API Migration": 22,
+        "Lambda Simplification": 1,
+        "Clean-up Bug Fix": 3,
+        "Performance": 8,
+        "Try-with-Resources": 1,
+        "Logging Modernization": 1,
+        "Internal JDT Refactoring": 2,
+        "Bug Fix": 3,
+        "Exception Handling": 3,
+        "Type System Improvement": 1,
+        "Code Style": 2,
+        "JDT Internal Formatting/Rewrite": 1,
+        "JDT Internal Architecture": 15,
+        "JDT Internal API Management": 1,
+        "Error Handling Improvement": 1,
+        "Java Modernization": 5,
+        "JDT Internal API Evolution": 12,
+        "JDT Internal Performance": 1,
+        "Concurrency": 2,
+        "Code Style / Annotation": 1,
+        "Error Handling / Logging": 1,
+        "API Modernization": 1,
+        "Eclipse API Modernization": 1,
+        "Null-Safety": 2,
+        "JDT Internal Feature Implementation": 4,
+        "Internal JDT Annotation": 1,
+        "Concurrency / Thread-Safety": 2
+      },
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
+      "lastProcessedCommit": "ab528648c0996ee6ed432feac5b9ff237884391c",
+      "lastProcessedDate": "2026-07-24T03:52:01.593063277Z",
+      "totalProcessed": 2776,
+      "status": "EPOCH_COMPLETE",
+      "deferredCommits": [
+        {
+          "hash": "c80a0ed5358fd6caf3f92e129276abba94329c19",
+          "message": "Bug 531061 - Asynchronous/non-blocking Java completion",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-23T04:34:42.508908933Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "370be844759aef0cc8d76309a999a0aca2b2f8cc",
+          "message": "Bug 550394 - [cleanup \u0026 saveaction] Simplify lambda expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-23T04:37:47.243469779Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a3c629b52383f910fe6ded17e0ad7dab97c476a8",
+          "message": "Revert \"Bug 550394 - [cleanup \u0026 saveaction] Simplify lambda expressions\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-03-23T04:37:47.245785446Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "326d1e2ea7464b4dc05c9e4df20375ddd8dc33dd",
+          "message": "Bug 553473 - [14] Create Menu item and New Wizard for creation of a Record",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-02T04:36:17.399807301Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "32e1a8524a2a17a479a14b2007c9725fba14d13d",
+          "message": "Bug 550394 - [cleanup \u0026 saveaction] Simplify lambda expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-02T04:37:28.236655718Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "952dcc27cdfe6b939cd9075a4fef1f56281e5159",
+          "message": "Bug 553111 - [quick fix] Add missing module-info Javadoc tags",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-02T04:40:44.658314987Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b05b51e95b4bbe3a056e4dbf4d0af90d0fa27024",
+          "message": "Bug 548309 - Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-14T03:27:02.609635039Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a1f5fa062403b3348a75ae63b17446f0011715a3",
+          "message": "Bug 548309 - Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-15T03:11:31.633184332Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "dff18abbf1362302a3af9e898d010c1a1e4c9a5c",
+          "message": "Bug 562600 - [15] Support setting compliance to 15 in Compiler\nCompliance Page\n\nChange-Id: I3dca11be68f9f8d55248f9c4262e",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-17T03:13:00.633985055Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "51b774924c2b6f140a1d37741c7805a2a32d0230",
+          "message": "Bug 560576: [14] There should be an easy way to enable preview features\n\n\nChange-Id: I1d50b153d91d22b599c5398c93f5dc5115",
+          "diffLines": 200,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-17T03:13:00.634615446Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "56f2e0f569246673f60a768129c64147ae01fe47",
+          "message": "Bug 516504 - [quick fix] \"Create method\" for method reference",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-18T03:16:30.844457717Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "32458d2362ce32b7fd5725ca25c177dd9266422d",
+          "message": "Bug 565040 - extracted convert string concatenation proposals",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-18T03:16:30.849914064Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "460ea99fcce37c263ca53d0a20ceb9b57641543b",
+          "message": "Bug 561769 - [AutoRefactor immigration #15/132] [cleanup \u0026 saveaction] Precompiles the regular expressions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-18T03:22:57.424204823Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c5510140697a1a4048b32515f26c4664ea05883f",
+          "message": "Bug 516504 - [quick fix] \"Create method\" for method reference\n\n- Only allow method reference \u0027this::\u0027 or static referenc",
+          "diffLines": 117,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:28:57.815819258Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d33941fd1af991c10120ee69bc873014204a389",
+          "message": "Bug 565387 - return of statement lambda is marked as exit point in method\n\nChange-Id: Id90509510493bf876db3e4165813e3e36",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:28:57.815905688Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "315e955d2eab8e4b28cc8c6078f40d0fb3eb1e68",
+          "message": "Bug 564416 - Use lambdas and method references cleanup on JDT UI code\n\nFor browsing, callhierarchy, preferences, working",
+          "diffLines": 123,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:32:51.503845039Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ba67eabbf1207ad025db6d9e4dbd74e95cbad904",
+          "message": "Bug 565208: Remove calls to Color.dispose\n\nAs these calls are no longer needed, remove the calls\nand related code around",
+          "diffLines": 250,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:32:51.503898568Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4a11ce46eb2e42b60f04982415c2f59f0e971fcb",
+          "message": "Bug 565846 - [15] Syntax coloring for permits\n\nChange-Id: Ie5b33136bd9da211658af48f111ddaec17ab8af9\nSigned-off-by: Kalya",
+          "diffLines": 121,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:36:28.256023869Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1ccbb768ebecd93b8e660851c1c0a852d3d9a351",
+          "message": "Bug 564416 - Use lambdas and method references cleanup on JDT UI code\n\nSeveral cases in which running the cleanup again ",
+          "diffLines": 253,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-18T03:36:28.256098508Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a5e9d842f5272792d7c07d77482c07201c94535b",
+          "message": "Bug 563233 - add preview support\n\nChange-Id: I97a425f1f34b12d06ff8e157cf33c08b6f181621\nSigned-off-by: Carsten Hammer \u003cca",
+          "diffLines": 433,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-19T03:12:09.068214444Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0ad81ae0a0187770153a362c868186c63dc684b0",
+          "message": "Bug 566529 - Another unclosed stream\n\nZipFile only closed in case of an exception\n\nChange-Id: Ibddcd0262f00a39b54a2c089e",
+          "diffLines": 41,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-19T03:30:50.162343305Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0907c34f90322319afb4bc5b03b9be511f61f934",
+          "message": "Bug 567335 - [AutoRefactor immigration #25/136] [cleanup \u0026 saveaction] Use Collection.addAll(), Collection.addAll(Arrays",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-20T03:25:35.020722037Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7b4291b1222ff497f5bec510115347d0b741128a",
+          "message": "Bug 567783 - [cleanup] Reuse existing code",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:19:17.687901198Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "64e5a9cab23ee26c331d3fabad5e5c83e09b6f6f",
+          "message": "Bug 567692 - [AutoRefactor immigration #31/138] [cleanup \u0026 saveaction] Objects.hash()",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:19:17.691782325Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d2df174ec8e59c7800cf23e03c454d70f281e8a",
+          "message": "Bug 567794 - [AutoRefactor immigration #33/139] [cleanup \u0026 saveaction] String.join()",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:19:17.695507720Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "10d4ec67649ed96e0f214228fb9b3525a8c8fab4",
+          "message": "Bug 568147 - Refactor some utils of ProfileVersioner and some other constants to jdt.core.manipulation for use by jdt.ls",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:23:17.947578297Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "091732c42db3c41edf06002028b273c7c38fd28f",
+          "message": "Bug 568348 - [cleanup] Simplify lambda expression should do all changes",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:24:44.653685505Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "97bc7e2c31c6ab99f428245d96a85e1cff0703ac",
+          "message": "Bug 568472 - [AutoRefactor immigration #42/145] [cleanup \u0026 saveaction] StringBuilder (also fix properties spaces)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-21T03:28:11.254381371Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a746f1297ff4a4364b7034ed53922a96db2651a3",
+          "message": "Bug 565447 - [15] ASTConverter showing pattern variable for\nInstanceOfExpression as final non-sealed\n\nChange-Id: I727bb6",
+          "diffLines": 36,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-22T03:12:02.437598058Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "438113dfd7d6c49f3734e2f028fdcbb689352303",
+          "message": "Bug 568609 - [cleanup] Improve the \"Replace String concatenation by StringBuilder\" rule appending",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:17:00.626821950Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "be05e73941642d62da465ee2e1d695c44bfd4311",
+          "message": "Bug 568611 - [AutoRefactor immigration #43/145] [cleanup \u0026 saveaction] Switch",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:19:09.691650627Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f14bd693b9898b109e7a703a97e10826117ea533",
+          "message": "Bug 568656 - [AutoRefactor immigration #45/145] [cleanup \u0026 saveaction] Control flow merge",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:26:51.914270240Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "16051ece96111f64ce9bea65b133c80e5bc56b30",
+          "message": "Bug 569879 - [AutoRefactor immigration #52/146] [cleanup \u0026 saveaction] Multi-catch",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-22T03:29:12.992451786Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2b83cf472a6a51733e0d08ed2918a2c53ec27082",
+          "message": "Bug 570029 - [AutoRefactor immigration #54/148] [cleanup \u0026 saveaction] Convert fields into local variables",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-24T03:19:48.771121438Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "921c6bef549bf78c71630c1802b52defe03b1e36",
+          "message": "Bug 570409 - Move switch cleanup to jdt.core.manipulation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-24T03:21:41.417398253Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "12d41031445086f94004a1acc883e6e622fbe8ee",
+          "message": "Bug 571077: [16] Merge master branch to BETA_JAVA16 branch after 570855 for Y-builds",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-24T03:29:13.192765874Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "37e4e7677ea4b1a03dae29db41f814a32822eb26",
+          "message": "Bug 571859 - \"Split variable declaration\" does not work with \"var\"\ndeclarations\n\nChange-Id: I53868f21e5e9d195bdea3e31233",
+          "diffLines": 113,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-25T03:23:28.241129704Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "df6f0abaa8653d7512ded9cb1c94eb5e0025ac8e",
+          "message": "Bug 395216 - [quick fix] Access via object instead of static access",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-27T03:13:29.648489492Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f8b868140341da612bccfae70252b0ece622084d",
+          "message": "Bug 574460 - [cleanup] \"static inner class\" should ignore @Nested tests\n\n- add code to StaticInnerClassCleanUp.createFix",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-27T03:34:00.986335803Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "406d1d9e5a4be6ee21e9c268ddf029f3d88ad0e6",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA17\n\nChange-Id: I9117deab8164467b4387ca44a466e3abe9985985\n",
+          "diffLines": 359,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-27T03:34:00.986413820Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4d373c515a97c14137887662a4f1ab2aa94b575d",
+          "message": "Bug 574794 - [17][quick fix] quick fix to add permitted types of a\nsealed type does not add import statement.\n\nChange-Id",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:16:11.049223934Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2e6f8ab198a5142b2a1ed202960109f3f74f59e0",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during\n4.21\n\nPost M1 - Merge remote-tracking branch \u0027or",
+          "diffLines": 172,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:16:11.049646217Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a7a6d6c6a9a3fccea21420e1a7b0b726f8b67ad6",
+          "message": "Bug 574820: [17][sealed] quick fix to add super interface should also\nadd corresponding import\n\nChange-Id: Ie405860aa6d1",
+          "diffLines": 32,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:16:11.049693335Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e0cc48d198e2d6ea58cfb63c448f1e026ca35ae2",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during 4.21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-28T03:19:05.290008672Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5742bd6c57fe03349ea199d60573daaba3a2f096",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during 4.21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-28T03:22:38.447015665Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "40f7464d3fb782edf064f26c47068667b230c26d",
+          "message": "Bug 571758: [preferences] Add defaults (enabled/disabled) in Type\nFilters preferences\n\nChange-Id: I75a374ffe4a8bed7ccfaa",
+          "diffLines": 130,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:25:07.729265986Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f2f186769ef6425e04eda93102f2b1fdf33da876",
+          "message": "Bug 574073: [17] Merge master to BETA_JAVA17 branch periodically during\n4.21\n\nMerge remote-tracking branch \u0027origin/maste",
+          "diffLines": 155,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-28T03:25:07.729321925Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4415189f73524cf0bfc61f0c2bc65f64f95520b2",
+          "message": "Bug 576431 - Refactor SurroundWithTryWithResouresRefactoring",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-28T03:29:55.943772610Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6e7ebc5f94ab97ab7cc03792a5256a1a8b3ba605",
+          "message": "Bug 570567 - [15] \"New Interface\" and \"New Class\" wizards to be enhanced to support \"non-sealed\" modifier",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-29T03:13:08.557612876Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ccb2e7bd426fc8a8566fb743212bd80c157dd1cd",
+          "message": "Bug 576549 - [content assist] Missing proposals\n\n- re-enabled java.awt.*\n- still disable java.awt.List\n- re-enabled org.",
+          "diffLines": 53,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-29T03:15:47.245238773Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0b0a471440f810269ac1b5eff4720a003b18fece",
+          "message": "Bug 576615 - Implement Filter editing in JDT with a new custom component",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-29T03:26:27.952742259Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fac9c282c7a2699a65179a3d40fa7042dcc6a367",
+          "message": "Bug 578948 - [18][javadoc] incorrect handling of overlapping multiple annotations within @snippet",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-30T03:24:56.538576676Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "686e6f8d1961a506077f3fc0f0a4ca368897d13b",
+          "message": "Bug 576615 : fix to use the defaults value, when they are requested, and show the saved values, if not\n\nChange-Id: I18b6",
+          "diffLines": 32,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-04-30T03:26:56.842710645Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b664510ccf77e2b6e2c292bb24ddfe2d234d4b01",
+          "message": "Bug 577682 - [18] Release Activities.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-30T03:29:26.851352871Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5b3ce4393966dc797e4fe8171ea78c072632a204",
+          "message": "Bug 569562 - use double-check locking idiom for performance",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-04-30T03:29:26.854251409Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0a1dc2c86f952bf7d8017f9cd4bf32f61629551a",
+          "message": "Merge remote-tracking branch \u0027upstream/master\u0027 into BETA_JAVA19",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-01T03:29:11.118726239Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fc2e2e732e7ec36988476a440e828b7597f3f9f0",
+          "message": "Merge pull request #172 from noopur2507/BETA_JAVA19",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-01T03:29:11.135104795Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "eaef2dbf940fc4208d4d96873181a87bc5a75966",
+          "message": "Merge master to BETA_JAVA21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-04T03:16:18.292648163Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9018c76e702cce50467e0bb1d3c2abbbb206e693",
+          "message": "Merge remote-tracking branch \u0027upstream/master\u0027 into BETA_JAVA21",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-04T03:19:26.106547114Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "13675b1f8a74f47de4da89ed0ded6af7c21dfbec",
+          "message": "Merge pull request from GHSA-q6xr-9x9x-g7w2",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-04T03:27:58.564678513Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "860103396d89e7a1e769a233d55fdbb2d537977f",
+          "message": "Push down logic to ReorgUtilsCore, unify a central location for resource and project utility functions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-05T03:17:17.337160633Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7c51007d443a2381a528644c0f6105f214bc8dd3",
+          "message": "Apply semantic syntax coloring in Java source hover viewer. Fixes #437 (#438)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-05T03:26:41.783333462Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cbc03c25f6059c774d8766bd7b02489c9df53acf",
+          "message": "Push down javadoc code from jdt.ui to jdt.core.manipulations (#941)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:25:23.687573890Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8977b63cc9c7b4398133dbfec53db86f959b318f",
+          "message": "Refactor lambda quickfixes for headless (#958)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:26:20.222508667Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d9752ee42b5c233506b1df38e3ec8c5086e074e7",
+          "message": "Push down code related to java partition scanners, now that o.e.jface… (#1011)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:29:16.118631370Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a81e7e104cb837c05d2ad44efe181be9cfa00204",
+          "message": "Refactor string concat fixes to be used in headless mode. (#1032)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-06T03:30:09.102177787Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "417ba9ad1af488d8b40ab87445cb45130c98550d",
+          "message": "New preferences for annotation based resource leak analysis (#1064)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:14:41.052763835Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8e28ae0210672ac240683b778206bed85263fa66",
+          "message": "Sub processor pushdown1 (#1078)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:16:41.161322810Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fca51c2a57fa4d3de0a0b496a97630bd05decc47",
+          "message": "add missing @Deprecated",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-07T03:20:42.955236084Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9cd02fe42320c3c4f0fe3af1690b692ed80968d7",
+          "message": "CallHierarchy: fix error when clicking a method that is gone #1098\n\nhttps://github.com/eclipse-jdt/eclipse.jdt.ui/issues",
+          "diffLines": 141,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-07T03:20:42.955310Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5afacf38e819114b3ed53c906b1877616c95bf20",
+          "message": "remove Exceptions not actually thrown\n\neliminates problem markers and dead code",
+          "diffLines": 174,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-07T03:20:42.955345334Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4a0adfa495da31d74cf5d2f06959402585bd8770",
+          "message": "Separate core and ui for GetterSetterCorrectionSubProcessor and VarargsWarningsSubProcessor (#1116)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:20:42.962836207Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ba75582568210776c392dcafd4a72a5830020991",
+          "message": "Incremental delete of duplicate interfaces (Delete ICleanUpCore)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-07T03:28:01.184718972Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "148ddd9084479170d625f7d77f21b70bdd707019",
+          "message": "Implemented Batch SelfEncapsulateField for multiple fields at once #1080 (#1124)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-08T03:14:18.625440018Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0b3382e7940eeb68a95c134c1ee90f1901b04dcd",
+          "message": "Add styling enhancements to signatures (JavaElementLinks) in Javadoc. Fixes #1073 (#1074)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-08T03:16:03.808122790Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "af7a99c24b6d7449a6eeef2b1f4f8527a21fe529",
+          "message": "Refactor UnnecessaryArrayCreation cleanup and quick-assist for jdt.ls (#1397)\n\n- move and rename UnnecessaryArrayCreatio",
+          "diffLines": 62,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-08T03:31:24.670830996Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "58ae34144bcf9935f73483a7f67fbbe73dee5916",
+          "message": "Replace \"UTF8\" with StandardCharsets.UTF_8\n\nAvoids NON-NLS and possible UnsupportedEncodingException\n",
+          "diffLines": 87,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-09T03:20:08.547570147Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7bcba3bbab7de6e9986445377a3d5c268f34a2f1",
+          "message": "Refactor StaticInnerClassCleanUp to jdt.core.manipulation (#1493)\n\n* Refactor StaticInnerClassCleanUp to jdt.core.manipu",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-09T03:20:08.547994020Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "25474de92e1e364ac735959e9e31382725a5a454",
+          "message": "Refactor RedundantSemicolonsCleanUp to jdt.core.manipulation (#1495)\n\n- refactor and rename to RedundantSemicolonsCleanU",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-09T03:20:08.548039185Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d11adcfa6c819430e06e1418619e8f06c88a60d1",
+          "message": "dogfooding - if else to switch cleanup (#1567)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-09T03:26:34.396473399Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d034430c32a7358212d855b411706265368d4e9f",
+          "message": "Merge remote-tracking branch \u0027upstream/BETA_JAVA23\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:14:01.021065544Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fee4f51cec58aa36651a4986e00dffd638487204",
+          "message": "Merge pull request #1662 from noopur2507/merge-beta23-to-master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:14:01.048799461Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c223f6243a4c18085a0071bc219189fe8e84b237",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:20:17.162593089Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5e4a552522dcfe92fafd549daf0be19684243c1b",
+          "message": "Merge master into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:21:06.723305015Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d0563dcb67679ab00626ff63283f5bceb5d0ea54",
+          "message": "Semantic Tokens extension point (#1683)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:28:15.643018001Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "960a9090a1d1b351e60fde07164347022318f679",
+          "message": "Refactor LocalCorrectionsSubProcessor to jdt.core.manipulation (#1849)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-10T03:28:15.655834581Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "251bc5f617abb0b78653d5b43348488b69cca104",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-11T03:25:15.601904963Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "76e1aaa15db619f615f49ec880f27709301d4c98",
+          "message": "Merge master with BETA_JAVA24",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-11T03:25:15.614919032Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28604fa1b4e9060c7b55c03e3ce18fc109b73b4a",
+          "message": "Add folding support for while/if/for/try/catch/do-while constructs (#1562)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-11T03:33:46.464692431Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6b4af8737dbfd5ca2c7e5217179d7a1f410bb867",
+          "message": "Fix folding of 2 consecutive methods (#2014)\n\nIf the second method starts in the same line the first one ends then\r\nther",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:14:47.196732341Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e813d376b64a7c421c7008833b9464ab041797f3",
+          "message": "Fix folding of local classes and added test case for the scenario (#2015)\n\n",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:14:47.197206668Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6d20661024f16e8d74ee5f5596af83f880d2c95c",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA24\n\nsync witch 4.35 M3\nneeded for https://github.com/eclipse-",
+          "diffLines": 268,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:14:47.197273937Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4f7c6a71d362fe6e4b735e55213b409d488801a9",
+          "message": "add custom folding regions (#1825)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-12T03:18:54.431461288Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28920b0631dde386f27504d7dded1e57fdf42b77",
+          "message": "Add project property page for folding (#1979)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-12T03:24:50.823681008Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ac95931acd1758b21eb0bccc724be39aa84ec7f5",
+          "message": "Added SwitchStatments and SwitchExpression to the new folding (#2084)\n\n",
+          "diffLines": 94,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:33:44.607554049Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ff7036ccb0e65504757d9db8422b3ba983f19af6",
+          "message": "Fix `Create new member record`: preview is missing `record` keyword (#2186)\n\nfixes #2185",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-12T03:39:54.519792378Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1f40aa1dcc8eb8f87432af15a8d6cf0e09125ff7",
+          "message": "Replace pre-generated disabled icon with on-the-fly generated ones (#2190)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-12T03:39:54.536894071Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b69eafb9ab6d8f46d558a26554274b486cdfd572",
+          "message": "Explicitencoding cleanup (#1631)\n\n* add explicitencoding cleanup\n- add new UseExplicitEncodingCleanUp, UseExplicitEncodi",
+          "diffLines": 152,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-13T03:18:26.139512890Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0d7c003813ce64024a4dbd16bfd1cf9a1102f6a3",
+          "message": "Replace BrowserTextAccessor with InputChangeListener for Javadoc views (#2168)\n\nBrowserTextAccessor came with Javadoc st",
+          "diffLines": 410,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-13T03:18:26.140000700Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "00da872c08deafe73bd86771773d8e94dd73166f",
+          "message": "Move methods from ModifierCorrectionSubProcessor into core class.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:25:24.335326870Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "905eb1c610c23fe8350e9339c8282f1b428be7b3",
+          "message": "Add new quick-fix/clean-up to replace deprecated fields if possible (#2254)\n\n* Add new quick-fix/clean-up to replace dep",
+          "diffLines": 236,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:29:01.299931919Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "51a745491eee50750c9eaed215c5c903e6aa3498",
+          "message": "Stickylines (#2149)\n\n* StickyLines implementation using AST\n\n- substitute for #1851\n",
+          "diffLines": 360,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:29:01.300017988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f07c4ccd6afe91a3b9bfaaccea7215105466de24",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA25",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:29:11.004126828Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "44d14e5e57f4ed9d35d93760c5f476f8175bb6d3",
+          "message": "Merge pull request #2291 from stephan-herrmann/BETA_JAVA25",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:29:11.023581559Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "234052821049cde41c372eb11ffd0b7038a8c36d",
+          "message": "Merge pull request #2345 from eclipse-jdt/master",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-05-31T03:36:22.191914757Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1f01b4197f57f636144e5a5059b9af06f14d79e5",
+          "message": "Wait for deferred PDE classpath initializer before initial reconcile\n\n- This avoids the display the transient error anno",
+          "diffLines": 33,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:41:46.245065407Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c58cae5be12286a049583c26c9dbc893e66be3eb",
+          "message": "Fix SingleUsedFieldCleanUp to remove volatile modifier if field moved (#2375)\n\n- add new test to CleanUpTest\n- fixes #23",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:41:46.245141882Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f7b34ef2f247ca70b5c3fa6b343d2e14cd102058",
+          "message": "Protect access to AbstractSpellDictionary.fHashBuckets to avoid CME (#2378)\n\n* Protect access to AbstractSpellDictionary",
+          "diffLines": 239,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:41:46.245157265Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bcc2a1da9d859fb4c553a76fb4949a11b76dcaed",
+          "message": "Support configuration of the release for a a source folder (#2260)\n\nThis allows the user to set the new \u0027release\u0027 option",
+          "diffLines": 252,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.448987988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3a6d9228ceaa45137f34283c663d8ab28ec18605",
+          "message": "Revert \"Show progress when calculating AST for ClipboardOperationAction #2028 (#2382)\" (#2405)\n\nThis reverts commit 5e09",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.449067477Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "56e76d732d10f7dc5ff9897601a3b80cd6080377",
+          "message": "Remove extraneous println in ReduceIndentationCleanUp (#2401)\n\n",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.449085925Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ef74c4430d96c065c7785c7eb4b6835517a080b2",
+          "message": "Fix type filtering in CallHierarchy view (#2400)\n\n- fix CallSearchResultCollector.isIgnored() method to not return\n  fal",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-05-31T03:47:54.449097432Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c6938dcc12c5cc4b2a9cf6b4aa27843affe9f0e0",
+          "message": "preserve contextual information with enhanced folding (#2410)\n\n",
+          "diffLines": 142,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:21:54.749606091Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fb7b017e4721824f1a2c070c0c20d936b0c761c3",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA25",
+          "diffLines": 172,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:21:54.750040915Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b09178ebefdc1f8b04713aa6b50eee54744acf92",
+          "message": "Validate the names of the methods in the call hierarchy filter dialog (#2304)\n\nThey can only be valid java method names ",
+          "diffLines": 115,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:21:54.750086733Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5a785abb3893582fc6609391a46e99ab08fede82",
+          "message": "Fix ExtractMethodInputPage preview text to reflect accessor settings (#2445)\n\n- fix opening ExtractMethodInputPage not s",
+          "diffLines": 36,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:21:54.750119862Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "73676b064980ea4c046f2dfb12b7418550d3ab3a",
+          "message": "Do not remove lone empty commented return statement in a lambda (#2478)\n\n- change LambdaExpressionAndMethodRefFixCore to",
+          "diffLines": 27,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564626873Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a4e790ced0775023fb6ab39bd4cd63136ec15aa0",
+          "message": "Merge branch \u0027R4_37_maintenance\u0027 into BETA_JAVA25 as of R4_37\n",
+          "diffLines": 81,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564718739Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b23b384e91f60c17493f62591103b051806b5fc2",
+          "message": "New Class dialog: fix cropped Interfaces field on mixed-DPI monitors (#2460)\n\nThe Interfaces field in the New Class dial",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564757196Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "02958ce874164f2a61fcfba52e975988f3704e89",
+          "message": "Support adding default wildcard chars to camel case types in Open Types (#2420)\n\n* Support adding default wildcard chars",
+          "diffLines": 126,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:27:21.564781682Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f2294e39d7cb73c4d7137681abaf50abf606dc1b",
+          "message": "Fix listener for folding preferences (#2551)\n\nThe listener was not un-subscribing because the editor had been set to\nnul",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:37:25.827993165Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e123ff19967582dfcb53a25bb7a0340515cb406f",
+          "message": "Do not calculate the folding structure for uninteresting events (#2552)\n\nOnly calculate the folding structure when:\na) T",
+          "diffLines": 341,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-06-01T03:37:25.828069458Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c76b5af9f358a2f84f435d19c43a59473ec569ca",
+          "message": "React to new info warnings from ecj",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:11:27.207072168Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d7d0d3d0cef09cb3f5d8ff0372b00da8252f23d5",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA26",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:12:51.346177166Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "88d763ca0e594b45692e7aec279248a99a6dc1fd",
+          "message": "Merge pull request #2633 from jarthana/BETA_JAVA26",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:12:51.378195492Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ecb420fa1f6158f5c63e221a01275782407757c7",
+          "message": "Mass refactor of LocalCorrectionsSubProcessor methods to base (#2640)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:13:15.038395955Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d3be3a659d8a85da67e08f1e479e43197d442bd1",
+          "message": "Merge branch \u0027master\u0027 into BETA_JAVA26",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:14:00.711910928Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0407b0dde5dd89bd5c3932857648a61b5343642a",
+          "message": "More refactoring of LocalCorrectionsSubProcessor methods (#2659)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-20T03:14:36.669770511Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3478a850278f2be0b18137ec3eb5eeab119a73db",
+          "message": "Bug 440815 - External annotations need UI to be attached to library jars on the classpath",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-21T03:11:52.817582920Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "594ed91e555d1955d9ad67626570809adfd08aaf",
+          "message": "Bug 403917 - [1.8] Render TYPE_USE annotations in Javadoc hover/view",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-21T03:15:49.087273691Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1666ecb6f9bef6be89e7a6b9ea30816d5311a1c3",
+          "message": "Fixed bug 438956: [1.8][quick fix] Surround with try/catch quick fix on lambda expression surrounds wrong method",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-22T03:12:02.857908984Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1d0a7f97de8a6bc6925deabc26b07c41fa3cbb1d",
+          "message": "Bug 477523: Provide new severity level \"information\" in the UI",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-22T03:12:49.727764371Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d11c46542d32fa82a972a39ca0bb788d757d06c0",
+          "message": "Bug 479838: Outline view not available for Java file",
+          "diffLines": 19,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-22T03:13:20.898049808Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e095667dfb3f41cc51e57c21543b4c8816b87254",
+          "message": "Bug 477523: Provide new severity level \"information\" in the UI",
+          "diffLines": 24,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-22T03:13:20.898125369Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7fd37c8e139cdceae09290ace1aeba8b2de7a6d2",
+          "message": "Bug 470203: [content assist] color/style substring code completion proposals",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-24T03:44:31.757487220Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f4fcc3da96fbe9d5cbe9f5f29d06c70ed5beab13",
+          "message": "Bug 483566 - [preferences] UI for multiple sets of null annotation names",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-24T03:46:05.122837555Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e054d75b6136dc19b5cb96714ae68535da5ce976",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-24T03:47:48.847195464Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
+      "categoryHitCounts": {
+        "Eclipse Specific": 1,
+        "JDT Internal Refactoring": 190,
+        "Code Simplification": 10,
+        "Performance": 26,
+        "JDT Internal Bug Fix": 69,
+        "Clean-up Bug Fix": 81,
+        "Try-with-Resources": 9,
+        "JDT UI Feature Implementation": 1,
+        "Resource Management": 4,
+        "JFace API Modernization": 1,
+        "String-API": 7,
+        "Java-Modernization": 26,
+        "Performance Optimization": 2,
+        "JDT Internal API Evolution": 2,
+        "Collection Performance": 1,
+        "Null-Safety": 20,
+        "Lambda-Simplification": 5,
+        "Architectural Refactoring": 2,
+        "Collections": 10,
+        "JDT Internal Feature Enhancement": 7,
+        "Clean-up Enhancement": 4,
+        "Internal Refactoring": 2,
+        "Loop Modernization": 4,
+        "JDT UI Bug Fix": 1,
+        "Type Inference": 2,
+        "Architecture Migration": 9,
+        "Code Style": 34,
+        "Eclipse API Configuration": 14,
+        "Javadoc Generation Enhancement": 1,
+        "Clean-up Logic Enhancement": 1,
+        "JDT Internal UI Feature": 22,
+        "JDT Internal Architecture": 1,
+        "Eclipse API Migration": 17,
+        "JDT Internal Feature": 6,
+        "Type Safety": 3,
+        "Eclipse UI Refactoring": 5,
+        "Control Flow Modernization": 4,
+        "JDT Internal Quick Fix Implementation": 1,
+        "Unnecessary Annotation Removal": 2,
+        "Eclipse JDT Internal Refactoring": 3,
+        "Code Style / Redundancy": 1,
+        "Performance Optimization / JDT Internal Refactoring": 1,
+        "Internal Bug Fix (Eclipse-specific)": 5,
+        "Clean-up Enhancement (Internal JDT)": 1,
+        "Eclipse Platform UI": 1,
+        "Arrays": 1,
+        "Probable Bugs": 5,
+        "JDT Internal Quick Fix Refactoring": 1,
+        "String API": 1,
+        "Algorithm/Sorting Logic": 1,
+        "Exception Handling": 1,
+        "UI Feature Implementation": 1,
+        "Refactoring": 1,
+        "Concurrency / Thread-Safety": 2,
+        "JDT UI Feature": 2,
+        "JDT UI Internal Refactoring": 1,
+        "Code Quality": 6,
+        "Architecture Refactoring": 4,
+        "Dead Code Removal": 13,
+        "Quick Fix Enhancement": 6,
+        "Unnecessary Code": 1,
+        "Correctness": 4,
+        "Code Correctness": 7,
+        "Code Structure Simplification": 5,
+        "Concurrency": 4,
+        "Bug Fix": 5,
+        "New Cleanup": 1,
+        "Logical Simplification": 8,
+        "UI Bug Fix": 9,
+        "Eclipse API Modernization": 24,
+        "Eclipse API Evolution": 1,
+        "Control Flow Simplification": 3,
+        "Lambda Simplification": 2,
+        "Eclipse UI Bug Fix": 1,
+        "Concurrency / Null-Safety": 1,
+        "Deprecation": 1,
+        "Clean-up Refactoring": 1,
+        "Eclipse UI Modernization": 2,
+        "Quick Fix Bug Fix": 2,
+        "UI Refactoring": 2,
+        "API Contract Compliance": 1,
+        "Eclipse JDT Internal API": 2,
+        "Eclipse UI Internal Logic": 2,
+        "New Feature / Validation": 1,
+        "Eclipse UI / Feature": 1,
+        "Javadoc/Code Generation": 1,
+        "New Feature / Extension": 1,
+        "Internal Bug Fix": 3,
+        "UI Enhancement": 5,
+        "Javadoc API Enhancement": 2,
+        "Code Clean-Up": 1,
+        "UI Performance": 1,
+        "Eclipse UI Validation": 2,
+        "Eclipse Bug Fix": 3,
+        "Eclipse Internal API Evolution": 1,
+        "JDT Internal Feature Implementation": 2,
+        "Loop Conversion": 1,
+        "Eclipse UI Enhancement": 1,
+        "Internal Logic Refactoring": 1,
+        "Internal API Modernization": 1,
+        "API-Migration": 1,
+        "Error Handling": 9,
+        "Eclipse API Removal": 1,
+        "Java API Deprecation": 1,
+        "Editor Functionality": 1,
+        "Eclipse UI Configuration": 3,
+        "Eclipse UI Fix": 6,
+        "New Feature Introduction": 2,
+        "Eclipse UI": 1,
+        "Eclipse UI Feature": 2,
+        "Java Modernization": 1,
+        "Internal Bug Fix / UI Refactoring": 1,
+        "UI Logic Enhancement": 1,
+        "UI Configuration": 1,
+        "Deprecations": 1,
+        "JDT Internal Configuration": 1,
+        "Eclipse API Deprecation": 1,
+        "Quick Assist": 1,
+        "Logging / Exception Handling": 1,
+        "JDT Internal Cleanup": 2,
+        "Clean-up Infrastructure": 2,
+        "New Quick Fix Feature": 1,
+        "Java 19+ Deprecation": 1,
+        "Clean-up Infrastructure Refactoring": 1,
+        "UI Logic Refactoring": 8,
+        "JDT Internal Quick Fix": 2,
+        "UI Feature Enhancement": 2,
+        "Boilerplate Generation": 1,
+        "Bug Fix / Logging": 2,
+        "Bug Fix / Null-Safety": 1,
+        "Bug Fix / UI Logic Refactoring": 1,
+        "Bug Fix / UI Logic": 1,
+        "API Migration": 2,
+        "Deprecation Cleanup": 1,
+        "Class Refactoring": 1,
+        "String Literal Transformation": 1,
+        "Modernization": 2,
+        "Defensive Programming": 1,
+        "Preference Configuration": 1,
+        "Typo Fix": 1,
+        "Unnecessary Call Removal": 1,
+        "String Literal Replacement": 1,
+        "API Replacement": 2,
+        "API Modernization": 4,
+        "Rename Constant": 1,
+        "Structural Refactoring": 1,
+        "Extract Method Refactoring": 1,
+        "Generics": 1,
+        "API Constant Update": 1
+      },
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-platform/eclipse.platform": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-platform/eclipse.platform.text": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    },
+    "https://github.com/eclipse-platform/eclipse.platform.debug": {
+      "totalProcessed": 0,
+      "status": "CATCHING_UP",
+      "deferredCommits": [],
+      "permanentlySkipped": [],
+      "learnedMaxDiffLines": -1,
+      "lastModelUsed": "gemini-2.5-flash",
+      "currentEpoch": 0,
+      "completedEpochs": [],
+      "categoryHitCounts": {},
+      "exhaustedCategories": []
+    }
+  },
+  "globalTotalProcessed": 25435
+}
