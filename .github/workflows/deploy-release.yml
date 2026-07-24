@@ -3,7 +3,8 @@ name: Release Workflow
 #
 # The release is built, tested and smoke-tested before any stable tag or GitHub
 # Release is created. The versioned p2 repository is then published and verified
-# through its advertised URL before the remaining promotion steps continue.
+# through its advertised URL. A failed public verification restores the previous
+# gh-pages revision before the workflow stops.
 
 on:
   workflow_dispatch:
@@ -41,6 +42,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
+      starting_sha: ${{ steps.versions.outputs.starting_sha }}
       current_version: ${{ steps.versions.outputs.current_version }}
       release_version: ${{ steps.versions.outputs.release_version }}
       next_snapshot: ${{ steps.versions.outputs.next_snapshot }}
@@ -56,7 +58,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
 
       - name: Set up Maven
         uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
@@ -68,6 +70,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          STARTING_SHA=$(git rev-parse HEAD)
           CURRENT=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           INPUT_VERSION="${{ inputs.release_version }}"
 
@@ -75,7 +78,6 @@ jobs:
             echo "::error::Invalid release version '$INPUT_VERSION'. Expected X.Y.Z."
             exit 1
           fi
-
           if [[ "$CURRENT" != *-SNAPSHOT ]]; then
             echo "::error::Current project version '$CURRENT' is not a SNAPSHOT version."
             exit 1
@@ -86,7 +88,6 @@ jobs:
             echo "::error::Release version '$INPUT_VERSION' does not match current SNAPSHOT '$CURRENT'. Expected '$SUGGESTED_RELEASE'."
             exit 1
           fi
-
           if [[ "${{ inputs.skip_tests }}" == "true" && "${{ inputs.dry_run }}" != "true" ]]; then
             echo "::error::Published releases may not skip tests. Use skip_tests only together with dry_run."
             exit 1
@@ -102,6 +103,7 @@ jobs:
             exit 1
           fi
 
+          echo "starting_sha=$STARTING_SHA" >> "$GITHUB_OUTPUT"
           echo "current_version=$CURRENT" >> "$GITHUB_OUTPUT"
           echo "release_version=$INPUT_VERSION" >> "$GITHUB_OUTPUT"
           echo "next_snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
@@ -112,15 +114,18 @@ jobs:
 
       - name: Preflight summary
         run: |
-          echo "## Release preflight" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Current version | ${{ steps.versions.outputs.current_version }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Release version | ${{ steps.versions.outputs.release_version }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Next SNAPSHOT | ${{ steps.versions.outputs.next_snapshot }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Dry run | ${{ inputs.dry_run }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Skip tests | ${{ inputs.skip_tests }} |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '## Release preflight'
+            echo
+            echo '| Field | Value |'
+            echo '|-------|-------|'
+            echo '| Starting commit | `${{ steps.versions.outputs.starting_sha }}` |'
+            echo '| Current version | ${{ steps.versions.outputs.current_version }} |'
+            echo '| Release version | ${{ steps.versions.outputs.release_version }} |'
+            echo '| Next SNAPSHOT | ${{ steps.versions.outputs.next_snapshot }} |'
+            echo '| Dry run | ${{ inputs.dry_run }} |'
+            echo '| Skip tests | ${{ inputs.skip_tests }} |'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   release:
     name: Build, Verify, Publish, and Prepare Next Version
@@ -129,23 +134,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      DISPLAY: :0
       MAVEN_OPTS: -Djava.awt.headless=true
     steps:
-      - name: Checkout repository
+      - name: Checkout the preflight commit
         uses: actions/checkout@v6
         with:
-          ref: main
+          ref: ${{ needs.preflight.outputs.starting_sha }}
           fetch-depth: 0
 
-      - name: Refresh main branch
-        run: git pull --ff-only origin main
+      - name: Verify the starting main revision
+        run: |
+          set -euo pipefail
+          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [[ "$remote_main" != "${{ needs.preflight.outputs.starting_sha }}" ]]; then
+            echo "::error::main moved after preflight: expected ${{ needs.preflight.outputs.starting_sha }}, found ${remote_main}."
+            exit 1
+          fi
+
+      - name: Prepare release evidence directory
+        run: |
+          mkdir -p target/distribution-verification
+          {
+            echo "startingSha=${{ needs.preflight.outputs.starting_sha }}"
+            echo "releaseVersion=${{ needs.preflight.outputs.release_version }}"
+            echo "dryRun=${{ inputs.dry_run }}"
+            echo "skipTests=${{ inputs.skip_tests }}"
+          } > target/distribution-verification/release-context.txt
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
 
       - name: Set up Maven
         uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
@@ -155,10 +175,9 @@ jobs:
       - name: Install Xvfb and GUI dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xauth \
-           libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
-           libasound2t64 libnss3 libgbm1
-          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
       - name: Cache Maven dependencies
         uses: actions/cache@v5
@@ -186,16 +205,16 @@ jobs:
       - name: Verify release version update
         run: |
           set -euo pipefail
-          if grep -r "SNAPSHOT" \
-             --include="pom.xml" \
-             --include="MANIFEST.MF" \
-             --include="feature.xml" \
-             --include="*.product" \
-             --exclude-dir="src" \
-             --exclude-dir="tst" \
-             --exclude-dir="target" \
-             --exclude-dir=".git" .; then
-            echo "::error::Found remaining SNAPSHOT references after release version update."
+          if grep -r 'SNAPSHOT' \
+             --include='pom.xml' \
+             --include='MANIFEST.MF' \
+             --include='feature.xml' \
+             --include='*.product' \
+             --exclude-dir='src' \
+             --exclude-dir='tst' \
+             --exclude-dir='target' \
+             --exclude-dir='.git' .; then
+            echo '::error::Found remaining SNAPSHOT references after release version update.'
             exit 1
           fi
 
@@ -209,18 +228,21 @@ jobs:
       - name: Build and verify release
         run: |
           set -euo pipefail
-          mkdir -p target/distribution-verification
           test_args=()
-          if [[ "${{ inputs.skip_tests }}" == "true" ]]; then
+          if [[ "${{ inputs.skip_tests }}" == 'true' ]]; then
             test_args=(-DskipTests)
           fi
+          status=0
           xvfb-run --auto-servernum mvn \
             -Pproduct,repo,cli-dist,maven-plugin,benchmark \
             -T 1C \
             --batch-mode \
+            -Dtycho.localArtifacts=ignore \
             clean verify \
-            "${test_args[@]}" 2>&1 \
-            | tee target/distribution-verification/release-build.log
+            "${test_args[@]}" 2>&1 | tee /tmp/release-build.log || status=$?
+          mkdir -p target/distribution-verification
+          cp /tmp/release-build.log target/distribution-verification/release-build.log
+          exit "$status"
 
       - name: Validate release repository and Linux product
         run: bash .github/scripts/verify_linux_distribution.sh
@@ -232,19 +254,10 @@ jobs:
         if: always() && hashFiles('target/distribution-verification/verification.md') != ''
         run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Cleanup Xvfb
-        if: always()
-        uses: bcomnes/cleanup-xvfb@v1
-
-      - name: Dry run summary
-        if: ${{ inputs.dry_run }}
-        run: |
-          echo "::notice::Dry run successful. No tag, release, gh-pages update, branch, or issue was created."
-
       - name: Generate release notes
         run: |
           set -euo pipefail
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')
           if [[ -n "$PREVIOUS_TAG" ]]; then
             PREVIOUS_DATE=$(git log -1 --format=%aI "$PREVIOUS_TAG")
             gh issue list \
@@ -256,7 +269,17 @@ jobs:
               echo "No closed issues found since $PREVIOUS_TAG" > release_notes.md
             fi
           else
-            echo "Initial release" > release_notes.md
+            echo 'Initial release' > release_notes.md
+          fi
+
+      - name: Verify main is unchanged before publication
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [[ "$remote_main" != "${{ needs.preflight.outputs.starting_sha }}" ]]; then
+            echo "::error::main moved during release verification: expected ${{ needs.preflight.outputs.starting_sha }}, found ${remote_main}."
+            exit 1
           fi
 
       - name: Push release commit to temporary branch
@@ -274,8 +297,15 @@ jobs:
         with:
           ref: gh-pages
           path: gh-pages-repo
+          fetch-depth: 1
+
+      - name: Capture current gh-pages revision
+        id: gh_pages_before
+        if: ${{ !inputs.dry_run }}
+        run: echo "sha=$(git -C gh-pages-repo rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy versioned P2 update site to gh-pages
+        id: deploy_release_site
         if: ${{ !inputs.dry_run }}
         run: |
           set -euo pipefail
@@ -291,7 +321,7 @@ jobs:
 
           VERSIONS=$(find . -maxdepth 1 -type d ! -name '.' ! -name '..' -exec basename {} \; | sort -V)
           VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
-          CHILDREN_XML=""
+          CHILDREN_XML=''
           for ver in $VERSIONS; do
             CHILDREN_XML="$CHILDREN_XML    <child location='$ver'/>\n"
           done
@@ -328,10 +358,11 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
-          git commit -m "Deploy release ${VERSION}" || echo "No gh-pages changes to commit"
+          git commit -m "Deploy release ${VERSION}" || echo 'No gh-pages changes to commit'
           git push origin gh-pages
 
       - name: Verify advertised release URLs
+        id: verify_release_urls
         if: ${{ !inputs.dry_run }}
         run: |
           VERSION="${{ needs.preflight.outputs.release_version }}"
@@ -343,6 +374,23 @@ jobs:
             --repository-url https://carstenartur.github.io/sandbox/releases/ \
             --expected-child "$VERSION" \
             --output target/distribution-verification/release-composite-verification.json
+
+      - name: Roll back a failed release-site verification
+        if: ${{ failure() && !inputs.dry_run && steps.deploy_release_site.outcome == 'success' && steps.verify_release_urls.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          previous="${{ steps.gh_pages_before.outputs.sha }}"
+          git -C gh-pages-repo fetch origin gh-pages
+          current_remote=$(git -C gh-pages-repo rev-parse origin/gh-pages)
+          if [[ -z "$previous" ]]; then
+            echo '::error::The previous gh-pages revision was not captured.'
+            exit 1
+          fi
+          git -C gh-pages-repo push \
+            --force-with-lease=refs/heads/gh-pages:${current_remote} \
+            origin "${previous}:refs/heads/gh-pages"
+          echo "Rolled gh-pages back from ${current_remote} to ${previous}." \
+            | tee target/distribution-verification/release-publication-rollback.log
 
       - name: Upload release distribution evidence
         if: always()
@@ -364,7 +412,7 @@ jobs:
             -f tag="v${VERSION}" \
             -f message="Release version ${VERSION}" \
             -f object="$COMMIT_SHA" \
-            -f type="commit" \
+            -f type='commit' \
             --jq '.sha')
           gh api "repos/${{ github.repository }}/git/refs" \
             --method POST \
@@ -399,7 +447,7 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           VERSION="${{ needs.preflight.outputs.release_version }}"
-          CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
+          CLI_DIST_DIR='sandbox_cleanup_cli_dist/target'
           for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
             if [[ -f "$archive" ]]; then
               gh release upload "v${VERSION}" "$archive" --clobber
@@ -419,10 +467,17 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           set -euo pipefail
-          COMMIT_SHA=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
+          expected="${{ needs.preflight.outputs.starting_sha }}"
+          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [[ "$remote_main" != "$expected" ]]; then
+            echo "::error::main moved before promotion: expected ${expected}, found ${remote_main}."
+            exit 1
+          fi
+          COMMIT_SHA=$(git rev-parse HEAD)
           gh api "repos/${{ github.repository }}/git/refs/heads/main" \
             --method PATCH \
-            -f sha="$COMMIT_SHA"
+            -f sha="$COMMIT_SHA" \
+            -F force=false
 
       - name: Delete temporary release branch
         if: ${{ always() && !inputs.dry_run }}
@@ -503,8 +558,8 @@ jobs:
           EOF
           )
           echo "$ISSUE_BODY" > /tmp/marketplace_issue_body.md
-          gh label create "release" --color "0075ca" --description "Release-related tasks" 2>/dev/null || true
+          gh label create release --color 0075ca --description 'Release-related tasks' 2>/dev/null || true
           gh issue create \
             --title "📦 Release ${VERSION} — Update Eclipse Marketplace Listing" \
             --body-file /tmp/marketplace_issue_body.md \
-            --label "release"
+            --label release
