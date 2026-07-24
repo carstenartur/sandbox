@@ -22,22 +22,29 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
  *             may be {@code null} when no coordinated change is required
  * @param status diagnostics produced during planning
  * @param metrics immutable scope, duration and retained-plan measurements
+ * @param diagnostics immutable machine-readable scope and candidate diagnostics
  */
 public record MultiFileCleanUpPlanResult<P>(P plan, RefactoringStatus status,
-		MultiFilePlanningMetrics metrics) {
+		MultiFilePlanningMetrics metrics, MultiFileCleanUpDiagnostics diagnostics) {
 
 	/** Validates the result. */
 	public MultiFileCleanUpPlanResult {
 		Objects.requireNonNull(status);
 		Objects.requireNonNull(metrics);
+		Objects.requireNonNull(diagnostics);
 		if (status.hasFatalError() && plan != null) {
 			throw new IllegalArgumentException();
 		}
 	}
 
-	/** Compatibility constructor for consumers that do not yet record metrics. */
+	/** Compatibility constructor for consumers without metrics or structured diagnostics. */
 	public MultiFileCleanUpPlanResult(P plan, RefactoringStatus status) {
-		this(plan, status, MultiFilePlanningMetrics.empty());
+		this(plan, status, MultiFilePlanningMetrics.empty(), MultiFileCleanUpDiagnostics.empty());
+	}
+
+	/** Compatibility constructor for consumers that record metrics but no candidate details. */
+	public MultiFileCleanUpPlanResult(P plan, RefactoringStatus status, MultiFilePlanningMetrics metrics) {
+		this(plan, status, metrics, MultiFileCleanUpDiagnostics.empty());
 	}
 
 	/**
@@ -49,7 +56,7 @@ public record MultiFileCleanUpPlanResult<P>(P plan, RefactoringStatus status,
 	 */
 	public static <P> MultiFileCleanUpPlanResult<P> success(P plan) {
 		return new MultiFileCleanUpPlanResult<>(Objects.requireNonNull(plan), new RefactoringStatus(),
-				MultiFilePlanningMetrics.empty());
+				MultiFilePlanningMetrics.empty(), MultiFileCleanUpDiagnostics.empty());
 	}
 
 	/**
@@ -63,10 +70,25 @@ public record MultiFileCleanUpPlanResult<P>(P plan, RefactoringStatus status,
 	 */
 	public static <P> MultiFileCleanUpPlanResult<P> success(P plan, RefactoringStatus status,
 			MultiFilePlanningMetrics metrics) {
+		return success(plan, status, metrics, MultiFileCleanUpDiagnostics.empty());
+	}
+
+	/**
+	 * Creates a successful measured and diagnosed result containing a plan.
+	 *
+	 * @param <P> plan type
+	 * @param plan immutable plan
+	 * @param status nonfatal diagnostics
+	 * @param metrics planning measurements
+	 * @param diagnostics structured diagnostics
+	 * @return successful result
+	 */
+	public static <P> MultiFileCleanUpPlanResult<P> success(P plan, RefactoringStatus status,
+			MultiFilePlanningMetrics metrics, MultiFileCleanUpDiagnostics diagnostics) {
 		if (status.hasFatalError()) {
 			throw new IllegalArgumentException("A successful plan cannot carry a fatal status"); //$NON-NLS-1$
 		}
-		return new MultiFileCleanUpPlanResult<>(Objects.requireNonNull(plan), status, metrics);
+		return new MultiFileCleanUpPlanResult<>(Objects.requireNonNull(plan), status, metrics, diagnostics);
 	}
 
 	/**
@@ -76,6 +98,7 @@ public record MultiFileCleanUpPlanResult<P>(P plan, RefactoringStatus status,
 	 * @return empty successful result
 	 */
 	public static <P> MultiFileCleanUpPlanResult<P> noPlan() {
-		return new MultiFileCleanUpPlanResult<>(null, new RefactoringStatus(), MultiFilePlanningMetrics.empty());
+		return new MultiFileCleanUpPlanResult<>(null, new RefactoringStatus(), MultiFilePlanningMetrics.empty(),
+				MultiFileCleanUpDiagnostics.empty());
 	}
 }
