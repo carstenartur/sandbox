@@ -19,7 +19,7 @@ jobs:
         with:
           ref: issue-1215-distribution-smoke
           fetch-depth: 0
-      - name: Bind release rollback to the deployed gh-pages commit
+      - name: Bind release rollback and link compatibility documentation
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -65,13 +65,25 @@ jobs:
           )
           text = text[:start] + rollback + text[end:]
           path.write_text(text, encoding='utf-8')
+
+          readme_path = Path('README.md')
+          readme = readme_path.read_text(encoding='utf-8')
+          link = ('- **[Distribution Compatibility](docs/distribution-compatibility.md)** '
+                  '- Supported build matrix, runtime coverage, publication gates, and evidence')
+          if link not in readme:
+              marker = ('- **[Release Process](CONTRIBUTING.md#release-process)** '
+                        '- Maintainer guide for creating releases')
+              if marker not in readme:
+                  raise SystemExit('README release-process link marker not found')
+              readme = readme.replace(marker, marker + '\n' + link, 1)
+              readme_path.write_text(readme, encoding='utf-8')
           PY
-          if git diff --quiet -- .github/workflows/deploy-release.yml; then
-            echo 'Release rollback is already bound to the deployed revision.'
+          if git diff --quiet -- .github/workflows/deploy-release.yml README.md; then
+            echo 'Release rollback and compatibility documentation are already current.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/deploy-release.yml
-          git commit -m 'Bind release rollback to deployed gh-pages revision'
+          git add .github/workflows/deploy-release.yml README.md
+          git commit -m 'Harden release rollback and link compatibility guide'
           git push origin HEAD:issue-1215-distribution-smoke
