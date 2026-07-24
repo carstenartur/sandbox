@@ -80,7 +80,11 @@
 					<compress>true</compress>
 					<xzCompress>false</xzCompress>
 					<createArtifactRepository>true</createArtifactRepository>
+					<!-- Resolve every required IU so Sandbox-owned dependencies are included. -->
 					<includeAllDependencies>true</includeAllDependencies>
+					<!-- Do not mirror Eclipse/Orbit/EGit content already provided by our POM repositories. -->
+					<filterProvided>true</filterProvided>
+					<addPomRepositoryReferences>true</addPomRepositoryReferences>
 				</configuration>
 			</plugin>
 		</plugins>
