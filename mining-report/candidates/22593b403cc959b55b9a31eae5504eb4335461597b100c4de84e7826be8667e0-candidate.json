@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "22593b403cc959b55b9a31eae5504eb4335461597b100c4de84e7826be8667e0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.api.emphasizeMatch.rename\u003e\n\u003c!description: Renames the \u0027emphasizeMatch\u0027 method to \u0027getStyledDisplayString\u0027 in implementations of ICompletionProposalExtension7, following API clarification. This rule applies to method declarations that override the old method signature.\u003e\n\u003c!severity: WARNING\u003e\n@java.lang.Override public org.eclipse.jface.viewers.StyledString emphasizeMatch(org.eclipse.jface.text.IDocument $document, int $offset, org.eclipse.jdt.internal.ui.text.java.BoldStylerProvider $boldStylerProvider)\n\u003d\u003e\n@java.lang.Override public org.eclipse.jface.viewers.StyledString getStyledDisplayString(org.eclipse.jface.text.IDocument $document, int $offset, org.eclipse.jdt.internal.ui.text.java.BoldStylerProvider $boldStylerProvider)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.viewers.StyledString;\n\n// Mock dependencies (simplified for example)\ninterface ICompletionProposalExtension7 {\n    StyledString emphasizeMatch(IDocument document, int offset, BoldStylerProvider boldStylerProvider);\n}\nabstract class AbstractJavaCompletionProposal implements ICompletionProposalExtension7 {\n    @Override\n    public StyledString emphasizeMatch(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        return null; // Dummy implementation\n    }\n}\nclass BoldStylerProvider {}\n\npublic class MyCompletionProposal extends AbstractJavaCompletionProposal {\n    @Override\n    public StyledString emphasizeMatch(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        StyledString styledDisplayString \u003d new StyledString();\n        styledDisplayString.append(\"Test\");\n        return styledDisplayString;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.viewers.StyledString;\n\n// Mock dependencies (simplified for example)\n// Assumes the interface also updated or new method added\ninterface ICompletionProposalExtension7 {\n    StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider);\n}\nabstract class AbstractJavaCompletionProposal implements ICompletionProposalExtension7 {\n    @Override\n    public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        return null; // Dummy implementation\n    }\n}\nclass BoldStylerProvider {}\n\npublic class MyCompletionProposal extends AbstractJavaCompletionProposal {\n    @Override\n    public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        StyledString styledDisplayString \u003d new StyledString();\n        styledDisplayString.append(\"Test\");\n        return styledDisplayString;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.viewers.StyledString;\n\ninterface ICompletionProposalExtension7 {\n    StyledString someOtherMatch(IDocument document, int offset, BoldStylerProvider boldStylerProvider);\n}\nabstract class AbstractJavaCompletionProposal implements ICompletionProposalExtension7 {\n    @Override\n    public StyledString someOtherMatch(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        return null;\n    }\n}\nclass BoldStylerProvider {}\n\npublic class MyCompletionProposal extends AbstractJavaCompletionProposal {\n    // This method has a different name, so it should not be matched\n    @Override\n    public StyledString someOtherMatch(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        StyledString styledDisplayString \u003d new StyledString();\n        styledDisplayString.append(\"Test\");\n        return styledDisplayString;\n    }\n    // This method also has a different name\n    public StyledString emphasizeMatchSomethingElse(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {\n        StyledString styledDisplayString \u003d new StyledString();\n        styledDisplayString.append(\"Test\");\n        return styledDisplayString;\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "b3d832b6e30ca2ca6efafb8d49105aeec3d4f5a7",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Rename `emphasizeMatch` method to `getStyledDisplayString`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-24T03:52:02.998005957Z",
+  "ruleFingerprint": "sha256:5b22217ad18b9f44b62364d514a468d12cc1d05a95446dc78a677e2c3c70acce",
+  "behaviorFingerprint": "sha256:5a15d3fb5edfef1e5f7cf0fd0dfa3da514b99746036d61a8dda5bb62893ec42b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-24T03:52:04.373233559Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

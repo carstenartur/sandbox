@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "59103d7c308c0971ff6ae00898288b4bc8da7e4f43307dc3ac6a44eb57dd8b97",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.core.version.constant.update\u003e\n\u003c!description: Update JavaCore.VERSION_1_9 constant to JavaCore.VERSION_9. The constant JavaCore.VERSION_1_9 was renamed/replaced with JavaCore.VERSION_9 for Java 9 module system support.\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jdt.core.JavaCore.VERSION_1_9 :: sourceVersionGE(9)\n\u003d\u003e org.eclipse.jdt.core.JavaCore.VERSION_9\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class MyProjectVersions {\n    public static final String COMPLIANCE_VERSION_FIELD \u003d JavaCore.VERSION_1_9;\n\n    public void checkVersion(String currentVersion) {\n        if (currentVersion.equals(JavaCore.VERSION_1_9)) {\n            System.out.println(\"Using Java 1.9 compatibility.\");\n        }\n    }\n}\n",
+  "afterExample": "package com.example;\n\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class MyProjectVersions {\n    public static final String COMPLIANCE_VERSION_FIELD \u003d JavaCore.VERSION_9;\n\n    public void checkVersion(String currentVersion) {\n        if (currentVersion.equals(JavaCore.VERSION_9)) {\n            System.out.println(\"Using Java 9 compatibility.\");\n        }\n    }\n}\n",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class MyProjectVersions {\n    public static final String OTHER_CONSTANT \u003d \"1.9\"; // Should not match literal \"1.9\"\n\n    public void checkOtherConstant(String version) {\n        if (version.equals(JavaCore.VERSION_1_8)) { // Should not match other JavaCore constants\n            System.out.println(\"Java 1.8\");\n        }\n    }\n}\n",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "5a5fbbbad83d24f1fbebf0477f78b03a05cb5643",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces the deprecated JavaCore.VERSION_1_9 constant with JavaCore.VERSION_9 when targeting Java 9 or later.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-24T03:52:03.001093508Z",
+  "ruleFingerprint": "sha256:c5361ff0399665cd0bbc399ae64215f6d695cc6f6915e4a426586007e7d18165",
+  "behaviorFingerprint": "sha256:b9ab1821e010c004c8c6eb70fd16093bfa263c9d60b3fec0649448ebaa329a90",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-24T03:52:04.378540363Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

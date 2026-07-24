@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3ac044f2970aaeba88cc13ab688157d212b806ae1bec363754743f9769660651",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$v \u003d\u003d org.eclipse.core.resources.IMarker.SEVERITY_WARNING || $v \u003d\u003d org.eclipse.core.resources.IMarker.SEVERITY_ERROR\n\u003d\u003e\n$v \u003d\u003d org.eclipse.core.resources.IMarker.SEVERITY_INFO || $v \u003d\u003d org.eclipse.core.resources.IMarker.SEVERITY_WARNING || $v \u003d\u003d org.eclipse.core.resources.IMarker.SEVERITY_ERROR\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.problems;\n\nimport org.eclipse.core.resources.IMarker;\n\npublic class MarkerSeverityChecker {\n    public int getSeverityValue(IMarker marker) {\n        int val \u003d marker.getAttribute(IMarker.SEVERITY, -1);\n        if (val \u003d\u003d IMarker.SEVERITY_WARNING || val \u003d\u003d IMarker.SEVERITY_ERROR) {\n            return val;\n        }\n        return 0;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.problems;\n\nimport org.eclipse.core.resources.IMarker;\n\npublic class MarkerSeverityChecker {\n    public int getSeverityValue(IMarker marker) {\n        int val \u003d marker.getAttribute(IMarker.SEVERITY, -1);\n        if (val \u003d\u003d IMarker.SEVERITY_INFO || val \u003d\u003d IMarker.SEVERITY_WARNING || val \u003d\u003d IMarker.SEVERITY_ERROR) {\n            return val;\n        }\n        return 0;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.problems;\n\nimport org.eclipse.core.resources.IMarker;\n\npublic class OtherCondition {\n    public boolean check(IMarker marker) {\n        // This condition is intentionally different and should not be touched\n        return marker.getAttribute(IMarker.SEVERITY, 0) \u003d\u003d IMarker.SEVERITY_WARNING;\n    }\n\n    public boolean checkAnother(int status) {\n        // Different variables, different constants\n        return status \u003d\u003d IMarker.TASK || status \u003d\u003d IMarker.BOOKMARK;\n    }\n}",
+  "targetHintFile": "general.sandbox-hint",
+  "sourceCommit": "afb90be72404d30061fc50fe47d68bdae870200c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Constant Update",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-24T03:52:02.980306585Z",
+  "ruleFingerprint": "sha256:574bced4dfff0c3401b62d829817977305fc19c2d843f53f5f5aa379a2d6b261",
+  "behaviorFingerprint": "sha256:0373b2630f0554860f4f75742d899f5ffece4d924b808aef82d5b60021df5d5c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type MarkerSeverityChecker must be defined in its own file",
+    "verifiedAt": "2026-07-24T03:52:04.348771118Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

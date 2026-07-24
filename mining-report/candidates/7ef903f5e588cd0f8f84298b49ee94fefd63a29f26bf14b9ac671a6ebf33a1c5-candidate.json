@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7ef903f5e588cd0f8f84298b49ee94fefd63a29f26bf14b9ac671a6ebf33a1c5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.getPattern() :: instanceof($x, \"org.eclipse.jface.text.templates.Template\")\n\u003d\u003e $x.getName()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jface.text.templates.Template;\nimport org.eclipse.jdt.internal.ui.text.template.contentassist.TemplateProposal;\n\npublic class AbstractTemplateCompletionProposalComputer {\n    void process(TemplateProposal curr) {\n        Template template \u003d curr.getTemplate();\n        String name \u003d template.getPattern();\n        System.out.println(name);\n    }\n\n    void anotherMethod(Template templateObj) {\n        String name \u003d templateObj.getPattern();\n        System.out.println(name);\n    }\n\n    class OtherTemplate {\n        public String getPattern() { return \"other pattern\"; }\n    }\n    void negativeCase(OtherTemplate other) {\n        String name \u003d other.getPattern();\n        System.out.println(name);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jface.text.templates.Template;\nimport org.eclipse.jdt.internal.ui.text.template.contentassist.TemplateProposal;\n\npublic class AbstractTemplateCompletionProposalComputer {\n    void process(TemplateProposal curr) {\n        Template template \u003d curr.getTemplate();\n        String name \u003d template.getName();\n        System.out.println(name);\n    }\n\n    void anotherMethod(Template templateObj) {\n        String name \u003d templateObj.getName();\n        System.out.println(name);\n    }\n\n    class OtherTemplate {\n        public String getPattern() { return \"other pattern\"; }\n    }\n    void negativeCase(OtherTemplate other) {\n        String name \u003d other.getPattern();\n        System.out.println(name);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jface.text.templates.Template;\n\npublic class AnotherClass {\n    class MyCustomTemplate {\n        public String getPattern() { return \"custom pattern\"; }\n    }\n    void test(MyCustomTemplate custom) {\n        String value \u003d custom.getPattern(); // Should not be affected\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "2e96c2b8506f407b3220551a72308ec19956b26d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces calls to org.eclipse.jface.text.templates.Template.getPattern() with Template.getName().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-24T03:52:02.994052372Z",
+  "ruleFingerprint": "sha256:0d4d7a6aea4474304445aa0d60d89c73094aa4383217b2adf2a8b333ebb63435",
+  "behaviorFingerprint": "sha256:a003898bf8a233525bd5bc4ea03d61ba3d3fd3d9a09b193de936dced4c527673",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.text.template cannot be resolved",
+    "verifiedAt": "2026-07-24T03:52:04.368466848Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

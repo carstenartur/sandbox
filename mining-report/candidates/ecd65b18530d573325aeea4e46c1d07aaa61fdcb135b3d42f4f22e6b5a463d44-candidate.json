@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ecd65b18530d573325aeea4e46c1d07aaa61fdcb135b3d42f4f22e6b5a463d44",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.Boolean($x)\n\u003d\u003e java.lang.Boolean.valueOf($x)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\n\nclass JavaPlugin {\n    public static JavaPlugin getDefault() { return new JavaPlugin(); }\n    public IPreferenceStore getPreferenceStore() { return null; } // Dummy\n}\n\ninterface IExtensionStateModel {\n    boolean getBooleanProperty(String key);\n    void setBooleanProperty(String key, boolean value);\n}\n\ninterface IMemento {\n    Boolean getBoolean(String key);\n}\n\npublic class JavaNavigatorViewActionProvider {\n    private static final String TAG_LIBRARIES_NODE\u003d \"org.eclipse.jdt.internal.ui.navigator.librariesnode\";\n    private IExtensionStateModel fStateModel;\n\n    public void restoreState(IMemento memento) {\n        Boolean showLibrariesNodeState\u003d null;\n        if (memento !\u003d null) {\n            showLibrariesNodeState\u003d memento.getBoolean(TAG_LIBRARIES_NODE);\n        }\n\n        // If no memento try to restore from preference store\n        if (showLibrariesNodeState \u003d\u003d null) {\n            IPreferenceStore store\u003d JavaPlugin.getDefault().getPreferenceStore();\n            boolean isDefault \u003d store.getString(TAG_LIBRARIES_NODE).equals(IPreferenceStore.STRING_DEFAULT_DEFAULT);\n            boolean storedBoolean \u003d store.getBoolean((TAG_LIBRARIES_NODE));\n            showLibrariesNodeState\u003d new Boolean(isDefault || storedBoolean);\n        }\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\n\nclass JavaPlugin {\n    public static JavaPlugin getDefault() { return new JavaPlugin(); }\n    public IPreferenceStore getPreferenceStore() { return null; } // Dummy\n}\n\ninterface IExtensionStateModel {\n    boolean getBooleanProperty(String key);\n    void setBooleanProperty(String key, boolean value);\n}\n\ninterface IMemento {\n    Boolean getBoolean(String key);\n}\n\npublic class JavaNavigatorViewActionProvider {\n    private static final String TAG_LIBRARIES_NODE\u003d \"org.eclipse.jdt.internal.ui.navigator.librariesnode\";\n    private IExtensionStateModel fStateModel;\n\n    public void restoreState(IMemento memento) {\n        Boolean showLibrariesNodeState\u003d null;\n        if (memento !\u003d null) {\n            showLibrariesNodeState\u003d memento.getBoolean(TAG_LIBRARIES_NODE);\n        }\n\n        // If no memento try to restore from preference store\n        if (showLibrariesNodeState \u003d\u003d null) {\n            IPreferenceStore store\u003d JavaPlugin.getDefault().getPreferenceStore();\n            boolean isDefault \u003d store.getString(TAG_LIBRARIES_NODE).equals(IPreferenceStore.STRING_DEFAULT_DEFAULT);\n            boolean storedBoolean \u003d store.getBoolean((TAG_LIBRARIES_NODE));\n            showLibrariesNodeState\u003d Boolean.valueOf(isDefault || storedBoolean);\n        }\n    }\n}",
+  "negativeExample": "package com.example;\n\npublic class SomeOtherClass {\n    public void doSomething() {\n        Boolean existingBoolean \u003d Boolean.valueOf(true); // Uses valueOf, should not match\n        String name \u003d new String(\"test\"); // Different type of constructor, should not match\n        boolean flag \u003d true;\n        Boolean b \u003d Boolean.valueOf(flag); // Uses valueOf, should not match\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "ab528648c0996ee6ed432feac5b9ff237884391c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modernization",
+  "summary": "Replaces the deprecated \u0027new Boolean(boolean)\u0027 constructor with \u0027Boolean.valueOf(boolean)\u0027 for improved performance and to use modern API.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-24T03:52:03.004179678Z",
+  "ruleFingerprint": "sha256:b1cd8dc8b6d234bbe45a4a783cbeb33a6404833c458a59f88b6a561170c830ee",
+  "behaviorFingerprint": "sha256:80654efdc3b29b823c04cd3db234591164c24739f21c2289942be100da824560",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
+    "verifiedAt": "2026-07-24T03:52:04.438692136Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
