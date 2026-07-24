@@ -54,7 +54,8 @@ run_equinox() {
   shift 2
   (
     cd "$working_directory"
-    timeout 300s xvfb-run -a java -jar "$launcher" -nosplash -consoleLog "$@"
+    timeout 300s xvfb-run -a java -Declipse.p2.mirrors=false \
+      -jar "$launcher" -nosplash -consoleLog "$@"
   )
 }
 
@@ -70,10 +71,13 @@ grep -Eq 'org\.eclipse\.|sandbox_' "$EVIDENCE_DIR/materialized-product.log"
 # Provision every published feature into a new destination. The built product is
 # only the director host; the destination is resolved from the local update site
 # plus the actual p2 InstallableUnit repositories in sandbox_target/eclipse.target.
+# Mirror indirection is disabled so CI contacts those canonical repository URLs
+# directly instead of failing on rate-limited mirror-list endpoints.
 FRESH_INSTALL="$SMOKE_ROOT/fresh-install"
 (
   cd "$PRODUCT_ROOT"
-  timeout 900s xvfb-run -a java -jar "$PRODUCT_LAUNCHER" -nosplash -consoleLog \
+  timeout 900s xvfb-run -a java -Declipse.p2.mirrors=false \
+    -jar "$PRODUCT_LAUNCHER" -nosplash -consoleLog \
     -application org.eclipse.equinox.p2.director \
     -repository "$REPOSITORIES" \
     -installIU "$INSTALL_IUS" \
