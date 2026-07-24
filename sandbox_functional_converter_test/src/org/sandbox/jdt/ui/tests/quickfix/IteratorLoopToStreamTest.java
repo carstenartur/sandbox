@@ -226,10 +226,10 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-				 List<String> collect(List<String> items) {
-				  List<String> result = items.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
-				  return result;
-				 }
+					List<String> collect(List<String> items) {
+						List<String> result = items.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
 				}
 				""";
 
@@ -273,10 +273,10 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-				 Set<String> collectUnique(List<String> items) {
-				  Set<String> result = items.stream().collect(Collectors.toCollection(java.util.HashSet::new));
-				  return result;
-				 }
+					Set<String> collectUnique(List<String> items) {
+						Set<String> result = items.stream().collect(Collectors.toCollection(java.util.HashSet::new));
+						return result;
+					}
 				}
 				""";
 
@@ -324,11 +324,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-				 List<String> transformAll(List<Integer> numbers) {
-				  List<String> result = numbers.stream().map(num -> num.toString())
-				    .collect(Collectors.toCollection(java.util.ArrayList::new));
-				  return result;
-				 }
+					List<String> transformAll(List<Integer> numbers) {
+						List<String> result = numbers.stream().map(num -> num.toString())
+								.collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
 				}
 				""";
 
@@ -372,11 +372,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-				 List<String> toUpperAll(List<String> items) {
-				  List<String> result = items.stream().map(item -> item.toUpperCase())
-				    .collect(Collectors.toCollection(java.util.ArrayList::new));
-				  return result;
-				 }
+					List<String> toUpperAll(List<String> items) {
+						List<String> result = items.stream().map(item -> item.toUpperCase())
+								.collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
 				}
 				""";
 
@@ -426,11 +426,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-				 List<String> filterNonEmpty(List<String> items) {
-				  List<String> result = items.stream().filter(item -> (!item.isEmpty()))
-				    .collect(Collectors.toCollection(java.util.ArrayList::new));
-				  return result;
-				 }
+					List<String> filterNonEmpty(List<String> items) {
+						List<String> result = items.stream().filter(item -> (!item.isEmpty()))
+								.collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
 				}
 				""";
 
@@ -480,11 +480,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-				 List<String> processPositive(List<Integer> numbers) {
-				  List<String> result = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
-				    .collect(Collectors.toCollection(java.util.ArrayList::new));
-				  return result;
-				 }
+					List<String> processPositive(List<Integer> numbers) {
+						List<String> result = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+								.collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
 				}
 				""";
 

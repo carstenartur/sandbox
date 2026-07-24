@@ -299,11 +299,11 @@ class MyTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class MyTest {
-				 public void process(List<Integer> numbers) {
-				  List<String> results = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
-				    .collect(Collectors.toCollection(java.util.ArrayList::new));
-				  System.out.println(results);
-				 }
+					public void process(List<Integer> numbers) {
+						List<String> results = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+								.collect(Collectors.toCollection(java.util.ArrayList::new));
+						System.out.println(results);
+					}
 				}
 				""";
 
