@@ -1,2 +1,29 @@
-- #884: Improve Gemini Mining
-- #881: 📦 Release 1.3.0 — Update Eclipse Marketplace Listing
+- #1251: Preserve concrete accumulator implementations with toCollection
+- #1244: Preserve existing collection targets for array-loop conversions
+- #1240: Harden XML cleanup resource charset, conflict handling, and validation
+- #1238: placeholder
+- #1236: This should have been a branch
+- #1235: Accidental issue creation loop
+- #1234: placeholder
+- #1233: QA fix branch placeholder
+- #1232: QA backlog cleanup placeholder
+- #1231: Stop QA issue proliferation and prioritize actionable fixes
+- #1230: Audit newly created QA backlog for duplicate and oversized issues
+- #1229: Deduplicate overlapping multi-file QA follow-ups into a tracked roadmap
+- #1228: Prevent unrelated cleanup profile options from triggering full-project analysis
+- #1227: Audit cleanup option granularity before multi-file scope expansion
+- #1224: Add source-root policy for coordinated production and test migrations
+- #1222: Add negative semantic compilation checks to cleanup integration tests
+- #1221: Add resource and memory limits for project-wide cleanup planning
+- #1220: Define supported concurrency and lifecycle ownership for cleanup instances
+- #1219: Consolidate cleanup documentation and generated capability inventory
+- #1218: Make post-merge CI status discoverable for squash commits on main
+- #1215: Verify product and update-site claims against automated release smoke tests
+- #1214: Expose multi-file cleanup scope and rejection diagnostics in the preview UI
+- #1213: Add end-to-end lifecycle QA for atomic multi-file cleanups
+- #1212: Replace full-project cleanup scope expansion with candidate-driven JDT search
+- #1210: Execute headless cleanups as atomic per-project multi-file transactions
+- #1206: Implement reusable multi-file cleanup planning for int-to-enum and JUnit migration
+- #1164: 📦 Release 1.3.1 — Update Eclipse Marketplace Listing
+- #1111: Complete and simplify staged DSL mining: verified candidates, review gates, and cleanup of dead scaffolding
+- #1095: Build errors on fedora 43
