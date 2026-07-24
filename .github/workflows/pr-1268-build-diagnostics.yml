@@ -1,0 +1,57 @@
+name: PR 1268 Build Diagnostics
+
+on:
+  push:
+    branches: [ issue-1251-concrete-collectors ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-1268-build-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Verify functional converter reactor
+        run: |
+          set +e
+          mvn -B \
+            -pl sandbox_target,sandbox-functional-converter-core,sandbox_common_core,sandbox_common,sandbox_test_commons,sandbox_functional_converter,sandbox_functional_converter_test \
+            -am clean verify > targeted-build.log 2>&1
+          status=$?
+          set -e
+          if (( status != 0 )); then
+            echo '::group::Relevant Maven failure lines'
+            grep -nE '^\[ERROR\]|BUILD FAILURE|Failed to execute goal|Tests run:|Failures:|Errors:|There are test failures|SpotBugs|Compilation failure' \
+              targeted-build.log | tail -250 || true
+            echo '::endgroup::'
+            echo '::group::Final 250 build lines'
+            tail -250 targeted-build.log
+            echo '::endgroup::'
+            exit "$status"
+          fi
+          tail -80 targeted-build.log
+      - name: Upload targeted build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-1268-targeted-build-${{ github.sha }}
+          path: targeted-build.log
+          retention-days: 3
+          if-no-files-found: error
