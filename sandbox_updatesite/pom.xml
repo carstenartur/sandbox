@@ -80,7 +80,7 @@
 					<compress>true</compress>
 					<xzCompress>false</xzCompress>
 					<createArtifactRepository>true</createArtifactRepository>
-					<includeAllDependencies>false</includeAllDependencies>
+					<includeAllDependencies>true</includeAllDependencies>
 				</configuration>
 			</plugin>
 		</plugins>
