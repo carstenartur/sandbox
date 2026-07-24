@@ -95,9 +95,17 @@ After publication, `.github/scripts/add_p2_sha256_checksums.py` recomputes the l
 
 The resulting repository and JSON/Markdown evidence are uploaded as a workflow artifact. This is an installable CI artifact, not yet a permanent public update-site channel.
 
-## Stock-to-patched installation smoke test
+## Patched-product profile and installation smoke test
 
-The final workflow job builds the normal stock Linux GTK x86_64 product without consuming the patch repository. It records the stock `org.eclipse.jdt.ui` entry from `configuration/org.eclipse.equinox.simpleconfigurator/bundles.info`, then installs the exact patch feature into that materialized profile with the p2 director.
+The normal `product` profile remains unchanged. The opt-in `patched-product` profile in `sandbox_product/pom.xml` overlays the generated repository only after Tycho has materialized the ordinary stock product. It requires an absolute path to the verified p2 output and runs the same repository-owned smoke script during the product module's `verify` phase.
+
+```bash
+mvn -Pproduct,patched-product -T 1C --batch-mode clean verify -DskipTests \
+  -Dpatched.jdt.ui.p2.root="$PWD/target/patched-jdt-ui-p2" \
+  -Dpatched.jdt.ui.installation.evidence="$PWD/target/patched-jdt-ui-installation"
+```
+
+The profile first records the stock `org.eclipse.jdt.ui` entry from `configuration/org.eclipse.equinox.simpleconfigurator/bundles.info`, then installs the exact patch feature into that materialized Linux GTK x86_64 profile with the p2 director. The underlying checkout-runnable command is:
 
 ```bash
 bash .github/scripts/smoke_test_patched_jdt_ui_repository.sh \
@@ -114,7 +122,7 @@ The smoke test requires:
 - the patch feature reported as an installed root;
 - successful startup of the modified product through the p2 director application.
 
-Because the stock product is built before the patch repository is introduced, the same workflow also proves that the ordinary target remains independently materializable.
+Because the stock product is built before the patch repository is introduced, the same profile proves that the ordinary target remains independently materializable. Omitting `patched-product` and the p2 path produces the original stock product without consulting the fork repository.
 
 ## Workflow evidence
 
@@ -124,16 +132,16 @@ Because the stock product is built before the patch repository is introduced, th
 - verified bundle and source provenance;
 - stock-target compatibility;
 - exact-version p2 repository and repository verification;
-- stock-versus-patched installation and startup evidence.
+- patched-product profile installation and startup evidence.
 
 Cached Maven data may accelerate resolution, but every trust decision is recomputed from pinned source, an isolated target-resolution repository or artifact checksums.
 
 ## Rollback and upgrade boundary
 
-The patch is not added to the normal target, normal update site or default product definition. Omitting the optional patch repository and feature therefore rebuilds the stock product. Before advancing the Eclipse target or pinned fork revision, the complete bundle, compatibility, p2 and installation pipeline must pass again; a changed bundle qualifier produces a new feature identity rather than overwriting prior evidence.
+The patch is not added to the normal target, normal update site or default product definition. Omitting the optional `patched-product` profile, patch repository and carrier feature therefore rebuilds the stock product. Before advancing the Eclipse target or pinned fork revision, the complete bundle, compatibility, p2 and installation pipeline must pass again; a changed bundle qualifier produces a new feature identity rather than overwriting prior evidence.
 
 No generated JAR is committed. A persistent public patch channel must add immutable versioned publication, public URL verification and retention/rollback policy before promotion.
 
 ## Remaining #1209 work
 
-The current stages prove source provenance, manifest compatibility, p2 metadata, exact singleton selection and product startup. They do not yet prove that a running patched product invokes scope expansion for a real cleanup, previews the related compilation unit, applies the complete change and undoes it. That behavioral product test, plus persistent release-channel publication and rollback, remains required before #1209 can close.
+The current stages prove source provenance, manifest compatibility, p2 metadata, an explicit patched-product profile, exact singleton selection and product startup. They do not yet prove that a running patched product invokes scope expansion for a real cleanup, previews the related compilation unit, applies the complete change and undoes it. That behavioral product test remains the final #1209 acceptance stage.
