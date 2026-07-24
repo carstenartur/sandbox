@@ -38,10 +38,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
       - name: Build and test stock product and update site from clean checkout
         run: |
-          mkdir -p target/distribution-verification
           set -o pipefail
+          status=0
           mvn -Pproduct,repo -T 1C --batch-mode clean verify 2>&1 \
-            | tee target/distribution-verification/build.log
+            | tee /tmp/distribution-build.log || status=$?
+          mkdir -p target/distribution-verification
+          cp /tmp/distribution-build.log target/distribution-verification/build.log
+          exit "$status"
       - name: Validate repository metadata, artifacts and Linux product layout
         run: bash .github/scripts/verify_linux_distribution.sh
       - name: Provision and start the built distribution
