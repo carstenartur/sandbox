@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: deploy-snapshot-${{ github.event.workflow_run.head_sha }}
+  group: deploy-snapshot
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 150
     env:
       VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
       VALIDATED_REF: refs/heads/main
@@ -55,10 +55,23 @@ jobs:
       - name: Install Linux product runtime libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
-      - name: Build product and update site
-        run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
+      - name: Build and test product and update site
+        run: |
+          set -o pipefail
+          status=0
+          xvfb-run --auto-servernum mvn \
+            -Pproduct,repo \
+            -T 1C \
+            --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            clean verify 2>&1 | tee /tmp/snapshot-build.log || status=$?
+          mkdir -p target/distribution-verification
+          cp /tmp/snapshot-build.log target/distribution-verification/snapshot-build.log
+          exit "$status"
 
       - name: Validate repository metadata, artifacts and Linux product layout
         run: bash .github/scripts/verify_linux_distribution.sh
