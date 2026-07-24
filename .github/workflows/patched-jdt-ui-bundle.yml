@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
+      - '.github/scripts/add_p2_sha256_checksums.py'
       - '.github/scripts/build_patched_jdt_ui.sh'
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/scripts/publish_patched_jdt_ui_repository.sh'
@@ -17,6 +18,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
+      - '.github/scripts/add_p2_sha256_checksums.py'
       - '.github/scripts/build_patched_jdt_ui.sh'
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/scripts/publish_patched_jdt_ui_repository.sh'
