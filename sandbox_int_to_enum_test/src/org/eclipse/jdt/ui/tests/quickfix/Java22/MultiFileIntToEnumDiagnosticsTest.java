@@ -32,6 +32,9 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 /** Diagnostics QA for coordinated integer-state migration planning. */
 public class MultiFileIntToEnumDiagnosticsTest {
 
+	private static final String METHOD_PREFIX_MARKER= "__METHOD_PREFIX__"; //$NON-NLS-1$
+	private static final String ARGUMENT_MARKER= "__ARGUMENT__"; //$NON-NLS-1$
+
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava22();
 
@@ -81,7 +84,7 @@ public class MultiFileIntToEnumDiagnosticsTest {
 					static final int STATUS_PENDING = 0;
 					static final int STATUS_APPROVED = 1;
 
-					%s process(int status) {
+					__METHOD_PREFIX__ process(int status) {
 						if (status == STATUS_PENDING) {
 							System.out.println("pending");
 						} else if (status == STATUS_APPROVED) {
@@ -89,17 +92,17 @@ public class MultiFileIntToEnumDiagnosticsTest {
 						}
 					}
 				}
-				""".formatted(methodPrefix), false, null);
+				""".replace(METHOD_PREFIX_MARKER, methodPrefix), false, null);
 		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
 				"""
 				package test;
 
 				public class OrderClient {
 					void run(OrderProcessor processor) {
-						processor.process(%s);
+						processor.process(__ARGUMENT__);
 					}
 				}
-				""".formatted(argument), false, null);
+				""".replace(ARGUMENT_MARKER, argument), false, null);
 		return new ICompilationUnit[] { processor, client };
 	}
 
