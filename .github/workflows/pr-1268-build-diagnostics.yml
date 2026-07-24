@@ -1,6 +1,8 @@
 name: PR 1268 Build Diagnostics
 
 on:
+  pull_request:
+    branches: [ main ]
   push:
     branches: [ issue-1251-concrete-collectors ]
   workflow_dispatch:
