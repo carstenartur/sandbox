@@ -1,10 +1,11 @@
 name: Release Workflow
-# Manual release workflow for Sandbox.
+# Manual, fail-closed release workflow for Sandbox.
 #
 # The release is built, tested and smoke-tested before any stable tag or GitHub
-# Release is created. The versioned p2 repository is then published and verified
-# through its advertised URL. A failed public verification restores the previous
-# gh-pages revision before the workflow stops.
+# Release is created. The versioned p2 repository is published to the configured
+# legacy GitHub Pages source, an explicit Pages build is requested, and the exact
+# deployed commit is awaited before the public URLs are verified. Publication
+# failures restore both the gh-pages branch and the public Pages deployment.
 
 on:
   workflow_dispatch:
@@ -23,6 +24,11 @@ on:
         required: false
         type: boolean
         default: false
+  push:
+    branches:
+      - 'release-request/**'
+    paths:
+      - '.github/release-request'
 
 concurrency:
   group: release-workflow
@@ -31,6 +37,7 @@ concurrency:
 permissions:
   contents: write
   issues: write
+  pages: write
   pull-requests: write
 
 env:
@@ -39,7 +46,6 @@ env:
 jobs:
   preflight:
     name: Preflight Checks
-    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     outputs:
       starting_sha: ${{ steps.versions.outputs.starting_sha }}
@@ -72,7 +78,18 @@ jobs:
 
           STARTING_SHA=$(git rev-parse HEAD)
           CURRENT=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          INPUT_VERSION="${{ inputs.release_version }}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            INPUT_VERSION="${{ inputs.release_version }}"
+          else
+            BRANCH_VERSION="${GITHUB_REF_NAME#release-request/}"
+            git fetch --no-tags origin "${{ github.sha }}"
+            REQUEST_VERSION=$(git show "${{ github.sha }}:.github/release-request" | tr -d '[:space:]')
+            if [[ "$BRANCH_VERSION" != "$REQUEST_VERSION" ]]; then
+              echo "::error::Release request branch version '$BRANCH_VERSION' does not match marker '$REQUEST_VERSION'."
+              exit 1
+            fi
+            INPUT_VERSION="$REQUEST_VERSION"
+          fi
 
           if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::Invalid release version '$INPUT_VERSION'. Expected X.Y.Z."
@@ -112,6 +129,11 @@ jobs:
       - name: Validate Maven configuration
         run: mvn --batch-mode validate
 
+      - name: Test release publication helpers
+        run: |
+          python3 .github/scripts/test_wait_for_pages_build.py
+          python3 .github/scripts/test_verify_published_repository.py
+
       - name: Preflight summary
         run: |
           {
@@ -129,7 +151,6 @@ jobs:
 
   release:
     name: Build, Verify, Publish, and Prepare Next Version
-    if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -368,6 +389,15 @@ jobs:
           git -C gh-pages-repo fetch origin gh-pages
           echo "sha=$(git -C gh-pages-repo rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
 
+      - name: Request and await GitHub Pages publication
+        id: pages_build
+        if: ${{ !inputs.dry_run }}
+        run: |
+          python3 .github/scripts/wait_for_pages_build.py \
+            --repository "${{ github.repository }}" \
+            --expected-commit "${{ steps.gh_pages_after.outputs.sha }}" \
+            --output target/distribution-verification/pages-build.json
+
       - name: Verify advertised release URLs
         id: verify_release_urls
         if: ${{ !inputs.dry_run }}
@@ -382,8 +412,8 @@ jobs:
             --expected-child "$VERSION" \
             --output target/distribution-verification/release-composite-verification.json
 
-      - name: Roll back a failed release-site verification
-        if: ${{ failure() && !inputs.dry_run && steps.deploy_release_site.outcome == 'success' && steps.verify_release_urls.outcome == 'failure' }}
+      - name: Roll back failed release-site publication
+        if: ${{ failure() && !inputs.dry_run && steps.deploy_release_site.outcome == 'success' && (steps.pages_build.outcome == 'failure' || steps.verify_release_urls.outcome == 'failure') }}
         run: |
           set -euo pipefail
           previous="${{ steps.gh_pages_before.outputs.sha }}"
@@ -395,7 +425,11 @@ jobs:
           git -C gh-pages-repo push \
             --force-with-lease=refs/heads/gh-pages:${deployed} \
             origin "${previous}:refs/heads/gh-pages"
-          echo "Rolled gh-pages back from ${deployed} to ${previous}." \
+          python3 .github/scripts/wait_for_pages_build.py \
+            --repository "${{ github.repository }}" \
+            --expected-commit "$previous" \
+            --output target/distribution-verification/pages-rollback-build.json
+          echo "Rolled gh-pages and its public deployment back from ${deployed} to ${previous}." \
             | tee target/distribution-verification/release-publication-rollback.log
 
       - name: Upload release distribution evidence
@@ -462,6 +496,7 @@ jobs:
           for evidence in \
             target/distribution-verification/verification.json \
             target/distribution-verification/verification.md \
+            target/distribution-verification/pages-build.json \
             target/distribution-verification/release-url-verification.json \
             target/distribution-verification/release-composite-verification.json; do
             if [[ -f "$evidence" ]]; then
@@ -491,6 +526,10 @@ jobs:
           VERSION="${{ needs.preflight.outputs.release_version }}"
           TEMP_BRANCH="release-temp-${VERSION}"
           git push origin ":refs/heads/${TEMP_BRANCH}" || true
+
+      - name: Delete release request branch
+        if: ${{ always() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-request/') }}
+        run: git push origin ":${{ github.ref }}" || true
 
       - name: Prepare next development iteration
         if: ${{ !inputs.dry_run }}
@@ -543,7 +582,7 @@ jobs:
           ISSUE_BODY=$(cat << EOF
           ## Release ${VERSION}
 
-          A new Sandbox release was published after product, p2 installation, startup, cleanup transformation and URL verification passed.
+          A new Sandbox release was published after product, p2 installation, startup, cleanup transformation, exact GitHub Pages deployment and URL verification passed.
 
           | Field | Value |
           |-------|-------|
