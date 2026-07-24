@@ -81,15 +81,15 @@ The publisher creates a temporary source layout and invokes Tycho's Features and
 - `sandbox_patched_jdt_ui_feature_<derived-version>.jar`;
 - compressed p2 metadata and artifact indexes.
 
-The carrier feature pins the replacement through both its feature plug-in entry and a `match="perfect"` requirement. Its qualifier is derived from the reviewed bundle version, so rebuilding the same pinned source produces the same feature identity.
+The carrier feature pins the replacement through both its feature plug-in entry and a `match="perfect"` requirement. Tycho materializes those dependencies on the feature-group IU and keeps the feature-jar IU as the feature artifact carrier. Its qualifier is derived from the reviewed bundle version, so rebuilding the same pinned source produces the same feature identity.
 
-`.github/scripts/verify_patched_jdt_ui_repository.py` then requires:
+After publication, `.github/scripts/add_p2_sha256_checksums.py` recomputes the local artifact bytes and writes size plus SHA-256 metadata for every bundle and feature artifact. `.github/scripts/verify_patched_jdt_ui_repository.py` then requires:
 
 - exactly one bundle IU with the provenance-bound version;
 - exactly one feature-group IU and feature-jar IU;
-- an exact feature-jar-to-bundle requirement;
+- exact feature-group requirements for both the feature-jar IU and patched bundle IU;
 - exactly one bundle artifact and one feature artifact;
-- referenced files, declared sizes and at least one verifiable checksum per artifact;
+- referenced files, declared sizes and a verifiable checksum for every artifact;
 - byte equality between the published bundle and the original SHA-256 provenance;
 - a packaged `feature.xml` with the expected IDs and exact version.
 
