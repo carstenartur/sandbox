@@ -24,14 +24,28 @@ jobs:
           fetch-depth: 1
       - name: Apply the collector fallback repair
         run: |
-          python3 .github/scripts/patch_1268_safe_fallback.py
-          git diff --check
+          set +e
+          python3 -m py_compile .github/scripts/patch_1268_safe_fallback.py > repair.log 2>&1
+          status=$?
+          if (( status == 0 )); then
+            python3 .github/scripts/patch_1268_safe_fallback.py >> repair.log 2>&1
+            status=$?
+          fi
+          if (( status == 0 )); then
+            git diff --check >> repair.log 2>&1
+            status=$?
+          fi
+          set -e
+          cat repair.log
+          if (( status != 0 )); then
+            exit "$status"
+          fi
           if git diff --quiet -- \
             sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ConcreteCollectionFactory.java \
             sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java \
             sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AccumulatorAndSequenceSafetyTest.java \
             sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AdditionalLoopPatternsTest.java; then
-            echo 'Collector fallback repair is already applied.'
+            echo 'Collector fallback repair is already applied.' | tee -a repair.log
           else
             git config user.name 'github-actions[bot]'
             git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -40,9 +54,17 @@ jobs:
               sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java \
               sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AccumulatorAndSequenceSafetyTest.java \
               sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AdditionalLoopPatternsTest.java
-            git commit -m 'Preserve supported constructor arguments with forEach fallback'
-            git push origin HEAD:issue-1251-concrete-collectors
+            git commit -m 'Preserve supported constructor arguments with forEach fallback' | tee -a repair.log
+            git push origin HEAD:issue-1251-concrete-collectors 2>&1 | tee -a repair.log
           fi
+      - name: Upload repair log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-1268-repair-${{ github.sha }}
+          path: repair.log
+          retention-days: 3
+          if-no-files-found: error
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
