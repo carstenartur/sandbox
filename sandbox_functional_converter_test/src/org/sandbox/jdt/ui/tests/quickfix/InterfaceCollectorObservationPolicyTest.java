@@ -73,8 +73,7 @@ class InterfaceCollectorObservationPolicyTest {
 				import java.util.stream.Collectors;
 				class E {
 					List<String> copy(List<String> source) {
-						List<String> result = source.stream()
-								.collect(Collectors.toCollection(java.util.ArrayList::new));
+						List<String> result = source.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
 						return result;
 					}
 				}
