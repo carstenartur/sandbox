@@ -10,12 +10,19 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
@@ -23,6 +30,9 @@ import org.sandbox.functional.core.terminal.CollectTerminal;
 
 /** Resolves behavior-preserving suppliers for fresh collection accumulators. */
 final class ConcreteCollectionFactory {
+
+	private static final String JAVA_UTIL_LIST= "java.util.List"; //$NON-NLS-1$
+	private static final String JAVA_UTIL_SET= "java.util.Set"; //$NON-NLS-1$
 
 	private static final Map<String, CollectTerminal.CollectorType> SUPPORTED= Map.of(
 			"java.util.ArrayList", CollectTerminal.CollectorType.TO_LIST, //$NON-NLS-1$
@@ -37,11 +47,21 @@ final class ConcreteCollectionFactory {
 	/**
 	 * Adds the proven constructor supplier to a collect terminal. Unsupported or
 	 * construction-sensitive declarations fail closed by returning {@code null}.
+	 *
+	 * <p>For an exact {@link java.util.List} or {@link java.util.Set} declaration
+	 * whose value is never referenced after the accumulating loop, the concrete
+	 * implementation is not observable. In that case the existing interface
+	 * collector remains sufficient and avoids changing established output for a
+	 * dead local. A later read, return or subsequent loop keeps the explicit
+	 * constructor supplier.</p>
 	 */
 	static CollectTerminal preserveFactory(VariableDeclarationStatement declaration, CollectTerminal terminal) {
 		String supplier= supplier(declaration, terminal);
 		if (supplier == null) {
 			return null;
+		}
+		if (canUseInterfaceCollector(declaration, terminal)) {
+			return terminal;
 		}
 		return new CollectTerminal(terminal.collectorType(), terminal.targetVariable(), supplier);
 	}
@@ -78,6 +98,65 @@ final class ConcreteCollectionFactory {
 			return null;
 		}
 		return qualifiedName + "::new"; //$NON-NLS-1$
+	}
+
+	private static boolean canUseInterfaceCollector(VariableDeclarationStatement declaration,
+			CollectTerminal terminal) {
+		ITypeBinding declaredType= declaration.getType().resolveBinding();
+		ITypeBinding erasure= declaredType == null ? null : declaredType.getErasure();
+		if (erasure == null) {
+			return false;
+		}
+		String qualifiedName= erasure.getQualifiedName();
+		boolean exactInterface= terminal.collectorType() == CollectTerminal.CollectorType.TO_LIST
+				? JAVA_UTIL_LIST.equals(qualifiedName)
+				: terminal.collectorType() == CollectTerminal.CollectorType.TO_SET
+						&& JAVA_UTIL_SET.equals(qualifiedName);
+		return exactInterface && !isReferencedAfterAccumulation(declaration);
+	}
+
+	private static boolean isReferencedAfterAccumulation(VariableDeclarationStatement declaration) {
+		if (!(declaration.getParent() instanceof Block block) || declaration.fragments().size() != 1) {
+			return true;
+		}
+		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);
+		IVariableBinding binding= fragment.resolveBinding();
+		if (binding == null) {
+			return true;
+		}
+		@SuppressWarnings("unchecked") //$NON-NLS-1$
+		List<Statement> statements= block.statements();
+		int declarationIndex= statements.indexOf(declaration);
+		if (declarationIndex < 0) {
+			return true;
+		}
+		boolean accumulationFound= false;
+		for (int index= declarationIndex + 1; index < statements.size(); index++) {
+			boolean referencesAccumulator= references(statements.get(index), binding);
+			if (!accumulationFound) {
+				accumulationFound= referencesAccumulator;
+			} else if (referencesAccumulator) {
+				return true;
+			}
+		}
+		return !accumulationFound;
+	}
+
+	private static boolean references(Statement statement, IVariableBinding target) {
+		boolean[] found= { false };
+		statement.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				IBinding resolved= node.resolveBinding();
+				if (resolved instanceof IVariableBinding variable
+						&& target.getVariableDeclaration().isEqualTo(variable.getVariableDeclaration())) {
+					found[0]= true;
+					return false;
+				}
+				return !found[0];
+			}
+		});
+		return found[0];
 	}
 
 	private static boolean hasAnonymousClass(ClassInstanceCreation creation) {
