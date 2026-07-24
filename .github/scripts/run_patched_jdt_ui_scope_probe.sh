@@ -136,6 +136,9 @@ mvn --batch-mode -ntp -f "$WORK_DIR/pom.xml" \
   -Drepository.location="$REPOSITORY_DIR" \
   2>&1 | tee "$EVIDENCE_DIR/publisher.log"
 
+python3 "$ROOT_DIR/.github/scripts/add_p2_sha256_checksums.py" \
+  --repository "$REPOSITORY_DIR" \
+  > "$EVIDENCE_DIR/probe-checksum-normalization.json"
 python3 - "$REPOSITORY_DIR" "$PROBE_ID" "$PROBE_VERSION" "$PROBE_SHA256" "$EVIDENCE_DIR" <<'PY'
 import hashlib
 import json
