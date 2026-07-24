@@ -361,6 +361,13 @@ jobs:
           git commit -m "Deploy release ${VERSION}" || echo 'No gh-pages changes to commit'
           git push origin gh-pages
 
+      - name: Capture deployed gh-pages revision
+        id: gh_pages_after
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git -C gh-pages-repo fetch origin gh-pages
+          echo "sha=$(git -C gh-pages-repo rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
+
       - name: Verify advertised release URLs
         id: verify_release_urls
         if: ${{ !inputs.dry_run }}
@@ -380,16 +387,15 @@ jobs:
         run: |
           set -euo pipefail
           previous="${{ steps.gh_pages_before.outputs.sha }}"
-          git -C gh-pages-repo fetch origin gh-pages
-          current_remote=$(git -C gh-pages-repo rev-parse origin/gh-pages)
-          if [[ -z "$previous" ]]; then
-            echo '::error::The previous gh-pages revision was not captured.'
+          deployed="${{ steps.gh_pages_after.outputs.sha }}"
+          if [[ -z "$previous" || -z "$deployed" ]]; then
+            echo '::error::The previous or deployed gh-pages revision was not captured.'
             exit 1
           fi
           git -C gh-pages-repo push \
-            --force-with-lease=refs/heads/gh-pages:${current_remote} \
+            --force-with-lease=refs/heads/gh-pages:${deployed} \
             origin "${previous}:refs/heads/gh-pages"
-          echo "Rolled gh-pages back from ${current_remote} to ${previous}." \
+          echo "Rolled gh-pages back from ${deployed} to ${previous}." \
             | tee target/distribution-verification/release-publication-rollback.log
 
       - name: Upload release distribution evidence
