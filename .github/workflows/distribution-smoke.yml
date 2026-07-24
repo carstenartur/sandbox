@@ -32,6 +32,15 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
+      - name: Test distribution verification utilities
+        run: |
+          python3 -m py_compile \
+            .github/scripts/verify_distribution_artifacts.py \
+            .github/scripts/verify_published_repository.py \
+            .github/scripts/test_verify_published_repository.py
+          python3 .github/scripts/test_verify_published_repository.py
+          bash -n .github/scripts/verify_linux_distribution.sh
+          bash -n .github/scripts/smoke_test_distribution.sh
       - name: Install Linux product runtime libraries
         run: |
           sudo apt-get update
