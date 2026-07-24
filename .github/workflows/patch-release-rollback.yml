@@ -1,0 +1,77 @@
+name: Patch release rollback lease
+
+on:
+  push:
+    branches: [ issue-1215-distribution-smoke ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-release-rollback
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: issue-1215-distribution-smoke
+          fetch-depth: 0
+      - name: Bind release rollback to the deployed gh-pages commit
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/deploy-release.yml')
+          text = path.read_text(encoding='utf-8')
+          if 'id: gh_pages_after' not in text:
+              marker = '      - name: Verify advertised release URLs\n'
+              dollar = '$'
+              capture = (
+                  '      - name: Capture deployed gh-pages revision\n'
+                  '        id: gh_pages_after\n'
+                  f'        if: {dollar}{{{{ !inputs.dry_run }}}}\n'
+                  '        run: |\n'
+                  '          git -C gh-pages-repo fetch origin gh-pages\n'
+                  '          echo "sha=$(git -C gh-pages-repo rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"\n\n'
+              )
+              if marker not in text:
+                  raise SystemExit('Release URL verification marker not found')
+              text = text.replace(marker, capture + marker, 1)
+
+          start_marker = '      - name: Roll back a failed release-site verification\n'
+          end_marker = '      - name: Upload release distribution evidence\n'
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          dollar = '$'
+          rollback = (
+              '      - name: Roll back a failed release-site verification\n'
+              f'        if: {dollar}{{{{ failure() && !inputs.dry_run && steps.deploy_release_site.outcome == \'success\' && steps.verify_release_urls.outcome == \'failure\' }}}}\n'
+              '        run: |\n'
+              '          set -euo pipefail\n'
+              f'          previous="{dollar}{{{{ steps.gh_pages_before.outputs.sha }}}}"\n'
+              f'          deployed="{dollar}{{{{ steps.gh_pages_after.outputs.sha }}}}"\n'
+              '          if [[ -z "$previous" || -z "$deployed" ]]; then\n'
+              '            echo \'::error::The previous or deployed gh-pages revision was not captured.\'\n'
+              '            exit 1\n'
+              '          fi\n'
+              '          git -C gh-pages-repo push \\\n'
+              '            --force-with-lease=refs/heads/gh-pages:${deployed} \\\n'
+              '            origin "${previous}:refs/heads/gh-pages"\n'
+              '          echo "Rolled gh-pages back from ${deployed} to ${previous}." \\\n'
+              '            | tee target/distribution-verification/release-publication-rollback.log\n\n'
+          )
+          text = text[:start] + rollback + text[end:]
+          path.write_text(text, encoding='utf-8')
+          PY
+          if git diff --quiet -- .github/workflows/deploy-release.yml; then
+            echo 'Release rollback is already bound to the deployed revision.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/deploy-release.yml
+          git commit -m 'Bind release rollback to deployed gh-pages revision'
+          git push origin HEAD:issue-1215-distribution-smoke
