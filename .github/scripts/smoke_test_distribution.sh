@@ -161,7 +161,7 @@ public class Smoke {
 EOF
 
 run_equinox "$FRESH_INSTALL" "$FRESH_LAUNCHER" \
-  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  -application org.sandbox.jdt.core.JavaCleanup \
   -data "$CLEANUP_WORKSPACE" \
   --import-project "$CLEANUP_PROJECT" \
   --mode apply \
