@@ -23,6 +23,7 @@ jobs:
         with:
           ref: issue-1215-distribution-smoke
           fetch-depth: 1
+      # The source artifact was produced by the successful local patch-evidence run.
       - name: Download the validated patched workflow
         run: |
           gh run download 30099487911 \
