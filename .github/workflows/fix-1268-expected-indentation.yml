@@ -66,7 +66,10 @@ jobs:
                       raise SystemExit(f'Could not locate expected block terminator in {class_name}.{method_name}')
                   closing_start = content_start + closing.start()
                   closing_indent = closing.group(1)
-                  rendered = ''.join(closing_indent + line + '\n' for line in actual.rstrip('\n').split('\n'))
+                  rendered = ''.join(
+                      '\n' if line == '' else closing_indent + line + '\n'
+                      for line in actual.rstrip('\n').split('\n')
+                  )
                   text = text[:content_start] + rendered + text[closing_start:]
                   replacements += 1
               path.write_text(text, encoding='utf-8')
