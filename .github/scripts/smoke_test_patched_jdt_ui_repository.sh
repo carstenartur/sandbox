@@ -9,7 +9,7 @@ REPOSITORY_EVIDENCE="$P2_ROOT/evidence"
 VERIFICATION_JSON="$REPOSITORY_EVIDENCE/repository-verification.json"
 PRODUCTS_DIR="$ROOT_DIR/sandbox_product/target/products"
 
-for command in find java python3 sha256sum timeout xvfb-run; do
+for command in awk basename dirname find java python3 sha256sum timeout xvfb-run; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 [[ -f "$VERIFICATION_JSON" ]] || { echo "Missing repository verification: $VERIFICATION_JSON" >&2; exit 1; }
@@ -35,20 +35,24 @@ BUNDLE_SHA256=${expected[2]}
 FEATURE_GROUP=${expected[3]}
 FEATURE_VERSION=${expected[4]}
 
-mapfile -t product_roots < <(find "$PRODUCTS_DIR" -type d -path '*/linux/gtk/x86_64' -print | sort)
-if (( ${#product_roots[@]} != 1 )); then
-  printf 'Expected exactly one Linux GTK x86_64 product root, found %d: %s\n' \
-    "${#product_roots[@]}" "${product_roots[*]:-<none>}" >&2
+mapfile -t architecture_roots < <(find "$PRODUCTS_DIR" -type d -path '*/linux/gtk/x86_64' -print | sort)
+if (( ${#architecture_roots[@]} != 1 )); then
+  printf 'Expected exactly one Linux GTK x86_64 product directory, found %d: %s\n' \
+    "${#architecture_roots[@]}" "${architecture_roots[*]:-<none>}" >&2
   exit 1
 fi
-PRODUCT_ROOT=${product_roots[0]}
-mapfile -t launchers < <(find "$PRODUCT_ROOT/plugins" -maxdepth 1 -type f \
-  -name 'org.eclipse.equinox.launcher_*.jar' | sort)
+ARCHITECTURE_ROOT=${architecture_roots[0]}
+mapfile -t launchers < <(find "$ARCHITECTURE_ROOT" -type f \
+  -path '*/plugins/org.eclipse.equinox.launcher_*.jar' | sort)
 if (( ${#launchers[@]} != 1 )); then
-  printf 'Expected exactly one Equinox launcher, found %d\n' "${#launchers[@]}" >&2
+  printf 'Expected exactly one Equinox launcher below %s, found %d: %s\n' \
+    "$ARCHITECTURE_ROOT" "${#launchers[@]}" "${launchers[*]:-<none>}" >&2
   exit 1
 fi
 LAUNCHER=${launchers[0]}
+PRODUCT_ROOT=$(dirname "$(dirname "$LAUNCHER")")
+[[ -f "$PRODUCT_ROOT/configuration/config.ini" ]] \
+  || { echo "Launcher parent is not a materialized product root: $PRODUCT_ROOT" >&2; exit 1; }
 BUNDLES_INFO="$PRODUCT_ROOT/configuration/org.eclipse.equinox.simpleconfigurator/bundles.info"
 [[ -f "$BUNDLES_INFO" ]] || { echo "Missing bundles.info: $BUNDLES_INFO" >&2; exit 1; }
 
