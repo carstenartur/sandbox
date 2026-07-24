@@ -35,13 +35,19 @@ jobs:
       - name: Install Linux product runtime libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
       - name: Build and test stock product and update site from clean checkout
         run: |
           set -o pipefail
           status=0
-          mvn -Pproduct,repo -T 1C --batch-mode clean verify 2>&1 \
-            | tee /tmp/distribution-build.log || status=$?
+          xvfb-run --auto-servernum mvn \
+            -Pproduct,repo \
+            -T 1C \
+            --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            clean verify 2>&1 | tee /tmp/distribution-build.log || status=$?
           mkdir -p target/distribution-verification
           cp /tmp/distribution-build.log target/distribution-verification/build.log
           exit "$status"
