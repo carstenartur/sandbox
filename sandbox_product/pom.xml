@@ -108,4 +108,69 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<!--
+			Opt-in overlay for the provenance-bound JDT UI replacement repository.
+			Activate together with the root product profile:
+			-Pproduct,patched-product -Dpatched.jdt.ui.p2.root=/absolute/path/to/p2-output
+		-->
+		<profile>
+			<id>patched-product</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<patched.jdt.ui.installation.evidence>${project.build.directory}/patched-jdt-ui-installation</patched.jdt.ui.installation.evidence>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>require-patched-jdt-ui-p2-root</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>enforce</goal>
+								</goals>
+								<configuration>
+									<rules>
+										<requireProperty>
+											<property>patched.jdt.ui.p2.root</property>
+											<message>The patched-product profile requires -Dpatched.jdt.ui.p2.root=/absolute/path/to/the/generated-p2-output.</message>
+											<regex>.+</regex>
+										</requireProperty>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>3.6.3</version>
+						<executions>
+							<execution>
+								<id>install-and-start-patched-jdt-ui-product</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>bash</executable>
+									<workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+									<arguments>
+										<argument>.github/scripts/smoke_test_patched_jdt_ui_repository.sh</argument>
+										<argument>${patched.jdt.ui.p2.root}</argument>
+										<argument>${patched.jdt.ui.installation.evidence}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
