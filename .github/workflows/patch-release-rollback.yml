@@ -20,15 +20,15 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: issue-1215-distribution-smoke
-          fetch-depth: 0
+          fetch-depth: 1
       - name: Complete distribution publication hardening
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('.github/workflows/deploy-release.yml')
-          text = path.read_text(encoding='utf-8')
-          if 'id: gh_pages_after' not in text:
+          release_path = Path('.github/workflows/deploy-release.yml')
+          release = release_path.read_text(encoding='utf-8')
+          if 'id: gh_pages_after' not in release:
               marker = '      - name: Verify advertised release URLs\n'
               dollar = '$'
               capture = (
@@ -39,14 +39,12 @@ jobs:
                   '          git -C gh-pages-repo fetch origin gh-pages\n'
                   '          echo "sha=$(git -C gh-pages-repo rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"\n\n'
               )
-              if marker not in text:
+              if marker not in release:
                   raise SystemExit('Release URL verification marker not found')
-              text = text.replace(marker, capture + marker, 1)
+              release = release.replace(marker, capture + marker, 1)
 
-          start_marker = '      - name: Roll back a failed release-site verification\n'
-          end_marker = '      - name: Upload release distribution evidence\n'
-          start = text.index(start_marker)
-          end = text.index(end_marker, start)
+          rollback_start = release.index('      - name: Roll back a failed release-site verification\n')
+          rollback_end = release.index('      - name: Upload release distribution evidence\n', rollback_start)
           dollar = '$'
           rollback = (
               '      - name: Roll back a failed release-site verification\n'
@@ -65,68 +63,124 @@ jobs:
               '          echo "Rolled gh-pages back from ${deployed} to ${previous}." \\\n'
               '            | tee target/distribution-verification/release-publication-rollback.log\n\n'
           )
-          text = text[:start] + rollback + text[end:]
-          path.write_text(text, encoding='utf-8')
+          release = release[:rollback_start] + rollback + release[rollback_end:]
+          release_path.write_text(release, encoding='utf-8')
 
           readme_path = Path('README.md')
           readme = readme_path.read_text(encoding='utf-8')
-          link = ('- **[Distribution Compatibility](docs/distribution-compatibility.md)** '
-                  '- Supported build matrix, runtime coverage, publication gates, and evidence')
-          if link not in readme:
-              marker = ('- **[Release Process](CONTRIBUTING.md#release-process)** '
-                        '- Maintainer guide for creating releases')
+          compatibility_link = (
+              '- **[Distribution Compatibility](docs/distribution-compatibility.md)** '
+              '- Supported build matrix, runtime coverage, publication gates, and evidence'
+          )
+          if compatibility_link not in readme:
+              marker = (
+                  '- **[Release Process](CONTRIBUTING.md#release-process)** '
+                  '- Maintainer guide for creating releases'
+              )
               if marker not in readme:
                   raise SystemExit('README release-process link marker not found')
-              readme = readme.replace(marker, marker + '\n' + link, 1)
+              readme = readme.replace(marker, marker + '\n' + compatibility_link, 1)
               readme_path.write_text(readme, encoding='utf-8')
 
           validator_path = Path('.github/scripts/verify_distribution_artifacts.py')
           validator = validator_path.read_text(encoding='utf-8')
-          if 'feature_artifacts: dict[tuple[str, str], dict[str, object]]' not in validator:
-              marker = '    checksum_errors: list[str] = []\n'
-              if marker not in validator:
-                  raise SystemExit('Validator checksum marker not found')
-              validator = validator.replace(
-                  marker,
-                  marker + '    feature_artifacts: dict[tuple[str, str], dict[str, object]] = {}\n',
-                  1,
-              )
-              marker = '        properties = artifact_properties(artifact)\n'
-              evidence = (
-                  '        if classifier == "org.eclipse.update.feature" and identifier in published_features:\n'
-                  '            feature_artifacts[(identifier, version)] = {\n'
-                  '                "id": identifier,\n'
-                  '                "iu": f"{identifier}.feature.group",\n'
-                  '                "version": version,\n'
-                  '                "artifactSize": path.stat().st_size,\n'
-                  '                "artifactSha256": digest(path, "sha256"),\n'
-                  '            }\n'
-              )
-              if marker not in validator:
-                  raise SystemExit('Validator artifact-property marker not found')
-              validator = validator.replace(marker, evidence + marker, 1)
-              marker = '    if checked_files == 0:\n        fail("No bundle or feature artifacts were validated")\n\n'
-              published = (
-                  '    published_evidence: list[dict[str, object]] = []\n'
-                  '    for feature in published_features:\n'
-                  '        version = units[f"{feature}.feature.group"]\n'
-                  '        evidence = feature_artifacts.get((feature, version))\n'
-                  '        if evidence is None:\n'
-                  '            fail(f"Published feature artifact missing for exact IU version: {feature}/{version}")\n'
-                  '        published_evidence.append(evidence)\n\n'
-              )
-              if marker not in validator:
-                  raise SystemExit('Validator checked-files marker not found')
-              validator = validator.replace(marker, marker + published, 1)
-              old = (
-                  '        "publishedFeatures": [\n'
-                  '            {"id": feature, "iu": f"{feature}.feature.group", "version": units[f"{feature}.feature.group"]}\n'
-                  '            for feature in published_features\n'
-                  '        ],\n'
-              )
-              if old not in validator:
-                  raise SystemExit('Validator published-features return block not found')
-              validator = validator.replace(old, '        "publishedFeatures": published_evidence,\n', 1)
+          if '"artifactSha256": feature_sha256' not in validator:
+              function_start = validator.index('def verify_repository(')
+              function_end = validator.index('\ndef find_product_root(', function_start)
+              replacement = '''def verify_repository(repository: Path, published_features: list[str]) -> dict[str, object]:
+              if not repository.is_dir():
+                  fail(f"Built p2 repository does not exist: {repository}")
+
+              content = xml_from_repository(repository, "content")
+              artifacts = xml_from_repository(repository, "artifacts")
+              units = {
+                  unit.attrib.get("id", ""): unit.attrib.get("version", "")
+                  for unit in content.findall("./units/unit")
+                  if unit.attrib.get("id")
+              }
+              missing_units = [
+                  f"{feature}.feature.group"
+                  for feature in published_features
+                  if f"{feature}.feature.group" not in units
+              ]
+              if missing_units:
+                  fail(f"Published feature IUs missing from content metadata: {missing_units}")
+
+              seen_keys: set[tuple[str, str, str]] = set()
+              feature_artifacts: dict[tuple[str, str], dict[str, object]] = {}
+              checked_files = 0
+              checksum_count = 0
+              missing_files: list[str] = []
+              checksum_errors: list[str] = []
+              for artifact in artifacts.findall("./artifacts/artifact"):
+                  classifier = artifact.attrib.get("classifier", "")
+                  identifier = artifact.attrib.get("id", "")
+                  version = artifact.attrib.get("version", "")
+                  key = classifier, identifier, version
+                  if key in seen_keys:
+                      fail(f"Duplicate p2 artifact key: {key}")
+                  seen_keys.add(key)
+                  artifact_file = artifact_path(repository, classifier, identifier, version)
+                  if artifact_file is None:
+                      continue
+                  checked_files += 1
+                  if not artifact_file.is_file():
+                      missing_files.append(str(artifact_file.relative_to(repository)))
+                      continue
+                  properties = artifact_properties(artifact)
+                  size = properties.get("download.size") or properties.get("artifact.size")
+                  if size and size.isdigit() and artifact_file.stat().st_size != int(size):
+                      checksum_errors.append(
+                          f"{artifact_file.name}: size {artifact_file.stat().st_size}, metadata {size}"
+                      )
+                  feature_sha256 = digest(artifact_file, "sha256")
+                  if classifier == "org.eclipse.update.feature" and identifier in published_features:
+                      feature_artifacts[(identifier, version)] = {
+                          "id": identifier,
+                          "iu": f"{identifier}.feature.group",
+                          "version": version,
+                          "artifactSize": artifact_file.stat().st_size,
+                          "artifactSha256": feature_sha256,
+                      }
+                  for name, value in properties.items():
+                      lowered = name.lower()
+                      if re.fullmatch(r"[0-9a-fA-F]{64}", value) and (
+                          "sha-256" in lowered or "sha256" in lowered
+                      ):
+                          checksum_count += 1
+                          if feature_sha256.lower() != value.lower():
+                              checksum_errors.append(f"{artifact_file.name}: SHA-256 mismatch")
+                      elif re.fullmatch(r"[0-9a-fA-F]{32}", value) and "md5" in lowered:
+                          checksum_count += 1
+                          if digest(artifact_file, "md5").lower() != value.lower():
+                              checksum_errors.append(f"{artifact_file.name}: MD5 mismatch")
+              if missing_files:
+                  fail(f"p2 artifact metadata references missing files: {missing_files[:20]}")
+              if checksum_errors:
+                  fail(f"p2 artifact integrity errors: {checksum_errors[:20]}")
+              if checked_files == 0:
+                  fail("No bundle or feature artifacts were validated")
+
+              published_evidence: list[dict[str, object]] = []
+              for feature in published_features:
+                  version = units[f"{feature}.feature.group"]
+                  evidence = feature_artifacts.get((feature, version))
+                  if evidence is None:
+                      fail(f"Published feature artifact missing for exact IU version: {feature}/{version}")
+                  published_evidence.append(evidence)
+
+              return {
+                  "path": str(repository),
+                  "metadataUnits": len(units),
+                  "artifactKeys": len(seen_keys),
+                  "artifactFilesChecked": checked_files,
+                  "checksumsChecked": checksum_count,
+                  "publishedFeatures": published_evidence,
+              }
+
+              '''
+              replacement = '\n'.join(line[14:] if line.startswith('              ') else line for line in replacement.splitlines())
+              validator = validator[:function_start] + replacement + validator[function_end + 1:]
               validator_path.write_text(validator, encoding='utf-8')
           PY
           if git diff --quiet -- .github/workflows/deploy-release.yml README.md .github/scripts/verify_distribution_artifacts.py; then
