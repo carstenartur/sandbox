@@ -1,0 +1,51 @@
+name: PR Build Diagnostics
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'sandbox_common/**'
+      - 'sandbox_common_test/**'
+      - 'sandbox_int_to_enum/**'
+      - 'sandbox_int_to_enum_test/**'
+      - 'sandbox_junit_cleanup/**'
+      - 'sandbox_junit_cleanup_test/**'
+      - '.github/workflows/pr-build-diagnostics.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-build-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  targeted-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Compile coordinated cleanup diagnostics modules
+        run: |
+          set -o pipefail
+          mvn -B -DskipTests \
+            -pl sandbox_target,sandbox_common,sandbox_common_test,sandbox_int_to_enum,sandbox_int_to_enum_test,sandbox_junit_cleanup,sandbox_junit_cleanup_test \
+            -am clean package 2>&1 | tee targeted-build.log
+      - name: Upload targeted build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: targeted-build-${{ github.sha }}
+          path: targeted-build.log
+          retention-days: 3
+          if-no-files-found: error
