@@ -14,6 +14,7 @@ on:
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-bundle.yml'
       - 'docs/patched-jdt-ui-delivery.md'
+      - 'sandbox_product/pom.xml'
   pull_request:
     branches: [ main ]
     paths:
@@ -26,6 +27,7 @@ on:
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-bundle.yml'
       - 'docs/patched-jdt-ui-delivery.md'
+      - 'sandbox_product/pom.xml'
 
 permissions:
   contents: read
@@ -191,7 +193,7 @@ jobs:
   patched-product-installation:
     needs: p2-repository
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v6
         with:
@@ -213,14 +215,21 @@ jobs:
         with:
           name: patched-jdt-ui-p2-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui-p2
-      - name: Build the independent stock product
-        run: mvn -Pproduct -T 1C --batch-mode clean package -DskipTests
-      - name: Install exact patch feature and start the product
+      - name: Build and verify the explicit patched-product Maven profile
         shell: bash
         run: |
-          bash .github/scripts/smoke_test_patched_jdt_ui_repository.sh \
-            "$RUNNER_TEMP/patched-jdt-ui-p2" \
-            "$RUNNER_TEMP/patched-jdt-ui-installation"
+          mvn -Pproduct,patched-product -T 1C --batch-mode clean verify -DskipTests \
+            -Dpatched.jdt.ui.p2.root="$RUNNER_TEMP/patched-jdt-ui-p2" \
+            -Dpatched.jdt.ui.installation.evidence="$RUNNER_TEMP/patched-jdt-ui-installation"
+          python3 - "$RUNNER_TEMP/patched-jdt-ui-installation/installation-verification.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          report = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          if report.get('result') != 'PASS':
+              raise SystemExit('patched-product Maven profile did not produce PASS installation evidence')
+          PY
       - name: Publish installation summary
         if: always()
         shell: bash
