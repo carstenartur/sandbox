@@ -276,8 +276,8 @@ public class AccumulatorAndSequenceSafetyTest {
 	}
 
 	@Test
-	void capacityConstructorFailsClosed() throws CoreException {
-		assertNoChange("""
+	void capacityConstructorPreservesDeclarationAndConvertsLoop() throws CoreException {
+		assertExpected("""
 				package test;
 				import java.util.*;
 				class E {
@@ -289,12 +289,22 @@ public class AccumulatorAndSequenceSafetyTest {
 						return result;
 					}
 				}
+				""", """
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>(16);
+						source.forEach(item -> result.add(item));
+						return result;
+					}
+				}
 				""");
 	}
 
 	@Test
-	void comparatorConstructorFailsClosed() throws CoreException {
-		assertNoChange("""
+	void comparatorConstructorPreservesDeclarationAndConvertsLoop() throws CoreException {
+		assertExpected("""
 				package test;
 				import java.util.*;
 				class E {
@@ -303,6 +313,16 @@ public class AccumulatorAndSequenceSafetyTest {
 						for (String item : source) {
 							result.add(item);
 						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+						source.forEach(item -> result.add(item));
 						return result;
 					}
 				}

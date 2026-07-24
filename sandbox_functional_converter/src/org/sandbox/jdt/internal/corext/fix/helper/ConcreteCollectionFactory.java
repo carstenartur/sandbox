@@ -71,6 +71,34 @@ final class ConcreteCollectionFactory {
 	}
 
 	/**
+	 * Returns whether the adjacent declaration uses one modeled JDK collection type.
+	 * Constructor arguments are allowed because callers using this predicate retain
+	 * the original declaration and only replace the loop with a direct forEach.
+	 */
+	static boolean hasSupportedConcreteType(VariableDeclarationStatement declaration, CollectTerminal terminal) {
+		if (declaration == null || terminal == null || declaration.fragments().size() != 1) {
+			return false;
+		}
+		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);
+		Expression initializer= fragment.getInitializer();
+		if (!(initializer instanceof ClassInstanceCreation creation) || hasAnonymousClass(creation)) {
+			return false;
+		}
+		ITypeBinding createdType= creation.resolveTypeBinding();
+		ITypeBinding declaredType= declaration.getType().resolveBinding();
+		if (createdType == null || declaredType == null) {
+			return false;
+		}
+		ITypeBinding createdErasure= createdType.getErasure();
+		if (createdErasure == null || declaredType.getErasure() == null) {
+			return false;
+		}
+		CollectTerminal.CollectorType supportedType= SUPPORTED.get(createdErasure.getQualifiedName());
+		return supportedType == terminal.collectorType()
+				&& createdType.isAssignmentCompatible(declaredType);
+	}
+
+	/**
 	 * Returns a qualified constructor reference for one exactly modeled initializer.
 	 * Constructor arguments, anonymous classes, custom implementations and unresolved
 	 * bindings fail closed.

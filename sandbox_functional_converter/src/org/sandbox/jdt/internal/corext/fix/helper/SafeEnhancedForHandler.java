@@ -182,17 +182,17 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return false;
 		}
 		if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
-			VariableDeclarationStatement accumulator= findFreshAccumulator(loop, collectTerminal.targetVariable());
-			if (accumulator != null) {
-				if (!collectTerminal.targetVariable().equals(
-						CollectPatternDetector.isEmptyCollectionDeclaration(accumulator))) {
-					return false;
-				}
-				CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(accumulator, collectTerminal);
+			VariableDeclarationStatement adjacent= findAdjacentAccumulator(loop, collectTerminal.targetVariable());
+			VariableDeclarationStatement fresh= findFreshAccumulator(loop, collectTerminal.targetVariable());
+			if (fresh != null) {
+				CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(fresh, collectTerminal);
 				if (preserved == null) {
 					return false;
 				}
 				model.setTerminal(preserved);
+			} else if (adjacent != null
+					&& !ConcreteCollectionFactory.hasSupportedConcreteType(adjacent, collectTerminal)) {
+				return false;
 			}
 		}
 		return !LambdaCaptureSafety.hasUnsafeCapture(loop.getBody(), liftedAccumulatorNames(loop, model),
@@ -363,6 +363,12 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 	}
 
 	private VariableDeclarationStatement findFreshAccumulator(EnhancedForStatement loop, String targetVariable) {
+		VariableDeclarationStatement declaration= findAdjacentAccumulator(loop, targetVariable);
+		return declaration != null && targetVariable.equals(
+				CollectPatternDetector.isEmptyCollectionDeclaration(declaration)) ? declaration : null;
+	}
+
+	private VariableDeclarationStatement findAdjacentAccumulator(EnhancedForStatement loop, String targetVariable) {
 		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {
 			return null;
 		}
