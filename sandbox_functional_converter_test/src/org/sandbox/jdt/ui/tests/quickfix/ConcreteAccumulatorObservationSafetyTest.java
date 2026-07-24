@@ -29,7 +29,7 @@ class ConcreteAccumulatorObservationSafetyTest {
 	AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
-	void aliasBeforeLoopPreservesTheOriginalAccumulator() throws CoreException {
+	void aliasBeforeEnhancedForPreservesTheOriginalAccumulator() throws CoreException {
 		assertExpected("""
 				package test;
 				import java.util.*;
@@ -58,7 +58,7 @@ class ConcreteAccumulatorObservationSafetyTest {
 	}
 
 	@Test
-	void readBeforeLoopPreservesTheOriginalAccumulator() throws CoreException {
+	void readBeforeEnhancedForPreservesTheOriginalAccumulator() throws CoreException {
 		assertExpected("""
 				package test;
 				import java.util.*;
@@ -86,10 +86,57 @@ class ConcreteAccumulatorObservationSafetyTest {
 				""");
 	}
 
+	@Test
+	void aliasBeforeIteratorLoopBlocksAccumulatorReplacement() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>();
+						ArrayList<String> alias = result;
+						Iterator<String> iterator = source.iterator();
+						while (iterator.hasNext()) {
+							String item = iterator.next();
+							result.add(item);
+						}
+						return alias;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void readBeforeIteratorLoopBlocksAccumulatorReplacement() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>();
+						System.out.println(result.size());
+						Iterator<String> iterator = source.iterator();
+						while (iterator.hasNext()) {
+							String item = iterator.next();
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""");
+	}
+
 	private void assertExpected(String source, String expected) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("E.java", source, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { expected }, null);
+	}
+
+	private void assertNoChange(String source) throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("E.java", source, false, null); //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
 	}
 }
