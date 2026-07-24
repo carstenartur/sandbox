@@ -19,7 +19,7 @@ concurrency:
 jobs:
   targeted-package:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,7 +36,7 @@ jobs:
         run: |
           set -o pipefail
           mvn -B -DskipTests \
-            -pl sandbox-functional-converter-core,sandbox_functional_converter,sandbox_functional_converter_test \
+            -pl sandbox_target,sandbox-functional-converter-core,sandbox_functional_converter,sandbox_functional_converter_test \
             -am clean package 2>&1 | tee targeted-build.log
       - name: Upload targeted build log
         if: always()
