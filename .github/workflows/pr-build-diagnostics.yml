@@ -1,6 +1,8 @@
 name: PR Build Diagnostics
 
 on:
+  push:
+    branches: [ issue-1251-concrete-collectors ]
   pull_request:
     branches: [ main ]
     paths:
@@ -48,58 +50,58 @@ jobs:
           text = text[:duplicate_start] + text[duplicate_end:]
 
           insertion_marker = '\n\t/**\n\t * Tests loop with wildcard generic types.'
-          nested_test = r'''
+          nested_test = '''
 
-	// ===========================================
-	// COMPLEX GENERIC TYPES
-	// ===========================================
+\t// ===========================================
+\t// COMPLEX GENERIC TYPES
+\t// ===========================================
 
-	/**
-	 * Tests loop with nested generic types.
-	 *
-	 * <p><b>Edge Case:</b> Complex generics like {@code List<List<String>>}</p>
-	 * <p><b>Expected:</b> Type inference handles nested generics correctly</p>
-	 * <p><b>Why Important:</b> Generic type erasure can cause compilation issues</p>
-	 *
-	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
-	 */
-//	@Disabled("Pattern not converting in V1 - needs investigation")
-	@Test
-	@DisplayName("Nested generics: List<List<T>> type inference")
-	void testNestedGenerics() throws CoreException {
-		String input = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public static void main(String[] args) {
-						new MyTest().process(new ArrayList<>());
-					}
-					public void process(List<List<String>> matrix) {
-						for (List<String> row : matrix) {
-							System.out.println(row);
-						}
-					}
-				}
-				""";
+\t/**
+\t * Tests loop with nested generic types.
+\t *
+\t * <p><b>Edge Case:</b> Complex generics like {@code List<List<String>>}</p>
+\t * <p><b>Expected:</b> Type inference handles nested generics correctly</p>
+\t * <p><b>Why Important:</b> Generic type erasure can cause compilation issues</p>
+\t *
+\t * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
+\t */
+//\t@Disabled("Pattern not converting in V1 - needs investigation")
+\t@Test
+\t@DisplayName("Nested generics: List<List<T>> type inference")
+\tvoid testNestedGenerics() throws CoreException {
+\t\tString input = """
+\t\t\t\tpackage test1;
+\t\t\t\timport java.util.*;
+\t\t\t\tclass MyTest {
+\t\t\t\t\tpublic static void main(String[] args) {
+\t\t\t\t\t\tnew MyTest().process(new ArrayList<>());
+\t\t\t\t\t}
+\t\t\t\t\tpublic void process(List<List<String>> matrix) {
+\t\t\t\t\t\tfor (List<String> row : matrix) {
+\t\t\t\t\t\t\tSystem.out.println(row);
+\t\t\t\t\t\t}
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t\t""";
 
-		String expected = """
-				package test1;
-				import java.util.*;
-				class MyTest {
-					public static void main(String[] args) {
-						new MyTest().process(new ArrayList<>());
-					}
-					public void process(List<List<String>> matrix) {
-						matrix.forEach(row -> System.out.println(row));
-					}
-				}
-				""";
+\t\tString expected = """
+\t\t\t\tpackage test1;
+\t\t\t\timport java.util.*;
+\t\t\t\tclass MyTest {
+\t\t\t\t\tpublic static void main(String[] args) {
+\t\t\t\t\t\tnew MyTest().process(new ArrayList<>());
+\t\t\t\t\t}
+\t\t\t\t\tpublic void process(List<List<String>> matrix) {
+\t\t\t\t\t\tmatrix.forEach(row -> System.out.println(row));
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t\t""";
 
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
-	}
+\t\tIPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
+\t\tICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
+\t\tcontext.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
+\t\tcontext.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
+\t}
 '''
           if insertion_marker not in text:
               raise SystemExit('Could not locate the wildcard-generics insertion point')
