@@ -1,1 +1,1 @@
-Trigger the registered PR Build Diagnostics workflow.
+Trigger the registered PR Build Diagnostics workflow with repair-log capture.
