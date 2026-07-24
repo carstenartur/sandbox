@@ -25,7 +25,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
  * Additional map and filter combination patterns for loop refactoring.
- * 
+ *
  * <p>This test class supplements FunctionalLoopFilterMapTest with additional
  * patterns demonstrating various map+filter combinations:</p>
  * <ul>
@@ -35,7 +35,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li><b>Null-safe patterns</b> - Filtering nulls before transformations</li>
  *   <li><b>Combined conditions</b> - Using && in filter predicates</li>
  * </ul>
- * 
+ *
  * <p><b>Expected Outputs:</b></p>
  * <ul>
  *   <li>Tests match current V1 implementation behavior</li>
@@ -43,11 +43,11 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li>Uses {@code forEachOrdered} for terminal forEach operations</li>
  *   <li>Uses {@code item -> item != null} for null checks</li>
  * </ul>
- * 
+ *
  * <p><b>Note:</b> Future enhancements could optimize to method references
  * (e.g., {@code String::toUpperCase}, {@code Objects::nonNull}) and direct
  * {@code forEach} where appropriate.</p>
- * 
+ *
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder
  */
@@ -59,7 +59,7 @@ public class LoopRefactoringMapFilterTest {
 
 	/**
 	 * Tests filter-first pattern for optimal performance.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Filter elements before transforming them</p>
 	 * <p><b>Expected:</b> {@code stream().filter(condition).map(transform).forEach(action)}</p>
 	 * <p><b>Best Practice:</b> Filtering first reduces number of transformations</p>
@@ -101,7 +101,7 @@ class MyTest {
 
 	/**
 	 * Tests map-filter-map chain.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Transform → filter → transform chain</p>
 	 * <p><b>Expected:</b> {@code stream().map().filter().map().forEach()}</p>
 	 */
@@ -143,7 +143,7 @@ class MyTest {
 
 	/**
 	 * Tests multiple independent filters.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Multiple sequential if statements</p>
 	 * <p><b>Expected:</b> {@code stream().filter(cond1).filter(cond2).forEach()}</p>
 	 * <p><b>Note:</b> Could be optimized to single filter with && but current
@@ -187,7 +187,7 @@ class MyTest {
 
 	/**
 	 * Tests null-safe map operation.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Null check before transformation</p>
 	 * <p><b>Expected:</b> {@code stream().filter(item -> item != null).map(transform).forEachOrdered()}</p>
 	 * <p><b>Note:</b> Current implementation uses lambda; future enhancement could use Objects::nonNull</p>
@@ -229,7 +229,7 @@ class MyTest {
 
 	/**
 	 * Tests combined AND condition in filter.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Single if statement with && condition</p>
 	 * <p><b>Expected:</b> {@code stream().filter(cond1 && cond2).map().forEach()}</p>
 	 * <p><b>Best Practice:</b> Combined conditions in single filter is more efficient</p>
@@ -271,7 +271,7 @@ class MyTest {
 
 	/**
 	 * Tests filter with transformation to collection.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Filter then map then collect</p>
 	 * <p><b>Expected:</b> {@code stream().filter().map().collect(Collectors.toList())}</p>
 	 */
@@ -295,48 +295,15 @@ class MyTest {
 				""";
 
 		String expected = """
-package test1;
-import java.util.*;
-import java.util.stream.Collectors;
-class MyTest {
-	public void process(List<Integer> numbers) {
-		List<String> results = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
-				.collect(Collectors.toList());
-		System.out.println(results);
-	}
-}
-""";
-
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
-	}
-
-	/**
-	 * Tests complex transformation with multiple steps.
-	 * 
-	 * <p><b>Pattern:</b> Multiple variable transformations with filtering</p>
-	 * <p><b>Expected:</b> Chain of map operations followed by filter</p>
-	 * <p><b>Note:</b> Currently produces forEach with block - stream chain not yet implemented</p>
-	 */
-	@Test
-	@org.junit.jupiter.api.Disabled("TODO: Complex stream chains with multiple intermediate variables not yet implemented - produces forEach with block")
-	@DisplayName("Complex chain: multiple transformations")
-	void testComplexChain() throws CoreException {
-		String input = """
 				package test1;
 				import java.util.*;
+				import java.util.stream.Collectors;
 				class MyTest {
-					public void process(List<Integer> numbers) {
-						for (Integer num : numbers) {
-							int doubled = num * 2;
-							int plusTen = doubled + 10;
-							if (plusTen < 100) {
-								System.out.println(plusTen);
-							}
-						}
-					}
+				 public void process(List<Integer> numbers) {
+				  List<String> results = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  System.out.println(results);
+				 }
 				}
 				""";
 

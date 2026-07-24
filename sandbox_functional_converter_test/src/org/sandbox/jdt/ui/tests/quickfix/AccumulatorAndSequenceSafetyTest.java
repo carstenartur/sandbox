@@ -29,8 +29,8 @@ public class AccumulatorAndSequenceSafetyTest {
 	AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
-	void enhancedForDoesNotReplaceConcreteListAccumulator() throws CoreException {
-		assertNoChange("""
+	void enhancedForPreservesConcreteArrayListAccumulator() throws CoreException {
+		assertExpected("""
 				package test;
 				import java.util.*;
 				class E {
@@ -42,12 +42,103 @@ public class AccumulatorAndSequenceSafetyTest {
 						return result;
 					}
 				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = source.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
+				}
 				""");
 	}
 
 	@Test
-	void enhancedForDoesNotReplaceConcreteSetAccumulator() throws CoreException {
-		assertNoChange("""
+	void enhancedForPreservesConcreteLinkedListAccumulator() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					LinkedList<String> copy(List<String> source) {
+						LinkedList<String> result = new LinkedList<>();
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					LinkedList<String> copy(List<String> source) {
+						LinkedList<String> result = source.stream().collect(Collectors.toCollection(java.util.LinkedList::new));
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void enhancedForPreservesConcreteHashSetAccumulator() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					HashSet<String> copy(List<String> source) {
+						HashSet<String> result = new HashSet<>();
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					HashSet<String> copy(List<String> source) {
+						HashSet<String> result = source.stream().collect(Collectors.toCollection(java.util.HashSet::new));
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void enhancedForPreservesConcreteLinkedHashSetAccumulator() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					LinkedHashSet<String> copy(List<String> source) {
+						LinkedHashSet<String> result = new LinkedHashSet<>();
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					LinkedHashSet<String> copy(List<String> source) {
+						LinkedHashSet<String> result = source.stream().collect(Collectors.toCollection(java.util.LinkedHashSet::new));
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void enhancedForPreservesNaturalOrderTreeSetAccumulator() throws CoreException {
+		assertExpected("""
 				package test;
 				import java.util.*;
 				class E {
@@ -59,12 +150,76 @@ public class AccumulatorAndSequenceSafetyTest {
 						return result;
 					}
 				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = source.stream().collect(Collectors.toCollection(java.util.TreeSet::new));
+						return result;
+					}
+				}
 				""");
 	}
 
 	@Test
-	void iteratorDoesNotReplaceConcreteListAccumulator() throws CoreException {
-		assertNoChange("""
+	void interfaceDeclarationStillPreservesChosenImplementation() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					List<String> copy(List<String> source) {
+						List<String> result = new ArrayList<>();
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					List<String> copy(List<String> source) {
+						List<String> result = source.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void arraySourceUsesTheSameConcreteFactoryModel() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(String[] source) {
+						ArrayList<String> result = new ArrayList<>();
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					ArrayList<String> copy(String[] source) {
+						ArrayList<String> result = Arrays.stream(source).collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void iteratorPreservesConcreteArrayListAccumulator() throws CoreException {
+		assertExpected("""
 				package test;
 				import java.util.*;
 				class E {
@@ -78,12 +233,22 @@ public class AccumulatorAndSequenceSafetyTest {
 						return result;
 					}
 				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = source.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
+						return result;
+					}
+				}
 				""");
 	}
 
 	@Test
-	void iteratorDoesNotReplaceConcreteSetAccumulator() throws CoreException {
-		assertNoChange("""
+	void iteratorPreservesNaturalOrderTreeSetAccumulator() throws CoreException {
+		assertExpected("""
 				package test;
 				import java.util.*;
 				class E {
@@ -92,6 +257,87 @@ public class AccumulatorAndSequenceSafetyTest {
 						Iterator<String> iterator = source.iterator();
 						while (iterator.hasNext()) {
 							String item = iterator.next();
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = source.stream().collect(Collectors.toCollection(java.util.TreeSet::new));
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void capacityConstructorFailsClosed() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>(16);
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void comparatorConstructorFailsClosed() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void unsupportedCustomImplementationFailsClosed() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					static class CustomList<T> extends ArrayList<T> {}
+					CustomList<String> copy(List<String> source) {
+						CustomList<String> result = new CustomList<>();
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""");
+	}
+
+	@Test
+	void anonymousCollectionImplementationFailsClosed() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>() {
+							private static final long serialVersionUID = 1L;
+						};
+						for (String item : source) {
 							result.add(item);
 						}
 						return result;
@@ -123,7 +369,7 @@ public class AccumulatorAndSequenceSafetyTest {
 				import java.util.stream.Collectors;
 				class E {
 					List<String> copy(List<String> first, List<String> second) {
-						List<String> result = first.stream().collect(Collectors.toList());
+						List<String> result = first.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
 						second.forEach(item -> result.add(item));
 						return result;
 					}

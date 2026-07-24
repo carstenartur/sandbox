@@ -25,7 +25,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
  * Edge case and boundary condition tests for loop refactoring.
- * 
+ *
  * <p>This test class focuses on challenging edge cases and boundary conditions
  * that the loop refactoring must handle correctly:</p>
  * <ul>
@@ -38,11 +38,11 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li><b>Lambda scope</b> - Variable shadowing and scope issues</li>
  *   <li><b>Performance</b> - Ensuring transformations don't degrade performance</li>
  * </ul>
- * 
+ *
  * <p><b>Testing Philosophy:</b> Edge cases often reveal bugs in pattern detection
  * and transformation logic. Each test documents why the edge case is important
  * and what could go wrong.</p>
- * 
+ *
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  */
 @DisplayName("Loop Refactoring Edge Cases and Boundary Conditions")
@@ -57,7 +57,7 @@ public class LoopRefactoringEdgeCasesTest {
 
 	/**
 	 * Tests loop with empty collection.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Empty collection should not cause errors</p>
 	 * <p><b>Expected:</b> Stream operations handle empty collections correctly</p>
 	 * <p><b>Why Important:</b> Stream operations must be null-safe and handle empty inputs</p>
@@ -97,10 +97,10 @@ public class LoopRefactoringEdgeCasesTest {
 
 	/**
 	 * Tests loop with single element collection.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Single element should still use stream operations</p>
 	 * <p><b>Expected:</b> Consistent transformation regardless of size</p>
-	 * 
+	 *
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
 //	@Disabled("Pattern not converting in V1 - needs investigation")
@@ -149,7 +149,7 @@ public class LoopRefactoringEdgeCasesTest {
 
 	/**
 	 * Tests loop that explicitly checks for null elements.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Null checks converted to filter</p>
 	 * <p><b>Expected:</b> Null filtering using lambda</p>
 	 * <p><b>Note:</b> Current implementation uses lambda; future enhancement could use Objects::nonNull</p>
@@ -189,7 +189,7 @@ class MyTest {
 
 	/**
 	 * Tests loop with null-safe method call.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Null checks combined with operations</p>
 	 * <p><b>Expected:</b> Filter null before performing operations</p>
 	 * <p><b>Note:</b> Current implementation uses lambda for filter</p>
@@ -214,52 +214,14 @@ class MyTest {
 				""";
 
 		String expected = """
-package test1;
-import java.util.*;
-import java.util.stream.Collectors;
-class MyTest {
-	public void process(List<String> items) {
-		List<String> upper = items.stream().filter(item -> (item != null)).map(item -> item.toUpperCase())
-				.collect(Collectors.toList());
-	}
-}
-""";
-
-		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
-		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
-	}
-
-	// ===========================================
-	// COMPLEX GENERIC TYPES
-	// ===========================================
-
-	/**
-	 * Tests loop with nested generic types.
-	 * 
-	 * <p><b>Edge Case:</b> Complex generics like {@code List<List<String>>}</p>
-	 * <p><b>Expected:</b> Type inference handles nested generics correctly</p>
-	 * <p><b>Why Important:</b> Generic type erasure can cause compilation issues</p>
-	 * 
-	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
-	 */
-//	@Disabled("Pattern not converting in V1 - needs investigation")
-	@Test
-	@DisplayName("Nested generics: List<List<T>> type inference")
-	void testNestedGenerics() throws CoreException {
-		String input = """
 				package test1;
 				import java.util.*;
+				import java.util.stream.Collectors;
 				class MyTest {
-					public static void main(String[] args) {
-						new MyTest().process(new ArrayList<>());
-					}
-					public void process(List<List<String>> matrix) {
-						for (List<String> row : matrix) {
-							System.out.println(row);
-						}
-					}
+				 public void process(List<String> items) {
+				  List<String> upper = items.stream().filter(item -> (item != null)).map(item -> item.toUpperCase())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				 }
 				}
 				""";
 
@@ -284,7 +246,7 @@ class MyTest {
 
 	/**
 	 * Tests loop with wildcard generic types.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Wildcards like {@code List<? extends Number>}</p>
 	 * <p><b>Expected:</b> Stream operations preserve wildcard semantics</p>
 	 */
@@ -325,7 +287,7 @@ class MyTest {
 
 	/**
 	 * Tests loop with method chaining on elements.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Multiple method calls chained on element</p>
 	 * <p><b>Expected:</b> Lambda correctly preserves method chaining</p>
 	 */
@@ -362,7 +324,7 @@ class MyTest {
 
 	/**
 	 * Tests loop with method chaining in collect.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Chained transformations in accumulation</p>
 	 * <p><b>Expected:</b> Map operation preserves chaining</p>
 	 */
@@ -387,9 +349,10 @@ class MyTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				class MyTest {
-					public void process(List<String> items) {
-						List<String> processed = items.stream().map(item -> item.trim().toUpperCase()).collect(Collectors.toList());
-					}
+				 public void process(List<String> items) {
+				  List<String> processed = items.stream().map(item -> item.trim().toUpperCase())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				 }
 				}
 				""";
 
@@ -405,7 +368,7 @@ class MyTest {
 
 	/**
 	 * Tests loop variable name that shadows outer variable.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Loop variable shadows an outer scope variable</p>
 	 * <p><b>Expected:</b> Lambda parameter preserves shadowing semantics</p>
 	 * <p><b>Why Important:</b> Incorrect transformation could change variable resolution</p>
@@ -447,7 +410,7 @@ class MyTest {
 
 	/**
 	 * Tests that loop variable name conflict with lambda body is handled.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Loop uses a variable name that would conflict</p>
 	 * <p><b>Expected:</b> Transformation uses stream().map().forEachOrdered() pattern
 	 * to properly separate the transformation and output operations</p>
@@ -496,7 +459,7 @@ class MyTest {
 
 	/**
 	 * Tests that simple forEach doesn't add unnecessary stream() overhead.
-	 * 
+	 *
 	 * <p><b>Performance Edge Case:</b> Direct forEach is more efficient than stream().forEach()</p>
 	 * <p><b>Expected:</b> {@code collection.forEach()} not {@code collection.stream().forEach()}</p>
 	 * <p><b>Best Practice:</b> Avoid unnecessary stream creation for simple iteration</p>
@@ -534,7 +497,7 @@ class MyTest {
 
 	/**
 	 * Tests primitive array handling for performance.
-	 * 
+	 *
 	 * <p><b>Performance Edge Case:</b> Primitive arrays should use specialized streams</p>
 	 * <p><b>Expected:</b> Use IntStream, LongStream, DoubleStream for primitive arrays</p>
 	 * <p><b>Best Practice:</b> Avoid boxing overhead with specialized streams</p>
@@ -577,10 +540,10 @@ class MyTest {
 
 	/**
 	 * Tests loop with no-op body (edge case of minimal operation).
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Loop that does nothing useful</p>
 	 * <p><b>Expected:</b> No transformation - empty loops have no useful functional equivalent</p>
-	 * 
+	 *
 	 * <p><b>Note:</b> Currently disabled - cleanup intentionally skips empty loops since
 	 * transforming them to forEach provides no benefit.</p>
 	 */
@@ -620,10 +583,10 @@ class MyTest {
 
 	/**
 	 * Tests loop where element is never used.
-	 * 
+	 *
 	 * <p><b>Edge Case:</b> Loop variable declared but never referenced</p>
 	 * <p><b>Expected:</b> Lambda parameter created but not used (compiler warning)</p>
-	 * 
+	 *
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
 	@Test

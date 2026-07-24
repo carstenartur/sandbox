@@ -252,41 +252,42 @@ public class AdditionalLoopPatternsTest {
 				}
 				""";
 		String expected = """
-package test1;
-import java.util.*;
-public class RuleChainBuilder {
-	private List<MethodRule> methodRules = new ArrayList<>();
-	private List<TestRule> testRules = new ArrayList<>();
-	private Map<Object, Integer> orderValues = new HashMap<>();
-	private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
+				package test1;
+				import java.util.*;
+				public class RuleChainBuilder {
+				 private List<MethodRule> methodRules = new ArrayList<>();
+				 private List<TestRule> testRules = new ArrayList<>();
+				 private Map<Object, Integer> orderValues = new HashMap<>();
+				 private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
 
-	private List<RuleEntry> getSortedEntries() {
-		List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
-				methodRules.size() + testRules.size());
-		methodRules.forEach(
-				rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))));
-		testRules
-				.forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))));
-		Collections.sort(ruleEntries, ENTRY_COMPARATOR);
-		return ruleEntries;
-	}
+				 private List<RuleEntry> getSortedEntries() {
+				  List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
+				    methodRules.size() + testRules.size());
+				  for (MethodRule rule : methodRules) {
+				   ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule)));
+				  }
+				  testRules
+				    .forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))));
+				  Collections.sort(ruleEntries, ENTRY_COMPARATOR);
+				  return ruleEntries;
+				 }
 
-	interface MethodRule {}
-	interface TestRule {}
+				 interface MethodRule {}
+				 interface TestRule {}
 
-	static class RuleEntry {
-		static final int TYPE_METHOD_RULE = 1;
-		static final int TYPE_TEST_RULE = 2;
-		Object rule;
-		int type;
-		int order;
-		RuleEntry(Object rule, int type, Integer order) {
-			this.rule = rule;
-			this.type = type;
-			this.order = order != null ? order : 0;
-		}
-	}
-}
+				 static class RuleEntry {
+				  static final int TYPE_METHOD_RULE = 1;
+				  static final int TYPE_TEST_RULE = 2;
+				  Object rule;
+				  int type;
+				  int order;
+				  RuleEntry(Object rule, int type, Integer order) {
+				   this.rule = rule;
+				   this.type = type;
+				   this.order = order != null ? order : 0;
+				  }
+				 }
+				}
 				""";
 		assertConversion("RuleChainBuilder.java", given, expected);
 	}
@@ -315,13 +316,14 @@ public class RuleChainBuilder {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					private List<String> items = Arrays.asList("c", "a", "b");
+				 private List<String> items = Arrays.asList("c", "a", "b");
 
-					List<String> getSortedItems() {
-						List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
-						Collections.sort(result);
-						return result;
-					}
+				 List<String> getSortedItems() {
+				  List<String> result = items.stream().map(item -> item.toUpperCase())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  Collections.sort(result);
+				  return result;
+				 }
 				}
 				""";
 		assertConversion("MyTest.java", given, expected);

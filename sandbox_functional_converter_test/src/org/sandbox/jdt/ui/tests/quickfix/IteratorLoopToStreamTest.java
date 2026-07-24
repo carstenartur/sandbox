@@ -25,7 +25,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /**
  * Pattern-based tests for iterator loop to stream conversions.
- * 
+ *
  * <p>This test class focuses on converting iterator-based loops to functional streams
  * using modern Java Stream API. Tests are organized by transformation patterns:</p>
  * <ul>
@@ -36,7 +36,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li><b>map+filter patterns</b> - Combined transformations</li>
  *   <li><b>reduce patterns</b> - Aggregating values</li>
  * </ul>
- * 
+ *
  * <p><b>Best Practices:</b></p>
  * <ul>
  *   <li>All expected outputs use idiomatic, production-ready Java code</li>
@@ -44,11 +44,11 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
  *   <li>Method references are used where appropriate for clarity</li>
  *   <li>Collectors are used for terminal operations that build collections</li>
  * </ul>
- * 
+ *
  * <p><b>Note:</b> ITERATOR_LOOP support has been activated in UseFunctionalCallFixCore (Phase 7).
  * Tests are enabled and validate iterator-to-stream forEach conversions.
  * Advanced patterns (collect, map, filter, reduce) are documented but not yet fully implemented.</p>
- * 
+ *
  * @see org.sandbox.jdt.internal.ui.fix.UseFunctionalLoopCleanUp
  * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder
  */
@@ -64,7 +64,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests conversion of while-iterator pattern to forEach.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code while (it.hasNext()) { T item = it.next(); ... }}</p>
 	 * <p><b>Expected:</b> {@code collection.forEach(item -> ...)}</p>
 	 * <p><b>Best Practice:</b> Direct forEach on collection is more idiomatic than stream().forEach()</p>
@@ -106,7 +106,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests conversion of for-loop-iterator pattern to forEach.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code for (Iterator<T> it = c.iterator(); it.hasNext(); ) { ... }}</p>
 	 * <p><b>Expected:</b> {@code collection.forEach(item -> ...)}</p>
 	 */
@@ -146,7 +146,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests forEach with multiple statements in loop body.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Multiple statements in loop body</p>
 	 * <p><b>Expected:</b> Block lambda with multiple statements</p>
 	 */
@@ -193,7 +193,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop that collects elements into a list.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with {@code result.add(item)}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use Collectors.toList() for collecting to List</p>
@@ -226,10 +226,10 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					List<String> collect(List<String> items) {
-						List<String> result = items.stream().collect(Collectors.toList());
-						return result;
-					}
+				 List<String> collect(List<String> items) {
+				  List<String> result = items.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
+				  return result;
+				 }
 				}
 				""";
 
@@ -240,7 +240,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop that collects elements into a set.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with {@code result.add(item)} to Set</p>
 	 * <p><b>Expected:</b> {@code collection.stream().collect(Collectors.toSet())}</p>
 	 * <p><b>Best Practice:</b> Use Collectors.toSet() for collecting to Set</p>
@@ -273,10 +273,10 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					Set<String> collectUnique(List<String> items) {
-						Set<String> result = items.stream().collect(Collectors.toSet());
-						return result;
-					}
+				 Set<String> collectUnique(List<String> items) {
+				  Set<String> result = items.stream().collect(Collectors.toCollection(java.util.HashSet::new));
+				  return result;
+				 }
 				}
 				""";
 
@@ -291,7 +291,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop with transformation (map).
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with {@code result.add(transform(item))}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().map(item -> transform(item)).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use map() for transformations before collecting</p>
@@ -324,10 +324,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					List<String> transformAll(List<Integer> numbers) {
-						List<String> result = numbers.stream().map(num -> num.toString()).collect(Collectors.toList());
-						return result;
-					}
+				 List<String> transformAll(List<Integer> numbers) {
+				  List<String> result = numbers.stream().map(num -> num.toString())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  return result;
+				 }
 				}
 				""";
 
@@ -338,7 +339,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop with method reference transformation.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with simple method call transformation</p>
 	 * <p><b>Expected:</b> {@code collection.stream().map(ClassName::method).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use method references for simple transformations (more concise)</p>
@@ -371,10 +372,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					List<String> toUpperAll(List<String> items) {
-						List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
-						return result;
-					}
+				 List<String> toUpperAll(List<String> items) {
+				  List<String> result = items.stream().map(item -> item.toUpperCase())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  return result;
+				 }
 				}
 				""";
 
@@ -389,7 +391,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop with conditional collection (filter).
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with {@code if (condition) result.add(item)}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Use filter() for conditional collection</p>
@@ -424,10 +426,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					List<String> filterNonEmpty(List<String> items) {
-						List<String> result = items.stream().filter(item -> (!item.isEmpty())).collect(Collectors.toList());
-						return result;
-					}
+				 List<String> filterNonEmpty(List<String> items) {
+				  List<String> result = items.stream().filter(item -> (!item.isEmpty()))
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  return result;
+				 }
 				}
 				""";
 
@@ -442,7 +445,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop with both filtering and mapping.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with {@code if (condition) result.add(transform(item))}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().filter(condition).map(transform).collect(Collectors.toList())}</p>
 	 * <p><b>Best Practice:</b> Chain filter() before map() for optimal performance</p>
@@ -477,11 +480,11 @@ public class IteratorLoopToStreamTest {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					List<String> processPositive(List<Integer> numbers) {
-						List<String> result = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
-								.collect(Collectors.toList());
-						return result;
-					}
+				 List<String> processPositive(List<Integer> numbers) {
+				  List<String> result = numbers.stream().filter(num -> (num > 0)).map(num -> num.toString())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  return result;
+				 }
 				}
 				""";
 
@@ -496,7 +499,7 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests iterator loop with sum reduction.
-	 * 
+	 *
 	 * <p><b>Pattern:</b> Iterator loop with {@code sum += item}</p>
 	 * <p><b>Expected:</b> {@code collection.stream().mapToInt(i -> i).sum()}</p>
 	 * <p><b>Best Practice:</b> Use specialized streams (IntStream) for primitive operations</p>
@@ -546,12 +549,12 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests that iterator loops with remove() are NOT converted.
-	 * 
+	 *
 	 * <p><b>Reason:</b> Iterator.remove() modifies the underlying collection during iteration.
 	 * This cannot be safely converted to streams which are designed for functional,
 	 * non-mutating operations. While removeIf() exists as an alternative, it has different
 	 * semantics and should be suggested separately.</p>
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { if(condition) it.remove(); }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
@@ -584,12 +587,12 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests that iterator loops with multiple next() calls are NOT converted.
-	 * 
+	 *
 	 * <p><b>Reason:</b> Multiple next() calls in a single iteration consume multiple elements,
 	 * which cannot be expressed in the standard stream forEach/map/filter pattern. This would
 	 * require more complex stream operations (windowing, batching) that are not semantically
 	 * equivalent.</p>
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { T a = it.next(); T b = it.next(); }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
@@ -621,12 +624,12 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests that iterator loops with break statements are NOT converted.
-	 * 
+	 *
 	 * <p><b>Reason:</b> Break statements have no direct equivalent in streams. While
 	 * operations like findFirst() short-circuit, they cannot replicate break semantics
 	 * when side effects occur before the break condition. Future enhancement could
 	 * support conversion to takeWhile() in specific cases.</p>
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { if(condition) break; }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
@@ -660,12 +663,12 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests that iterator loops with external state modification are NOT converted.
-	 * 
+	 *
 	 * <p><b>Reason:</b> Modifying external variables (other than the accumulator pattern)
 	 * introduces side effects that change program semantics. Streams are designed for
 	 * functional, stateless operations. Converting such loops would obscure the side
 	 * effects and make code harder to understand.</p>
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code while(it.hasNext()) { externalVar = item; }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
@@ -700,10 +703,10 @@ public class IteratorLoopToStreamTest {
 
 	/**
 	 * Tests that iterator loops with labeled continue are NOT converted.
-	 * 
+	 *
 	 * <p><b>Reason:</b> Labeled continue statements have no equivalent in stream
 	 * operations. They control flow in outer loops which streams cannot replicate.</p>
-	 * 
+	 *
 	 * <p><b>Pattern:</b> {@code outer: while(it.hasNext()) { continue outer; }}</p>
 	 * <p><b>Expected:</b> No conversion (loop remains unchanged)</p>
 	 */
