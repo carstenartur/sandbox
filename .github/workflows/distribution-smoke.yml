@@ -39,7 +39,10 @@ jobs:
       - name: Build stock product and update site from clean checkout
         run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
       - name: Validate repository metadata, artifacts and product layout
-        run: python3 .github/scripts/verify_distribution_artifacts.py
+        run: |
+          mkdir -p target/distribution-verification
+          python3 .github/scripts/verify_distribution_artifacts.py 2>&1 \
+            | tee target/distribution-verification/validator.log
       - name: Provision and start the built distribution
         run: bash .github/scripts/smoke_test_distribution.sh
       - name: Publish verification summary
