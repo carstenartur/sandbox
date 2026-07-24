@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -69,7 +70,7 @@ class ProjectSnapshotTest {
 		Path expectedUnavailablePath= unavailable.toRealPath();
 		ProjectSnapshot snapshot= ProjectSnapshot.capture(List.of(unavailable.toFile(), restorable.toFile()));
 		Files.delete(unavailable);
-		Files.delete(unavailable.getParent());
+		Files.delete(Objects.requireNonNull(unavailable.getParent()));
 		Files.writeString(restorable, "changed", StandardCharsets.UTF_8); //$NON-NLS-1$
 
 		ProjectSnapshot.RestoreException exception= assertThrows(ProjectSnapshot.RestoreException.class,
@@ -92,7 +93,7 @@ class ProjectSnapshotTest {
 
 	private Path write(String relativePath, String content) throws Exception {
 		Path path= temporaryDirectory.resolve(relativePath);
-		Files.createDirectories(path.getParent());
+		Files.createDirectories(Objects.requireNonNull(path.getParent()));
 		return Files.writeString(path, content, StandardCharsets.UTF_8);
 	}
 }
