@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "publishedFeatureIds": [
+    "sandbox_cleanup_application_feature",
+    "sandbox_css_cleanup_feature",
+    "sandbox_encoding_quickfix_feature",
+    "sandbox_extra_search_feature",
+    "sandbox_functional_converter_feature",
+    "sandbox_int_to_enum_feature",
+    "sandbox_jface_cleanup_feature",
+    "sandbox_junit_cleanup_feature",
+    "sandbox_method_reuse_feature",
+    "sandbox_platform_helper_feature",
+    "sandbox_tools_feature",
+    "sandbox_triggerpattern_feature",
+    "sandbox_usage_view_feature",
+    "sandbox_use_general_type_feature",
+    "sandbox_xml_cleanup_feature"
+  ],
+  "publishedFeatureIUs": [
+    "sandbox_cleanup_application_feature.feature.group",
+    "sandbox_css_cleanup_feature.feature.group",
+    "sandbox_encoding_quickfix_feature.feature.group",
+    "sandbox_extra_search_feature.feature.group",
+    "sandbox_functional_converter_feature.feature.group",
+    "sandbox_int_to_enum_feature.feature.group",
+    "sandbox_jface_cleanup_feature.feature.group",
+    "sandbox_junit_cleanup_feature.feature.group",
+    "sandbox_method_reuse_feature.feature.group",
+    "sandbox_platform_helper_feature.feature.group",
+    "sandbox_tools_feature.feature.group",
+    "sandbox_triggerpattern_feature.feature.group",
+    "sandbox_usage_view_feature.feature.group",
+    "sandbox_use_general_type_feature.feature.group",
+    "sandbox_xml_cleanup_feature.feature.group"
+  ],
+  "targetRepositories": [
+    "https://download.eclipse.org/cbi/updates/license",
+    "https://download.eclipse.org/egit/updates/",
+    "https://download.eclipse.org/releases/2025-12/",
+    "https://download.eclipse.org/technology/swtbot/releases/latest/",
+    "https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.37.0",
+    "https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/"
+  ],
+  "repository": {
+    "path": "/home/runner/work/sandbox/sandbox/sandbox_updatesite/target/repository",
+    "metadataUnits": 51,
+    "artifactKeys": 35,
+    "artifactFilesChecked": 35,
+    "checksumsChecked": 35,
+    "publishedFeatures": [
+      {
+        "id": "sandbox_cleanup_application_feature",
+        "iu": "sandbox_cleanup_application_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 8009,
+        "artifactSha256": "8f8a1ecf6bb15384276c9bd3e2dfd0efa25018c324f719d9512fb3db4fb1ebd1"
+      },
+      {
+        "id": "sandbox_css_cleanup_feature",
+        "iu": "sandbox_css_cleanup_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 2694,
+        "artifactSha256": "684f9d65ffeb6115d6f9436303b085387622b55dbf9562b2083489dedbd08bce"
+      },
+      {
+        "id": "sandbox_encoding_quickfix_feature",
+        "iu": "sandbox_encoding_quickfix_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7870,
+        "artifactSha256": "e32ec7720c7bea0db9ef1fecb457ee87dc7b0329ba82efce8dc6ad5df2a674b5"
+      },
+      {
+        "id": "sandbox_extra_search_feature",
+        "iu": "sandbox_extra_search_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 8274,
+        "artifactSha256": "9170964a8e186ab2726273ed64a5e88bf3257f1a59733e68df16a39525afc4f1"
+      },
+      {
+        "id": "sandbox_functional_converter_feature",
+        "iu": "sandbox_functional_converter_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7980,
+        "artifactSha256": "68ef05fe3e2aae63f200b944dc8568106114a0407c5cdd773a6c8bb0db6cd5d7"
+      },
+      {
+        "id": "sandbox_int_to_enum_feature",
+        "iu": "sandbox_int_to_enum_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 12037,
+        "artifactSha256": "48a5a14e4dcf358db7d3a93290370e2bff6155b86782bf21c71e4e6893f197a5"
+      },
+      {
+        "id": "sandbox_jface_cleanup_feature",
+        "iu": "sandbox_jface_cleanup_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7844,
+        "artifactSha256": "fee792db626b02e9503e3be85170c4d0ac93ab9c14975913c2e10ab418466bdc"
+      },
+      {
+        "id": "sandbox_junit_cleanup_feature",
+        "iu": "sandbox_junit_cleanup_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7858,
+        "artifactSha256": "7656fe47125f1463d0b784dd0fab2e5fab4afc8a579fcd8906eed2a070a04b9e"
+      },
+      {
+        "id": "sandbox_method_reuse_feature",
+        "iu": "sandbox_method_reuse_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 2671,
+        "artifactSha256": "503d0a5b1229e252a7c0dea9202e13859c1e3f7361625a872ee4835862687647"
+      },
+      {
+        "id": "sandbox_platform_helper_feature",
+        "iu": "sandbox_platform_helper_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7796,
+        "artifactSha256": "ad056a6639939811ea4807ed857aefc7732c07e4c3980fb4a488d975515e2c64"
+      },
+      {
+        "id": "sandbox_tools_feature",
+        "iu": "sandbox_tools_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7709,
+        "artifactSha256": "7f7afc76ff92624dc9c3e47e5ace56ecb0dbec78cdba33cabb8d99d7a0c1c062"
+      },
+      {
+        "id": "sandbox_triggerpattern_feature",
+        "iu": "sandbox_triggerpattern_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 7936,
+        "artifactSha256": "f58799946ff46576d63107730670280cb463d0447a7982d8c274a60cbfe64f73"
+      },
+      {
+        "id": "sandbox_usage_view_feature",
+        "iu": "sandbox_usage_view_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 2953,
+        "artifactSha256": "ea471595994fa66f1738cb40389d9f6e90211f7be61e01f96239f97cac85dfec"
+      },
+      {
+        "id": "sandbox_use_general_type_feature",
+        "iu": "sandbox_use_general_type_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 8129,
+        "artifactSha256": "ae0d45ac8917fe76bd1df556e7658b4a3c9a18a94b68e59c14c51e4242f7772e"
+      },
+      {
+        "id": "sandbox_xml_cleanup_feature",
+        "iu": "sandbox_xml_cleanup_feature.feature.group",
+        "version": "1.3.2",
+        "artifactSize": 8079,
+        "artifactSha256": "b497b59a3003cb585d10e12f32522eb87789ee60182bb425be93c9c9783ced2c"
+      }
+    ]
+  },
+  "product": {
+    "root": "/home/runner/work/sandbox/sandbox/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/client",
+    "launcher": "/home/runner/work/sandbox/sandbox/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/client/plugins/org.eclipse.equinox.launcher_1.7.100.v20251111-0406.jar",
+    "pluginCount": 361,
+    "singletonBundleCount": 192,
+    "sandboxBundleCount": 17
+  }
+}
