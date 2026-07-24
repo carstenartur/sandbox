@@ -8,7 +8,7 @@ UPDATE_SITE="$ROOT_DIR/sandbox_updatesite/target/repository"
 TARGET_FILE="$ROOT_DIR/sandbox_target/eclipse.target"
 SMOKE_ROOT=${DISTRIBUTION_SMOKE_ROOT:-"${RUNNER_TEMP:-${TMPDIR:-/tmp}}/sandbox-distribution-smoke"}
 
-for command in java python3 timeout xvfb-run; do
+for command in java javac python3 timeout xvfb-run; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 [[ -f "$VERIFY_JSON" ]] || { echo "Missing distribution verification evidence: $VERIFY_JSON" >&2; exit 1; }
@@ -46,7 +46,7 @@ REPOSITORIES=${values[2]}
 INSTALL_IUS=${values[3]}
 
 rm -rf "$SMOKE_ROOT"
-mkdir -p "$SMOKE_ROOT/product-data" "$SMOKE_ROOT/fresh-data" "$SMOKE_ROOT/cleanup-workspace"
+mkdir -p "$SMOKE_ROOT/product-data" "$SMOKE_ROOT/fresh-data"
 
 run_equinox() {
   local working_directory=$1
@@ -112,16 +112,82 @@ if missing:
     raise SystemExit(f'Fresh installation is missing published roots: {missing}')
 PY
 
-# Activate the installed Sandbox cleanup application from the fresh destination.
-# Help mode is side-effect free but still proves application-extension lookup,
-# bundle resolution and Java/UI service startup in the installed distribution.
+# Create and import a real Java project, run a deterministic cleanup through the
+# freshly provisioned application, and prove both the report and source change.
+CLEANUP_WORKSPACE="$SMOKE_ROOT/cleanup-workspace"
+CLEANUP_PROJECT="$CLEANUP_WORKSPACE/SmokeProject"
+CLEANUP_SOURCE="$CLEANUP_PROJECT/src/smoke/Smoke.java"
+CLEANUP_REPORT="$EVIDENCE_DIR/cleanup-report.json"
+mkdir -p "$CLEANUP_PROJECT/src/smoke" "$CLEANUP_PROJECT/bin"
+cat > "$CLEANUP_PROJECT/.project" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+  <name>SmokeProject</name>
+  <comment></comment>
+  <projects></projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+      <arguments></arguments>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
+EOF
+cat > "$CLEANUP_PROJECT/.classpath" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+  <classpathentry kind="src" path="src"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="output" path="bin"/>
+</classpath>
+EOF
+cat > "$CLEANUP_SOURCE" <<'EOF'
+package smoke;
+
+import java.util.List;
+
+public class Smoke {
+    public String value() {
+        return "smoke";
+    }
+}
+EOF
+
 run_equinox "$FRESH_INSTALL" "$FRESH_LAUNCHER" \
   -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
-  -data "$SMOKE_ROOT/cleanup-workspace" \
-  --help \
+  -data "$CLEANUP_WORKSPACE" \
+  --import-project "$CLEANUP_PROJECT" \
+  --mode apply \
+  --report "$CLEANUP_REPORT" \
+  --config "$ROOT_DIR/.github/cleanup-profiles/minimal.properties" \
+  "$CLEANUP_SOURCE" \
   > "$EVIDENCE_DIR/cleanup-application.log" 2>&1
 
-grep -Eiq 'usage|cleanup|config' "$EVIDENCE_DIR/cleanup-application.log"
+python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+report_path = Path(sys.argv[1])
+source_path = Path(sys.argv[2])
+with report_path.open(encoding='utf-8') as stream:
+    report = json.load(stream)
+if report.get('filesProcessed') != 1:
+    raise SystemExit(f"Expected one processed file, got {report.get('filesProcessed')!r}")
+if report.get('filesChanged') != 1:
+    raise SystemExit(f"Expected one changed file, got {report.get('filesChanged')!r}")
+if str(source_path) not in report.get('changedFiles', []):
+    raise SystemExit('Cleanup report does not name the transformed source file')
+source = source_path.read_text(encoding='utf-8')
+if 'import java.util.List;' in source:
+    raise SystemExit('Minimal cleanup did not remove the unused import')
+PY
+
+mkdir -p "$SMOKE_ROOT/compiled"
+javac -d "$SMOKE_ROOT/compiled" "$CLEANUP_SOURCE"
 
 cat >> "$EVIDENCE_DIR/verification.md" <<'EOF'
 
@@ -130,5 +196,6 @@ cat >> "$EVIDENCE_DIR/verification.md" <<'EOF'
 - Materialized product started and listed installed roots: **PASS**
 - Every published Sandbox feature provisioned into a fresh p2 destination: **PASS**
 - Fresh installation started and reported all published roots: **PASS**
-- Installed Sandbox cleanup application activated in side-effect-free help mode: **PASS**
+- Installed cleanup application imported a Java project and transformed one source file: **PASS**
+- Transformed source still compiled with Java 21: **PASS**
 EOF
