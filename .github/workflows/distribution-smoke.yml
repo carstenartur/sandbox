@@ -62,6 +62,19 @@ jobs:
           exit "$status"
       - name: Validate repository metadata, artifacts and Linux product layout
         run: bash .github/scripts/verify_linux_distribution.sh
+      - name: Cross-check built repository with publication verifier
+        run: |
+          repository_url=$(python3 - <<'PY'
+          from pathlib import Path
+          print(Path('sandbox_updatesite/target/repository').resolve().as_uri() + '/')
+          PY
+          )
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url "$repository_url" \
+            --expected-json target/distribution-verification/verification.json \
+            --attempts 1 \
+            --delay-seconds 0 \
+            --output target/distribution-verification/local-publication-verification.json
       - name: Provision and start the built distribution
         run: bash .github/scripts/smoke_test_distribution.sh
       - name: Publish verification summary
