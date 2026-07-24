@@ -27,9 +27,9 @@ ARM64/AArch64 product archives are not currently built or advertised.
 
 ## Automated runtime coverage
 
-The complete distribution gate currently runs on Linux GTK x86_64. It performs all of the following before snapshot or stable-release promotion:
+The required pull-request gate is named **Distribution Smoke Test**. It currently runs the complete native verification on Linux GTK x86_64 and performs all of the following:
 
-1. builds and tests the product and update site from a clean checkout;
+1. builds and tests the product and update site from a clean checkout under Xvfb;
 2. parses p2 metadata and verifies that every published feature and referenced artifact is present;
 3. checks the materialized product layout and rejects duplicate singleton bundles;
 4. installs every published Sandbox feature into a fresh p2 destination;
@@ -45,13 +45,13 @@ Windows and macOS archives are assembled by the same Tycho reactor, but they do 
 
 `https://carstenartur.github.io/sandbox/snapshots/latest/`
 
-This URL is mutable and follows verified commits from `main`. The snapshot deployment repeats the distribution gate before publication and then reads the public p2 metadata back from both the version endpoint and the snapshots composite repository. A failed build, test, p2 install, startup, cleanup transformation, compilation or public-URL check prevents successful promotion.
+The named **Deploy Snapshot to GitHub Pages** gate runs only after a successful Java CI push on `main`. It repeats the full distribution gate for that exact commit, publishes the snapshot, and reads the public p2 metadata back from both the version endpoint and the snapshots composite repository. A failed build, test, p2 install, startup, cleanup transformation, compilation or public-URL check prevents successful promotion. If the public URL verification fails after the `gh-pages` write, the workflow restores the previously captured `gh-pages` revision with a force-with-lease rollback and records the rollback evidence.
 
 ### Versioned releases
 
 `https://carstenartur.github.io/sandbox/releases/`
 
-A release build cannot skip tests. The release workflow runs the same local distribution gate, publishes the version-specific update site, verifies the public version URL and release composite, and only then creates the release tag and GitHub Release. Version-specific verification files are published beside the p2 repository and attached to the GitHub Release.
+The named **Release Workflow** does not permit tests to be skipped for a published release. It runs the same local distribution gate, publishes the version-specific update site, verifies the public version URL and release composite, and only then creates the release tag and GitHub Release. Version-specific verification files are published beside the p2 repository and attached to the GitHub Release. The release publication follows the same fail-closed rule: a failed public repository verification must restore the previously captured `gh-pages` revision before any tag or GitHub Release is created.
 
 ## Evidence
 
@@ -60,7 +60,8 @@ Distribution workflows retain machine-readable and human-readable evidence under
 - `verification.json` and `verification.md` for repository, artifact and product checks;
 - build, materialized-product, fresh-install, fresh-product and cleanup-application logs;
 - public snapshot or release URL verification JSON;
-- the cleanup transformation report.
+- the cleanup transformation report;
+- a publication rollback log when an advertised URL fails validation after deployment.
 
 GitHub Actions stores this directory as an immutable workflow artifact. Snapshot and release deployments also publish the summary and JSON report beside the corresponding p2 repository.
 
