@@ -54,6 +54,31 @@ class InterfaceCollectorObservationPolicyTest {
 	}
 
 	@Test
+	void deadSetInterfacePreservesTreeSetInsertionChecks() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					void copy(List<Object> source) {
+						Set<Object> result = new TreeSet<>();
+						for (Object item : source) {
+							result.add(item);
+						}
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				import java.util.stream.Collectors;
+				class E {
+					void copy(List<Object> source) {
+						Set<Object> result = source.stream().collect(Collectors.toCollection(java.util.TreeSet::new));
+					}
+				}
+				""");
+	}
+
+	@Test
 	void returnedInterfaceAccumulatorPreservesArrayList() throws CoreException {
 		assertExpected("""
 				package test;
