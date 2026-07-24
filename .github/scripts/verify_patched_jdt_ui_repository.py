@@ -172,8 +172,8 @@ def main() -> int:
             fail(f"Expected exactly one feature jar IU {feature_jar_id} {args.feature_version}")
         if not exact_requirement(feature_groups[0], feature_jar_id, args.feature_version):
             fail("Feature group does not require its exact feature jar IU")
-        if not exact_requirement(feature_jars[0], bundle_id, bundle_version):
-            fail("Patch feature does not require the exact patched JDT UI bundle version")
+        if not exact_requirement(feature_groups[0], bundle_id, bundle_version):
+            fail("Feature group does not require the exact patched JDT UI bundle version")
 
         artifact_entries = artifacts.findall("./artifacts/artifact")
         expected_keys = {
