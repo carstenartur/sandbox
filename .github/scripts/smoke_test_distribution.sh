@@ -116,11 +116,15 @@ if missing:
     raise SystemExit(f'Fresh installation is missing published roots: {missing}')
 PY
 
-# Create and import a real Java project, run a deterministic cleanup through the
-# freshly provisioned application, and prove both the report and source change.
+# Create and import a real Java project, run a deterministic headless-safe
+# formatting cleanup, and prove both the report and source change. Import
+# organization is deliberately excluded: Eclipse's ImportsCleanUp requires a
+# created UI workbench and is therefore not a valid headless application probe.
 CLEANUP_WORKSPACE="$SMOKE_ROOT/cleanup-workspace"
 CLEANUP_PROJECT="$CLEANUP_WORKSPACE/SmokeProject"
 CLEANUP_SOURCE="$CLEANUP_PROJECT/src/smoke/Smoke.java"
+CLEANUP_CONFIG="$SMOKE_ROOT/distribution-smoke.properties"
+CLEANUP_BEFORE="$EVIDENCE_DIR/cleanup-source-before.java"
 CLEANUP_REPORT="$EVIDENCE_DIR/cleanup-report.json"
 mkdir -p "$CLEANUP_PROJECT/src/smoke" "$CLEANUP_PROJECT/bin"
 cat > "$CLEANUP_PROJECT/.project" <<'EOF'
@@ -148,17 +152,15 @@ cat > "$CLEANUP_PROJECT/.classpath" <<'EOF'
   <classpathentry kind="output" path="bin"/>
 </classpath>
 EOF
+cat > "$CLEANUP_CONFIG" <<'EOF'
+cleanup.format_source_code=true
+cleanup.format_source_code_changes_only=false
+EOF
 cat > "$CLEANUP_SOURCE" <<'EOF'
 package smoke;
-
-import java.util.List;
-
-public class Smoke {
-    public String value() {
-        return "smoke";
-    }
-}
+public class Smoke{public String value(){return "smoke";}}
 EOF
+cp "$CLEANUP_SOURCE" "$CLEANUP_BEFORE"
 
 run_equinox "$FRESH_INSTALL" "$FRESH_LAUNCHER" \
   -application org.sandbox.jdt.core.JavaCleanup \
@@ -166,17 +168,18 @@ run_equinox "$FRESH_INSTALL" "$FRESH_LAUNCHER" \
   --import-project "$CLEANUP_PROJECT" \
   --mode apply \
   --report "$CLEANUP_REPORT" \
-  --config "$ROOT_DIR/.github/cleanup-profiles/minimal.properties" \
+  --config "$CLEANUP_CONFIG" \
   "$CLEANUP_SOURCE" \
   > "$EVIDENCE_DIR/cleanup-application.log" 2>&1
 
-python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" <<'PY'
+python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" "$CLEANUP_BEFORE" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 report_path = Path(sys.argv[1])
 source_path = Path(sys.argv[2])
+before_path = Path(sys.argv[3])
 with report_path.open(encoding='utf-8') as stream:
     report = json.load(stream)
 if report.get('filesProcessed') != 1:
@@ -185,9 +188,12 @@ if report.get('filesChanged') != 1:
     raise SystemExit(f"Expected one changed file, got {report.get('filesChanged')!r}")
 if str(source_path) not in report.get('changedFiles', []):
     raise SystemExit('Cleanup report does not name the transformed source file')
-source = source_path.read_text(encoding='utf-8')
-if 'import java.util.List;' in source:
-    raise SystemExit('Minimal cleanup did not remove the unused import')
+before = before_path.read_text(encoding='utf-8')
+after = source_path.read_text(encoding='utf-8')
+if after == before:
+    raise SystemExit('Headless formatting cleanup reported a change but left the source byte-identical')
+if 'public class Smoke{' in after or 'value(){' in after:
+    raise SystemExit('Headless formatting cleanup did not expand the compact class and method declarations')
 PY
 
 mkdir -p "$SMOKE_ROOT/compiled"
@@ -200,6 +206,6 @@ cat >> "$EVIDENCE_DIR/verification.md" <<'EOF'
 - Materialized product started and listed installed roots: **PASS**
 - Every published Sandbox feature provisioned into a fresh p2 destination: **PASS**
 - Fresh installation started and reported all published roots: **PASS**
-- Installed cleanup application imported a Java project and transformed one source file: **PASS**
+- Installed cleanup application imported a Java project and formatted one source file: **PASS**
 - Transformed source still compiled with Java 21: **PASS**
 EOF
