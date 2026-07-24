@@ -67,13 +67,14 @@ jobs:
             const fs = require('fs');
             const report = fs.readFileSync('test-report.md', 'utf8');
 
-            const comments = await github.rest.issues.listComments({
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
+              per_page: 100,
             });
 
-            const botComment = comments.data.find(comment =>
+            const botComment = comments.find(comment =>
               comment.user.type === 'Bot' &&
               (comment.body.includes('<!-- sandbox-test-source-inventory -->') ||
                comment.body.includes('# JUnit Test Overview Report'))
