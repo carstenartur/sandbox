@@ -19,7 +19,7 @@ concurrency:
 jobs:
   product-and-update-site:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v6
         with:
@@ -36,8 +36,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
-      - name: Build stock product and update site from clean checkout
-        run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
+      - name: Build and test stock product and update site from clean checkout
+        run: |
+          mkdir -p target/distribution-verification
+          set -o pipefail
+          mvn -Pproduct,repo -T 1C --batch-mode clean verify 2>&1 \
+            | tee target/distribution-verification/build.log
       - name: Validate repository metadata, artifacts and Linux product layout
         run: bash .github/scripts/verify_linux_distribution.sh
       - name: Provision and start the built distribution
