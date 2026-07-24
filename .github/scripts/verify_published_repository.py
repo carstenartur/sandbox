@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Verify feature IUs and composite children at a published p2 repository URL."""
+"""Verify exact feature artifacts and composite children at a published p2 URL."""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -48,16 +50,43 @@ def load_xml(repository_url: str, base_name: str) -> tuple[ET.Element, str]:
     raise RuntimeError("; ".join(failures))
 
 
-def expected_features(path: Path) -> tuple[list[str], list[str]]:
+def expected_features(path: Path) -> list[dict[str, object]]:
     with path.open(encoding="utf-8") as stream:
         report = json.load(stream)
-    ius = report.get("publishedFeatureIUs")
-    identifiers = report.get("publishedFeatureIds")
-    if not isinstance(ius, list) or not all(isinstance(value, str) for value in ius):
-        raise ValueError(f"{path} does not contain a publishedFeatureIUs string list")
-    if not isinstance(identifiers, list) or not all(isinstance(value, str) for value in identifiers):
-        raise ValueError(f"{path} does not contain a publishedFeatureIds string list")
-    return sorted(set(ius)), sorted(set(identifiers))
+    repository = report.get("repository")
+    values = repository.get("publishedFeatures") if isinstance(repository, dict) else None
+    if not isinstance(values, list) or not values:
+        raise ValueError(f"{path} does not contain repository.publishedFeatures evidence")
+
+    normalized: list[dict[str, object]] = []
+    for value in values:
+        if not isinstance(value, dict):
+            raise ValueError(f"{path} contains a non-object published feature entry")
+        identifier = value.get("id")
+        iu = value.get("iu")
+        version = value.get("version")
+        size = value.get("artifactSize")
+        sha256 = value.get("artifactSha256")
+        if not all(isinstance(item, str) and item for item in (identifier, iu, version)):
+            raise ValueError(f"{path} contains incomplete published feature identity evidence")
+        if not isinstance(size, int) or size <= 0:
+            raise ValueError(f"{path} contains an invalid published feature artifact size")
+        if not isinstance(sha256, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", sha256):
+            raise ValueError(f"{path} contains an invalid published feature SHA-256")
+        normalized.append(
+            {
+                "id": identifier,
+                "iu": iu,
+                "version": version,
+                "artifactSize": size,
+                "artifactSha256": sha256.lower(),
+            }
+        )
+
+    identities = [(item["id"], item["iu"], item["version"]) for item in normalized]
+    if len(identities) != len(set(identities)):
+        raise ValueError(f"{path} contains duplicate published feature evidence")
+    return sorted(normalized, key=lambda item: (str(item["id"]), str(item["version"])))
 
 
 def composite_children(root: ET.Element) -> list[str]:
@@ -68,12 +97,45 @@ def composite_children(root: ET.Element) -> list[str]:
     )
 
 
+def verify_feature_artifact(repository_url: str, expected: dict[str, object]) -> dict[str, object]:
+    identifier = str(expected["id"])
+    version = str(expected["version"])
+    filename = urllib.parse.quote(f"{identifier}_{version}.jar")
+    url = urllib.parse.urljoin(repository_url.rstrip("/") + "/", f"features/{filename}")
+    payload = fetch(url)
+    expected_size = int(expected["artifactSize"])
+    if len(payload) != expected_size:
+        raise RuntimeError(
+            f"Published feature artifact {identifier}/{version} has size {len(payload)}, expected {expected_size}"
+        )
+    actual_sha256 = hashlib.sha256(payload).hexdigest()
+    expected_sha256 = str(expected["artifactSha256"])
+    if actual_sha256 != expected_sha256:
+        raise RuntimeError(f"Published feature artifact {identifier}/{version} has a SHA-256 mismatch")
+    try:
+        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+            feature = ET.fromstring(archive.read("feature.xml"))
+    except (KeyError, ET.ParseError, zipfile.BadZipFile) as error:
+        raise RuntimeError(f"Published feature artifact {identifier}/{version} is invalid: {error}") from error
+    if feature.attrib.get("id") != identifier:
+        raise RuntimeError(
+            f"Published feature artifact {identifier}/{version} contains feature id {feature.attrib.get('id')!r}"
+        )
+    return {
+        "id": identifier,
+        "version": version,
+        "url": url,
+        "size": len(payload),
+        "sha256": actual_sha256,
+    }
+
+
 def verify(args: argparse.Namespace) -> dict[str, object]:
     if not args.expected_json and not args.expected_child:
         raise ValueError("Specify --expected-json and/or --expected-child")
 
     result: dict[str, object] = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "repositoryUrl": args.repository_url.rstrip("/") + "/",
     }
 
@@ -81,29 +143,39 @@ def verify(args: argparse.Namespace) -> dict[str, object]:
         content, content_url = load_xml(args.repository_url, "content")
         artifacts, artifacts_url = load_xml(args.repository_url, "artifacts")
         available_ius = {
-            unit.attrib.get("id")
+            (unit.attrib.get("id"), unit.attrib.get("version"))
             for unit in content.findall(".//unit")
-            if unit.attrib.get("id")
+            if unit.attrib.get("id") and unit.attrib.get("version")
         }
         available_feature_artifacts = {
-            artifact.attrib.get("id")
+            (artifact.attrib.get("id"), artifact.attrib.get("version"))
             for artifact in artifacts.findall(".//artifact")
             if artifact.attrib.get("classifier") == "org.eclipse.update.feature"
             and artifact.attrib.get("id")
+            and artifact.attrib.get("version")
         }
-        expected_ius, expected_ids = expected_features(args.expected_json)
-        missing_ius = [iu for iu in expected_ius if iu not in available_ius]
-        missing_artifacts = [feature for feature in expected_ids if feature not in available_feature_artifacts]
+        expected = expected_features(args.expected_json)
+        missing_ius = [
+            f"{item['iu']}/{item['version']}"
+            for item in expected
+            if (item["iu"], item["version"]) not in available_ius
+        ]
+        missing_artifacts = [
+            f"{item['id']}/{item['version']}"
+            for item in expected
+            if (item["id"], item["version"]) not in available_feature_artifacts
+        ]
         if missing_ius:
-            raise RuntimeError(f"Published repository is missing feature IUs: {missing_ius}")
+            raise RuntimeError(f"Published repository is missing exact feature IUs: {missing_ius}")
         if missing_artifacts:
-            raise RuntimeError(f"Published repository is missing feature artifacts: {missing_artifacts}")
+            raise RuntimeError(f"Published repository is missing exact feature artifacts: {missing_artifacts}")
+        verified_artifacts = [verify_feature_artifact(args.repository_url, item) for item in expected]
         result.update(
             {
                 "contentMetadataUrl": content_url,
                 "artifactMetadataUrl": artifacts_url,
-                "expectedFeatureIUs": expected_ius,
-                "expectedFeatureArtifacts": expected_ids,
+                "expectedFeatures": expected,
+                "verifiedFeatureArtifacts": verified_artifacts,
                 "metadataUnitCount": len(available_ius),
                 "artifactKeyCount": len(artifacts.findall(".//artifact")),
             }
