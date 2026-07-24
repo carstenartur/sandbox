@@ -19,7 +19,7 @@ jobs:
         with:
           ref: issue-1215-distribution-smoke
           fetch-depth: 0
-      - name: Bind release rollback and link compatibility documentation
+      - name: Complete distribution publication hardening
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -77,13 +77,62 @@ jobs:
                   raise SystemExit('README release-process link marker not found')
               readme = readme.replace(marker, marker + '\n' + link, 1)
               readme_path.write_text(readme, encoding='utf-8')
+
+          validator_path = Path('.github/scripts/verify_distribution_artifacts.py')
+          validator = validator_path.read_text(encoding='utf-8')
+          if 'feature_artifacts: dict[tuple[str, str], dict[str, object]]' not in validator:
+              marker = '    checksum_errors: list[str] = []\n'
+              if marker not in validator:
+                  raise SystemExit('Validator checksum marker not found')
+              validator = validator.replace(
+                  marker,
+                  marker + '    feature_artifacts: dict[tuple[str, str], dict[str, object]] = {}\n',
+                  1,
+              )
+              marker = '        properties = artifact_properties(artifact)\n'
+              evidence = (
+                  '        if classifier == "org.eclipse.update.feature" and identifier in published_features:\n'
+                  '            feature_artifacts[(identifier, version)] = {\n'
+                  '                "id": identifier,\n'
+                  '                "iu": f"{identifier}.feature.group",\n'
+                  '                "version": version,\n'
+                  '                "artifactSize": path.stat().st_size,\n'
+                  '                "artifactSha256": digest(path, "sha256"),\n'
+                  '            }\n'
+              )
+              if marker not in validator:
+                  raise SystemExit('Validator artifact-property marker not found')
+              validator = validator.replace(marker, evidence + marker, 1)
+              marker = '    if checked_files == 0:\n        fail("No bundle or feature artifacts were validated")\n\n'
+              published = (
+                  '    published_evidence: list[dict[str, object]] = []\n'
+                  '    for feature in published_features:\n'
+                  '        version = units[f"{feature}.feature.group"]\n'
+                  '        evidence = feature_artifacts.get((feature, version))\n'
+                  '        if evidence is None:\n'
+                  '            fail(f"Published feature artifact missing for exact IU version: {feature}/{version}")\n'
+                  '        published_evidence.append(evidence)\n\n'
+              )
+              if marker not in validator:
+                  raise SystemExit('Validator checked-files marker not found')
+              validator = validator.replace(marker, marker + published, 1)
+              old = (
+                  '        "publishedFeatures": [\n'
+                  '            {"id": feature, "iu": f"{feature}.feature.group", "version": units[f"{feature}.feature.group"]}\n'
+                  '            for feature in published_features\n'
+                  '        ],\n'
+              )
+              if old not in validator:
+                  raise SystemExit('Validator published-features return block not found')
+              validator = validator.replace(old, '        "publishedFeatures": published_evidence,\n', 1)
+              validator_path.write_text(validator, encoding='utf-8')
           PY
-          if git diff --quiet -- .github/workflows/deploy-release.yml README.md; then
-            echo 'Release rollback and compatibility documentation are already current.'
+          if git diff --quiet -- .github/workflows/deploy-release.yml README.md .github/scripts/verify_distribution_artifacts.py; then
+            echo 'Distribution publication hardening is already current.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add .github/workflows/deploy-release.yml README.md
-          git commit -m 'Harden release rollback and link compatibility guide'
+          git add .github/workflows/deploy-release.yml README.md .github/scripts/verify_distribution_artifacts.py
+          git commit -m 'Complete exact distribution publication evidence'
           git push origin HEAD:issue-1215-distribution-smoke
