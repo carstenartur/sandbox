@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -120,7 +121,7 @@ class CleanupInputCollectorTest {
 	}
 
 	private static Path createSource(Path path) throws IOException {
-		Files.createDirectories(path.getParent());
+		Files.createDirectories(Objects.requireNonNull(path.getParent()));
 		return Files.writeString(path, "class A {}\n"); //$NON-NLS-1$
 	}
 
