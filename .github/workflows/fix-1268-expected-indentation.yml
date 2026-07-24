@@ -5,13 +5,17 @@ on:
     branches: [ issue-1251-concrete-collectors ]
     paths:
       - '.github/workflows/fix-1268-expected-indentation.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/fix-1268-expected-indentation.yml'
 
 permissions:
   contents: write
 
 concurrency:
   group: fix-pr-1268-expected-indentation
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   fix:
@@ -55,7 +59,6 @@ jobs:
                   opening = re.search(r'String[ \t]+expected[ \t]*=[ \t]*"""', text[method_match.end():bound])
                   if opening is None:
                       raise SystemExit(f'Could not locate expected block in {class_name}.{method_name}')
-                  opening_start = method_match.end() + opening.start()
                   opening_end = method_match.end() + opening.end()
                   content_start = text.find('\n', opening_end) + 1
                   closing = re.search(r'(?m)^([ \t]*)""";[ \t]*$', text[content_start:bound])
