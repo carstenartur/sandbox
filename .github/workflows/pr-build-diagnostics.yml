@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - 'sandbox-functional-converter-core/**'
+      - 'sandbox_common_core/**'
+      - 'sandbox_common/**'
+      - 'sandbox_test_commons/**'
       - 'sandbox_functional_converter/**'
       - 'sandbox_functional_converter_test/**'
       - '.github/workflows/pr-build-diagnostics.yml'
@@ -36,7 +39,7 @@ jobs:
         run: |
           set -o pipefail
           mvn -B -DskipTests \
-            -pl sandbox_target,sandbox-functional-converter-core,sandbox_functional_converter,sandbox_functional_converter_test \
+            -pl sandbox_target,sandbox-functional-converter-core,sandbox_common_core,sandbox_common,sandbox_test_commons,sandbox_functional_converter,sandbox_functional_converter_test \
             -am clean package 2>&1 | tee targeted-build.log
       - name: Upload targeted build log
         if: always()
