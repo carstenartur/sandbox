@@ -60,8 +60,8 @@ jobs:
       - name: Build product and update site
         run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
 
-      - name: Validate repository metadata, artifacts and product layout
-        run: python3 .github/scripts/verify_distribution_artifacts.py
+      - name: Validate repository metadata, artifacts and Linux product layout
+        run: bash .github/scripts/verify_linux_distribution.sh
 
       - name: Provision and start the built distribution
         run: bash .github/scripts/smoke_test_distribution.sh
