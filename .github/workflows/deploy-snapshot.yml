@@ -129,7 +129,19 @@ jobs:
           </repository>
           EOF
 
+      - name: Checkout current gh-pages revision
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages-before
+          fetch-depth: 1
+
+      - name: Capture current gh-pages revision
+        id: gh_pages_before
+        run: echo "sha=$(git -C gh-pages-before rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Deploy snapshot and dashboard
+        id: deploy_snapshot
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -141,6 +153,7 @@ jobs:
           commit_message: Deploy verified snapshot for ${{ env.VALIDATED_SHA }}
 
       - name: Verify advertised snapshot URLs
+        id: verify_snapshot_urls
         run: |
           python3 .github/scripts/verify_published_repository.py \
             --repository-url https://carstenartur.github.io/sandbox/snapshots/latest/ \
@@ -150,6 +163,23 @@ jobs:
             --repository-url https://carstenartur.github.io/sandbox/snapshots/ \
             --expected-child latest \
             --output target/distribution-verification/snapshot-composite-verification.json
+
+      - name: Roll back a failed snapshot-site verification
+        if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && steps.verify_snapshot_urls.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          previous="${{ steps.gh_pages_before.outputs.sha }}"
+          git -C gh-pages-before fetch origin gh-pages
+          current_remote=$(git -C gh-pages-before rev-parse origin/gh-pages)
+          if [[ -z "$previous" ]]; then
+            echo "::error::The previous gh-pages revision was not captured."
+            exit 1
+          fi
+          git -C gh-pages-before push \
+            --force-with-lease=refs/heads/gh-pages:${current_remote} \
+            origin "${previous}:refs/heads/gh-pages"
+          echo "Rolled gh-pages back from ${current_remote} to ${previous}." \
+            | tee target/distribution-verification/snapshot-publication-rollback.log
 
       - name: Upload immutable snapshot provenance
         if: always()
