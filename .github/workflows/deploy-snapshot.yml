@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: deploy-snapshot-${{ github.event.workflow_run.head_sha }}
+  group: sandbox-gh-pages-publication
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 150
     env:
       VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
       VALIDATED_REF: refs/heads/main
@@ -52,8 +52,32 @@ jobs:
         with:
           maven-version: 3.9.14
 
-      - name: Build product and update site
-        run: mvn -Pproduct,repo -T 1C --batch-mode clean verify -DskipTests
+      - name: Install Linux product runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Build and test product and update site
+        run: |
+          set -o pipefail
+          status=0
+          xvfb-run --auto-servernum mvn \
+            -Pproduct,repo \
+            -T 1C \
+            --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            clean verify 2>&1 | tee /tmp/snapshot-build.log || status=$?
+          mkdir -p target/distribution-verification
+          cp /tmp/snapshot-build.log target/distribution-verification/snapshot-build.log
+          exit "$status"
+
+      - name: Validate repository metadata, artifacts and Linux product layout
+        run: bash .github/scripts/verify_linux_distribution.sh
+
+      - name: Provision and start the built distribution
+        run: bash .github/scripts/smoke_test_distribution.sh
 
       - name: Generate snapshot build manifest
         run: |
@@ -70,6 +94,8 @@ jobs:
           mkdir -p "$snapshot_dir"
           cp -a sandbox_updatesite/target/repository/. "$snapshot_dir/"
           cp build-manifest.json "$snapshot_dir/build-manifest.json"
+          cp target/distribution-verification/verification.json "$snapshot_dir/distribution-verification.json"
+          cp target/distribution-verification/verification.md "$snapshot_dir/distribution-verification.md"
           cp .github/pages/index.html gh-pages-content/index.html
 
           mkdir -p gh-pages-content/snapshots
@@ -103,15 +129,19 @@ jobs:
           </repository>
           EOF
 
-      - name: Upload immutable snapshot provenance
-        uses: actions/upload-artifact@v7
+      - name: Checkout current gh-pages revision
+        uses: actions/checkout@v6
         with:
-          name: snapshot-provenance-${{ env.VALIDATED_SHA }}
-          path: build-manifest.json
-          retention-days: 90
-          if-no-files-found: error
+          ref: gh-pages
+          path: gh-pages-before
+          fetch-depth: 1
+
+      - name: Capture current gh-pages revision
+        id: gh_pages_before
+        run: echo "sha=$(git -C gh-pages-before rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy snapshot and dashboard
+        id: deploy_snapshot
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -120,7 +150,52 @@ jobs:
           keep_files: true
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
-          commit_message: Deploy snapshot for ${{ env.VALIDATED_SHA }}
+          commit_message: Deploy verified snapshot for ${{ env.VALIDATED_SHA }}
+
+      - name: Capture deployed gh-pages revision
+        id: gh_pages_after
+        run: |
+          git -C gh-pages-before fetch origin gh-pages
+          echo "sha=$(git -C gh-pages-before rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify advertised snapshot URLs
+        id: verify_snapshot_urls
+        run: |
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url https://carstenartur.github.io/sandbox/snapshots/latest/ \
+            --expected-json target/distribution-verification/verification.json \
+            --output target/distribution-verification/snapshot-url-verification.json
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url https://carstenartur.github.io/sandbox/snapshots/ \
+            --expected-child latest \
+            --output target/distribution-verification/snapshot-composite-verification.json
+
+      - name: Roll back a failed snapshot-site verification
+        if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && steps.verify_snapshot_urls.outcome == 'failure' }}
+        run: |
+          set -euo pipefail
+          previous="${{ steps.gh_pages_before.outputs.sha }}"
+          deployed="${{ steps.gh_pages_after.outputs.sha }}"
+          if [[ -z "$previous" || -z "$deployed" ]]; then
+            echo "::error::The previous or deployed gh-pages revision was not captured."
+            exit 1
+          fi
+          git -C gh-pages-before push \
+            --force-with-lease=refs/heads/gh-pages:${deployed} \
+            origin "${previous}:refs/heads/gh-pages"
+          echo "Rolled gh-pages back from ${deployed} to ${previous}." \
+            | tee target/distribution-verification/snapshot-publication-rollback.log
+
+      - name: Upload immutable snapshot provenance
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshot-provenance-${{ env.VALIDATED_SHA }}
+          path: |
+            build-manifest.json
+            target/distribution-verification/
+          retention-days: 90
+          if-no-files-found: error
 
       - name: Report deployed resources
         if: always()
@@ -133,4 +208,5 @@ jobs:
             echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
             echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
             echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
+            echo '- [Distribution verification](https://carstenartur.github.io/sandbox/snapshots/latest/distribution-verification.md)'
           } >> "$GITHUB_STEP_SUMMARY"
