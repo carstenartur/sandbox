@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify feature IUs or composite children at a published p2 repository URL."""
+"""Verify feature IUs and composite children at a published p2 repository URL."""
 
 from __future__ import annotations
 
@@ -32,9 +32,8 @@ def fetch(url: str) -> bytes:
         return response.read()
 
 
-def load_xml(repository_url: str, composite: bool) -> tuple[ET.Element, str]:
+def load_xml(repository_url: str, base_name: str) -> tuple[ET.Element, str]:
     repository_url = repository_url.rstrip("/") + "/"
-    base_name = "compositeContent" if composite else "content"
     failures: list[str] = []
     for suffix in (".jar", ".xml"):
         url = urllib.parse.urljoin(repository_url, base_name + suffix)
@@ -49,13 +48,24 @@ def load_xml(repository_url: str, composite: bool) -> tuple[ET.Element, str]:
     raise RuntimeError("; ".join(failures))
 
 
-def expected_feature_ius(path: Path) -> list[str]:
+def expected_features(path: Path) -> tuple[list[str], list[str]]:
     with path.open(encoding="utf-8") as stream:
         report = json.load(stream)
-    values = report.get("publishedFeatureIUs")
-    if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+    ius = report.get("publishedFeatureIUs")
+    identifiers = report.get("publishedFeatureIds")
+    if not isinstance(ius, list) or not all(isinstance(value, str) for value in ius):
         raise ValueError(f"{path} does not contain a publishedFeatureIUs string list")
-    return sorted(set(values))
+    if not isinstance(identifiers, list) or not all(isinstance(value, str) for value in identifiers):
+        raise ValueError(f"{path} does not contain a publishedFeatureIds string list")
+    return sorted(set(ius)), sorted(set(identifiers))
+
+
+def composite_children(root: ET.Element) -> list[str]:
+    return sorted(
+        child.attrib["location"]
+        for child in root.findall(".//child")
+        if child.attrib.get("location")
+    )
 
 
 def verify(args: argparse.Namespace) -> dict[str, object]:
@@ -63,43 +73,67 @@ def verify(args: argparse.Namespace) -> dict[str, object]:
         raise ValueError("Specify --expected-json and/or --expected-child")
 
     result: dict[str, object] = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "repositoryUrl": args.repository_url.rstrip("/") + "/",
     }
 
     if args.expected_json:
-        root, metadata_url = load_xml(args.repository_url, composite=False)
-        available = {unit.attrib.get("id") for unit in root.findall(".//unit")}
-        expected = expected_feature_ius(args.expected_json)
-        missing = [iu for iu in expected if iu not in available]
-        if missing:
-            raise RuntimeError(f"Published repository is missing feature IUs: {missing}")
+        content, content_url = load_xml(args.repository_url, "content")
+        artifacts, artifacts_url = load_xml(args.repository_url, "artifacts")
+        available_ius = {
+            unit.attrib.get("id")
+            for unit in content.findall(".//unit")
+            if unit.attrib.get("id")
+        }
+        available_feature_artifacts = {
+            artifact.attrib.get("id")
+            for artifact in artifacts.findall(".//artifact")
+            if artifact.attrib.get("classifier") == "org.eclipse.update.feature"
+            and artifact.attrib.get("id")
+        }
+        expected_ius, expected_ids = expected_features(args.expected_json)
+        missing_ius = [iu for iu in expected_ius if iu not in available_ius]
+        missing_artifacts = [feature for feature in expected_ids if feature not in available_feature_artifacts]
+        if missing_ius:
+            raise RuntimeError(f"Published repository is missing feature IUs: {missing_ius}")
+        if missing_artifacts:
+            raise RuntimeError(f"Published repository is missing feature artifacts: {missing_artifacts}")
         result.update(
             {
-                "metadataUrl": metadata_url,
-                "expectedFeatureIUs": expected,
-                "metadataUnitCount": len(available),
+                "contentMetadataUrl": content_url,
+                "artifactMetadataUrl": artifacts_url,
+                "expectedFeatureIUs": expected_ius,
+                "expectedFeatureArtifacts": expected_ids,
+                "metadataUnitCount": len(available_ius),
+                "artifactKeyCount": len(artifacts.findall(".//artifact")),
             }
         )
 
     if args.expected_child:
-        root, metadata_url = load_xml(args.repository_url, composite=True)
-        children = sorted(
-            child.attrib["location"]
-            for child in root.findall(".//child")
-            if child.attrib.get("location")
-        )
+        content, content_url = load_xml(args.repository_url, "compositeContent")
+        artifacts, artifacts_url = load_xml(args.repository_url, "compositeArtifacts")
+        content_children = composite_children(content)
+        artifact_children = composite_children(artifacts)
         normalized_expected = args.expected_child.strip("/")
-        normalized_children = {child.strip("/") for child in children}
-        if normalized_expected not in normalized_children:
+        normalized_content = {child.strip("/") for child in content_children}
+        normalized_artifacts = {child.strip("/") for child in artifact_children}
+        if normalized_expected not in normalized_content:
             raise RuntimeError(
-                f"Published composite is missing child {args.expected_child!r}; children={children}"
+                f"Published metadata composite is missing child {args.expected_child!r}; "
+                f"children={content_children}"
+            )
+        if normalized_expected not in normalized_artifacts:
+            raise RuntimeError(
+                f"Published artifact composite is missing child {args.expected_child!r}; "
+                f"children={artifact_children}"
             )
         result.update(
             {
-                "compositeMetadataUrl": metadata_url,
+                "compositeContentUrl": content_url,
+                "compositeArtifactsUrl": artifacts_url,
                 "expectedChild": args.expected_child,
-                "children": children,
+                "metadataChildren": content_children,
+                "artifactChildren": artifact_children,
             }
         )
 
