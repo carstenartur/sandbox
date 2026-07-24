@@ -318,7 +318,8 @@ public class RuleChainBuilder {
 					private List<String> items = Arrays.asList("c", "a", "b");
 
 					List<String> getSortedItems() {
-						List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
+						List<String> result = items.stream().map(item -> item.toUpperCase())
+								.collect(Collectors.toCollection(java.util.ArrayList::new));
 						Collections.sort(result);
 						return result;
 					}

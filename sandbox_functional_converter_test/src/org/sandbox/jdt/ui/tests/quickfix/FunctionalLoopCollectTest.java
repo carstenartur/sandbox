@@ -88,7 +88,7 @@ public class FunctionalLoopCollectTest {
 					new MyTest().test(Arrays.asList(1, 2, 3));
 				}
 				public void test(List<Integer> ls) {
-					List<Integer> result = ls.stream().collect(Collectors.toList());
+					List<Integer> result = ls.stream().collect(Collectors.toCollection(java.util.ArrayList::new));
 					System.out.println(result);
 				}
 			}""";
@@ -150,7 +150,8 @@ public class FunctionalLoopCollectTest {
 					new MyTest().test(Arrays.asList(1, 2, 3));
 				}
 				public void test(List<Integer> ls) {
-					List<String> result = ls.stream().map(l -> l.toString()).collect(Collectors.toList());
+					List<String> result = ls.stream().map(l -> l.toString())
+							.collect(Collectors.toCollection(java.util.ArrayList::new));
 					System.out.println(result);
 				}
 			}""";

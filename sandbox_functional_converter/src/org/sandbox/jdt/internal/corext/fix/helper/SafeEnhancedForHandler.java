@@ -21,12 +21,14 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -39,6 +41,7 @@ import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.terminal.CollectTerminal;
 import org.sandbox.functional.core.terminal.ReduceTerminal;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.functional.core.tree.ConversionDecision;
 import org.sandbox.functional.core.tree.LoopKind;
 import org.sandbox.functional.core.tree.LoopTree;
@@ -54,15 +57,12 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * <p>Array collect into an existing target is rendered as a sequential
  * {@code Arrays.stream(...).forEachOrdered(...)} operation that copies the
  * original loop body through {@link ASTRewrite}. Generated lambdas may capture
- * only effectively-final locals. A fresh collect accumulator is replaced only
- * when the collector result is assignable to its declared interface type;
- * concrete collection implementations remain unchanged until an explicit
- * {@code Collectors.toCollection(...)} model exists.</p>
+ * only effectively-final locals. Fresh collection accumulators are replaced only
+ * when their constructor and assignment compatibility are modeled explicitly;
+ * their runtime implementation is preserved with
+ * {@code Collectors.toCollection(...)}.</p>
  */
 public class SafeEnhancedForHandler extends EnhancedForHandler {
-
-	private static final String JAVA_UTIL_LIST= "java.util.List"; //$NON-NLS-1$
-	private static final String JAVA_UTIL_SET= "java.util.Set"; //$NON-NLS-1$
 
 	private final JdtLoopExtractor extractor= new JdtLoopExtractor();
 
@@ -104,6 +104,12 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		JdtLoopExtractor.ExtractedLoop extracted= (JdtLoopExtractor.ExtractedLoop) data.get(visited);
 		if (isExistingArrayCollect(visited, extracted)) {
 			rewriteExistingArrayCollect(visited, cuRewrite, group);
+			return;
+		}
+		if (extracted != null
+				&& extracted.model.getTerminal() instanceof CollectTerminal terminal
+				&& terminal.hasCollectionFactory()) {
+			rewriteFreshCollect(visited, extracted, cuRewrite, group);
 			return;
 		}
 		super.rewrite(fixCore, visited, cuRewrite, group, data);
@@ -176,8 +182,16 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return false;
 		}
 		if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
-			VariableDeclarationStatement accumulator= findFreshAccumulator(loop, collectTerminal.targetVariable());
-			if (accumulator != null && !isCollectorResultAssignable(accumulator, collectTerminal)) {
+			VariableDeclarationStatement adjacent= findAdjacentAccumulator(loop, collectTerminal.targetVariable());
+			VariableDeclarationStatement fresh= findFreshAccumulator(loop, collectTerminal.targetVariable());
+			if (fresh != null) {
+				CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(fresh, collectTerminal);
+				if (preserved == null) {
+					return false;
+				}
+				model.setTerminal(preserved);
+			} else if (adjacent != null
+					&& !ConcreteCollectionFactory.hasSupportedConcreteType(adjacent, collectTerminal)) {
 				return false;
 			}
 		}
@@ -258,6 +272,64 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		rewrite.replace(loop, ast.newExpressionStatement(forEach), group);
 	}
 
+	private void rewriteFreshCollect(EnhancedForStatement loop, JdtLoopExtractor.ExtractedLoop extracted,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+		LoopModel model= extracted.model;
+		CollectTerminal terminal= (CollectTerminal) model.getTerminal();
+		VariableDeclarationStatement accumulator= findFreshAccumulator(loop, terminal.targetVariable());
+		if (accumulator == null || !terminal.targetVariable().equals(
+				CollectPatternDetector.isEmptyCollectionDeclaration(accumulator))) {
+			return;
+		}
+		CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(accumulator, terminal);
+		if (preserved == null) {
+			return;
+		}
+		model.setTerminal(preserved);
+
+		AST ast= cuRewrite.getRoot().getAST();
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		ConcreteCollectionASTStreamRenderer renderer= new ConcreteCollectionASTStreamRenderer(
+				ast, rewrite, cuRewrite.getRoot(), extracted.originalBody);
+		Expression streamExpression= new LoopModelTransformer<>(renderer).transform(model);
+		if (streamExpression == null) {
+			return;
+		}
+
+		VariableDeclarationStatement replacement= createMergedDeclaration(ast, accumulator, streamExpression);
+		rewrite.remove(accumulator, group);
+		rewrite.replace(loop, replacement, group);
+		addRequiredImports(cuRewrite, model);
+	}
+
+	@SuppressWarnings("unchecked")
+	private VariableDeclarationStatement createMergedDeclaration(AST ast,
+			VariableDeclarationStatement original, Expression initializer) {
+		VariableDeclarationFragment originalFragment=
+				(VariableDeclarationFragment) original.fragments().get(0);
+		VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
+		fragment.setName(ast.newSimpleName(originalFragment.getName().getIdentifier()));
+		fragment.setInitializer((Expression) ASTNode.copySubtree(ast, initializer));
+		VariableDeclarationStatement declaration= ast.newVariableDeclarationStatement(fragment);
+		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
+		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
+		return declaration;
+	}
+
+	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {
+		switch (model.getSource().type()) {
+			case ARRAY:
+				cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
+				break;
+			case ITERABLE:
+				cuRewrite.getImportRewrite().addImport("java.util.stream.StreamSupport"); //$NON-NLS-1$
+				break;
+			default:
+				break;
+		}
+		cuRewrite.getImportRewrite().addImport("java.util.stream.Collectors"); //$NON-NLS-1$
+	}
+
 	@SuppressWarnings("unchecked")
 	private ExpressionStatement singleExpressionWithoutComments(Block block, CompilationUnit compilationUnit) {
 		List<Statement> statements= block.statements();
@@ -291,6 +363,12 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 	}
 
 	private VariableDeclarationStatement findFreshAccumulator(EnhancedForStatement loop, String targetVariable) {
+		VariableDeclarationStatement declaration= findAdjacentAccumulator(loop, targetVariable);
+		return declaration != null && targetVariable.equals(
+				CollectPatternDetector.isEmptyCollectionDeclaration(declaration)) ? declaration : null;
+	}
+
+	private VariableDeclarationStatement findAdjacentAccumulator(EnhancedForStatement loop, String targetVariable) {
 		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {
 			return null;
 		}
@@ -302,24 +380,12 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		}
 		Statement previous= statements.get(loopIndex - 1);
 		if (!(previous instanceof VariableDeclarationStatement declaration)
-				|| !targetVariable.equals(CollectPatternDetector.isEmptyCollectionDeclaration(declaration))) {
+				|| declaration.fragments().size() != 1) {
 			return null;
 		}
-		return declaration;
-	}
-
-	private boolean isCollectorResultAssignable(VariableDeclarationStatement declaration,
-			CollectTerminal terminal) {
-		ITypeBinding typeBinding= declaration.getType().resolveBinding();
-		if (typeBinding == null) {
-			return false;
-		}
-		String qualifiedName= typeBinding.getErasure().getQualifiedName();
-		return switch (terminal.collectorType()) {
-			case TO_LIST -> JAVA_UTIL_LIST.equals(qualifiedName);
-			case TO_SET -> JAVA_UTIL_SET.equals(qualifiedName);
-			default -> false;
-		};
+		VariableDeclarationFragment fragment=
+				(VariableDeclarationFragment) declaration.fragments().get(0);
+		return targetVariable.equals(fragment.getName().getIdentifier()) ? declaration : null;
 	}
 
 	private boolean isConvertible(LoopModel model) {
