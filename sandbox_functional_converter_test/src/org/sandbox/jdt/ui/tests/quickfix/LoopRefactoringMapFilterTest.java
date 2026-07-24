@@ -307,17 +307,6 @@ class MyTest {
 				}
 				""";
 
-		String expected = """
-package test1;
-import java.util.*;
-class MyTest {
-	public void process(List<Integer> numbers) {
-		numbers.stream().map(num -> num * 2).map(doubled -> doubled + 10).filter(plusTen -> (plusTen < 100))
-				.forEachOrdered(plusTen -> System.out.println(plusTen));
-	}
-}
-""";
-
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", input, false, null);
 		context.enable(MYCleanUpConstants.USEFUNCTIONALLOOP_CLEANUP);
