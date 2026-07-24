@@ -116,16 +116,6 @@ jobs:
           </repository>
           EOF
 
-      - name: Upload immutable snapshot provenance
-        uses: actions/upload-artifact@v7
-        with:
-          name: snapshot-provenance-${{ env.VALIDATED_SHA }}
-          path: |
-            build-manifest.json
-            target/distribution-verification/
-          retention-days: 90
-          if-no-files-found: error
-
       - name: Deploy snapshot and dashboard
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -136,6 +126,28 @@ jobs:
           user_name: github-actions[bot]
           user_email: github-actions[bot]@users.noreply.github.com
           commit_message: Deploy verified snapshot for ${{ env.VALIDATED_SHA }}
+
+      - name: Verify advertised snapshot URLs
+        run: |
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url https://carstenartur.github.io/sandbox/snapshots/latest/ \
+            --expected-json target/distribution-verification/verification.json \
+            --output target/distribution-verification/snapshot-url-verification.json
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url https://carstenartur.github.io/sandbox/snapshots/ \
+            --expected-child latest \
+            --output target/distribution-verification/snapshot-composite-verification.json
+
+      - name: Upload immutable snapshot provenance
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshot-provenance-${{ env.VALIDATED_SHA }}
+          path: |
+            build-manifest.json
+            target/distribution-verification/
+          retention-days: 90
+          if-no-files-found: error
 
       - name: Report deployed resources
         if: always()
