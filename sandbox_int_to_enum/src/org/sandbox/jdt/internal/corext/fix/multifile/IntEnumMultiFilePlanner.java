@@ -60,16 +60,29 @@ import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningLimits;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
+import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Builds conservative source-wide integer-state migration plans. */
 public final class IntEnumMultiFilePlanner {
 
+	private static final String CLEANUP_ID= "int-to-enum"; //$NON-NLS-1$
+
 	private record ConstantDecl(String bindingKey, String name, int value) {
+	}
+
+	private record FreezeResult(List<IntEnumCandidate> candidates,
+			List<MultiFileCandidateDiagnostic> diagnostics) {
+		FreezeResult {
+			candidates= List.copyOf(candidates);
+			diagnostics= List.copyOf(diagnostics);
+		}
 	}
 
 	private static final class CandidateBuilder {
@@ -77,6 +90,7 @@ public final class IntEnumMultiFilePlanner {
 		String ownerTypeKey;
 		String ownerTypeQualifiedName;
 		String methodKey;
+		String methodName;
 		int parameterIndex;
 		String prefix;
 		String enumName;
@@ -87,6 +101,27 @@ public final class IntEnumMultiFilePlanner {
 		final Map<String, Integer> callCountsByUnit= new LinkedHashMap<>();
 		boolean valid= true;
 		boolean hasExternalCaller;
+		String rejectionCode= ""; //$NON-NLS-1$
+		String rejectionMessage= ""; //$NON-NLS-1$
+
+		void invalidate(String reasonCode, String message) {
+			if (valid) {
+				valid= false;
+				rejectionCode= reasonCode;
+				rejectionMessage= message;
+			}
+		}
+
+		String candidateId() {
+			return ownerTypeQualifiedName + '#' + methodName + ':' + parameterIndex;
+		}
+
+		List<String> relatedUnitHandles() {
+			Set<String> handles= new LinkedHashSet<>();
+			handles.add(ownerUnitHandle);
+			handles.addAll(callCountsByUnit.keySet());
+			return List.copyOf(handles);
+		}
 	}
 
 	private IntEnumMultiFilePlanner() {
@@ -115,14 +150,17 @@ public final class IntEnumMultiFilePlanner {
 		SelectedCompilationUnitPlan scope= SelectedCompilationUnitPlan.of(project, selectedUnits);
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		if (!closedScope) {
-			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, List.of()));
+			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, List.of()),
+					new org.eclipse.ltk.core.refactoring.RefactoringStatus(), MultiFilePlanningMetrics.empty(),
+					diagnostics(selectedUnits, false, List.of()));
 		}
 
 		long planningStarted= System.nanoTime();
 		MultiFilePlanningBudget.Assessment budget= MultiFilePlanningBudget.assess(selectedUnits,
 				MultiFilePlanningLimits.fromSystemProperties(), monitor);
 		if (!budget.mayProceed()) {
-			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics());
+			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics(),
+					diagnostics(selectedUnits, true, List.of()));
 		}
 		long parseStarted= System.nanoTime();
 		Map<String, CompilationUnit> roots= parse(project, selectedUnits, monitor);
@@ -132,12 +170,26 @@ public final class IntEnumMultiFilePlanner {
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		validateReferences(roots, builders, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		List<IntEnumCandidate> candidates= freeze(builders, monitor);
+		FreezeResult frozen= freeze(builders, monitor);
 		MultiFilePlanningMetrics metrics= budget.metrics()
 				.withDurations(parseNanos, System.nanoTime() - planningStarted)
-				.withRetainedPlanEntries(candidates.size());
-		return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, candidates),
-				budget.status(), metrics);
+				.withRetainedPlanEntries(frozen.candidates().size());
+		return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(scope, frozen.candidates()),
+				budget.status(), metrics, diagnostics(selectedUnits, true, frozen.diagnostics()));
+	}
+
+	private static MultiFileCleanUpDiagnostics diagnostics(ICompilationUnit[] selectedUnits, boolean complete,
+			List<MultiFileCandidateDiagnostic> candidates) {
+		List<String> selectedHandles= java.util.Arrays.stream(selectedUnits)
+				.map(ICompilationUnit::getPrimary)
+				.map(ICompilationUnit::getHandleIdentifier)
+				.toList();
+		MultiFileScopeDiagnostic scope= complete
+				? new MultiFileScopeDiagnostic(selectedHandles, List.of(), "CLOSED_SOURCE_SCOPE", //$NON-NLS-1$
+						"The selected compilation units form a closed integer-state migration scope.", true) //$NON-NLS-1$
+				: new MultiFileScopeDiagnostic(selectedHandles, List.of(), "INCOMPLETE_SOURCE_SCOPE", //$NON-NLS-1$
+						"The selected compilation units do not contain every required declaration and caller.", false); //$NON-NLS-1$
+		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
 	}
 
 	private static Map<String, CompilationUnit> parse(IJavaProject project, ICompilationUnit[] units,
@@ -183,7 +235,7 @@ public final class IntEnumMultiFilePlanner {
 						return false;
 					}
 					for (MethodDeclaration method : type.getMethods()) {
-						if (method.isConstructor() || !isPackagePrivate(method.getModifiers()) || method.getBody() == null) {
+						if (method.isConstructor() || Modifier.isPrivate(method.getModifiers()) || method.getBody() == null) {
 							continue;
 						}
 						for (int parameterIndex= 0; parameterIndex < method.parameters().size(); parameterIndex++) {
@@ -193,11 +245,23 @@ public final class IntEnumMultiFilePlanner {
 							}
 							CandidateBuilder candidate= discoverMethodCandidate(unitHandle, type, typeBinding, typeKey, method,
 									parameter, parameterIndex, constants);
-							if (candidate != null && candidate.constants.stream()
-									.noneMatch(constant -> claimedConstants.contains(constant.bindingKey()))) {
-								candidate.constants.forEach(constant -> claimedConstants.add(constant.bindingKey()));
-								result.add(candidate);
+							if (candidate == null) {
+								continue;
 							}
+							if (!isPackagePrivate(method.getModifiers())) {
+								candidate.invalidate("UNSUPPORTED_API_VISIBILITY", //$NON-NLS-1$
+										"Method " + candidate.ownerTypeQualifiedName + '#' + candidate.methodName //$NON-NLS-1$
+										+ " is public or protected; changing its parameter type requires an explicit compatibility policy."); //$NON-NLS-1$
+							}
+							if (candidate.valid && candidate.constants.stream()
+									.anyMatch(constant -> claimedConstants.contains(constant.bindingKey()))) {
+								candidate.invalidate("SHARED_CONSTANT_GROUP", //$NON-NLS-1$
+										"The integer constant group is already claimed by another migration candidate."); //$NON-NLS-1$
+							}
+							if (candidate.valid) {
+								candidate.constants.forEach(constant -> claimedConstants.add(constant.bindingKey()));
+							}
+							result.add(candidate);
 						}
 					}
 					return false;
@@ -234,10 +298,15 @@ public final class IntEnumMultiFilePlanner {
 			candidate.ownerTypeKey= typeKey;
 			candidate.ownerTypeQualifiedName= typeBinding.getQualifiedName();
 			candidate.methodKey= methodBinding.getMethodDeclaration().getKey();
+			candidate.methodName= method.getName().getIdentifier();
 			candidate.parameterIndex= parameterIndex;
-			if (candidate.methodKey == null || candidate.ownerTypeQualifiedName.isEmpty()
-					|| hasNestedTypeNamed(type, candidate.enumName)) {
-				continue;
+			if (candidate.methodKey == null || candidate.ownerTypeQualifiedName.isEmpty()) {
+				return null;
+			}
+			if (hasNestedTypeNamed(type, candidate.enumName)) {
+				candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
+						"Nested type " + candidate.enumName + " already exists in " //$NON-NLS-1$ //$NON-NLS-2$
+						+ candidate.ownerTypeQualifiedName + '.');
 			}
 			return candidate;
 		}
@@ -336,22 +405,25 @@ public final class IntEnumMultiFilePlanner {
 					if (candidate == null) {
 						return true;
 					}
+					candidate.callCountsByUnit.putIfAbsent(unitHandle, Integer.valueOf(0));
+					if (!unitHandle.equals(candidate.ownerUnitHandle)) {
+						candidate.hasExternalCaller= true;
+					}
 					if (candidate.parameterIndex >= node.arguments().size()) {
-						candidate.valid= false;
+						candidate.invalidate("UNRESOLVED_INVOCATION", //$NON-NLS-1$
+								"A call does not expose the planned integer-state parameter."); //$NON-NLS-1$
 						return false;
 					}
 					Expression argument= unwrap((Expression) node.arguments().get(candidate.parameterIndex));
 					IVariableBinding argumentBinding= resolveVariable(argument);
 					IntEnumConstant constant= frozenConstant(candidate, argumentBinding);
 					if (constant == null) {
-						candidate.valid= false;
+						candidate.invalidate("ARBITRARY_INTEGER_ARGUMENT", //$NON-NLS-1$
+								"A call passes an integer expression that is not one of the modeled constants."); //$NON-NLS-1$
 						return false;
 					}
 					candidate.recognisedReferences.put(argument, constant.bindingKey());
 					candidate.callCountsByUnit.merge(unitHandle, Integer.valueOf(1), Integer::sum);
-					if (!unitHandle.equals(candidate.ownerUnitHandle)) {
-						candidate.hasExternalCaller= true;
-					}
 					return true;
 				}
 
@@ -364,19 +436,22 @@ public final class IntEnumMultiFilePlanner {
 						CandidateBuilder candidate= byConstant.get(key);
 						if (candidate != null && !isVariableDeclarationName(node)
 								&& !candidate.recognisedReferences.containsKey(containingExpression(node))) {
-							candidate.valid= false;
+							candidate.invalidate("UNSUPPORTED_CONSTANT_REFERENCE", //$NON-NLS-1$
+									"A modeled integer constant is used outside the supported comparisons and call arguments."); //$NON-NLS-1$
 						}
 						for (CandidateBuilder stateCandidate : candidates) {
 							if (sameVariable(stateCandidate.stateBinding, variable) && !isParameterDeclarationName(node)
 									&& !stateCandidate.stateReferences.contains(containingExpression(node))) {
-								stateCandidate.valid= false;
+								stateCandidate.invalidate("UNSUPPORTED_STATE_REFERENCE", //$NON-NLS-1$
+										"The integer-state parameter is used outside the modeled equality chain."); //$NON-NLS-1$
 							}
 						}
 					} else if (binding instanceof IMethodBinding methodBinding) {
 						CandidateBuilder candidate= byMethod.get(methodBinding.getMethodDeclaration().getKey());
 						if (candidate != null && !isMethodDeclarationName(node)
 								&& !(node.getParent() instanceof MethodInvocation invocation && invocation.getName() == node)) {
-							candidate.valid= false;
+							candidate.invalidate("UNSUPPORTED_METHOD_REFERENCE", //$NON-NLS-1$
+									"The candidate method is referenced in a form other than a direct invocation."); //$NON-NLS-1$
 						}
 					}
 					return true;
@@ -385,11 +460,17 @@ public final class IntEnumMultiFilePlanner {
 		}
 	}
 
-	private static List<IntEnumCandidate> freeze(List<CandidateBuilder> builders, IProgressMonitor monitor) {
+	private static FreezeResult freeze(List<CandidateBuilder> builders, IProgressMonitor monitor) {
 		List<IntEnumCandidate> result= new ArrayList<>();
+		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>();
 		for (CandidateBuilder builder : builders) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
-			if (!builder.valid || !builder.hasExternalCaller) {
+			if (!builder.valid) {
+				diagnostics.add(MultiFileCandidateDiagnostic.rejected(builder.candidateId(), builder.ownerUnitHandle,
+						builder.rejectionCode, builder.rejectionMessage, builder.relatedUnitHandles()));
+				continue;
+			}
+			if (!builder.hasExternalCaller) {
 				continue;
 			}
 			Map<String, Map<String, Integer>> referenceCounts= new LinkedHashMap<>();
@@ -397,13 +478,16 @@ public final class IntEnumMultiFilePlanner {
 				MultiFilePlanningBudget.checkCanceled(monitor);
 				CompilationUnit root= root(reference.getKey());
 				if (root == null || !(root.getJavaElement() instanceof ICompilationUnit unit)) {
-					builder.valid= false;
+					builder.invalidate("UNRESOLVED_SOURCE_REFERENCE", //$NON-NLS-1$
+							"A modeled reference can no longer be mapped to a source compilation unit."); //$NON-NLS-1$
 					break;
 				}
 				referenceCounts.computeIfAbsent(unit.getPrimary().getHandleIdentifier(), key -> new LinkedHashMap<>())
 						.merge(reference.getValue(), Integer.valueOf(1), Integer::sum);
 			}
 			if (!builder.valid) {
+				diagnostics.add(MultiFileCandidateDiagnostic.rejected(builder.candidateId(), builder.ownerUnitHandle,
+						builder.rejectionCode, builder.rejectionMessage, builder.relatedUnitHandles()));
 				continue;
 			}
 			List<IntEnumConstant> constants= builder.constants.stream()
@@ -413,8 +497,11 @@ public final class IntEnumMultiFilePlanner {
 			result.add(new IntEnumCandidate(builder.ownerUnitHandle, builder.ownerTypeKey,
 					builder.ownerTypeQualifiedName, builder.methodKey, builder.parameterIndex, builder.prefix,
 					builder.enumName, constants, referenceCounts, builder.callCountsByUnit));
+			diagnostics.add(MultiFileCandidateDiagnostic.transformed(builder.candidateId(), builder.ownerUnitHandle,
+					"Migrates the closed integer-state flow to nested enum " + builder.enumName + '.', //$NON-NLS-1$
+					builder.relatedUnitHandles()));
 		}
-		return List.copyOf(result);
+		return new FreezeResult(result, diagnostics);
 	}
 
 	private static Map<String, ConstantDecl> collectPackageConstants(TypeDeclaration type) {
