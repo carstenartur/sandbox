@@ -67,6 +67,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	private final Object lifecycleLock= new Object();
 
 	private final Map<IJavaProject, P> plansByProject= new HashMap<>();
+	private final Map<IJavaProject, MultiFilePlanningMetrics> metricsByProject= new HashMap<>();
 
 	/** Creates a base class without options. */
 	protected AbstractPlannedMultiFileCleanUp() {
@@ -105,13 +106,16 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			IProgressMonitor monitor) throws CoreException {
 		synchronized (lifecycleLock) {
 			plansByProject.remove(project);
+			metricsByProject.remove(project);
 			MultiFileCleanUpPlanResult<P> result;
 			try {
 				result= createPlan(project, compilationUnits.clone(), monitor);
 			} catch (CoreException | RuntimeException e) {
 				plansByProject.remove(project);
+				metricsByProject.remove(project);
 				throw e;
 			}
+			metricsByProject.put(project, result.metrics());
 			if (!result.status().hasFatalError() && result.plan() != null) {
 				plansByProject.put(project, result.plan());
 			}
@@ -135,6 +139,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 				return createFixForPlan(plan, context);
 			} catch (CoreException | RuntimeException e) {
 				plansByProject.remove(project);
+				metricsByProject.remove(project);
 				throw e;
 			}
 		}
@@ -147,6 +152,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 				return checkPlanPostConditions(monitor);
 			} finally {
 				plansByProject.clear();
+				metricsByProject.clear();
 			}
 		}
 	}
@@ -196,6 +202,20 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	protected final P getPlan(IJavaProject project) {
 		synchronized (lifecycleLock) {
 			return plansByProject.get(project);
+		}
+	}
+
+	/**
+	 * Returns metrics from the current project's most recent planning attempt.
+	 * Metrics remain available through fix creation and postcondition checks and are
+	 * cleared with the rest of the lifecycle state.
+	 *
+	 * @param project Java project
+	 * @return retained metrics or empty metrics when no planning run exists
+	 */
+	protected final MultiFilePlanningMetrics getPlanningMetrics(IJavaProject project) {
+		synchronized (lifecycleLock) {
+			return metricsByProject.getOrDefault(project, MultiFilePlanningMetrics.empty());
 		}
 	}
 }

@@ -49,6 +49,9 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningLimits;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Builds the source-wide JUnit migration plan before per-file rewrites start. */
@@ -101,19 +104,33 @@ public final class JUnitMultiFilePlanner {
 		if (!migrateExternalResourceRules || selectedUnits.length == 0 || !closedScope) {
 			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
 		}
-		if (monitor != null && monitor.isCanceled()) {
-			throw new OperationCanceledException();
-		}
+		MultiFilePlanningBudget.checkCanceled(monitor);
 
-		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
-		Map<String, ResourceType> resourcesByTypeKey= collectResourceTypes(rootsByHandle);
-		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey);
-		RefactoringStatus status= new RefactoringStatus();
-		List<ExternalResourceRuleMigration> migrations= createMigrations(ruleFields, resourcesByTypeKey, status);
-		if (status.hasFatalError()) {
-			return new MultiFileCleanUpPlanResult<>(null, status);
+		long planningStarted= System.nanoTime();
+		MultiFilePlanningBudget.Assessment budget= MultiFilePlanningBudget.assess(selectedUnits,
+				MultiFilePlanningLimits.fromSystemProperties(), monitor);
+		if (!budget.mayProceed()) {
+			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics());
 		}
-		return new MultiFileCleanUpPlanResult<>(new JUnitMigrationPlan(selectedScope, migrations), status);
+		long parseStarted= System.nanoTime();
+		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
+		long parseNanos= System.nanoTime() - parseStarted;
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		Map<String, ResourceType> resourcesByTypeKey= collectResourceTypes(rootsByHandle, monitor);
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey, monitor);
+		RefactoringStatus status= budget.status();
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		List<ExternalResourceRuleMigration> migrations= createMigrations(ruleFields, resourcesByTypeKey, status,
+				monitor);
+		MultiFilePlanningMetrics metrics= budget.metrics()
+				.withDurations(parseNanos, System.nanoTime() - planningStarted)
+				.withRetainedPlanEntries(migrations.size());
+		if (status.hasFatalError()) {
+			return new MultiFileCleanUpPlanResult<>(null, status, metrics);
+		}
+		return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, migrations), status,
+				metrics);
 	}
 
 	private static Map<String, CompilationUnit> parse(IJavaProject project, ICompilationUnit[] units,
@@ -134,13 +151,16 @@ public final class JUnitMultiFilePlanner {
 		return roots;
 	}
 
-	private static Map<String, ResourceType> collectResourceTypes(Map<String, CompilationUnit> rootsByHandle) {
+	private static Map<String, ResourceType> collectResourceTypes(
+			Map<String, CompilationUnit> rootsByHandle, IProgressMonitor monitor) {
 		Map<String, ResourceType> result= new LinkedHashMap<>();
 		for (Map.Entry<String, CompilationUnit> entry : rootsByHandle.entrySet()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			String unitHandle= entry.getKey();
 			entry.getValue().accept(new ASTVisitor() {
 				@Override
 				public boolean visit(TypeDeclaration node) {
+					MultiFilePlanningBudget.checkCanceled(monitor);
 					ITypeBinding binding= node.resolveBinding();
 					if (directlyExtendsExternalResource(binding)) {
 						String typeKey= JUnitMigrationPlan.typeKey(binding);
@@ -156,13 +176,15 @@ public final class JUnitMultiFilePlanner {
 	}
 
 	private static List<RuleField> collectRuleFields(Map<String, CompilationUnit> rootsByHandle,
-			Map<String, ResourceType> resourcesByTypeKey) {
+			Map<String, ResourceType> resourcesByTypeKey, IProgressMonitor monitor) {
 		List<RuleField> result= new ArrayList<>();
 		for (Map.Entry<String, CompilationUnit> entry : rootsByHandle.entrySet()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			String unitHandle= entry.getKey();
 			entry.getValue().accept(new ASTVisitor() {
 				@Override
 				public boolean visit(FieldDeclaration node) {
+					MultiFilePlanningBudget.checkCanceled(monitor);
 					RuleKind kind= ruleKind(node);
 					boolean classRule= kind == RuleKind.CLASS;
 					if (kind == RuleKind.NONE || node.fragments().size() != 1
@@ -189,10 +211,11 @@ public final class JUnitMultiFilePlanner {
 	}
 
 	private static List<ExternalResourceRuleMigration> createMigrations(List<RuleField> fields,
-			Map<String, ResourceType> resourcesByTypeKey, RefactoringStatus status) {
+			Map<String, ResourceType> resourcesByTypeKey, RefactoringStatus status, IProgressMonitor monitor) {
 		Map<String, Boolean> modeByResourceType= new HashMap<>();
 		List<ExternalResourceRuleMigration> result= new ArrayList<>();
 		for (RuleField field : fields) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			Boolean previousMode= modeByResourceType.putIfAbsent(field.resourceTypeKey(), field.classRule());
 			if (previousMode != null && previousMode.booleanValue() != field.classRule()) {
 				status.addFatalError("The ExternalResource type is used by both @Rule and @ClassRule fields; " //$NON-NLS-1$
