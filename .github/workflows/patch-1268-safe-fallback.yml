@@ -1,0 +1,309 @@
+name: Patch concrete collector fallback
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ issue-1251-concrete-collectors ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-concrete-collector-fallback
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: issue-1251-concrete-collectors
+          fetch-depth: 1
+      - name: Restore safe fallback for supported constructor arguments
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          handler_path = Path('sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java')
+          handler = handler_path.read_text(encoding='utf-8')
+          old = '''		if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
+			VariableDeclarationStatement accumulator= findFreshAccumulator(loop, collectTerminal.targetVariable());
+			if (accumulator != null) {
+				if (!collectTerminal.targetVariable().equals(
+						CollectPatternDetector.isEmptyCollectionDeclaration(accumulator))) {
+					return false;
+				}
+				CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(accumulator, collectTerminal);
+				if (preserved == null) {
+					return false;
+				}
+				model.setTerminal(preserved);
+			}
+		}
+'''
+          new = '''		if (model.getTerminal() instanceof CollectTerminal collectTerminal) {
+			VariableDeclarationStatement adjacent= findAdjacentAccumulator(loop, collectTerminal.targetVariable());
+			VariableDeclarationStatement fresh= findFreshAccumulator(loop, collectTerminal.targetVariable());
+			if (fresh != null) {
+				CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(fresh, collectTerminal);
+				if (preserved == null) {
+					return false;
+				}
+				model.setTerminal(preserved);
+			} else if (adjacent != null
+					&& !ConcreteCollectionFactory.hasSupportedConcreteType(adjacent, collectTerminal)) {
+				return false;
+			}
+		}
+'''
+          handler = replace_once(handler, old, new, 'collector scheduling block')
+
+          old = '''	private VariableDeclarationStatement findFreshAccumulator(EnhancedForStatement loop, String targetVariable) {
+		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {
+			return null;
+		}
+		@SuppressWarnings("unchecked") //$NON-NLS-1$
+		List<Statement> statements= block.statements();
+		int loopIndex= statements.indexOf(loop);
+		if (loopIndex <= 0) {
+			return null;
+		}
+		Statement previous= statements.get(loopIndex - 1);
+		if (!(previous instanceof VariableDeclarationStatement declaration)
+				|| declaration.fragments().size() != 1) {
+			return null;
+		}
+		VariableDeclarationFragment fragment=
+				(VariableDeclarationFragment) declaration.fragments().get(0);
+		return targetVariable.equals(fragment.getName().getIdentifier()) ? declaration : null;
+	}
+'''
+          new = '''	private VariableDeclarationStatement findFreshAccumulator(EnhancedForStatement loop, String targetVariable) {
+		VariableDeclarationStatement declaration= findAdjacentAccumulator(loop, targetVariable);
+		return declaration != null && targetVariable.equals(
+				CollectPatternDetector.isEmptyCollectionDeclaration(declaration)) ? declaration : null;
+	}
+
+	private VariableDeclarationStatement findAdjacentAccumulator(EnhancedForStatement loop, String targetVariable) {
+		if (targetVariable == null || !(loop.getParent() instanceof Block block)) {
+			return null;
+		}
+		@SuppressWarnings("unchecked") //$NON-NLS-1$
+		List<Statement> statements= block.statements();
+		int loopIndex= statements.indexOf(loop);
+		if (loopIndex <= 0) {
+			return null;
+		}
+		Statement previous= statements.get(loopIndex - 1);
+		if (!(previous instanceof VariableDeclarationStatement declaration)
+				|| declaration.fragments().size() != 1) {
+			return null;
+		}
+		VariableDeclarationFragment fragment=
+				(VariableDeclarationFragment) declaration.fragments().get(0);
+		return targetVariable.equals(fragment.getName().getIdentifier()) ? declaration : null;
+	}
+'''
+          handler = replace_once(handler, old, new, 'accumulator lookup method')
+          handler_path.write_text(handler, encoding='utf-8')
+
+          factory_path = Path('sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ConcreteCollectionFactory.java')
+          factory = factory_path.read_text(encoding='utf-8')
+          marker = '''	/**
+	 * Returns a qualified constructor reference for one exactly modeled initializer.
+'''
+          helper = '''	/**
+	 * Returns whether the adjacent declaration uses one modeled JDK collection type.
+	 * Constructor arguments are allowed because callers using this predicate retain
+	 * the original declaration and only replace the loop with a direct forEach.
+	 */
+	static boolean hasSupportedConcreteType(VariableDeclarationStatement declaration, CollectTerminal terminal) {
+		if (declaration == null || terminal == null || declaration.fragments().size() != 1) {
+			return false;
+		}
+		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);
+		Expression initializer= fragment.getInitializer();
+		if (!(initializer instanceof ClassInstanceCreation creation) || hasAnonymousClass(creation)) {
+			return false;
+		}
+		ITypeBinding createdType= creation.resolveTypeBinding();
+		ITypeBinding declaredType= declaration.getType().resolveBinding();
+		if (createdType == null || declaredType == null) {
+			return false;
+		}
+		ITypeBinding createdErasure= createdType.getErasure();
+		if (createdErasure == null || declaredType.getErasure() == null) {
+			return false;
+		}
+		CollectTerminal.CollectorType supportedType= SUPPORTED.get(createdErasure.getQualifiedName());
+		return supportedType == terminal.collectorType()
+				&& createdType.isAssignmentCompatible(declaredType);
+	}
+
+'''
+          if helper not in factory:
+              if factory.count(marker) != 1:
+                  raise SystemExit('factory helper insertion marker not found exactly once')
+              factory = factory.replace(marker, helper + marker, 1)
+          factory_path.write_text(factory, encoding='utf-8')
+
+          safety_path = Path('sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AccumulatorAndSequenceSafetyTest.java')
+          safety = safety_path.read_text(encoding='utf-8')
+          old = '''	@Test
+	void capacityConstructorFailsClosed() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>(16);
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""");
+	}
+'''
+          new = '''	@Test
+	void capacityConstructorPreservesDeclarationAndConvertsLoop() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>(16);
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				class E {
+					ArrayList<String> copy(List<String> source) {
+						ArrayList<String> result = new ArrayList<>(16);
+						source.forEach(item -> result.add(item));
+						return result;
+					}
+				}
+				""");
+	}
+'''
+          safety = replace_once(safety, old, new, 'capacity-constructor regression')
+
+          old = '''	@Test
+	void comparatorConstructorFailsClosed() throws CoreException {
+		assertNoChange("""
+				package test;
+				import java.util.*;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""");
+	}
+'''
+          new = '''	@Test
+	void comparatorConstructorPreservesDeclarationAndConvertsLoop() throws CoreException {
+		assertExpected("""
+				package test;
+				import java.util.*;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+						for (String item : source) {
+							result.add(item);
+						}
+						return result;
+					}
+				}
+				""", """
+				package test;
+				import java.util.*;
+				class E {
+					TreeSet<String> copy(List<String> source) {
+						TreeSet<String> result = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+						source.forEach(item -> result.add(item));
+						return result;
+					}
+				}
+				""");
+	}
+'''
+          safety = replace_once(safety, old, new, 'comparator-constructor regression')
+          safety_path.write_text(safety, encoding='utf-8')
+
+          additional_path = Path('sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AdditionalLoopPatternsTest.java')
+          additional = additional_path.read_text(encoding='utf-8')
+          method_start = additional.index('public void testMultipleLoopsPopulatingList_preservesConcreteAccumulator()')
+          expected_start = additional.index('\n\t\tString expected = """', method_start)
+          expected_end = additional.index('\n\t\tassertConversion("RuleChainBuilder.java", given, expected);', expected_start)
+          expected = '''
+		String expected = """
+package test1;
+import java.util.*;
+public class RuleChainBuilder {
+	private List<MethodRule> methodRules = new ArrayList<>();
+	private List<TestRule> testRules = new ArrayList<>();
+	private Map<Object, Integer> orderValues = new HashMap<>();
+	private static final Comparator<RuleEntry> ENTRY_COMPARATOR = Comparator.comparingInt(e -> e.order);
+
+	private List<RuleEntry> getSortedEntries() {
+		List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
+				methodRules.size() + testRules.size());
+		methodRules.forEach(
+				rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule))));
+		testRules
+				.forEach(rule -> ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule))));
+		Collections.sort(ruleEntries, ENTRY_COMPARATOR);
+		return ruleEntries;
+	}
+
+	interface MethodRule {}
+	interface TestRule {}
+
+	static class RuleEntry {
+		static final int TYPE_METHOD_RULE = 1;
+		static final int TYPE_TEST_RULE = 2;
+		Object rule;
+		int type;
+		int order;
+		RuleEntry(Object rule, int type, Integer order) {
+			this.rule = rule;
+			this.type = type;
+			this.order = order != null ? order : 0;
+		}
+	}
+}
+				""";'''
+          additional = additional[:expected_start] + expected + additional[expected_end:]
+          additional_path.write_text(additional, encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add \
+            sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ConcreteCollectionFactory.java \
+            sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/SafeEnhancedForHandler.java \
+            sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AccumulatorAndSequenceSafetyTest.java \
+            sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/AdditionalLoopPatternsTest.java
+          git diff --cached --quiet && exit 0
+          git commit -m 'Preserve supported constructor arguments with forEach fallback'
+          git push origin HEAD:issue-1251-concrete-collectors
