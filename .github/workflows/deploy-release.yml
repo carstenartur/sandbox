@@ -1,21 +1,19 @@
 name: Release Workflow
 # Manual release workflow for Sandbox.
 #
-# This replaces the previous large workflow with a shorter process that is
-# easier to review and re-run safely. It validates the current SNAPSHOT version,
-# builds with Xvfb installed, creates the release tag and GitHub Release, deploys
-# the P2 update site, and opens a PR for the next development SNAPSHOT.
+# The release is built, tested and smoke-tested before any stable tag or GitHub
+# Release is created. The versioned p2 repository is then published and verified
+# through its advertised URL before the remaining promotion steps continue.
 
 on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Release version matching the current SNAPSHOT without -SNAPSHOT, e.g. 1.3.1'
+        description: 'Release version matching the current SNAPSHOT without -SNAPSHOT, e.g. 1.3.2'
         required: true
         type: string
-        default: '1.3.1'
       skip_tests:
-        description: 'Skip tests during release build'
+        description: 'Skip tests for a dry-run diagnostic build only'
         required: false
         type: boolean
         default: false
@@ -89,6 +87,11 @@ jobs:
             exit 1
           fi
 
+          if [[ "${{ inputs.skip_tests }}" == "true" && "${{ inputs.dry_run }}" != "true" ]]; then
+            echo "::error::Published releases may not skip tests. Use skip_tests only together with dry_run."
+            exit 1
+          fi
+
           IFS='.' read -r major minor patch <<< "$INPUT_VERSION"
           NEXT_PATCH=$((patch + 1))
           NEXT_SNAPSHOT="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
@@ -120,10 +123,11 @@ jobs:
           echo "| Skip tests | ${{ inputs.skip_tests }} |" >> "$GITHUB_STEP_SUMMARY"
 
   release:
-    name: Build, Publish, and Prepare Next Version
+    name: Build, Verify, Publish, and Prepare Next Version
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: preflight
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     env:
       DISPLAY: :0
       MAVEN_OPTS: -Djava.awt.headless=true
@@ -205,16 +209,28 @@ jobs:
       - name: Build and verify release
         run: |
           set -euo pipefail
-          TEST_FLAG=""
+          mkdir -p target/distribution-verification
+          test_args=()
           if [[ "${{ inputs.skip_tests }}" == "true" ]]; then
-            TEST_FLAG="-DskipTests"
+            test_args=(-DskipTests)
           fi
           xvfb-run --auto-servernum mvn \
             -Pproduct,repo,cli-dist,maven-plugin,benchmark \
             -T 1C \
             --batch-mode \
             clean verify \
-            ${TEST_FLAG}
+            "${test_args[@]}" 2>&1 \
+            | tee target/distribution-verification/release-build.log
+
+      - name: Validate release repository and Linux product
+        run: bash .github/scripts/verify_linux_distribution.sh
+
+      - name: Install, start, and transform with the release distribution
+        run: bash .github/scripts/smoke_test_distribution.sh
+
+      - name: Publish local release verification summary
+        if: always() && hashFiles('target/distribution-verification/verification.md') != ''
+        run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cleanup Xvfb
         if: always()
@@ -252,59 +268,6 @@ jobs:
           git push origin ":refs/heads/${TEMP_BRANCH}" || true
           git push origin "HEAD:refs/heads/${TEMP_BRANCH}"
 
-      - name: Create release tag
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          COMMIT_SHA=$(git rev-parse HEAD)
-          TAG_SHA=$(gh api "repos/${{ github.repository }}/git/tags" \
-            --method POST \
-            -f tag="v${VERSION}" \
-            -f message="Release version ${VERSION}" \
-            -f object="$COMMIT_SHA" \
-            -f type="commit" \
-            --jq '.sha')
-          gh api "repos/${{ github.repository }}/git/refs" \
-            --method POST \
-            -f ref="refs/tags/v${VERSION}" \
-            -f sha="$TAG_SHA"
-
-      - name: Create maintenance branch
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          MAJOR_MINOR=$(echo "$VERSION" | sed 's/\.[^.]*$//')
-          BRANCH_NAME="maintenance/${MAJOR_MINOR}.x"
-          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
-            echo "Maintenance branch $BRANCH_NAME already exists."
-          else
-            gh api "repos/${{ github.repository }}/git/refs" \
-              --method POST \
-              -f ref="refs/heads/${BRANCH_NAME}" \
-              -f sha="$(git rev-parse HEAD)"
-          fi
-
-      - name: Create GitHub Release
-        if: ${{ !inputs.dry_run }}
-        run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          gh release create "v${VERSION}" \
-            --title "Release ${VERSION}" \
-            --notes-file release_notes.md
-
-      - name: Upload CLI distribution archives
-        if: ${{ !inputs.dry_run }}
-        run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
-          for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
-            if [[ -f "$archive" ]]; then
-              gh release upload "v${VERSION}" "$archive" --clobber
-            fi
-          done
-
       - name: Checkout gh-pages branch
         if: ${{ !inputs.dry_run }}
         uses: actions/checkout@v6
@@ -312,13 +275,18 @@ jobs:
           ref: gh-pages
           path: gh-pages-repo
 
-      - name: Deploy P2 update site to gh-pages
+      - name: Deploy versioned P2 update site to gh-pages
         if: ${{ !inputs.dry_run }}
         run: |
           set -euo pipefail
           VERSION="${{ needs.preflight.outputs.release_version }}"
           mkdir -p "gh-pages-repo/releases/${VERSION}"
-          cp -r sandbox_updatesite/target/repository/* "gh-pages-repo/releases/${VERSION}/"
+          rm -rf "gh-pages-repo/releases/${VERSION:?}"/*
+          cp -a sandbox_updatesite/target/repository/. "gh-pages-repo/releases/${VERSION}/"
+          cp target/distribution-verification/verification.json \
+             "gh-pages-repo/releases/${VERSION}/distribution-verification.json"
+          cp target/distribution-verification/verification.md \
+             "gh-pages-repo/releases/${VERSION}/distribution-verification.md"
           cd gh-pages-repo/releases
 
           VERSIONS=$(find . -maxdepth 1 -type d ! -name '.' ! -name '..' -exec basename {} \; | sort -V)
@@ -362,6 +330,90 @@ jobs:
           git add .
           git commit -m "Deploy release ${VERSION}" || echo "No gh-pages changes to commit"
           git push origin gh-pages
+
+      - name: Verify advertised release URLs
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url "https://carstenartur.github.io/sandbox/releases/${VERSION}/" \
+            --expected-json target/distribution-verification/verification.json \
+            --output target/distribution-verification/release-url-verification.json
+          python3 .github/scripts/verify_published_repository.py \
+            --repository-url https://carstenartur.github.io/sandbox/releases/ \
+            --expected-child "$VERSION" \
+            --output target/distribution-verification/release-composite-verification.json
+
+      - name: Upload release distribution evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-distribution-${{ needs.preflight.outputs.release_version }}-${{ github.run_id }}
+          path: target/distribution-verification/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Create release tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          COMMIT_SHA=$(git rev-parse HEAD)
+          TAG_SHA=$(gh api "repos/${{ github.repository }}/git/tags" \
+            --method POST \
+            -f tag="v${VERSION}" \
+            -f message="Release version ${VERSION}" \
+            -f object="$COMMIT_SHA" \
+            -f type="commit" \
+            --jq '.sha')
+          gh api "repos/${{ github.repository }}/git/refs" \
+            --method POST \
+            -f ref="refs/tags/v${VERSION}" \
+            -f sha="$TAG_SHA"
+
+      - name: Create maintenance branch
+        if: ${{ !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          MAJOR_MINOR=$(echo "$VERSION" | sed 's/\.[^.]*$//')
+          BRANCH_NAME="maintenance/${MAJOR_MINOR}.x"
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Maintenance branch $BRANCH_NAME already exists."
+          else
+            gh api "repos/${{ github.repository }}/git/refs" \
+              --method POST \
+              -f ref="refs/heads/${BRANCH_NAME}" \
+              -f sha="$(git rev-parse HEAD)"
+          fi
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          gh release create "v${VERSION}" \
+            --title "Release ${VERSION}" \
+            --notes-file release_notes.md
+
+      - name: Upload release archives and verification evidence
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="${{ needs.preflight.outputs.release_version }}"
+          CLI_DIST_DIR="sandbox_cleanup_cli_dist/target"
+          for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
+            if [[ -f "$archive" ]]; then
+              gh release upload "v${VERSION}" "$archive" --clobber
+            fi
+          done
+          for evidence in \
+            target/distribution-verification/verification.json \
+            target/distribution-verification/verification.md \
+            target/distribution-verification/release-url-verification.json \
+            target/distribution-verification/release-composite-verification.json; do
+            if [[ -f "$evidence" ]]; then
+              gh release upload "v${VERSION}" "$evidence" --clobber
+            fi
+          done
 
       - name: Fast-forward main to release commit
         if: ${{ !inputs.dry_run }}
@@ -430,7 +482,7 @@ jobs:
           ISSUE_BODY=$(cat << EOF
           ## Release ${VERSION}
 
-          A new Sandbox release was published.
+          A new Sandbox release was published after product, p2 installation, startup, cleanup transformation and URL verification passed.
 
           | Field | Value |
           |-------|-------|
@@ -438,6 +490,7 @@ jobs:
           | GitHub Release | https://github.com/${{ github.repository }}/releases/tag/v${VERSION} |
           | Composite Update Site | https://carstenartur.github.io/sandbox/releases/ |
           | Version-specific Update Site | https://carstenartur.github.io/sandbox/releases/${VERSION}/ |
+          | Distribution Evidence | https://carstenartur.github.io/sandbox/releases/${VERSION}/distribution-verification.md |
           | Marketplace Edit | https://marketplace.eclipse.org/content/sandbox/edit |
 
           ## Checklist
