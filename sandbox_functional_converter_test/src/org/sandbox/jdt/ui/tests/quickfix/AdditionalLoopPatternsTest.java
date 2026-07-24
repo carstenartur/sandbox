@@ -315,13 +315,14 @@ public class RuleChainBuilder {
 				import java.util.*;
 				import java.util.stream.Collectors;
 				public class MyTest {
-					private List<String> items = Arrays.asList("c", "a", "b");
+				 private List<String> items = Arrays.asList("c", "a", "b");
 
-					List<String> getSortedItems() {
-						List<String> result = items.stream().map(item -> item.toUpperCase()).collect(Collectors.toList());
-						Collections.sort(result);
-						return result;
-					}
+				 List<String> getSortedItems() {
+				  List<String> result = items.stream().map(item -> item.toUpperCase())
+				    .collect(Collectors.toCollection(java.util.ArrayList::new));
+				  Collections.sort(result);
+				  return result;
+				 }
 				}
 				""";
 		assertConversion("MyTest.java", given, expected);

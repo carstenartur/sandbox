@@ -24,7 +24,6 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ForStatement;
-import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -47,9 +46,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 
 /** Converts safe iterator while/for loops through the shared ULR pipeline. */
 public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
-
-	private static final String JAVA_UTIL_LIST= "java.util.List"; //$NON-NLS-1$
-	private static final String JAVA_UTIL_SET= "java.util.Set"; //$NON-NLS-1$
 
 	private final IteratorPatternDetector patternDetector= new IteratorPatternDetector();
 	private final IteratorLoopAnalyzer loopAnalyzer= new IteratorLoopAnalyzer();
@@ -124,16 +120,21 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 	}
 
 	private boolean isSafeToSchedule(ASTNode loop, IteratorConversion conversion) {
-		TerminalOperation terminal= conversion.extractedLoop().model.getTerminal();
+		LoopModel model= conversion.extractedLoop().model;
+		TerminalOperation terminal= model.getTerminal();
 		String liftedAccumulatorName= null;
 		if (terminal instanceof CollectTerminal collectTerminal) {
 			liftedAccumulatorName= collectTerminal.targetVariable();
 			VariableDeclarationStatement declaration= findAccumulatorDeclaration(loop, liftedAccumulatorName);
 			if (declaration == null
-					|| !liftedAccumulatorName.equals(CollectPatternDetector.isEmptyCollectionDeclaration(declaration))
-					|| !isCollectorResultAssignable(declaration, collectTerminal)) {
+					|| !liftedAccumulatorName.equals(CollectPatternDetector.isEmptyCollectionDeclaration(declaration))) {
 				return false;
 			}
+			CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(declaration, collectTerminal);
+			if (preserved == null) {
+				return false;
+			}
+			model.setTerminal(preserved);
 		} else if (terminal instanceof ReduceTerminal reduceTerminal) {
 			liftedAccumulatorName= reduceTerminal.targetVariable();
 			VariableDeclarationStatement declaration= findAccumulatorDeclaration(loop, liftedAccumulatorName);
@@ -172,10 +173,15 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);
 			if (accumulatorDeclaration == null
 					|| !liftedAccumulatorName.equals(
-							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))
-					|| !isCollectorResultAssignable(accumulatorDeclaration, collectTerminal)) {
+							CollectPatternDetector.isEmptyCollectionDeclaration(accumulatorDeclaration))) {
 				return;
 			}
+			CollectTerminal preserved= ConcreteCollectionFactory.preserveFactory(
+					accumulatorDeclaration, collectTerminal);
+			if (preserved == null) {
+				return;
+			}
+			model.setTerminal(preserved);
 		} else if (terminal instanceof ReduceTerminal reduceTerminal) {
 			liftedAccumulatorName= reduceTerminal.targetVariable();
 			accumulatorDeclaration= findAccumulatorDeclaration(visited, liftedAccumulatorName);
@@ -189,7 +195,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
-		ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(),
+		ASTStreamRenderer renderer= new ConcreteCollectionASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(),
 				conversion.extractedLoop().originalBody);
 		Expression streamExpression= new LoopModelTransformer<>(renderer).transform(model);
 		if (streamExpression == null) {
@@ -243,20 +249,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 		return fragment.getName().getIdentifier().equals(targetVariable) ? fragment : null;
 	}
 
-	private boolean isCollectorResultAssignable(VariableDeclarationStatement declaration,
-			CollectTerminal terminal) {
-		ITypeBinding typeBinding= declaration.getType().resolveBinding();
-		if (typeBinding == null) {
-			return false;
-		}
-		String qualifiedName= typeBinding.getErasure().getQualifiedName();
-		return switch (terminal.collectorType()) {
-			case TO_LIST -> JAVA_UTIL_LIST.equals(qualifiedName);
-			case TO_SET -> JAVA_UTIL_SET.equals(qualifiedName);
-			default -> false;
-		};
-	}
-
+	@SuppressWarnings("unchecked")
 	private VariableDeclarationStatement createMergedDeclaration(AST ast,
 			VariableDeclarationStatement original, Expression initializer) {
 		VariableDeclarationFragment originalFragment=
