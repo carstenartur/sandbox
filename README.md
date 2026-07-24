@@ -366,6 +366,7 @@ This repository contains extensive documentation organized at multiple levels to
 - **[Projects](#projects)** - Descriptions and documentation for all plugins
 - **[Contributing](CONTRIBUTING.md)** - How to contribute to this project
 - **[Release Process](CONTRIBUTING.md#release-process)** - Maintainer guide for creating releases
+- **[Distribution Compatibility](docs/distribution-compatibility.md)** - Supported build matrix, runtime coverage, publication gates, and evidence
 - **[Post-merge Multi-file Cleanup QA](docs/qa/multi-file-cleanup-post-merge-qa.md)** - Validated scope, risks, and prioritized follow-ups
 - **[Eclipse Version Configuration](CONTRIBUTING.md#eclipse-version-configuration)** - Maintainer guide for updating Eclipse versions
 

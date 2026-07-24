@@ -107,12 +107,16 @@ def verify_repository(repository: Path, published_features: list[str]) -> dict[s
         for unit in content.findall("./units/unit")
         if unit.attrib.get("id")
     }
-    missing_units = [f"{feature}.feature.group" for feature in published_features
-                     if f"{feature}.feature.group" not in units]
+    missing_units = [
+        f"{feature}.feature.group"
+        for feature in published_features
+        if f"{feature}.feature.group" not in units
+    ]
     if missing_units:
         fail(f"Published feature IUs missing from content metadata: {missing_units}")
 
     seen_keys: set[tuple[str, str, str]] = set()
+    feature_artifacts: dict[tuple[str, str], dict[str, object]] = {}
     checked_files = 0
     checksum_count = 0
     missing_files: list[str] = []
@@ -125,31 +129,40 @@ def verify_repository(repository: Path, published_features: list[str]) -> dict[s
         if key in seen_keys:
             fail(f"Duplicate p2 artifact key: {key}")
         seen_keys.add(key)
-        path = artifact_path(repository, classifier, identifier, version)
-        if path is None:
+        artifact_file = artifact_path(repository, classifier, identifier, version)
+        if artifact_file is None:
             continue
         checked_files += 1
-        if not path.is_file():
-            missing_files.append(str(path.relative_to(repository)))
+        if not artifact_file.is_file():
+            missing_files.append(str(artifact_file.relative_to(repository)))
             continue
         properties = artifact_properties(artifact)
         size = properties.get("download.size") or properties.get("artifact.size")
-        if size and size.isdigit() and path.stat().st_size != int(size):
+        if size and size.isdigit() and artifact_file.stat().st_size != int(size):
             checksum_errors.append(
-                f"{path.name}: size {path.stat().st_size}, metadata {size}"
+                f"{artifact_file.name}: size {artifact_file.stat().st_size}, metadata {size}"
             )
+        feature_sha256 = digest(artifact_file, "sha256")
+        if classifier == "org.eclipse.update.feature" and identifier in published_features:
+            feature_artifacts[(identifier, version)] = {
+                "id": identifier,
+                "iu": f"{identifier}.feature.group",
+                "version": version,
+                "artifactSize": artifact_file.stat().st_size,
+                "artifactSha256": feature_sha256,
+            }
         for name, value in properties.items():
             lowered = name.lower()
-            if re.fullmatch(r"[0-9a-fA-F]{64}", value) and ("sha-256" in lowered or "sha256" in lowered):
+            if re.fullmatch(r"[0-9a-fA-F]{64}", value) and (
+                "sha-256" in lowered or "sha256" in lowered
+            ):
                 checksum_count += 1
-                actual = digest(path, "sha256")
-                if actual.lower() != value.lower():
-                    checksum_errors.append(f"{path.name}: SHA-256 mismatch")
+                if feature_sha256.lower() != value.lower():
+                    checksum_errors.append(f"{artifact_file.name}: SHA-256 mismatch")
             elif re.fullmatch(r"[0-9a-fA-F]{32}", value) and "md5" in lowered:
                 checksum_count += 1
-                actual = digest(path, "md5")
-                if actual.lower() != value.lower():
-                    checksum_errors.append(f"{path.name}: MD5 mismatch")
+                if digest(artifact_file, "md5").lower() != value.lower():
+                    checksum_errors.append(f"{artifact_file.name}: MD5 mismatch")
     if missing_files:
         fail(f"p2 artifact metadata references missing files: {missing_files[:20]}")
     if checksum_errors:
@@ -157,18 +170,22 @@ def verify_repository(repository: Path, published_features: list[str]) -> dict[s
     if checked_files == 0:
         fail("No bundle or feature artifacts were validated")
 
+    published_evidence: list[dict[str, object]] = []
+    for feature in published_features:
+        version = units[f"{feature}.feature.group"]
+        evidence = feature_artifacts.get((feature, version))
+        if evidence is None:
+            fail(f"Published feature artifact missing for exact IU version: {feature}/{version}")
+        published_evidence.append(evidence)
+
     return {
         "path": str(repository),
         "metadataUnits": len(units),
         "artifactKeys": len(seen_keys),
         "artifactFilesChecked": checked_files,
         "checksumsChecked": checksum_count,
-        "publishedFeatures": [
-            {"id": feature, "iu": f"{feature}.feature.group", "version": units[f"{feature}.feature.group"]}
-            for feature in published_features
-        ],
+        "publishedFeatures": published_evidence,
     }
-
 
 def find_product_root(products: Path) -> Path:
     candidates = sorted({path.parent.parent for path in products.rglob("plugins/org.eclipse.equinox.launcher_*.jar")})
