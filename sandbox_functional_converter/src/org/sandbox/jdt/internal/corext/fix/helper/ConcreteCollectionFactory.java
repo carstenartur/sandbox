@@ -33,6 +33,7 @@ final class ConcreteCollectionFactory {
 
 	private static final String JAVA_UTIL_LIST= "java.util.List"; //$NON-NLS-1$
 	private static final String JAVA_UTIL_SET= "java.util.Set"; //$NON-NLS-1$
+	private static final String JAVA_UTIL_TREE_SET_FACTORY= "java.util.TreeSet::new"; //$NON-NLS-1$
 
 	private static final Map<String, CollectTerminal.CollectorType> SUPPORTED= Map.of(
 			"java.util.ArrayList", CollectTerminal.CollectorType.TO_LIST, //$NON-NLS-1$
@@ -48,19 +49,22 @@ final class ConcreteCollectionFactory {
 	 * Adds the proven constructor supplier to a collect terminal. Unsupported or
 	 * construction-sensitive declarations fail closed by returning {@code null}.
 	 *
-	 * <p>For an exact {@link java.util.List} or {@link java.util.Set} declaration
-	 * whose value is never referenced after the accumulating loop, the concrete
+	 * <p>For an exact {@link java.util.List} declaration, or an exact
+	 * {@link java.util.Set} declaration backed by a modeled hash-based set, whose
+	 * value is never referenced after the accumulating loop, the concrete
 	 * implementation is not observable. In that case the existing interface
 	 * collector remains sufficient and avoids changing established output for a
 	 * dead local. A later read, return or subsequent loop keeps the explicit
-	 * constructor supplier.</p>
+	 * constructor supplier. {@link java.util.TreeSet} always keeps its supplier:
+	 * comparison and null-handling failures remain observable even when the final
+	 * set value is not read.</p>
 	 */
 	static CollectTerminal preserveFactory(VariableDeclarationStatement declaration, CollectTerminal terminal) {
 		String supplier= supplier(declaration, terminal);
 		if (supplier == null) {
 			return null;
 		}
-		if (canUseInterfaceCollector(declaration, terminal)) {
+		if (canUseInterfaceCollector(declaration, terminal, supplier)) {
 			return terminal;
 		}
 		return new CollectTerminal(terminal.collectorType(), terminal.targetVariable(), supplier);
@@ -101,7 +105,10 @@ final class ConcreteCollectionFactory {
 	}
 
 	private static boolean canUseInterfaceCollector(VariableDeclarationStatement declaration,
-			CollectTerminal terminal) {
+			CollectTerminal terminal, String supplier) {
+		if (JAVA_UTIL_TREE_SET_FACTORY.equals(supplier)) {
+			return false;
+		}
 		ITypeBinding declaredType= declaration.getType().resolveBinding();
 		ITypeBinding erasure= declaredType == null ? null : declaredType.getErasure();
 		if (erasure == null) {
