@@ -32,51 +32,27 @@ jobs:
       - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
-      - name: Test distribution verification utilities
-        run: |
-          python3 -m py_compile \
-            .github/scripts/verify_distribution_artifacts.py \
-            .github/scripts/verify_published_repository.py \
-            .github/scripts/test_verify_published_repository.py
-          python3 .github/scripts/test_verify_published_repository.py
-          bash -n .github/scripts/verify_linux_distribution.sh
-          bash -n .github/scripts/smoke_test_distribution.sh
-      - name: Install Linux product runtime libraries
+      - name: Install Linux desktop runtime
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
-      - name: Build and test stock product and update site from clean checkout
+      - name: Maven distribution build and verification
+        shell: bash
         run: |
           set -o pipefail
           status=0
           xvfb-run --auto-servernum mvn \
-            -Pproduct,repo \
-            -T 1C \
+            -Pdistribution \
             --batch-mode \
             -Dtycho.localArtifacts=ignore \
-            clean verify 2>&1 | tee /tmp/distribution-build.log || status=$?
+            clean verify 2>&1 \
+            | tee /tmp/sandbox-distribution-maven.log || status=$?
           mkdir -p target/distribution-verification
-          cp /tmp/distribution-build.log target/distribution-verification/build.log
+          cp /tmp/sandbox-distribution-maven.log \
+            target/distribution-verification/maven.log
           exit "$status"
-      - name: Validate repository metadata, artifacts and Linux product layout
-        run: bash .github/scripts/verify_linux_distribution.sh
-      - name: Cross-check built repository with publication verifier
-        run: |
-          repository_url=$(python3 - <<'PY'
-          from pathlib import Path
-          print(Path('sandbox_updatesite/target/repository').resolve().as_uri() + '/')
-          PY
-          )
-          python3 .github/scripts/verify_published_repository.py \
-            --repository-url "$repository_url" \
-            --expected-json target/distribution-verification/verification.json \
-            --attempts 1 \
-            --delay-seconds 0 \
-            --output target/distribution-verification/local-publication-verification.json
-      - name: Provision and start the built distribution
-        run: bash .github/scripts/smoke_test_distribution.sh
       - name: Publish verification summary
         if: always() && hashFiles('target/distribution-verification/verification.md') != ''
         run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"

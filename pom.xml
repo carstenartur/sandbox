@@ -23,7 +23,7 @@
 		<maven.compiler.target>${java-version}</maven.compiler.target>
 		<maven.compiler.release>${java-version}</maven.compiler.release>
 		<license.licenseName>epl_v1</license.licenseName>
-		<bouncycastle.version>1.85</bouncycastle.version>
+		<bouncycastle.version>1.84</bouncycastle.version>
 		<assertj.version>3.27.7</assertj.version>
 		<bnd.version>7.3.0</bnd.version>
 		<caffeine.version>3.2.4</caffeine.version>
@@ -107,12 +107,12 @@
 		profiles below -->
 	</modules>
 	<repositories>
-		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2025-12 to
+		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2026-06 to
 		resolve Bouncy Castle import conflicts -->
 		<repository>
-			<id>eclipse-2025-12</id>
+			<id>eclipse-2026-06</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/releases/2025-12/</url>
+			<url>https://download.eclipse.org/releases/2026-06/</url>
 		</repository>
 
 		<!-- 2. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
@@ -120,7 +120,7 @@
 			<id>orbit</id>
 			<layout>p2</layout>
 			<url>
-				https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/</url>
+				https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-06/</url>
 		</repository>
 
 		<!-- 3. Eclipse Lizenzinformationen -->
@@ -268,22 +268,22 @@
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcutil</id>
-								<versionRange>1.81.0</versionRange>
+								<versionRange>1.84.0</versionRange>
 							</requirement>
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcprov</id>
-								<versionRange>1.81.0</versionRange>
+								<versionRange>1.84.0</versionRange>
 							</requirement>
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcpkix</id>
-								<versionRange>1.81.0</versionRange>
+								<versionRange>1.84.0</versionRange>
 							</requirement>
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcpg</id>
-								<versionRange>1.81.0</versionRange>
+								<versionRange>1.84.0</versionRange>
 							</requirement>
 						</extraRequirements>
 					</dependency-resolution>
@@ -849,6 +849,17 @@
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+		</profile>
+
+		<!-- Complete distributable: standalone IDE archives, p2 update site and
+		Java-based runtime installation verification. -->
+		<profile>
+			<id>distribution</id>
+			<modules>
+				<module>sandbox_product</module>
+				<module>sandbox_updatesite</module>
+				<module>sandbox_distribution_verify</module>
+			</modules>
 		</profile>
 
 		<!-- Product profile: Build Eclipse product with p2-director

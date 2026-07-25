@@ -18,13 +18,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.IScopeContext;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+
+import org.eclipse.core.resources.ProjectScope;
 
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
@@ -32,6 +36,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.eclipse.jdt.internal.corext.fix.CleanUpPostSaveListener;
 import org.eclipse.jdt.internal.corext.fix.CleanUpPreferenceUtil;
@@ -66,11 +71,8 @@ public class IntToEnumSaveActionIsolationTest {
 				}
 			}
 		}
-		IEclipsePreferences node= InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN);
-		node.remove("editor_save_participant_" + CleanUpPostSaveListener.POSTSAVELISTENER_ID); //$NON-NLS-1$
-		node.remove(CleanUpPreferenceUtil.SAVE_PARTICIPANT_KEY_PREFIX
-				+ CleanUpConstants.CLEANUP_ON_SAVE_ADDITIONAL_OPTIONS);
-		node.flush();
+		clearSaveParticipantPreferences(InstanceScope.INSTANCE);
+		clearSaveParticipantPreferences(new ProjectScope(context.getJavaProject().getProject()));
 	}
 
 	@Test
@@ -139,6 +141,7 @@ public class IntToEnumSaveActionIsolationTest {
 
 		JavaEditor localEditor= openEditor(local);
 		local.getBuffer().setContents(localInEditor);
+		local.reconcile(IASTSharedValues.SHARED_AST_LEVEL, true, null, null);
 		localEditor.doSave(null);
 
 		String savedLocal= Files.readString(local.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8);
@@ -162,10 +165,26 @@ public class IntToEnumSaveActionIsolationTest {
 	}
 
 	private void enableSaveParticipant() throws Exception {
-		IEclipsePreferences node= InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN);
+		Map<String, String> settings= CleanUpPreferenceUtil.loadSaveParticipantOptions(InstanceScope.INSTANCE);
+		ProjectScope projectScope= new ProjectScope(context.getJavaProject().getProject());
+		CleanUpPreferenceUtil.saveSaveParticipantOptions(projectScope, settings);
+		enableSaveParticipant(projectScope);
+	}
+
+	private static void enableSaveParticipant(IScopeContext scope) throws Exception {
+		IEclipsePreferences node= scope.getNode(JavaUI.ID_PLUGIN);
 		node.putBoolean("editor_save_participant_" + CleanUpPostSaveListener.POSTSAVELISTENER_ID, true); //$NON-NLS-1$
 		node.put(CleanUpPreferenceUtil.SAVE_PARTICIPANT_KEY_PREFIX
 				+ CleanUpConstants.CLEANUP_ON_SAVE_ADDITIONAL_OPTIONS, CleanUpOptions.TRUE);
+		node.flush();
+	}
+
+	private static void clearSaveParticipantPreferences(IScopeContext scope) throws Exception {
+		IEclipsePreferences node= scope.getNode(JavaUI.ID_PLUGIN);
+		node.remove("editor_save_participant_" + CleanUpPostSaveListener.POSTSAVELISTENER_ID); //$NON-NLS-1$
+		for (String key : CleanUpPreferenceUtil.loadSaveParticipantOptions(InstanceScope.INSTANCE).keySet()) {
+			node.remove(CleanUpPreferenceUtil.SAVE_PARTICIPANT_KEY_PREFIX + key);
+		}
 		node.flush();
 	}
 

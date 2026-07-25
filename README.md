@@ -104,7 +104,8 @@ The repository includes CI workflows for building, testing, and code quality ana
 **Quick Start:**
 - **Requires**: Java 21 or later
 - **Quick Build**: `mvn -T 1C verify`
-- **Full Build**: `mvn -Pproduct,repo -T 1C verify`
+- **Standalone IDE Product**: `mvn -Pproduct clean verify`
+- **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`
 
 **Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
@@ -134,7 +135,7 @@ Want to build and run the Eclipse product with bundled plugins? See the [Buildin
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2025-12)| Java 21      | 5.0.3         |
+| `main` (2026-06)| Java 21      | 5.0.3         |
 
 **Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 

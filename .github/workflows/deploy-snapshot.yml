@@ -52,32 +52,20 @@ jobs:
         with:
           maven-version: 3.9.14
 
-      - name: Install Linux product runtime libraries
+      - name: Install Linux desktop runtime
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
-      - name: Build and test product and update site
-        run: |
-          set -o pipefail
-          status=0
-          xvfb-run --auto-servernum mvn \
-            -Pproduct,repo \
-            -T 1C \
-            --batch-mode \
-            -Dtycho.localArtifacts=ignore \
-            clean verify 2>&1 | tee /tmp/snapshot-build.log || status=$?
-          mkdir -p target/distribution-verification
-          cp /tmp/snapshot-build.log target/distribution-verification/snapshot-build.log
-          exit "$status"
-
-      - name: Validate repository metadata, artifacts and Linux product layout
-        run: bash .github/scripts/verify_linux_distribution.sh
-
-      - name: Provision and start the built distribution
-        run: bash .github/scripts/smoke_test_distribution.sh
+      - name: Maven distribution build and verification
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pdistribution
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
 
       - name: Generate snapshot build manifest
         run: |
@@ -177,7 +165,7 @@ jobs:
           previous="${{ steps.gh_pages_before.outputs.sha }}"
           deployed="${{ steps.gh_pages_after.outputs.sha }}"
           if [[ -z "$previous" || -z "$deployed" ]]; then
-            echo "::error::The previous or deployed gh-pages revision was not captured."
+            echo '::error::The previous or deployed gh-pages revision was not captured.'
             exit 1
           fi
           git -C gh-pages-before push \

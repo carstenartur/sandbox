@@ -10,7 +10,7 @@
 	<artifactId>sandbox_target</artifactId>
 	<name>Sandbox target</name>
 	<packaging>eclipse-target-definition</packaging>
-		<build>
+	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>

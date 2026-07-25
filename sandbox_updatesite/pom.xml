@@ -58,7 +58,19 @@
 		</dependency>
 		<dependency>
 			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_css_cleanup_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_extra_search_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_int_to_enum_feature</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_use_general_type_feature</artifactId>
 		</dependency>
 	</dependencies>
 	<build>
