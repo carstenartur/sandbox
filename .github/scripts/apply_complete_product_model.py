@@ -41,16 +41,11 @@ def root_pom(text: str) -> str:
 
 
 def readme(text: str) -> str:
-    text = text.replace(
-        "- **Complete Distribution Gate (Linux)**: `xvfb-run --auto-servernum mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`",
-        "- **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`",
-    )
-    text = text.replace(
-        "- **Full Build**: `mvn -Pproduct,repo -T 1C verify`",
-        "- **Standalone IDE Product**: `mvn -Pproduct clean verify`\
-        "\n- **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`",
-    )
-    return text
+    old = "- **Complete Distribution Gate (Linux)**: `xvfb-run --auto-servernum mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`"
+    new = "- **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`"
+    if old not in text:
+        raise SystemExit("README distribution command not found")
+    return text.replace(old, new, 1)
 
 
 def compatibility(text: str) -> str:
@@ -83,10 +78,18 @@ mvn -Pdistribution \\
 
 
 def product_readme(text: str) -> str:
-    text = text.replace(
-        "xvfb-run --auto-servernum mvn \\\n  -Pdistribution \\\n  --batch-mode \\\n  -Dtycho.localArtifacts=ignore \\\n  clean verify",
-        "mvn -Pdistribution \\\n  --batch-mode \\\n  -Dtycho.localArtifacts=ignore \\\n  clean verify",
-    )
+    old = """xvfb-run --auto-servernum mvn \\
+  -Pdistribution \\
+  --batch-mode \\
+  -Dtycho.localArtifacts=ignore \\
+  clean verify"""
+    new = """mvn -Pdistribution \\
+  --batch-mode \\
+  -Dtycho.localArtifacts=ignore \\
+  clean verify"""
+    if old not in text:
+        raise SystemExit("Product README distribution command not found")
+    text = text.replace(old, new, 1)
     text = text.replace(
         "The complete delivery build creates the standalone IDE archives and the Marketplace-compatible p2 update site, then installs the published Sandbox features into a fresh Eclipse destination and exercises both the default IDE workbench and the cleanup application:",
         "The complete delivery build creates the standalone IDE archives and the Marketplace-compatible p2 update site. Its final Java module then installs the published Sandbox features into a fresh Eclipse destination and exercises both the default IDE workbench and the cleanup application. No Bash or Python installation is required:",
@@ -94,10 +97,22 @@ def product_readme(text: str) -> str:
     return text
 
 
+def verifier_source(text: str) -> str:
+    old = '        roots.add("org.eclipse.equinox.p2.extras.feature.feature.group");\n'
+    new = old + '        roots.add("org.eclipse.equinox.executable.feature.group");\n'
+    if old not in text:
+        raise SystemExit("Fresh-install root marker not found in Java verifier")
+    return text.replace(old, new, 1)
+
+
 update("pom.xml", root_pom)
 update("README.md", readme)
 update("docs/distribution-compatibility.md", compatibility)
 update("sandbox_product/README.md", product_readme)
+update(
+    "sandbox_distribution_verify/src/main/java/org/sandbox/distribution/DistributionVerifier.java",
+    verifier_source,
+)
 
 for path in (
     "pom.xml",
