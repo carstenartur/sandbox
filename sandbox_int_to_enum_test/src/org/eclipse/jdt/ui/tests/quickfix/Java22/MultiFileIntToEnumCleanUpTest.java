@@ -155,4 +155,49 @@ public class MultiFileIntToEnumCleanUpTest {
 
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
 	}
+
+	@Test
+	public void abortsAtomicallyWhenAnotherSelectedUnitOccupiesGeneratedName() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				class OrderProcessor {
+					static final int STATUS_PENDING = 0;
+					static final int STATUS_APPROVED = 1;
+
+					void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				class OrderClient {
+					void run(OrderProcessor processor) {
+						processor.process(OrderProcessor.STATUS_PENDING);
+					}
+				}
+				""", false, null);
+		ICompilationUnit conflicting= pack.createCompilationUnit("Other.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				class Other {
+					class Status {}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client, conflicting });
+	}
 }
