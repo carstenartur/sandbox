@@ -34,7 +34,7 @@ public enum IntEnumCompatibilityMode {
 
 	/** Migration requiring interactive decisions or non-Java resource updates. */
 	MANUAL_EXTERNAL(CleanUpImpact.MANUAL_REFACTORING, false, true,
-			"Persistence, wire, build or configuration resources require a dedicated manual refactoring." ); //$NON-NLS-1$
+			"Persistence, wire, build or configuration resources require a dedicated manual refactoring."); //$NON-NLS-1$
 
 	private final CleanUpImpact impact;
 	private final boolean implemented;
