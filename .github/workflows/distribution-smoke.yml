@@ -45,7 +45,7 @@ jobs:
               (b'<bouncycastle.version>1.85</bouncycastle.version>',
                b'<bouncycastle.version>1.84</bouncycastle.version>'),
               (b'<versionRange>1.81.0</versionRange>',
-               b'<versionRange>1.84</versionRange>'),
+               b'<versionRange>1.84.0</versionRange>'),
           ))
           replace_bytes('sandbox_product/sandbox.product', (
               (b'releases/2025-12/', b'releases/2026-06/'),
