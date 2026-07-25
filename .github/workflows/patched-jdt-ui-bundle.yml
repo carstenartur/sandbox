@@ -1,15 +1,11 @@
 name: Patched JDT UI Bundle
 
+# This is an optional, manually triggered compatibility experiment. The pinned
+# replacement bundle still targets the pre-2026-06 JDT UI baseline and must not
+# participate in normal pull-request or main-branch validation until #1209 is
+# rebased and revalidated against Eclipse 2026-06 / Platform 4.40.
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '.github/patched-jdt-ui.env'
-      - '.github/scripts/build_patched_jdt_ui.sh'
-      - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
-      - '.github/workflows/patched-jdt-ui-bundle.yml'
-      - 'docs/patched-jdt-ui-delivery.md'
 
 permissions:
   contents: read
