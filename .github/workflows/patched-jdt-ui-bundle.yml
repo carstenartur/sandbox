@@ -1,11 +1,18 @@
 name: Patched JDT UI Bundle
 
-# This is an optional, manually triggered compatibility experiment. The pinned
-# replacement bundle still targets the pre-2026-06 JDT UI baseline and must not
-# participate in normal pull-request or main-branch validation until #1209 is
-# rebased and revalidated against Eclipse 2026-06 / Platform 4.40.
+# Optional compatibility lane for the pinned JDT UI replacement. It is not a
+# general main-branch check: pull requests trigger it only when the source pin,
+# build/compatibility scripts, workflow or delivery documentation changes.
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/patched-jdt-ui.env'
+      - '.github/scripts/build_patched_jdt_ui.sh'
+      - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
+      - '.github/workflows/patched-jdt-ui-bundle.yml'
+      - 'docs/patched-jdt-ui-delivery.md'
 
 permissions:
   contents: read
@@ -106,6 +113,22 @@ jobs:
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Enforce 2026-06 stock-target replacement gate
+        shell: bash
+        run: |
+          result="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json"
+          python3 - "$result" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          if not path.is_file():
+              raise SystemExit('Compatibility report is missing')
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          if payload.get('compatibleForReplacement') is not True:
+              raise SystemExit('Pinned JDT UI bundle is not compatible with the Eclipse 2026-06 stock target')
+          PY
       - name: Upload stock-target compatibility report
         if: always()
         uses: actions/upload-artifact@v7
