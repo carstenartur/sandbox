@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3ece1f3658b1cd48d5a378c8fc74e2bc22b40ae46249872a1dafc85defacd62a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: java9.naming.preference_message_version_19_to_9*/\n/*!description: Update preference message constant from version 19 to version 9 for Java 9 support, reflecting naming consistency.*/\n/*!severity: WARNING*/\norg.eclipse.jdt.internal.ui.preferences.PreferencesMessages.ComplianceConfigurationBlock_version19\n\u003d\u003e org.eclipse.jdt.internal.ui.preferences.PreferencesMessages.ComplianceConfigurationBlock_version9\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nclass PreferencesMessages {\n    public static String ComplianceConfigurationBlock_version18 \u003d \"1.8\";\n    public static String ComplianceConfigurationBlock_version19 \u003d \"1.9 (BETA)\";\n    public static String ComplianceConfigurationBlock_version9 \u003d \"9 (BETA)\";\n}\n\npublic class MyClass {\n    public void setup() {\n        String[] versionLabels \u003d new String[] {\n            PreferencesMessages.ComplianceConfigurationBlock_version18,\n            PreferencesMessages.ComplianceConfigurationBlock_version19 // Target of replacement\n        };\n        System.out.println(versionLabels[1]);\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nclass PreferencesMessages {\n    public static String ComplianceConfigurationBlock_version18 \u003d \"1.8\";\n    public static String ComplianceConfigurationBlock_version19 \u003d \"1.9 (BETA)\"; // Old field, still present for negative example logic\n    public static String ComplianceConfigurationBlock_version9 \u003d \"9 (BETA)\";\n}\n\npublic class MyClass {\n    public void setup() {\n        String[] versionLabels \u003d new String[] {\n            PreferencesMessages.ComplianceConfigurationBlock_version18,\n            PreferencesMessages.ComplianceConfigurationBlock_version9 // Replaced\n        };\n        System.out.println(versionLabels[1]);\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nclass PreferencesMessages {\n    public static String ComplianceConfigurationBlock_version18 \u003d \"1.8\";\n    public static String ComplianceConfigurationBlock_version19 \u003d \"1.9 (BETA)\";\n    public static String ComplianceConfigurationBlock_version9 \u003d \"9 (BETA)\";\n}\n\npublic class MyClass {\n    public void setup() {\n        String[] otherLabels \u003d new String[] {\n            PreferencesMessages.ComplianceConfigurationBlock_version18 // Should not change\n        };\n        System.out.println(otherLabels[0]);\n    }\n}\n",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "9ee2768b74c74a41ba8366f8b60ad00d76828ad6",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces the usage of the PreferencesMessages.ComplianceConfigurationBlock_version19 constant with PreferencesMessages.ComplianceConfigurationBlock_version9 to align with Java 9 naming conventions.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.266736363Z",
+  "ruleFingerprint": "sha256:09de135e4d1d221b90dd411842331160b979ae65b65e9e7176fe9b931a383eb5",
+  "behaviorFingerprint": "sha256:73defda165b154ebc36f2c4ec44af80803c5703e6facbc9f32118635e1bf994b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 9: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-25T03:14:44.890244234Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

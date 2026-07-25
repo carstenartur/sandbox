@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4c6dd300f24e25db5f9be0527ae1f8f54add0f48be29fc01c48209dba73e5f7f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$listener.widgetSelected(null) :: instanceof($listener, \"org.eclipse.swt.events.SelectionListener\")\n\u003d\u003e\n$listener.widgetSelected((org.eclipse.swt.events.SelectionEvent) null)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.events.SelectionListener;\nimport org.eclipse.swt.events.SelectionEvent;\nimport java.util.Iterator;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class TestClass {\n    List\u003cSelectionListener\u003e fMasterSlaveListeners \u003d new ArrayList\u003c\u003e();\n\n    public void foo() {\n        Iterator\u003cSelectionListener\u003e iter3\u003d fMasterSlaveListeners.iterator();\n        while (iter3.hasNext()) {\n            SelectionListener listener\u003d iter3.next();\n            listener.widgetSelected(null);\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.events.SelectionListener;\nimport org.eclipse.swt.events.SelectionEvent;\nimport java.util.Iterator;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class TestClass {\n    List\u003cSelectionListener\u003e fMasterSlaveListeners \u003d new ArrayList\u003c\u003e();\n\n    public void foo() {\n        Iterator\u003cSelectionListener\u003e iter3\u003d fMasterSlaveListeners.iterator();\n        while (iter3.hasNext()) {\n            SelectionListener listener\u003d iter3.next();\n            listener.widgetSelected((org.eclipse.swt.events.SelectionEvent) null);\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.events.SelectionListener;\nimport org.eclipse.swt.events.SelectionEvent;\nimport java.util.Iterator;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class TestClass {\n    List\u003cString\u003e stringList \u003d new ArrayList\u003c\u003e();\n\n    public void someMethodTakingObject(Object o) {\n        // Should not match\n    }\n\n    public void someMethodTakingString(String s) {\n        // Should not match\n    }\n\n    public void bar() {\n        someMethodTakingObject(null);\n    }\n\n    class AnotherListener {\n        public void widgetSelected(Object data) {}\n    }\n\n    public void anotherBar() {\n        AnotherListener another \u003d new AnotherListener();\n        another.widgetSelected(null);\n    }\n}",
+  "targetHintFile": "typing.sandbox-hint",
+  "sourceCommit": "19ae998c193c46737c221d21e50643df3d4e6f8b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Type Clarity",
+  "summary": "Add explicit `(org.eclipse.swt.events.SelectionEvent) null` cast for `SelectionListener.widgetSelected()` calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.288245779Z",
+  "ruleFingerprint": "sha256:6505ae58a91ec875848f3e70fd190820d0010b64b5cb525f1675f3f8d89d3555",
+  "behaviorFingerprint": "sha256:becc2f1a1777ebafcb711607ca4db5f0595aff7ddccde9750738158fd56c0d3d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-07-25T03:14:44.983021510Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

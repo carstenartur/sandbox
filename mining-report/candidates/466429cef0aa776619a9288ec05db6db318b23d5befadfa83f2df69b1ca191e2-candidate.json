@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "466429cef0aa776619a9288ec05db6db318b23d5befadfa83f2df69b1ca191e2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.swt.SWT.$x$ \u003d\u003d org.eclipse.swt.SWT.CONTROL\n\u003d\u003e\n(org.eclipse.swt.SWT.$x$ \u0026 org.eclipse.swt.SWT.MODIFIER_MASK) \u003d\u003d org.eclipse.swt.SWT.CONTROL\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.swt.SWT;\npublic class Example {\n    public void foo(int stateMask) {\n        if (stateMask \u003d\u003d SWT.CONTROL) {\n            System.out.println(\"Ctrl pressed only\");\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.swt.SWT;\npublic class Example {\n    public void foo(int stateMask) {\n        if ((stateMask \u0026 SWT.MODIFIER_MASK) \u003d\u003d SWT.CONTROL) {\n            System.out.println(\"Ctrl pressed only\");\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.swt.SWT;\npublic class Negative {\n    public void bar(int stateMask) {\n        if (stateMask \u003d\u003d SWT.SHIFT) { // Different constant\n            System.out.println(\"Shift pressed\");\n        }\n        if (stateMask \u003d\u003d 5) { // Literal value\n            System.out.println(\"Literal int\");\n        }\n    }\n}",
+  "targetHintFile": "swt-api.sandbox-hint",
+  "sourceCommit": "ffc17b55a858eac8507427f57a0bddfc11d08996",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace direct comparison with SWT.CONTROL with bitwise AND with SWT.MODIFIER_MASK for robustness.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.255009897Z",
+  "ruleFingerprint": "sha256:2a55a5be0d20e94282f49404f6172ae5c5399e4453d6fd7c75db07dfd99b68c5",
+  "behaviorFingerprint": "sha256:4adbbde38d36c97fc7d2f64db63e4a21bf614745059d005370736a5ab210b5fe",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-07-25T03:14:44.823381551Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

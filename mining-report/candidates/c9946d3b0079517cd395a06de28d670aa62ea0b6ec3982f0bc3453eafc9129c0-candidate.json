@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c9946d3b0079517cd395a06de28d670aa62ea0b6ec3982f0bc3453eafc9129c0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.Status($severity, $pluginId, $exception.getMessage(), $exception)\n\u003d\u003e\nnew org.eclipse.core.runtime.Status($severity, $pluginId, $exception)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\n\n// Mock classes for compilation context\nclass JavaCore { public static final String PLUGIN_ID \u003d \"org.eclipse.jdt.core\"; }\nclass JavaPlugin { public static void log(IStatus status) { System.err.println(status.getMessage()); } }\n\npublic class Example {\n    public void testMethod() {\n        try {\n            throw new CoreException(Status.CANCEL_STATUS);\n        } catch (CoreException ex) {\n            JavaPlugin.log(new Status(\n                    IStatus.ERROR,\n                    JavaCore.PLUGIN_ID,\n                    ex.getMessage(),\n                    ex));\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\n\n// Mock classes for compilation context\nclass JavaCore { public static final String PLUGIN_ID \u003d \"org.eclipse.jdt.core\"; }\nclass JavaPlugin { public static void log(IStatus status) { System.err.println(status.getMessage()); } }\n\npublic class Example {\n    public void testMethod() {\n        try {\n            throw new CoreException(Status.CANCEL_STATUS);\n        } catch (CoreException ex) {\n            JavaPlugin.log(new Status(\n                    IStatus.ERROR,\n                    JavaCore.PLUGIN_ID,\n                    ex));\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\n\n// Mock classes for compilation context\nclass JavaCore { public static final String PLUGIN_ID \u003d \"org.eclipse.jdt.core\"; }\nclass JavaPlugin { public static void log(IStatus status) { System.err.println(status.getMessage()); } }\n\npublic class NegativeExample {\n    public void testMethod() {\n        Throwable ex \u003d new Exception(\"Custom message for negative test.\");\n\n        // Should not match: message is a literal string, not from ex.getMessage()\n        JavaPlugin.log(new Status(\n                IStatus.ERROR,\n                JavaCore.PLUGIN_ID,\n                \"A specific literal message\",\n                ex));\n\n        // Should not match: already using the simplified constructor\n        JavaPlugin.log(new Status(\n                IStatus.ERROR,\n                JavaCore.PLUGIN_ID,\n                ex));\n\n        // Should not match: different constructor signature\n        JavaPlugin.log(new Status(\n                IStatus.WARNING,\n                JavaCore.PLUGIN_ID,\n                \"Just a message\"));\n    }\n}",
+  "targetHintFile": "eclipse-api-usage.sandbox-hint",
+  "sourceCommit": "9e10067e18dfcedd1846ca0a5cc362b84b36c074",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.280973633Z",
+  "ruleFingerprint": "sha256:e0f25c0f659ccda639d4487df7f23699e35e634fc1efbdaa9cfc1ea7bca18ec4",
+  "behaviorFingerprint": "sha256:234940698fb2904883b31e9a7e8fc7523becfecc2901ba77f9a333eea5806c9f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 11: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-07-25T03:14:44.946593118Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

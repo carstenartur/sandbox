@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d5711a22c44a7744ef8c08179a6ea3b1f4f2feae6c5a3688f5b44ccefe3da286",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: selectionlistener.explicit-null-cast\u003e\n\u003c!description: Add explicit cast to SelectionEvent for null argument in SelectionListener.widgetSelected().\nThis clarifies intent and can help type inference, especially with functional interfaces.\u003e\n\u003c!severity: HINT\u003e\n\n$listener.widgetSelected(null) :: instanceof($listener, \"org.eclipse.swt.events.SelectionListener\")\n\u003d\u003e\n$listener.widgetSelected((org.eclipse.swt.events.SelectionEvent) null)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.events.SelectionListener;\n\npublic class TestClass {\n    public void method() {\n        SelectionListener listener \u003d new SelectionListener() {\n            @Override\n            public void widgetSelected(SelectionEvent e) {}\n            @Override\n            public void widgetDefaultSelected(SelectionEvent e) {}\n        };\n        listener.widgetSelected(null);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.events.SelectionListener;\n\npublic class TestClass {\n    public void method() {\n        SelectionListener listener \u003d new SelectionListener() {\n            @Override\n            public void widgetSelected(SelectionEvent e) {}\n            @Override\n            public void widgetDefaultSelected(SelectionEvent e) {}\n        };\n        listener.widgetSelected((org.eclipse.swt.events.SelectionEvent) null);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.events.SelectionListener;\n\npublic class TestClass {\n    public void method() {\n        SelectionListener listener \u003d new SelectionListener() {\n            @Override\n            public void widgetSelected(SelectionEvent e) {}\n            @Override\n            public void widgetDefaultSelected(SelectionEvent e) {}\n        };\n        // Should not match: argument is not null\n        listener.widgetSelected(new SelectionEvent(null, null, 0));\n\n        // Should not match: receiver is not SelectionListener\n        MyOtherClass other \u003d new MyOtherClass();\n        other.widgetSelected(null);\n\n        // Should not match: method has different name\n        listener.widgetDefaultSelected(null);\n    }\n\n    static class MyOtherClass {\n        public void widgetSelected(Object o) {}\n    }\n}\n",
+  "targetHintFile": "style.sandbox-hint",
+  "sourceCommit": "89da2ef66b1fced4c1d4ff81ea9622ada9841256",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Style/Clarity",
+  "summary": "Adds an explicit cast `(SelectionEvent) null` to `null` arguments passed to `SelectionListener.widgetSelected()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.284820737Z",
+  "ruleFingerprint": "sha256:0431224e558a948f823b53a0f4bdc9fcc1b49b93e6402a327b2a3320cf3bf54d",
+  "behaviorFingerprint": "sha256:b32a3021febfdbbbac5f37e0d964a09077f4b13424d81d193e923120d69fb9b1",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-25T03:14:44.951601706Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

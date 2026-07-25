@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2d7af6e9d392dfb185eaa02404bda0af5483b85576ae6258c49fa26d680425b5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$m.isCanceled() :: instanceof($m, \"org.eclipse.core.runtime.IProgressMonitor\")\n\u003d\u003e $m !\u003d null \u0026\u0026 $m.isCanceled()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.runtime.IProgressMonitor;\npublic class Example {\n    void doWork(IProgressMonitor monitor) {\n        if (monitor.isCanceled()) { // Potential NPE if monitor is null\n            System.out.println(\"Work was canceled.\");\n        }\n        monitor.isCanceled(); // Also matches this expression\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.runtime.IProgressMonitor;\npublic class Example {\n    void doWork(IProgressMonitor monitor) {\n        if (monitor !\u003d null \u0026\u0026 monitor.isCanceled()) { // Null-safe\n            System.out.println(\"Work was canceled.\");\n        }\n        monitor !\u003d null \u0026\u0026 monitor.isCanceled(); // Also matches this expression\n    }\n}",
+  "negativeExample": "package test;\nclass MyCustomCancellable {\n    boolean isCanceled() { return true; }\n}\npublic class NegativeExample {\n    void doSomething(MyCustomCancellable task) {\n        if (task.isCanceled()) { // Should not match: task is not IProgressMonitor\n            System.out.println(\"Task canceled.\");\n        }\n    }\n    void anotherMethod(String s) {\n        s.isEmpty(); // Not relevant\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "fd3cf64994236fa858ef3c96dd3e08f2cfaf245d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Add null check before calling `isCanceled()` on `IProgressMonitor`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.236236346Z",
+  "ruleFingerprint": "sha256:1d93bb7911a88905f68d6aef83c0864d3cdd1af505905eec7628de6e7ca831c7",
+  "behaviorFingerprint": "sha256:213c0259736ede24bc2f6c4d2b4521dbd52f878325cc5ac9486b793eb3105973",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-07-25T03:14:44.789375763Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

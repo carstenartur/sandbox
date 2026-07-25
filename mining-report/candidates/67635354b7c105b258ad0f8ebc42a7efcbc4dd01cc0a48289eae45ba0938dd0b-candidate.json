@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "67635354b7c105b258ad0f8ebc42a7efcbc4dd01cc0a48289eae45ba0938dd0b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.IJavaHelpContextIds.IMPORT_ORGANIZE_INPUT_DIALOG\n\u003d\u003e\norg.eclipse.jdt.internal.ui.IJavaHelpContextIds.TYPE_FILTER_PREFERENCE_PAGE\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.jface.dialogs.IInputValidator;\nimport org.eclipse.jface.dialogs.InputDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.jdt.internal.ui.IJavaHelpContextIds;\n\npublic class TypeFilterInputDialog extends InputDialog {\n    public TypeFilterInputDialog(Shell parentShell, String dialogTitle, String dialogMessage, String initialValue, IInputValidator validator) {\n        super(parentShell, dialogTitle, dialogMessage, initialValue, validator);\n    }\n\n    @Override\n    protected void configureShell(Shell newShell) {\n        super.configureShell(newShell);\n        PlatformUI.getWorkbench().getHelpSystem().setHelp(newShell, IJavaHelpContextIds.IMPORT_ORGANIZE_INPUT_DIALOG);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.jface.dialogs.IInputValidator;\nimport org.eclipse.jface.dialogs.InputDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.jdt.internal.ui.IJavaHelpContextIds;\n\npublic class TypeFilterInputDialog extends InputDialog {\n    public TypeFilterInputDialog(Shell parentShell, String dialogTitle, String dialogMessage, String initialValue, IInputValidator validator) {\n        super(parentShell, dialogTitle, dialogMessage, initialValue, validator);\n    }\n\n    @Override\n    protected void configureShell(Shell newShell) {\n        super.configureShell(newShell);\n        PlatformUI.getWorkbench().getHelpSystem().setHelp(newShell, IJavaHelpContextIds.TYPE_FILTER_PREFERENCE_PAGE);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.jface.dialogs.IInputValidator;\nimport org.eclipse.jface.dialogs.InputDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.jdt.internal.ui.IJavaHelpContextIds;\n\npublic class OtherDialog extends InputDialog {\n    public OtherDialog(Shell parentShell, String dialogTitle, String dialogMessage, String initialValue, IInputValidator validator) {\n        super(parentShell, dialogTitle, dialogMessage, initialValue, validator);\n    }\n\n    @Override\n    protected void configureShell(Shell newShell) {\n        super.configureShell(newShell);\n        // This should not match, as it\u0027s already the target constant\n        PlatformUI.getWorkbench().getHelpSystem().setHelp(newShell, IJavaHelpContextIds.TYPE_FILTER_PREFERENCE_PAGE);\n    }\n\n    public void anotherMethod(Shell shell) {\n        // This should not match, as the pattern specifically targets IMPORT_ORGANIZE_INPUT_DIALOG\n        PlatformUI.getWorkbench().getHelpSystem().setHelp(shell, \"SOME_OTHER_HELP_ID\");\n    }\n}",
+  "targetHintFile": "eclipse-jdt.sandbox-hint",
+  "sourceCommit": "80bcf91800d0fe02b1a16a73928f64f75ef79ce9",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.277496494Z",
+  "ruleFingerprint": "sha256:b78655b1ca94c6400c714081c0f6f8d97d72f492272cea42f3f698b0c01f422f",
+  "behaviorFingerprint": "sha256:1774211be5f772ed99e54a8b446528f9c6d1e558f7e3d2df45c7a6a9381829b0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.dialogs cannot be resolved",
+    "verifiedAt": "2026-07-25T03:14:44.923996108Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

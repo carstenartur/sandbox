@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9f2ed970cdd51a47f0ce41ed92b0190df69aac913d97bf2a5ef516638bd1687f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: nullcheck.editor_site*/\n/*!description: Adds a null check for getEditorSite() to prevent NullPointerExceptions before accessing its ID.*/\n/*!severity: WARNING*/\n$editor !\u003d null \u0026\u0026 org.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_EDITOR.equals($editor.getEditorSite().getId())\n\u003d\u003e $editor !\u003d null \u0026\u0026 $editor.getEditorSite() !\u003d null \u0026\u0026 org.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_EDITOR.equals($editor.getEditorSite().getId())\n;;",
+  "beforeExample": "package my.package;\n\nclass MockEditorSite {\n    public String getId() { return \"org.eclipse.jdt.ui.moduleInfoEditor\"; }\n}\n\nclass MockTextEditor {\n    private MockEditorSite site;\n    public MockTextEditor(MockEditorSite site) { this.site \u003d site; }\n    public MockEditorSite getEditorSite() { return site; }\n}\n\nclass JavaUI {\n    public static final String ID_MODULE_INFO_EDITOR \u003d \"org.eclipse.jdt.ui.moduleInfoEditor\";\n}\n\npublic class MyService {\n    private MockTextEditor someEditor;\n\n    public MyService(MockTextEditor editor) {\n        this.someEditor \u003d editor;\n    }\n\n    public void configureEditor() {\n        boolean isModuleInfoEditor \u003d false;\n        // The original code segment to match\n        if (someEditor !\u003d null \u0026\u0026 JavaUI.ID_MODULE_INFO_EDITOR.equals(someEditor.getEditorSite().getId())) {\n            isModuleInfoEditor \u003d true;\n        }\n        System.out.println(isModuleInfoEditor);\n    }\n}\n",
+  "afterExample": "package my.package;\n\nclass MockEditorSite {\n    public String getId() { return \"org.eclipse.jdt.ui.moduleInfoEditor\"; }\n}\n\nclass MockTextEditor {\n    private MockEditorSite site;\n    public MockTextEditor(MockEditorSite site) { this.site \u003d site; }\n    public MockEditorSite getEditorSite() { return site; }\n}\n\nclass JavaUI {\n    public static final String ID_MODULE_INFO_EDITOR \u003d \"org.eclipse.jdt.ui.moduleInfoEditor\";\n}\n\npublic class MyService {\n    private MockTextEditor someEditor;\n\n    public MyService(MockTextEditor editor) {\n        this.someEditor \u003d editor;\n    }\n\n    public void configureEditor() {\n        boolean isModuleInfoEditor \u003d false;\n        // Expected transformed code\n        if (someEditor !\u003d null \u0026\u0026 someEditor.getEditorSite() !\u003d null \u0026\u0026 JavaUI.ID_MODULE_INFO_EDITOR.equals(someEditor.getEditorSite().getId())) {\n            isModuleInfoEditor \u003d true;\n        }\n        System.out.println(isModuleInfoEditor);\n    }\n}\n",
+  "negativeExample": "package my.package;\n\nclass MockEditorSite {\n    public String getId() { return \"org.eclipse.jdt.ui.moduleInfoEditor\"; }\n}\n\nclass MockTextEditor {\n    private MockEditorSite site;\n    public MockTextEditor(MockEditorSite site) { this.site \u003d site; }\n    public MockEditorSite getEditorSite() { return site; }\n}\n\nclass JavaUI {\n    public static final String ID_MODULE_INFO_EDITOR \u003d \"org.eclipse.jdt.ui.moduleInfoEditor\";\n}\n\npublic class MyService {\n    private MockTextEditor someEditor;\n\n    public MyService(MockTextEditor editor) {\n        this.someEditor \u003d editor;\n    }\n\n    public void configureEditor() {\n        boolean alreadyCorrected \u003d false;\n        // This condition is already in the target state, should not be matched again\n        if (someEditor !\u003d null \u0026\u0026 someEditor.getEditorSite() !\u003d null \u0026\u0026 JavaUI.ID_MODULE_INFO_EDITOR.equals(someEditor.getEditorSite().getId())) {\n            alreadyCorrected \u003d true;\n        }\n        System.out.println(alreadyCorrected);\n\n        boolean anotherCondition \u003d false;\n        // This condition does not involve .getId() and should not be matched\n        if (someEditor !\u003d null \u0026\u0026 someEditor.getEditorSite() !\u003d null) {\n            anotherCondition \u003d true;\n        }\n        System.out.println(anotherCondition);\n    }\n}\n",
+  "targetHintFile": "defensive.sandbox-hint",
+  "sourceCommit": "51234ed1a519f265dcc569c030d7d871aecda738",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Adds a null check for `getEditorSite()` in a boolean expression to prevent potential `NullPointerExceptions` when calling `.getId()` on the result.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.273464757Z",
+  "ruleFingerprint": "sha256:c7479d4b322646021e7b274dfd276a653009ba41cb17029904c9c8d17797f109",
+  "behaviorFingerprint": "sha256:aeb1a5f4639ba5444e5ab30eda5d47fd46f92d1e39629462a754c95c14389343",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token \"package\", Identifier expected",
+    "verifiedAt": "2026-07-25T03:14:44.909043352Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
