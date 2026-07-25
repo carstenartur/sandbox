@@ -7,7 +7,7 @@
    </configIni>
 
    <launcherArgs>
-      <programArgs>-clearPersistedState --launcher.defaultAction openFile --launcher.appendVmargs
+      <programArgs>--launcher.defaultAction openFile --launcher.appendVmargs
       </programArgs>
       <vmArgs>-Xms512m
 -Xmx1024m
