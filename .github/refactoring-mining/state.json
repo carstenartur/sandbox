@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "ab528648c0996ee6ed432feac5b9ff237884391c",
-      "lastProcessedDate": "2026-07-24T03:52:01.593063277Z",
-      "totalProcessed": 2776,
+      "lastProcessedCommit": "e8a3b0cb14aa37645705b7c0d607202d7b6fc01b",
+      "lastProcessedDate": "2026-07-25T03:14:41.887082620Z",
+      "totalProcessed": 2852,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2429,6 +2429,33 @@
           "deferredAt": "2026-07-24T03:47:48.847195464Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ae0f4733850d80765bd9b59df53774626d27df6d",
+          "message": "Bug 339292 - [type wizards] NewAnnotationWizard generates @Documented, @Retention and @Target",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-25T03:09:15.454740966Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3bba7a83ad16733ef89d5eb7a73e3e2e84aacf44",
+          "message": "Bug 368527: [search] Allow search for references in workspace to start from multiple selection",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-25T03:09:34.633655037Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3340f6bf7b92483294d9a1793448ef9a8a3f73a0",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-25T03:13:10.750376031Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2575,19 +2602,25 @@
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
-        "Modernization": 2,
+        "Modernization": 3,
         "Defensive Programming": 1,
         "Preference Configuration": 1,
         "Typo Fix": 1,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 1,
         "API Replacement": 2,
-        "API Modernization": 4,
+        "API Modernization": 7,
         "Rename Constant": 1,
         "Structural Refactoring": 1,
         "Extract Method Refactoring": 1,
         "Generics": 1,
-        "API Constant Update": 1
+        "API Constant Update": 1,
+        "Null Safety": 3,
+        "Boolean Simplification": 1,
+        "Constant Replacement": 1,
+        "API Simplification": 1,
+        "Code Style/Clarity": 1,
+        "Type Clarity": 1
       },
       "exhaustedCategories": []
     },
@@ -2628,5 +2661,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25435
+  "globalTotalProcessed": 25511
 }
