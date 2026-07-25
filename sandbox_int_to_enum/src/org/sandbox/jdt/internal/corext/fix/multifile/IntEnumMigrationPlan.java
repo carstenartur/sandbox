@@ -20,6 +20,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 
+import org.sandbox.jdt.cleanup.multifile.CleanUpImpact;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Immutable plan containing all conservative package-scoped enum candidates. */
@@ -28,6 +29,21 @@ public record IntEnumMigrationPlan(SelectedCompilationUnitPlan selectedScope, Li
 	/** Defensively copies plan data. */
 	public IntEnumMigrationPlan {
 		candidates= List.copyOf(candidates);
+	}
+
+	/** Current automatic plans are always closed-source migrations. */
+	public IntEnumCompatibilityMode compatibilityMode() {
+		return IntEnumCompatibilityMode.CLOSED_SOURCE;
+	}
+
+	/** Impact shown in preview and headless diagnostics. */
+	public CleanUpImpact impact() {
+		return compatibilityMode().impact();
+	}
+
+	/** Stable compatibility statement for this plan. */
+	public String compatibilityStatement() {
+		return compatibilityMode().previewStatement();
 	}
 
 	/** Returns whether the unit participates in the cleanup run. */
