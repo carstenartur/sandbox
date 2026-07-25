@@ -18,14 +18,13 @@ On Linux, install the GTK/Xvfb runtime packages listed in `.github/workflows/dis
 
 ```bash
 xvfb-run --auto-servernum mvn \
-  -Pproduct,repo \
+  -Pdistribution \
   --batch-mode \
   -Dtycho.localArtifacts=ignore \
-  -Ddistribution.smoke=true \
   clean verify
 ```
 
-The `distribution.smoke` property activates the verification bound to the `sandbox_updatesite` Maven `verify` phase. Do not add Maven parallelism to this command: the product must be materialized before the final update-site module provisions and starts the completed distribution.
+The `distribution` profile adds both heavy delivery modules and activates the verification bound to the `sandbox_updatesite` Maven `verify` phase. Do not add Maven parallelism to this command: the product must be materialized before the final update-site module provisions and starts the completed distribution.
 
 ## Product build matrix
 

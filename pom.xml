@@ -851,6 +851,22 @@
 			</activation>
 		</profile>
 
+		<!-- Complete distributable: standalone IDE archives, p2 update site and
+		runtime installation verification. -->
+		<profile>
+			<id>distribution</id>
+			<activation>
+				<property>
+					<name>distribution.smoke</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<modules>
+				<module>sandbox_product</module>
+				<module>sandbox_updatesite</module>
+			</modules>
+		</profile>
+
 		<!-- Product profile: Build Eclipse product with p2-director
 		materialization -->
 		<profile>

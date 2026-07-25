@@ -39,6 +39,26 @@ def osgi_version(version: str) -> str:
     raise ValueError(f"Unsupported Bouncy Castle version syntax: {version}")
 
 
+
+def maven_dependency_artifacts(path: Path) -> set[str]:
+    root = ET.parse(path).getroot()
+    return {
+        text(dependency.find("m:artifactId", MAVEN_NS), f"dependency artifactId in {path.name}")
+        for dependency in root.findall("m:dependencies/m:dependency", MAVEN_NS)
+    }
+
+
+def maven_profile_modules(root: ET.Element, profile_id: str) -> set[str]:
+    for profile in root.findall("m:profiles/m:profile", MAVEN_NS):
+        identifier = profile.find("m:id", MAVEN_NS)
+        if identifier is not None and (identifier.text or "").strip() == profile_id:
+            return {
+                (module.text or "").strip()
+                for module in profile.findall("m:modules/m:module", MAVEN_NS)
+                if (module.text or "").strip()
+            }
+    raise ValueError(f"Missing Maven profile {profile_id}")
+
 def verify() -> None:
     pom = ET.parse(ROOT / "pom.xml").getroot()
     pom_repositories = [
@@ -60,6 +80,73 @@ def verify() -> None:
         for repository in product.findall("./repositories/repository")
         if repository.attrib.get("location")
     ]
+
+
+    # Standalone product application and delivery model.
+    if product.attrib.get("application") != "org.eclipse.ui.ide.workbench":
+        raise ValueError(
+            "Standalone product application must be org.eclipse.ui.ide.workbench, "
+            f"found {product.attrib.get('application')!r}"
+        )
+    if product.attrib.get("includeLaunchers") != "true":
+        raise ValueError("Standalone product must include native launchers")
+
+    product_features = {
+        feature.attrib["id"]
+        for feature in product.findall("./features/feature")
+        if feature.attrib.get("id")
+    }
+    required_base_features = {
+        "org.eclipse.platform",
+        "org.eclipse.jdt",
+        "org.eclipse.pde",
+        "org.eclipse.equinox.p2.user.ui",
+        "org.eclipse.egit",
+        "org.eclipse.jgit",
+    }
+    missing_base = required_base_features - product_features
+    if missing_base:
+        raise ValueError(f"Standalone product is missing base features: {sorted(missing_base)}")
+
+    category = ET.parse(ROOT / "sandbox_updatesite/category.xml").getroot()
+    published_features = {
+        feature.attrib["id"]
+        for feature in category.findall("./feature")
+        if feature.attrib.get("id", "").startswith("sandbox_")
+    }
+    product_sandbox_features = {
+        feature for feature in product_features if feature.startswith("sandbox_")
+    }
+    if product_sandbox_features != published_features:
+        raise ValueError(
+            "Product and update-site Sandbox features differ: "
+            f"product-only={sorted(product_sandbox_features - published_features)}, "
+            f"update-site-only={sorted(published_features - product_sandbox_features)}"
+        )
+
+    for module in ("sandbox_product", "sandbox_updatesite"):
+        dependencies = {
+            artifact
+            for artifact in maven_dependency_artifacts(ROOT / module / "pom.xml")
+            if artifact.startswith("sandbox_") and artifact.endswith("_feature")
+        }
+        if dependencies != published_features:
+            raise ValueError(
+                f"{module}/pom.xml does not declare the complete feature graph: "
+                f"missing={sorted(published_features - dependencies)}, "
+                f"extra={sorted(dependencies - published_features)}"
+            )
+
+    distribution_modules = maven_profile_modules(pom, "distribution")
+    expected_distribution_modules = {"sandbox_product", "sandbox_updatesite"}
+    if distribution_modules != expected_distribution_modules:
+        raise ValueError(
+            "The distribution Maven profile must contain product and update site: "
+            f"found {sorted(distribution_modules)}"
+        )
+
+    updatesite_pom = ET.parse(ROOT / "sandbox_updatesite/pom.xml").getroot()
+    maven_profile_modules(updatesite_pom, "distribution")
 
     pom_release = single_release(pom_repositories, RELEASE_PATTERN, "Maven Eclipse release")
     target_release = single_release(target_repositories, RELEASE_PATTERN, "target Eclipse release")

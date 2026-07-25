@@ -4,7 +4,7 @@
 
 ## Overview
 
-The **Product** module builds a complete Eclipse product distribution that includes all sandbox cleanup plugins. This creates a standalone Eclipse installation with all sandbox features pre-installed and ready to use.
+The **Product** module builds a complete JDT-based Eclipse IDE distribution that includes every published Sandbox feature. This creates a standalone Eclipse installation with all sandbox features pre-installed and ready to use.
 
 ## Key Features
 
@@ -19,12 +19,26 @@ The **Product** module builds a complete Eclipse product distribution that inclu
 ### Building the Product
 
 ```bash
-# Build all modules including product
-mvn clean verify
+# Build the standalone Eclipse IDE archives
+mvn -Pproduct clean verify
 
 # Product artifacts in:
 # sandbox_product/target/products/
 ```
+
+### Building and Verifying the Complete Distribution
+
+The complete delivery build creates the standalone IDE archives and the Marketplace-compatible p2 update site, then installs the published Sandbox features into a fresh Eclipse destination and exercises both the default IDE workbench and the cleanup application:
+
+```bash
+xvfb-run --auto-servernum mvn \
+  -Pdistribution \
+  --batch-mode \
+  -Dtycho.localArtifacts=ignore \
+  clean verify
+```
+
+Use `-Pproduct` when only the standalone IDE archives are needed. Use `-Prepo` when only the p2 update site is needed.
 
 ### Running the Product
 
@@ -69,7 +83,7 @@ All sandbox cleanup plugins:
 
 ### Additional Features
 - EGit (Git integration)
-- Marketplace client
+- p2 installation UI (`Help` → `Install New Software...`)
 - Help system
 - Documentation
 
@@ -160,13 +174,12 @@ The product is built by Tycho:
 | Platform | Architecture | Format |
 |----------|--------------|--------|
 | Windows | x86_64 | .zip |
-| macOS | x86_64, arm64 | .tar.gz |
+| macOS | x86_64 | .tar.gz |
 | Linux | x86_64 | .tar.gz |
 
 ### Architecture Notes
 
 - **x86_64**: Standard 64-bit Intel/AMD processors
-- **arm64**: Apple Silicon (M1/M2/M3) Macs
 - 32-bit platforms not supported
 
 ## Product Artifacts
@@ -177,7 +190,6 @@ The product is built by Tycho:
 sandbox_product/target/products/
 ├── sandbox-linux.gtk.x86_64.tar.gz
 ├── sandbox-macosx.cocoa.x86_64.tar.gz
-├── sandbox-macosx.cocoa.arm64.tar.gz
 ├── sandbox-win32.win32.x86_64.zip
 └── sandbox/
     ├── linux/gtk/x86_64/

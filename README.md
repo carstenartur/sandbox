@@ -104,7 +104,8 @@ The repository includes CI workflows for building, testing, and code quality ana
 **Quick Start:**
 - **Requires**: Java 21 or later
 - **Quick Build**: `mvn -T 1C verify`
-- **Full Build**: `mvn -Pproduct,repo -T 1C verify`
+- **Standalone IDE Product**: `mvn -Pproduct clean verify`
+- **Complete Distribution Gate (Linux)**: `xvfb-run --auto-servernum mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`
 
 **Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
