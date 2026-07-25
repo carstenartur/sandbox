@@ -42,13 +42,17 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p target/distribution-verification
+          status=0
           xvfb-run --auto-servernum mvn \
             -Pdistribution \
             --batch-mode \
             -Dtycho.localArtifacts=ignore \
             clean verify 2>&1 \
-            | tee target/distribution-verification/maven.log
+            | tee /tmp/sandbox-distribution-maven.log || status=$?
+          mkdir -p target/distribution-verification
+          cp /tmp/sandbox-distribution-maven.log \
+            target/distribution-verification/maven.log
+          exit "$status"
       - name: Publish verification summary
         if: always() && hashFiles('target/distribution-verification/verification.md') != ''
         run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
