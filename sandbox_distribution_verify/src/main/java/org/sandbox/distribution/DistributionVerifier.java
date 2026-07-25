@@ -403,6 +403,7 @@ public final class DistributionVerifier {
         List<String> roots = new ArrayList<>();
         roots.add("org.eclipse.sdk.ide");
         roots.add("org.eclipse.equinox.p2.extras.feature.feature.group");
+        roots.add("org.eclipse.equinox.executable.feature.group");
         roots.addAll(model.publishedFeatures().stream()
                 .map(feature -> feature + ".feature.group").toList());
 

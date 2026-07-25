@@ -28,11 +28,10 @@ mvn -Pproduct clean verify
 
 ### Building and Verifying the Complete Distribution
 
-The complete delivery build creates the standalone IDE archives and the Marketplace-compatible p2 update site, then installs the published Sandbox features into a fresh Eclipse destination and exercises both the default IDE workbench and the cleanup application:
+The complete delivery build creates the standalone IDE archives and the Marketplace-compatible p2 update site. Its final Java module then installs the published Sandbox features into a fresh Eclipse destination and exercises both the default IDE workbench and the cleanup application. No Bash or Python installation is required:
 
 ```bash
-xvfb-run --auto-servernum mvn \
-  -Pdistribution \
+mvn -Pdistribution \
   --batch-mode \
   -Dtycho.localArtifacts=ignore \
   clean verify

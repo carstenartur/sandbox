@@ -14,17 +14,16 @@ Sandbox is an experimental Eclipse JDT cleanup distribution. The compatibility s
 The target platform is resolved from `sandbox_target/eclipse.target`. Plugins and the cleanup application may depend on APIs present in that target and are not claimed to support older Eclipse releases.
 ## Reproducing the distribution gate locally
 
-On Linux, install the GTK/Xvfb runtime packages listed in `.github/workflows/distribution-smoke.yml`, then run exactly the same Maven entry point as CI:
+Run the same Maven entry point on Windows, Linux or macOS. A headless Linux CI runner additionally needs a virtual X display, but that is runner setup rather than part of the build:
 
 ```bash
-xvfb-run --auto-servernum mvn \
-  -Pdistribution \
+mvn -Pdistribution \
   --batch-mode \
   -Dtycho.localArtifacts=ignore \
   clean verify
 ```
 
-The `distribution` profile adds both heavy delivery modules and activates the verification bound to the `sandbox_updatesite` Maven `verify` phase. Do not add Maven parallelism to this command: the product must be materialized before the final update-site module provisions and starts the completed distribution.
+The `distribution` profile builds the product and update site, then executes the Java-only `sandbox_distribution_verify` module. Do not add Maven parallelism to this command: product materialization and repository assembly must finish before the final verification module runs.
 
 ## Product build matrix
 
