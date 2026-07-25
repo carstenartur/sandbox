@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e4354c9aabb16d82a05072d836976b685880937dbf3155ac09f01997070ab5b1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$cond ? true : false\n\u003d\u003e\n$cond\n;;",
+  "beforeExample": "class Example {\n    boolean checkCondition(int value) {\n        return value \u003e 10 ? true : false;\n    }\n\n    boolean isActivated(boolean flag) {\n        if (flag) {\n            return true;\n        } else {\n            return false;\n        }\n    }\n}",
+  "afterExample": "class Example {\n    boolean checkCondition(int value) {\n        return value \u003e 10;\n    }\n\n    boolean isActivated(boolean flag) {\n        if (flag) {\n            return true;\n        } else {\n            return false;\n        }\n    }\n}",
+  "negativeExample": "class NegativeExample {\n    boolean checkInvertedCondition(int value) {\n        return value \u003e 10 ? false : true; // Should not match (inverted logic)\n    }\n\n    String getStatus(boolean success) {\n        return success ? \"SUCCESS\" : \"FAILURE\"; // Should not match (different types)\n    }\n\n    boolean alreadySimplified(boolean value) {\n        return value; // Already simplified, no change expected\n    }\n}",
+  "targetHintFile": "simplification.sandbox-hint",
+  "sourceCommit": "be85879cb90acfcb832c6e18c6f84d556978ee24",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Boolean Simplification",
+  "summary": "Simplifies boolean expressions of the form `condition ? true : false` to just `condition`.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-07-25T03:14:43.258747339Z",
+  "ruleFingerprint": "sha256:d98f6c6b9f02bc298a4d17944a42f4941e162cd22989a13566834d85c218d547",
+  "behaviorFingerprint": "sha256:26c38a17eb5d60e46e258a3854e781530d6a3301a601916fc84701f578d16974",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-07-25T03:14:44.865812918Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-07-25T03:14:44.866085900Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-07-25T03:14:44.866121062Z"
+    }
+  ]
+}

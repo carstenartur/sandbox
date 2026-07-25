@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "74323baf0a689d507fd05621936061409243e0a0288b3bb32ff9517d4d020366",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$delegate.select($viewer, $parent, $element) :: instanceof($delegate, \"org.eclipse.jface.viewers.ViewerFilter\")\n\u003d\u003e $delegate !\u003d null ? $delegate.select($viewer, $parent, $element) : true\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.jface.viewers.ViewerFilter;\npublic class MyFilter extends ViewerFilter {\n    private ViewerFilter fDelegateFilter; // Can be null based on context in original diff\n\n    public MyFilter(ViewerFilter delegateFilter) {\n        this.fDelegateFilter \u003d delegateFilter;\n    }\n\n    @Override\n    public boolean select(Viewer viewer, Object parent, Object element) {\n        // Potential NPE if fDelegateFilter is null\n        return fDelegateFilter.select(viewer, parent, element);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.jface.viewers.ViewerFilter;\npublic class MyFilter extends ViewerFilter {\n    private ViewerFilter fDelegateFilter;\n\n    public MyFilter(ViewerFilter delegateFilter) {\n        this.fDelegateFilter \u003d delegateFilter;\n    }\n\n    @Override\n    public boolean select(Viewer viewer, Object parent, Object element) {\n        return fDelegateFilter !\u003d null ? fDelegateFilter.select(viewer, parent, element) : true;\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.jface.viewers.ViewerFilter;\nclass AnotherFilter extends ViewerFilter {\n    private ViewerFilter anotherFilter;\n\n    public AnotherFilter(ViewerFilter filter) {\n        this.anotherFilter \u003d filter;\n    }\n\n    @Override\n    public boolean select(Viewer viewer, Object parent, Object element) {\n        return anotherFilter.equals(viewer); // Different method call, should not match\n    }\n}\npublic class NotMatchingClass {\n    void someMethod(Object obj) {\n        String s \u003d \"hello\";\n        s.length(); // Not a ViewerFilter\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "e197753492f080f14a9e3f30da789dc237630b51",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Add null check for `ViewerFilter.select()` on a delegate, returning true if delegate is null.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.251095873Z",
+  "ruleFingerprint": "sha256:bc4f53982ef60fd87834e588e42b25311f0a257a4ea4fa8dc100e4feb4f4828f",
+  "behaviorFingerprint": "sha256:5a6cea199fab8019abb8848ae19f636af47bca34314de87ff5f53ec17549cdfd",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-07-25T03:14:44.808527181Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

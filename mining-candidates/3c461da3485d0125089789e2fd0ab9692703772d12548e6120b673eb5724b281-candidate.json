@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3c461da3485d0125089789e2fd0ab9692703772d12548e6120b673eb5724b281",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: javadocview.htmlprinter.foreground\u003e\n\u003c!description: In JavadocView, pass the foreground color field to HTMLPrinter.insertPageProlog instead of null, enabling text coloring.\nThis transformation is part of a feature implementation introduced in the commit to add custom foreground color support to JavadocView. It ensures that the foreground color is correctly applied when rendering HTML content.\n\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.internal.ui.text.HTMLPrinter.insertPageProlog($buffer, 0, null, $backgroundColorRGB, $fgStyleSheet) :: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\")\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.HTMLPrinter.insertPageProlog($buffer, 0, fForegroundColorRGB, $backgroundColorRGB, $fgStyleSheet)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.internal.ui.text.HTMLPrinter;\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\n// Dummy HTMLPrinter for compilation\npackage org.eclipse.jdt.internal.ui.text;\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\npublic class HTMLPrinter {\n    public static void insertPageProlog(StringBuffer buffer, int offset, RGB foreground, RGB background, String styleSheet) {}\n}\n\npackage org.eclipse.jdt.internal.ui.infoviews;\n\npublic class JavadocView {\n    private RGB fBackgroundColorRGB;\n    private RGB fForegroundColorRGB; // Assumed to exist as part of the new feature\n\n    public void someMethod(StringBuffer buffer, String fgStyleSheet) {\n        HTMLPrinter.insertPageProlog(buffer, 0, null, fBackgroundColorRGB, fgStyleSheet);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.internal.ui.text.HTMLPrinter;\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\n// Dummy HTMLPrinter for compilation\npackage org.eclipse.jdt.internal.ui.text;\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\npublic class HTMLPrinter {\n    public static void insertPageProlog(StringBuffer buffer, int offset, RGB foreground, RGB background, String styleSheet) {}\n}\n\npackage org.eclipse.jdt.internal.ui.infoviews;\n\npublic class JavadocView {\n    private RGB fBackgroundColorRGB;\n    private RGB fForegroundColorRGB;\n\n    public void someMethod(StringBuffer buffer, String fgStyleSheet) {\n        HTMLPrinter.insertPageProlog(buffer, 0, fForegroundColorRGB, fBackgroundColorRGB, fgStyleSheet);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.internal.ui.text.HTMLPrinter;\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\n// Dummy HTMLPrinter for compilation\npackage org.eclipse.jdt.internal.ui.text;\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\npublic class HTMLPrinter {\n    public static void insertPageProlog(StringBuffer buffer, int offset, RGB foreground, RGB background, String styleSheet) {}\n}\n\npackage org.eclipse.jdt.internal.ui.infoviews;\n\npublic class JavadocView {\n    private RGB fBackgroundColorRGB;\n    private RGB fForegroundColorRGB;\n    private static final RGB EXISTING_FOREGROUND_COLOR \u003d new RGB(10, 20, 30);\n\n    public void someMethodAlreadySettingColor(StringBuffer buffer, String fgStyleSheet) {\n        // This call already passes a non-null RGB for foreground, so it should not be matched by the rule.\n        HTMLPrinter.insertPageProlog(buffer, 0, EXISTING_FOREGROUND_COLOR, fBackgroundColorRGB, fgStyleSheet);\n    }\n\n    // This call is in a different class, so it should not match due to the `inClass` guard.\n    public static class OtherClass {\n        private RGB fBackgroundColorRGB;\n        // No fForegroundColorRGB field here\n        public void anotherMethod(StringBuffer buffer, String fgStyleSheet) {\n            HTMLPrinter.insertPageProlog(buffer, 0, null, fBackgroundColorRGB, fgStyleSheet);\n        }\n    }\n}",
+  "targetHintFile": "infoviews.sandbox-hint",
+  "sourceCommit": "e8a3b0cb14aa37645705b7c0d607202d7b6fc01b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces `null` with `fForegroundColorRGB` as the foreground color argument in `HTMLPrinter.insertPageProlog` calls within the `JavadocView` class. This applies the newly introduced foreground color option.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-25T03:14:43.292026376Z",
+  "ruleFingerprint": "sha256:1e62eb8450f3eae56e75a89b34657ca8c91e5a9e4a5a69e7976d0fe0b7f08d5b",
+  "behaviorFingerprint": "sha256:a19a35ea0367bf87f136e9bc7ea585cdb89496e9dff19e71eab3a01b9a4f5da9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-25T03:14:44.988280748Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
