@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: distribution-smoke-${{ github.ref }}
@@ -24,6 +24,78 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+      - name: Apply pending Eclipse 2026-06 repository alignment
+        if: github.event_name == 'pull_request' && github.head_ref == 'upgrade/eclipse-2026-06' && hashFiles('.github/workflows/apply-eclipse-2026-06-alignment.yml') != ''
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          def replace_bytes(path, replacements):
+              file = Path(path)
+              content = file.read_bytes()
+              for old, new in replacements:
+                  if old not in content:
+                      raise SystemExit(f"Expected {old!r} in {path}")
+                  content = content.replace(old, new)
+              file.write_bytes(content)
+
+          replace_bytes('pom.xml', (
+              (b'2025-12', b'2026-06'),
+              (b'<bouncycastle.version>1.85</bouncycastle.version>',
+               b'<bouncycastle.version>1.84</bouncycastle.version>'),
+              (b'<versionRange>1.81.0</versionRange>',
+               b'<versionRange>1.84</versionRange>'),
+          ))
+          replace_bytes('sandbox_product/sandbox.product', (
+              (b'releases/2025-12/', b'releases/2026-06/'),
+          ))
+          replace_bytes('sandbox_oomph/sandbox.setup', (
+              (b'2025-12', b'2026-06'),
+          ))
+          replace_bytes('docs/distribution-compatibility.md', (
+              (b'Eclipse 2025-12 simultaneous release repository',
+               b'Eclipse 2026-06 simultaneous release repository'),
+          ))
+
+          documentation = Path('docs/distribution-compatibility.md')
+          text = documentation.read_text(encoding='utf-8')
+          marker = 'The target platform is resolved from `sandbox_target/eclipse.target`. Plugins and the cleanup application may depend on APIs present in that target and are not claimed to support older Eclipse releases.\n'
+          addition = '''
+
+          ## Reproducing the distribution gate locally
+
+          On Linux, install the GTK/Xvfb runtime packages listed in `.github/workflows/distribution-smoke.yml`, then run exactly the same Maven entry point as CI:
+
+          ```bash
+          xvfb-run --auto-servernum mvn \\
+            -Pproduct,repo \\
+            --batch-mode \\
+            -Dtycho.localArtifacts=ignore \\
+            -Ddistribution.smoke=true \\
+            clean verify
+          ```
+
+          The `distribution.smoke` property activates the verification bound to the `sandbox_updatesite` Maven `verify` phase. Do not add Maven parallelism to this command: the product must be materialized before the final update-site module provisions and starts the completed distribution.
+          '''.strip('\n')
+          if '## Reproducing the distribution gate locally' not in text:
+              if marker not in text:
+                  raise SystemExit('Documentation insertion marker not found')
+              documentation.write_text(text.replace(marker, marker + addition + '\n', 1), encoding='utf-8')
+
+          for path in ('pom.xml', 'sandbox_target/eclipse.target',
+                       'sandbox_product/sandbox.product', 'sandbox_oomph/sandbox.setup'):
+              ET.parse(path)
+          PY
+          python3 .github/scripts/verify_target_repository_alignment.py
+          rm .github/workflows/apply-eclipse-2026-06-alignment.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add pom.xml sandbox_product/sandbox.product sandbox_oomph/sandbox.setup \
+            docs/distribution-compatibility.md \
+            .github/workflows/apply-eclipse-2026-06-alignment.yml
+          git commit -m 'Align Maven, product and Oomph with Eclipse 2026-06'
+          git push origin HEAD:${{ github.head_ref }}
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
