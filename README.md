@@ -36,7 +36,6 @@ This project provides:
 - **Refactoring Mining Infrastructure**: AI-assisted commit analysis, DSL rule inference from Git diffs, standalone CLI and Eclipse-integrated mining tools
 - **Standalone Tooling**: Maven plugin, CLI distributions, Docker packaging, JGit storage backend, and web interface modules
 
-
 All plugins are work-in-progress and intended for experimentation and learning.
 
 ## 🚀 Installation
@@ -99,13 +98,16 @@ The repository includes CI workflows for building, testing, and code quality ana
 
 ## Building from Source
 
-> **For Contributors/Developers**: Want to build the project locally? See [Building from Source](CONTRIBUTING.md#building-from-source) in CONTRIBUTING.md for complete build instructions.
+> **For Contributors/Developers**: Want to build the project locally? See the [Building from Source](CONTRIBUTING.md#building-from-source) section in CONTRIBUTING.md for complete build instructions.
 
 **Quick Start:**
 - **Requires**: Java 21 or later
 - **Quick Build**: `mvn -T 1C verify`
 - **Standalone IDE Product**: `mvn -Pproduct clean verify`
+- **P2 Update Site**: `mvn -Prepo clean verify`
 - **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`
+
+The complete distribution command is platform-neutral and does not invoke Bash or Python. A headless Linux runner needs an X display for the SWT workbench launch, but that is runner setup rather than build logic.
 
 **Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
@@ -239,193 +241,43 @@ Eclipse plugin for CSS validation and formatting using Prettier and Stylelint. P
 
 ---
 
-### Common Utilities (`sandbox_common`)
+### TriggerPattern DSL (`sandbox_triggerpattern`)
 
-Provides shared utilities, constants, and base classes used across all sandbox cleanup plugins. Serves as the foundation for the entire sandbox ecosystem with AST manipulation utilities, central cleanup constants repository (`MYCleanUpConstants`), reusable base classes, and Eclipse JDT compatibility structure for easy porting. Also hosts the TriggerPattern DSL engine for pattern matching, batch processing, and `.sandbox-hint` file support, along with mining infrastructure for git-based refactoring analysis.
+TriggerPattern is a declarative DSL for matching and transforming Java AST nodes. It supports pattern variables, semantic constraints, replacement templates, reusable rule sets, and Eclipse editor tooling. Rules can be executed through the Eclipse integration or the standalone cleanup application.
 
-📖 **Full Documentation**: [Plugin README](sandbox_common/README.md) | [Architecture](sandbox_common/ARCHITECTURE.md) | [TODO](sandbox_common/TODO.md)
-
----
-### TriggerPattern Engine (`sandbox_triggerpattern`)
-
-Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), `.sandbox-hint` DSL file format for rule definitions with `match`/`replace` blocks and guard expressions, annotation-based hints using `@TriggerPattern` and `@Hint`, batch processing of rules against compilation units, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
-
-📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
-
----
-### Fluent AST API (`sandbox-ast-api`)
-
-Fluent, type-safe AST wrapper API using Java 21 features. Pure Maven module with no Eclipse dependencies, enabling reuse outside Eclipse context. Replaces verbose instanceof checks and nested visitor patterns with modern, readable fluent API for AST operations.
-
-📖 **Full Documentation**: [Plugin README](sandbox-ast-api/README.md)
-
----
-### JMH Performance Benchmarks (`sandbox-benchmarks`)
-
-JMH (Java Microbenchmark Harness) performance benchmarks for the Sandbox project. Provides continuous performance tracking and visualization through GitHub Actions and GitHub Pages. Includes benchmarks for AST parsing, pattern matching, and loop transformation performance.
-
-📖 **Full Documentation**: [Plugin README](sandbox-benchmarks/README.md)
-
----
-### Functional Converter Core (`sandbox-functional-converter-core`)
-
-Plain Java core module providing AST-independent representation of loop structures for transformation into functional/stream-based equivalents. Part of the Unified Loop Representation (ULR) implementation. No Eclipse/JDT dependencies - pure Java module reusable in any context.
-
-📖 **Full Documentation**: [Plugin README](sandbox-functional-converter-core/README.md)
-
-**Relationship**: This core module is used by `sandbox_functional_converter` to provide the underlying loop transformation logic without Eclipse dependencies.
-
----
-### Oomph Workspace Setup (`sandbox_oomph`)
-
-Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
-
-📖 **Full Documentation**: [Plugin README](sandbox_oomph/README.md) | [Architecture](sandbox_oomph/ARCHITECTURE.md) | [TODO](sandbox_oomph/TODO.md)
+📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Language Reference](docs/triggerpattern-language.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md)
 
 ---
 
-### Use General Type (`sandbox_use_general_type`)
+### Int-to-Enum Cleanup (`sandbox_int_to_enum`)
 
-Eclipse cleanup plugin that suggests replacing specific types with more general supertypes (e.g., `ArrayList` → `List`, `HashMap` → `Map`). Uses the TriggerPattern DSL for rule definitions and promotes programming to interfaces.
+Detects suitable integer constant groups and can migrate coordinated references toward enum-based representations. The implementation includes multi-file planning infrastructure; broader hierarchy and compatibility cases remain experimental.
 
-📖 **Full Documentation**: [Plugin README](sandbox_use_general_type/README.md)
-
----
-
-### Int to Enum (`sandbox_int_to_enum`)
-
-Experimental Eclipse cleanup plugin for converting proven integer state domains to Java enum types. It supports a conservative private single-file path and a package-scoped multi-file path that coordinates declarations, comparisons, and callers. Public APIs, persistence/wire values, bit flags, aliases, arbitrary integer arguments, and incomplete scopes are deliberately rejected.
+📖 **Full Documentation**: [Plugin README](sandbox_int_to_enum/README.md) | [Architecture](sandbox_int_to_enum/ARCHITECTURE.md) | [TODO](sandbox_int_to_enum/TODO.md)
 
 ---
 
-### Fluent AST API JDT Bridge (`sandbox-ast-api-jdt`)
+### Use General Type Cleanup (`sandbox_use_general_type`)
 
-Bridge module between Eclipse JDT AST nodes and the sandbox-ast-api fluent types. Provides `JDTConverter` for converting JDT expressions, statements, and bindings to fluent wrapper types. Enables sandbox plugins to use the fluent API without changing their existing JDT-based infrastructure.
+Replaces overly concrete local declaration types with suitable general interfaces when binding analysis proves the change safe.
 
----
-
-### Common Core (`sandbox_common_core`)
-
-Eclipse-independent common core module. A plain Maven JAR with no Eclipse Platform/UI dependencies (relies on JDT Core plus non-Eclipse libraries such as JGit, Gson, and SLF4J) containing HelperVisitor API, TriggerPattern engine, pattern matching, guard expressions, hint file parsing (HintFileStore, BuiltInGuards), and LambdaASTVisitor. Enables standalone usage, fast testing without Xvfb, and CLI tool development. Existing Eclipse plugins continue to depend on `sandbox_common` which re-exports this module with `visibility:=reexport`.
-
-📖 **Full Documentation**: [Module README](sandbox_common_core/README.md)
-
----
-
-### Test Commons (`sandbox_test_commons`)
-
-Shared JUnit 5 test infrastructure for Eclipse JDT–based tests. Provides the `AbstractEclipseJava` JUnit 5 extension and version-specific subclasses (for example, `EclipseJava17`) under `org.sandbox.jdt.ui.tests.quickfix.rules` to configure Eclipse/Java environments for tests. Consumed by other `sandbox_*_test` modules to ensure consistent setup of the Eclipse Java tooling across different Java versions.
-
-📖 **Full Documentation**: [Module README](sandbox_test_commons/README.md)
-
----
-
-### Refactoring Mining Core (`sandbox_mining_core`)
-
-AI-assisted commit analysis engine for inferring DSL rules from Git diffs. Provides LLM-based rule inference (supports multiple providers), state management with deferred commits, keyword filtering, comparison mode, and automatic HintFile generation.
-
----
-
-### Refactoring Mining CLI (`sandbox_mining_cli`)
-
-Standalone CLI tool for refactoring mining: clones Git repositories, scans source code against `.sandbox-hint` rules, and generates JSON/Markdown reports.
-
----
-
-### JGit Storage Backend (`sandbox-jgit-storage-hibernate`)
-
-Hibernate/Lucene-based JGit storage backend for persistent Git object storage.
-
----
-
-### JGit Server WebApp (`sandbox-jgit-server-webapp`)
-
-REST API server for JGit operations, providing web-based access to Git repositories.
-
----
-
-### Additional Tools
-
-The following directories provide supplementary tooling and distribution packaging:
-
-- **`sandbox-maven-plugin`** — Maven plugin with goals for running Sandbox cleanups in CI/CD pipelines
-- **`sandbox_cleanup_cli_dist`** — Distribution packaging for the cleanup CLI
-- **`sandbox_cleanup_docker`** — Docker container for the cleanup CLI
+📖 **Full Documentation**: [Plugin README](sandbox_use_general_type/README.md) | [Architecture](sandbox_use_general_type/ARCHITECTURE.md) | [TODO](sandbox_use_general_type/TODO.md)
 
 ---
 
 ## Documentation
 
-This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
-
-📚 **For a complete documentation index covering all plugins, architecture guides, and contributing information**, see [DOCUMENTATION_INVENTORY.md](DOCUMENTATION_INVENTORY.md).
-
-### Quick Documentation Links
-
-- **[Installation](#-installation)** - How to install plugins in Eclipse
-- **[Building from Source](CONTRIBUTING.md#building-from-source)** - How to build the project with Maven/Tycho
-- **[Projects](#projects)** - Descriptions and documentation for all plugins
-- **[Contributing](CONTRIBUTING.md)** - How to contribute to this project
-- **[Release Process](CONTRIBUTING.md#release-process)** - Maintainer guide for creating releases
-- **[Distribution Compatibility](docs/distribution-compatibility.md)** - Supported build matrix, runtime coverage, publication gates, and evidence
-- **[Post-merge Multi-file Cleanup QA](docs/qa/multi-file-cleanup-post-merge-qa.md)** - Validated scope, risks, and prioritized follow-ups
-- **[Eclipse Version Configuration](CONTRIBUTING.md#eclipse-version-configuration)** - Maintainer guide for updating Eclipse versions
-
----
+- [Capability inventory](docs/capabilities.md)
+- [Distribution compatibility](docs/distribution-compatibility.md)
+- [TriggerPattern language](docs/triggerpattern-language.md)
+- [Contributing and build instructions](CONTRIBUTING.md)
 
 ## Contributing
 
-Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
-
-**📖 For full contribution guidelines, building instructions, reporting issues, release process, and Eclipse version configuration**, see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-### Quick Start
-
-1. Fork the repository and create a feature branch from `main`
-2. Make your changes following existing code structure
-3. Test thoroughly with `mvn -Pjacoco verify`
-4. Submit a Pull Request with clear description
-
-**Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
-
----
-
-<details>
-<summary>Legacy Branch CI Status</summary>
-
-### 2022-09
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-09)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-
-### 2022-06
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)  
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=2022-06)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-
-</details>
-
----
+Contributions are welcome. Review [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
 
 ## License
 
-This project is licensed under the **Eclipse Public License 2.0 (EPL-2.0)**.
-
-See the [LICENSE.txt](LICENSE.txt) file for the full license text.
-
 ### Eclipse Public License 2.0
 
-The Eclipse Public License (EPL) is a free and open-source software license maintained by the Eclipse Foundation. Key points:
-
-- ✅ **Commercial use** allowed
-- ✅ **Modification** allowed
-- ✅ **Distribution** allowed
-- ✅ **Patent grant** included
-- ⚠️ **Disclose source** for modifications
-- ⚠️ **License and copyright notice** required
-
-For more information, visit: https://www.eclipse.org/legal/epl-2.0/
-
----
-
-**Copyright © 2021-2026 Carsten Hammer and contributors**
+This project is licensed under the Eclipse Public License 2.0. See [LICENSE](LICENSE) for details.
