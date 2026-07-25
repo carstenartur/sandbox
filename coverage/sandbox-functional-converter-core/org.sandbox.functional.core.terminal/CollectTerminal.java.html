@@ -13,35 +13,44 @@
  *******************************************************************************/
 package org.sandbox.functional.core.terminal;
 
-/**
- * Represents a collect terminal operation.
- */
-<span class="fc" id="L19">public record CollectTerminal(</span>
-    CollectorType collectorType,
-    String targetVariable
-) implements TerminalOperation {
-    
-    /**
-     * Types of collectors.
-     */
-<span class="fc" id="L27">    public enum CollectorType {</span>
-        /** Collectors.toList() */
-<span class="fc" id="L29">        TO_LIST, </span>
-        /** Collectors.toSet() */
-<span class="fc" id="L31">        TO_SET, </span>
-        /** Collectors.toMap() */
-<span class="fc" id="L33">        TO_MAP, </span>
-        /** Collectors.joining() */
-<span class="fc" id="L35">        JOINING, </span>
-        /** Collectors.groupingBy() */
-<span class="fc" id="L37">        GROUPING_BY, </span>
-        /** Custom collector */
-<span class="fc" id="L39">        CUSTOM</span>
-    }
-    
-    @Override
-    public String operationType() { 
-<span class="fc" id="L44">        return &quot;collect&quot;; </span>
-    }
+/** Represents a collect terminal operation. */
+<span class="fc" id="L17">public record CollectTerminal(</span>
+		CollectorType collectorType,
+		String targetVariable,
+		String collectionFactory) implements TerminalOperation {
+
+	/** Compatibility constructor for interface-based collectors. */
+	public CollectTerminal(CollectorType collectorType, String targetVariable) {
+<span class="fc" id="L24">		this(collectorType, targetVariable, null);</span>
+<span class="fc" id="L25">	}</span>
+
+	/**
+	 * Returns whether this terminal must preserve a concrete collection
+	 * implementation with {@code Collectors.toCollection(...)}.
+	 */
+	public boolean hasCollectionFactory() {
+<span class="fc bfc" id="L32" title="All 4 branches covered.">		return collectionFactory != null &amp;&amp; !collectionFactory.isBlank();</span>
+	}
+
+	/** Types of collectors. */
+<span class="fc" id="L36">	public enum CollectorType {</span>
+		/** Collectors.toList() */
+<span class="fc" id="L38">		TO_LIST,</span>
+		/** Collectors.toSet() */
+<span class="fc" id="L40">		TO_SET,</span>
+		/** Collectors.toMap() */
+<span class="fc" id="L42">		TO_MAP,</span>
+		/** Collectors.joining() */
+<span class="fc" id="L44">		JOINING,</span>
+		/** Collectors.groupingBy() */
+<span class="fc" id="L46">		GROUPING_BY,</span>
+		/** Custom collector */
+<span class="fc" id="L48">		CUSTOM</span>
+	}
+
+	@Override
+	public String operationType() {
+<span class="fc" id="L53">		return &quot;collect&quot;; //$NON-NLS-1$</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

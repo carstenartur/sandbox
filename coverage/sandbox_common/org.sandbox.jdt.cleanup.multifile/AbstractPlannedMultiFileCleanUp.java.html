@@ -13,7 +13,10 @@ package org.sandbox.jdt.cleanup.multifile;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -64,18 +67,68 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractCleanUp
 		implements IMultiFileCleanUpScopeProvider {
 
-<span class="fc" id="L67">	private final Object lifecycleLock= new Object();</span>
+	private static final String UNKNOWN_CLEANUP_ID= &quot;unknown&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L69">	private final Map&lt;IJavaProject, P&gt; plansByProject= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L72">	private static final class ScopeAccumulator {</span>
+<span class="fc" id="L73">		private final Set&lt;String&gt; selectedHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L74">		private final Set&lt;String&gt; addedHandles= new LinkedHashSet&lt;&gt;();</span>
+
+		void record(Collection&lt;ICompilationUnit&gt; currentScope, Collection&lt;ICompilationUnit&gt; additions) {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			if (selectedHandles.isEmpty()) {</span>
+<span class="fc" id="L78">				addHandles(selectedHandles, currentScope);</span>
+			}
+<span class="fc" id="L80">			Set&lt;String&gt; discovered= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L81">			addHandles(discovered, additions);</span>
+<span class="fc" id="L82">			discovered.removeAll(selectedHandles);</span>
+<span class="fc" id="L83">			addedHandles.addAll(discovered);</span>
+<span class="fc" id="L84">		}</span>
+
+		MultiFileScopeDiagnostic merge(MultiFileScopeDiagnostic existing) {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">			if (addedHandles.isEmpty()) {</span>
+<span class="nc" id="L88">				return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles),</span>
+<span class="nc" id="L89">						existing.addedCompilationUnitHandles(), existing.reasonCode(), existing.explanation(),</span>
+<span class="nc" id="L90">						existing.complete());</span>
+			}
+<span class="nc" id="L92">			Set&lt;String&gt; allAdded= new LinkedHashSet&lt;&gt;(existing.addedCompilationUnitHandles());</span>
+<span class="nc" id="L93">			allAdded.addAll(addedHandles);</span>
+<span class="nc" id="L94">			return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles), List.copyOf(allAdded),</span>
+<span class="nc" id="L95">					&quot;RELATED_SOURCE_CLOSURE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L96">					&quot;Related source compilation units were added to close coordinated cleanup references.&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L97">					existing.complete());</span>
+		}
+
+		private static void addHandles(Set&lt;String&gt; target, Collection&lt;ICompilationUnit&gt; units) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">			if (units == null) {</span>
+<span class="nc" id="L102">				return;</span>
+			}
+<span class="fc bfc" id="L104" title="All 2 branches covered.">			for (ICompilationUnit unit : units) {</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				if (unit == null) {</span>
+<span class="nc" id="L106">					continue;</span>
+				}
+<span class="fc" id="L108">				ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">				String handle= (primary == null ? unit : primary).getHandleIdentifier();</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				if (handle != null) {</span>
+<span class="fc" id="L111">					target.add(handle);</span>
+				}
+			}
+<span class="fc" id="L114">		}</span>
+	}
+
+<span class="fc" id="L117">	private final Object lifecycleLock= new Object();</span>
+
+<span class="fc" id="L119">	private final Map&lt;IJavaProject, P&gt; plansByProject= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L120">	private final Map&lt;IJavaProject, MultiFilePlanningMetrics&gt; metricsByProject= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L121">	private final Map&lt;IJavaProject, MultiFileCleanUpDiagnostics&gt; diagnosticsByProject= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L122">	private final Map&lt;IJavaProject, ScopeAccumulator&gt; scopesByProject= new HashMap&lt;&gt;();</span>
 
 	/** Creates a base class without options. */
-<span class="fc" id="L72">	protected AbstractPlannedMultiFileCleanUp() {</span>
-<span class="fc" id="L73">	}</span>
+<span class="fc" id="L125">	protected AbstractPlannedMultiFileCleanUp() {</span>
+<span class="fc" id="L126">	}</span>
 
 	/** Creates a base class with cleanup options. */
 	protected AbstractPlannedMultiFileCleanUp(Map&lt;String, String&gt; settings) {
-<span class="fc" id="L77">		super(settings);</span>
-<span class="fc" id="L78">	}</span>
+<span class="fc" id="L130">		super(settings);</span>
+<span class="fc" id="L131">	}</span>
 
 	/**
 	 * Analyses all selected units and creates the immutable run plan.
@@ -103,50 +156,65 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 	@Override
 	public final RefactoringStatus checkPreConditions(IJavaProject project, ICompilationUnit[] compilationUnits,
 			IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L106">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L107">			plansByProject.remove(project);</span>
+<span class="fc" id="L159">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L160">			clearPlanningState(project);</span>
 			MultiFileCleanUpPlanResult&lt;P&gt; result;
 			try {
-<span class="fc" id="L110">				result= createPlan(project, compilationUnits.clone(), monitor);</span>
-<span class="fc" id="L111">			} catch (CoreException | RuntimeException e) {</span>
-<span class="fc" id="L112">				plansByProject.remove(project);</span>
-<span class="fc" id="L113">				throw e;</span>
+<span class="fc" id="L163">				result= createPlan(project, compilationUnits.clone(), monitor);</span>
+<span class="fc" id="L164">			} catch (CoreException | RuntimeException e) {</span>
+<span class="fc" id="L165">				clearProjectState(project);</span>
+<span class="fc" id="L166">				throw e;</span>
 			}
-<span class="fc bfc" id="L115" title="All 4 branches covered.">			if (!result.status().hasFatalError() &amp;&amp; result.plan() != null) {</span>
-<span class="fc" id="L116">				plansByProject.put(project, result.plan());</span>
+<span class="fc" id="L168">			MultiFileCleanUpDiagnostics diagnostics= result.diagnostics();</span>
+<span class="fc" id="L169">			ScopeAccumulator scope= scopesByProject.remove(project);</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">			if (scope != null) {</span>
+<span class="nc" id="L171">				MultiFileScopeDiagnostic mergedScope= scope.merge(diagnostics.scope());</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">				String cleanupId= UNKNOWN_CLEANUP_ID.equals(diagnostics.cleanupId())</span>
+<span class="nc" id="L173">						? getClass().getSimpleName()</span>
+<span class="nc" id="L174">						: diagnostics.cleanupId();</span>
+<span class="nc" id="L175">				diagnostics= new MultiFileCleanUpDiagnostics(cleanupId, mergedScope, diagnostics.candidates());</span>
 			}
-<span class="fc" id="L118">			return result.status();</span>
+<span class="fc" id="L177">			metricsByProject.put(project, result.metrics());</span>
+<span class="fc" id="L178">			diagnosticsByProject.put(project, diagnostics);</span>
+<span class="fc" id="L179">			diagnostics.appendSummary(result.status());</span>
+<span class="fc bfc" id="L180" title="All 4 branches covered.">			if (!result.status().hasFatalError() &amp;&amp; result.plan() != null) {</span>
+<span class="fc" id="L181">				plansByProject.put(project, result.plan());</span>
+			}
+<span class="fc" id="L183">			return result.status();</span>
 		}
 	}
 
 	@Override
 	public final ICleanUpFix createFix(CleanUpContext context) throws CoreException {
-<span class="fc" id="L124">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L125">			ICompilationUnit unit= context.getCompilationUnit();</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if (unit == null) {</span>
-<span class="nc" id="L127">				return null;</span>
+<span class="fc" id="L189">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L190">			ICompilationUnit unit= context.getCompilationUnit();</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">			if (unit == null) {</span>
+<span class="nc" id="L192">				return null;</span>
 			}
-<span class="fc" id="L129">			IJavaProject project= unit.getJavaProject();</span>
-<span class="fc" id="L130">			P plan= plansByProject.get(project);</span>
-<span class="fc bfc" id="L131" title="All 2 branches covered.">			if (plan == null) {</span>
-<span class="fc" id="L132">				return null;</span>
+<span class="fc" id="L194">			IJavaProject project= unit.getJavaProject();</span>
+<span class="fc" id="L195">			P plan= plansByProject.get(project);</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">			if (plan == null) {</span>
+<span class="fc" id="L197">				return null;</span>
 			}
 			try {
-<span class="fc" id="L135">				return createFixForPlan(plan, context);</span>
-<span class="fc" id="L136">			} catch (CoreException | RuntimeException e) {</span>
-<span class="fc" id="L137">				plansByProject.remove(project);</span>
-<span class="fc" id="L138">				throw e;</span>
+<span class="fc" id="L200">				return createFixForPlan(plan, context);</span>
+<span class="fc" id="L201">			} catch (CoreException | RuntimeException e) {</span>
+<span class="fc" id="L202">				clearProjectState(project);</span>
+<span class="fc" id="L203">				throw e;</span>
 			}
 		}
 	}
 
 	@Override
 	public final RefactoringStatus checkPostConditions(IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L145">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L210">		synchronized (lifecycleLock) {</span>
 			try {
-<span class="fc" id="L147">				return checkPlanPostConditions(monitor);</span>
+<span class="fc" id="L212">				return checkPlanPostConditions(monitor);</span>
 			} finally {
-<span class="fc" id="L149">				plansByProject.clear();</span>
+<span class="fc" id="L214">				plansByProject.clear();</span>
+<span class="fc" id="L215">				metricsByProject.clear();</span>
+<span class="fc" id="L216">				diagnosticsByProject.clear();</span>
+<span class="fc" id="L217">				scopesByProject.clear();</span>
 			}
 		}
 	}
@@ -159,16 +227,18 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 	 * @throws CoreException if validation fails unexpectedly
 	 */
 	protected RefactoringStatus checkPlanPostConditions(IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L162">		return new RefactoringStatus();</span>
+<span class="fc" id="L230">		return new RefactoringStatus();</span>
 	}
 
 	@Override
 	public final Collection&lt;ICompilationUnit&gt; expandCleanUpScope(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L168">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L169">			Collection&lt;ICompilationUnit&gt; result= discoverAdditionalCompilationUnits(project,</span>
-<span class="fc" id="L170">					Collections.unmodifiableCollection(currentScope), monitor);</span>
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">			return result == null ? Collections.emptyList() : result;</span>
+<span class="fc" id="L236">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L237">			Collection&lt;ICompilationUnit&gt; result= discoverAdditionalCompilationUnits(project,</span>
+<span class="fc" id="L238">					Collections.unmodifiableCollection(currentScope), monitor);</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">			Collection&lt;ICompilationUnit&gt; normalized= result == null ? Collections.emptyList() : result;</span>
+<span class="fc" id="L240">			scopesByProject.computeIfAbsent(project, ignored -&gt; new ScopeAccumulator()).record(currentScope, normalized);</span>
+<span class="fc" id="L241">			return normalized;</span>
 		}
 	}
 
@@ -184,7 +254,7 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 	 */
 	protected Collection&lt;ICompilationUnit&gt; discoverAdditionalCompilationUnits(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L187">		return Collections.emptyList();</span>
+<span class="fc" id="L257">		return Collections.emptyList();</span>
 	}
 
 	/**
@@ -194,9 +264,48 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 	 * @return plan or {@code null}
 	 */
 	protected final P getPlan(IJavaProject project) {
-<span class="fc" id="L197">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L198">			return plansByProject.get(project);</span>
+<span class="fc" id="L267">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L268">			return plansByProject.get(project);</span>
 		}
 	}
+
+	/**
+	 * Returns metrics from the current project's most recent planning attempt.
+	 * Metrics remain available through fix creation and postcondition checks and are
+	 * cleared with the rest of the lifecycle state.
+	 *
+	 * @param project Java project
+	 * @return retained metrics or empty metrics when no planning run exists
+	 */
+	protected final MultiFilePlanningMetrics getPlanningMetrics(IJavaProject project) {
+<span class="nc" id="L281">		synchronized (lifecycleLock) {</span>
+<span class="nc" id="L282">			return metricsByProject.getOrDefault(project, MultiFilePlanningMetrics.empty());</span>
+		}
+	}
+
+	/**
+	 * Returns structured diagnostics from the current project's most recent planning
+	 * attempt. Diagnostics remain available through fix creation and postcondition
+	 * checks and are cleared with the rest of the lifecycle state.
+	 *
+	 * @param project Java project
+	 * @return retained diagnostics or empty diagnostics when no planning run exists
+	 */
+	protected final MultiFileCleanUpDiagnostics getPlanningDiagnostics(IJavaProject project) {
+<span class="nc" id="L295">		synchronized (lifecycleLock) {</span>
+<span class="nc" id="L296">			return diagnosticsByProject.getOrDefault(project, MultiFileCleanUpDiagnostics.empty());</span>
+		}
+	}
+
+	private void clearPlanningState(IJavaProject project) {
+<span class="fc" id="L301">		plansByProject.remove(project);</span>
+<span class="fc" id="L302">		metricsByProject.remove(project);</span>
+<span class="fc" id="L303">		diagnosticsByProject.remove(project);</span>
+<span class="fc" id="L304">	}</span>
+
+	private void clearProjectState(IJavaProject project) {
+<span class="fc" id="L307">		clearPlanningState(project);</span>
+<span class="fc" id="L308">		scopesByProject.remove(project);</span>
+<span class="fc" id="L309">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

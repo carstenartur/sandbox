@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CleanupInputCollector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CleanupInputCollector.java</span></div><h1>CleanupInputCollector.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import org.eclipse.jdt.internal.core.util.Util;
+
+/**
+ * Expands command-line files and directories into one deterministic, canonical
+ * Java source selection without modifying workspace or file contents.
+ */
+<span class="fc" id="L34">final class CleanupInputCollector {</span>
+
+<span class="fc" id="L36">	private static final Set&lt;String&gt; TEST_SEGMENTS= Set.of(</span>
+<span class="fc" id="L37">			&quot;test&quot;, &quot;tests&quot;, &quot;testfixtures&quot;, &quot;integrationtest&quot;, &quot;integration-test&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+
+	/** One input that could not be inspected safely. */
+	record Diagnostic(String input, String message) {
+<span class="fc" id="L41">		Diagnostic {</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">			input= input == null ? &quot;&quot; : input; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">			message= message == null ? &quot;&quot; : message; //$NON-NLS-1$</span>
+<span class="fc" id="L44">		}</span>
+	}
+
+	/** Stable result of the discovery phase. */
+	record Result(List&lt;File&gt; files, List&lt;Diagnostic&gt; diagnostics) {
+<span class="fc" id="L49">		Result {</span>
+<span class="fc" id="L50">			files= List.copyOf(files);</span>
+<span class="fc" id="L51">			diagnostics= List.copyOf(diagnostics);</span>
+<span class="fc" id="L52">		}</span>
+	}
+
+	Result collect(Collection&lt;File&gt; inputs, CodeCleanupApplication.CleanupScope scope) {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		if (scope == null) {</span>
+<span class="fc" id="L57">			throw new NullPointerException(&quot;scope&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L59">		Map&lt;String, File&gt; filesByCanonicalPath= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L60">		List&lt;Diagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		if (inputs == null) {</span>
+<span class="fc" id="L62">			return new Result(List.of(), List.of(new Diagnostic(&quot;&quot;, &quot;Input collection is null&quot;))); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		for (File input : inputs) {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">			if (input == null) {</span>
+<span class="fc" id="L66">				diagnostics.add(new Diagnostic(&quot;&quot;, &quot;Input entry is null&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L67">				continue;</span>
+			}
+			Path root;
+			try {
+<span class="fc" id="L71">				root= input.toPath().toRealPath();</span>
+<span class="fc" id="L72">			} catch (IOException exception) {</span>
+<span class="fc" id="L73">				diagnostics.add(new Diagnostic(input.getPath(), exception.getMessage()));</span>
+<span class="fc" id="L74">				continue;</span>
+			}
+<span class="fc bfc" id="L76" title="All 2 branches covered.">			if (Files.isDirectory(root)) {</span>
+<span class="fc" id="L77">				collectDirectory(root, scope, filesByCanonicalPath, diagnostics);</span>
+<span class="fc" id="L78">			} else {</span>
+<span class="fc" id="L79">				addCandidate(root, scope, filesByCanonicalPath, diagnostics);</span>
+			}
+		}
+<span class="fc" id="L82">		List&lt;File&gt; files= new ArrayList&lt;&gt;(filesByCanonicalPath.values());</span>
+<span class="fc" id="L83">		files.sort(Comparator.comparing(file -&gt; stablePath(file.toPath())));</span>
+<span class="fc" id="L84">		diagnostics.sort(Comparator.comparing(Diagnostic::input).thenComparing(Diagnostic::message));</span>
+<span class="fc" id="L85">		return new Result(files, diagnostics);</span>
+	}
+
+	private static void collectDirectory(Path root, CodeCleanupApplication.CleanupScope scope,
+			Map&lt;String, File&gt; filesByCanonicalPath, List&lt;Diagnostic&gt; diagnostics) {
+<span class="fc" id="L90">		try (Stream&lt;Path&gt; paths= Files.walk(root)) {</span>
+<span class="fc" id="L91">			paths.filter(Files::isRegularFile)</span>
+<span class="fc" id="L92">					.sorted(Comparator.comparing(CleanupInputCollector::stablePath))</span>
+<span class="fc" id="L93">					.forEach(path -&gt; addCandidate(path, scope, filesByCanonicalPath, diagnostics));</span>
+<span class="nc" id="L94">		} catch (IOException | UncheckedIOException exception) {</span>
+<span class="nc" id="L95">			diagnostics.add(new Diagnostic(stablePath(root), exception.getMessage()));</span>
+		}
+<span class="fc" id="L97">	}</span>
+
+	private static void addCandidate(Path path, CodeCleanupApplication.CleanupScope scope,
+			Map&lt;String, File&gt; filesByCanonicalPath, List&lt;Diagnostic&gt; diagnostics) {
+<span class="fc bfc" id="L101" title="All 4 branches covered.">		if (!Util.isJavaLikeFileName(path.toString()) || !includes(scope, path)) {</span>
+<span class="fc" id="L102">			return;</span>
+		}
+		try {
+<span class="fc" id="L105">			Path canonical= path.toRealPath();</span>
+<span class="fc" id="L106">			filesByCanonicalPath.putIfAbsent(stablePath(canonical), canonical.toFile());</span>
+<span class="pc" id="L107">		} catch (IOException exception) {</span>
+<span class="nc" id="L108">			diagnostics.add(new Diagnostic(stablePath(path), exception.getMessage()));</span>
+		}
+<span class="fc" id="L110">	}</span>
+
+	private static boolean includes(CodeCleanupApplication.CleanupScope scope, Path path) {
+<span class="fc" id="L113">		boolean testSource= isTestPath(path);</span>
+<span class="fc bfc" id="L114" title="All 3 branches covered.">		return switch (scope) {</span>
+<span class="fc" id="L115">			case BOTH -&gt; true;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">			case MAIN -&gt; !testSource;</span>
+<span class="fc" id="L117">			case TEST -&gt; testSource;</span>
+		};
+	}
+
+	private static String stablePath(Path path) {
+<span class="fc" id="L122">		return path.toAbsolutePath().normalize().toString().replace(File.separatorChar, '/');</span>
+	}
+
+	static boolean isTestPath(Path path) {
+<span class="fc" id="L126">		Path normalized= path.normalize();</span>
+<span class="fc" id="L127">		int lastSourceSegment= -1;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		for (int index= 0; index &lt; normalized.getNameCount(); index++) {</span>
+<span class="fc" id="L129">			String value= normalized.getName(index).toString().toLowerCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			if (&quot;src&quot;.equals(value)) { //$NON-NLS-1$</span>
+<span class="fc" id="L131">				lastSourceSegment= index;</span>
+			}
+		}
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (lastSourceSegment &gt;= 0) {</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">			if (lastSourceSegment + 1 &gt;= normalized.getNameCount()) {</span>
+<span class="nc" id="L136">				return false;</span>
+			}
+<span class="fc" id="L138">			String sourceSet= normalized.getName(lastSourceSegment + 1).toString().toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L139">			return TEST_SEGMENTS.contains(sourceSet);</span>
+		}
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		for (Path segment : normalized) {</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">			if (TEST_SEGMENTS.contains(segment.toString().toLowerCase(Locale.ROOT))) {</span>
+<span class="nc" id="L143">				return true;</span>
+			}
+		}
+<span class="fc" id="L146">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

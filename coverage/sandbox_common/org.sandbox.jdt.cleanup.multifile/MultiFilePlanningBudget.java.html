@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MultiFilePlanningBudget.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">MultiFilePlanningBudget.java</span></div><h1>MultiFilePlanningBudget.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaModelException;
+
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+
+/** Measures source scope and applies warning/hard limits before AST creation. */
+public final class MultiFilePlanningBudget {
+
+	/** Result of measuring one source scope. */
+	public record Assessment(MultiFilePlanningMetrics metrics, RefactoringStatus status) {
+<span class="fc" id="L29">		public Assessment {</span>
+<span class="pc bpc" id="L30" title="2 of 4 branches missed.">			if (metrics == null || status == null) {</span>
+<span class="nc" id="L31">				throw new NullPointerException();</span>
+			}
+<span class="fc" id="L33">		}</span>
+
+		/** @return whether planning may safely continue */
+		public boolean mayProceed() {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">			return !status.hasFatalError();</span>
+		}
+	}
+
+	private MultiFilePlanningBudget() {
+	}
+
+	/**
+	 * Measures distinct primary compilation units using their current working-copy
+	 * source, including unsaved edits. UTF-8 byte length is counted without
+	 * allocating a second byte array. Hard thresholds abort measurement as soon as
+	 * they are exceeded.
+	 *
+	 * @param units planned source units
+	 * @param limits effective limits
+	 * @param monitor progress monitor, may be {@code null}
+	 * @return metrics and warning/fatal diagnostics
+	 * @throws JavaModelException if current source cannot be read
+	 */
+	public static Assessment assess(ICompilationUnit[] units, MultiFilePlanningLimits limits,
+			IProgressMonitor monitor) throws JavaModelException {
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">		if (units == null || limits == null) {</span>
+<span class="nc" id="L59">			throw new NullPointerException();</span>
+		}
+<span class="fc" id="L61">		RefactoringStatus status= new RefactoringStatus();</span>
+<span class="fc" id="L62">		Set&lt;String&gt; measuredHandles= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L63">		int unitCount= 0;</span>
+<span class="fc" id="L64">		long sourceBytes= 0;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L66">			checkCanceled(monitor);</span>
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">			if (unit == null || !unit.exists()) {</span>
+<span class="nc" id="L68">				status.addFatalError(&quot;The coordinated cleanup scope contains a missing compilation unit.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L69">				break;</span>
+			}
+<span class="fc" id="L71">			ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">			if (!measuredHandles.add(primary.getHandleIdentifier())) {</span>
+<span class="fc" id="L73">				continue;</span>
+			}
+<span class="fc" id="L75">			unitCount++;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">			if (unitCount &gt; limits.hardCompilationUnits()) {</span>
+<span class="fc" id="L77">				status.addFatalError(&quot;Coordinated cleanup planning aborted: &quot; + unitCount //$NON-NLS-1$</span>
+<span class="fc" id="L78">						+ &quot; source units exceed the hard limit of &quot; + limits.hardCompilationUnits() + '.'); //$NON-NLS-1$</span>
+<span class="fc" id="L79">				break;</span>
+			}
+<span class="fc" id="L81">			String source= primary.getSource();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			if (source == null) {</span>
+<span class="nc" id="L83">				status.addFatalError(&quot;The current source of &quot; + primary.getElementName() //$NON-NLS-1$</span>
+						+ &quot; is unavailable for coordinated cleanup planning.&quot;); //$NON-NLS-1$
+<span class="nc" id="L85">				break;</span>
+			}
+<span class="fc" id="L87">			sourceBytes= saturatedAdd(sourceBytes, utf8Length(source));</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">			if (sourceBytes &gt; limits.hardSourceBytes()) {</span>
+<span class="fc" id="L89">				status.addFatalError(&quot;Coordinated cleanup planning aborted: &quot; + sourceBytes //$NON-NLS-1$</span>
+<span class="fc" id="L90">						+ &quot; source bytes exceed the hard limit of &quot; + limits.hardSourceBytes() + '.'); //$NON-NLS-1$</span>
+<span class="fc" id="L91">				break;</span>
+			}
+		}
+<span class="fc" id="L94">		MultiFilePlanningMetrics metrics= MultiFilePlanningMetrics.scope(unitCount, sourceBytes);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (status.hasFatalError()) {</span>
+<span class="fc" id="L96">			return new Assessment(metrics, status);</span>
+		}
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">		if (unitCount &gt; limits.warningCompilationUnits() || sourceBytes &gt; limits.warningSourceBytes()) {</span>
+<span class="fc" id="L99">			status.addWarning(&quot;Coordinated cleanup planning will analyse &quot; + unitCount + &quot; source units (&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L100">					+ sourceBytes + &quot; UTF-8 bytes). Warning limits are &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L101">					+ limits.warningCompilationUnits() + &quot; units and &quot; + limits.warningSourceBytes() + &quot; bytes.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L103">		return new Assessment(metrics, status);</span>
+	}
+
+	static long utf8Length(CharSequence source) {
+<span class="fc" id="L107">		long length= 0;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		for (int index= 0; index &lt; source.length(); index++) {</span>
+<span class="fc" id="L109">			char character= source.charAt(index);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">			if (character &lt;= 0x7f) {</span>
+<span class="fc" id="L111">				length= saturatedAdd(length, 1);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			} else if (character &lt;= 0x7ff) {</span>
+<span class="fc" id="L113">				length= saturatedAdd(length, 2);</span>
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">			} else if (Character.isHighSurrogate(character) &amp;&amp; index + 1 &lt; source.length()</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">					&amp;&amp; Character.isLowSurrogate(source.charAt(index + 1))) {</span>
+<span class="fc" id="L116">				length= saturatedAdd(length, 4);</span>
+<span class="fc" id="L117">				index++;</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">			} else if (Character.isSurrogate(character)) {</span>
+<span class="fc" id="L119">				length= saturatedAdd(length, 1);</span>
+<span class="fc" id="L120">			} else {</span>
+<span class="nc" id="L121">				length= saturatedAdd(length, 3);</span>
+			}
+		}
+<span class="fc" id="L124">		return length;</span>
+	}
+
+	private static long saturatedAdd(long left, long right) {
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		return Long.MAX_VALUE - left &lt; right ? Long.MAX_VALUE : left + right;</span>
+	}
+
+	/** Throws immediately when the user or caller cancels planning. */
+	public static void checkCanceled(IProgressMonitor monitor) {
+<span class="fc bfc" id="L133" title="All 4 branches covered.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="fc" id="L134">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L136">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

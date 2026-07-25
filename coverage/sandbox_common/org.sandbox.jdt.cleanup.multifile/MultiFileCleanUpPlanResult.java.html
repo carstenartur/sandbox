@@ -21,16 +21,31 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
  * @param plan plan to retain for the subsequent per-compilation-unit fix phase;
  *             may be {@code null} when no coordinated change is required
  * @param status diagnostics produced during planning
+ * @param metrics immutable scope, duration and retained-plan measurements
+ * @param diagnostics immutable machine-readable scope and candidate diagnostics
  */
-public record MultiFileCleanUpPlanResult&lt;P&gt;(P plan, RefactoringStatus status) {
+public record MultiFileCleanUpPlanResult&lt;P&gt;(P plan, RefactoringStatus status,
+		MultiFilePlanningMetrics metrics, MultiFileCleanUpDiagnostics diagnostics) {
 
 	/** Validates the result. */
-<span class="fc" id="L28">	public MultiFileCleanUpPlanResult {</span>
-<span class="fc" id="L29">		Objects.requireNonNull(status);</span>
-<span class="pc bpc" id="L30" title="1 of 4 branches missed.">		if (status.hasFatalError() &amp;&amp; plan != null) {</span>
-<span class="nc" id="L31">			throw new IllegalArgumentException();</span>
+<span class="fc" id="L31">	public MultiFileCleanUpPlanResult {</span>
+<span class="fc" id="L32">		Objects.requireNonNull(status);</span>
+<span class="fc" id="L33">		Objects.requireNonNull(metrics);</span>
+<span class="fc" id="L34">		Objects.requireNonNull(diagnostics);</span>
+<span class="pc bpc" id="L35" title="1 of 4 branches missed.">		if (status.hasFatalError() &amp;&amp; plan != null) {</span>
+<span class="nc" id="L36">			throw new IllegalArgumentException();</span>
 		}
-<span class="fc" id="L33">	}</span>
+<span class="fc" id="L38">	}</span>
+
+	/** Compatibility constructor for consumers without metrics or structured diagnostics. */
+	public MultiFileCleanUpPlanResult(P plan, RefactoringStatus status) {
+<span class="fc" id="L42">		this(plan, status, MultiFilePlanningMetrics.empty(), MultiFileCleanUpDiagnostics.empty());</span>
+<span class="fc" id="L43">	}</span>
+
+	/** Compatibility constructor for consumers that record metrics but no candidate details. */
+	public MultiFileCleanUpPlanResult(P plan, RefactoringStatus status, MultiFilePlanningMetrics metrics) {
+<span class="nc" id="L47">		this(plan, status, metrics, MultiFileCleanUpDiagnostics.empty());</span>
+<span class="nc" id="L48">	}</span>
 
 	/**
 	 * Creates a successful result containing a plan.
@@ -40,7 +55,40 @@ public record MultiFileCleanUpPlanResult&lt;P&gt;(P plan, RefactoringStatus stat
 	 * @return successful result
 	 */
 	public static &lt;P&gt; MultiFileCleanUpPlanResult&lt;P&gt; success(P plan) {
-<span class="fc" id="L43">		return new MultiFileCleanUpPlanResult&lt;&gt;(Objects.requireNonNull(plan), new RefactoringStatus());</span>
+<span class="fc" id="L58">		return new MultiFileCleanUpPlanResult&lt;&gt;(Objects.requireNonNull(plan), new RefactoringStatus(),</span>
+<span class="fc" id="L59">				MultiFilePlanningMetrics.empty(), MultiFileCleanUpDiagnostics.empty());</span>
+	}
+
+	/**
+	 * Creates a successful measured result containing a plan.
+	 *
+	 * @param &lt;P&gt; plan type
+	 * @param plan immutable plan
+	 * @param status nonfatal diagnostics
+	 * @param metrics planning measurements
+	 * @return successful result
+	 */
+	public static &lt;P&gt; MultiFileCleanUpPlanResult&lt;P&gt; success(P plan, RefactoringStatus status,
+			MultiFilePlanningMetrics metrics) {
+<span class="fc" id="L73">		return success(plan, status, metrics, MultiFileCleanUpDiagnostics.empty());</span>
+	}
+
+	/**
+	 * Creates a successful measured and diagnosed result containing a plan.
+	 *
+	 * @param &lt;P&gt; plan type
+	 * @param plan immutable plan
+	 * @param status nonfatal diagnostics
+	 * @param metrics planning measurements
+	 * @param diagnostics structured diagnostics
+	 * @return successful result
+	 */
+	public static &lt;P&gt; MultiFileCleanUpPlanResult&lt;P&gt; success(P plan, RefactoringStatus status,
+			MultiFilePlanningMetrics metrics, MultiFileCleanUpDiagnostics diagnostics) {
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
+<span class="nc" id="L89">			throw new IllegalArgumentException(&quot;A successful plan cannot carry a fatal status&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L91">		return new MultiFileCleanUpPlanResult&lt;&gt;(Objects.requireNonNull(plan), status, metrics, diagnostics);</span>
 	}
 
 	/**
@@ -50,7 +98,8 @@ public record MultiFileCleanUpPlanResult&lt;P&gt;(P plan, RefactoringStatus stat
 	 * @return empty successful result
 	 */
 	public static &lt;P&gt; MultiFileCleanUpPlanResult&lt;P&gt; noPlan() {
-<span class="fc" id="L53">		return new MultiFileCleanUpPlanResult&lt;&gt;(null, new RefactoringStatus());</span>
+<span class="fc" id="L101">		return new MultiFileCleanUpPlanResult&lt;&gt;(null, new RefactoringStatus(), MultiFilePlanningMetrics.empty(),</span>
+<span class="fc" id="L102">				MultiFileCleanUpDiagnostics.empty());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

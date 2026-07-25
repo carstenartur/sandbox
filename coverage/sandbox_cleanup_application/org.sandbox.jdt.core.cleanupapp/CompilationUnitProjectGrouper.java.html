@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompilationUnitProjectGrouper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CompilationUnitProjectGrouper.java</span></div><h1>CompilationUnitProjectGrouper.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+
+/**
+ * Resolves canonical input files to primary compilation units and groups them by
+ * Java project without modifying workspace resources or source contents.
+ */
+final class CompilationUnitProjectGrouper {
+
+	private static final String OUTSIDE_WORKSPACE= &quot;OUTSIDE_WORKSPACE&quot;; //$NON-NLS-1$
+	private static final String NOT_COMPILATION_UNIT= &quot;NOT_COMPILATION_UNIT&quot;; //$NON-NLS-1$
+	private static final String NO_JAVA_PROJECT= &quot;NO_JAVA_PROJECT&quot;; //$NON-NLS-1$
+	private static final String RESOLUTION_FAILED= &quot;RESOLUTION_FAILED&quot;; //$NON-NLS-1$
+
+	/** One requested file and its normalized primary compilation unit. */
+	record Input(File file, ICompilationUnit compilationUnit) {
+<span class="fc" id="L45">		Input {</span>
+<span class="fc" id="L46">			Objects.requireNonNull(file, &quot;file&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L47">			Objects.requireNonNull(compilationUnit, &quot;compilationUnit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L48">		}</span>
+	}
+
+	/** One deterministic per-project input transaction candidate. */
+	record ProjectGroup(IJavaProject project, List&lt;Input&gt; inputs) {
+<span class="fc" id="L53">		ProjectGroup {</span>
+<span class="fc" id="L54">			Objects.requireNonNull(project, &quot;project&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">			inputs= List.copyOf(inputs);</span>
+<span class="fc" id="L56">		}</span>
+
+		List&lt;ICompilationUnit&gt; compilationUnits() {
+<span class="fc" id="L59">			return inputs.stream().map(Input::compilationUnit).toList();</span>
+		}
+	}
+
+	/** Structured resolution problem for one requested file. */
+	record Diagnostic(String input, String reasonCode, String message) {
+<span class="fc" id="L65">		Diagnostic {</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">			input= input == null ? &quot;&quot; : input; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">			reasonCode= reasonCode == null ? RESOLUTION_FAILED : reasonCode;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			message= message == null ? &quot;&quot; : message; //$NON-NLS-1$</span>
+<span class="fc" id="L69">		}</span>
+	}
+
+	/** Stable grouping result. */
+	record Result(List&lt;ProjectGroup&gt; groups, List&lt;Diagnostic&gt; diagnostics) {
+<span class="fc" id="L74">		Result {</span>
+<span class="fc" id="L75">			groups= List.copyOf(groups);</span>
+<span class="fc" id="L76">			diagnostics= List.copyOf(diagnostics);</span>
+<span class="fc" id="L77">		}</span>
+	}
+
+	private static final class ResolutionException extends RuntimeException {
+		private static final long serialVersionUID= 1L;
+		private final String reasonCode;
+
+		ResolutionException(String reasonCode, String message) {
+<span class="nc" id="L85">			super(message);</span>
+<span class="nc" id="L86">			this.reasonCode= reasonCode;</span>
+<span class="nc" id="L87">		}</span>
+	}
+
+	private final Function&lt;File, ICompilationUnit&gt; resolver;
+
+	CompilationUnitProjectGrouper() {
+<span class="nc" id="L93">		this(CompilationUnitProjectGrouper::resolveWorkspaceCompilationUnit);</span>
+<span class="nc" id="L94">	}</span>
+
+<span class="fc" id="L96">	CompilationUnitProjectGrouper(Function&lt;File, ICompilationUnit&gt; resolver) {</span>
+<span class="fc" id="L97">		this.resolver= Objects.requireNonNull(resolver, &quot;resolver&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">	}</span>
+
+	Result group(Collection&lt;File&gt; files) {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		if (files == null) {</span>
+<span class="fc" id="L102">			return new Result(List.of(), List.of(new Diagnostic(&quot;&quot;, RESOLUTION_FAILED, //$NON-NLS-1$</span>
+<span class="fc" id="L103">					&quot;Input file collection is null&quot;))); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L105">		List&lt;File&gt; orderedFiles= files.stream().filter(Objects::nonNull)</span>
+<span class="fc" id="L106">				.sorted(Comparator.comparing(CompilationUnitProjectGrouper::stablePath)).toList();</span>
+<span class="fc" id="L107">		Map&lt;String, ProjectAccumulator&gt; projects= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L108">		List&lt;Diagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		for (File file : orderedFiles) {</span>
+			try {
+<span class="fc" id="L111">				ICompilationUnit resolved= resolver.apply(file);</span>
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">				if (resolved == null || !resolved.exists()) {</span>
+<span class="fc" id="L113">					diagnostics.add(new Diagnostic(stablePath(file), NOT_COMPILATION_UNIT,</span>
+<span class="fc" id="L114">							&quot;No existing compilation unit was resolved&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L115">					continue;</span>
+				}
+<span class="fc" id="L117">				ICompilationUnit primary= resolved.getPrimary();</span>
+<span class="pc bpc" id="L118" title="2 of 4 branches missed.">				if (primary == null || !primary.exists()) {</span>
+<span class="nc" id="L119">					diagnostics.add(new Diagnostic(stablePath(file), NOT_COMPILATION_UNIT,</span>
+<span class="nc" id="L120">							&quot;The resolved compilation unit has no existing primary unit&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L121">					continue;</span>
+				}
+<span class="fc" id="L123">				IJavaProject project= primary.getJavaProject();</span>
+<span class="pc bpc" id="L124" title="1 of 4 branches missed.">				if (project == null || !project.exists()) {</span>
+<span class="fc" id="L125">					diagnostics.add(new Diagnostic(stablePath(file), NO_JAVA_PROJECT,</span>
+<span class="fc" id="L126">							&quot;The resolved compilation unit is not in an existing Java project&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L127">					continue;</span>
+				}
+<span class="fc" id="L129">				String projectKey= stableProjectKey(project);</span>
+<span class="fc" id="L130">				projects.computeIfAbsent(projectKey, ignored -&gt; new ProjectAccumulator(project))</span>
+<span class="fc" id="L131">						.add(file, primary);</span>
+<span class="pc" id="L132">			} catch (ResolutionException exception) {</span>
+<span class="nc" id="L133">				diagnostics.add(new Diagnostic(stablePath(file), exception.reasonCode, exception.getMessage()));</span>
+<span class="fc" id="L134">			} catch (RuntimeException exception) {</span>
+<span class="fc" id="L135">				diagnostics.add(new Diagnostic(stablePath(file), RESOLUTION_FAILED,</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">						exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage()));</span>
+			}
+		}
+
+<span class="fc" id="L140">		List&lt;ProjectGroup&gt; groups= projects.entrySet().stream().sorted(Map.Entry.comparingByKey())</span>
+<span class="fc" id="L141">				.map(entry -&gt; entry.getValue().freeze()).toList();</span>
+<span class="fc" id="L142">		diagnostics.sort(Comparator.comparing(Diagnostic::input)</span>
+<span class="fc" id="L143">				.thenComparing(Diagnostic::reasonCode).thenComparing(Diagnostic::message));</span>
+<span class="fc" id="L144">		return new Result(groups, diagnostics);</span>
+	}
+
+	private static final class ProjectAccumulator {
+		private final IJavaProject project;
+<span class="fc" id="L149">		private final Map&lt;String, Input&gt; inputsByUnitHandle= new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L151">		ProjectAccumulator(IJavaProject project) {</span>
+<span class="fc" id="L152">			this.project= project;</span>
+<span class="fc" id="L153">		}</span>
+
+		void add(File file, ICompilationUnit unit) {
+<span class="fc" id="L156">			String handle= unit.getHandleIdentifier();</span>
+<span class="pc bpc" id="L157" title="2 of 4 branches missed.">			if (handle == null || handle.isBlank()) {</span>
+<span class="nc" id="L158">				throw new ResolutionException(NOT_COMPILATION_UNIT,</span>
+<span class="nc" id="L159">						&quot;The resolved compilation unit has no stable Java-model handle&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L161">			inputsByUnitHandle.putIfAbsent(handle, new Input(file, unit));</span>
+<span class="fc" id="L162">		}</span>
+
+		ProjectGroup freeze() {
+<span class="fc" id="L165">			List&lt;Input&gt; inputs= inputsByUnitHandle.entrySet().stream().sorted(Map.Entry.comparingByKey())</span>
+<span class="fc" id="L166">					.map(Map.Entry::getValue).toList();</span>
+<span class="fc" id="L167">			return new ProjectGroup(project, inputs);</span>
+		}
+	}
+
+	private static ICompilationUnit resolveWorkspaceCompilationUnit(File file) {
+<span class="nc" id="L172">		IPath path= Path.fromOSString(file.getAbsolutePath());</span>
+<span class="nc" id="L173">		IFile workspaceFile= ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(path);</span>
+<span class="nc bnc" id="L174" title="All 4 branches missed.">		if (workspaceFile == null || !workspaceFile.exists()) {</span>
+<span class="nc" id="L175">			throw new ResolutionException(OUTSIDE_WORKSPACE,</span>
+<span class="nc" id="L176">					&quot;File is outside the current Eclipse workspace&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L178">		ICompilationUnit unit= JavaCore.createCompilationUnitFrom(workspaceFile);</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">		if (unit == null) {</span>
+<span class="nc" id="L180">			throw new ResolutionException(NOT_COMPILATION_UNIT,</span>
+<span class="nc" id="L181">					&quot;Workspace file is not a Java compilation unit&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L183">		return unit;</span>
+	}
+
+	private static String stableProjectKey(IJavaProject project) {
+<span class="fc" id="L187">		String handle= project.getHandleIdentifier();</span>
+<span class="pc bpc" id="L188" title="2 of 4 branches missed.">		return handle == null || handle.isBlank() ? project.getElementName() : handle;</span>
+	}
+
+	private static String stablePath(File file) {
+<span class="fc" id="L192">		return file.toPath().toAbsolutePath().normalize().toString().replace(File.separatorChar, '/');</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

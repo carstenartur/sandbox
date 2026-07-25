@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MultiFileScopeDiagnostic.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">MultiFileScopeDiagnostic.java</span></div><h1>MultiFileScopeDiagnostic.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+/** Immutable account of selected and automatically added cleanup source units. */
+public record MultiFileScopeDiagnostic(List&lt;String&gt; selectedCompilationUnitHandles,
+		List&lt;String&gt; addedCompilationUnitHandles, String reasonCode, String explanation,
+		boolean complete) {
+
+	/** Validates and normalizes the scope diagnostic. */
+<span class="fc" id="L23">	public MultiFileScopeDiagnostic {</span>
+<span class="fc" id="L24">		selectedCompilationUnitHandles= normalize(selectedCompilationUnitHandles);</span>
+<span class="fc" id="L25">		addedCompilationUnitHandles= normalize(addedCompilationUnitHandles);</span>
+<span class="fc" id="L26">		reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L27">		explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L28">	}</span>
+
+	/** Creates a diagnostic from general collections while retaining deterministic order. */
+	public MultiFileScopeDiagnostic(Collection&lt;String&gt; selectedCompilationUnitHandles,
+			Collection&lt;String&gt; addedCompilationUnitHandles, String reasonCode, String explanation,
+			boolean complete) {
+<span class="nc" id="L34">		this(toList(selectedCompilationUnitHandles), toList(addedCompilationUnitHandles), reasonCode, explanation,</span>
+<span class="nc" id="L35">				complete);</span>
+<span class="nc" id="L36">	}</span>
+
+	/** @return an empty, complete scope diagnostic */
+	public static MultiFileScopeDiagnostic empty() {
+<span class="fc" id="L40">		return new MultiFileScopeDiagnostic(List.of(), List.of(), &quot;NO_EXPANSION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L41">				&quot;No coordinated source-scope expansion was required.&quot;, true); //$NON-NLS-1$</span>
+	}
+
+	private static List&lt;String&gt; toList(Collection&lt;String&gt; handles) {
+<span class="nc bnc" id="L45" title="All 2 branches missed.">		return handles == null ? null : List.copyOf(handles);</span>
+	}
+
+	private static List&lt;String&gt; normalize(List&lt;String&gt; handles) {
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		return handles == null ? List.of() : handles.stream().filter(Objects::nonNull).distinct().sorted().toList();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

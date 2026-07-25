@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConcreteCollectionFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ConcreteCollectionFactory.java</span></div><h1>ConcreteCollectionFactory.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+import org.sandbox.functional.core.terminal.CollectTerminal;
+
+/** Resolves behavior-preserving suppliers for fresh collection accumulators. */
+final class ConcreteCollectionFactory {
+
+	private static final String JAVA_UTIL_LIST= &quot;java.util.List&quot;; //$NON-NLS-1$
+	private static final String JAVA_UTIL_SET= &quot;java.util.Set&quot;; //$NON-NLS-1$
+	private static final String JAVA_UTIL_TREE_SET_FACTORY= &quot;java.util.TreeSet::new&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L38">	private static final Map&lt;String, CollectTerminal.CollectorType&gt; SUPPORTED= Map.of(</span>
+<span class="fc" id="L39">			&quot;java.util.ArrayList&quot;, CollectTerminal.CollectorType.TO_LIST, //$NON-NLS-1$</span>
+<span class="fc" id="L40">			&quot;java.util.LinkedList&quot;, CollectTerminal.CollectorType.TO_LIST, //$NON-NLS-1$</span>
+<span class="fc" id="L41">			&quot;java.util.HashSet&quot;, CollectTerminal.CollectorType.TO_SET, //$NON-NLS-1$</span>
+<span class="fc" id="L42">			&quot;java.util.LinkedHashSet&quot;, CollectTerminal.CollectorType.TO_SET, //$NON-NLS-1$</span>
+<span class="fc" id="L43">			&quot;java.util.TreeSet&quot;, CollectTerminal.CollectorType.TO_SET); //$NON-NLS-1$</span>
+
+	private ConcreteCollectionFactory() {
+	}
+
+	/**
+	 * Adds the proven constructor supplier to a collect terminal. Unsupported or
+	 * construction-sensitive declarations fail closed by returning {@code null}.
+	 *
+	 * &lt;p&gt;For an exact {@link java.util.List} declaration, or an exact
+	 * {@link java.util.Set} declaration backed by a modeled hash-based set, whose
+	 * value is never referenced after the accumulating loop, the concrete
+	 * implementation is not observable. In that case the existing interface
+	 * collector remains sufficient and avoids changing established output for a
+	 * dead local. A later read, return or subsequent loop keeps the explicit
+	 * constructor supplier. {@link java.util.TreeSet} always keeps its supplier:
+	 * comparison and null-handling failures remain observable even when the final
+	 * set value is not read.&lt;/p&gt;
+	 */
+	static CollectTerminal preserveFactory(VariableDeclarationStatement declaration, CollectTerminal terminal) {
+<span class="fc" id="L63">		String supplier= supplier(declaration, terminal);</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		if (supplier == null) {</span>
+<span class="nc" id="L65">			return null;</span>
+		}
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (canUseInterfaceCollector(declaration, terminal, supplier)) {</span>
+<span class="fc" id="L68">			return terminal;</span>
+		}
+<span class="fc" id="L70">		return new CollectTerminal(terminal.collectorType(), terminal.targetVariable(), supplier);</span>
+	}
+
+	/**
+	 * Returns whether the adjacent declaration uses one modeled JDK collection type.
+	 * Constructor arguments are allowed because callers using this predicate retain
+	 * the original declaration and only replace the loop with a direct forEach.
+	 */
+	static boolean hasSupportedConcreteType(VariableDeclarationStatement declaration, CollectTerminal terminal) {
+<span class="pc bpc" id="L79" title="3 of 6 branches missed.">		if (declaration == null || terminal == null || declaration.fragments().size() != 1) {</span>
+<span class="nc" id="L80">			return false;</span>
+		}
+<span class="fc" id="L82">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);</span>
+<span class="fc" id="L83">		Expression initializer= fragment.getInitializer();</span>
+<span class="pc bpc" id="L84" title="1 of 4 branches missed.">		if (!(initializer instanceof ClassInstanceCreation creation) || hasAnonymousClass(creation)) {</span>
+<span class="fc" id="L85">			return false;</span>
+		}
+<span class="fc" id="L87">		ITypeBinding createdType= creation.resolveTypeBinding();</span>
+<span class="fc" id="L88">		ITypeBinding declaredType= declaration.getType().resolveBinding();</span>
+<span class="pc bpc" id="L89" title="2 of 4 branches missed.">		if (createdType == null || declaredType == null) {</span>
+<span class="nc" id="L90">			return false;</span>
+		}
+<span class="fc" id="L92">		ITypeBinding createdErasure= createdType.getErasure();</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">		if (createdErasure == null || declaredType.getErasure() == null) {</span>
+<span class="nc" id="L94">			return false;</span>
+		}
+<span class="fc" id="L96">		CollectTerminal.CollectorType supportedType= SUPPORTED.get(createdErasure.getQualifiedName());</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		return supportedType == terminal.collectorType()</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				&amp;&amp; createdType.isAssignmentCompatible(declaredType);</span>
+	}
+
+	/**
+	 * Returns a qualified constructor reference for one exactly modeled initializer.
+	 * Constructor arguments, anonymous classes, custom implementations and unresolved
+	 * bindings fail closed.
+	 */
+	static String supplier(VariableDeclarationStatement declaration, CollectTerminal terminal) {
+<span class="pc bpc" id="L107" title="3 of 6 branches missed.">		if (declaration == null || terminal == null || declaration.fragments().size() != 1) {</span>
+<span class="nc" id="L108">			return null;</span>
+		}
+<span class="fc" id="L110">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);</span>
+<span class="fc" id="L111">		Expression initializer= fragment.getInitializer();</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		if (!(initializer instanceof ClassInstanceCreation creation)</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				|| !creation.arguments().isEmpty()</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				|| hasAnonymousClass(creation)) {</span>
+<span class="nc" id="L115">			return null;</span>
+		}
+<span class="fc" id="L117">		ITypeBinding createdType= creation.resolveTypeBinding();</span>
+<span class="fc" id="L118">		ITypeBinding declaredType= declaration.getType().resolveBinding();</span>
+<span class="pc bpc" id="L119" title="2 of 4 branches missed.">		if (createdType == null || declaredType == null) {</span>
+<span class="nc" id="L120">			return null;</span>
+		}
+<span class="fc" id="L122">		ITypeBinding createdErasure= createdType.getErasure();</span>
+<span class="pc bpc" id="L123" title="2 of 4 branches missed.">		if (createdErasure == null || declaredType.getErasure() == null) {</span>
+<span class="nc" id="L124">			return null;</span>
+		}
+<span class="fc" id="L126">		String qualifiedName= createdErasure.getQualifiedName();</span>
+<span class="fc" id="L127">		CollectTerminal.CollectorType supportedType= SUPPORTED.get(qualifiedName);</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (supportedType != terminal.collectorType()</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">				|| !createdType.isAssignmentCompatible(declaredType)) {</span>
+<span class="nc" id="L130">			return null;</span>
+		}
+<span class="fc" id="L132">		return qualifiedName + &quot;::new&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static boolean canUseInterfaceCollector(VariableDeclarationStatement declaration,
+			CollectTerminal terminal, String supplier) {
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (JAVA_UTIL_TREE_SET_FACTORY.equals(supplier)) {</span>
+<span class="fc" id="L138">			return false;</span>
+		}
+<span class="fc" id="L140">		ITypeBinding declaredType= declaration.getType().resolveBinding();</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		ITypeBinding erasure= declaredType == null ? null : declaredType.getErasure();</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">		if (erasure == null) {</span>
+<span class="nc" id="L143">			return false;</span>
+		}
+<span class="fc" id="L145">		String qualifiedName= erasure.getQualifiedName();</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		boolean exactInterface= terminal.collectorType() == CollectTerminal.CollectorType.TO_LIST</span>
+<span class="fc" id="L147">				? JAVA_UTIL_LIST.equals(qualifiedName)</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				: terminal.collectorType() == CollectTerminal.CollectorType.TO_SET</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">						&amp;&amp; JAVA_UTIL_SET.equals(qualifiedName);</span>
+<span class="fc bfc" id="L150" title="All 4 branches covered.">		return exactInterface &amp;&amp; !isReferencedAfterAccumulation(declaration);</span>
+	}
+
+	private static boolean isReferencedAfterAccumulation(VariableDeclarationStatement declaration) {
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">		if (!(declaration.getParent() instanceof Block block) || declaration.fragments().size() != 1) {</span>
+<span class="nc" id="L155">			return true;</span>
+		}
+<span class="fc" id="L157">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);</span>
+<span class="fc" id="L158">		IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L160">			return true;</span>
+		}
+		@SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
+<span class="fc" id="L163">		List&lt;Statement&gt; statements= block.statements();</span>
+<span class="fc" id="L164">		int declarationIndex= statements.indexOf(declaration);</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		if (declarationIndex &lt; 0) {</span>
+<span class="nc" id="L166">			return true;</span>
+		}
+<span class="fc" id="L168">		boolean accumulationFound= false;</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (int index= declarationIndex + 1; index &lt; statements.size(); index++) {</span>
+<span class="fc" id="L170">			boolean referencesAccumulator= references(statements.get(index), binding);</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">			if (!accumulationFound) {</span>
+<span class="fc" id="L172">				accumulationFound= referencesAccumulator;</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">			} else if (referencesAccumulator) {</span>
+<span class="fc" id="L174">				return true;</span>
+			}
+		}
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		return !accumulationFound;</span>
+	}
+
+	private static boolean references(Statement statement, IVariableBinding target) {
+<span class="fc" id="L181">		boolean[] found= { false };</span>
+<span class="fc" id="L182">		statement.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName node) {
+<span class="fc" id="L185">				IBinding resolved= node.resolveBinding();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">				if (resolved instanceof IVariableBinding variable</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">						&amp;&amp; target.getVariableDeclaration().isEqualTo(variable.getVariableDeclaration())) {</span>
+<span class="fc" id="L188">					found[0]= true;</span>
+<span class="fc" id="L189">					return false;</span>
+				}
+<span class="fc bfc" id="L191" title="All 2 branches covered.">				return !found[0];</span>
+			}
+		});
+<span class="fc" id="L194">		return found[0];</span>
+	}
+
+	private static boolean hasAnonymousClass(ClassInstanceCreation creation) {
+<span class="fc" id="L198">		AnonymousClassDeclaration anonymous= creation.getAnonymousClassDeclaration();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		return anonymous != null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
