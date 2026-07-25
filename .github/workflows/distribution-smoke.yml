@@ -28,7 +28,16 @@ jobs:
       - name: Apply pending complete product model
         if: github.event_name == 'pull_request' && github.head_ref == 'upgrade/eclipse-2026-06' && hashFiles('.github/scripts/apply_complete_product_model.py') != ''
         run: |
-          python3 .github/scripts/apply_complete_product_model.py
+          mkdir -p target/distribution-verification
+          set +e
+          python3 .github/scripts/apply_complete_product_model.py \
+            > target/distribution-verification/product-model-migration.log 2>&1
+          status=$?
+          set -e
+          cat target/distribution-verification/product-model-migration.log
+          if [[ "$status" -ne 0 ]]; then
+            exit "$status"
+          fi
           rm -f .github/scripts/apply_complete_product_model.py
           rm -f .github/workflows/apply-complete-product-model.yml
           cat > .github/workflows/distribution-smoke.yml <<'EOF'
@@ -96,7 +105,6 @@ jobs:
                     retention-days: 30
                     if-no-files-found: error
           EOF
-          # Remove the YAML indentation introduced by this shell block.
           sed -i 's/^          //' .github/workflows/distribution-smoke.yml
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
