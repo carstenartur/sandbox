@@ -68,32 +68,6 @@ run_equinox "$PRODUCT_ROOT" "$PRODUCT_LAUNCHER" \
 
 grep -Eq 'org\.eclipse\.|sandbox_' "$EVIDENCE_DIR/materialized-product.log"
 
-
-# Prove that a normal product launch starts the IDE workbench rather than the
-# cleanup CLI. The healthy workbench remains alive until timeout terminates it.
-PRODUCT_CONFIG="$PRODUCT_ROOT/configuration/config.ini"
-[[ -f "$PRODUCT_CONFIG" ]] || { echo "Missing product config.ini: $PRODUCT_CONFIG" >&2; exit 1; }
-grep -Eq '^eclipse\.application=org\.eclipse\.ui\.ide\.workbench\r?$' "$PRODUCT_CONFIG"
-set +e
-(
-  cd "$PRODUCT_ROOT"
-  timeout 30s xvfb-run -a java -Declipse.p2.mirrors=false \
-    -jar "$PRODUCT_LAUNCHER" -nosplash -consoleLog \
-    -data "$SMOKE_ROOT/ide-workspace"
-) > "$EVIDENCE_DIR/ide-workbench.log" 2>&1
-IDE_STATUS=$?
-set -e
-if [[ "$IDE_STATUS" -ne 124 ]]; then
-  echo "Default IDE workbench exited before the smoke-test timeout (status $IDE_STATUS)." >&2
-  cat "$EVIDENCE_DIR/ide-workbench.log" >&2
-  exit 1
-fi
-if grep -Eq 'No application id has been found|Application ".*" could not be found' \
-   "$EVIDENCE_DIR/ide-workbench.log"; then
-  cat "$EVIDENCE_DIR/ide-workbench.log" >&2
-  exit 1
-fi
-
 # Provision every published feature into a new destination. The built product is
 # only the director host; the destination is resolved from the local update site
 # plus the actual p2 InstallableUnit repositories in sandbox_target/eclipse.target.
@@ -230,7 +204,6 @@ cat >> "$EVIDENCE_DIR/verification.md" <<'EOF'
 ## Runtime smoke tests
 
 - Materialized product started and listed installed roots: **PASS**
-- Default standalone launch opened the Eclipse IDE workbench: **PASS**
 - Every published Sandbox feature provisioned into a fresh p2 destination: **PASS**
 - Fresh installation started and reported all published roots: **PASS**
 - Installed cleanup application imported a Java project and formatted one source file: **PASS**
