@@ -29,34 +29,13 @@ on:
       - 'sandbox_updatesite/category.xml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Synchronize README with Eclipse 2026-06
-        if: github.event_name == 'pull_request' && github.head_ref == 'upgrade/eclipse-2026-06'
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('README.md')
-          content = path.read_bytes()
-          old = b'2025-12'
-          if old in content:
-              path.write_bytes(content.replace(old, b'2026-06'))
-          PY
-          if git diff --quiet -- README.md; then
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add README.md
-          git commit -m 'Document Eclipse 2026-06 as the repository baseline'
-          git push origin HEAD:${{ github.head_ref }}
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
