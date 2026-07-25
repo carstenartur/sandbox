@@ -52,6 +52,7 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumGeneratedNameValidator;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
@@ -93,9 +94,10 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(selectedScope, List.of()));
 		}
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
-		return closedScope == null
+		MultiFileCleanUpPlanResult<IntEnumMigrationPlan> result= closedScope == null
 				? IntEnumMultiFilePlanner.create(project, compilationUnits, monitor)
 				: IntEnumMultiFilePlanner.create(project, compilationUnits, closedScope.booleanValue(), monitor);
+		return IntEnumGeneratedNameValidator.validate(project, compilationUnits, result, monitor);
 	}
 
 	@Override
