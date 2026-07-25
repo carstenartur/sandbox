@@ -10,6 +10,9 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -199,7 +202,7 @@ public class MultiFileIntToEnumCleanUpTest {
 	}
 
 	@Test
-	public void doesNotMigrateWhenGeneratedNameConflictsWithOwnerMember() throws CoreException {
+	public void generatedNameMemberCollisionFailsClosedWithDiagnostic() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
 				"""
@@ -232,7 +235,9 @@ public class MultiFileIntToEnumCleanUpTest {
 
 		enableProjectWideCleanup();
 
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
+		CoreException exception= assertThrows(CoreException.class,
+				() -> context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client }));
+		assertTrue(exception.getMessage().contains("GENERATED_NAME_COLLISION")); //$NON-NLS-1$
 	}
 
 	private ICompilationUnit processor(IPackageFragment pack) throws CoreException {
