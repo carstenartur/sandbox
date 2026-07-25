@@ -105,10 +105,7 @@ The repository includes CI workflows for building, testing, and code quality ana
 - **Requires**: Java 21 or later
 - **Quick Build**: `mvn -T 1C verify`
 - **Standalone IDE Product**: `mvn -Pproduct clean verify`
-- **P2 Update Site**: `mvn -Prepo clean verify`
 - **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`
-
-The complete distribution command is platform-neutral and invokes only Maven and Java. A headless Linux runner needs an X display for the SWT workbench launch, but that is runner setup rather than build logic.
 
 **Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
