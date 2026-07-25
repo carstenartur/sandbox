@@ -134,7 +134,7 @@ Want to build and run the Eclipse product with bundled plugins? See the [Buildin
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2025-12)| Java 21      | 5.0.3         |
+| `main` (2026-06)| Java 21      | 5.0.3         |
 
 **Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 
