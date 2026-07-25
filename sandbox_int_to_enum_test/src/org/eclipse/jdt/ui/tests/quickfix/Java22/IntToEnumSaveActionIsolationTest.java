@@ -32,6 +32,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
 import org.eclipse.jdt.internal.corext.fix.CleanUpPostSaveListener;
 import org.eclipse.jdt.internal.corext.fix.CleanUpPreferenceUtil;
@@ -139,6 +140,7 @@ public class IntToEnumSaveActionIsolationTest {
 
 		JavaEditor localEditor= openEditor(local);
 		local.getBuffer().setContents(localInEditor);
+		local.reconcile(IASTSharedValues.SHARED_AST_LEVEL, true, null, null);
 		localEditor.doSave(null);
 
 		String savedLocal= Files.readString(local.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8);
