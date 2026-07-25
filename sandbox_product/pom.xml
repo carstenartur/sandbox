@@ -110,7 +110,6 @@
 						<product>
 							<id>sandbox.bundle.product${rcp-version}</id>
 							<attachId>standard</attachId>
-							<rootFolder>client</rootFolder>
 						</product>
 					</products>
 					<formats>
