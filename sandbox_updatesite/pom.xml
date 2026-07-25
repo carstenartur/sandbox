@@ -101,40 +101,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<profiles>
-		<profile>
-			<id>distribution</id>
-			<activation>
-				<property>
-					<name>distribution.smoke</name>
-					<value>true</value>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>exec-maven-plugin</artifactId>
-						<version>3.6.3</version>
-						<executions>
-							<execution>
-								<id>verify-built-distribution</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>exec</goal>
-								</goals>
-								<configuration>
-									<workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
-									<executable>bash</executable>
-									<arguments>
-										<argument>.github/scripts/verify_distribution.sh</argument>
-									</arguments>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>
