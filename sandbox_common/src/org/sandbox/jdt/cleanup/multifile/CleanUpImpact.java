@@ -29,7 +29,7 @@ public enum CleanUpImpact {
 
 	/** Interactive or non-Java migration that must use a dedicated refactoring workflow. */
 	MANUAL_REFACTORING(false, true,
-			"The transformation requires interactive decisions or non-Java resource changes." ); //$NON-NLS-1$
+			"The transformation requires interactive decisions or non-Java resource changes."); //$NON-NLS-1$
 
 	private final boolean ordinarySaveActionAllowed;
 	private final boolean projectWide;
