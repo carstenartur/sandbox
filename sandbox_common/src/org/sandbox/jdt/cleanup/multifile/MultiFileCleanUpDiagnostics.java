@@ -16,20 +16,34 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 /** Immutable aggregate diagnostics for one coordinated cleanup planning run. */
-public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagnostic scope,
+public record MultiFileCleanUpDiagnostics(String cleanupId, CleanUpImpact impact,
+		String compatibilityStatement, MultiFileScopeDiagnostic scope,
 		List<MultiFileCandidateDiagnostic> candidates) {
+
+	/** Compatibility constructor for existing project-wide cleanup planners. */
+	public MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagnostic scope,
+			List<MultiFileCandidateDiagnostic> candidates) {
+		this(cleanupId, CleanUpImpact.PROJECT_CLOSED,
+				CleanUpImpact.PROJECT_CLOSED.compatibilityStatement(), scope, candidates);
+	}
 
 	/** Validates and deterministically orders diagnostics. */
 	public MultiFileCleanUpDiagnostics {
 		cleanupId= Objects.requireNonNull(cleanupId);
+		impact= impact == null ? CleanUpImpact.PROJECT_CLOSED : impact;
+		compatibilityStatement= compatibilityStatement == null || compatibilityStatement.isBlank()
+				? impact.compatibilityStatement()
+				: compatibilityStatement;
 		scope= scope == null ? MultiFileScopeDiagnostic.empty() : scope;
 		List<MultiFileCandidateDiagnostic> normalized= candidates == null ? List.of() : new ArrayList<>(candidates);
 		normalized.sort(Comparator.comparing(MultiFileCandidateDiagnostic::ownerCompilationUnitHandle)
@@ -41,12 +55,25 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 
 	/** @return empty diagnostics for a cleanup with no coordinated candidate */
 	public static MultiFileCleanUpDiagnostics empty() {
-		return new MultiFileCleanUpDiagnostics("unknown", MultiFileScopeDiagnostic.empty(), List.of()); //$NON-NLS-1$
+		return new MultiFileCleanUpDiagnostics("unknown", CleanUpImpact.LOCAL_SAFE, //$NON-NLS-1$
+				CleanUpImpact.LOCAL_SAFE.compatibilityStatement(), MultiFileScopeDiagnostic.empty(), List.of());
 	}
 
 	/** Returns a copy containing the observed host scope expansion. */
 	public MultiFileCleanUpDiagnostics withScope(MultiFileScopeDiagnostic newScope) {
-		return new MultiFileCleanUpDiagnostics(cleanupId, newScope, candidates);
+		return new MultiFileCleanUpDiagnostics(cleanupId, impact, compatibilityStatement, newScope, candidates);
+	}
+
+	/** Returns a copy with an explicit impact and compatibility claim. */
+	public MultiFileCleanUpDiagnostics withImpact(CleanUpImpact newImpact, String statement) {
+		return new MultiFileCleanUpDiagnostics(cleanupId, newImpact, statement, scope, candidates);
+	}
+
+	/** Number of distinct compilation units that can participate in this run. */
+	public int affectedCompilationUnitCount() {
+		Set<String> affected= new LinkedHashSet<>(scope.selectedCompilationUnitHandles());
+		affected.addAll(scope.addedCompilationUnitHandles());
+		return affected.size();
 	}
 
 	/** Adds one concise, nonfatal planning summary to the cleanup preview status. */
@@ -64,10 +91,11 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 			}
 		}
 		long rejected= rejectedByReason.values().stream().mapToLong(Long::longValue).sum();
-		StringBuilder summary= new StringBuilder(160)
-				.append("Coordinated cleanup ").append(cleanupId).append(": ") //$NON-NLS-1$ //$NON-NLS-2$
+		StringBuilder summary= new StringBuilder(256)
+				.append("Coordinated cleanup ").append(cleanupId).append(" [").append(impact).append("]: ") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				.append(scope.selectedCompilationUnitHandles().size()).append(" selected, ") //$NON-NLS-1$
 				.append(scope.addedCompilationUnitHandles().size()).append(" added; ") //$NON-NLS-1$
+				.append(affectedCompilationUnitCount()).append(" affected; ") //$NON-NLS-1$
 				.append(transformed).append(" transformed, ").append(rejected).append(" rejected"); //$NON-NLS-1$ //$NON-NLS-2$
 		if (!scope.complete()) {
 			summary.append("; scope incomplete (").append(scope.reasonCode()).append(')'); //$NON-NLS-1$
@@ -83,6 +111,7 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 			}
 			summary.append(')');
 		}
+		summary.append(" Compatibility: ").append(compatibilityStatement); //$NON-NLS-1$
 		status.addInfo(summary.append('.').toString());
 	}
 
@@ -94,10 +123,15 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 	 * @return privacy-preserving deterministic JSON
 	 */
 	public String toJson() {
-		StringBuilder json= new StringBuilder(512);
+		StringBuilder json= new StringBuilder(768);
 		json.append('{');
-		property(json, "schemaVersion", "1").append(','); //$NON-NLS-1$ //$NON-NLS-2$
+		property(json, "schemaVersion", "2").append(','); //$NON-NLS-1$ //$NON-NLS-2$
 		property(json, "cleanupId", cleanupId).append(','); //$NON-NLS-1$
+		property(json, "impact", impact.name()).append(','); //$NON-NLS-1$
+		json.append("\"projectWide\":").append(impact.projectWide()).append(','); //$NON-NLS-1$
+		json.append("\"ordinarySaveActionAllowed\":").append(impact.ordinarySaveActionAllowed()).append(','); //$NON-NLS-1$
+		json.append("\"affectedCompilationUnitCount\":").append(affectedCompilationUnitCount()).append(','); //$NON-NLS-1$
+		property(json, "compatibilityStatement", compatibilityStatement).append(','); //$NON-NLS-1$
 		json.append("\"scope\":{"); //$NON-NLS-1$
 		arrayProperty(json, "selectedCompilationUnits", externalUnitIds(scope.selectedCompilationUnitHandles())).append(','); //$NON-NLS-1$
 		arrayProperty(json, "addedCompilationUnits", externalUnitIds(scope.addedCompilationUnitHandles())).append(','); //$NON-NLS-1$
