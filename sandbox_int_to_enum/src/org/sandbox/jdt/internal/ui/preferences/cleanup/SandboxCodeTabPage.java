@@ -24,44 +24,44 @@ import org.sandbox.jdt.internal.corext.fix.IntToEnumCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUp;
 
-/**
- * Cleanup tab page for int to enum conversion options.
- */
+/** Cleanup tab page for int-to-enum conversion options. */
 public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
-	/**
-	 * Constant array for boolean selection
-	 */
-	static final String[] FALSE_TRUE = {
-			CleanUpOptions.FALSE,
-			CleanUpOptions.TRUE
-	};
+	static final String[] FALSE_TRUE= { CleanUpOptions.FALSE, CleanUpOptions.TRUE };
 
-	public static final String ID = "org.eclipse.jdt.ui.cleanup.tabpage.sandbox.int_to_enum"; //$NON-NLS-1$
+	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox.int_to_enum"; //$NON-NLS-1$
+
+	@Override
+	public void setWorkingValues(Map<String, String> workingValues) {
+		if (isSaveAction()) {
+			workingValues.put(IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.FALSE);
+		}
+		super.setWorkingValues(workingValues);
+	}
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
-		return new AbstractCleanUp[] {
-				new IntToEnumCleanUp(values)
-		};
+		return new AbstractCleanUp[] { new IntToEnumCleanUp(values) };
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-		Group intToEnumGroup = createGroup(numColumns, composite, CleanUpMessages.IntToEnumTabPage_GroupName_IntToEnum);
+		Group intToEnumGroup= createGroup(numColumns, composite,
+				CleanUpMessages.IntToEnumTabPage_GroupName_IntToEnum);
 		CheckboxPreference intToEnum= createCheckboxPref(intToEnumGroup, numColumns,
 				CleanUpMessages.IntToEnumTabPage_CheckboxName_IntToEnum,
-				MYCleanUpConstants.INT_TO_ENUM_CLEANUP,
-				FALSE_TRUE);
+				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, FALSE_TRUE);
+
+		if (isSaveAction()) {
+			// PROJECT_CLOSED transformations must never be enabled as ordinary save actions.
+			registerPreference(intToEnum);
+			return;
+		}
 
 		intent(intToEnumGroup);
 		CheckboxPreference projectWide= createCheckboxPref(intToEnumGroup, numColumns - 1,
 				CleanUpMessages.IntToEnumTabPage_CheckboxName_ProjectWide,
-				IntToEnumCleanUpOptions.PROJECT_WIDE,
-				FALSE_TRUE);
+				IntToEnumCleanUpOptions.PROJECT_WIDE, FALSE_TRUE);
 		registerSlavePreference(intToEnum, new CheckboxPreference[] { projectWide });
-
-		intent(intToEnumGroup);
-		registerPreference(intToEnum);
 	}
 }
