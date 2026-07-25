@@ -10,8 +10,29 @@
 	<artifactId>sandbox_target</artifactId>
 	<name>Sandbox target</name>
 	<packaging>eclipse-target-definition</packaging>
-		<build>
+	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.6.3</version>
+				<executions>
+					<execution>
+						<id>verify-target-repository-alignment</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+							<executable>python3</executable>
+							<arguments>
+								<argument>.github/scripts/verify_target_repository_alignment.py</argument>
+							</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
