@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <Match>
+    <!-- All affected paths are descendants of verifier-owned product or evidence
+         directories. Their parent and file-name components therefore exist by
+         construction; SpotBugs cannot infer those invariants through Path APIs. -->
+    <Class name="org.sandbox.distribution.DistributionVerifier"/>
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+  </Match>
+  <Match>
+    <!-- Evidence files are deliberately written with LF on every platform so
+         JSON/Markdown artifacts are byte-stable. Platform-specific %n would be
+         incorrect for this reproducibility evidence. -->
+    <Class name="org.sandbox.distribution.DistributionVerifier"/>
+    <Method name="writeEvidence"/>
+    <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+  </Match>
+</FindBugsFilter>
