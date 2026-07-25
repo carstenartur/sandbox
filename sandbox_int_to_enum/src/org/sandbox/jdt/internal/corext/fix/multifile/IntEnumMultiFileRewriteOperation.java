@@ -56,6 +56,8 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 import org.eclipse.text.edits.TextEditGroup;
 
+import org.sandbox.jdt.cleanup.multifile.GeneratedTypeNamePolicy;
+
 /** Local AST rewrite generated from a project-wide integer-state plan. */
 final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOperationWithSourceRange {
 
@@ -99,6 +101,12 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 					for (IntEnumCandidate candidate : candidates) {
 						if (unitHandle.equals(candidate.ownerCompilationUnitHandle())
 								&& candidate.ownerTypeBindingKey().equals(key)) {
+							GeneratedTypeNamePolicy.Assessment assessment= GeneratedTypeNamePolicy.assessNestedType(
+									root, node, List.of(root), candidate.enumTypeName());
+							if (!assessment.available()) {
+								throw new StalePlanRuntimeException(stale(unit,
+										assessment.reasonCode() + ": " + assessment.explanation())); //$NON-NLS-1$
+							}
 							ownerTypes.put(candidate, node);
 							processed.add(node);
 						}
@@ -162,10 +170,14 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 								stale(unit, "unexpected use of " + node.getIdentifier())); //$NON-NLS-1$
 					}
 					IntEnumConstant constant= candidate.constant(constantKey);
-					String qualifier= unitHandle.equals(candidate.ownerCompilationUnitHandle())
-							? candidate.enumTypeName()
-							: candidate.ownerTypeQualifiedName() + "." + candidate.enumTypeName(); //$NON-NLS-1$
-					replacements.put(expression, qualifier + "." + constant.enumName()); //$NON-NLS-1$
+					GeneratedTypeNamePolicy.ReferenceResolution reference= GeneratedTypeNamePolicy.resolveReference(root,
+							candidate.ownerTypeQualifiedName(), candidate.enumTypeName(),
+							unitHandle.equals(candidate.ownerCompilationUnitHandle()));
+					if (!reference.accessible()) {
+						throw new StalePlanRuntimeException(stale(unit,
+								reference.reasonCode() + ": " + reference.explanation())); //$NON-NLS-1$
+					}
+					replacements.put(expression, reference.qualifier() + "." + constant.enumName()); //$NON-NLS-1$
 					referenceCounts.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
 							.merge(constantKey, Integer.valueOf(1), Integer::sum);
 					processed.add(expression);
