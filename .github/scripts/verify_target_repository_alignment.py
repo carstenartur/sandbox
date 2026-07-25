@@ -112,11 +112,7 @@ def verify() -> None:
         )
 
     pom_bc: dict[str, str] = {}
-    for requirement in pom.findall(
-        ".//m:target-platform-configuration/m:configuration/"
-        "m:dependency-resolution/m:extraRequirements/m:requirement",
-        MAVEN_NS,
-    ):
+    for requirement in pom.findall(".//m:extraRequirements/m:requirement", MAVEN_NS):
         identifier = text(requirement.find("m:id", MAVEN_NS), "extra requirement id")
         if identifier in BOUNCY_CASTLE_IDS:
             pom_bc[identifier] = text(
