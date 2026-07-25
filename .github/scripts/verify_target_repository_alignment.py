@@ -30,6 +30,15 @@ def text(element: ET.Element | None, label: str) -> str:
     return element.text.strip()
 
 
+def osgi_version(version: str) -> str:
+    """Normalize Maven's 1.84 spelling to the OSGi 1.84.0 spelling."""
+    if re.fullmatch(r"\d+\.\d+", version):
+        return f"{version}.0"
+    if re.fullmatch(r"\d+\.\d+\.\d+", version):
+        return version
+    raise ValueError(f"Unsupported Bouncy Castle version syntax: {version}")
+
+
 def verify() -> None:
     pom = ET.parse(ROOT / "pom.xml").getroot()
     pom_repositories = [
@@ -87,6 +96,7 @@ def verify() -> None:
     properties = pom.find("m:properties", MAVEN_NS)
     assert properties is not None
     declared_bc = text(properties.find("m:bouncycastle.version", MAVEN_NS), "bouncycastle.version")
+    declared_bc_osgi = osgi_version(declared_bc)
 
     target_bc = {
         unit.attrib["id"]: unit.attrib["version"]
@@ -95,10 +105,10 @@ def verify() -> None:
     }
     if set(target_bc) != set(BOUNCY_CASTLE_IDS):
         raise ValueError(f"Target Bouncy Castle units are incomplete: {target_bc}")
-    target_versions = set(target_bc.values())
-    if target_versions != {declared_bc}:
+    if set(target_bc.values()) != {declared_bc_osgi}:
         raise ValueError(
-            f"Bouncy Castle property {declared_bc} does not match target units {target_bc}"
+            f"Bouncy Castle Maven version {declared_bc} ({declared_bc_osgi} as OSGi) "
+            f"does not match target units {target_bc}"
         )
 
     pom_bc: dict[str, str] = {}
@@ -113,16 +123,15 @@ def verify() -> None:
                 requirement.find("m:versionRange", MAVEN_NS),
                 f"versionRange for {identifier}",
             )
-    expected_bc = {identifier: declared_bc for identifier in BOUNCY_CASTLE_IDS}
-    if pom_bc != expected_bc:
+    if pom_bc != target_bc:
         raise ValueError(
-            f"Bouncy Castle Maven extra requirements are inconsistent: "
-            f"expected {expected_bc}, found {pom_bc}"
+            f"Bouncy Castle Maven extra requirements do not match target units: "
+            f"expected {target_bc}, found {pom_bc}"
         )
 
     print(
         f"Repository alignment verified: Eclipse {target_release}, "
-        f"Orbit {target_orbit}, Bouncy Castle {declared_bc}."
+        f"Orbit {target_orbit}, Bouncy Castle Maven {declared_bc} / OSGi {declared_bc_osgi}."
     )
 
 
