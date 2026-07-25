@@ -24,7 +24,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 import org.sandbox.jdt.ui.tests.quickfix.rules.MultiFileCleanUpLifecycleAssertions;
 
-/** Integration test for a package-scoped state API and a caller in another file. */
+/** Integration tests for package-scoped state APIs and callers in other files. */
 public class MultiFileIntToEnumCleanUpTest {
 
 	@RegisterExtension
@@ -33,23 +33,7 @@ public class MultiFileIntToEnumCleanUpTest {
 	@Test
 	public void completeSelectionMigratesOwnerAndCallerButNotUnrelatedSource() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
-		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
-				"""
-				package test;
-
-				public class OrderProcessor {
-					static final int STATUS_PENDING = 0;
-					static final int STATUS_APPROVED = 1;
-
-					void process(int status) {
-						if (status == STATUS_PENDING) {
-							System.out.println("pending");
-						} else if (status == STATUS_APPROVED) {
-							System.out.println("approved");
-						}
-					}
-				}
-				""", false, null);
+		ICompilationUnit processor= processor(pack);
 		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
 				"""
 				package test;
@@ -71,36 +55,19 @@ public class MultiFileIntToEnumCleanUpTest {
 				}
 				""", false, null);
 
-		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
-		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
+		enableProjectWideCleanup();
 
 		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
 				new ICompilationUnit[] { processor, client, unrelated },
 				new ICompilationUnit[] { processor, client, unrelated },
 				new String[] {
-						"""
-						package test;
-
-						public class OrderProcessor {
-							enum Status {
-								PENDING, APPROVED
-							}
-
-							void process(Status status) {
-								if (status == Status.PENDING) {
-									System.out.println("pending");
-								} else if (status == Status.APPROVED) {
-									System.out.println("approved");
-								}
-							}
-						}
-						""",
+						migratedProcessor(),
 						"""
 						package test;
 
 						public class OrderClient {
 							void run(OrderProcessor processor) {
-								processor.process(test.OrderProcessor.Status.PENDING);
+								processor.process(OrderProcessor.Status.PENDING);
 							}
 						}
 						""",
@@ -110,6 +77,82 @@ public class MultiFileIntToEnumCleanUpTest {
 						public class Unrelated {
 							String value() {
 								return "unchanged";
+							}
+						}
+						""" });
+	}
+
+	@Test
+	public void nestedCallerUsesOrdinarySamePackageOwnerName() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit processor= processor(pack);
+		ICompilationUnit client= pack.createCompilationUnit("Outer.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class Outer {
+					class Inner {
+						void run(OrderProcessor processor) {
+							processor.process(OrderProcessor.STATUS_APPROVED);
+						}
+					}
+				}
+				""", false, null);
+
+		enableProjectWideCleanup();
+
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+				new ICompilationUnit[] { processor, client },
+				new ICompilationUnit[] { processor, client },
+				new String[] {
+						migratedProcessor(),
+						"""
+						package test;
+
+						public class Outer {
+							class Inner {
+								void run(OrderProcessor processor) {
+									processor.process(OrderProcessor.Status.APPROVED);
+								}
+							}
+						}
+						""" });
+	}
+
+	@Test
+	public void callerTypeConflictUsesQualifiedOwnerName() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit processor= processor(pack);
+		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderClient {
+					static class OrderProcessor {
+					}
+
+					void run(test.OrderProcessor processor) {
+						processor.process(test.OrderProcessor.STATUS_PENDING);
+					}
+				}
+				""", false, null);
+
+		enableProjectWideCleanup();
+
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+				new ICompilationUnit[] { processor, client },
+				new ICompilationUnit[] { processor, client },
+				new String[] {
+						migratedProcessor(),
+						"""
+						package test;
+
+						public class OrderClient {
+							static class OrderProcessor {
+							}
+
+							void run(test.OrderProcessor processor) {
+								processor.process(test.OrderProcessor.Status.PENDING);
 							}
 						}
 						""" });
@@ -150,9 +193,90 @@ public class MultiFileIntToEnumCleanUpTest {
 				}
 				""", false, null);
 
-		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
-		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
+		enableProjectWideCleanup();
 
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
+	}
+
+	@Test
+	public void doesNotMigrateWhenGeneratedNameConflictsWithOwnerMember() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderProcessor {
+					int Status;
+					static final int STATUS_PENDING = 0;
+					static final int STATUS_APPROVED = 1;
+
+					void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderClient {
+					void run(OrderProcessor processor) {
+						processor.process(OrderProcessor.STATUS_PENDING);
+					}
+				}
+				""", false, null);
+
+		enableProjectWideCleanup();
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { processor, client });
+	}
+
+	private ICompilationUnit processor(IPackageFragment pack) throws CoreException {
+		return pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class OrderProcessor {
+					static final int STATUS_PENDING = 0;
+					static final int STATUS_APPROVED = 1;
+
+					void process(int status) {
+						if (status == STATUS_PENDING) {
+							System.out.println("pending");
+						} else if (status == STATUS_APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""", false, null);
+	}
+
+	private static String migratedProcessor() {
+		return """
+				package test;
+
+				public class OrderProcessor {
+					enum Status {
+						PENDING, APPROVED
+					}
+
+					void process(Status status) {
+						if (status == Status.PENDING) {
+							System.out.println("pending");
+						} else if (status == Status.APPROVED) {
+							System.out.println("approved");
+						}
+					}
+				}
+				""";
+	}
+
+	private void enableProjectWideCleanup() {
+		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
+		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 	}
 }
