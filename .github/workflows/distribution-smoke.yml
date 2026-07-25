@@ -39,12 +39,16 @@ jobs:
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
       - name: Maven distribution build and verification
-        run: >-
-          xvfb-run --auto-servernum mvn
-          -Pdistribution
-          --batch-mode
-          -Dtycho.localArtifacts=ignore
-          clean verify
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p target/distribution-verification
+          xvfb-run --auto-servernum mvn \
+            -Pdistribution \
+            --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            clean verify 2>&1 \
+            | tee target/distribution-verification/maven.log
       - name: Publish verification summary
         if: always() && hashFiles('target/distribution-verification/verification.md') != ''
         run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
