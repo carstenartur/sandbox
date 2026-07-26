@@ -1,0 +1,38 @@
+name: Release Workflow Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/deploy-release.yml'
+      - '.github/workflows/release-workflow-validation.yml'
+      - '.github/scripts/verify_release_identity.py'
+      - '.github/scripts/test_verify_release_identity.py'
+      - '.github/scripts/wait_for_pages_build.py'
+      - '.github/scripts/test_wait_for_pages_build.py'
+      - '.github/scripts/verify_published_repository.py'
+      - '.github/scripts/test_verify_published_repository.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compile release helpers
+        run: |
+          python3 -m py_compile \
+            .github/scripts/verify_release_identity.py \
+            .github/scripts/test_verify_release_identity.py \
+            .github/scripts/wait_for_pages_build.py \
+            .github/scripts/test_wait_for_pages_build.py \
+            .github/scripts/verify_published_repository.py \
+            .github/scripts/test_verify_published_repository.py
+      - name: Test release helpers
+        run: |
+          python3 .github/scripts/test_verify_release_identity.py
+          python3 .github/scripts/test_wait_for_pages_build.py
+          python3 .github/scripts/test_verify_published_repository.py

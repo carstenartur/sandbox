@@ -37,6 +37,13 @@ $x.toString()
 => !$a || !$b
 ;;
 
+@id: logical.simplification.boolean-conditional
+@severity: info
+"Simplify condition ? true : false to condition.":
+$condition ? true : false
+=> $condition
+;;
+
 $threadLocalVar.set(null) :: instanceof($threadLocalVar, "java.lang.ThreadLocal")
 => $threadLocalVar.remove()
 ;;
