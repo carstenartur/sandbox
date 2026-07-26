@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7fcc08499e4e23d4c0557843f1a4582a41806e1c76f60a4bbf0e5f7b096d8bb4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: preference.editorEscapeStringsDefault\u003e\n\u003c!description: Set default for EDITOR_ESCAPE_STRINGS to true.\u003e\n\u003c!severity: INFO\u003e\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_ESCAPE_STRINGS, false)\n\u003d\u003e\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.EDITOR_ESCAPE_STRINGS, true)\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.jface.preference.PreferenceStore;\n\npublic class PreferenceConstants {\n    public static final String EDITOR_CLOSE_BRACES \u003d \"editor_close_braces\";\n    public static final String EDITOR_ESCAPE_STRINGS \u003d \"editor_escape_strings\";\n\n    public static void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.EDITOR_CLOSE_BRACES, true);\n        store.setDefault(PreferenceConstants.EDITOR_ESCAPE_STRINGS, false); // Matched line\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.jface.preference.PreferenceStore;\n\npublic class PreferenceConstants {\n    public static final String EDITOR_CLOSE_BRACES \u003d \"editor_close_braces\";\n    public static final String EDITOR_ESCAPE_STRINGS \u003d \"editor_escape_strings\";\n\n    public static void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.EDITOR_CLOSE_BRACES, true);\n        store.setDefault(PreferenceConstants.EDITOR_ESCAPE_STRINGS, true); // Replaced\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.jface.preference.PreferenceStore;\n\npublic class PreferenceConstants {\n    public static final String EDITOR_CLOSE_BRACES \u003d \"editor_close_braces\";\n    public static final String EDITOR_ESCAPE_STRINGS \u003d \"editor_escape_strings\";\n\n    public static void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.EDITOR_CLOSE_BRACES, false);\n        store.setDefault(PreferenceConstants.EDITOR_ESCAPE_STRINGS, true); // Already true, should not match\n    }\n}",
+  "targetHintFile": "preferences.sandbox-hint",
+  "sourceCommit": "faef33aea75a3f0f3b937e9de6f0165d5db2504d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Configuration Update",
+  "summary": "Replaces \u0027false\u0027 with \u0027true\u0027 as the default value for EDITOR_ESCAPE_STRINGS preference.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-26T03:15:43.497841469Z",
+  "ruleFingerprint": "sha256:b1b7add6e67ac7d1dbe19e4ebc11d8f907e941b90562fb69d5170ed6fedd8813",
+  "behaviorFingerprint": "sha256:a555d6d719f099207ed22e3f6e1e75c9174126f1554103558c1e3eaa92dd8a1f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-26T03:15:45.365236528Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

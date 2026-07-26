@@ -1,44 +1,44 @@
 {
-  "totalProcessed": 37,
-  "relevant": 12,
-  "irrelevant": 25,
+  "totalProcessed": 35,
+  "relevant": 6,
+  "irrelevant": 29,
   "duplicates": 0,
-  "green": 12,
+  "green": 4,
   "yellow": 0,
-  "red": 0,
+  "red": 2,
   "irrelevantReasons": {},
   "perRepository": {
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "totalProcessed": 37,
-      "relevant": 12,
-      "green": 12,
+      "totalProcessed": 35,
+      "relevant": 6,
+      "green": 4,
       "yellow": 0,
-      "red": 0
+      "red": 2
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-07-25",
-      "processed": 37,
-      "relevant": 12
+      "date": "2026-07-26",
+      "processed": 35,
+      "relevant": 6
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-07-25T03:06:38.788Z",
-    "completedAt": "2026-07-25T03:14:43.188814659Z",
-    "durationSeconds": 484,
+    "startedAt": "2026-07-26T03:08:05.433Z",
+    "completedAt": "2026-07-26T03:15:43.418017900Z",
+    "durationSeconds": 457,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
     "commitsPerRequest": 4,
     "apiCallsMade": 18,
-    "deferredCommits": 263,
+    "deferredCommits": 265,
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-07-25T03:08:29.829656283Z",
-    "latestEvaluation": "2026-07-25T03:14:41.886467983Z",
-    "earliestCommitDate": "2016-01-14T15:51:52Z",
-    "latestCommitDate": "2016-09-23T06:37:27Z"
+    "earliestEvaluation": "2026-07-26T03:09:55.298647827Z",
+    "latestEvaluation": "2026-07-26T03:15:42.100114003Z",
+    "earliestCommitDate": "2016-06-10T17:49:45Z",
+    "latestCommitDate": "2017-01-31T10:42:50Z"
   }
 }

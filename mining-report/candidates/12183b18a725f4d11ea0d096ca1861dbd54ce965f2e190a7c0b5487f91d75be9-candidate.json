@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "12183b18a725f4d11ea0d096ca1861dbd54ce965f2e190a7c0b5487f91d75be9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($x instanceof org.eclipse.jdt.core.IParent) :: sourceVersionGE(9)\n\u003d\u003e\n($x instanceof org.eclipse.jdt.core.IParent \u0026\u0026 !($x instanceof org.eclipse.jdt.core.IModuleDescription))\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.IParent;\n\npublic class MyClass {\n    public void someMethod(Object parent) {\n        if (parent instanceof IParent) {\n            System.out.println(\"Is parent\");\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.IParent;\nimport org.eclipse.jdt.core.IModuleDescription;\n\npublic class MyClass {\n    public void someMethod(Object parent) {\n        if (parent instanceof IParent \u0026\u0026 !(parent instanceof IModuleDescription)) {\n            System.out.println(\"Is parent\");\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.ISourceReference;\n\npublic class MyClass {\n    public void someMethod(Object element) {\n        if (element instanceof ISourceReference) {\n            System.out.println(\"Is source reference\");\n        }\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "ea9d4c1324f60c894c82d38d61078c85788f442f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Add negation for IModuleDescription to instanceof IParent checks for Java 9+.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-26T03:15:43.504366955Z",
+  "ruleFingerprint": "sha256:0c33642d9a5521e799274e6a3302bb7e1e3e44f8cc7c99b53c3485afc124a57d",
+  "behaviorFingerprint": "sha256:72c0d8db9057dc59a9206aaefc765df2969454f236f53ecd857be53cf04b083e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-26T03:15:45.381922487Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

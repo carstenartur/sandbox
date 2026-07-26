@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "34a59d7525a5af6c3831d5e8018e189027caca647fcdd66ccabd4e52e9ce36da",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.ArrayList\u003c$Type$\u003e(java.util.Arrays.asList($args$))\n\u003d\u003e\nnew java.util.ArrayList\u003c\u003e(java.util.Arrays.asList($args$))\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class MyClass {\n    public void foo(String[] items) {\n        List\u003cString\u003e list \u003d new ArrayList\u003cString\u003e(Arrays.asList(items));\n        System.out.println(list);\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class MyClass {\n    public void foo(String[] items) {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e(Arrays.asList(items));\n        System.out.println(list);\n    }\n}",
+  "negativeExample": "import java.util.LinkedList;\nimport java.util.List;\nimport java.util.Set;\nimport java.util.HashSet;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    public void bar() {\n        List\u003cString\u003e list \u003d new LinkedList\u003cString\u003e(); // Different collection type\n        Set\u003cString\u003e set \u003d new HashSet\u003cString\u003e(); // Different collection type\n        List\u003cString\u003e anotherList \u003d new ArrayList\u003cString\u003e(); // Not initialized from Arrays.asList\n        ArrayList\u003cString\u003e justList \u003d new ArrayList\u003cString\u003e(); // Not initialized from Arrays.asList\n    }\n}",
+  "targetHintFile": "modernize-java7.sandbox-hint",
+  "sourceCommit": "cd049c24efd509aaa2b9dcf2619389980df429ba",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Generics Modernization",
+  "summary": "Use diamond operator for ArrayList constructor when initialized with Arrays.asList.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-26T03:15:43.491105828Z",
+  "ruleFingerprint": "sha256:04aacbdee771772605aad782035ad45de7a7dd4e58546e0edcc105c3cd4e1e6d",
+  "behaviorFingerprint": "sha256:4db55b833d2763408e8a1bdcf834e0429a4c19953dca209da282f129fe86fb28",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-26T03:15:45.359819290Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
