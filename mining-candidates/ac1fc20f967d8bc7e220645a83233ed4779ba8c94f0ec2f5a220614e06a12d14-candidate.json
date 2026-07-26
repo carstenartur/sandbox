@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ac1fc20f967d8bc7e220645a83233ed4779ba8c94f0ec2f5a220614e06a12d14",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"org.eclipse.jdt.ui.JavadocView.backgroundColor\"\n\u003d\u003e\n\"org.eclipse.jdt.ui.Javadoc.backgroundColor\"\n;;",
+  "beforeExample": "public class JavadocView {\n    protected String getBackgroundColorKey() {\n        return \"org.eclipse.jdt.ui.JavadocView.backgroundColor\";\n    }\n    protected String getForegroundColorKey() {\n        return \"org.eclipse.jdt.ui.JavadocView.foregroundColor\";\n    }\n}",
+  "afterExample": "public class JavadocView {\n    protected String getBackgroundColorKey() {\n        return \"org.eclipse.jdt.ui.Javadoc.backgroundColor\";\n    }\n    protected String getForegroundColorKey() {\n        return \"org.eclipse.jdt.ui.JavadocView.foregroundColor\";\n    }\n}",
+  "negativeExample": "public class OtherView {\n    protected String getSomeOtherKey() {\n        return \"com.example.OtherView.backgroundColor\";\n    }\n}",
+  "targetHintFile": "eclipse-ui-refactor.sandbox-hint",
+  "sourceCommit": "23c909d0d505112cd83ffa6ee849b8202d23d01c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Literal Refactoring",
+  "summary": "Replace deprecated JavadocView background color key with common Javadoc key.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-26T03:15:43.470074683Z",
+  "ruleFingerprint": "sha256:16e6b83308335b2be64351a03b0fb4c440bfca9b0fe843e3da0ea5deeb370c2c",
+  "behaviorFingerprint": "sha256:6e7e4411eed27f89132f21744c30e6c4ce1d6b4f20494801c0ed4df84c0bb1be",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type JavadocView must be defined in its own file",
+    "verifiedAt": "2026-07-26T03:15:45.334557281Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
