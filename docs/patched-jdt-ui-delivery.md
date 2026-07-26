@@ -11,11 +11,11 @@ The replacement lane is isolated from ordinary `main` validation. It runs for pu
 The immutable coordinates are stored in `.github/patched-jdt-ui.env`:
 
 - repository: `https://github.com/carstenartur/eclipse.jdt.ui.git`;
-- commit: `450bfd46089c99608dd60203e1257e1c329ad2c5`;
+- commit: `f5270e1eb9e35be435ac4ff7d4e942ac3c1dc219`;
 - bundle: `org.eclipse.jdt.ui`;
 - expected base version: `3.39.0`.
 
-The commit is the merged result of `carstenartur/eclipse.jdt.ui#95`. Its fork synchronization manifest preserves both the modified `CleanUpRefactoring.java` source and `MultiFileCleanUpScopeExpansionTest.java`.
+The commit is the synchronized fork master for the Eclipse 2026-06 / Platform 4.40 development line. It retains the reviewed fixed-point cleanup scope expansion and the upstream PDE test. The fork synchronization manifest preserves both the modified `CleanUpRefactoring.java` source and `MultiFileCleanUpScopeExpansionTest.java` while later JDT UI changes are synchronized.
 
 ## Local rebuild
 
