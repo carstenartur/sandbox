@@ -1,29 +1,25 @@
 name: Release Workflow
-# Manual, fail-closed release workflow for Sandbox.
-#
-# The release is built, tested and smoke-tested before any stable tag or GitHub
-# Release is created. The versioned p2 repository is published to the configured
-# legacy GitHub Pages source, an explicit Pages build is requested, and the exact
-# deployed commit is awaited before the public URLs are verified. Publication
-# failures restore both the gh-pages branch and the public Pages deployment.
 
+# Fail-closed release publication. The stable source tree, Maven distribution,
+# public p2 repository, tag source archives and draft GitHub Release are all
+# verified before the release is published and can trigger archival services.
 on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Release version matching the current SNAPSHOT without -SNAPSHOT, e.g. 1.3.2'
+        description: Stable version matching the current SNAPSHOT without -SNAPSHOT
         required: true
         type: string
       skip_tests:
-        description: 'Skip tests for a dry-run diagnostic build only'
+        description: Skip tests for a dry-run diagnostic build only
         required: false
-        type: boolean
         default: false
+        type: boolean
       dry_run:
-        description: 'Validate and build only; do not publish tags, releases, branches, gh-pages, or issues'
+        description: Build and verify without publishing
         required: false
-        type: boolean
         default: false
+        type: boolean
   push:
     branches:
       - 'release-request/**'
@@ -44,17 +40,14 @@ env:
   GH_TOKEN: ${{ github.token }}
 
 jobs:
-  preflight:
-    name: Preflight Checks
+  release:
+    name: Build, verify and publish stable release
     runs-on: ubuntu-latest
-    outputs:
-      starting_sha: ${{ steps.versions.outputs.starting_sha }}
-      current_version: ${{ steps.versions.outputs.current_version }}
-      release_version: ${{ steps.versions.outputs.release_version }}
-      next_snapshot: ${{ steps.versions.outputs.next_snapshot }}
-      next_release: ${{ steps.versions.outputs.next_release }}
+    timeout-minutes: 180
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
     steps:
-      - name: Checkout repository
+      - name: Checkout main
         uses: actions/checkout@v6
         with:
           ref: main
@@ -67,138 +60,9 @@ jobs:
           distribution: temurin
 
       - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
         with:
           maven-version: 3.9.14
-
-      - name: Validate versions and release state
-        id: versions
-        run: |
-          set -euo pipefail
-
-          STARTING_SHA=$(git rev-parse HEAD)
-          CURRENT=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            INPUT_VERSION="${{ inputs.release_version }}"
-          else
-            BRANCH_VERSION="${GITHUB_REF_NAME#release-request/}"
-            git fetch --no-tags origin "${{ github.sha }}"
-            REQUEST_VERSION=$(git show "${{ github.sha }}:.github/release-request" | tr -d '[:space:]')
-            if [[ "$BRANCH_VERSION" != "$REQUEST_VERSION" ]]; then
-              echo "::error::Release request branch version '$BRANCH_VERSION' does not match marker '$REQUEST_VERSION'."
-              exit 1
-            fi
-            INPUT_VERSION="$REQUEST_VERSION"
-          fi
-
-          if ! [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Invalid release version '$INPUT_VERSION'. Expected X.Y.Z."
-            exit 1
-          fi
-          if [[ "$CURRENT" != *-SNAPSHOT ]]; then
-            echo "::error::Current project version '$CURRENT' is not a SNAPSHOT version."
-            exit 1
-          fi
-
-          SUGGESTED_RELEASE="${CURRENT%-SNAPSHOT}"
-          if [[ "$INPUT_VERSION" != "$SUGGESTED_RELEASE" ]]; then
-            echo "::error::Release version '$INPUT_VERSION' does not match current SNAPSHOT '$CURRENT'. Expected '$SUGGESTED_RELEASE'."
-            exit 1
-          fi
-          if [[ "${{ inputs.skip_tests }}" == "true" && "${{ inputs.dry_run }}" != "true" ]]; then
-            echo "::error::Published releases may not skip tests. Use skip_tests only together with dry_run."
-            exit 1
-          fi
-
-          IFS='.' read -r major minor patch <<< "$INPUT_VERSION"
-          NEXT_PATCH=$((patch + 1))
-          NEXT_SNAPSHOT="${major}.${minor}.${NEXT_PATCH}-SNAPSHOT"
-          NEXT_RELEASE="${major}.${minor}.${NEXT_PATCH}"
-
-          if git ls-remote --tags origin | grep -q "refs/tags/v${INPUT_VERSION}$"; then
-            echo "::error::Tag v${INPUT_VERSION} already exists. Refusing to overwrite an existing release."
-            exit 1
-          fi
-
-          echo "starting_sha=$STARTING_SHA" >> "$GITHUB_OUTPUT"
-          echo "current_version=$CURRENT" >> "$GITHUB_OUTPUT"
-          echo "release_version=$INPUT_VERSION" >> "$GITHUB_OUTPUT"
-          echo "next_snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
-          echo "next_release=$NEXT_RELEASE" >> "$GITHUB_OUTPUT"
-
-      - name: Validate Maven configuration
-        run: mvn --batch-mode validate
-
-      - name: Test release publication helpers
-        run: |
-          python3 .github/scripts/test_wait_for_pages_build.py
-          python3 .github/scripts/test_verify_published_repository.py
-
-      - name: Preflight summary
-        run: |
-          {
-            echo '## Release preflight'
-            echo
-            echo '| Field | Value |'
-            echo '|-------|-------|'
-            echo '| Starting commit | `${{ steps.versions.outputs.starting_sha }}` |'
-            echo '| Current version | ${{ steps.versions.outputs.current_version }} |'
-            echo '| Release version | ${{ steps.versions.outputs.release_version }} |'
-            echo '| Next SNAPSHOT | ${{ steps.versions.outputs.next_snapshot }} |'
-            echo '| Dry run | ${{ inputs.dry_run }} |'
-            echo '| Skip tests | ${{ inputs.skip_tests }} |'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  release:
-    name: Build, Verify, Publish, and Prepare Next Version
-    needs: preflight
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    env:
-      MAVEN_OPTS: -Djava.awt.headless=true
-    steps:
-      - name: Checkout the preflight commit
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.preflight.outputs.starting_sha }}
-          fetch-depth: 0
-
-      - name: Verify the starting main revision
-        run: |
-          set -euo pipefail
-          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
-          if [[ "$remote_main" != "${{ needs.preflight.outputs.starting_sha }}" ]]; then
-            echo "::error::main moved after preflight: expected ${{ needs.preflight.outputs.starting_sha }}, found ${remote_main}."
-            exit 1
-          fi
-
-      - name: Prepare release evidence directory
-        run: |
-          mkdir -p target/distribution-verification
-          {
-            echo "startingSha=${{ needs.preflight.outputs.starting_sha }}"
-            echo "releaseVersion=${{ needs.preflight.outputs.release_version }}"
-            echo "dryRun=${{ inputs.dry_run }}"
-            echo "skipTests=${{ inputs.skip_tests }}"
-          } > target/distribution-verification/release-context.txt
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: temurin
-
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
-        with:
-          maven-version: 3.9.14
-
-      - name: Install Xvfb and GUI dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
-            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
       - name: Cache Maven dependencies
         uses: actions/cache@v5
@@ -207,404 +71,449 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      - name: Set release version
+      - name: Install Linux desktop runtime
         run: |
-          set -euo pipefail
-          RELEASE_VERSION="${{ needs.preflight.outputs.release_version }}"
-          TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
-          echo "Using Tycho versions plugin ${TYCHO_VERSION}"
-          mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version \
-            -DnewVersion="${RELEASE_VERSION}" \
-            -Pbenchmark,jacoco
-          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
-            -DnewVersion="${RELEASE_VERSION}" \
-            -DgenerateBackupPoms=false
-          mvn -f sandbox-maven-plugin/pom.xml versions:set \
-            -DnewVersion="${RELEASE_VERSION}" \
-            -DgenerateBackupPoms=false
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
-      - name: Verify release version update
+      - name: Test release publication helpers
+        run: |
+          python3 .github/scripts/test_verify_release_identity.py
+          python3 .github/scripts/test_wait_for_pages_build.py
+          python3 .github/scripts/test_verify_published_repository.py
+
+      - name: Validate requested version and immutable starting state
         run: |
           set -euo pipefail
-          if grep -r 'SNAPSHOT' \
-             --include='pom.xml' \
-             --include='MANIFEST.MF' \
-             --include='feature.xml' \
-             --include='*.product' \
-             --exclude-dir='src' \
-             --exclude-dir='tst' \
-             --exclude-dir='target' \
-             --exclude-dir='.git' .; then
-            echo '::error::Found remaining SNAPSHOT references after release version update.'
+          starting_sha=$(git rev-parse HEAD)
+          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [[ "$remote_main" != "$starting_sha" ]]; then
+            echo "::error::Checked-out main $starting_sha differs from remote main $remote_main."
             exit 1
           fi
 
-      - name: Commit release version
+          current_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+            release_version='${{ inputs.release_version }}'
+          else
+            git fetch --no-tags origin "${{ github.sha }}"
+            branch_version="${GITHUB_REF_NAME#release-request/}"
+            marker_version=$(git show "${{ github.sha }}:.github/release-request" | tr -d '[:space:]')
+            if [[ "$branch_version" != "$marker_version" ]]; then
+              echo "::error::Release request branch '$branch_version' differs from marker '$marker_version'."
+              exit 1
+            fi
+            release_version="$marker_version"
+          fi
+
+          if ! [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid stable release version '$release_version'."
+            exit 1
+          fi
+          if [[ "$current_version" != "${release_version}-SNAPSHOT" ]]; then
+            echo "::error::Requested release '$release_version' does not match project version '$current_version'."
+            exit 1
+          fi
+
+          dry_run='${{ inputs.dry_run }}'
+          skip_tests='${{ inputs.skip_tests }}'
+          [[ "$dry_run" == 'true' ]] || dry_run=false
+          [[ "$skip_tests" == 'true' ]] || skip_tests=false
+          if [[ "$skip_tests" == 'true' && "$dry_run" != 'true' ]]; then
+            echo '::error::Published releases may not skip tests.'
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/v${release_version}" >/dev/null 2>&1; then
+            echo "::error::Tag v${release_version} already exists."
+            exit 1
+          fi
+          if gh release view "v${release_version}" >/dev/null 2>&1; then
+            echo "::error::GitHub Release v${release_version} already exists."
+            exit 1
+          fi
+
+          IFS='.' read -r major minor patch <<< "$release_version"
+          next_snapshot="${major}.${minor}.$((patch + 1))-SNAPSHOT"
+          next_release="${major}.${minor}.$((patch + 1))"
+
+          {
+            echo "STARTING_SHA=$starting_sha"
+            echo "CURRENT_VERSION=$current_version"
+            echo "RELEASE_VERSION=$release_version"
+            echo "NEXT_SNAPSHOT=$next_snapshot"
+            echo "NEXT_RELEASE=$next_release"
+            echo "DRY_RUN=$dry_run"
+            echo "SKIP_TESTS=$skip_tests"
+          } >> "$GITHUB_ENV"
+
+      - name: Set and verify stable project version
         run: |
+          set -euo pipefail
+          tycho_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
+          mvn org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
+            -DnewVersion="$RELEASE_VERSION" -Pbenchmark,jacoco
+          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
+            -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
+          mvn -f sandbox-maven-plugin/pom.xml versions:set \
+            -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
+
+          actual=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          if [[ "$actual" != "$RELEASE_VERSION" ]]; then
+            echo "::error::Stable tree reports project version '$actual', expected '$RELEASE_VERSION'."
+            exit 1
+          fi
+          mkdir -p target/distribution-verification
+          python3 .github/scripts/verify_release_identity.py \
+            --root . \
+            --expected-version "$RELEASE_VERSION" \
+            --forbidden-version "$CURRENT_VERSION" \
+            --output target/distribution-verification/release-tree-identity.json
+
+      - name: Commit stable release tree
+        run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add -A -- ':!.github/workflows/'
-          git commit -m "Release version ${{ needs.preflight.outputs.release_version }}"
+          git commit -m "Release version ${RELEASE_VERSION}"
+          echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
-      - name: Build and verify release
+      - name: Maven distribution build and verification
         run: |
           set -euo pipefail
           test_args=()
-          if [[ "${{ inputs.skip_tests }}" == 'true' ]]; then
+          if [[ "$SKIP_TESTS" == 'true' ]]; then
             test_args=(-DskipTests)
           fi
-          status=0
           xvfb-run --auto-servernum mvn \
-            -Pproduct,repo,cli-dist,maven-plugin,benchmark \
-            -T 1C \
+            -Pdistribution,cli-dist,maven-plugin,benchmark \
             --batch-mode \
             -Dtycho.localArtifacts=ignore \
-            clean verify \
-            "${test_args[@]}" 2>&1 | tee /tmp/release-build.log || status=$?
-          mkdir -p target/distribution-verification
-          cp /tmp/release-build.log target/distribution-verification/release-build.log
-          exit "$status"
+            clean verify "${test_args[@]}"
 
-      - name: Validate release repository and Linux product
-        run: bash .github/scripts/verify_linux_distribution.sh
-
-      - name: Install, start, and transform with the release distribution
-        run: bash .github/scripts/smoke_test_distribution.sh
-
-      - name: Publish local release verification summary
-        if: always() && hashFiles('target/distribution-verification/verification.md') != ''
-        run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Generate release notes
+      - name: Create and inspect immutable source archives
         run: |
           set -euo pipefail
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo '')
-          if [[ -n "$PREVIOUS_TAG" ]]; then
-            PREVIOUS_DATE=$(git log -1 --format=%aI "$PREVIOUS_TAG")
-            gh issue list \
-              --state closed \
-              --search "closed:>$PREVIOUS_DATE" \
-              --json number,title \
-              --jq '.[] | "- #\(.number): \(.title)"' > release_notes.md
-            if [[ ! -s release_notes.md ]]; then
-              echo "No closed issues found since $PREVIOUS_TAG" > release_notes.md
-            fi
-          else
-            echo 'Initial release' > release_notes.md
-          fi
+          mkdir -p target/release-assets target/distribution-verification
+          prefix="sandbox-${RELEASE_VERSION}/"
+          git archive --format=tar --prefix="$prefix" HEAD \
+            | gzip -n > "target/release-assets/sandbox-${RELEASE_VERSION}-source.tar.gz"
+          git archive --format=zip --prefix="$prefix" \
+            --output="target/release-assets/sandbox-${RELEASE_VERSION}-source.zip" HEAD
+          python3 .github/scripts/verify_release_identity.py \
+            --root . \
+            --expected-version "$RELEASE_VERSION" \
+            --forbidden-version "$CURRENT_VERSION" \
+            --archive "target/release-assets/sandbox-${RELEASE_VERSION}-source.tar.gz" \
+            --archive "target/release-assets/sandbox-${RELEASE_VERSION}-source.zip" \
+            --output target/distribution-verification/release-source-identity.json
 
-      - name: Verify main is unchanged before publication
-        if: ${{ !inputs.dry_run }}
+      - name: Record pre-publication evidence
         run: |
-          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          evidence = {
+              "schemaVersion": 1,
+              "status": "VERIFIED_NOT_PUBLISHED",
+              "startingSha": os.environ["STARTING_SHA"],
+              "releaseCommit": os.environ["RELEASE_COMMIT"],
+              "releaseVersion": os.environ["RELEASE_VERSION"],
+              "tag": f"v{os.environ['RELEASE_VERSION']}",
+              "p2Url": f"https://carstenartur.github.io/sandbox/releases/{os.environ['RELEASE_VERSION']}/",
+              "dryRun": os.environ["DRY_RUN"] == "true",
+          }
+          path = Path("target/distribution-verification/release-evidence.json")
+          path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload verified pre-publication evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-verification-${{ env.RELEASE_VERSION }}-${{ github.run_id }}
+          path: |
+            target/distribution-verification/
+            target/release-assets/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Verify main remained unchanged
+        if: env.DRY_RUN != 'true'
+        run: |
           remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
-          if [[ "$remote_main" != "${{ needs.preflight.outputs.starting_sha }}" ]]; then
-            echo "::error::main moved during release verification: expected ${{ needs.preflight.outputs.starting_sha }}, found ${remote_main}."
+          if [[ "$remote_main" != "$STARTING_SHA" ]]; then
+            echo "::error::main moved during release verification: expected $STARTING_SHA, found $remote_main."
             exit 1
           fi
 
-      - name: Push release commit to temporary branch
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          TEMP_BRANCH="release-temp-${VERSION}"
-          git push origin ":refs/heads/${TEMP_BRANCH}" || true
-          git push origin "HEAD:refs/heads/${TEMP_BRANCH}"
-
-      - name: Checkout gh-pages branch
-        if: ${{ !inputs.dry_run }}
+      - name: Checkout current gh-pages revision
+        if: env.DRY_RUN != 'true'
         uses: actions/checkout@v6
         with:
           ref: gh-pages
-          path: gh-pages-repo
+          path: gh-pages-release
           fetch-depth: 1
 
       - name: Capture current gh-pages revision
+        if: env.DRY_RUN != 'true'
         id: gh_pages_before
-        if: ${{ !inputs.dry_run }}
-        run: echo "sha=$(git -C gh-pages-repo rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(git -C gh-pages-release rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy versioned P2 update site to gh-pages
+      - name: Deploy versioned p2 repository
+        if: env.DRY_RUN != 'true'
         id: deploy_release_site
-        if: ${{ !inputs.dry_run }}
         run: |
           set -euo pipefail
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          mkdir -p "gh-pages-repo/releases/${VERSION}"
-          rm -rf "gh-pages-repo/releases/${VERSION:?}"/*
-          cp -a sandbox_updatesite/target/repository/. "gh-pages-repo/releases/${VERSION}/"
-          cp target/distribution-verification/verification.json \
-             "gh-pages-repo/releases/${VERSION}/distribution-verification.json"
-          cp target/distribution-verification/verification.md \
-             "gh-pages-repo/releases/${VERSION}/distribution-verification.md"
-          cd gh-pages-repo/releases
+          destination="gh-pages-release/releases/${RELEASE_VERSION}"
+          mkdir -p "$destination"
+          rm -rf "${destination:?}"/*
+          cp -a sandbox_updatesite/target/repository/. "$destination/"
+          cp target/distribution-verification/verification.json "$destination/distribution-verification.json"
+          cp target/distribution-verification/verification.md "$destination/distribution-verification.md"
 
-          VERSIONS=$(find . -maxdepth 1 -type d ! -name '.' ! -name '..' -exec basename {} \; | sort -V)
-          VERSION_COUNT=$(echo "$VERSIONS" | wc -l)
-          CHILDREN_XML=''
-          for ver in $VERSIONS; do
-            CHILDREN_XML="$CHILDREN_XML    <child location='$ver'/>\n"
-          done
-
-          cat > compositeContent.xml << EOF
-          <?xml version='1.0' encoding='UTF-8'?>
-          <?compositeMetadataRepository version='1.0.0'?>
-          <repository name='Sandbox Releases'
-                      type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository'
-                      version='1.0.0'>
-            <properties size='1'>
-              <property name='p2.timestamp' value='$(date +%s)000'/>
-            </properties>
-            <children size='$VERSION_COUNT'>
-          $(echo -e "$CHILDREN_XML")  </children>
-          </repository>
-          EOF
-
-          cat > compositeArtifacts.xml << EOF
-          <?xml version='1.0' encoding='UTF-8'?>
-          <?compositeArtifactRepository version='1.0.0'?>
-          <repository name='Sandbox Releases'
-                      type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
-                      version='1.0.0'>
-            <properties size='1'>
-              <property name='p2.timestamp' value='$(date +%s)000'/>
-            </properties>
-            <children size='$VERSION_COUNT'>
-          $(echo -e "$CHILDREN_XML")  </children>
-          </repository>
-          EOF
+          cd gh-pages-release/releases
+          mapfile -t versions < <(find . -mindepth 1 -maxdepth 1 -type d -printf '%f\n' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)
+          timestamp="$(date +%s)000"
+          {
+            echo "<?xml version='1.0' encoding='UTF-8'?>"
+            echo "<?compositeMetadataRepository version='1.0.0'?>"
+            echo "<repository name='Sandbox Releases' type='org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository' version='1.0.0'>"
+            echo "  <properties size='1'><property name='p2.timestamp' value='$timestamp'/></properties>"
+            echo "  <children size='${#versions[@]}'>"
+            printf "    <child location='%s'/>\n" "${versions[@]}"
+            echo '  </children>'
+            echo '</repository>'
+          } > compositeContent.xml
+          {
+            echo "<?xml version='1.0' encoding='UTF-8'?>"
+            echo "<?compositeArtifactRepository version='1.0.0'?>"
+            echo "<repository name='Sandbox Releases' type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository' version='1.0.0'>"
+            echo "  <properties size='1'><property name='p2.timestamp' value='$timestamp'/></properties>"
+            echo "  <children size='${#versions[@]}'>"
+            printf "    <child location='%s'/>\n" "${versions[@]}"
+            echo '  </children>'
+            echo '</repository>'
+          } > compositeArtifacts.xml
 
           cd ..
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
-          git commit -m "Deploy release ${VERSION}" || echo 'No gh-pages changes to commit'
+          git commit -m "Deploy release ${RELEASE_VERSION}"
           git push origin gh-pages
 
       - name: Capture deployed gh-pages revision
+        if: env.DRY_RUN != 'true'
         id: gh_pages_after
-        if: ${{ !inputs.dry_run }}
         run: |
-          git -C gh-pages-repo fetch origin gh-pages
-          echo "sha=$(git -C gh-pages-repo rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
+          git -C gh-pages-release fetch origin gh-pages
+          echo "sha=$(git -C gh-pages-release rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
 
-      - name: Request and await GitHub Pages publication
-        id: pages_build
-        if: ${{ !inputs.dry_run }}
+      - name: Await exact GitHub Pages publication
+        if: env.DRY_RUN != 'true'
         run: |
           python3 .github/scripts/wait_for_pages_build.py \
             --repository "${{ github.repository }}" \
             --expected-commit "${{ steps.gh_pages_after.outputs.sha }}" \
             --output target/distribution-verification/pages-build.json
 
-      - name: Verify advertised release URLs
-        id: verify_release_urls
-        if: ${{ !inputs.dry_run }}
+      - name: Verify public release repositories
+        if: env.DRY_RUN != 'true'
         run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
           python3 .github/scripts/verify_published_repository.py \
-            --repository-url "https://carstenartur.github.io/sandbox/releases/${VERSION}/" \
+            --repository-url "https://carstenartur.github.io/sandbox/releases/${RELEASE_VERSION}/" \
             --expected-json target/distribution-verification/verification.json \
             --output target/distribution-verification/release-url-verification.json
           python3 .github/scripts/verify_published_repository.py \
             --repository-url https://carstenartur.github.io/sandbox/releases/ \
-            --expected-child "$VERSION" \
+            --expected-child "$RELEASE_VERSION" \
             --output target/distribution-verification/release-composite-verification.json
 
-      - name: Roll back failed release-site publication
-        if: ${{ failure() && !inputs.dry_run && steps.deploy_release_site.outcome == 'success' && (steps.pages_build.outcome == 'failure' || steps.verify_release_urls.outcome == 'failure') }}
+      - name: Generate release notes
+        if: env.DRY_RUN != 'true'
         run: |
-          set -euo pipefail
-          previous="${{ steps.gh_pages_before.outputs.sha }}"
-          deployed="${{ steps.gh_pages_after.outputs.sha }}"
-          if [[ -z "$previous" || -z "$deployed" ]]; then
-            echo '::error::The previous or deployed gh-pages revision was not captured.'
-            exit 1
-          fi
-          git -C gh-pages-repo push \
-            --force-with-lease=refs/heads/gh-pages:${deployed} \
-            origin "${previous}:refs/heads/gh-pages"
-          python3 .github/scripts/wait_for_pages_build.py \
-            --repository "${{ github.repository }}" \
-            --expected-commit "$previous" \
-            --output target/distribution-verification/pages-rollback-build.json
-          echo "Rolled gh-pages and its public deployment back from ${deployed} to ${previous}." \
-            | tee target/distribution-verification/release-publication-rollback.log
-
-      - name: Upload release distribution evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: release-distribution-${{ needs.preflight.outputs.release_version }}-${{ github.run_id }}
-          path: target/distribution-verification/
-          retention-days: 90
-          if-no-files-found: error
-
-      - name: Create release tag
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          COMMIT_SHA=$(git rev-parse HEAD)
-          TAG_SHA=$(gh api "repos/${{ github.repository }}/git/tags" \
-            --method POST \
-            -f tag="v${VERSION}" \
-            -f message="Release version ${VERSION}" \
-            -f object="$COMMIT_SHA" \
-            -f type='commit' \
-            --jq '.sha')
-          gh api "repos/${{ github.repository }}/git/refs" \
-            --method POST \
-            -f ref="refs/tags/v${VERSION}" \
-            -f sha="$TAG_SHA"
-
-      - name: Create maintenance branch
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          MAJOR_MINOR=$(echo "$VERSION" | sed 's/\.[^.]*$//')
-          BRANCH_NAME="maintenance/${MAJOR_MINOR}.x"
-          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
-            echo "Maintenance branch $BRANCH_NAME already exists."
+          previous_tag=$(git describe --tags --abbrev=0 "$STARTING_SHA" 2>/dev/null || true)
+          if [[ -n "$previous_tag" ]]; then
+            git log --no-merges --pretty='- %s' "${previous_tag}..${STARTING_SHA}" > release-notes.md
           else
-            gh api "repos/${{ github.repository }}/git/refs" \
-              --method POST \
-              -f ref="refs/heads/${BRANCH_NAME}" \
-              -f sha="$(git rev-parse HEAD)"
+            echo 'Initial verified release.' > release-notes.md
           fi
+          [[ -s release-notes.md ]] || echo 'No user-visible changes recorded.' > release-notes.md
 
-      - name: Create GitHub Release
-        if: ${{ !inputs.dry_run }}
+      - name: Create stable tag
+        if: env.DRY_RUN != 'true'
+        id: create_tag
         run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          gh release create "v${VERSION}" \
-            --title "Release ${VERSION}" \
-            --notes-file release_notes.md
+          git tag -a "v${RELEASE_VERSION}" -m "Release version ${RELEASE_VERSION}" "$RELEASE_COMMIT"
+          git push origin "refs/tags/v${RELEASE_VERSION}"
 
-      - name: Upload release archives and verification evidence
-        if: ${{ !inputs.dry_run }}
+      - name: Create draft GitHub Release
+        if: env.DRY_RUN != 'true'
+        id: create_release
         run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          CLI_DIST_DIR='sandbox_cleanup_cli_dist/target'
-          for archive in "$CLI_DIST_DIR"/*-dist.tar.gz "$CLI_DIST_DIR"/*-dist.zip; do
-            if [[ -f "$archive" ]]; then
-              gh release upload "v${VERSION}" "$archive" --clobber
-            fi
+          assets=(
+            "target/release-assets/sandbox-${RELEASE_VERSION}-source.tar.gz"
+            "target/release-assets/sandbox-${RELEASE_VERSION}-source.zip"
+          )
+          for candidate in sandbox_cleanup_cli_dist/target/*-dist.tar.gz sandbox_cleanup_cli_dist/target/*-dist.zip; do
+            [[ -f "$candidate" ]] && assets+=("$candidate")
           done
-          for evidence in \
+          gh release create "v${RELEASE_VERSION}" "${assets[@]}" \
+            --draft \
+            --verify-tag \
+            --title "Release ${RELEASE_VERSION}" \
+            --notes-file release-notes.md
+
+      - name: Verify tag archives and draft release identity
+        if: env.DRY_RUN != 'true'
+        id: verify_draft_release
+        run: |
+          set -euo pipefail
+          mkdir -p target/github-source
+          gh api "repos/${GITHUB_REPOSITORY}/tarball/v${RELEASE_VERSION}" \
+            > "target/github-source/github-v${RELEASE_VERSION}.tar.gz"
+          gh api "repos/${GITHUB_REPOSITORY}/zipball/v${RELEASE_VERSION}" \
+            > "target/github-source/github-v${RELEASE_VERSION}.zip"
+          python3 .github/scripts/verify_release_identity.py \
+            --root . \
+            --expected-version "$RELEASE_VERSION" \
+            --forbidden-version "$CURRENT_VERSION" \
+            --archive "target/github-source/github-v${RELEASE_VERSION}.tar.gz" \
+            --archive "target/github-source/github-v${RELEASE_VERSION}.zip" \
+            --output target/distribution-verification/github-source-identity.json
+
+          release_json=$(gh release view "v${RELEASE_VERSION}" \
+            --json tagName,isDraft,isPrerelease,url)
+          python3 - "$release_json" <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          release = json.loads(sys.argv[1])
+          expected_tag = f"v{os.environ['RELEASE_VERSION']}"
+          if release.get("tagName") != expected_tag:
+              raise SystemExit(f"Unexpected release tag: {release}")
+          if release.get("isDraft") is not True or release.get("isPrerelease") is not False:
+              raise SystemExit(f"Release must remain a stable draft during verification: {release}")
+          path = Path("target/distribution-verification/release-evidence.json")
+          evidence = json.loads(path.read_text(encoding="utf-8"))
+          evidence.update({"githubReleaseUrl": release["url"], "status": "DRAFT_VERIFIED"})
+          path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          gh release upload "v${RELEASE_VERSION}" \
             target/distribution-verification/verification.json \
             target/distribution-verification/verification.md \
-            target/distribution-verification/pages-build.json \
-            target/distribution-verification/release-url-verification.json \
-            target/distribution-verification/release-composite-verification.json; do
-            if [[ -f "$evidence" ]]; then
-              gh release upload "v${VERSION}" "$evidence" --clobber
-            fi
-          done
+            target/distribution-verification/release-evidence.json \
+            target/distribution-verification/release-source-identity.json \
+            target/distribution-verification/github-source-identity.json \
+            --clobber
 
-      - name: Fast-forward main to release commit
-        if: ${{ !inputs.dry_run }}
+      - name: Publish verified GitHub Release
+        if: env.DRY_RUN != 'true'
+        id: publish_release
+        run: |
+          gh release edit "v${RELEASE_VERSION}" --draft=false --prerelease=false
+          release_json=$(gh release view "v${RELEASE_VERSION}" \
+            --json tagName,isDraft,isPrerelease,url)
+          python3 - "$release_json" <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          release = json.loads(sys.argv[1])
+          if release.get("tagName") != f"v{os.environ['RELEASE_VERSION']}" \
+                  or release.get("isDraft") or release.get("isPrerelease"):
+              raise SystemExit(f"Published release identity is invalid: {release}")
+          path = Path("target/distribution-verification/release-evidence.json")
+          evidence = json.loads(path.read_text(encoding="utf-8"))
+          evidence.update({"githubReleaseUrl": release["url"], "status": "PUBLISHED_VERIFIED"})
+          path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          gh release upload "v${RELEASE_VERSION}" \
+            target/distribution-verification/release-evidence.json --clobber
+
+      - name: Roll back failed pre-publication state
+        if: failure() && env.DRY_RUN != 'true' && steps.deploy_release_site.outcome == 'success' && steps.publish_release.outcome != 'success'
+        run: |
+          set +e
+          gh release delete "v${RELEASE_VERSION}" --yes --cleanup-tag
+          git push origin ":refs/tags/v${RELEASE_VERSION}"
+          previous='${{ steps.gh_pages_before.outputs.sha }}'
+          deployed='${{ steps.gh_pages_after.outputs.sha }}'
+          if [[ -n "$previous" && -n "$deployed" ]]; then
+            git -C gh-pages-release push \
+              --force-with-lease="refs/heads/gh-pages:${deployed}" \
+              origin "${previous}:refs/heads/gh-pages"
+            python3 .github/scripts/wait_for_pages_build.py \
+              --repository "${{ github.repository }}" \
+              --expected-commit "$previous" \
+              --output target/distribution-verification/pages-rollback-build.json
+          fi
+          exit 0
+
+      - name: Fast-forward main to verified stable release commit
+        if: env.DRY_RUN != 'true'
         run: |
           set -euo pipefail
-          expected="${{ needs.preflight.outputs.starting_sha }}"
           remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
-          if [[ "$remote_main" != "$expected" ]]; then
-            echo "::error::main moved before promotion: expected ${expected}, found ${remote_main}."
+          if [[ "$remote_main" != "$STARTING_SHA" ]]; then
+            echo "::error::main moved before stable promotion: expected $STARTING_SHA, found $remote_main."
             exit 1
           fi
-          COMMIT_SHA=$(git rev-parse HEAD)
-          gh api "repos/${{ github.repository }}/git/refs/heads/main" \
-            --method PATCH \
-            -f sha="$COMMIT_SHA" \
-            -F force=false
+          git push origin "${RELEASE_COMMIT}:refs/heads/main"
 
-      - name: Delete temporary release branch
-        if: ${{ always() && !inputs.dry_run }}
-        run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          TEMP_BRANCH="release-temp-${VERSION}"
-          git push origin ":refs/heads/${TEMP_BRANCH}" || true
-
-      - name: Delete release request branch
-        if: ${{ always() && github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-request/') }}
-        run: git push origin ":${{ github.ref }}" || true
-
-      - name: Prepare next development iteration
-        if: ${{ !inputs.dry_run }}
+      - name: Prepare next development iteration pull request
+        if: env.DRY_RUN != 'true'
         run: |
           set -euo pipefail
-          cd "$GITHUB_WORKSPACE"
-          NEXT_VERSION="${{ needs.preflight.outputs.next_snapshot }}"
-          NEXT_RELEASE="${{ needs.preflight.outputs.next_release }}"
-          BRANCH_NAME="release/prepare-next-${NEXT_VERSION}"
-
-          TYCHO_VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version)
-          mvn org.eclipse.tycho:tycho-versions-plugin:${TYCHO_VERSION}:set-version \
-            -DnewVersion="${NEXT_VERSION}" \
-            -Pbenchmark,jacoco
+          branch="release/prepare-next-${NEXT_SNAPSHOT}"
+          git checkout -b "$branch" "$RELEASE_COMMIT"
+          tycho_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
+          mvn org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
+            -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco
           mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
-            -DnewVersion="${NEXT_VERSION}" \
-            -DgenerateBackupPoms=false
+            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           mvn -f sandbox-maven-plugin/pom.xml versions:set \
-            -DnewVersion="${NEXT_VERSION}" \
-            -DgenerateBackupPoms=false
+            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
-
-          git checkout -b "$BRANCH_NAME"
           git add -A -- ':!.github/workflows/'
-          git commit -m "Prepare for next development iteration ${NEXT_VERSION}"
-          git push origin "$BRANCH_NAME"
-
-          cat > /tmp/pr_body.md << EOF
-          Automated PR to bump version to ${NEXT_VERSION} after release ${{ needs.preflight.outputs.release_version }}.
-
-          ## Changes
-          - Bump project version to ${NEXT_VERSION}
-          - Update release.properties to ${NEXT_RELEASE}
-
-          ## Release Notes
-
-          EOF
-          cat release_notes.md >> /tmp/pr_body.md
-
+          git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"
+          git push origin "$branch"
           gh pr create \
-            --title "Prepare for next development iteration ${NEXT_VERSION}" \
-            --body-file /tmp/pr_body.md \
-            --base main \
-            --head "$BRANCH_NAME"
+            --title "Prepare for next development iteration ${NEXT_SNAPSHOT}" \
+            --body "Automated version transition after verified release v${RELEASE_VERSION}." \
+            --base main --head "$branch"
 
-      - name: Create Marketplace reminder issue
-        if: ${{ !inputs.dry_run }}
+      - name: Create Marketplace and Zenodo verification issue
+        if: env.DRY_RUN != 'true'
         run: |
-          VERSION="${{ needs.preflight.outputs.release_version }}"
-          ISSUE_BODY=$(cat << EOF
-          ## Release ${VERSION}
+          body=$(cat <<EOF
+          ## Verified release ${RELEASE_VERSION}
 
-          A new Sandbox release was published after product, p2 installation, startup, cleanup transformation, exact GitHub Pages deployment and URL verification passed.
+          - GitHub Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/v${RELEASE_VERSION}
+          - Composite update site: https://carstenartur.github.io/sandbox/releases/
+          - Versioned update site: https://carstenartur.github.io/sandbox/releases/${RELEASE_VERSION}/
+          - Distribution evidence: https://carstenartur.github.io/sandbox/releases/${RELEASE_VERSION}/distribution-verification.md
 
-          | Field | Value |
-          |-------|-------|
-          | Release | v${VERSION} |
-          | GitHub Release | https://github.com/${{ github.repository }}/releases/tag/v${VERSION} |
-          | Composite Update Site | https://carstenartur.github.io/sandbox/releases/ |
-          | Version-specific Update Site | https://carstenartur.github.io/sandbox/releases/${VERSION}/ |
-          | Distribution Evidence | https://carstenartur.github.io/sandbox/releases/${VERSION}/distribution-verification.md |
-          | Marketplace Edit | https://marketplace.eclipse.org/content/sandbox/edit |
+          ## External publication checklist
 
-          ## Checklist
-
-          - [ ] Update the Eclipse Marketplace solution version to ${VERSION}
-          - [ ] Verify the update site URL points to https://carstenartur.github.io/sandbox/releases/
-          - [ ] Verify Eclipse and Java compatibility information
-          - [ ] Update screenshots and description if needed
-          - [ ] Test installation from the Marketplace
+          - [ ] Update Eclipse Marketplace to ${RELEASE_VERSION}
+          - [ ] Test Marketplace installation
+          - [ ] Verify the Zenodo record names stable version ${RELEASE_VERSION}
+          - [ ] Verify the Zenodo title contains no SNAPSHOT marker
+          - [ ] Record the resulting version DOI while preserving the concept DOI
           EOF
           )
-          echo "$ISSUE_BODY" > /tmp/marketplace_issue_body.md
           gh label create release --color 0075ca --description 'Release-related tasks' 2>/dev/null || true
           gh issue create \
-            --title "📦 Release ${VERSION} — Update Eclipse Marketplace Listing" \
-            --body-file /tmp/marketplace_issue_body.md \
-            --label release
+            --title "Release ${RELEASE_VERSION}: verify Marketplace and Zenodo" \
+            --body "$body" --label release
