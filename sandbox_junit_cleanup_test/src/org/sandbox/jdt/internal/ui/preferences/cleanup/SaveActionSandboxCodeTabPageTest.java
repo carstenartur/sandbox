@@ -29,6 +29,10 @@ class SaveActionSandboxCodeTabPageTest {
 		Map<String, String> values= new HashMap<>();
 		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, CleanUpOptions.TRUE);
 		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, CleanUpOptions.TRUE);
+		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, CleanUpOptions.TRUE);
+		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, CleanUpOptions.TRUE);
+		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS, CleanUpOptions.TRUE);
+		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, CleanUpOptions.TRUE);
 		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, CleanUpOptions.TRUE);
 		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE, CleanUpOptions.TRUE);
 		values.put(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED, CleanUpOptions.TRUE);
@@ -42,6 +46,10 @@ class SaveActionSandboxCodeTabPageTest {
 
 		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE));
 		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE));
+		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE));
+		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER));
+		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS));
+		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS));
 		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH));
 		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE));
 		assertEquals(CleanUpOptions.FALSE, values.get(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED));
