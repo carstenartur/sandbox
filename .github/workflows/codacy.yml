@@ -20,16 +20,10 @@ jobs:
   codacy-java-tools:
     name: Codacy Java Tools
     runs-on: ubuntu-24.04
-    timeout-minutes: 55
+    timeout-minutes: 70
     permissions:
       contents: read
       security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        # PMD remains disabled until Codacy's SARIF conversion no longer throws
-        # MalformedInputException on this repository.
-        tool: [ spotbugs, checkstyle ]
     env:
       LC_ALL: C.UTF-8
       LANG: C.UTF-8
@@ -38,7 +32,7 @@ jobs:
       - name: Set up Maven
         uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
         with:
-          maven-version: 3.9.9
+          maven-version: 3.9.14
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -77,90 +71,133 @@ jobs:
           echo "::warning::Could not pre-pull $CODACY_CLI_IMAGE after five attempts."
           exit 1
 
-      # Keep Codacy as reporting integration, not as a second build authority.
-      # In particular, Docker Hub/registry outages must not turn a successful
-      # Maven build red. Missing SARIF is reported explicitly below.
-      - name: Run Codacy Analysis CLI (${{ matrix.tool }})
-        id: codacy_analysis
+      # Codacy is a reporting integration after the Maven gate, not a second
+      # build authority. Registry outages therefore produce a warning rather
+      # than hiding a successful, locally reproducible Maven result.
+      - name: Run Codacy Analysis CLI (spotbugs)
+        id: codacy_spotbugs
         continue-on-error: true
         uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08 # v4
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-          tool: ${{ matrix.tool }}
+          tool: spotbugs
           verbose: true
           format: sarif
-          output: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
+          output: ${{ runner.temp }}/results-spotbugs.sarif
           gh-code-scanning-compat: true
           max-allowed-issues: 2147483647
           skip-uncommitted-files-check: true
           tool-timeout: 1hour
 
-      - name: Report unavailable Codacy result
-        if: steps.codacy_analysis.outcome == 'failure'
+      - name: Report unavailable SpotBugs result
+        if: steps.codacy_spotbugs.outcome == 'failure'
         run: |
-          echo "::warning::Codacy ${{ matrix.tool }} reporting failed after the authoritative Maven build succeeded."
-          echo "::warning::No SARIF will be uploaded for this tool in this run."
+          echo "::warning::Codacy SpotBugs reporting failed after the authoritative Maven build succeeded."
+          echo "::warning::No SpotBugs SARIF will be uploaded in this run."
 
-      # GitHub code scanning accepts one SARIF run per upload/category. The
-      # outputs avoid hashFiles(), which only searches GITHUB_WORKSPACE and
-      # therefore cannot detect files written below runner.temp.
-      - name: Split SARIF into single-run files (${{ matrix.tool }})
+      - name: Run Codacy Analysis CLI (checkstyle)
+        id: codacy_checkstyle
+        continue-on-error: true
+        uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08 # v4
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          tool: checkstyle
+          verbose: true
+          format: sarif
+          output: ${{ runner.temp }}/results-checkstyle.sarif
+          gh-code-scanning-compat: true
+          max-allowed-issues: 2147483647
+          skip-uncommitted-files-check: true
+          tool-timeout: 1hour
+
+      - name: Report unavailable Checkstyle result
+        if: steps.codacy_checkstyle.outcome == 'failure'
+        run: |
+          echo "::warning::Codacy Checkstyle reporting failed after the authoritative Maven build succeeded."
+          echo "::warning::No Checkstyle SARIF will be uploaded in this run."
+
+      # hashFiles() searches only GITHUB_WORKSPACE, not runner.temp. Explicit
+      # outputs ensure generated SARIF files are really detected and uploaded.
+      - name: Split SARIF into single-run files
         id: split_sarif
         shell: bash
-        env:
-          SARIF: ${{ runner.temp }}/results-${{ matrix.tool }}.sarif
-          OUTDIR: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}
         run: |
           set -euo pipefail
-          echo "run0=false" >> "$GITHUB_OUTPUT"
-          echo "run1=false" >> "$GITHUB_OUTPUT"
-          echo "run2=false" >> "$GITHUB_OUTPUT"
+          for tool in spotbugs checkstyle; do
+            for index in 0 1 2; do
+              echo "${tool}_run${index}=false" >> "$GITHUB_OUTPUT"
+            done
 
-          if [ ! -s "$SARIF" ]; then
-            echo "No SARIF produced for ${{ matrix.tool }}; skipping upload."
-            exit 0
-          fi
+            sarif="$RUNNER_TEMP/results-${tool}.sarif"
+            outdir="$RUNNER_TEMP/sarif_split_${tool}"
+            if [ ! -s "$sarif" ]; then
+              echo "No SARIF produced for $tool; skipping upload."
+              continue
+            fi
 
-          mkdir -p "$OUTDIR"
-          runs=$(jq '.runs | length // 0' "$SARIF")
-          echo "Found $runs runs in $SARIF"
+            mkdir -p "$outdir"
+            runs=$(jq '.runs | length // 0' "$sarif")
+            echo "Found $runs runs in $sarif"
+            if [ "$runs" -gt 3 ]; then
+              echo "::warning::${tool} SARIF contains $runs runs; only the first three are uploaded."
+            fi
 
-          if [ "$runs" -gt 3 ]; then
-            echo "::warning::SARIF contains $runs runs; only the first three are uploaded."
-          fi
-
-          limit=$runs
-          if [ "$limit" -gt 3 ]; then
-            limit=3
-          fi
-
-          for ((i=0; i<limit; i++)); do
-            jq --argjson i "$i" \
-              '{ "$schema": .["$schema"], version: .version, runs: [ .runs[$i] ] }' \
-              "$SARIF" > "$OUTDIR/run-$i.sarif"
-            echo "run${i}=true" >> "$GITHUB_OUTPUT"
+            limit=$runs
+            if [ "$limit" -gt 3 ]; then
+              limit=3
+            fi
+            for ((index=0; index<limit; index++)); do
+              jq --argjson index "$index" \
+                '{ "$schema": .["$schema"], version: .version, runs: [ .runs[$index] ] }' \
+                "$sarif" > "$outdir/run-$index.sarif"
+              echo "${tool}_run${index}=true" >> "$GITHUB_OUTPUT"
+            done
           done
 
-      - name: Upload SARIF run 0 (${{ matrix.tool }})
-        if: steps.split_sarif.outputs.run0 == 'true'
+      - name: Upload SpotBugs SARIF run 0
+        if: steps.split_sarif.outputs.spotbugs_run0 == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-0.sarif
-          category: codacy-${{ matrix.tool }}-run-0
+          sarif_file: ${{ runner.temp }}/sarif_split_spotbugs/run-0.sarif
+          category: codacy-spotbugs-run-0
           wait-for-processing: true
 
-      - name: Upload SARIF run 1 (${{ matrix.tool }})
-        if: steps.split_sarif.outputs.run1 == 'true'
+      - name: Upload SpotBugs SARIF run 1
+        if: steps.split_sarif.outputs.spotbugs_run1 == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-1.sarif
-          category: codacy-${{ matrix.tool }}-run-1
+          sarif_file: ${{ runner.temp }}/sarif_split_spotbugs/run-1.sarif
+          category: codacy-spotbugs-run-1
           wait-for-processing: true
 
-      - name: Upload SARIF run 2 (${{ matrix.tool }})
-        if: steps.split_sarif.outputs.run2 == 'true'
+      - name: Upload SpotBugs SARIF run 2
+        if: steps.split_sarif.outputs.spotbugs_run2 == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ runner.temp }}/sarif_split_${{ matrix.tool }}/run-2.sarif
-          category: codacy-${{ matrix.tool }}-run-2
+          sarif_file: ${{ runner.temp }}/sarif_split_spotbugs/run-2.sarif
+          category: codacy-spotbugs-run-2
+          wait-for-processing: true
+
+      - name: Upload Checkstyle SARIF run 0
+        if: steps.split_sarif.outputs.checkstyle_run0 == 'true'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/sarif_split_checkstyle/run-0.sarif
+          category: codacy-checkstyle-run-0
+          wait-for-processing: true
+
+      - name: Upload Checkstyle SARIF run 1
+        if: steps.split_sarif.outputs.checkstyle_run1 == 'true'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/sarif_split_checkstyle/run-1.sarif
+          category: codacy-checkstyle-run-1
+          wait-for-processing: true
+
+      - name: Upload Checkstyle SARIF run 2
+        if: steps.split_sarif.outputs.checkstyle_run2 == 'true'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/sarif_split_checkstyle/run-2.sarif
+          category: codacy-checkstyle-run-2
           wait-for-processing: true
