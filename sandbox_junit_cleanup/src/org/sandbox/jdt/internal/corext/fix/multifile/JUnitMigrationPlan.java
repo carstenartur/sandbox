@@ -36,12 +36,19 @@ import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 /** Immutable project plan for coordinated JUnit migration edits. */
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		List<ExternalResourceRuleMigration> externalResourceRules,
+		boolean externalResourceScopeClosed,
 		boolean lifecycleScopeClosed) {
 
-	/** Source-compatible constructor for plans without hierarchy-sensitive lifecycle work. */
+	/** Source-compatible constructor for plans without coordinated scope restrictions. */
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			List<ExternalResourceRuleMigration> externalResourceRules) {
-		this(selectedScope, externalResourceRules, true);
+		this(selectedScope, externalResourceRules, true, true);
+	}
+
+	/** Compatibility constructor for the first lifecycle-aware plan shape. */
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules, boolean lifecycleScopeClosed) {
+		this(selectedScope, externalResourceRules, true, lifecycleScopeClosed);
 	}
 
 	/** Defensively copies plan data. */
@@ -55,9 +62,9 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		return selectedScope.contains(unit);
 	}
 
-	/** Returns whether the plan contains coordinated cross-file work. */
+	/** Returns whether the plan contains coordinated cross-file work or restrictions. */
 	public boolean hasCoordinatedChanges() {
-		return !externalResourceRules.isEmpty() || !lifecycleScopeClosed;
+		return !externalResourceRules.isEmpty() || !externalResourceScopeClosed || !lifecycleScopeClosed;
 	}
 
 	/**
