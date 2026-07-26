@@ -1,0 +1,48 @@
+name: PR 1291 Diagnostics
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedTypeNamePolicy.java'
+      - 'sandbox_common_test/src/org/sandbox/jdt/cleanup/multifile/GeneratedTypeNamePolicyTest.java'
+      - 'sandbox_int_to_enum/**'
+      - 'sandbox_int_to_enum_test/**'
+      - '.github/workflows/pr1291-diagnostics.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  targeted-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Build affected reactor slice
+        shell: bash
+        run: |
+          set -o pipefail
+          status=0
+          mvn -e -V --batch-mode -Dtycho.localArtifacts=ignore \
+            -pl sandbox_common,sandbox_common_test,sandbox_int_to_enum,sandbox_int_to_enum_test \
+            -am clean verify 2>&1 | tee pr1291-maven.log || status=$?
+          echo "$status" > pr1291-exit-code.txt
+          exit "$status"
+      - name: Upload complete diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr1291-maven-diagnostics-${{ github.sha }}
+          path: |
+            pr1291-maven.log
+            pr1291-exit-code.txt
+          retention-days: 2
+          if-no-files-found: error
