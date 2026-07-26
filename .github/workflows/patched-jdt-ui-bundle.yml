@@ -187,10 +187,10 @@ jobs:
           if-no-files-found: error
 
   patched-product:
-    name: Replace stock JDT feature and start product
+    name: Replace JDT feature and prove cleanup behavior
     needs: p2-repository
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v6
         with:
@@ -226,18 +226,36 @@ jobs:
           bash .github/scripts/install_patched_jdt_feature.sh \
             "$RUNNER_TEMP/patched-jdt-feature-p2" \
             "$RUNNER_TEMP/patched-jdt-feature-installation"
-      - name: Publish installation summary
+      - name: Execute fixed-point preview apply and undo probe
+        run: |
+          bash .github/scripts/run_patched_jdt_ui_scope_probe.sh \
+            "$RUNNER_TEMP/patched-jdt-feature-p2" \
+            "$RUNNER_TEMP/patched-jdt-feature-installation" \
+            "$RUNNER_TEMP/patched-jdt-ui-runtime-probe"
+      - name: Publish installation and runtime summaries
         if: always()
         run: |
-          report="$RUNNER_TEMP/patched-jdt-feature-installation/installation-verification.md"
-          if [[ -s "$report" ]]; then
-            cat "$report" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for report in \
+            "$RUNNER_TEMP/patched-jdt-feature-installation/installation-verification.md" \
+            "$RUNNER_TEMP/patched-jdt-ui-runtime-probe/runtime-verification.md"; do
+            if [[ -s "$report" ]]; then
+              cat "$report" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
       - name: Upload patched-product evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: patched-jdt-feature-installation-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-feature-installation/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Upload runtime behavior evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-runtime-probe-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-runtime-probe/
           retention-days: 14
           if-no-files-found: error
