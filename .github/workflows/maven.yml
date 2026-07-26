@@ -79,7 +79,6 @@ jobs:
       - name: Maven clean verify
         run: >-
           xvfb-run --auto-servernum mvn
-          --threads 1C
           --no-transfer-progress
           -e
           -V
