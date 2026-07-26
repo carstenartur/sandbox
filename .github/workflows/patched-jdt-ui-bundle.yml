@@ -57,7 +57,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: patched-jdt-ui-${{ github.sha }}
+          name: patched-jdt-ui-bundle-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui/
           retention-days: 14
           if-no-files-found: error
@@ -81,7 +81,7 @@ jobs:
       - name: Download verified replacement bundle
         uses: actions/download-artifact@v7
         with:
-          name: patched-jdt-ui-${{ github.sha }}
+          name: patched-jdt-ui-bundle-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui
       - name: Resolve target and compare manifests
         shell: bash
@@ -159,7 +159,7 @@ jobs:
         run: |
           rm -rf "$RUNNER_TEMP/patched-jdt-ui" "$RUNNER_TEMP/patched-jdt-ui-compatibility"
           mkdir -p "$RUNNER_TEMP/patched-jdt-ui" "$RUNNER_TEMP/patched-jdt-ui-compatibility"
-          cp -a "$RUNNER_TEMP/inputs/patched-jdt-ui-${GITHUB_SHA}/". "$RUNNER_TEMP/patched-jdt-ui/"
+          cp -a "$RUNNER_TEMP/inputs/patched-jdt-ui-bundle-${GITHUB_SHA}/". "$RUNNER_TEMP/patched-jdt-ui/"
           cp -a "$RUNNER_TEMP/inputs/patched-jdt-ui-target-compatibility-${GITHUB_SHA}/". \
             "$RUNNER_TEMP/patched-jdt-ui-compatibility/"
       - name: Build stock product used as feature provenance
