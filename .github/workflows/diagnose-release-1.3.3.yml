@@ -15,6 +15,11 @@ jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout diagnostic branch
+        uses: actions/checkout@v6
+        with:
+          ref: diagnose-release-1.3.3
+
       - name: Extract failed release log
         env:
           GH_TOKEN: ${{ github.token }}
@@ -27,13 +32,14 @@ jobs:
           gh run view "$RUN_ID" --repo "$REPOSITORY" --log-failed > /tmp/full.log
           {
             echo '=== MATCHED FAILURE LINES ==='
-            grep -n -E '\[ERROR\]|BUILD FAILURE|Failed to execute goal|There are test failures|Tests run:|Failures:|Errors:|Caused by:|OutOfMemoryError|Killed|Process completed with exit code' /tmp/full.log | tail -n 500 || true
+            grep -n -E '\[ERROR\]|BUILD FAILURE|Failed to execute goal|There are test failures|Tests run:|Failures:|Errors:|Caused by:|OutOfMemoryError|Killed|Process completed with exit code' /tmp/full.log | tail -n 250 || true
             echo
-            echo '=== FINAL 600 LINES ==='
-            tail -n 600 /tmp/full.log
-          } > /tmp/release-failure.txt
-          content=$(base64 -w0 /tmp/release-failure.txt)
-          gh api --method PUT "repos/${REPOSITORY}/contents/.github/release-failure-1.3.3.txt" \
-            -f message='Record release 1.3.3 failure details' \
-            -f content="$content" \
-            -f branch="$BRANCH" >/dev/null
+            echo '=== FINAL 250 LINES ==='
+            tail -n 250 /tmp/full.log
+          } > .github/release-failure-1.3.3.txt
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .github/release-failure-1.3.3.txt
+          git commit -m 'Record release 1.3.3 failure details'
+          git push origin "HEAD:refs/heads/${BRANCH}"
