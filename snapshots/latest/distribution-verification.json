@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 2,
+  "result": "PASS",
+  "platform": "linux/gtk/x86_64",
+  "eclipseRelease": "2026-06",
+  "orbitRelease": "2026-06",
+  "bouncyCastleVersion": "1.84",
+  "publishedFeatureCount": 15,
+  "p2MetadataUnits": 52,
+  "p2ArtifactKeys": 36,
+  "p2ArtifactFilesChecked": 36,
+  "p2ChecksumsChecked": 36,
+  "productPluginCount": 360,
+  "productSingletonBundleCount": 192,
+  "productRoot": "/home/runner/work/sandbox/sandbox/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64"
+}
