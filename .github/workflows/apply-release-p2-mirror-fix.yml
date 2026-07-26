@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   apply:
-    if: github.event.head_commit.message == 'Apply release p2 mirror fix'
+    if: github.event.head_commit.message == 'Retry release p2 mirror fix'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout fix branch
@@ -29,14 +29,12 @@ jobs:
 
           path = Path('sandbox_distribution_verify/src/main/java/org/sandbox/distribution/DistributionVerifier.java')
           text = path.read_text(encoding='utf-8')
-          old = '''                        "-p2.arch", platform.osgiArch(),
-                          "-roaming"),'''
-          new = '''                        "-p2.arch", platform.osgiArch(),
-                          "-roaming",
+          old = '                        "-roaming"),'
+          new = '''                        "-roaming",
                           "-vmargs",
                           "-Declipse.p2.mirrors=false"),'''
-          if old not in text:
-              raise SystemExit('Expected fresh-install director argument block not found')
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one fresh-install roaming argument, found {text.count(old)}')
           path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
 
