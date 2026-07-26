@@ -105,14 +105,21 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (compilationUnit == null) {
 			return null;
 		}
-		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
-		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()) {
+		EnumSet<JUnitCleanUpFixCore> localFixes= computeFixSet();
+		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || localFixes.isEmpty()) {
 			return null;
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
+
+		// ExternalResource migrations alter a resource type and one or more Rule fields.
+		// They must be emitted only by the immutable closed-source plan. Removing the
+		// corresponding local plugins prevents a rejected or incomplete scope from
+		// producing a partial signature/annotation migration.
+		localFixes.remove(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+		localFixes.remove(JUnitCleanUpFixCore.EXTERNALRESOURCE);
 		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
+		localFixes.forEach(fix -> fix.findOperations(compilationUnit, operations, sharedNodesProcessed));
 		if (operations.isEmpty()) {
 			return null;
 		}
