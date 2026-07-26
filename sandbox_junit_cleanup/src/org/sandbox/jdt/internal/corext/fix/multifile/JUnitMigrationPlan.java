@@ -35,7 +35,14 @@ import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Immutable project plan for coordinated JUnit migration edits. */
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
-		List<ExternalResourceRuleMigration> externalResourceRules) {
+		List<ExternalResourceRuleMigration> externalResourceRules,
+		boolean lifecycleScopeClosed) {
+
+	/** Source-compatible constructor for plans without hierarchy-sensitive lifecycle work. */
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules) {
+		this(selectedScope, externalResourceRules, true);
+	}
 
 	/** Defensively copies plan data. */
 	public JUnitMigrationPlan {
@@ -50,7 +57,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 
 	/** Returns whether the plan contains coordinated cross-file work. */
 	public boolean hasCoordinatedChanges() {
-		return !externalResourceRules.isEmpty();
+		return !externalResourceRules.isEmpty() || !lifecycleScopeClosed;
 	}
 
 	/**
