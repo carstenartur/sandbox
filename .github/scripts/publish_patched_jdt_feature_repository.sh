@@ -13,7 +13,7 @@ JDT_FEATURE_ID=org.eclipse.jdt
 source "$CONFIG_FILE"
 : "${PATCHED_JDT_UI_BUNDLE:?missing PATCHED_JDT_UI_BUNDLE}"
 
-for command in find jar java mvn python3 sed sha256sum; do
+for command in find jar java python3 sed sha256sum; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 
@@ -84,6 +84,19 @@ if (( ${#feature_digests[@]} != 1 )); then
 fi
 STOCK_FEATURE_JAR=${stock_feature_jars[0]}
 
+# Reuse the p2 publisher from the already materialized Linux product. This is
+# the same Equinox application that tycho-p2-extras launches, but it avoids a
+# second Maven/plugin-resolution layer after the product has been built.
+mapfile -t publisher_candidates < <(find "$PRODUCTS_DIR" -type f -name eclipse -perm -u+x \
+  -path '*/linux/gtk/x86_64/*' | sort -u)
+if (( ${#publisher_candidates[@]} != 1 )); then
+  printf 'Expected exactly one Linux Eclipse p2 publisher below %s, found %d\n' \
+    "$PRODUCTS_DIR" "${#publisher_candidates[@]}" >&2
+  printf 'Candidates: %s\n' "${publisher_candidates[*]:-(none)}" >&2
+  exit 1
+fi
+P2_PUBLISHER=${publisher_candidates[0]}
+
 rm -rf "$WORK_DIR" "$OUTPUT_DIR"
 SOURCE_DIR="$WORK_DIR/source"
 FEATURE_STAGING="$WORK_DIR/stock-feature"
@@ -133,52 +146,33 @@ FEATURE_DIR="$SOURCE_DIR/features/${JDT_FEATURE_ID}_${PATCHED_FEATURE_VERSION}"
 mkdir -p "$FEATURE_DIR"
 cp -a "$FEATURE_STAGING"/. "$FEATURE_DIR/"
 cp "$FEATURE_DIR/feature.xml" "$EVIDENCE_DIR/patched-feature.xml"
-jar --extract --file "$STOCK_FEATURE_JAR" feature.xml
-mv feature.xml "$EVIDENCE_DIR/stock-feature.xml"
+(
+  cd "$WORK_DIR"
+  jar --extract --file "$STOCK_FEATURE_JAR" feature.xml
+  mv feature.xml "$EVIDENCE_DIR/stock-feature.xml"
+)
 
-TYCHO_VERSION=$(mvn -q -ntp -f "$ROOT_DIR/pom.xml" help:evaluate \
-  -Dexpression=tycho-version -DforceStdout \
-  | sed -nE '/^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$/p' \
-  | tail -n 1)
-if ! [[ "$TYCHO_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
-  echo "Could not determine a Tycho version from the reactor: $TYCHO_VERSION" >&2
-  exit 1
+PUBLISHER_LOG="$EVIDENCE_DIR/publisher.log"
+set +e
+env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
+  "$P2_PUBLISHER" \
+  -nosplash \
+  -consolelog \
+  -clean \
+  -application org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher \
+  -metadataRepository "file:$REPOSITORY_DIR" \
+  -artifactRepository "file:$REPOSITORY_DIR" \
+  -source "$SOURCE_DIR" \
+  -compress \
+  -publishArtifacts \
+  > "$PUBLISHER_LOG" 2>&1
+publisher_status=$?
+set -e
+cat "$PUBLISHER_LOG"
+if (( publisher_status != 0 )); then
+  printf 'Equinox p2 publisher failed with exit code %d\n' "$publisher_status" >&2
+  exit "$publisher_status"
 fi
-
-cat > "$WORK_DIR/pom.xml" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.sandbox.build</groupId>
-  <artifactId>patched-jdt-feature-publisher</artifactId>
-  <version>1.0.0</version>
-  <packaging>pom</packaging>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.eclipse.tycho.extras</groupId>
-        <artifactId>tycho-p2-extras-plugin</artifactId>
-        <version>$TYCHO_VERSION</version>
-        <configuration>
-          <sourceLocation>\${source.location}</sourceLocation>
-          <metadataRepositoryLocation>\${repository.location}</metadataRepositoryLocation>
-          <artifactRepositoryLocation>\${repository.location}</artifactRepositoryLocation>
-          <compress>true</compress>
-          <publishArtifacts>true</publishArtifacts>
-          <append>false</append>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-</project>
-EOF
-
-mvn --batch-mode -ntp -f "$WORK_DIR/pom.xml" \
-  "org.eclipse.tycho.extras:tycho-p2-extras-plugin:${TYCHO_VERSION}:publish-features-and-bundles" \
-  -Dsource.location="$SOURCE_DIR" \
-  -Drepository.location="$REPOSITORY_DIR"
 
 python3 "$ROOT_DIR/.github/scripts/add_p2_sha256_checksums.py" \
   --repository "$REPOSITORY_DIR" \
@@ -223,6 +217,7 @@ def digest(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b''):
             value.update(chunk)
     return value.hexdigest()
+
 
 content = metadata('content')
 artifacts = metadata('artifacts')
