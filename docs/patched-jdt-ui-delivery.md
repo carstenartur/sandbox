@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The normal Sandbox target and cleanup test reactor use the stock Eclipse JDT UI bundle. Automatic multi-file cleanup scope expansion is an optional product capability that requires a reviewed replacement of the singleton `org.eclipse.jdt.ui` bundle.
+The normal Sandbox target and default Maven build use the stock Eclipse 2026-06 JDT UI bundle. Automatic multi-file cleanup scope expansion is an optional product capability that requires a reviewed replacement of the singleton `org.eclipse.jdt.ui` bundle.
 
-This document covers the reproducible source-bundle and stock-target compatibility stages. Minimal p2 publication, exact-IU product resolution, product startup and stock-versus-patched runtime smoke tests remain tracked in #1209 and #1215.
+The replacement lane is isolated from ordinary `main` validation. It runs for pull requests that change the delivery implementation and by manual dispatch after merge. The stock product remains the supported default.
 
 ## Pinned source
 
@@ -38,7 +38,7 @@ The script:
 
 Generated JARs are not committed. CI publishes the verified output as a short-lived artifact.
 
-## Stock-target compatibility gate
+## Eclipse 2026-06 compatibility gate
 
 After building the bundle, CI runs:
 
@@ -48,21 +48,80 @@ bash .github/scripts/compare_patched_jdt_ui_with_target.sh \
   target/patched-jdt-ui-compatibility
 ```
 
-The comparison removes only cached `org.eclipse.jdt.ui` artifacts, resolves `sandbox_target/eclipse.target` through the normal Tycho build and identifies the single stock JDT UI bundle selected from Eclipse 2025-12. It then records:
+The comparison removes only cached `org.eclipse.jdt.ui` artifacts, resolves `sandbox_target/eclipse.target` through the normal Tycho build and identifies the single stock JDT UI bundle selected from Eclipse 2026-06. It records:
 
 - the exact stock and patched OSGi versions and SHA-256 checksums;
 - whether the patched version is strictly newer, as required for singleton replacement;
 - normalized differences in `Bundle-RequiredExecutionEnvironment`, `Require-Bundle` and `Import-Package`;
 - whether every stock `Export-Package` remains present in the patched bundle.
 
-Results are written to `compatibility.json` and `compatibility.md` and uploaded as a workflow artifact. A blocked result is emitted as an Actions warning and prevents the next p2-publication stage from being introduced. The source-bundle job may still remain green because it proves a different property: reproducibility of the pinned source build.
+A manifest or export-surface difference fails closed. The p2 repository is not produced unless `compatibleForReplacement` is true.
 
-The comparison is deliberately strict. A manifest difference is treated as unresolved compatibility work rather than assumed safe. Once the report passes, the next stage can publish a minimal p2 repository and prove exact IU selection in a patched product.
+## Exact-version p2 repository
+
+```bash
+bash .github/scripts/publish_patched_jdt_ui_repository.sh \
+  target/patched-jdt-ui \
+  target/patched-jdt-ui-compatibility \
+  target/patched-jdt-ui-p2
+```
+
+The publisher creates a minimal carrier feature whose plug-in entry and p2 requirement both pin the exact qualified patched bundle version. Repository verification requires:
+
+- exactly one patched bundle IU;
+- exactly one feature-group and feature-jar IU;
+- exact requirements from the feature group to its feature jar and replacement bundle;
+- only the expected bundle and feature artifacts;
+- file-size and checksum metadata for every artifact;
+- byte-for-byte agreement with the source-build SHA-256 provenance.
+
+## Stock-to-patched installation
+
+Build the ordinary Eclipse 2026-06 product first:
+
+```bash
+mvn -Pproduct --batch-mode -Dtycho.localArtifacts=ignore clean verify
+```
+
+Then install and verify the optional repository:
+
+```bash
+bash .github/scripts/smoke_test_patched_jdt_ui_repository.sh \
+  target/patched-jdt-ui-p2 \
+  target/patched-jdt-ui-installation
+```
+
+The smoke test records the stock selection, installs the exact feature with the product's own p2 director and requires:
+
+- one active `org.eclipse.jdt.ui` simpleconfigurator entry;
+- the exact patched version and SHA-256;
+- the carrier feature as an installed profile root;
+- successful product startup through the p2 director.
+
+## Runtime behavior proof
+
+The repository-owned Equinox application under `.github/probes/patched-jdt-ui/` is compiled against the plug-ins of the materialized patched product and published through a temporary one-bundle p2 repository. It is then installed into that same profile.
+
+```bash
+bash .github/scripts/run_patched_jdt_ui_scope_probe.sh \
+  target/patched-jdt-ui-p2 \
+  target/patched-jdt-ui-installation \
+  target/patched-jdt-ui-runtime-probe
+```
+
+The probe creates two Java compilation units, explicitly selects only the first and exposes `expandCleanUpScope(...)` to return the second. Success requires:
+
+- repeated scope expansion to a fixed point;
+- both compilation units in preconditions;
+- two text-change previews;
+- application of one composite cleanup change to both files;
+- a non-null undo change;
+- byte-for-byte restoration of both original UTF-8 files.
+
+The bounded JSON and Markdown evidence includes exact target, planning, preview, apply and restore counts. The temporary workspace project is deleted after success or failure.
 
 ## Trust boundary
 
-Passing the source-bundle stage proves the source revision, patch paths, singleton identity, compiled capability marker and artifact checksum. Passing the compatibility stage additionally proves that the resolved 2025-12 stock bundle can be replaced without changing its declared execution environment, imports, required bundles or exported package surface under the current strict policy.
+Passing the complete lane proves the pinned source revision, singleton identity, strict compatibility with the Eclipse 2026-06 stock target, exact p2 publication, installation into the stock product and real cleanup lifecycle behavior on Linux GTK x86_64 with Java 21.
 
-Neither stage proves p2 installation, product startup, runtime cleanup expansion, apply/undo behavior or rollback. Those checks belong to the p2/product stages before an installation channel is published.
-
-The stock target remains the default and has no dependency on this optional bundle artifact.
+It does not add the replacement to the normal Sandbox update site and does not claim runtime execution on Windows or macOS. The stock target remains independent of this optional artifact.
