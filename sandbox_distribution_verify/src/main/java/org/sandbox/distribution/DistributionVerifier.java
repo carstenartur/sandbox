@@ -427,7 +427,9 @@ public final class DistributionVerifier {
                         "-p2.os", platform.osgiOs(),
                         "-p2.ws", platform.osgiWs(),
                         "-p2.arch", platform.osgiArch(),
-                        "-roaming"),
+                        "-roaming",
+                        "-vmargs",
+                        "-Declipse.p2.mirrors=false"),
                 product.root(),
                 installLog,
                 Duration.ofMinutes(15));
