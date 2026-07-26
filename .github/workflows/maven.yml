@@ -1,380 +1,104 @@
-# This workflow will build a Java project with Maven
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
 name: Java CI with Maven
 
 on:
   push:
-    branches: [ main ] # , 2022-09, 2022-06 ]
+    branches: [ main ]
+    paths:
+      - 'pom.xml'
+      - '.mvn/**'
+      - 'sandbox*/**'
+      - 'features/**'
+      - 'plugins/**'
+      - 'org/**'
+      - '*.xml'
+      - '*.properties'
+      - '.github/actions/cleanup-action/**'
+      - '.github/workflows/maven.yml'
   pull_request:
-    branches: [ main ] # , 2022-09, 2022-06 ]
+    branches: [ main ]
+    paths:
+      - 'pom.xml'
+      - '.mvn/**'
+      - 'sandbox*/**'
+      - 'features/**'
+      - 'plugins/**'
+      - 'org/**'
+      - '*.xml'
+      - '*.properties'
+      - '.github/actions/cleanup-action/**'
+      - '.github/workflows/maven.yml'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
     permissions:
-      contents: write
-      checks: write        # Required for mikepenz/action-junit-report to create check annotations
-      pull-requests: write # Required for PR test report comments
-    runs-on: ubuntu-latest
+      contents: read
+      checks: write
     env:
-      DISPLAY: :0
       MAVEN_OPTS: -Djava.awt.headless=true
-
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0 # required for jgit timestamp provider to work
-    - name: Debug GitHub context
-      run: |
-        echo "event_name: ${{ github.event_name }}"
-        echo "ref: ${{ github.ref }}"
-        echo "ref_name: ${{ github.ref_name }}"
-        echo "head_ref: ${{ github.head_ref }}"
-        echo "base_ref: ${{ github.base_ref }}"
-    - name: Set up JDK 21
-      uses: actions/setup-java@v5
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-    - name: Set up Node.js
-      uses: actions/setup-node@v6
-      with:
-        node-version: '20'
-    - name: Install CSS tools for testing
-      run: |
-        npm install -g prettier stylelint stylelint-config-standard
-    - run: |
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Set up Maven 3.9.14
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+
+      - name: Set up Node.js for CSS tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install test and desktop dependencies
+        run: |
+          npm install --global prettier stylelint stylelint-config-standard
           sudo apt-get update
-          sudo apt-get install -y xvfb xauth \
-           libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
-           libasound2t64 libnss3 libgbm1
-          sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
-    - name: Cache Maven dependencies
-      uses: actions/cache@v5
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
-        restore-keys: ${{ runner.os }}-maven-
-    - name: Set up Maven
-      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
-      with:
-        maven-version: 3.9.14
-    - name: Build with Maven
-      run: |
-        # Normal Maven/Tycho build without jacoco, product, repo profiles by default
-        # This ensures fast builds and test report generation on every commit
-        xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore clean verify
-    - name: Cleanup xvfb pidx build
-      uses: bcomnes/cleanup-xvfb@v1
-    # Option 1: Check Annotations (schöne UI in GitHub Checks)
-    - name: Publish Test Report (Annotations)
-      uses: mikepenz/action-junit-report@v6
-      if: always() # always run even if the previous step fails
-      with:
-        report_paths: '**/target/surefire-reports/TEST-*.xml'
-        summary: true
-        include_passed: false
-        detailed_summary: true
-        
-    # Option 2: PR-Kommentar (für Copilot und API-Zugriff)
-    - name: Publish Test Results (PR Comment)
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always() # always run even if the previous step fails
-      with:
-        files: '**/target/surefire-reports/TEST-*.xml'
-        comment_mode: always
-        check_name: 'Test Results'
-        comment_title: 'Test Results'
-        fail_on: 'nothing'
-        report_individual_runs: true
-        deduplicate_classes_by_file_name: true
-        # Fehlerdetails im Kommentar anzeigen
-        large_files: true
-        report_suite_logs: 'error'
-        job_summary: true
-        compare_to_earlier_commit: false
-        test_changes_limit: 50
-        # Zeigt fehlgeschlagene Tests mit Details
-        check_run_annotations: 'all tests, skipped tests'
-        check_run_annotations_branch: '*'
-    
-    # Option 3: Detaillierte Fehlermeldungen als PR-Kommentar (für Copilot)
-    - name: Extract Test Failures
-      if: always()
-      run: |
-        python3 .github/scripts/extract_test_failures.py > test-failures.md
-        
-    - name: Post Test Failures as PR Comment
-      if: always()
-      uses: actions/github-script@v8
-      with:
-        script: |
-          const fs = require('fs');
-          
-          // Determine PR number (available for pull_request events)
-          let prNumber = context.issue?.number;
-          
-          // If not a direct PR event, try to find PR associated with this commit
-          // This handles cases where workflow is triggered on push to main but there
-          // are still open PRs that should be updated (e.g., for branch protection reruns)
-          if (!prNumber && context.eventName === 'push') {
-            const branch = context.ref.replace('refs/heads/', '');
-            // Skip main branch as it won't have an associated PR
-            if (branch !== 'main') {
-              try {
-                // Search for PRs that match this commit SHA
-                const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  commit_sha: context.sha
-                });
-                
-                // Filter to open PRs only
-                const openPrs = prs.filter(pr => pr.state === 'open');
-                
-                if (openPrs.length === 1) {
-                  prNumber = openPrs[0].number;
-                  console.log(`Found associated PR #${prNumber} for commit ${context.sha.substring(0, 7)}`);
-                } else if (openPrs.length > 1) {
-                  // Multiple PRs found - select the one with matching head SHA
-                  const matchingPr = openPrs.find(pr => pr.head && pr.head.sha === context.sha);
-                  if (matchingPr) {
-                    prNumber = matchingPr.number;
-                    console.log(`Found associated PR #${prNumber} matching head SHA among ${openPrs.length} open PRs`);
-                  } else {
-                    // Fall back to most recently updated PR for deterministic behavior
-                    openPrs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-                    prNumber = openPrs[0].number;
-                    console.log(`Multiple (${openPrs.length}) open PRs found for commit. Selected most recently updated PR #${prNumber}`);
-                  }
-                }
-              } catch (error) {
-                console.log(`Could not find PR for commit ${context.sha.substring(0, 7)}:`, error.message);
-              }
-            }
-          }
-          
-          // Skip if no PR found (e.g., push to main without an associated PR)
-          if (!prNumber) {
-            console.log('No associated PR found, skipping comment');
-            return;
-          }
-          
-          // Read the failures markdown
-          let body;
-          try {
-            body = fs.readFileSync('test-failures.md', 'utf8');
-          } catch (e) {
-            // If file doesn't exist or can't be read, check if previous step failed
-            console.error('Could not read test-failures.md:', e.message);
-            body = '## ⚠️ Test Failure Extraction Error\n\n<!-- test-failures-comment -->\nCould not extract test failures. Check workflow logs for details.';
-          }
-          
-          // Add header and footer
-          const commentBody = `${body}\n\n---\n*This comment is automatically updated with test failure details for each commit.*`;
-          
-          // Find existing comment using unique marker
-          const comments = await github.rest.issues.listComments({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: prNumber,
-          });
-          
-          const botComment = comments.data.find(comment => 
-            comment.user.type === 'Bot' && 
-            comment.body.includes('<!-- test-failures-comment -->')
-          );
-          
-          if (botComment) {
-            // Update existing comment
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: botComment.id,
-              body: commentBody
-            });
-            console.log('Updated existing test failures comment');
-          } else {
-            // Create new comment
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: commentBody
-            });
-            console.log('Created new test failures comment');
-          }
-    - name: Install xsltproc
-      if: always()
-      run: sudo apt-get update && sudo apt-get install -y xsltproc
-    - name: Generate HTML Test Reports
-      if: always()
-      run: |
-        echo "=== Generating HTML reports using XSLT ==="
-        
-        # For each test module, combine all TEST-*.xml files and transform to HTML
-        for module in sandbox_*_test sandbox-functional-converter-core; do
-          if [ -d "$module/target/surefire-reports" ]; then
-            xml_files=$(find "$module/target/surefire-reports" -name "TEST-*.xml" 2>/dev/null)
-            if [ -n "$xml_files" ]; then
-              echo "Processing $module..."
-              
-              # Create a combined testsuites XML file
-              mkdir -p "$module/target/site"
-              
-              # Copy config file to the target directory
-              cp .github/junit-report-config.xml "$module/target/site/" || echo "Config file not found, using defaults"
-              
-              # Combine all TEST-*.xml files into one testsuites document
-              # Use deduplication to avoid duplicate test suites
-              echo '<?xml version="1.0" encoding="UTF-8"?>' > "$module/target/site/combined-tests.xml"
-              echo '<testsuites>' >> "$module/target/site/combined-tests.xml"
-              
-              # Track seen test suites to avoid duplicates
-              declare -A seen_suites
-              for xml in $xml_files; do
-                # Extract name attribute specifically from the testsuite element
-                # This handles both single-line and multi-line testsuite tags
-                suite_name=$(sed -n '/<testsuite/,/>/{/<testsuite/,/>/{p}}' "$xml" | tr -d '\n' | grep -o '<testsuite[^>]*' | grep -o 'name="[^"]*"' | sed 's/name="//;s/"//' || true)
-                
-                # Fallback: use the XML filename as identifier if name extraction failed
-                if [[ -z "$suite_name" ]]; then
-                  suite_name=$(basename "$xml" .xml)
-                fi
-                
-                # Only include this testsuite if we haven't seen it before
-                if [[ -n "$suite_name" && -z "${seen_suites[$suite_name]}" ]]; then
-                  seen_suites[$suite_name]=1
-                  # Extract the testsuite element (skip XML declaration)
-                  sed -n '/<testsuite/,/<\/testsuite>/p' "$xml" >> "$module/target/site/combined-tests.xml"
-                  echo "  Including testsuite: $suite_name"
-                else
-                  echo "  Skipping duplicate testsuite: $suite_name"
-                fi
-              done
-              echo '</testsuites>' >> "$module/target/site/combined-tests.xml"
-              
-              # Transform to HTML using xsltproc
-              xsltproc \
-                --stringparam TITLE "Test Results - $module" \
-                --stringparam CONFIG_FILE "$module/target/site/junit-report-config.xml" \
-                .github/JUNIT.XSL \
-                "$module/target/site/combined-tests.xml" \
-                > "$module/target/site/surefire-report.html"
-              
-              echo "Generated $module/target/site/surefire-report.html"
-            fi
-          fi
-        done
-        
-        echo ""
-        echo "=== Generated HTML reports ==="
-        find . -name "surefire-report.html" -type f
-    - name: Upload Test Reports Artifact
-      if: always()
-      uses: actions/upload-artifact@v7
-      with:
-        name: test-reports-${{ github.run_number }}
-        path: |
-          **/target/site/surefire-report.html
-          **/target/site/combined-tests.xml
-        retention-days: 30
-    - name: Prepare Test Reports for GitHub Pages
-      if: github.event_name == 'push' && github.ref_name == 'main'
-      run: |
-        mkdir -p /tmp/gh-pages/tests
-        found_reports=false
-        
-        # Create index.html header
-        cat > /tmp/gh-pages/tests/index.html << 'EOF'
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Sandbox Test Reports</title>
-          <style>
-            body { font-family: verdana, arial, helvetica; max-width: 1200px; margin: 0 auto; padding: 20px; }
-            h1 { color: #333; }
-            .module { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
-            .module h2 { margin-top: 0; color: #0066cc; font-size: 1.2em; }
-            a { color: #0066cc; text-decoration: none; }
-            a:hover { text-decoration: underline; }
-            .description { color: #666; margin: 10px 0; }
-            .stats { color: #666; font-size: 0.9em; }
-            .no-reports { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <h1>🧪 Sandbox Test Reports</h1>
-          <p class="description">
-            HTML test reports for all test modules. Click a module to see detailed results.
-          </p>
-          <div class="modules">
-        EOF
-        
-        # Copy test reports and add links to index
-        for module in sandbox_*_test sandbox-functional-converter-core; do
-          if [ -f "$module/target/site/surefire-report.html" ]; then
-            echo "Found report for $module"
-            found_reports=true
-            mkdir -p "/tmp/gh-pages/tests/$module"
-            cp "$module/target/site/surefire-report.html" "/tmp/gh-pages/tests/$module/"
-            
-            # Extract test counts from combined XML if available
-            tests="" errors="" failures=""
-            if [ -f "$module/target/site/combined-tests.xml" ]; then
-              # Sum up all tests, errors, failures from all testsuite elements
-              tests=$(grep -o 'tests="[0-9]*"' "$module/target/site/combined-tests.xml" | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "")
-              errors=$(grep -o 'errors="[0-9]*"' "$module/target/site/combined-tests.xml" | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "")
-              failures=$(grep -o 'failures="[0-9]*"' "$module/target/site/combined-tests.xml" | grep -o '[0-9]*' | awk '{s+=$1} END {print s}' || echo "")
-            fi
-            
-            cat >> /tmp/gh-pages/tests/index.html << EOF
-            <div class="module">
-              <h2><a href="${module}/surefire-report.html">${module}</a></h2>
-              <p class="stats">Tests: ${tests:-N/A} | Errors: ${errors:-0} | Failures: ${failures:-0}</p>
-            </div>
-        EOF
-          fi
-        done
-        
-        # If no reports found, add message
-        if [ "$found_reports" = false ]; then
-          cat >> /tmp/gh-pages/tests/index.html << 'EOF'
-            <div class="no-reports">
-              <strong>⚠️ No test reports available yet.</strong>
-              <p>Reports will appear after a successful build on main branch.</p>
-            </div>
-        EOF
-        fi
-        
-        # Close HTML
-        cat >> /tmp/gh-pages/tests/index.html << 'EOF'
-          </div>
-          <hr>
-          <p style="text-align: center; color: #666; margin-top: 30px;">
-            Generated by <a href="https://github.com/carstenartur/sandbox">Sandbox Project</a> | 
-            <a href="../coverage/">Coverage Reports</a>
-          </p>
-        </body>
-        </html>
-        EOF
-        
-        echo "=== Test reports prepared ==="
-        ls -la /tmp/gh-pages/tests/
-    - name: Deploy Test Reports to GitHub Pages
-      if: github.event_name == 'push' && github.ref_name == 'main'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: /tmp/gh-pages/tests
-        destination_dir: tests
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Deploy test reports'
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Maven clean verify
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Publish JUnit annotations
+        if: always()
+        uses: mikepenz/action-junit-report@v6
+        with:
+          report_paths: '**/target/surefire-reports/TEST-*.xml'
+          summary: true
+          include_passed: false
+          detailed_summary: true
+
+      - name: Upload raw test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ github.run_number }}
+          path: '**/target/surefire-reports/**'
+          retention-days: 14
+          if-no-files-found: warn
