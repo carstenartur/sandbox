@@ -75,6 +75,21 @@ class ReleaseIdentityTest(unittest.TestCase):
         self.assertEqual("FAIL", report["status"])
         self.assertEqual("plugin/feature.xml", report["findings"][0]["path"])
 
+    def test_rejects_snapshot_in_archival_metadata(self) -> None:
+        (self.root / "CITATION.cff").write_text(
+            'version: "1.4.0-SNAPSHOT"\n', encoding="utf-8"
+        )
+        (self.root / ".zenodo.json").write_text(
+            '{"version": "1.4.0-SNAPSHOT"}\n', encoding="utf-8"
+        )
+
+        with self.assertRaises(ReleaseIdentityError):
+            self.invoke()
+
+        report = json.loads((self.root / "report.json").read_text(encoding="utf-8"))
+        paths = {finding["path"] for finding in report["findings"]}
+        self.assertEqual({"CITATION.cff", ".zenodo.json"}, paths)
+
     def test_rejects_snapshot_in_source_archive(self) -> None:
         snapshot = self.root / "snapshot-pom.xml"
         snapshot.write_text(
