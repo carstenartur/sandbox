@@ -123,7 +123,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	@Override
 	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
-		if (!computeFixSet().contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)) {
+		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
+		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+		boolean migrateSuites= fixes.contains(JUnitCleanUpFixCore.RUNWITH);
+		if (!migrateExternalResourceRules && !migrateSuites) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
@@ -137,8 +140,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			return List.of();
 		}
 		rejectedScopes.remove(project);
-		JUnitScopeCandidateDetector.SearchSeeds seeds=
-				JUnitScopeCandidateDetector.findSearchSeeds(project, currentScope, monitor);
+		JUnitScopeCandidateDetector.SearchSeeds seeds= JUnitScopeCandidateDetector.findSearchSeeds(project,
+				currentScope, migrateExternalResourceRules, migrateSuites, monitor);
 		if (!seeds.candidateFound()) {
 			clearScopeDecision(project);
 			return List.of();
@@ -150,14 +153,18 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (!seeds.complete()) {
 			requiredUnits= allowedUnits;
 		} else {
-			RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(project,
-					seeds.elements(), currentScope, allowedUnits, monitor);
-			if (!related.complete()) {
-				clearScopeDecision(project);
-				rejectedScopes.add(project);
-				return List.of();
+			Set<ICompilationUnit> required= new LinkedHashSet<>(seeds.directCompilationUnits());
+			if (!seeds.elements().isEmpty()) {
+				RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(project,
+						seeds.elements(), currentScope, allowedUnits, monitor);
+				if (!related.complete()) {
+					clearScopeDecision(project);
+					rejectedScopes.add(project);
+					return List.of();
+				}
+				required.addAll(related.compilationUnits());
 			}
-			requiredUnits= related.compilationUnits();
+			requiredUnits= new ArrayList<>(required);
 		}
 		return registerRequiredScope(project, currentHandles, requiredUnits);
 	}
