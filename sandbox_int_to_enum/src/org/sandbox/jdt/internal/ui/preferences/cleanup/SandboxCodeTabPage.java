@@ -53,8 +53,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				MYCleanUpConstants.INT_TO_ENUM_CLEANUP, FALSE_TRUE);
 
 		if (isSaveAction()) {
-			// PROJECT_CLOSED transformations must never be enabled as ordinary save actions.
-			registerPreference(intToEnum);
+			// createCheckboxPref already registers the ordinary preference. The
+			// PROJECT_CLOSED child is deliberately absent from the save-action page.
 			return;
 		}
 
