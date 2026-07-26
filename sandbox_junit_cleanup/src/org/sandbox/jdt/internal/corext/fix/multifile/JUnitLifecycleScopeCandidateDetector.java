@@ -50,6 +50,9 @@ public final class JUnitLifecycleScopeCandidateDetector {
 	private static final Set<String> LIFECYCLE_SIMPLE_NAMES= Set.of(
 			"Before", "After", "BeforeClass", "AfterClass"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 
+	private record LifecycleSyntax(boolean candidateFound, boolean complete) {
+	}
+
 	/** Types whose declarations and references define the required hierarchy closure. */
 	public record SearchSeeds(boolean candidateFound, boolean complete, List<IJavaElement> elements) {
 		public SearchSeeds {
@@ -94,12 +97,13 @@ public final class JUnitLifecycleScopeCandidateDetector {
 					public boolean visit(TypeDeclaration node) {
 						checkCanceled(monitor);
 						ITypeBinding binding= node.resolveBinding();
-						boolean syntacticLifecycle= hasSyntacticLifecycle(node);
+						LifecycleSyntax syntax= inspectLifecycleSyntax(node);
 						boolean bindingLifecycle= hierarchyDeclaresLifecycle(binding, new LinkedHashSet<>());
-						if (!syntacticLifecycle && !bindingLifecycle) {
+						if (!syntax.candidateFound() && !bindingLifecycle) {
 							return true;
 						}
 						candidateFound[0]= true;
+						complete[0]&= syntax.complete();
 						if (binding == null) {
 							complete[0]= false;
 							return true;
@@ -114,7 +118,9 @@ public final class JUnitLifecycleScopeCandidateDetector {
 		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
 	}
 
-	private static boolean hasSyntacticLifecycle(TypeDeclaration type) {
+	private static LifecycleSyntax inspectLifecycleSyntax(TypeDeclaration type) {
+		boolean candidate= false;
+		boolean complete= true;
 		for (MethodDeclaration method : type.getMethods()) {
 			for (Object modifier : method.modifiers()) {
 				if (!(modifier instanceof Annotation annotation)) {
@@ -122,15 +128,17 @@ public final class JUnitLifecycleScopeCandidateDetector {
 				}
 				ITypeBinding annotationBinding= annotation.resolveTypeBinding();
 				if (annotationBinding != null && LIFECYCLE_ANNOTATIONS.contains(annotationBinding.getQualifiedName())) {
-					return true;
+					candidate= true;
+					continue;
 				}
 				String name= annotation.getTypeName().getFullyQualifiedName();
 				if (LIFECYCLE_SIMPLE_NAMES.contains(simpleName(name))) {
-					return true;
+					candidate= true;
+					complete&= annotationBinding != null;
 				}
 			}
 		}
-		return false;
+		return new LifecycleSyntax(candidate, complete);
 	}
 
 	private static boolean hierarchyDeclaresLifecycle(ITypeBinding binding, Set<String> visited) {
