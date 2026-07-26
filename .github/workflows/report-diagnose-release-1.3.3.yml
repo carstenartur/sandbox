@@ -1,0 +1,33 @@
+name: Report release diagnosis status
+
+on:
+  push:
+    branches:
+      - diagnose-release-1.3.3
+    paths:
+      - .github/workflows/report-diagnose-release-1.3.3.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record diagnosis workflow status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: diagnose-release-1.3.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/${REPOSITORY}/actions/runs?branch=${BRANCH}&per_page=30" \
+            --jq '{runs: [.workflow_runs[] | {id,name,event,status,conclusion,head_branch,head_sha,created_at,updated_at,html_url}]}' \
+            > /tmp/status.json
+          content=$(base64 -w0 /tmp/status.json)
+          gh api --method PUT "repos/${REPOSITORY}/contents/.github/diagnose-release-status.json" \
+            -f message='Record release diagnosis workflow status' \
+            -f content="$content" \
+            -f branch="$BRANCH" >/dev/null
