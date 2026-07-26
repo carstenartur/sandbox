@@ -234,6 +234,40 @@ public class MultiFileExternalResourceMigrationTest {
 						""" }, null);
 	}
 
+	@Test
+	public void incompleteSelectionDoesNotPartiallyRewriteResourceType() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit resource= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.rules.ExternalResource;
+
+				public class SharedResource extends ExternalResource {
+					@Override
+					protected void before() {
+					}
+
+					@Override
+					protected void after() {
+					}
+				}
+				""", false, null);
+		pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+
+				public class MyTest {
+					@Rule
+					public SharedResource resource = new SharedResource();
+				}
+				""", false, null);
+
+		enableExternalResourceRuleMigration();
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { resource });
+	}
+
 	private void enableExternalResourceRuleMigration() throws CoreException {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
