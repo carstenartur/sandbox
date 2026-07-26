@@ -23,10 +23,10 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUp;
 
 /**
- * Conservative save-action page that exposes only local JUnit migrations.
- * Coordinated, runner/suite and discovery-oriented transformations are forced
- * off because they require a project preview and must not run while saving one
- * compilation unit.
+ * Conservative save-action page that exposes only proven local JUnit migrations.
+ * Coordinated, inherited-lifecycle, runner/suite and discovery-oriented
+ * transformations are forced off because they require a project preview and must
+ * not run while saving one compilation unit.
  */
 public final class SaveActionSandboxCodeTabPage extends AbstractCleanUpTabPage {
 
@@ -35,6 +35,10 @@ public final class SaveActionSandboxCodeTabPage extends AbstractCleanUpTabPage {
 	private static final Set<String> PROJECT_OR_MANUAL_OPTIONS= Set.of(
 			MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE,
+			MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,
+			MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,
+			MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS,
+			MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED,
@@ -83,18 +87,6 @@ public final class SaveActionSandboxCodeTabPage extends AbstractCleanUpTabPage {
 		CheckboxPreference expected= child(group, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_TEST_EXPECTED,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED);
-		CheckboxPreference before= child(group, numColumns,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEFORE,
-				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
-		CheckboxPreference after= child(group, numColumns,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_AFTER,
-				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER);
-		CheckboxPreference beforeClass= child(group, numColumns,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEFORECLASS,
-				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS);
-		CheckboxPreference afterClass= child(group, numColumns,
-				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_AFTERCLASS,
-				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS);
 		CheckboxPreference temporaryFolder= child(group, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_RULETEMPORARYFOLDER,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
@@ -111,8 +103,8 @@ public final class SaveActionSandboxCodeTabPage extends AbstractCleanUpTabPage {
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_THROWINGRUNNABLE,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
-		CheckboxPreference[] localOptions= { assertions, assumptions, ignore, test, before, after, beforeClass,
-				afterClass, temporaryFolder, testName, ruleTimeout, expectedException, throwingRunnable };
+		CheckboxPreference[] localOptions= { assertions, assumptions, ignore, test,
+				temporaryFolder, testName, ruleTimeout, expectedException, throwingRunnable };
 		registerSlavePreference(enabled, localOptions);
 		registerSlavePreference(assertions, new CheckboxPreference[] { assertionOptimization });
 		registerSlavePreference(assumptions, new CheckboxPreference[] { assumptionOptimization });
