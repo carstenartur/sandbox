@@ -2,7 +2,7 @@
 <plugin>
 	<extension point="org.eclipse.jdt.ui.cleanUps">
 		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" cleanUpKind="cleanUp" name="JUnit Migration (Sandbox)" />
-		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" name="JUnit Migration (Sandbox)" cleanUpKind="saveAction" />
+		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SaveActionSandboxCodeTabPage" name="JUnit Migration (Sandbox — local safe only)" cleanUpKind="saveAction" />
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.SaveActionCleanUpOptionsInitializer" cleanUpKind="saveAction"></cleanUpOptionsInitializer>
 		
