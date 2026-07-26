@@ -1,0 +1,39 @@
+name: Diagnose release 1.3.3 failure
+
+on:
+  push:
+    branches:
+      - diagnose-release-1.3.3
+    paths:
+      - .github/workflows/diagnose-release-1.3.3.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract failed release log
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BRANCH: diagnose-release-1.3.3
+          RUN_ID: '30211408755'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run view "$RUN_ID" --repo "$REPOSITORY" --log-failed > /tmp/full.log
+          {
+            echo '=== MATCHED FAILURE LINES ==='
+            grep -n -E '\[ERROR\]|BUILD FAILURE|Failed to execute goal|There are test failures|Tests run:|Failures:|Errors:|Caused by:|OutOfMemoryError|Killed|Process completed with exit code' /tmp/full.log | tail -n 500 || true
+            echo
+            echo '=== FINAL 600 LINES ==='
+            tail -n 600 /tmp/full.log
+          } > /tmp/release-failure.txt
+          content=$(base64 -w0 /tmp/release-failure.txt)
+          gh api --method PUT "repos/${REPOSITORY}/contents/.github/release-failure-1.3.3.txt" \
+            -f message='Record release 1.3.3 failure details' \
+            -f content="$content" \
+            -f branch="$BRANCH" >/dev/null
