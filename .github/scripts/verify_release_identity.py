@@ -12,7 +12,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 
-VERSIONED_NAMES = {"pom.xml", "MANIFEST.MF", "feature.xml", "release.properties"}
+VERSIONED_NAMES = {
+    "pom.xml",
+    "MANIFEST.MF",
+    "feature.xml",
+    "release.properties",
+    "CITATION.cff",
+    ".zenodo.json",
+}
 VERSIONED_SUFFIXES = {".product"}
 EXCLUDED_PARTS = {".git", "target", "node_modules"}
 
