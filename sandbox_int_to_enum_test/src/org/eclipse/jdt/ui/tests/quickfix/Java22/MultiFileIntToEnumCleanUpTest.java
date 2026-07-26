@@ -280,7 +280,7 @@ public class MultiFileIntToEnumCleanUpTest {
 				""";
 	}
 
-	private void enableProjectWideCleanup() {
+	private void enableProjectWideCleanup() throws CoreException {
 		context.enable(MYCleanUpConstants.INT_TO_ENUM_CLEANUP);
 		context.enable(IntToEnumCleanUpOptions.PROJECT_WIDE);
 	}
