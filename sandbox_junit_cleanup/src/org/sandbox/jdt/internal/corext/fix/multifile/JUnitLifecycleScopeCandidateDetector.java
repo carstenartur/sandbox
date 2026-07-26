@@ -104,7 +104,7 @@ public final class JUnitLifecycleScopeCandidateDetector {
 						}
 						candidateFound[0]= true;
 						complete[0]&= syntax.complete();
-						if (binding == null) {
+						if (binding == null || binding.isRecovered()) {
 							complete[0]= false;
 							return true;
 						}
@@ -127,14 +127,15 @@ public final class JUnitLifecycleScopeCandidateDetector {
 					continue;
 				}
 				ITypeBinding annotationBinding= annotation.resolveTypeBinding();
-				if (annotationBinding != null && LIFECYCLE_ANNOTATIONS.contains(annotationBinding.getQualifiedName())) {
+				if (annotationBinding != null && !annotationBinding.isRecovered()
+						&& LIFECYCLE_ANNOTATIONS.contains(annotationBinding.getQualifiedName())) {
 					candidate= true;
 					continue;
 				}
 				String name= annotation.getTypeName().getFullyQualifiedName();
 				if (LIFECYCLE_SIMPLE_NAMES.contains(simpleName(name))) {
 					candidate= true;
-					complete&= annotationBinding != null;
+					complete= false;
 				}
 			}
 		}
@@ -142,7 +143,7 @@ public final class JUnitLifecycleScopeCandidateDetector {
 	}
 
 	private static boolean hierarchyDeclaresLifecycle(ITypeBinding binding, Set<String> visited) {
-		if (binding == null) {
+		if (binding == null || binding.isRecovered()) {
 			return false;
 		}
 		ITypeBinding declaration= binding.getErasure().getTypeDeclaration();
@@ -153,7 +154,7 @@ public final class JUnitLifecycleScopeCandidateDetector {
 		for (IMethodBinding method : declaration.getDeclaredMethods()) {
 			for (IAnnotationBinding annotation : method.getAnnotations()) {
 				ITypeBinding type= annotation.getAnnotationType();
-				if (type != null && LIFECYCLE_ANNOTATIONS.contains(type.getQualifiedName())) {
+				if (type != null && !type.isRecovered() && LIFECYCLE_ANNOTATIONS.contains(type.getQualifiedName())) {
 					return true;
 				}
 			}
@@ -171,8 +172,8 @@ public final class JUnitLifecycleScopeCandidateDetector {
 
 	private static boolean addHierarchyElements(ITypeBinding binding, Set<IJavaElement> elements,
 			Set<String> visited) {
-		if (binding == null) {
-			return true;
+		if (binding == null || binding.isRecovered()) {
+			return false;
 		}
 		ITypeBinding declaration= binding.getErasure().getTypeDeclaration();
 		String key= declaration.getKey();
@@ -193,7 +194,7 @@ public final class JUnitLifecycleScopeCandidateDetector {
 	}
 
 	private static boolean sourceHierarchyType(ITypeBinding binding) {
-		if (binding == null) {
+		if (binding == null || binding.isRecovered()) {
 			return false;
 		}
 		IJavaElement element= binding.getErasure().getJavaElement();
