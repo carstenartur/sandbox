@@ -6,6 +6,7 @@ CONFIG_FILE=${PATCHED_JDT_UI_CONFIG:-"$ROOT_DIR/.github/patched-jdt-ui.env"}
 PATCH_DIR=${1:?usage: compare_patched_jdt_ui_with_target.sh PATCH_DIR [REPORT_DIR]}
 REPORT_DIR=${2:-"$ROOT_DIR/target/patched-jdt-ui-compatibility"}
 MAVEN_REPOSITORY=${MAVEN_REPOSITORY:-"$(dirname "$REPORT_DIR")/patched-jdt-ui-compat-m2"}
+WORK_DIR="$REPORT_DIR/stock-jdt-ui-probe"
 
 mkdir -p "$REPORT_DIR"
 exec > >(tee "$REPORT_DIR/compatibility-build.log") 2>&1
@@ -27,21 +28,92 @@ if (( ${#patched_candidates[@]} != 1 )); then
 fi
 PATCHED_JAR=${patched_candidates[0]}
 
-# Use an isolated local Maven repository. Scanning a shared Actions cache cannot
-# prove which JDT UI version the checked-in target selected because stale target
-# artifacts from earlier Eclipse releases may coexist there.
-rm -rf "$MAVEN_REPOSITORY"
-mkdir -p "$MAVEN_REPOSITORY"
+# Resolve only the stock JDT UI bundle from the declared Eclipse release. The
+# former focused Sandbox reactor still inherited every root p2 repository and
+# therefore downloaded unrelated Babel fragments before compatibility could be
+# inspected. A minimal probe keeps this gate deterministic and substantially
+# cheaper while retaining an isolated repository as provenance evidence.
+rm -rf "$MAVEN_REPOSITORY" "$WORK_DIR"
+mkdir -p "$MAVEN_REPOSITORY" "$WORK_DIR/META-INF"
 
-# The target definition is referenced as a Maven artifact by Tycho and therefore
-# must be present in the selected reactor when using an otherwise empty local
-# repository. A normal full build includes it implicitly; this focused build must
-# name it explicitly.
-mvn --batch-mode -ntp -f "$ROOT_DIR/pom.xml" \
-  -Dmaven.repo.local="$MAVEN_REPOSITORY" \
-  -pl sandbox_target,sandbox_common -am \
-  -DskipTests -DskipITs -Dspotbugs.skip=true -Dlicense.skip=true \
-  package
+TYCHO_VERSION=$(python3 - "$ROOT_DIR/pom.xml" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+
+root = ET.parse(sys.argv[1]).getroot()
+namespace = {'m': 'http://maven.apache.org/POM/4.0.0'}
+value = root.findtext('m:properties/m:tycho-version', namespaces=namespace)
+if not value:
+    raise SystemExit('Root POM contains no tycho-version property')
+print(value.strip())
+PY
+)
+
+cat > "$WORK_DIR/pom.xml" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.sandbox.build</groupId>
+  <artifactId>stock-jdt-ui-probe</artifactId>
+  <version>1.0.0</version>
+  <packaging>eclipse-plugin</packaging>
+  <repositories>
+    <repository>
+      <id>eclipse-2026-06</id>
+      <layout>p2</layout>
+      <url>https://download.eclipse.org/releases/2026-06/</url>
+    </repository>
+  </repositories>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-maven-plugin</artifactId>
+        <version>$TYCHO_VERSION</version>
+        <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>target-platform-configuration</artifactId>
+        <version>$TYCHO_VERSION</version>
+        <configuration>
+          <executionEnvironment>JavaSE-21</executionEnvironment>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+EOF
+
+cat > "$WORK_DIR/META-INF/MANIFEST.MF" <<EOF
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Stock JDT UI Resolution Probe
+Bundle-SymbolicName: org.sandbox.build.stock.jdt.ui.probe;singleton:=true
+Bundle-Version: 1.0.0
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Require-Bundle: $PATCHED_JDT_UI_BUNDLE
+EOF
+
+cat > "$WORK_DIR/build.properties" <<'EOF'
+bin.includes = META-INF/
+EOF
+
+for attempt in 1 2 3; do
+  if mvn --batch-mode -ntp -f "$WORK_DIR/pom.xml" \
+      -Dmaven.repo.local="$MAVEN_REPOSITORY" \
+      -DskipTests -DskipITs package; then
+    break
+  fi
+  if (( attempt == 3 )); then
+    echo "Stock JDT UI resolution failed after $attempt attempts" >&2
+    exit 1
+  fi
+  echo "Stock JDT UI resolution attempt $attempt failed; retrying" >&2
+  sleep $((attempt * 10))
+done
 
 # Tycho's p2 cache does not guarantee Maven-style artifact file names. Inspect
 # manifests from every freshly resolved JAR and select the exact symbolic name.
@@ -196,7 +268,7 @@ compatible = all(bool(item['passed']) for item in checks)
 payload = {
     'schemaVersion': 1,
     'compatibleForReplacement': compatible,
-    'target': 'sandbox_target/eclipse.target (Eclipse 2025-12)',
+    'target': 'Eclipse 2026-06 / Platform 4.40',
     'stockBundle': {
         'path': str(stock_path),
         'version': stock_version,
