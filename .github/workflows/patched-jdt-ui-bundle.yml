@@ -1,16 +1,20 @@
-name: Patched JDT UI Bundle
+name: Patched JDT UI Delivery
 
-# Optional compatibility lane for the pinned JDT UI replacement. It is not a
-# general main-branch check: pull requests trigger it only when the source pin,
-# build/compatibility scripts, workflow or delivery documentation changes.
+# Optional compatibility and product-delivery lane. It is intentionally scoped
+# to patch-delivery files and never runs for unrelated changes or main pushes.
 on:
   workflow_dispatch:
   pull_request:
     branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
+      - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/build_patched_jdt_ui.sh'
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
+      - '.github/scripts/add_p2_sha256_checksums.py'
+      - '.github/scripts/publish_patched_jdt_feature_repository.sh'
+      - '.github/scripts/install_patched_jdt_feature.sh'
+      - '.github/scripts/run_patched_jdt_ui_scope_probe.sh'
       - '.github/workflows/patched-jdt-ui-bundle.yml'
       - 'docs/patched-jdt-ui-delivery.md'
 
@@ -19,6 +23,7 @@ permissions:
 
 jobs:
   build:
+    name: Build pinned replacement bundle
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -58,6 +63,7 @@ jobs:
           if-no-files-found: error
 
   target-compatibility:
+    name: Verify Eclipse 2026-06 target compatibility
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -77,13 +83,13 @@ jobs:
         with:
           name: patched-jdt-ui-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui
-      - name: Resolve the Sandbox target and compare manifests
+      - name: Resolve target and compare manifests
         shell: bash
         run: |
           bash .github/scripts/compare_patched_jdt_ui_with_target.sh \
             "$RUNNER_TEMP/patched-jdt-ui" \
             "$RUNNER_TEMP/patched-jdt-ui-compatibility"
-      - name: Publish compatibility summary
+      - name: Publish and enforce compatibility summary
         if: always()
         shell: bash
         run: |
@@ -92,43 +98,26 @@ jobs:
           log="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility-build.log"
           if [[ -s "$report" && -s "$result" ]]; then
             cat "$report" >> "$GITHUB_STEP_SUMMARY"
-            if ! python3 - "$result" <<'PY'
+            python3 - "$result" <<'PY'
           import json
           import sys
-          with open(sys.argv[1], encoding='utf-8') as stream:
-              compatible = json.load(stream)['compatibleForReplacement']
-          raise SystemExit(0 if compatible else 1)
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          if payload.get('compatibleForReplacement') is not True:
+              raise SystemExit('Pinned JDT UI bundle is not compatible with the Eclipse 2026-06 target')
           PY
-            then
-              echo '::warning::The pinned bundle is not yet eligible for p2 replacement. The report records the exact stock-target incompatibility; publication remains disabled.'
-            fi
           else
             {
               echo '### Patched JDT UI target compatibility'
               echo
-              echo '**ERROR:** target resolution or manifest inspection did not produce a compatibility report.'
+              echo '**ERROR:** target resolution or manifest inspection produced no report.'
               echo
               echo '```text'
               tail -n 120 "$log" 2>/dev/null || echo 'No compatibility log was produced.'
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
-      - name: Enforce 2026-06 stock-target replacement gate
-        shell: bash
-        run: |
-          result="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json"
-          python3 - "$result" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          path = Path(sys.argv[1])
-          if not path.is_file():
-              raise SystemExit('Compatibility report is missing')
-          payload = json.loads(path.read_text(encoding='utf-8'))
-          if payload.get('compatibleForReplacement') is not True:
-              raise SystemExit('Pinned JDT UI bundle is not compatible with the Eclipse 2026-06 stock target')
-          PY
       - name: Upload stock-target compatibility report
         if: always()
         uses: actions/upload-artifact@v7
@@ -136,4 +125,119 @@ jobs:
           name: patched-jdt-ui-target-compatibility-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui-compatibility/
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
+
+  p2-repository:
+    name: Publish replacement JDT feature repository
+    needs: [build, target-compatibility]
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Install Linux product runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+      - name: Download verified bundle and compatibility evidence
+        uses: actions/download-artifact@v7
+        with:
+          pattern: patched-jdt-ui-*-${{ github.sha }}
+          path: ${{ runner.temp }}/inputs
+      - name: Normalize downloaded input layout
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/patched-jdt-ui" "$RUNNER_TEMP/patched-jdt-ui-compatibility"
+          mkdir -p "$RUNNER_TEMP/patched-jdt-ui" "$RUNNER_TEMP/patched-jdt-ui-compatibility"
+          cp -a "$RUNNER_TEMP/inputs/patched-jdt-ui-${GITHUB_SHA}/". "$RUNNER_TEMP/patched-jdt-ui/"
+          cp -a "$RUNNER_TEMP/inputs/patched-jdt-ui-target-compatibility-${GITHUB_SHA}/". \
+            "$RUNNER_TEMP/patched-jdt-ui-compatibility/"
+      - name: Build stock product used as feature provenance
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --batch-mode
+          -DskipTests
+          -Dtycho.localArtifacts=ignore
+          clean verify
+      - name: Publish and verify replacement JDT feature repository
+        run: |
+          bash .github/scripts/publish_patched_jdt_feature_repository.sh \
+            "$RUNNER_TEMP/patched-jdt-ui" \
+            "$RUNNER_TEMP/patched-jdt-ui-compatibility" \
+            "$RUNNER_TEMP/patched-jdt-feature-p2"
+      - name: Publish repository summary
+        run: cat "$RUNNER_TEMP/patched-jdt-feature-p2/evidence/repository-verification.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload verified replacement repository
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-feature-p2-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-feature-p2/
+          retention-days: 14
+          if-no-files-found: error
+
+  patched-product:
+    name: Replace stock JDT feature and start product
+    needs: p2-repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Install Linux product runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+      - name: Download replacement repository
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-feature-p2-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-feature-p2
+      - name: Build independent stock product regression baseline
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --batch-mode
+          -DskipTests
+          -Dtycho.localArtifacts=ignore
+          clean verify
+      - name: Replace stock JDT root and start patched workbench
+        run: |
+          bash .github/scripts/install_patched_jdt_feature.sh \
+            "$RUNNER_TEMP/patched-jdt-feature-p2" \
+            "$RUNNER_TEMP/patched-jdt-feature-installation"
+      - name: Publish installation summary
+        if: always()
+        run: |
+          report="$RUNNER_TEMP/patched-jdt-feature-installation/installation-verification.md"
+          if [[ -s "$report" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload patched-product evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-feature-installation-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-feature-installation/
+          retention-days: 14
+          if-no-files-found: error
