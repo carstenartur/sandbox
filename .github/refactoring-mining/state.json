@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "e8a3b0cb14aa37645705b7c0d607202d7b6fc01b",
-      "lastProcessedDate": "2026-07-25T03:14:41.887082620Z",
-      "totalProcessed": 2852,
+      "lastProcessedCommit": "1fc404d872cf5c35d5660ff10acb71daf54c7b5f",
+      "lastProcessedDate": "2026-07-26T03:15:42.100517560Z",
+      "totalProcessed": 2932,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2456,6 +2456,24 @@
           "deferredAt": "2026-07-25T03:13:10.750376031Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ae1a3b48c9d6ee9c7c4c4e4e3a3e5682e1869f26",
+          "message": "Fixed bug 507294: [navigation] Ctrl+Click on interface should allow to jump to the implementations similar as for interf",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-26T03:12:18.996356386Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cffd24327833af389f8dcc7386d7f3e2ffae192a",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JUNIT5",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-26T03:12:45.287947771Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2609,9 +2627,9 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 1,
         "API Replacement": 2,
-        "API Modernization": 7,
+        "API Modernization": 8,
         "Rename Constant": 1,
-        "Structural Refactoring": 1,
+        "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
         "Generics": 1,
         "API Constant Update": 1,
@@ -2620,7 +2638,10 @@
         "Constant Replacement": 1,
         "API Simplification": 1,
         "Code Style/Clarity": 1,
-        "Type Clarity": 1
+        "Type Clarity": 1,
+        "String Literal Refactoring": 1,
+        "Generics Modernization": 1,
+        "Configuration Update": 1
       },
       "exhaustedCategories": []
     },
@@ -2661,5 +2682,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25511
+  "globalTotalProcessed": 25591
 }
