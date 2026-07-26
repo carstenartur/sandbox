@@ -106,16 +106,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (base.plan() == null) {
 			return base;
 		}
+		boolean fallbackCompleteSelection= closedScope == null && isCompleteProjectSelection(project, compilationUnits);
+		boolean externalResourceScopeClosed= !migrateExternalResourceRules
+				|| (closedScope == null ? fallbackCompleteSelection : closedScope.booleanValue());
 		boolean lifecycleScopeClosed= !migrateLifecycleContracts
-				|| (closedScope == null
-						? isCompleteProjectSelection(project, compilationUnits)
-						: closedScope.booleanValue());
+				|| (closedScope == null ? fallbackCompleteSelection : closedScope.booleanValue());
 		if (migrateLifecycleContracts && !lifecycleScopeClosed) {
 			base.status().addInfo("Inherited JUnit lifecycle migration was skipped because the selected source scope " //$NON-NLS-1$
 					+ "does not contain the complete base-type/subtype hierarchy."); //$NON-NLS-1$
 		}
 		JUnitMigrationPlan plan= new JUnitMigrationPlan(base.plan().selectedScope(),
-				base.plan().externalResourceRules(), lifecycleScopeClosed);
+				base.plan().externalResourceRules(), externalResourceScopeClosed, lifecycleScopeClosed);
 		return new MultiFileCleanUpPlanResult<>(plan, base.status(), base.metrics(), base.diagnostics());
 	}
 
@@ -135,16 +136,19 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
 
-		// ExternalResource migrations alter a resource type and one or more Rule fields.
-		// They must be emitted only by the immutable closed-source plan. Removing the
-		// corresponding local plugins prevents a rejected or incomplete scope from
-		// producing a partial signature/annotation migration.
-		localFixes.remove(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
-		localFixes.remove(JUnitCleanUpFixCore.EXTERNALRESOURCE);
+		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
+
+		// A rejected or incomplete named ExternalResource scope must not produce a
+		// partial type/field rewrite. Once the scope is closed, coordinated plan
+		// operations mark their nodes as processed and the local plugins remain
+		// available for independent anonymous or nested rules in the same run.
+		if (!plan.externalResourceScopeClosed()) {
+			localFixes.remove(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+			localFixes.remove(JUnitCleanUpFixCore.EXTERNALRESOURCE);
+		}
 		if (!plan.lifecycleScopeClosed()) {
 			localFixes.removeAll(LIFECYCLE_FIXES);
 		}
-		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
 		localFixes.forEach(fix -> fix.findOperations(compilationUnit, operations, sharedNodesProcessed));
 		if (operations.isEmpty()) {
 			return null;
@@ -157,9 +161,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
-		boolean externalResourceRequested= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
-		boolean lifecycleRequested= lifecycleFixesEnabled(fixes);
-		if (!externalResourceRequested && !lifecycleRequested) {
+		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+		boolean migrateSuites= fixes.contains(JUnitCleanUpFixCore.RUNWITH);
+		boolean migrateLifecycleContracts= lifecycleFixesEnabled(fixes);
+		if (!migrateExternalResourceRules && !migrateSuites && !migrateLifecycleContracts) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
@@ -174,13 +179,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 		rejectedScopes.remove(project);
 
-		JUnitScopeCandidateDetector.SearchSeeds resourceSeeds= externalResourceRequested
-				? JUnitScopeCandidateDetector.findSearchSeeds(project, currentScope, monitor)
-				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of());
-		JUnitLifecycleScopeCandidateDetector.SearchSeeds lifecycleSeeds= lifecycleRequested
+		JUnitScopeCandidateDetector.SearchSeeds junitSeeds= JUnitScopeCandidateDetector.findSearchSeeds(project,
+				currentScope, migrateExternalResourceRules, migrateSuites, monitor);
+		JUnitLifecycleScopeCandidateDetector.SearchSeeds lifecycleSeeds= migrateLifecycleContracts
 				? JUnitLifecycleScopeCandidateDetector.findSearchSeeds(project, currentScope, monitor)
 				: new JUnitLifecycleScopeCandidateDetector.SearchSeeds(false, true, List.of());
-		if (!resourceSeeds.candidateFound() && !lifecycleSeeds.candidateFound()) {
+		if (!junitSeeds.candidateFound() && !lifecycleSeeds.candidateFound()) {
 			clearScopeDecision(project);
 			return List.of();
 		}
@@ -188,20 +192,24 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		List<ICompilationUnit> allowedUnits= JavaProjectCompilationUnits.collect(project, currentScope,
 				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);
 		List<ICompilationUnit> requiredUnits;
-		if (!resourceSeeds.complete() || !lifecycleSeeds.complete()) {
+		if (!junitSeeds.complete() || !lifecycleSeeds.complete()) {
 			requiredUnits= allowedUnits;
 		} else {
+			Set<ICompilationUnit> required= new LinkedHashSet<>(junitSeeds.directCompilationUnits());
 			Set<IJavaElement> elements= new LinkedHashSet<>();
-			elements.addAll(resourceSeeds.elements());
+			elements.addAll(junitSeeds.elements());
 			elements.addAll(lifecycleSeeds.elements());
-			RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(project,
-					elements, currentScope, allowedUnits, monitor);
-			if (!related.complete()) {
-				clearScopeDecision(project);
-				rejectedScopes.add(project);
-				return List.of();
+			if (!elements.isEmpty()) {
+				RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(project,
+						elements, currentScope, allowedUnits, monitor);
+				if (!related.complete()) {
+					clearScopeDecision(project);
+					rejectedScopes.add(project);
+					return List.of();
+				}
+				required.addAll(related.compilationUnits());
 			}
-			requiredUnits= related.compilationUnits();
+			requiredUnits= new ArrayList<>(required);
 		}
 		return registerRequiredScope(project, currentHandles, requiredUnits);
 	}
