@@ -49,6 +49,7 @@ print(value.strip())
 PY
 )
 
+PROBE_ID=org.sandbox.build.stock.jdt.ui.probe
 cat > "$WORK_DIR/pom.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -56,7 +57,7 @@ cat > "$WORK_DIR/pom.xml" <<EOF
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.sandbox.build</groupId>
-  <artifactId>stock-jdt-ui-probe</artifactId>
+  <artifactId>$PROBE_ID</artifactId>
   <version>1.0.0</version>
   <packaging>eclipse-plugin</packaging>
   <repositories>
@@ -91,7 +92,7 @@ cat > "$WORK_DIR/META-INF/MANIFEST.MF" <<EOF
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Stock JDT UI Resolution Probe
-Bundle-SymbolicName: org.sandbox.build.stock.jdt.ui.probe;singleton:=true
+Bundle-SymbolicName: $PROBE_ID;singleton:=true
 Bundle-Version: 1.0.0
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: $PATCHED_JDT_UI_BUNDLE
