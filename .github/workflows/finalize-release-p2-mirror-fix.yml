@@ -1,0 +1,56 @@
+name: Finalize release p2 mirror fix
+
+on:
+  push:
+    branches:
+      - fix/release-p2-mirror-rate-limit
+    paths:
+      - .github/workflows/finalize-release-p2-mirror-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.head_commit.message == 'Finalize release p2 mirror fix'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v6
+        with:
+          ref: fix/release-p2-mirror-rate-limit
+
+      - name: Normalize source and remove temporary files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_distribution_verify/src/main/java/org/sandbox/distribution/DistributionVerifier.java')
+          text = path.read_text(encoding='utf-8')
+          old = '                        "-roaming",\n                "-vmargs",\n                "-Declipse.p2.mirrors=false"),'
+          indent = ' ' * 24
+          new = (f'{indent}"-roaming",\n'
+                 f'{indent}"-vmargs",\n'
+                 f'{indent}"-Declipse.p2.mirrors=false"),')
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one misindented mirror block, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          rm -f .github/workflows/finalize-release-p2-mirror-fix.yml \
+            .github/workflows/report-p2-mirror-fix-status.yml \
+            .github/p2-mirror-fix-status.json
+          git diff --check
+          git diff --stat
+
+      - name: Commit clean fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Finalize p2 mirror rate-limit fix'
+          git push origin HEAD:refs/heads/fix/release-p2-mirror-rate-limit
