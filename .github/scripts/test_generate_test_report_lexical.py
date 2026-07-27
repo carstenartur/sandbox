@@ -44,6 +44,20 @@ char quote = '\'';
         self.assertNotIn("commentedBlock", masked)
         self.assertIn("@Test void real", masked)
 
+    def test_does_not_close_text_block_at_escaped_delimiter(self) -> None:
+        source = r'''class Sample {
+String block = """
+escaped delimiter: \"""
+@Disabled("fixture only")
+@Test void embedded() {}
+""";
+@Test void real() {}
+}
+'''
+        masked = mask_non_code(source)
+        self.assertNotIn("embedded", masked)
+        self.assertIn("@Test void real", masked)
+
 
 class ScannerTest(unittest.TestCase):
     def scan(self, source: str):
@@ -100,6 +114,23 @@ public class SampleTest {
         )
         self.assertEqual(1, len(tests))
         self.assertFalse(tests[0].is_disabled)
+
+    def test_disabled_annotation_does_not_leak_to_following_test(self) -> None:
+        tests = self.scan(
+            '''package demo;
+public class SampleTest {
+    @Disabled("first only")
+    @Test
+    void disabledTest() {}
+
+    @Test
+    void enabledTest() {}
+}
+'''
+        )
+        self.assertEqual(["disabledTest", "enabledTest"], [test.method_name for test in tests])
+        self.assertTrue(tests[0].is_disabled)
+        self.assertFalse(tests[1].is_disabled)
 
 
 if __name__ == "__main__":
