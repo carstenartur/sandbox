@@ -1,0 +1,55 @@
+# ADR 0002: Adopt the released jgit-storage-hibernate modules
+
+- **Status:** Accepted
+- **Date:** 2026-07-27
+- **Issue:** #1303
+
+## Context
+
+`sandbox-jgit-storage-hibernate` currently contains a copied generic JGit/Hibernate implementation together with Sandbox-specific search presentation, embeddings and REST-facing query services. The released `io.github.carstenartur:jgit-storage-hibernate` project now owns generic database-backed Git storage, history search, Java analysis and architecture analysis as separate modules.
+
+Keeping both implementations independently editable would create divergent schemas, transaction behaviour, JGit compatibility and query semantics.
+
+## Decision
+
+Sandbox will adopt the released library in reviewable slices.
+
+### Ownership
+
+The external project owns:
+
+- Git objects, packs, refs, Reftables, reflogs and repository lifecycle;
+- generic history projections and full-text history search;
+- binding-aware Java history and semantic code analysis;
+- generic architecture rules, evidence and drift analysis;
+- module-owned entities, schema migrations, facades, query objects and DTOs.
+
+Sandbox owns:
+
+- Sandbox REST resources and transport DTOs;
+- UI and Eclipse integration;
+- operational configuration specific to the Sandbox product;
+- optional embedding/rank-fusion experiments not provided by the generic library;
+- migration adapters required only while copied callers are being removed.
+
+### First slice
+
+The module consumes released version `0.1.13` from the anonymous static Maven repository documented by the external project. `JGitStorageLibraryBoundary` exposes the public `RepositoryName` and `CoreEntities` contracts to Sandbox code. New integration code must use this boundary or another explicitly reviewed public-library adapter; it must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation classes.
+
+### Subsequent slices
+
+1. Replace repository construction and lifecycle with `jgit-storage-hibernate-core`.
+2. Replace copied commit/history entities and indexers with `jgit-storage-hibernate-search`.
+3. Replace copied Java AST/history analysis with `jgit-storage-hibernate-java-analysis`.
+4. Move Sandbox-only embeddings and REST query composition behind application-owned interfaces.
+5. Remove copied generic packages, migrations and dependencies.
+6. Add a build rule that rejects new source references to removed/copied implementation packages.
+
+Each slice must preserve repository data through the external migration/adoption runbook and must keep one authoritative implementation active.
+
+## Consequences
+
+- The first slice adds a released dependency without immediately deleting the copied implementation.
+- The temporary coexistence is explicit and bounded by this migration plan.
+- Public external APIs, not implementation packages, define the replacement contract.
+- Database migration and service cut-over remain separate follow-up changes and cannot be represented as a package rename.
