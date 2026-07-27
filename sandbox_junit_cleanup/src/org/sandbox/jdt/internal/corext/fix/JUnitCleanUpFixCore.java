@@ -38,7 +38,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
@@ -48,11 +47,12 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedAndTimeoutJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ThrowingRunnableJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
@@ -114,6 +114,8 @@ public enum JUnitCleanUpFixCore {
 	 * @param operations             set of all CompilationUnitRewriteOperations
 	 *                               created already
 	 * @param nodesprocessed         list to remember nodes already processed
+	 * @param createForOnlyIfVarUsed true if for loop should be created only only if
+	 *                               loop var used within
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed) {
