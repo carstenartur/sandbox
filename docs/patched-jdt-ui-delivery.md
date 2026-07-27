@@ -2,45 +2,37 @@
 
 ## Purpose
 
-The normal Sandbox target and cleanup test reactor use the stock Eclipse JDT UI bundle. Automatic multi-file cleanup scope expansion is an optional product capability that requires a reviewed replacement of the singleton `org.eclipse.jdt.ui` bundle.
+The normal Sandbox target and product use the stock Eclipse 2026-06 / Platform 4.40 JDT UI bundle. Automatic multi-file cleanup scope expansion is an optional product capability that requires a reviewed replacement of the singleton `org.eclipse.jdt.ui` bundle.
 
-This document covers the reproducible source-bundle and stock-target compatibility stages. Minimal p2 publication, exact-IU product resolution, product startup and stock-versus-patched runtime smoke tests remain tracked in #1209 and #1215.
+This delivery path is separate from the ordinary update site. It proves source provenance, target compatibility, exact p2 publication, installation into the materialized Linux product, product startup, and a real preview/apply/undo cleanup lifecycle before any public patch channel is considered.
 
-## Pinned source
+## Immutable 4.40 source coordinates
 
-The immutable coordinates are stored in `.github/patched-jdt-ui.env`:
+`.github/patched-jdt-ui.env` pins:
 
 - repository: `https://github.com/carstenartur/eclipse.jdt.ui.git`;
-- commit: `450bfd46089c99608dd60203e1257e1c329ad2c5`;
+- commit: `b1f1aa61631af8d4faa47f02e39f2bba9134b5a7`;
 - bundle: `org.eclipse.jdt.ui`;
-- expected base version: `3.39.0`.
+- expected base version: `3.38.0`.
 
-The commit is the merged result of `carstenartur/eclipse.jdt.ui#95`. Its fork synchronization manifest preserves both the modified `CleanUpRefactoring.java` source and `MultiFileCleanUpScopeExpansionTest.java`.
+The commit has the official Eclipse 4.40/JDT UI 3.38.0 commit as its sole parent and replaces exactly two blobs with the reviewed contents from `carstenartur/eclipse.jdt.ui#94`:
 
-## Local rebuild
+- `CleanUpRefactoring.java`;
+- `MultiFileCleanUpScopeExpansionTest.java`.
 
-Requirements are Git, Java 21, Maven 3.9.x, JDK tools, Python 3 and access to the pinned fork plus Eclipse build repositories.
+It contains no 4.41 history or unrelated fork changes.
+
+## Local stages
+
+### 1. Build the pinned replacement bundle
 
 ```bash
 bash .github/scripts/build_patched_jdt_ui.sh target/patched-jdt-ui
 ```
 
-The script:
+The script checks out only the immutable commit, verifies the productive source and PDE test, builds the single JDT UI bundle, validates singleton identity and the `3.38.0.*` version, and writes SHA-256 provenance.
 
-1. fetches and checks out only the exact 40-character commit;
-2. verifies the productive patch source, PDE test and synchronization entries;
-3. invokes the upstream `build-individual-bundles` Maven profile for `org.eclipse.jdt.ui`;
-4. requires exactly one non-source bundle artifact;
-5. validates the singleton bundle symbolic name;
-6. requires a qualified `3.39.0.*` OSGi version;
-7. verifies the compiled `CleanUpRefactoring` contains the scope-expansion marker;
-8. emits the bundle, manifest evidence and `provenance.json` with SHA-256.
-
-Generated JARs are not committed. CI publishes the verified output as a short-lived artifact.
-
-## Stock-target compatibility gate
-
-After building the bundle, CI runs:
+### 2. Compare against the resolved Sandbox target
 
 ```bash
 bash .github/scripts/compare_patched_jdt_ui_with_target.sh \
@@ -48,21 +40,45 @@ bash .github/scripts/compare_patched_jdt_ui_with_target.sh \
   target/patched-jdt-ui-compatibility
 ```
 
-The comparison removes only cached `org.eclipse.jdt.ui` artifacts, resolves `sandbox_target/eclipse.target` through the normal Tycho build and identifies the single stock JDT UI bundle selected from Eclipse 2025-12. It then records:
+The gate resolves the checked-in Eclipse 2026-06 target and compares execution environment, required bundles, imports, exports, versions and checksums. A difference is rejected rather than assumed compatible.
 
-- the exact stock and patched OSGi versions and SHA-256 checksums;
-- whether the patched version is strictly newer, as required for singleton replacement;
-- normalized differences in `Bundle-RequiredExecutionEnvironment`, `Require-Bundle` and `Import-Package`;
-- whether every stock `Export-Package` remains present in the patched bundle.
+### 3. Publish an exact-version p2 repository
 
-Results are written to `compatibility.json` and `compatibility.md` and uploaded as a workflow artifact. A blocked result is emitted as an Actions warning and prevents the next p2-publication stage from being introduced. The source-bundle job may still remain green because it proves a different property: reproducibility of the pinned source build.
+```bash
+bash .github/scripts/publish_patched_jdt_ui_repository.sh \
+  target/patched-jdt-ui \
+  target/patched-jdt-ui-compatibility \
+  target/patched-jdt-ui-p2
+```
 
-The comparison is deliberately strict. A manifest difference is treated as unresolved compatibility work rather than assumed safe. Once the report passes, the next stage can publish a minimal p2 repository and prove exact IU selection in a patched product.
+The repository contains the replacement bundle and a carrier feature that pins its exact version. Repository metadata, artifact identity, sizes and SHA-256 values are verified.
 
-## Trust boundary
+### 4. Build, patch and start the product
 
-Passing the source-bundle stage proves the source revision, patch paths, singleton identity, compiled capability marker and artifact checksum. Passing the compatibility stage additionally proves that the resolved 2025-12 stock bundle can be replaced without changing its declared execution environment, imports, required bundles or exported package surface under the current strict policy.
+```bash
+mvn -Pproduct -T 1C --batch-mode clean package -DskipTests
+bash .github/scripts/smoke_test_patched_jdt_ui_repository.sh \
+  target/patched-jdt-ui-p2 \
+  target/patched-jdt-ui-installation
+```
 
-Neither stage proves p2 installation, product startup, runtime cleanup expansion, apply/undo behavior or rollback. Those checks belong to the p2/product stages before an installation channel is published.
+The normal stock product is built first. The p2 director then installs the exact patch feature, verifies the active simpleconfigurator entry and installed bytes, and starts the modified product.
 
-The stock target remains the default and has no dependency on this optional bundle artifact.
+### 5. Execute the real cleanup lifecycle probe
+
+```bash
+bash .github/scripts/run_patched_jdt_ui_scope_probe.sh \
+  target/patched-jdt-ui-p2 \
+  target/patched-jdt-ui-installation \
+  target/patched-jdt-ui-runtime-probe
+```
+
+The installed Equinox application creates two Java compilation units while initially selecting only one. The cleanup's optional `expandCleanUpScope(...)` method discovers the second unit. The probe requires fixed-point expansion, complete preconditions, two previews, atomic apply, a non-null undo change and byte-exact restoration.
+
+## CI evidence
+
+`.github/workflows/patched-jdt-ui-bundle.yml` runs when this delivery surface changes. Each stage consumes the previous stage's immutable artifact and uploads bounded evidence. The stock target and ordinary Sandbox update site remain independent of the optional patch.
+
+## Claim boundary
+
+A green workflow proves the Linux GTK x86_64 product path with Java 21 and the checked-in Eclipse 2026-06 target. It does not claim Windows or macOS runtime execution and does not automatically publish a persistent public patch repository.

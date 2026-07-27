@@ -1,14 +1,42 @@
 name: Patched JDT UI Bundle
 
-# This is an optional, manually triggered compatibility experiment. The pinned
-# replacement bundle still targets the pre-2026-06 JDT UI baseline and must not
-# participate in normal pull-request or main-branch validation until #1209 is
-# rebased and revalidated against Eclipse 2026-06 / Platform 4.40.
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/patched-jdt-ui.env'
+      - '.github/probes/patched-jdt-ui/**'
+      - '.github/scripts/add_p2_sha256_checksums.py'
+      - '.github/scripts/build_patched_jdt_ui.sh'
+      - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
+      - '.github/scripts/publish_patched_jdt_ui_repository.sh'
+      - '.github/scripts/run_patched_jdt_ui_scope_probe.sh'
+      - '.github/scripts/smoke_test_patched_jdt_ui_repository.sh'
+      - '.github/scripts/verify_patched_jdt_ui_repository.py'
+      - '.github/workflows/patched-jdt-ui-bundle.yml'
+      - 'docs/patched-jdt-ui-delivery.md'
+  pull_request:
+    branches: [ main, issue-1209-patched-jdt-ui-p2 ]
+    paths:
+      - '.github/patched-jdt-ui.env'
+      - '.github/probes/patched-jdt-ui/**'
+      - '.github/scripts/add_p2_sha256_checksums.py'
+      - '.github/scripts/build_patched_jdt_ui.sh'
+      - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
+      - '.github/scripts/publish_patched_jdt_ui_repository.sh'
+      - '.github/scripts/run_patched_jdt_ui_scope_probe.sh'
+      - '.github/scripts/smoke_test_patched_jdt_ui_repository.sh'
+      - '.github/scripts/verify_patched_jdt_ui_repository.py'
+      - '.github/workflows/patched-jdt-ui-bundle.yml'
+      - 'docs/patched-jdt-ui-delivery.md'
 
 permissions:
   contents: read
+
+concurrency:
+  group: patched-jdt-ui-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -81,20 +109,9 @@ jobs:
         shell: bash
         run: |
           report="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.md"
-          result="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json"
           log="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility-build.log"
-          if [[ -s "$report" && -s "$result" ]]; then
+          if [[ -s "$report" ]]; then
             cat "$report" >> "$GITHUB_STEP_SUMMARY"
-            if ! python3 - "$result" <<'PY'
-          import json
-          import sys
-          with open(sys.argv[1], encoding='utf-8') as stream:
-              compatible = json.load(stream)['compatibleForReplacement']
-          raise SystemExit(0 if compatible else 1)
-          PY
-            then
-              echo '::warning::The pinned bundle is not yet eligible for p2 replacement. The report records the exact stock-target incompatibility; publication remains disabled.'
-            fi
           else
             {
               echo '### Patched JDT UI target compatibility'
@@ -106,11 +123,140 @@ jobs:
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Enforce stock-target replacement gate
+        shell: bash
+        run: |
+          python3 - "$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          report = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
+          if report.get('compatibleForReplacement') is not True:
+              raise SystemExit('Pinned JDT UI bundle is not compatible with the stock target')
+          PY
       - name: Upload stock-target compatibility report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: patched-jdt-ui-target-compatibility-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui-compatibility/
+          retention-days: 14
+          if-no-files-found: warn
+
+  p2-repository:
+    needs: [ build, target-compatibility ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Download verified replacement bundle
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-ui-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui
+      - name: Download stock-target compatibility evidence
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-ui-target-compatibility-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-compatibility
+      - name: Publish and verify exact-version p2 repository
+        shell: bash
+        run: |
+          bash .github/scripts/publish_patched_jdt_ui_repository.sh \
+            "$RUNNER_TEMP/patched-jdt-ui" \
+            "$RUNNER_TEMP/patched-jdt-ui-compatibility" \
+            "$RUNNER_TEMP/patched-jdt-ui-p2"
+      - name: Publish p2 repository summary
+        if: always()
+        shell: bash
+        run: |
+          report="$RUNNER_TEMP/patched-jdt-ui-p2/evidence/repository-verification.md"
+          if [[ -s "$report" ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload verified p2 repository
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-p2-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-p2/
+          retention-days: 14
+          if-no-files-found: warn
+
+  patched-product-installation:
+    needs: p2-repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
+        with:
+          maven-version: 3.9.14
+      - name: Install Linux product runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+      - name: Download verified patch repository
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-ui-p2-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-p2
+      - name: Build the independent stock product
+        run: mvn -Pproduct -T 1C --batch-mode clean package -DskipTests
+      - name: Install exact patch feature and start the product
+        shell: bash
+        run: |
+          bash .github/scripts/smoke_test_patched_jdt_ui_repository.sh \
+            "$RUNNER_TEMP/patched-jdt-ui-p2" \
+            "$RUNNER_TEMP/patched-jdt-ui-installation"
+      - name: Execute real scope-expansion preview, apply, and undo probe
+        shell: bash
+        run: |
+          bash .github/scripts/run_patched_jdt_ui_scope_probe.sh \
+            "$RUNNER_TEMP/patched-jdt-ui-p2" \
+            "$RUNNER_TEMP/patched-jdt-ui-installation" \
+            "$RUNNER_TEMP/patched-jdt-ui-runtime-probe"
+      - name: Publish installation and runtime summaries
+        if: always()
+        shell: bash
+        run: |
+          for report in \
+            "$RUNNER_TEMP/patched-jdt-ui-installation/installation-verification.md" \
+            "$RUNNER_TEMP/patched-jdt-ui-runtime-probe/runtime-verification.md"; do
+            if [[ -s "$report" ]]; then
+              cat "$report" >> "$GITHUB_STEP_SUMMARY"
+              echo >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+      - name: Upload patched-product installation evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-installation-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-installation/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Upload patched JDT UI runtime behavior evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: patched-jdt-ui-runtime-probe-${{ github.sha }}
+          path: ${{ runner.temp }}/patched-jdt-ui-runtime-probe/
           retention-days: 14
           if-no-files-found: warn
