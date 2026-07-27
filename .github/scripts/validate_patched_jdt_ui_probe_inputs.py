@@ -22,7 +22,10 @@ def main() -> int:
     args = parser.parse_args()
 
     p2_root = args.p2_root.resolve()
+    repository_dir = p2_root / "repository"
     repository_report_path = p2_root / "evidence" / "repository-verification.json"
+    if not repository_dir.is_dir():
+        raise SystemExit(f"Missing downloaded p2 repository: {repository_dir}")
     if not repository_report_path.is_file():
         raise SystemExit(f"Missing repository verification: {repository_report_path}")
     if not args.installation.is_file():
@@ -34,13 +37,6 @@ def main() -> int:
         raise SystemExit("p2 repository verification is not PASS")
     if installation.get("result") != "PASS":
         raise SystemExit("patched-product installation verification is not PASS")
-
-    repository_path = Path(str(repository.get("repository", ""))).resolve()
-    expected_repository_path = (p2_root / "repository").resolve()
-    if repository_path != expected_repository_path:
-        raise SystemExit(
-            f"Repository verification refers to {repository_path}, expected {expected_repository_path}"
-        )
 
     repository_bundle = repository.get("bundle")
     installed_bundle = installation.get("patchedBundle")
@@ -64,12 +60,16 @@ def main() -> int:
     if repository_feature.get("version") != installed_feature.get("version"):
         raise SystemExit("Installed feature version differs from the supplied p2 repository")
 
+    # repository-verification.json is created on another runner, so its absolute
+    # repository path is intentionally not compared. Artifact identity is the
+    # portable trust boundary across download jobs.
     print(
         json.dumps(
             {
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "result": "PASS",
-                "repository": str(expected_repository_path),
+                "downloadedRepository": str(repository_dir),
+                "publisherRepository": repository.get("repository"),
                 "bundle": repository_bundle,
                 "feature": repository_feature,
             },
