@@ -69,6 +69,15 @@ def mask_non_code(source: str) -> str:
             continue
 
         if state == "text_block":
+            if char == "\\":
+                result[index] = " "
+                if index + 1 < len(source):
+                    if source[index + 1] != "\n":
+                        result[index + 1] = " "
+                    index += 2
+                else:
+                    index += 1
+                continue
             if next_two == '"""':
                 result[index : index + 3] = "   "
                 index += 3
@@ -101,6 +110,11 @@ def mask_non_code(source: str) -> str:
     return "".join(result)
 
 
+def annotation_parenthesis_delta(line: str) -> int:
+    """Return the parenthesis balance for one already-masked annotation line."""
+    return line.count("(") - line.count(")")
+
+
 class TestScanner(LegacyTestScanner):
     """Legacy report generator with a lexical Java-code view for discovery."""
 
@@ -123,49 +137,76 @@ class TestScanner(LegacyTestScanner):
         full_class_name = (
             f"{package_match.group(1)}.{class_name}" if package_match else class_name
         )
+        pending_code: list[str] = []
+        pending_source: list[str] = []
+        annotation_depth = 0
 
         for index, line in enumerate(lines):
-            test_annotation = None
-            is_disabled = False
-            disabled_reason = ""
-            for annotation_index in range(max(0, index - 10), index):
-                previous = lines[annotation_index].strip()
-                original = source_lines[annotation_index].strip()
-                if re.search(r"@Test(?![a-zA-Z])", previous):
-                    test_annotation = "Test"
-                elif re.search(r"@ParameterizedTest\b", previous):
-                    test_annotation = "ParameterizedTest"
-                elif re.search(r"@RepeatedTest\b", previous):
-                    test_annotation = "RepeatedTest"
+            stripped = line.strip()
+            original = source_lines[index].strip()
+            if not stripped:
+                continue
 
-                if "@Disabled" in previous:
-                    is_disabled = True
-                    reason_match = re.search(
-                        r"@Disabled\s*\(\s*[\"']([^\"']+)[\"']\s*\)", original
-                    )
-                    disabled_reason = (
-                        reason_match.group(1) if reason_match else "No reason specified"
-                    )
+            if annotation_depth > 0:
+                pending_code.append(stripped)
+                pending_source.append(original)
+                annotation_depth = max(
+                    0, annotation_depth + annotation_parenthesis_delta(stripped)
+                )
+                continue
+
+            if stripped.startswith("@"):
+                pending_code.append(stripped)
+                pending_source.append(original)
+                annotation_depth = max(0, annotation_parenthesis_delta(stripped))
+                continue
 
             method_match = re.match(
                 r"\s*(?:public|private|protected)?\s+(?:static\s+)?(?:void|\w+)\s+(\w+)\s*\(",
                 line,
             )
-            if not method_match or not test_annotation:
+            if method_match:
+                annotation_code = "\n".join(pending_code)
+                annotation_source = "\n".join(pending_source)
+                test_annotation = None
+                if re.search(r"@ParameterizedTest\b", annotation_code):
+                    test_annotation = "ParameterizedTest"
+                elif re.search(r"@RepeatedTest\b", annotation_code):
+                    test_annotation = "RepeatedTest"
+                elif re.search(r"@Test(?![a-zA-Z])", annotation_code):
+                    test_annotation = "Test"
+
+                if test_annotation:
+                    is_disabled = bool(re.search(r"@Disabled\b", annotation_code))
+                    reason_match = re.search(
+                        r"@Disabled\s*\(\s*[\"']([^\"']+)[\"']\s*\)",
+                        annotation_source,
+                        re.DOTALL,
+                    )
+                    disabled_reason = (
+                        reason_match.group(1)
+                        if reason_match
+                        else "No reason specified" if is_disabled else ""
+                    )
+                    self.tests.append(
+                        TestMethod(
+                            plugin=plugin_name,
+                            file_path=str(file_path.relative_to(self.repo_root)),
+                            class_name=full_class_name,
+                            method_name=method_match.group(1),
+                            is_disabled=is_disabled,
+                            disabled_reason=disabled_reason,
+                            test_type=test_annotation,
+                            line_number=index + 1,
+                        )
+                    )
+                pending_code.clear()
+                pending_source.clear()
                 continue
 
-            self.tests.append(
-                TestMethod(
-                    plugin=plugin_name,
-                    file_path=str(file_path.relative_to(self.repo_root)),
-                    class_name=full_class_name,
-                    method_name=method_match.group(1),
-                    is_disabled=is_disabled,
-                    disabled_reason=disabled_reason,
-                    test_type=test_annotation,
-                    line_number=index + 1,
-                )
-            )
+            # A declaration or statement boundary ends the contiguous annotation block.
+            pending_code.clear()
+            pending_source.clear()
 
 
 def main() -> None:
