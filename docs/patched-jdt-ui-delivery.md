@@ -11,16 +11,18 @@ This delivery path is separate from the ordinary update site. It proves source p
 `.github/patched-jdt-ui.env` pins:
 
 - repository: `https://github.com/carstenartur/eclipse.jdt.ui.git`;
-- commit: `b1f1aa61631af8d4faa47f02e39f2bba9134b5a7`;
+- commit: `c9a174e62c32be00bd14c368524d36de75e9fd0f`;
+- parent commit: `c922f757b27b7e2b6215db383cec5f8aafd13227`;
 - bundle: `org.eclipse.jdt.ui`;
 - expected base version: `3.38.0`.
 
-The commit has the official Eclipse 4.40/JDT UI 3.38.0 commit as its sole parent and replaces exactly two blobs with the reviewed contents from `carstenartur/eclipse.jdt.ui#94`:
+The commit has the official Eclipse 4.40/JDT UI 3.38.0 commit as its sole parent. It contains the two reviewed PR #94 patch files plus a provenance-only synchronization manifest:
 
 - `CleanUpRefactoring.java`;
-- `MultiFileCleanUpScopeExpansionTest.java`.
+- `MultiFileCleanUpScopeExpansionTest.java`;
+- `.github/fork-specific-files.txt`, listing exactly those two retained patch files.
 
-It contains no 4.41 history or unrelated fork changes.
+It contains no 4.41 history or unrelated product changes. The build verifies both patch paths against the manifest before compiling the bundle.
 
 ## Local stages
 
@@ -30,7 +32,7 @@ It contains no 4.41 history or unrelated fork changes.
 bash .github/scripts/build_patched_jdt_ui.sh target/patched-jdt-ui
 ```
 
-The script checks out only the immutable commit, verifies the productive source and PDE test, builds the single JDT UI bundle, validates singleton identity and the `3.38.0.*` version, and writes SHA-256 provenance.
+The script checks out only the immutable commit, verifies the productive source, PDE test and synchronization manifest, builds the single JDT UI bundle, validates singleton identity and the `3.38.0.*` version, and writes SHA-256 provenance.
 
 ### 2. Compare against the resolved Sandbox target
 
@@ -73,7 +75,7 @@ bash .github/scripts/run_patched_jdt_ui_scope_probe.sh \
   target/patched-jdt-ui-runtime-probe
 ```
 
-The installed Equinox application creates two Java compilation units while initially selecting only one. The cleanup's optional `expandCleanUpScope(...)` method discovers the second unit. The probe requires fixed-point expansion, complete preconditions, two previews, atomic apply, a non-null undo change and byte-exact restoration.
+The wrapper first proves that the supplied p2 repository and installation evidence name the same feature and the same bundle ID, version and SHA-256. The installed Equinox application then creates two Java compilation units while initially selecting only one. The cleanup's optional `expandCleanUpScope(...)` method discovers the second unit. The probe requires fixed-point expansion, complete preconditions, two previews, atomic apply, a non-null undo change and byte-exact restoration.
 
 ## CI evidence
 
