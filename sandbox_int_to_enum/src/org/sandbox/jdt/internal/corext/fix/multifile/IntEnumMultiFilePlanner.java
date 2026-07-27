@@ -33,7 +33,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
@@ -59,6 +58,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.Allocation;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.NestedTypeRequest;
 import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
@@ -116,6 +118,10 @@ public final class IntEnumMultiFilePlanner {
 			return ownerTypeQualifiedName + '#' + methodName + ':' + parameterIndex;
 		}
 
+		String generatedNameRequestId() {
+			return candidateId() + "->" + enumName; //$NON-NLS-1$
+		}
+
 		List<String> relatedUnitHandles() {
 			Set<String> handles= new LinkedHashSet<>();
 			handles.add(ownerUnitHandle);
@@ -169,6 +175,8 @@ public final class IntEnumMultiFilePlanner {
 		List<CandidateBuilder> builders= discoverCandidates(roots, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		validateReferences(roots, builders, monitor);
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		validateGeneratedNames(roots.values(), builders, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		FreezeResult frozen= freeze(builders, monitor);
 		MultiFilePlanningMetrics metrics= budget.metrics()
@@ -302,11 +310,6 @@ public final class IntEnumMultiFilePlanner {
 			candidate.parameterIndex= parameterIndex;
 			if (candidate.methodKey == null || candidate.ownerTypeQualifiedName.isEmpty()) {
 				return null;
-			}
-			if (hasNestedTypeNamed(type, candidate.enumName)) {
-				candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
-						"Nested type " + candidate.enumName + " already exists in " //$NON-NLS-1$ //$NON-NLS-2$
-						+ candidate.ownerTypeQualifiedName + '.');
 			}
 			return candidate;
 		}
@@ -457,6 +460,39 @@ public final class IntEnumMultiFilePlanner {
 					return true;
 				}
 			});
+		}
+	}
+
+	private static void validateGeneratedNames(Collection<CompilationUnit> roots,
+			List<CandidateBuilder> candidates, IProgressMonitor monitor) {
+		List<NestedTypeRequest> requests= new ArrayList<>();
+		Map<String, CandidateBuilder> candidatesByRequestId= new LinkedHashMap<>();
+		for (CandidateBuilder candidate : candidates) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
+			if (!candidate.valid) {
+				continue;
+			}
+			String requestId= candidate.generatedNameRequestId();
+			requests.add(new NestedTypeRequest(requestId, candidate.ownerUnitHandle, candidate.ownerTypeKey,
+					candidate.ownerTypeQualifiedName, candidate.enumName));
+			candidatesByRequestId.put(requestId, candidate);
+		}
+		if (requests.isEmpty()) {
+			return;
+		}
+		Map<String, Allocation> allocations= GeneratedNameAllocator.allocateNestedTypes(roots, requests);
+		for (Map.Entry<String, Allocation> entry : allocations.entrySet()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
+			Allocation allocation= entry.getValue();
+			if (allocation.available()) {
+				continue;
+			}
+			CandidateBuilder candidate= candidatesByRequestId.get(entry.getKey());
+			if (candidate != null) {
+				candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
+						"Nested enum " + candidate.enumName + " cannot be generated in " //$NON-NLS-1$ //$NON-NLS-2$
+						+ candidate.ownerTypeQualifiedName + ": " + allocation.diagnosticMessage() + '.'); //$NON-NLS-1$
+			}
 		}
 	}
 
@@ -650,15 +686,5 @@ public final class IntEnumMultiFilePlanner {
 
 	private static boolean validIdentifier(String name) {
 		return SourceVersion.isIdentifier(name) && !SourceVersion.isKeyword(name);
-	}
-
-	private static boolean hasNestedTypeNamed(TypeDeclaration type, String name) {
-		for (Object declaration : type.bodyDeclarations()) {
-			if (declaration instanceof AbstractTypeDeclaration nested
-					&& name.equals(nested.getName().getIdentifier())) {
-				return true;
-			}
-		}
-		return false;
 	}
 }
