@@ -79,9 +79,12 @@ public class TestExpectedJUnitPlugin extends TriggerPatternCleanupPlugin {
 		MemberValuePair expectedPair = null;
 		for (Object obj : annotation.values()) {
 			MemberValuePair pair = (MemberValuePair) obj;
-			if ("expected".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+			String parameterName = pair.getName().getIdentifier();
+			if ("timeout".equals(parameterName)) { //$NON-NLS-1$
+				return null;
+			}
+			if ("expected".equals(parameterName)) { //$NON-NLS-1$
 				expectedPair = pair;
-				break;
 			}
 		}
 		if (expectedPair == null || !(expectedPair.getValue() instanceof TypeLiteral)) {

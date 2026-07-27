@@ -56,9 +56,12 @@ public class TestTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		MemberValuePair timeoutPair = null;
 		for (Object obj : annotation.values()) {
 			MemberValuePair pair = (MemberValuePair) obj;
-			if ("timeout".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+			String parameterName = pair.getName().getIdentifier();
+			if ("expected".equals(parameterName)) { //$NON-NLS-1$
+				return null;
+			}
+			if ("timeout".equals(parameterName)) { //$NON-NLS-1$
 				timeoutPair = pair;
-				break;
 			}
 		}
 		if (timeoutPair == null) {

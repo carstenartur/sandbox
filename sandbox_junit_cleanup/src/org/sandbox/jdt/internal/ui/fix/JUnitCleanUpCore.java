@@ -237,12 +237,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				fixSetCombined.remove(fix);
 			}
 		});
+		if (isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED)
+				&& isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT)) {
+			fixSetCombined.add(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);
+		}
 		return fixSetCombined;
 	}
 
 	private EnumSet<JUnitCleanUpFixCore> allOfJunit4() {
 		EnumSet<JUnitCleanUpFixCore> allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);
 		allOf.remove(JUnitCleanUpFixCore.TEST3);
+		allOf.remove(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);
 		return allOf;
 	}
 
