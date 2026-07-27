@@ -13,7 +13,7 @@ FEATURE_ID=${PATCHED_JDT_UI_FEATURE_ID:-sandbox_patched_jdt_ui_feature}
 source "$CONFIG_FILE"
 : "${PATCHED_JDT_UI_BUNDLE:?missing PATCHED_JDT_UI_BUNDLE}"
 
-for command in find java mvn python3 sed sha256sum; do
+for command in awk find java mvn python3 sed sha256sum sort tail; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 
@@ -148,6 +148,13 @@ mvn --batch-mode -ntp -f "$WORK_DIR/pom.xml" \
 python3 "$ROOT_DIR/.github/scripts/add_p2_sha256_checksums.py" \
   --repository "$REPOSITORY_DIR" \
   > "$EVIDENCE_DIR/checksum-normalization.json"
+python3 "$ROOT_DIR/.github/scripts/verify_minimal_patched_jdt_ui_units.py" \
+  --repository "$REPOSITORY_DIR" \
+  --bundle-id "$PATCHED_JDT_UI_BUNDLE" \
+  --bundle-version "$BUNDLE_VERSION" \
+  --feature-id "$FEATURE_ID" \
+  --feature-version "$FEATURE_VERSION" \
+  > "$EVIDENCE_DIR/minimal-unit-set.txt"
 cp "$PROVENANCE" "$EVIDENCE_DIR/bundle-provenance.json"
 cp "$COMPATIBILITY" "$EVIDENCE_DIR/target-compatibility.json"
 cp "$FEATURE_DIR/feature.xml" "$EVIDENCE_DIR/feature.xml"
