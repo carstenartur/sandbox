@@ -69,11 +69,8 @@ public class TestExpectedAndTimeoutJUnitPlugin extends TriggerPatternCleanupPlug
 
 	@Override
 	protected List<Pattern> getPatterns() {
-		return List.of(
-				new Pattern("@Test(expected=$ex, timeout=$t)", PatternKind.ANNOTATION, null, null, //$NON-NLS-1$
-						ORG_JUNIT_TEST, null, null),
-				new Pattern("@Test(timeout=$t, expected=$ex)", PatternKind.ANNOTATION, null, null, //$NON-NLS-1$
-						ORG_JUNIT_TEST, null, null));
+		return List.of(new Pattern("@Test(expected=$ex, timeout=$t)", PatternKind.ANNOTATION, null, null, //$NON-NLS-1$
+				ORG_JUNIT_TEST, null, null));
 	}
 
 	@Override
