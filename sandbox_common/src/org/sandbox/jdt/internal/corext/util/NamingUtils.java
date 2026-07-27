@@ -16,13 +16,24 @@ package org.sandbox.jdt.internal.corext.util;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.Allocation;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.NestedTypeRequest;
 
 /**
  * Utility class for naming and string operations.
@@ -76,22 +87,48 @@ public final class NamingUtils {
 	}
 
 	/**
-	 * Generates a unique nested class name based on the anonymous class content and field name.
-	 * Uses a checksum of the class code to ensure uniqueness.
-	 * 
+	 * Generates and validates a deterministic nested helper class name.
+	 *
+	 * <p>The historical field-name/checksum convention is retained for stable
+	 * output, but the proposed name is now checked by the shared generated-name
+	 * allocator against type, member, local and import namespaces before any
+	 * rewrite is committed.</p>
+	 *
 	 * @param anonymousClass the anonymous class declaration
 	 * @param baseName the base name from the field
-	 * @return a unique class name combining capitalized base name and checksum
+	 * @return the available class name
+	 * @throws IllegalStateException if owner context is unavailable or the name collides
 	 */
 	public static String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
-		// Convert anonymous class to string for checksum generation to ensure unique naming
 		String anonymousCode = anonymousClass.toString();
 		String checksum = generateChecksum(anonymousCode);
-
-		// Capitalize field name for class naming convention
-		String capitalizedBaseName = capitalizeFirstLetter(baseName);
-
-		return capitalizedBaseName + "_" + checksum; //$NON-NLS-1$
+		String requestedName = capitalizeFirstLetter(baseName) + "_" + checksum; //$NON-NLS-1$
+		if (!(anonymousClass.getRoot() instanceof CompilationUnit root)) {
+			throw new IllegalStateException("Cannot validate generated helper name without a compilation unit."); //$NON-NLS-1$
+		}
+		TypeDeclaration owner= ASTNavigationUtils.findEnclosingTypeDeclaration(anonymousClass);
+		if (owner == null) {
+			throw new IllegalStateException("Cannot validate generated helper name without an enclosing type."); //$NON-NLS-1$
+		}
+		ITypeBinding ownerBinding= owner.resolveBinding();
+		ITypeBinding ownerDeclaration= ownerBinding == null ? null : ownerBinding.getTypeDeclaration();
+		String ownerKey= ownerDeclaration == null || ownerDeclaration.getKey() == null
+				? "" : ownerDeclaration.getKey(); //$NON-NLS-1$
+		String ownerQualifiedName= ownerDeclaration == null || ownerDeclaration.getQualifiedName().isEmpty()
+				? qualifiedName(root, owner) : ownerDeclaration.getQualifiedName();
+		String unitHandle= root.getJavaElement() instanceof ICompilationUnit unit
+				? unit.getPrimary().getHandleIdentifier() : ""; //$NON-NLS-1$
+		String requestId= (ownerKey.isEmpty() ? ownerQualifiedName : ownerKey) + "#junit-helper:" + requestedName; //$NON-NLS-1$
+		NestedTypeRequest request= new NestedTypeRequest(requestId, unitHandle, ownerKey, ownerQualifiedName,
+				requestedName);
+		Allocation allocation= GeneratedNameAllocator.allocateNestedTypes(List.of(root), List.of(request))
+				.get(requestId);
+		if (allocation == null || !allocation.available()) {
+			String detail= allocation == null ? "allocation result is missing" : allocation.diagnosticMessage(); //$NON-NLS-1$
+			throw new IllegalStateException("Generated nested helper name " + requestedName //$NON-NLS-1$
+					+ " is unavailable: " + detail); //$NON-NLS-1$
+		}
+		return requestedName;
 	}
 
 	/**
@@ -182,5 +219,20 @@ public final class NamingUtils {
 			return simpleType.getName().getFullyQualifiedName();
 		}
 		return null;
+	}
+
+	private static String qualifiedName(CompilationUnit root, TypeDeclaration owner) {
+		List<String> typeNames= new ArrayList<>();
+		ASTNode current= owner;
+		while (current != null) {
+			if (current instanceof TypeDeclaration type) {
+				typeNames.add(0, type.getName().getIdentifier());
+			}
+			current= current.getParent();
+		}
+		String packageName= root.getPackage() == null
+				? "" : root.getPackage().getName().getFullyQualifiedName(); //$NON-NLS-1$
+		String localName= String.join(".", typeNames); //$NON-NLS-1$
+		return packageName.isEmpty() ? localName : packageName + '.' + localName;
 	}
 }
