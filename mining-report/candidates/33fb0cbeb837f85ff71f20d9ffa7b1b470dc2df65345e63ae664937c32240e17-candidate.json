@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "33fb0cbeb837f85ff71f20d9ffa7b1b470dc2df65345e63ae664937c32240e17",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$desc.getImageData() :: instanceof($desc, \"org.eclipse.jface.resource.ImageDescriptor\")\n\u003d\u003e\n$desc.getImageData(100)\n;;",
+  "beforeExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.ImageData;\nimport org.eclipse.swt.graphics.Point;\n\npublic class MyClass {\n    private static Point fgSize;\n    private ImageDescriptor descriptor;\n\n    public void foo() {\n        ImageData imageData \u003d descriptor.getImageData();\n        fgSize \u003d new Point(imageData.width, imageData.height);\n    }\n    \n    public ImageData getSomeImageData() {\n        return descriptor.getImageData();\n    }\n}",
+  "afterExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.ImageData;\nimport org.eclipse.swt.graphics.Point;\n\npublic class MyClass {\n    private static Point fgSize;\n    private ImageDescriptor descriptor;\n\n    public void foo() {\n        ImageData imageData \u003d descriptor.getImageData(100);\n        fgSize \u003d new Point(imageData.width, imageData.height);\n    }\n    \n    public ImageData getSomeImageData() {\n        return descriptor.getImageData(100);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.ImageData;\n\npublic class MyClass {\n    private ImageDescriptor descriptor;\n\n    public void bar() {\n        // This already uses an int argument, should not be changed.\n        ImageData imageData \u003d descriptor.getImageData(200);\n        System.out.println(imageData.width);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "cc0cefa711d12e200790950c1a22bc292f30fd6c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-27T03:18:01.507285077Z",
+  "ruleFingerprint": "sha256:18cf1312f160987c9250a0f025287a25c0ba1a9ceb03aaa5c6f0d50273f3399c",
+  "behaviorFingerprint": "sha256:74a816fa8f00af2e97d0c5b57d7a634b0ef49ddbe536145d4f638ebdb7c1d0d6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
+    "verifiedAt": "2026-07-27T03:18:03.334518457Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
