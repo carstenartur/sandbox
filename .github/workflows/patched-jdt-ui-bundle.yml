@@ -12,12 +12,15 @@ on:
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/scripts/publish_patched_jdt_ui_repository.sh'
       - '.github/scripts/run_patched_jdt_ui_scope_probe.sh'
+      - '.github/scripts/run_patched_jdt_ui_scope_probe_impl.sh'
       - '.github/scripts/smoke_test_patched_jdt_ui_repository.sh'
+      - '.github/scripts/validate_patched_jdt_ui_probe_inputs.py'
+      - '.github/scripts/verify_minimal_patched_jdt_ui_units.py'
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-bundle.yml'
       - 'docs/patched-jdt-ui-delivery.md'
   pull_request:
-    branches: [ main, issue-1209-patched-jdt-ui-p2 ]
+    branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
       - '.github/probes/patched-jdt-ui/**'
@@ -26,7 +29,10 @@ on:
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/scripts/publish_patched_jdt_ui_repository.sh'
       - '.github/scripts/run_patched_jdt_ui_scope_probe.sh'
+      - '.github/scripts/run_patched_jdt_ui_scope_probe_impl.sh'
       - '.github/scripts/smoke_test_patched_jdt_ui_repository.sh'
+      - '.github/scripts/validate_patched_jdt_ui_probe_inputs.py'
+      - '.github/scripts/verify_minimal_patched_jdt_ui_units.py'
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-bundle.yml'
       - 'docs/patched-jdt-ui-delivery.md'
@@ -126,7 +132,9 @@ jobs:
       - name: Enforce stock-target replacement gate
         shell: bash
         run: |
-          python3 - "$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json" <<'PY'
+          compatibility="$RUNNER_TEMP/patched-jdt-ui-compatibility/compatibility.json"
+          [[ -f "$compatibility" ]] || { echo "Missing compatibility report: $compatibility" >&2; exit 1; }
+          python3 - "$compatibility" <<'PY'
           import json
           import sys
           from pathlib import Path
