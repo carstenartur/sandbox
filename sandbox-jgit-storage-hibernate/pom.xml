@@ -15,7 +15,7 @@
 	<packaging>jar</packaging>
 
 	<name>Sandbox JGit Storage Hibernate</name>
-	<description>Hibernate ORM + Hibernate Search storage backend for JGit</description>
+	<description>Sandbox-specific REST, embedding and presentation integration for jgit-storage-hibernate</description>
 
 	<properties>
 		<!-- Disable Tycho for this plain jar module (parent uses tycho-maven-plugin with extensions=true) -->
@@ -23,9 +23,30 @@
 		<!-- Hibernate Search 8.4 targets Hibernate ORM 7.4; keep the mapper stack aligned. -->
 		<hibernate.version>7.4.5.Final</hibernate.version>
 		<hibernate-search.version>8.4.0.Final</hibernate-search.version>
+		<jgit-storage-hibernate.version>0.1.13</jgit-storage-hibernate.version>
 	</properties>
 
+	<repositories>
+		<repository>
+			<id>jgit-storage-hibernate-public</id>
+			<url>https://raw.githubusercontent.com/carstenartur/jgit-storage-hibernate/maven-repository/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
 	<dependencies>
+		<!-- Released generic storage implementation. New Sandbox integration code must use this public API. -->
+		<dependency>
+			<groupId>io.github.carstenartur</groupId>
+			<artifactId>jgit-storage-hibernate-core</artifactId>
+			<version>${jgit-storage-hibernate.version}</version>
+		</dependency>
+
 		<!-- JGit core -->
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
@@ -186,9 +207,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<!-- Use 3.3.0: versions 3.4.0+ use maven-archiver with session-scoped injection
-				     that conflicts with Tycho extensions in M2E, causing
-				     "Cannot access session scope outside of a scoping block" -->
 				<version>${maven-jar-plugin.version}</version>
 				<configuration>
 					<archive>
