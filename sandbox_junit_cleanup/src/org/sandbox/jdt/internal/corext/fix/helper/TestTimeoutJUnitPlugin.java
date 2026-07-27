@@ -38,11 +38,7 @@ import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
-/**
- * Plugin to migrate JUnit 4 @Test(timeout=...) to JUnit 5 @Timeout.
- * 
- * @since 1.3.0
- */
+/** Plugin to migrate JUnit 4 {@code @Test(timeout=...)} to JUnit 5 {@code @Timeout}. */
 @CleanupPattern(value = "@Test(timeout=$t)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_TEST, cleanupId = "cleanup.junit.test.timeout", description = "Migrate @Test(timeout=...) to @Timeout", displayName = "JUnit 4 @Test(timeout) → JUnit 5 @Timeout")
 public class TestTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 
@@ -56,21 +52,20 @@ public class TestTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		MemberValuePair timeoutPair = null;
 		for (Object obj : annotation.values()) {
 			MemberValuePair pair = (MemberValuePair) obj;
-			if ("timeout".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+			String name= pair.getName().getIdentifier();
+			if ("expected".equals(name)) { //$NON-NLS-1$
+				return null;
+			}
+			if ("timeout".equals(name)) { //$NON-NLS-1$
 				timeoutPair = pair;
-				break;
 			}
 		}
-		if (timeoutPair == null) {
-			return null;
-		}
-		Expression value = timeoutPair.getValue();
-		if (!(value instanceof NumberLiteral)) {
+		if (timeoutPair == null || !(timeoutPair.getValue() instanceof NumberLiteral number)) {
 			return null;
 		}
 		try {
-			Long.parseLong(((NumberLiteral) value).getToken());
-		} catch (NumberFormatException e) {
+			Long.parseLong(number.getToken());
+		} catch (NumberFormatException exception) {
 			return null;
 		}
 		JunitHolder holder = new JunitHolder();
@@ -84,69 +79,34 @@ public class TestTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
 		MemberValuePair timeoutPair = (MemberValuePair) junitHolder.getAdditionalInfo();
-
-		if (timeoutPair == null) {
+		if (timeoutPair == null || !(timeoutPair.getValue() instanceof NumberLiteral timeoutValue)) {
 			return;
 		}
-
-		Expression timeoutValue = timeoutPair.getValue();
-		if (!(timeoutValue instanceof NumberLiteral)) {
-			return;
-		}
-
 		final long timeoutMillis;
 		try {
-			timeoutMillis = Long.parseLong(((NumberLiteral) timeoutValue).getToken());
-		} catch (NumberFormatException e) {
-			// Malformed timeout value, skip refactoring for this method
+			timeoutMillis = Long.parseLong(timeoutValue.getToken());
+		} catch (NumberFormatException exception) {
 			return;
 		}
-
-		// Determine the best time unit (optimize for readability)
-		// Use SECONDS if the value is >= 1000ms and evenly divisible by 1000
-		// This makes the timeout more readable (e.g., "5 seconds" vs "5000
-		// milliseconds")
-		long timeout;
-		String timeUnit;
-		if (timeoutMillis % 1000 == 0 && timeoutMillis >= 1000) {
-			// Use SECONDS for better readability (e.g., 1 second instead of 1000
-			// milliseconds)
-			timeout = timeoutMillis / 1000;
-			timeUnit = "SECONDS";
-		} else {
-			// Use MILLISECONDS for values < 1000ms or not evenly divisible by 1000
-			timeout = timeoutMillis;
-			timeUnit = "MILLISECONDS";
-		}
-
-		// Create @Timeout annotation
+		boolean seconds = timeoutMillis % 1000 == 0 && timeoutMillis >= 1000;
+		long timeout = seconds ? timeoutMillis / 1000 : timeoutMillis;
+		String timeUnit = seconds ? "SECONDS" : "MILLISECONDS"; //$NON-NLS-1$ //$NON-NLS-2$
 		NormalAnnotation timeoutAnnotation = ast.newNormalAnnotation();
 		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));
-
-		// Add value parameter
 		MemberValuePair valuePair = ast.newMemberValuePair();
-		valuePair.setName(ast.newSimpleName("value"));
+		valuePair.setName(ast.newSimpleName("value")); //$NON-NLS-1$
 		valuePair.setValue(ast.newNumberLiteral(String.valueOf(timeout)));
 		timeoutAnnotation.values().add(valuePair);
-
-		// Add unit parameter
 		MemberValuePair unitPair = ast.newMemberValuePair();
-		unitPair.setName(ast.newSimpleName("unit"));
-		QualifiedName timeUnitName = ast.newQualifiedName(ast.newSimpleName("TimeUnit"), ast.newSimpleName(timeUnit));
+		unitPair.setName(ast.newSimpleName("unit")); //$NON-NLS-1$
+		QualifiedName timeUnitName = ast.newQualifiedName(ast.newSimpleName("TimeUnit"), ast.newSimpleName(timeUnit)); //$NON-NLS-1$
 		unitPair.setValue(timeUnitName);
 		timeoutAnnotation.values().add(unitPair);
-
-		// Add the @Timeout annotation to the method (after @Test)
 		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);
 		if (method != null) {
 			ListRewrite listRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
 			listRewrite.insertAfter(timeoutAnnotation, testAnnotation, group);
 		}
-
-		// Remove the timeout parameter from @Test annotation
-		// If the timeout is the only parameter, replace the NormalAnnotation with a
-		// MarkerAnnotation
-		// to avoid leaving an empty @Test() annotation.
 		List<MemberValuePair> testValues = testAnnotation.values();
 		if (testValues.size() == 1 && testValues.get(0) == timeoutPair) {
 			MarkerAnnotation markerTestAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
@@ -154,12 +114,10 @@ public class TestTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {
 		} else {
 			rewriter.remove(timeoutPair, group);
 		}
-
-		// Add imports - order matters: remove old import first, then add new imports
 		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);
-		importRewriter.addImport("java.util.concurrent.TimeUnit");
+		importRewriter.addImport("java.util.concurrent.TimeUnit"); //$NON-NLS-1$
 	}
 
 	@Override
