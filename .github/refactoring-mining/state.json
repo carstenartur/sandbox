@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "1fc404d872cf5c35d5660ff10acb71daf54c7b5f",
-      "lastProcessedDate": "2026-07-26T03:15:42.100517560Z",
-      "totalProcessed": 2932,
+      "lastProcessedCommit": "89e1ca7a3cba092253362b8a657232d5459fed31",
+      "lastProcessedDate": "2026-07-27T03:18:00.197993560Z",
+      "totalProcessed": 3008,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2474,6 +2474,87 @@
           "deferredAt": "2026-07-26T03:12:45.287947771Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "3b6698b8ddb0e1f6566e324d6a8b4e87397a8b97",
+          "message": "Bug 443146 - [1.8][null] Quickfixes add unnecessary @NonNull annotation to types, when @NonNullByDefault is used",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-27T03:11:52.522776104Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c1b32716a58e84c713cdd725b1a58e45540e03a8",
+          "message": "Bug 166915: [filters] Add \"Hide Deprecated Fields and Methods\" to\nOutline view\n\nupdated copyright and fixed info\n\nChange",
+          "diffLines": 44,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-27T03:12:32.284426542Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "05009d91b27000df6b7ba48847d86e8f164ddd33",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-27T03:14:15.278631645Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8070f3a502020e5759289a789fe05cc78f9a04f6",
+          "message": "Bug 488748: [1.9] Provide a command/tool to convert a project to module\n\nChange-Id: I9c4ad714a1fe6049656848fc9bf697b1251",
+          "diffLines": 119,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-27T03:14:45.718563655Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "39be9e84c38ad6ea431b3c2f5f50900c5c0b824e",
+          "message": "Bug 515534 - Add a rebuild index button to the Java preference page\n\nChange-Id: I29378c63d134960c5bf1ad78cb446c560dcd3db",
+          "diffLines": 106,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-27T03:14:45.718621382Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "35387e1186dac0e131d535f5c6ee8e19c32cf06d",
+          "message": "Bug 515534: [newindex] Add a button to the Java preference page for\nrebuilding the index\n\nfixed formatting and button la",
+          "diffLines": 56,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-27T03:14:45.718654063Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a699beddf82dd4a886af713d775ef3f76d926baa",
+          "message": "Bug 513682 - [quick fix][null] quick fix to add @Nullable to a parameter\n\nChange-Id: Id6825adb80d01fba44b32660740ed090f9",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-27T03:14:45.718682466Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aa74e5dcebc448be26724e5edceb5eee97778574",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA9",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-27T03:17:09.854149308Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b80504c89eb283c803eee942d751edf19b80acff",
+          "message": "Fixed bug 488748: [1.9] Provide a command/tool to convert a project to module",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-27T03:17:09.858443686Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2616,11 +2697,11 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 2,
+        "API Migration": 3,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
-        "Modernization": 3,
+        "Modernization": 4,
         "Defensive Programming": 1,
         "Preference Configuration": 1,
         "Typo Fix": 1,
@@ -2628,7 +2709,7 @@
         "String Literal Replacement": 1,
         "API Replacement": 2,
         "API Modernization": 8,
-        "Rename Constant": 1,
+        "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
         "Generics": 1,
@@ -2641,7 +2722,10 @@
         "Type Clarity": 1,
         "String Literal Refactoring": 1,
         "Generics Modernization": 1,
-        "Configuration Update": 1
+        "Configuration Update": 1,
+        "Type Mismatch Cleanup": 1,
+        "API usage": 1,
+        "UI Color Management": 1
       },
       "exhaustedCategories": []
     },
@@ -2682,5 +2766,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25591
+  "globalTotalProcessed": 25667
 }
