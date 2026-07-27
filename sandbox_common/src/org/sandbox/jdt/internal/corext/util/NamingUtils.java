@@ -92,22 +92,23 @@ public final class NamingUtils {
 	 * <p>The historical field-name/checksum convention is retained for stable
 	 * output, but the proposed name is now checked by the shared generated-name
 	 * allocator against type, member, local and import namespaces before any
-	 * rewrite is scheduled.</p>
+	 * rewrite is committed.</p>
 	 *
 	 * @param anonymousClass the anonymous class declaration
 	 * @param baseName the base name from the field
-	 * @return the available class name, or {@code null} when it would collide
+	 * @return the available class name
+	 * @throws IllegalStateException if owner context is unavailable or the name collides
 	 */
 	public static String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
 		String anonymousCode = anonymousClass.toString();
 		String checksum = generateChecksum(anonymousCode);
 		String requestedName = capitalizeFirstLetter(baseName) + "_" + checksum; //$NON-NLS-1$
 		if (!(anonymousClass.getRoot() instanceof CompilationUnit root)) {
-			return null;
+			throw new IllegalStateException("Cannot validate generated helper name without a compilation unit."); //$NON-NLS-1$
 		}
 		TypeDeclaration owner= ASTNavigationUtils.findEnclosingTypeDeclaration(anonymousClass);
 		if (owner == null) {
-			return null;
+			throw new IllegalStateException("Cannot validate generated helper name without an enclosing type."); //$NON-NLS-1$
 		}
 		ITypeBinding ownerBinding= owner.resolveBinding();
 		ITypeBinding ownerDeclaration= ownerBinding == null ? null : ownerBinding.getTypeDeclaration();
@@ -122,7 +123,12 @@ public final class NamingUtils {
 				requestedName);
 		Allocation allocation= GeneratedNameAllocator.allocateNestedTypes(List.of(root), List.of(request))
 				.get(requestId);
-		return allocation != null && allocation.available() ? requestedName : null;
+		if (allocation == null || !allocation.available()) {
+			String detail= allocation == null ? "allocation result is missing" : allocation.diagnosticMessage(); //$NON-NLS-1$
+			throw new IllegalStateException("Generated nested helper name " + requestedName //$NON-NLS-1$
+					+ " is unavailable: " + detail); //$NON-NLS-1$
+		}
+		return requestedName;
 	}
 
 	/**
