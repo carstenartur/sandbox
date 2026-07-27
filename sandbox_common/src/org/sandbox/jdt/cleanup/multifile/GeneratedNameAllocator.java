@@ -23,8 +23,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.lang.model.SourceVersion;
-
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -79,7 +77,7 @@ public final class GeneratedNameAllocator {
 				throw new IllegalArgumentException(
 						"Either ownerTypeBindingKey or ownerTypeQualifiedName must be provided."); //$NON-NLS-1$
 			}
-			if (!SourceVersion.isIdentifier(requestedName) || SourceVersion.isKeyword(requestedName)) {
+			if (!isJavaIdentifier(requestedName)) {
 				throw new IllegalArgumentException("Not a Java identifier: " + requestedName); //$NON-NLS-1$
 			}
 		}
@@ -104,7 +102,8 @@ public final class GeneratedNameAllocator {
 		/** Defensively copies and sorts collision diagnostics. */
 		public Allocation {
 			request= Objects.requireNonNull(request, "request"); //$NON-NLS-1$
-			collisions= collisions.stream().map(collision -> Objects.requireNonNull(collision, "collision")) //$NON-NLS-1$
+			collisions= collisions.stream()
+					.map(collision -> Objects.requireNonNull(collision, "collision")) //$NON-NLS-1$
 					.sorted(COLLISION_ORDER).toList();
 		}
 
@@ -131,6 +130,15 @@ public final class GeneratedNameAllocator {
 			.thenComparing(Collision::declarationKind)
 			.thenComparing(Collision::context);
 
+	private static final Set<String> RESERVED_IDENTIFIERS= Set.of(
+			"abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$
+			"const", "continue", "default", "do", "double", "else", "enum", "extends", "final", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$
+			"finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$
+			"interface", "long", "native", "new", "package", "private", "protected", "public", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+			"return", "short", "static", "strictfp", "super", "switch", "synchronized", "this", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+			"throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$
+			"null", "_", "record", "sealed", "permits", "yield", "var"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+
 	private GeneratedNameAllocator() {
 	}
 
@@ -145,12 +153,17 @@ public final class GeneratedNameAllocator {
 		Objects.requireNonNull(roots, "roots"); //$NON-NLS-1$
 		Objects.requireNonNull(requests, "requests"); //$NON-NLS-1$
 
-		List<CompilationUnit> orderedRoots= roots.stream()
-				.map(root -> Objects.requireNonNull(root, "root")) //$NON-NLS-1$
-				.sorted(Comparator.comparing(GeneratedNameAllocator::compilationUnitKey)).toList();
-		List<NestedTypeRequest> orderedRequests= requests.stream()
-				.map(request -> Objects.requireNonNull(request, "request")) //$NON-NLS-1$
-				.sorted(Comparator.comparing(NestedTypeRequest::requestId)).toList();
+		List<CompilationUnit> orderedRoots= new ArrayList<>();
+		for (CompilationUnit root : roots) {
+			orderedRoots.add(Objects.requireNonNull(root, "root")); //$NON-NLS-1$
+		}
+		orderedRoots.sort(Comparator.comparing(GeneratedNameAllocator::compilationUnitKey));
+
+		List<NestedTypeRequest> orderedRequests= new ArrayList<>();
+		for (NestedTypeRequest request : requests) {
+			orderedRequests.add(Objects.requireNonNull(request, "request")); //$NON-NLS-1$
+		}
+		orderedRequests.sort(Comparator.comparing(NestedTypeRequest::requestId));
 		ensureUniqueRequestIds(orderedRequests);
 
 		Map<String, List<NestedTypeRequest>> reservationGroups= new LinkedHashMap<>();
@@ -221,7 +234,8 @@ public final class GeneratedNameAllocator {
 		root.accept(new ASTVisitor() {
 			@Override
 			public void preVisit(ASTNode node) {
-				if (result[0] == null && node instanceof AbstractTypeDeclaration type && matchesOwner(root, type, request)) {
+				if (result[0] == null && node instanceof AbstractTypeDeclaration type
+						&& matchesOwner(root, type, request)) {
 					result[0]= type;
 				}
 			}
@@ -335,11 +349,14 @@ public final class GeneratedNameAllocator {
 		String packageName= root.getPackage() == null
 				? "" //$NON-NLS-1$
 				: root.getPackage().getName().getFullyQualifiedName();
-		String types= root.types().stream()
-				.filter(AbstractTypeDeclaration.class::isInstance)
-				.map(AbstractTypeDeclaration.class::cast)
-				.map(type -> type.getName().getIdentifier()).sorted().collect(Collectors.joining(",")); //$NON-NLS-1$
-		return packageName + ':' + types;
+		List<String> typeNames= new ArrayList<>();
+		for (Object typeObject : root.types()) {
+			if (typeObject instanceof AbstractTypeDeclaration type) {
+				typeNames.add(type.getName().getIdentifier());
+			}
+		}
+		Collections.sort(typeNames);
+		return packageName + ':' + String.join(",", typeNames); //$NON-NLS-1$
 	}
 
 	private static String compilationUnitHandle(CompilationUnit root) {
@@ -366,6 +383,22 @@ public final class GeneratedNameAllocator {
 				: root.getPackage().getName().getFullyQualifiedName();
 		String localName= String.join(".", typeNames); //$NON-NLS-1$
 		return packageName.isEmpty() ? localName : packageName + '.' + localName;
+	}
+
+	private static boolean isJavaIdentifier(String value) {
+		if (value.isEmpty() || RESERVED_IDENTIFIERS.contains(value)
+				|| !Character.isJavaIdentifierStart(value.codePointAt(0))) {
+			return false;
+		}
+		int index= Character.charCount(value.codePointAt(0));
+		while (index < value.length()) {
+			int codePoint= value.codePointAt(index);
+			if (!Character.isJavaIdentifierPart(codePoint)) {
+				return false;
+			}
+			index+= Character.charCount(codePoint);
+		}
+		return true;
 	}
 
 	private static String normalize(String value) {
