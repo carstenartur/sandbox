@@ -12,6 +12,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -74,6 +75,24 @@ public class MultiFileIntToEnumDiagnosticsTest {
 		assertRejected(result, "UNSUPPORTED_API_VISIBILITY"); //$NON-NLS-1$
 	}
 
+	@Test
+	public void reportsGeneratedNameCollisionBeforeCreatingPlan() throws CoreException {
+		ICompilationUnit[] units= createCandidate("void", "OrderProcessor.STATUS_PENDING"); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit processor= units[0];
+		processor.getBuffer().setContents(processor.getSource().replace(
+				"public class OrderProcessor {", //$NON-NLS-1$
+				"public class OrderProcessor {\n\tObject Status;")); //$NON-NLS-1$
+		processor.save(null, true);
+
+		MultiFileCleanUpPlanResult<IntEnumMigrationPlan> result= IntEnumMultiFilePlanner.create(
+				context.getJavaProject(), units, true, null);
+
+		assertEquals(0, result.plan().candidates().size());
+		MultiFileCandidateDiagnostic diagnostic= assertRejected(result, "GENERATED_NAME_COLLISION"); //$NON-NLS-1$
+		assertTrue(diagnostic.message().contains("field")); //$NON-NLS-1$
+		assertTrue(diagnostic.message().contains("Status")); //$NON-NLS-1$
+	}
+
 	private ICompilationUnit[] createCandidate(String methodPrefix, String argument) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
@@ -106,12 +125,13 @@ public class MultiFileIntToEnumDiagnosticsTest {
 		return new ICompilationUnit[] { processor, client };
 	}
 
-	private static void assertRejected(MultiFileCleanUpPlanResult<IntEnumMigrationPlan> result,
-			String reasonCode) {
+	private static MultiFileCandidateDiagnostic assertRejected(
+			MultiFileCleanUpPlanResult<IntEnumMigrationPlan> result, String reasonCode) {
 		assertEquals(1, result.diagnostics().candidates().size());
 		MultiFileCandidateDiagnostic diagnostic= result.diagnostics().candidates().get(0);
 		assertEquals(MultiFileCandidateOutcome.REJECTED, diagnostic.outcome());
 		assertEquals(reasonCode, diagnostic.reasonCode());
 		assertEquals(2, diagnostic.relatedCompilationUnitHandles().size());
+		return diagnostic;
 	}
 }
