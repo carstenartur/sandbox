@@ -7,6 +7,10 @@ INSTALLATION_EVIDENCE=${2:?usage: run_patched_jdt_ui_scope_probe.sh P2_OUTPUT IN
 EVIDENCE_DIR=${3:-"$ROOT_DIR/target/patched-jdt-ui-runtime-probe"}
 INSTALLATION_JSON="$INSTALLATION_EVIDENCE/installation-verification.json"
 
+for command in awk find grep jar java javac mvn python3 sed sha256sum sort tail tee timeout xvfb-run; do
+  command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
+done
+
 python3 "$ROOT_DIR/.github/scripts/validate_patched_jdt_ui_probe_inputs.py" \
   --p2-root "$P2_ROOT" \
   --installation "$INSTALLATION_JSON" \
