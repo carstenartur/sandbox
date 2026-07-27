@@ -41,31 +41,7 @@ import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
-/**
- * Plugin to migrate JUnit 4 @Test(expected=...) to JUnit 5 assertThrows().
- * 
- * Transforms:
- * 
- * <pre>
- * {@literal @}Test(expected = IllegalArgumentException.class)
- * public void testException() {
- *     // code that throws
- * }
- * </pre>
- * 
- * To:
- * 
- * <pre>
- * {@literal @}Test
- * public void testException() {
- *     assertThrows(IllegalArgumentException.class, () -> {
- *         // code that throws
- *     });
- * }
- * </pre>
- * 
- * @since 1.3.0
- */
+/** Plugin to migrate JUnit 4 {@code @Test(expected=...)} to assertThrows(). */
 @CleanupPattern(value = "@Test(expected=$ex)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_TEST, cleanupId = "cleanup.junit.test.expected", description = "Migrate @Test(expected=...) to assertThrows()", displayName = "JUnit 4 @Test(expected) → JUnit 5 assertThrows()")
 public class TestExpectedJUnitPlugin extends TriggerPatternCleanupPlugin {
 
@@ -79,9 +55,12 @@ public class TestExpectedJUnitPlugin extends TriggerPatternCleanupPlugin {
 		MemberValuePair expectedPair = null;
 		for (Object obj : annotation.values()) {
 			MemberValuePair pair = (MemberValuePair) obj;
-			if ("expected".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+			String name= pair.getName().getIdentifier();
+			if ("timeout".equals(name)) { //$NON-NLS-1$
+				return null;
+			}
+			if ("expected".equals(name)) { //$NON-NLS-1$
 				expectedPair = pair;
-				break;
 			}
 		}
 		if (expectedPair == null || !(expectedPair.getValue() instanceof TypeLiteral)) {
@@ -98,92 +77,46 @@ public class TestExpectedJUnitPlugin extends TriggerPatternCleanupPlugin {
 			JunitHolder junitHolder) {
 		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();
 		MemberValuePair expectedPair = (MemberValuePair) junitHolder.getAdditionalInfo();
-
-		if (expectedPair == null) {
+		if (expectedPair == null || !(expectedPair.getValue() instanceof TypeLiteral expectedTypeLiteral)) {
 			return;
 		}
-
-		Expression expectedValue = expectedPair.getValue();
-		if (!(expectedValue instanceof TypeLiteral)) {
-			// Can't handle non-TypeLiteral expected values
-			return;
-		}
-
-		TypeLiteral expectedTypeLiteral = (TypeLiteral) expectedValue;
-
-		// Get the method declaration
 		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);
-		if (method == null) {
+		if (method == null || method.getBody() == null) {
 			return;
 		}
-
 		Block methodBody = method.getBody();
-		if (methodBody == null) {
-			return;
-		}
-
 		List<Statement> statements = methodBody.statements();
-
-		// Create assertThrows method invocation
 		MethodInvocation assertThrowsCall = ast.newMethodInvocation();
 		assertThrowsCall.setName(ast.newSimpleName(METHOD_ASSERT_THROWS));
-
-		// Add the exception class as the first argument
 		TypeLiteral exceptionClass = (TypeLiteral) ASTNode.copySubtree(ast, expectedTypeLiteral);
 		assertThrowsCall.arguments().add(exceptionClass);
-
-		// Create lambda expression for the method body
 		LambdaExpression lambda = ast.newLambdaExpression();
 		lambda.setParentheses(true);
-
 		Block lambdaBody = ast.newBlock();
-
-		// Copy all statements from the original method body into the lambda
 		for (Statement stmt : statements) {
 			Statement copiedStmt = (Statement) ASTNode.copySubtree(ast, stmt);
 			lambdaBody.statements().add(copiedStmt);
 		}
-
 		lambda.setBody(lambdaBody);
 		assertThrowsCall.arguments().add(lambda);
-
-		// Create the new expression statement with assertThrows
 		ExpressionStatement assertThrowsStatement = ast.newExpressionStatement(assertThrowsCall);
-
-		// Remove all existing statements from the method body
 		for (int i = statements.size() - 1; i >= 0; i--) {
 			rewriter.remove(statements.get(i), group);
 		}
-
-		// Add the assertThrows statement as the only statement in the method
 		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertThrowsStatement, group);
-
-		// Remove the expected parameter from @Test annotation
-		// If expected is the only parameter remaining, replace with marker annotation
 		List<MemberValuePair> testValues = testAnnotation.values();
-
-		// Count how many parameters will remain after removing expected
-		// (need to account for other parameters that might be removed by other plugins
-		// like timeout)
 		int remainingParams = 0;
 		for (MemberValuePair pair : testValues) {
-			String paramName = pair.getName().getIdentifier();
-			// Count parameters that are not expected and not timeout (which is handled by
-			// TestTimeoutJUnitPlugin)
-			if (!"expected".equals(paramName) && !"timeout".equals(paramName)) {
+			if (!"expected".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
 				remainingParams++;
 			}
 		}
-
 		if (remainingParams == 0) {
-			// No other meaningful parameters remain, convert to marker annotation @Test
 			MarkerAnnotation markerTestAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);
 			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);
 		} else {
 			rewriter.remove(expectedPair, group);
 		}
-
-		// Add imports - order matters: remove old import first, then add new imports
 		importRewriter.removeImport(ORG_JUNIT_TEST);
 		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);
 		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);
