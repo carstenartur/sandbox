@@ -8,8 +8,9 @@ REPOSITORY_DIR="$P2_ROOT/repository"
 REPOSITORY_EVIDENCE="$P2_ROOT/evidence"
 VERIFICATION_JSON="$REPOSITORY_EVIDENCE/repository-verification.json"
 PRODUCTS_DIR="$ROOT_DIR/sandbox_product/target/products"
+STOCK_JDT_FEATURE_GROUP=org.eclipse.jdt.feature.group
 
-for command in awk basename dirname find java python3 sha256sum timeout xvfb-run; do
+for command in awk basename dirname find grep java python3 sha256sum sort timeout xvfb-run; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 [[ -f "$VERIFICATION_JSON" ]] || { echo "Missing repository verification: $VERIFICATION_JSON" >&2; exit 1; }
@@ -89,11 +90,16 @@ print(Path(sys.argv[1]).resolve().as_uri())
 PY
 )
 
+# The stock JDT feature pins the original JDT UI qualifier exactly. Remove that
+# root and install the patch feature in one p2 transaction. Required JDT bundles
+# remain in the profile through the Sandbox product/features and are validated by
+# the subsequent startup and runtime cleanup probe.
 (
   cd "$PRODUCT_ROOT"
   timeout 900s xvfb-run -a java -jar "$LAUNCHER" -nosplash -consoleLog \
     -application org.eclipse.equinox.p2.director \
     -repository "$REPOSITORY_URI" \
+    -uninstallIU "$STOCK_JDT_FEATURE_GROUP" \
     -installIU "$FEATURE_GROUP" \
     -destination "$PRODUCT_ROOT" \
     -bundlepool "$PRODUCT_ROOT" \
@@ -139,19 +145,24 @@ if ! grep -Fq "$FEATURE_GROUP" "$EVIDENCE_DIR/installed-roots.log"; then
   echo "Installed product did not report root $FEATURE_GROUP" >&2
   exit 1
 fi
+if grep -Fq "$STOCK_JDT_FEATURE_GROUP" "$EVIDENCE_DIR/installed-roots.log"; then
+  echo "Installed product still reports the exact-pinning stock root $STOCK_JDT_FEATURE_GROUP" >&2
+  exit 1
+fi
 
 export EVIDENCE_DIR PRODUCT_ROOT PROFILE_ID BUNDLE_ID BUNDLE_VERSION BUNDLE_SHA256
-export STOCK_VERSION FEATURE_GROUP FEATURE_VERSION INSTALLED_SHA
+export STOCK_VERSION FEATURE_GROUP FEATURE_VERSION INSTALLED_SHA STOCK_JDT_FEATURE_GROUP
 python3 <<'PY'
 import json
 import os
 from pathlib import Path
 
 payload = {
-    'schemaVersion': 1,
+    'schemaVersion': 2,
     'result': 'PASS',
     'productRoot': os.environ['PRODUCT_ROOT'],
     'profileId': os.environ['PROFILE_ID'],
+    'removedRoot': os.environ['STOCK_JDT_FEATURE_GROUP'],
     'stockBundle': {'id': os.environ['BUNDLE_ID'], 'version': os.environ['STOCK_VERSION']},
     'patchedBundle': {
         'id': os.environ['BUNDLE_ID'],
@@ -169,6 +180,7 @@ lines = [
     '# Patched JDT UI installation verification',
     '',
     '- Result: **PASS**',
+    f"- Removed exact-pinning root: `{os.environ['STOCK_JDT_FEATURE_GROUP']}`",
     f"- Stock selection: `{os.environ['BUNDLE_ID']} {os.environ['STOCK_VERSION']}`",
     f"- Patched selection: `{os.environ['BUNDLE_ID']} {os.environ['BUNDLE_VERSION']}`",
     f"- Installed root: `{os.environ['FEATURE_GROUP']} {os.environ['FEATURE_VERSION']}`",
