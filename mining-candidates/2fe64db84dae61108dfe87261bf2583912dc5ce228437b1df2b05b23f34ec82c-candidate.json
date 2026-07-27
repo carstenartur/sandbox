@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2fe64db84dae61108dfe87261bf2583912dc5ce228437b1df2b05b23f34ec82c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.renameRebuildIndexButtonName\u003e\n\u003c!description: Update preference message key from JavaBasePreferencePage_clearIndexButtonName to JavaBasePreferencePage_rebuildIndexButtonName following UI text change.\u003e\n\u003c!severity: INFO\u003e\n\norg.eclipse.jdt.internal.ui.preferences.PreferencesMessages.JavaBasePreferencePage_clearIndexButtonName\n\u003d\u003e\norg.eclipse.jdt.internal.ui.preferences.PreferencesMessages.JavaBasePreferencePage_rebuildIndexButtonName\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class JavaBasePreferencePage {\n    // Simulate the Messages class content for example\n    public static class PreferencesMessages {\n        public static final String JavaBasePreferencePage_clearIndexButtonName \u003d \"Clear Indexes\";\n        public static final String JavaBasePreferencePage_rebuildIndexButtonName \u003d \"Rebuild Index\";\n        public static final String JavaBasePreferencePage_rebuildingIndexJobName \u003d \"Rebuilding Index\";\n    }\n\n    public void configureUI() {\n        String buttonText \u003d PreferencesMessages.JavaBasePreferencePage_clearIndexButtonName;\n        System.out.println(buttonText);\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class JavaBasePreferencePage {\n    // Simulate the Messages class content for example\n    public static class PreferencesMessages {\n        public static final String JavaBasePreferencePage_clearIndexButtonName \u003d \"Clear Indexes\";\n        public static final String JavaBasePreferencePage_rebuildIndexButtonName \u003d \"Rebuild Index\";\n        public static final String JavaBasePreferencePage_rebuildingIndexJobName \u003d \"Rebuilding Index\";\n    }\n\n    public void configureUI() {\n        String buttonText \u003d PreferencesMessages.JavaBasePreferencePage_rebuildIndexButtonName;\n        System.out.println(buttonText);\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class JavaBasePreferencePage {\n    // Simulate the Messages class content for example\n    public static class PreferencesMessages {\n        public static final String JavaBasePreferencePage_clearIndexButtonName \u003d \"Clear Indexes\";\n        public static final String JavaBasePreferencePage_rebuildIndexButtonName \u003d \"Rebuild Index\";\n        public static final String JavaBasePreferencePage_rebuildingIndexJobName \u003d \"Rebuilding Index\";\n    }\n\n    public void configureUI() {\n        // This should not be affected as it\u0027s a different message key.\n        String jobText \u003d PreferencesMessages.JavaBasePreferencePage_rebuildingIndexJobName;\n        System.out.println(jobText);\n    }\n}\n",
+  "targetHintFile": "eclipse-jdt-ui-renames.sandbox-hint",
+  "sourceCommit": "b59281ad67e731494a92c3a69b33b50b8738ae10",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Rename Constant",
+  "summary": "Rename constant reference `PreferencesMessages.JavaBasePreferencePage_clearIndexButtonName` to `PreferencesMessages.JavaBasePreferencePage_rebuildIndexButtonName`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-27T03:18:01.520398244Z",
+  "ruleFingerprint": "sha256:2185ba7fa56329340cfe4c618ac5a15d4d43a62432b39933f18344401f68d31a",
+  "behaviorFingerprint": "sha256:29a3202bc92fa07fbdfb94821d5a49c9dd37594b7dc5026e82aaad11e6bacead",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-27T03:18:03.341949998Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

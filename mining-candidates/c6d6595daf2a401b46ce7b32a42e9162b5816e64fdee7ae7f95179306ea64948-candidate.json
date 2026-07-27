@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c6d6595daf2a401b46ce7b32a42e9162b5816e64fdee7ae7f95179306ea64948",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.ArrayList\u003c$Type\u003e($arg)\n\u003d\u003e new java.util.ArrayList\u003c\u003e($arg)\n;;",
+  "beforeExample": "package test;\n\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\ninterface IRule {}\n\npublic class MyScanner {\n    void setup() {\n        IRule combinedWordRule \u003d null; // Dummy variable to make example compile\n        List\u003cIRule\u003e rules \u003d new ArrayList\u003cIRule\u003e(Arrays.asList(combinedWordRule));\n    }\n}",
+  "afterExample": "package test;\n\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\ninterface IRule {}\n\npublic class MyScanner {\n    void setup() {\n        IRule combinedWordRule \u003d null;\n        List\u003cIRule\u003e rules \u003d new ArrayList\u003c\u003e(Arrays.asList(combinedWordRule));\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\ninterface IRule {}\n\npublic class MyScanner {\n    void noMatch() {\n        List\u003cIRule\u003e rules1 \u003d new ArrayList\u003cIRule\u003e(); // No constructor argument\n        List\u003cIRule\u003e rules2 \u003d new ArrayList\u003c\u003e(); // Already uses diamond operator\n        List\u003cIRule\u003e rules3 \u003d new java.util.LinkedList\u003cIRule\u003e(); // Different collection type\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "de252d80121dc1be980d499a8ca79f553fcacd8d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modernization",
+  "summary": "Replace explicit type arguments in `ArrayList` constructor with the diamond operator (`\u003c\u003e`) when the type can be inferred from the constructor argument. This is a Java 7+ feature that improves code readability.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-27T03:18:01.486936903Z",
+  "ruleFingerprint": "sha256:84c18fa90c8392e26f348166a1ffcf4110c3cb0bd77ad3e4126319cbb397852a",
+  "behaviorFingerprint": "sha256:7f7b541a327884a78536b1825861ef753d4faed00502ed45bec5b0c1eedc4b29",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 9: The public type MyScanner must be defined in its own file",
+    "verifiedAt": "2026-07-27T03:18:03.316641075Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "17e6d08bfa22e6f1554aa75209d796da6c47217b629de0e780f0ea8907abab0d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java-project-is-open-check\u003e\n\u003c!description: Corrects the API usage for checking if an Eclipse IJavaProject is open, changing from IJavaProject.isOpen() to IJavaProject.getProject().isOpen().\nThis addresses Bug 501069 where IOpenable.isOpen() incorrectly returned false for an open JavaProject.\n\u003e\n\u003c!severity: WARNING\u003e\n\n$var.isOpen() :: instanceof($var, \"org.eclipse.jdt.core.IJavaProject\")\n\u003d\u003e\n$var.getProject().isOpen()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.core.runtime.CoreException;\n\npublic class TestClass {\n    public void check(IJavaProject project) throws CoreException {\n        if (project !\u003d null \u0026\u0026 project.exists() \u0026\u0026 project.isOpen()) { // Buggy call\n            System.out.println(\"Project is open: \" + project.getElementName());\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.core.runtime.CoreException;\n\npublic class TestClass {\n    public void check(IJavaProject project) throws CoreException {\n        if (project !\u003d null \u0026\u0026 project.exists() \u0026\u0026 project.getProject().isOpen()) { // Corrected call\n            System.out.println(\"Project is open: \" + project.getElementName());\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.IOpenable;\nimport org.eclipse.core.runtime.CoreException;\n\n// A mock class implementing IOpenable, but not IJavaProject\nclass MyOpenable implements IOpenable {\n    public boolean isOpen() { return true; }\n    // Minimal methods for compilation; actual implementation would be more complete\n    @Override public boolean exists() { return false; }\n    @Override public Object getAdapter(Class\u003c?\u003e adapter) { return null; }\n    @Override public org.eclipse.core.resources.IResource getResource() { return null; }\n    @Override public org.eclipse.core.runtime.IPath getPath() { return null; }\n    @Override public String getElementName() { return null; }\n    @Override public int getElementType() { return 0; }\n    @Override public org.eclipse.jdt.core.IJavaElement getParent() { return null; }\n    @Override public org.eclipse.jdt.core.IJavaElement getAncestor(int ancestorType) { return null; }\n    @Override public org.eclipse.jdt.core.IJavaProject getJavaProject() { return null; }\n    @Override public org.eclipse.jdt.core.IJavaModel getJavaModel() { return null; }\n    @Override public org.eclipse.core.runtime.IStatus getExistenceCompareResult(org.eclipse.jdt.core.IJavaElement element) { return null; }\n    @Override public org.eclipse.jdt.core.IMethod getMethod(String name, String[] parameterTypes) { return null; }\n    @Override public boolean isReadOnly() { return false; }\n    @Override public org.eclipse.core.runtime.IStatus validateExistence() { return null; }\n    @Override public void close() throws CoreException {}\n    @Override public void open(org.eclipse.core.runtime.IProgressMonitor monitor) throws CoreException {}\n    @Override public org.eclipse.jdt.core.IBuffer getBuffer() throws JavaModelException { return null; }\n    @Override public boolean hasUnsavedChanges() throws JavaModelException { return false; }\n    @Override public boolean isConsistent() throws JavaModelException { return false; }\n    @Override public boolean isStructureKnown() throws JavaModelException { return false; }\n    @Override public void makeConsistent(org.eclipse.core.runtime.IProgressMonitor monitor) throws JavaModelException {}\n    @Override public void save(org.eclipse.core.runtime.IProgressMonitor monitor, boolean force) throws JavaModelException {}\n}\n\npublic class NegativeTest {\n    public void checkOtherOpenable(MyOpenable item) {\n        if (item !\u003d null \u0026\u0026 item.isOpen()) { // This call should NOT be changed as MyOpenable is not IJavaProject\n            System.out.println(\"Item is open.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse-api-usage.sandbox-hint",
+  "sourceCommit": "dfa1e1e1c17abeddef647017a50e7d790761c76b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API usage",
+  "summary": "Replace IJavaProject.isOpen() with IJavaProject.getProject().isOpen()",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-27T03:18:01.530568428Z",
+  "ruleFingerprint": "sha256:14e779fc2f92141216f2a3985996a634b3159236d20be255e23fa6e828a51464",
+  "behaviorFingerprint": "sha256:82143ab08565084cd84aea0dc15e7317a835f7258e2416d1de1f92707dee8754",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-27T03:18:03.345901835Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
