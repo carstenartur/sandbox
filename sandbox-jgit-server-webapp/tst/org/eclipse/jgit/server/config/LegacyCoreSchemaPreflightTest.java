@@ -48,13 +48,19 @@ public class LegacyCoreSchemaPreflightTest {
 	}
 
 	@Test
+	public void acceptsPublishedSqlServerAdoptionPathWithoutOpeningConnection() {
+		LegacyCoreSchemaPreflight.requirePublishedLegacyAdoptionPath(
+				"jdbc:sqlserver://localhost:1433;databaseName=sandbox"); //$NON-NLS-1$
+	}
+
+	@Test
 	public void rejectsDatabaseWithoutPublishedLegacyAdoptionMigration() {
 		Properties properties= connectionProperties("jdbc:h2:mem:unsupported-preflight"); //$NON-NLS-1$
 
 		IllegalArgumentException failure= assertThrows(IllegalArgumentException.class,
 				() -> LegacyCoreSchemaPreflight.inspect(properties));
 
-		assertTrue(failure.getMessage().contains("PostgreSQL or HSQLDB")); //$NON-NLS-1$
+		assertTrue(failure.getMessage().contains("PostgreSQL, HSQLDB or SQL Server")); //$NON-NLS-1$
 	}
 
 	@Test
