@@ -58,7 +58,7 @@ import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 /** Builds the source-wide JUnit migration plan before per-file rewrites start. */
 public final class JUnitMultiFilePlanner {
 
-	private static final String CLEANUP_ID= "junit-external-resource"; //$NON-NLS-1$
+	private static final String CLEANUP_ID= "junit-coordinated"; //$NON-NLS-1$
 
 	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName) {
 	}
@@ -84,13 +84,25 @@ public final class JUnitMultiFilePlanner {
 	private JUnitMultiFilePlanner() {
 	}
 
-	/** Plans named ExternalResource migrations for a complete project selection. */
+	/** Compatibility overload for ExternalResource-only callers. */
 	public static MultiFileCleanUpPlanResult<JUnitMigrationPlan> create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, IProgressMonitor monitor)
 			throws CoreException {
+		return create(project, selectedUnits, migrateExternalResourceRules, false, monitor);
+	}
+
+	/**
+	 * Creates a legacy local-capable plan when no patched scope-provider decision is
+	 * available. Coordinated entries are retained only when the selection already
+	 * contains the complete project source scope; otherwise local JUnit plugins may
+	 * still run without claiming a proven cross-file relationship.
+	 */
+	public static MultiFileCleanUpPlanResult<JUnitMigrationPlan> create(IJavaProject project,
+			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean migrateSuites,
+			IProgressMonitor monitor) throws CoreException {
 		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);
-		if (!migrateExternalResourceRules || selectedUnits.length == 0) {
-			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
+		if (selectedUnits.length == 0 || (!migrateExternalResourceRules && !migrateSuites)) {
+			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of(), List.of()));
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
@@ -100,20 +112,31 @@ public final class JUnitMultiFilePlanner {
 		for (ICompilationUnit unit : allProjectUnits) {
 			projectHandles.add(unit.getPrimary().getHandleIdentifier());
 		}
-		return create(project, selectedUnits, migrateExternalResourceRules,
-				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);
+		boolean closedScope= selectedScope.compilationUnitHandles().equals(projectHandles);
+		if (!closedScope) {
+			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of(), List.of()),
+					new RefactoringStatus(), MultiFilePlanningMetrics.empty(), diagnostics(selectedUnits, false, List.of()));
+		}
+		return create(project, selectedUnits, migrateExternalResourceRules, migrateSuites, true, monitor);
 	}
 
-	/**
-	 * Plans named ExternalResource migrations after the caller has proved that the
-	 * selected source units form a closed migration scope.
-	 */
+	/** Compatibility overload for callers that explicitly prove ExternalResource scope closure. */
 	public static MultiFileCleanUpPlanResult<JUnitMigrationPlan> create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean closedScope,
 			IProgressMonitor monitor) throws CoreException {
+		return create(project, selectedUnits, migrateExternalResourceRules, false, closedScope, monitor);
+	}
+
+	/**
+	 * Plans coordinated JUnit migrations after the patched scope provider has made
+	 * an explicit closed/incomplete decision.
+	 */
+	public static MultiFileCleanUpPlanResult<JUnitMigrationPlan> create(IJavaProject project,
+			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean migrateSuites,
+			boolean closedScope, IProgressMonitor monitor) throws CoreException {
 		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);
 		if (selectedUnits.length == 0) {
-			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
+			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of(), List.of()));
 		}
 		if (!closedScope) {
 			String message= "The coordinated JUnit cleanup scope is incomplete; no local or multi-file migration is allowed."; //$NON-NLS-1$
@@ -122,8 +145,8 @@ public final class JUnitMultiFilePlanner {
 			return new MultiFileCleanUpPlanResult<>(null, status, MultiFilePlanningMetrics.empty(),
 					diagnostics(selectedUnits, false, List.of()));
 		}
-		if (!migrateExternalResourceRules) {
-			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
+		if (!migrateExternalResourceRules && !migrateSuites) {
+			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of(), List.of()));
 		}
 		MultiFilePlanningBudget.checkCanceled(monitor);
 
@@ -138,21 +161,38 @@ public final class JUnitMultiFilePlanner {
 		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
 		long parseNanos= System.nanoTime() - parseStarted;
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		Map<String, ResourceType> resourcesByTypeKey= collectResourceTypes(rootsByHandle, monitor);
-		MultiFilePlanningBudget.checkCanceled(monitor);
-		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey, monitor);
 		RefactoringStatus status= budget.status();
+
+		MigrationResult resourceResult= migrateExternalResourceRules
+				? planExternalResources(rootsByHandle, status, monitor)
+				: new MigrationResult(List.of(), List.of());
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		MigrationResult migrationResult= createMigrations(ruleFields, resourcesByTypeKey, status, monitor);
+		JUnitSuitePlanner.Result suiteResult= migrateSuites
+				? JUnitSuitePlanner.create(rootsByHandle, selectedScope, status, monitor)
+				: new JUnitSuitePlanner.Result(List.of(), List.of());
+
+		List<MultiFileCandidateDiagnostic> candidates= new ArrayList<>();
+		candidates.addAll(resourceResult.diagnostics());
+		candidates.addAll(suiteResult.diagnostics());
+		int retainedEntries= resourceResult.migrations().size() + suiteResult.migrations().size();
 		MultiFilePlanningMetrics metrics= budget.metrics()
 				.withDurations(parseNanos, System.nanoTime() - planningStarted)
-				.withRetainedPlanEntries(migrationResult.migrations().size());
-		MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, true, migrationResult.diagnostics());
+				.withRetainedPlanEntries(retainedEntries);
+		MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, true, candidates);
 		if (status.hasFatalError()) {
 			return new MultiFileCleanUpPlanResult<>(null, status, metrics, diagnostics);
 		}
-		return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, migrationResult.migrations()),
+		return MultiFileCleanUpPlanResult.success(
+				new JUnitMigrationPlan(selectedScope, resourceResult.migrations(), suiteResult.migrations()),
 				status, metrics, diagnostics);
+	}
+
+	private static MigrationResult planExternalResources(Map<String, CompilationUnit> rootsByHandle,
+			RefactoringStatus status, IProgressMonitor monitor) {
+		Map<String, ResourceType> resourcesByTypeKey= collectResourceTypes(rootsByHandle, monitor);
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey, monitor);
+		return createMigrations(ruleFields, resourcesByTypeKey, status, monitor);
 	}
 
 	private static MultiFileCleanUpDiagnostics diagnostics(ICompilationUnit[] selectedUnits, boolean complete,
