@@ -269,16 +269,6 @@ public class MyTest {
         System.out.println("Test with multiple resources");
     }
 
-	class SecondRule_c4213 implements BeforeEachCallback, AfterEachCallback {
-		public void beforeEach(ExtensionContext context) {
-			System.out.println("Second rule before");
-		}
-
-		public void afterEach(ExtensionContext context) {
-			System.out.println("Second rule after");
-		}
-	}
-
 	class AnonymousRule_9ea4e implements BeforeEachCallback, AfterEachCallback {
 		public void beforeEach(ExtensionContext context) {
 			System.out.println("Anonymous rule before");
@@ -286,6 +276,16 @@ public class MyTest {
 
 		public void afterEach(ExtensionContext context) {
 			System.out.println("Anonymous rule after");
+		}
+	}
+
+	class SecondRule_c4213 implements BeforeEachCallback, AfterEachCallback {
+		public void beforeEach(ExtensionContext context) {
+			System.out.println("Second rule before");
+		}
+
+		public void afterEach(ExtensionContext context) {
+			System.out.println("Second rule after");
 		}
 	}
 }

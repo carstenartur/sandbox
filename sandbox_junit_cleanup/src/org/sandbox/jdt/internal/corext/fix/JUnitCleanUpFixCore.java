@@ -13,11 +13,19 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_SUITE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_SUITE;
+
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -38,6 +46,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
@@ -47,12 +56,11 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedAndTimeoutJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ThrowingRunnableJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
@@ -106,23 +114,17 @@ public enum JUnitCleanUpFixCore {
 		return preview.toString();
 	}
 
-	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported
-	 * situations
-	 *
-	 * @param compilationUnit        unit to search in
-	 * @param operations             set of all CompilationUnitRewriteOperations
-	 *                               created already
-	 * @param nodesprocessed         list to remember nodes already processed
-	 * @param createForOnlyIfVarUsed true if for loop should be created only only if
-	 *                               loop var used within
-	 */
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed) {
 		junitfound.find(this, compilationUnit, operations, nodesprocessed);
 	}
 
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder<Integer, JunitHolder> hit) {
+		JunitHolder rangeAnchor= hit.get(0);
+		JunitHolder snapshot= hit.get(hit.size() - 1);
+		ReferenceHolder<Integer, JunitHolder> operationData= ReferenceHolder.createIndexed();
+		operationData.put(Integer.valueOf(0), snapshot);
+		boolean suiteRunnerPresent= this == RUNWITH && hasSuiteRunner(snapshot.getMinv());
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
@@ -136,11 +138,47 @@ public enum JUnitCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode(hit.get(0).getMinv());
+				// Preserve historical operation ordering while keeping rewrite data isolated.
+				rangeComputer.addTightSourceNode(rangeAnchor.getMinv());
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
-				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);
+				junitfound.rewrite(JUnitCleanUpFixCore.this, operationData, cuRewrite, group);
+				if (suiteRunnerPresent) {
+					// A later SuiteClasses rewrite removes the old Suite simple name. Re-add
+					// the JUnit Platform import after every related independent operation.
+					cuRewrite.getImportRewrite().addImport(ORG_JUNIT_JUPITER_SUITE);
+				}
 			}
 		};
+	}
+
+	private static boolean hasSuiteRunner(ASTNode node) {
+		if (!(node.getRoot() instanceof CompilationUnit root)) {
+			return false;
+		}
+		boolean[] result= new boolean[1];
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SingleMemberAnnotation annotation) {
+				ITypeBinding annotationType= annotation.resolveTypeBinding();
+				String annotationName= annotationType == null
+						? annotation.getTypeName().getFullyQualifiedName()
+						: annotationType.getQualifiedName();
+				if (!ORG_JUNIT_RUNWITH.equals(annotationName) && !"RunWith".equals(annotationName)) { //$NON-NLS-1$
+					return true;
+				}
+				if (annotation.getValue() instanceof TypeLiteral typeLiteral) {
+					ITypeBinding runnerBinding= typeLiteral.getType().resolveBinding();
+					String runnerName= runnerBinding == null ? typeLiteral.getType().toString()
+							: runnerBinding.getQualifiedName();
+					if (ORG_JUNIT_SUITE.equals(runnerName) || "Suite".equals(runnerName)) { //$NON-NLS-1$
+						result[0]= true;
+						return false;
+					}
+				}
+				return true;
+			}
+		});
+		return result[0];
 	}
 
 	@Override
