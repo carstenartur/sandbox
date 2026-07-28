@@ -72,7 +72,8 @@ public final class LegacyCoreSchemaPreflight {
 	 * @throws SQLException
 	 *             if the database connection fails
 	 */
-	static PreflightReport inspect(Properties properties) throws ClassNotFoundException, SQLException {
+	static PreflightReport inspect(Properties properties)
+			throws ClassNotFoundException, SQLException {
 		Objects.requireNonNull(properties, "properties"); //$NON-NLS-1$
 		String url= requireProperty(properties, CONNECTION_URL);
 		requirePublishedLegacyAdoptionPath(url);
@@ -90,16 +91,20 @@ public final class LegacyCoreSchemaPreflight {
 
 	/** Validate one existing JDBC connection without modifying its schema. */
 	static PreflightReport inspect(Connection connection) {
-		LegacySchemaReport report= LegacyCoreSchemaAdoption.requireSafeToAdopt(connection);
+		LegacySchemaReport report= LegacyCoreSchemaAdoption
+				.requireSafeToAdopt(connection);
 		Comparator<DuplicatePackIdentity> duplicateOrder= Comparator
 				.comparing(DuplicatePackIdentity::repositoryName)
 				.thenComparing(DuplicatePackIdentity::packName)
 				.thenComparing(DuplicatePackIdentity::packExtension)
 				.thenComparingLong(DuplicatePackIdentity::rowCount);
+		List<DuplicatePackIdentity> duplicatePackIdentities= report
+				.duplicatePackIdentities().stream().sorted(duplicateOrder).toList();
 		return new PreflightReport(report.columns().stream().sorted().toList(),
-				report.missingRequiredColumns().stream().sorted().toList(), report.packRows(),
-				report.incompletePackRows(), report.duplicatePackIdentities().stream().sorted(duplicateOrder).toList(),
-				report.hasCommittedColumn(), report.hasCommittedAtColumn(), report.requiresAdoption());
+				report.missingRequiredColumns().stream().sorted().toList(),
+				report.packRows(), report.incompletePackRows(),
+				duplicatePackIdentities, report.hasCommittedColumn(),
+				report.hasCommittedAtColumn(), report.requiresAdoption());
 	}
 
 	/** Serialize the bounded report without exposing connection credentials. */
@@ -109,18 +114,22 @@ public final class LegacyCoreSchemaPreflight {
 
 	/** Require a JDBC family with a published pre-library adoption migration. */
 	static void requirePublishedLegacyAdoptionPath(String url) {
-		String normalizedUrl= url.toLowerCase(Locale.ROOT);
+		String normalizedUrl= Objects.requireNonNull(url, "url") //$NON-NLS-1$
+				.toLowerCase(Locale.ROOT);
 		if (!normalizedUrl.startsWith(POSTGRESQL_URL_PREFIX)
 				&& !normalizedUrl.startsWith(HSQLDB_URL_PREFIX)
 				&& !normalizedUrl.startsWith(SQL_SERVER_URL_PREFIX)) {
 			throw new IllegalArgumentException(
-					"No published pre-library legacy-adoption migration exists for JDBC family " //$NON-NLS-1$
-							+ databaseFamily(normalizedUrl)
-							+ ". Use PostgreSQL, HSQLDB or SQL Server, or add and release generic support upstream first."); //$NON-NLS-1$
+					"No published pre-library legacy-adoption migration exists " //$NON-NLS-1$
+							+ "for JDBC family " + databaseFamily(normalizedUrl) //$NON-NLS-1$
+							+ ". Use PostgreSQL, HSQLDB or SQL Server, or add " //$NON-NLS-1$
+							+ "and release generic support upstream first."); //$NON-NLS-1$
 		}
-		if (normalizedUrl.startsWith(HSQLDB_URL_PREFIX) && !normalizedUrl.contains(HSQLDB_IF_EXISTS)) {
+		if (normalizedUrl.startsWith(HSQLDB_URL_PREFIX)
+				&& !normalizedUrl.contains(HSQLDB_IF_EXISTS)) {
 			throw new IllegalArgumentException(
-					"HSQLDB legacy-schema preflight requires ;ifexists=true so a mistyped path cannot create a database."); //$NON-NLS-1$
+					"HSQLDB legacy-schema preflight requires ;ifexists=true " //$NON-NLS-1$
+							+ "so a mistyped path cannot create a database."); //$NON-NLS-1$
 		}
 	}
 
@@ -132,14 +141,18 @@ public final class LegacyCoreSchemaPreflight {
 	private static String requireProperty(Properties properties, String name) {
 		String value= properties.getProperty(name);
 		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException("Missing required database property: " + name); //$NON-NLS-1$
+			throw new IllegalArgumentException(
+					"Missing required database property: " + name); //$NON-NLS-1$
 		}
 		return value;
 	}
 
 	/** Machine-readable result of the released read-only legacy-schema check. */
-	record PreflightReport(List<String> columns, List<String> missingRequiredColumns, long packRows,
-			long incompletePackRows, List<DuplicatePackIdentity> duplicatePackIdentities,
-			boolean hasCommittedColumn, boolean hasCommittedAtColumn, boolean requiresAdoption) {
+	record PreflightReport(List<String> columns,
+			List<String> missingRequiredColumns, long packRows,
+			long incompletePackRows,
+			List<DuplicatePackIdentity> duplicatePackIdentities,
+			boolean hasCommittedColumn, boolean hasCommittedAtColumn,
+			boolean requiresAdoption) {
 	}
 }
