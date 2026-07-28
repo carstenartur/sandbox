@@ -14,115 +14,84 @@
 package org.eclipse.jgit.server.resolver;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Objects;
 
-import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.storage.hibernate.repository.HibernateRepository;
-import org.eclipse.jgit.storage.hibernate.repository.HibernateRepositoryBuilder;
 import org.eclipse.jgit.transport.resolver.RepositoryResolver;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-/**
- * Resolves Git repositories from the Hibernate database backend.
- * <p>
- * Repository instances are cached by name to avoid creating duplicate
- * connections to the same database-backed repository.
- */
+/** Resolves Smart HTTP repositories through the application-owned service boundary. */
 public class HibernateRepositoryResolver
 		implements RepositoryResolver<HttpServletRequest>, AutoCloseable {
 
 	private final HibernateSessionFactoryProvider sessionFactoryProvider;
+	private final SandboxRepositoryService repositories;
 
-	private final Map<String, HibernateRepository> cache = new ConcurrentHashMap<>();
+	/** Creates a resolver using the temporary copied-backend adapter. */
+	public HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider) {
+		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider));
+	}
 
-	/**
-	 * Create a resolver backed by the given session factory provider.
-	 *
-	 * @param sessionFactoryProvider
-	 *            the Hibernate session factory provider
-	 */
-	public HibernateRepositoryResolver(
-			HibernateSessionFactoryProvider sessionFactoryProvider) {
-		this.sessionFactoryProvider = sessionFactoryProvider;
+	/** Creates a resolver for an application-owned repository service. */
+	public HibernateRepositoryResolver(SandboxRepositoryService repositories) {
+		this(null, repositories);
+	}
+
+	private HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider,
+			SandboxRepositoryService repositories) {
+		this.sessionFactoryProvider= sessionFactoryProvider;
+		this.repositories= Objects.requireNonNull(repositories, "repositories"); //$NON-NLS-1$
 	}
 
 	@Override
-	public Repository open(HttpServletRequest req, String name)
-			throws ServiceNotEnabledException {
-		String repoName = normalizeRepoName(name);
+	public Repository open(HttpServletRequest request, String name) throws ServiceNotEnabledException {
 		try {
-			return getOrCreateRepository(repoName);
-		} catch (IOException e) {
-			throw new ServiceNotEnabledException(e.getMessage());
+			return repositories.openOrCreate(name);
+		} catch (IOException | RuntimeException exception) {
+			throw new ServiceNotEnabledException(exception.getMessage());
 		}
 	}
 
 	/**
-	 * Get or create a repository by name.
-	 *
-	 * @param name
-	 *            the repository name
-	 * @return the repository
-	 * @throws IOException
-	 *             if repository creation fails
+	 * Transitional source-compatible access for existing server tests and callers.
+	 * New application code must use {@link #getRepositoryService()} and the public
+	 * {@link Repository} type. The generic return erases to {@code Repository} and
+	 * introduces no copied-backend type into this resolver.
 	 */
-	public HibernateRepository getOrCreateRepository(String name)
-			throws IOException {
-		return cache.computeIfAbsent(name, n -> {
-			try {
-				return new HibernateRepositoryBuilder()
-						.setSessionFactoryProvider(sessionFactoryProvider)
-						.setRepositoryName(n)
-						.setRepositoryDescription(
-								new DfsRepositoryDescription(n))
-						.build();
-			} catch (IOException e) {
-				throw new IllegalStateException(
-						"Failed to create repository: " + n, e); //$NON-NLS-1$
-			}
-		});
+	@Deprecated(forRemoval = true)
+	@SuppressWarnings("unchecked")
+	public <R extends Repository> R getOrCreateRepository(String name) throws IOException {
+		return (R) repositories.openOrCreate(name);
 	}
 
-	/**
-	 * Check if a repository with the given name exists in the cache.
-	 *
-	 * @param name
-	 *            the repository name
-	 * @return true if the repository is cached
-	 */
+	/** Returns whether this resolver already owns an open repository handle. */
 	public boolean hasRepository(String name) {
-		return cache.containsKey(normalizeRepoName(name));
+		return repositories.isOpen(name);
+	}
+
+	/** Returns the application-owned repository service used by REST resources. */
+	public SandboxRepositoryService getRepositoryService() {
+		return repositories;
 	}
 
 	/**
-	 * Get the session factory provider.
-	 *
-	 * @return the session factory provider
+	 * Returns the legacy provider while Search and analytics still use the copied
+	 * implementation. Repository lifecycle code must use {@link #getRepositoryService()}.
 	 */
 	public HibernateSessionFactoryProvider getSessionFactoryProvider() {
+		if (sessionFactoryProvider == null) {
+			throw new IllegalStateException("This resolver was created without a legacy session factory provider."); //$NON-NLS-1$
+		}
 		return sessionFactoryProvider;
 	}
 
 	@Override
 	public void close() {
-		for (HibernateRepository repo : cache.values()) {
-			repo.close();
-		}
-		cache.clear();
-	}
-
-	private static String normalizeRepoName(String name) {
-		if (name.startsWith("/")) { //$NON-NLS-1$
-			name = name.substring(1);
-		}
-		if (name.endsWith(".git")) { //$NON-NLS-1$
-			name = name.substring(0, name.length() - 4);
-		}
-		return name;
+		repositories.close();
 	}
 }
