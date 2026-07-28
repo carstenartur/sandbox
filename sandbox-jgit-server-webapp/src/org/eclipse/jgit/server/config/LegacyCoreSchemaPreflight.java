@@ -41,6 +41,7 @@ public final class LegacyCoreSchemaPreflight {
 	private static final String CONNECTION_DRIVER= "hibernate.connection.driver_class"; //$NON-NLS-1$
 	private static final String POSTGRESQL_URL_PREFIX= "jdbc:postgresql:"; //$NON-NLS-1$
 	private static final String HSQLDB_URL_PREFIX= "jdbc:hsqldb:"; //$NON-NLS-1$
+	private static final String SQL_SERVER_URL_PREFIX= "jdbc:sqlserver:"; //$NON-NLS-1$
 	private static final String HSQLDB_IF_EXISTS= ";ifexists=true"; //$NON-NLS-1$
 
 	private LegacyCoreSchemaPreflight() {
@@ -106,13 +107,16 @@ public final class LegacyCoreSchemaPreflight {
 		return new Gson().toJson(report);
 	}
 
-	private static void requirePublishedLegacyAdoptionPath(String url) {
+	/** Require a JDBC family with a published pre-library adoption migration. */
+	static void requirePublishedLegacyAdoptionPath(String url) {
 		String normalizedUrl= url.toLowerCase(Locale.ROOT);
-		if (!normalizedUrl.startsWith(POSTGRESQL_URL_PREFIX) && !normalizedUrl.startsWith(HSQLDB_URL_PREFIX)) {
+		if (!normalizedUrl.startsWith(POSTGRESQL_URL_PREFIX)
+				&& !normalizedUrl.startsWith(HSQLDB_URL_PREFIX)
+				&& !normalizedUrl.startsWith(SQL_SERVER_URL_PREFIX)) {
 			throw new IllegalArgumentException(
 					"No published pre-library legacy-adoption migration exists for JDBC family " //$NON-NLS-1$
 							+ databaseFamily(normalizedUrl)
-							+ ". Use PostgreSQL or HSQLDB, or add and release generic support upstream first."); //$NON-NLS-1$
+							+ ". Use PostgreSQL, HSQLDB or SQL Server, or add and release generic support upstream first."); //$NON-NLS-1$
 		}
 		if (normalizedUrl.startsWith(HSQLDB_URL_PREFIX) && !normalizedUrl.contains(HSQLDB_IF_EXISTS)) {
 			throw new IllegalArgumentException(
