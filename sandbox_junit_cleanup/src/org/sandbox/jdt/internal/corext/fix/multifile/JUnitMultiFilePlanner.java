@@ -112,13 +112,18 @@ public final class JUnitMultiFilePlanner {
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, boolean closedScope,
 			IProgressMonitor monitor) throws CoreException {
 		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);
-		if (!migrateExternalResourceRules || selectedUnits.length == 0) {
+		if (selectedUnits.length == 0) {
 			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
 		}
 		if (!closedScope) {
-			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());
-			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()),
-					new RefactoringStatus(), MultiFilePlanningMetrics.empty(), diagnostics);
+			String message= "The coordinated JUnit cleanup scope is incomplete; no local or multi-file migration is allowed."; //$NON-NLS-1$
+			RefactoringStatus status= new RefactoringStatus();
+			status.addFatalError(message);
+			return new MultiFileCleanUpPlanResult<>(null, status, MultiFilePlanningMetrics.empty(),
+					diagnostics(selectedUnits, false, List.of()));
+		}
+		if (!migrateExternalResourceRules) {
+			return MultiFileCleanUpPlanResult.success(new JUnitMigrationPlan(selectedScope, List.of()));
 		}
 		MultiFilePlanningBudget.checkCanceled(monitor);
 
@@ -158,9 +163,9 @@ public final class JUnitMultiFilePlanner {
 				.toList();
 		MultiFileScopeDiagnostic scope= complete
 				? new MultiFileScopeDiagnostic(selectedHandles, List.of(), "CLOSED_SOURCE_SCOPE", //$NON-NLS-1$
-						"The selected compilation units form a closed ExternalResource migration scope.", true) //$NON-NLS-1$
+						"The selected compilation units form a closed coordinated JUnit migration scope.", true) //$NON-NLS-1$
 				: new MultiFileScopeDiagnostic(selectedHandles, List.of(), "INCOMPLETE_SOURCE_SCOPE", //$NON-NLS-1$
-						"The selected compilation units do not contain every required ExternalResource declaration and user.", //$NON-NLS-1$
+						"The selected compilation units omit source declarations or consumers required by an enabled coordinated JUnit migration.", //$NON-NLS-1$
 						false);
 		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
 	}
