@@ -4,7 +4,9 @@
 
 ## Overview
 
-`sandbox-jgit-server-webapp` is a Jakarta Servlet-based REST API server that provides web-based access to Git repositories indexed by the `sandbox-jgit-storage-hibernate` backend. It enables semantic and structural search over indexed Java repositories.
+`sandbox-jgit-server-webapp` is a Jakarta Servlet-based REST API server that provides web-based access to Git repositories indexed by the `sandbox-jgit-storage-hibernate` integration module. It enables semantic and structural search over indexed Java repositories.
+
+Repository lifecycle callers are being moved behind the application-owned `SandboxRepositoryService` boundary so the copied storage backend can be replaced by released `jgit-storage-hibernate` modules in independently verified stages. The copied backend remains the production default until its database schema has passed the documented adoption and rollback procedure.
 
 ## REST API
 
@@ -34,6 +36,12 @@ Additional routes include:
 - Additional `/api/search/*` endpoints such as `annotations`, `docs`, `fqn`, and `filehistory`, plus `migration/*` sub-routes
 - Admin reindex endpoint: `POST /api/admin/reindex` (Bearer-token protected)
 
+## Database adoption safety
+
+Do not point the released Core factory at an existing Sandbox database merely by changing Hibernate entity registration. Before any Flyway adoption migration or production-backend switch, run the read-only legacy-schema preflight described in [JGit storage legacy-schema adoption](../docs/jgit-storage-legacy-adoption.md).
+
+The published pre-library migration path currently supports PostgreSQL and HSQLDB. The maintenance command rejects H2, MSSQL and other database families before opening them, requires an existing HSQLDB database, marks the JDBC connection read-only, starts neither Hibernate nor Jetty and performs no DDL. A successful report is a prerequisite for the later migration; it is not itself a migration.
+
 ## Docker
 
 ```bash
@@ -48,11 +56,11 @@ The `Dockerfile.jgit` and `docker-compose.yml` provide a self-contained deployme
 ```
 JGitServerApplication (Jakarta Servlet container)
   → RepositoryResource, SearchResource, AnalyticsResource, AdminResource, HealthResource
-  → HibernateRepositoryResolver (maps repo names to Hibernate-backed JGit repos)
-  → sandbox-jgit-storage-hibernate (indexing and query backend)
+  → SandboxRepositoryService / HibernateRepositoryResolver
+  → sandbox-jgit-storage-hibernate (current indexing and query integration)
   → HibernateConfig, ElasticsearchConfig, RepositoryManagerConfig
 ```
 
 ## Related Modules
 
-- **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — the underlying storage and indexing backend
+- **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — current storage/search integration and staged external-library adoption boundary
