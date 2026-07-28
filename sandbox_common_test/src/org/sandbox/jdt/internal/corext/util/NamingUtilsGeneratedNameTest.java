@@ -46,8 +46,8 @@ class NamingUtilsGeneratedNameTest {
 	void rejectsExistingNestedTypeWithGeneratedName() {
 		AnonymousClassDeclaration initial= parseAnonymous(sourceWithoutCollision());
 		String generated= NamingUtils.generateUniqueNestedClassName(initial, "resource"); //$NON-NLS-1$
-		String source= sourceWithoutCollision().replace("class Owner {", //$NON-NLS-1$
-				"class Owner {\n\tstatic class " + generated + " {} "); //$NON-NLS-1$ //$NON-NLS-2$
+		String source= sourceWithoutCollision().replace("\tObject resource", //$NON-NLS-1$
+				"\tstatic class " + generated + " {}\n\tObject resource"); //$NON-NLS-1$ //$NON-NLS-2$
 		AnonymousClassDeclaration conflicting= parseAnonymous(source);
 
 		IllegalStateException exception= assertThrows(IllegalStateException.class,
