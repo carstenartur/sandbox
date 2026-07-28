@@ -8,7 +8,6 @@ REPOSITORY_DIR="$P2_ROOT/repository"
 REPOSITORY_EVIDENCE="$P2_ROOT/evidence"
 VERIFICATION_JSON="$REPOSITORY_EVIDENCE/repository-verification.json"
 PRODUCTS_DIR="$ROOT_DIR/sandbox_product/target/products"
-STOCK_JDT_FEATURE_GROUP=org.eclipse.jdt.feature.group
 
 for command in awk basename dirname find grep java python3 sha256sum sort timeout xvfb-run; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
@@ -23,11 +22,17 @@ from pathlib import Path
 report = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 if report.get('result') != 'PASS':
     raise SystemExit('Repository verification is not PASS')
+feature = report.get('feature') or {}
+patch_target = feature.get('patchTarget') or {}
+if feature.get('kind') != 'patch':
+    raise SystemExit('Repository feature is not verified as a patch')
 print(report['bundle']['id'])
 print(report['bundle']['version'])
 print(report['bundle']['sha256'])
-print(report['feature']['groupIU'])
-print(report['feature']['version'])
+print(feature['groupIU'])
+print(feature['version'])
+print(patch_target['groupIU'])
+print(patch_target['version'])
 PY
 )
 BUNDLE_ID=${expected[0]}
@@ -35,6 +40,8 @@ BUNDLE_VERSION=${expected[1]}
 BUNDLE_SHA256=${expected[2]}
 FEATURE_GROUP=${expected[3]}
 FEATURE_VERSION=${expected[4]}
+PATCH_TARGET_GROUP=${expected[5]}
+PATCH_TARGET_VERSION=${expected[6]}
 
 mapfile -t architecture_roots < <(find "$PRODUCTS_DIR" -type d -path '*/linux/gtk/x86_64' -print | sort)
 if (( ${#architecture_roots[@]} != 1 )); then
@@ -90,16 +97,28 @@ print(Path(sys.argv[1]).resolve().as_uri())
 PY
 )
 
-# The stock JDT feature pins the original JDT UI qualifier exactly. Remove that
-# root and install the patch feature in one p2 transaction. Required JDT bundles
-# remain in the profile through the Sandbox product/features and are validated by
-# the subsequent startup and runtime cleanup probe.
+(
+  cd "$PRODUCT_ROOT"
+  timeout 300s xvfb-run -a java -jar "$LAUNCHER" -nosplash -consoleLog \
+    -application org.eclipse.equinox.p2.director \
+    -listInstalledRoots \
+    -destination "$PRODUCT_ROOT" \
+    -profile "$PROFILE_ID"
+) > "$EVIDENCE_DIR/stock-installed-roots.log" 2>&1
+if ! grep -F "$PATCH_TARGET_GROUP" "$EVIDENCE_DIR/stock-installed-roots.log" \
+    | grep -Fq "$PATCH_TARGET_VERSION"; then
+  echo "Stock product does not contain exact patch target $PATCH_TARGET_GROUP $PATCH_TARGET_VERSION" >&2
+  exit 1
+fi
+
+# A feature patch keeps the original JDT feature installed and contributes a
+# newer JDT UI bundle for that exact feature version. This is the PDE/p2 patch
+# mechanism and avoids removing the JDT feature required by PDE itself.
 (
   cd "$PRODUCT_ROOT"
   timeout 900s xvfb-run -a java -jar "$LAUNCHER" -nosplash -consoleLog \
     -application org.eclipse.equinox.p2.director \
     -repository "$REPOSITORY_URI" \
-    -uninstallIU "$STOCK_JDT_FEATURE_GROUP" \
     -installIU "$FEATURE_GROUP" \
     -destination "$PRODUCT_ROOT" \
     -bundlepool "$PRODUCT_ROOT" \
@@ -141,28 +160,29 @@ fi
     -destination "$PRODUCT_ROOT" \
     -profile "$PROFILE_ID"
 ) > "$EVIDENCE_DIR/installed-roots.log" 2>&1
-if ! grep -Fq "$FEATURE_GROUP" "$EVIDENCE_DIR/installed-roots.log"; then
-  echo "Installed product did not report root $FEATURE_GROUP" >&2
+if ! grep -F "$FEATURE_GROUP" "$EVIDENCE_DIR/installed-roots.log" \
+    | grep -Fq "$FEATURE_VERSION"; then
+  echo "Installed product did not report patch root $FEATURE_GROUP $FEATURE_VERSION" >&2
   exit 1
 fi
-if grep -Fq "$STOCK_JDT_FEATURE_GROUP" "$EVIDENCE_DIR/installed-roots.log"; then
-  echo "Installed product still reports the exact-pinning stock root $STOCK_JDT_FEATURE_GROUP" >&2
+if ! grep -F "$PATCH_TARGET_GROUP" "$EVIDENCE_DIR/installed-roots.log" \
+    | grep -Fq "$PATCH_TARGET_VERSION"; then
+  echo "Installed product lost patch target root $PATCH_TARGET_GROUP $PATCH_TARGET_VERSION" >&2
   exit 1
 fi
 
 export EVIDENCE_DIR PRODUCT_ROOT PROFILE_ID BUNDLE_ID BUNDLE_VERSION BUNDLE_SHA256
-export STOCK_VERSION FEATURE_GROUP FEATURE_VERSION INSTALLED_SHA STOCK_JDT_FEATURE_GROUP
+export STOCK_VERSION FEATURE_GROUP FEATURE_VERSION INSTALLED_SHA PATCH_TARGET_GROUP PATCH_TARGET_VERSION
 python3 <<'PY'
 import json
 import os
 from pathlib import Path
 
 payload = {
-    'schemaVersion': 2,
+    'schemaVersion': 3,
     'result': 'PASS',
     'productRoot': os.environ['PRODUCT_ROOT'],
     'profileId': os.environ['PROFILE_ID'],
-    'removedRoot': os.environ['STOCK_JDT_FEATURE_GROUP'],
     'stockBundle': {'id': os.environ['BUNDLE_ID'], 'version': os.environ['STOCK_VERSION']},
     'patchedBundle': {
         'id': os.environ['BUNDLE_ID'],
@@ -170,7 +190,15 @@ payload = {
         'sha256': os.environ['BUNDLE_SHA256'],
         'installedSha256': os.environ['INSTALLED_SHA'],
     },
-    'feature': {'groupIU': os.environ['FEATURE_GROUP'], 'version': os.environ['FEATURE_VERSION']},
+    'feature': {
+        'kind': 'patch',
+        'groupIU': os.environ['FEATURE_GROUP'],
+        'version': os.environ['FEATURE_VERSION'],
+        'patchTarget': {
+            'groupIU': os.environ['PATCH_TARGET_GROUP'],
+            'version': os.environ['PATCH_TARGET_VERSION'],
+        },
+    },
 }
 root = Path(os.environ['EVIDENCE_DIR'])
 (root / 'installation-verification.json').write_text(
@@ -180,13 +208,13 @@ lines = [
     '# Patched JDT UI installation verification',
     '',
     '- Result: **PASS**',
-    f"- Removed exact-pinning root: `{os.environ['STOCK_JDT_FEATURE_GROUP']}`",
+    f"- Retained patch target: `{os.environ['PATCH_TARGET_GROUP']} {os.environ['PATCH_TARGET_VERSION']}`",
+    f"- Installed patch root: `{os.environ['FEATURE_GROUP']} {os.environ['FEATURE_VERSION']}`",
     f"- Stock selection: `{os.environ['BUNDLE_ID']} {os.environ['STOCK_VERSION']}`",
     f"- Patched selection: `{os.environ['BUNDLE_ID']} {os.environ['BUNDLE_VERSION']}`",
-    f"- Installed root: `{os.environ['FEATURE_GROUP']} {os.environ['FEATURE_VERSION']}`",
     '- Exactly one active simpleconfigurator entry: **PASS**',
     '- Installed bundle bytes match pinned SHA-256: **PASS**',
-    '- Patched product starts the p2 director and lists installed roots: **PASS**',
+    '- Patched product starts the p2 director and lists both patch roots: **PASS**',
 ]
 (root / 'installation-verification.md').write_text(
     '\n'.join(lines) + '\n', encoding='utf-8'
