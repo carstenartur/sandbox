@@ -48,14 +48,21 @@ Before changing the active storage backend, server repository lifecycle code is 
 
 The resolver retains a deprecated generic compatibility method only so existing integration tests and callers compile during the staged transition. Its erased public contract is `Repository`; new application code must use `getRepositoryService()`. The compatibility method is removed when copied-backend integration tests move to the external Core factory.
 
+### Public factory-adapter slice
+
+`ExternalHibernateRepositoryService` adapts the released `HibernateRepositoryFactory` and owns the resulting `HibernateGitStorage` handles. It exposes only public JGit `Repository` instances and `SandboxRepositoryInfo` to the server. Unit tests use a fake implementation of the released factory contract, so the application-side lifecycle, identity normalization, caching, metadata and close semantics can be verified without importing the external implementation packages or requiring a database.
+
+This adapter is deliberately not made the production default in the same slice. The existing Sandbox `SessionFactory` still registers copied Core entity classes and owns a schema whose exact adoption state must be established before the external factory is allowed to write to it. Registering copied and external Core entities together would also create duplicate persistence mappings. Production wiring changes only after the external Core migration runbook, Hibernate validation and repository-level rollback test have succeeded on a restored database.
+
 ### Subsequent slices
 
-1. Replace `CopiedHibernateRepositoryService` with a `jgit-storage-hibernate-core` factory adapter and migrate repository lifecycle data.
-2. Replace copied commit/history entities and indexers with `jgit-storage-hibernate-search`.
-3. Replace copied Java AST/history analysis with `jgit-storage-hibernate-java-analysis`.
-4. Move Sandbox-only embeddings and REST query composition behind application-owned interfaces.
-5. Remove copied generic packages, migrations and dependencies.
-6. Add a build rule that rejects new source references to removed/copied implementation packages.
+1. Classify the existing Core schema, apply the matching `jgit-storage-hibernate-core` adoption/migration path and verify backup restoration.
+2. Construct a persistence context with external Core entities plus only the still-required Sandbox projection entities, then switch production wiring from `CopiedHibernateRepositoryService` to `ExternalHibernateRepositoryService`.
+3. Replace copied commit/history entities and indexers with `jgit-storage-hibernate-search`.
+4. Replace copied Java AST/history analysis with `jgit-storage-hibernate-java-analysis`.
+5. Move Sandbox-only embeddings and REST query composition behind application-owned interfaces.
+6. Remove copied generic packages, migrations and dependencies.
+7. Add a build rule that rejects new source references to removed/copied implementation packages.
 
 Each slice must preserve repository data through the external migration/adoption runbook and must keep one authoritative implementation active.
 
@@ -63,6 +70,7 @@ Each slice must preserve repository data through the external migration/adoption
 
 - The first slice adds a released dependency without immediately deleting the copied implementation.
 - The repository-service boundary makes the later factory cut-over local instead of requiring simultaneous REST, Smart HTTP and startup rewrites.
+- The public factory adapter completes the application-side cut-over point while leaving the persistence migration explicit and independently reversible.
 - The temporary coexistence and deprecated compatibility method are explicit and bounded by this migration plan.
 - Public external APIs and application-owned interfaces, not implementation packages, define the replacement contract.
 - Database migration and service cut-over remain separate follow-up changes and cannot be represented as a package rename.
