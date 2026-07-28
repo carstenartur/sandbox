@@ -19,9 +19,10 @@ import java.io.PrintWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.jgit.server.repository.SandboxRepositoryInfo;
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.storage.hibernate.repository.HibernateRepository;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -31,142 +32,104 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- * REST endpoint for repository CRUD operations.
- * <ul>
- * <li>{@code POST /api/repos} — create a new repository (body:
- * {"name":"...","description":"..."})</li>
- * <li>{@code GET /api/repos/{name}} — get repository info</li>
- * </ul>
- */
+/** REST endpoint for repository creation and metadata lookup. */
 public class RepositoryResource extends HttpServlet {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID= 1L;
+	private static final Logger LOG= Logger.getLogger(RepositoryResource.class.getName());
 
-	private static final Logger LOG = Logger
-			.getLogger(RepositoryResource.class.getName());
+	private final SandboxRepositoryService repositories;
+	private final Gson gson= new Gson();
 
-	private final HibernateRepositoryResolver resolver;
-
-	private final Gson gson = new Gson();
+	/** Creates a resource using the application-owned repository boundary. */
+	public RepositoryResource(SandboxRepositoryService repositories) {
+		this.repositories= repositories;
+	}
 
 	/**
-	 * Create a repository resource endpoint.
-	 *
-	 * @param provider
-	 *            the session factory provider (reserved for future use)
-	 * @param resolver
-	 *            the repository resolver
+	 * Compatibility constructor while the application still wires the legacy
+	 * Hibernate provider separately for health, search and analytics.
 	 */
 	@SuppressWarnings("unused")
-	public RepositoryResource(HibernateSessionFactoryProvider provider,
-			HibernateRepositoryResolver resolver) {
-		this.resolver = resolver;
+	public RepositoryResource(HibernateSessionFactoryProvider provider, HibernateRepositoryResolver resolver) {
+		this(resolver.getRepositoryService());
 	}
 
 	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-			throws IOException {
-		resp.setContentType("application/json"); //$NON-NLS-1$
-		resp.setCharacterEncoding("UTF-8"); //$NON-NLS-1$
-
-		StringBuilder sb = new StringBuilder();
-		try (BufferedReader reader = req.getReader()) {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		prepare(response);
+		StringBuilder input= new StringBuilder();
+		try (BufferedReader reader= request.getReader()) {
 			String line;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line);
+			while ((line= reader.readLine()) != null) {
+				input.append(line);
 			}
 		}
 
 		try {
-			JsonObject body = JsonParser.parseString(sb.toString())
-					.getAsJsonObject();
-			String name = body.has("name") ? body.get("name").getAsString() //$NON-NLS-1$ //$NON-NLS-2$
-					: null;
-
-			if (name == null || name.trim().isEmpty()) {
-				resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-				try (PrintWriter w = resp.getWriter()) {
-					JsonObject error = new JsonObject();
-					error.addProperty("error", //$NON-NLS-1$
-							"Repository name is required"); //$NON-NLS-1$
-					w.write(gson.toJson(error));
-				}
+			JsonObject body= JsonParser.parseString(input.toString()).getAsJsonObject();
+			String name= body.has("name") ? body.get("name").getAsString() : null; //$NON-NLS-1$ //$NON-NLS-2$
+			if (name == null || name.isBlank()) {
+				writeError(response, HttpServletResponse.SC_BAD_REQUEST, "Repository name is required"); //$NON-NLS-1$
 				return;
 			}
-
-			HibernateRepository repo = resolver
-					.getOrCreateRepository(name.trim());
-			String description = body.has("description") //$NON-NLS-1$
-					? body.get("description").getAsString() //$NON-NLS-1$
-					: null;
-			if (description != null) {
-				repo.setGitwebDescription(description);
-			}
-
-			resp.setStatus(HttpServletResponse.SC_CREATED);
-			try (PrintWriter w = resp.getWriter()) {
-				JsonObject result = new JsonObject();
-				result.addProperty("name", name.trim()); //$NON-NLS-1$
-				result.addProperty("description", //$NON-NLS-1$
-						repo.getGitwebDescription());
-				w.write(gson.toJson(result));
-			}
-		} catch (Exception e) {
-			LOG.log(Level.WARNING, "Error creating repository", e); //$NON-NLS-1$
-			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			try (PrintWriter w = resp.getWriter()) {
-				JsonObject error = new JsonObject();
-				error.addProperty("error", //$NON-NLS-1$
-						e.getMessage());
-				w.write(gson.toJson(error));
-			}
+			String normalized= name.strip();
+			SandboxRepositoryInfo info= body.has("description") //$NON-NLS-1$
+					? repositories.setDescription(normalized, body.get("description").getAsString()) //$NON-NLS-1$
+					: repositories.info(normalized);
+			response.setStatus(HttpServletResponse.SC_CREATED);
+			writeInfo(response, info);
+		} catch (Exception exception) {
+			LOG.log(Level.WARNING, "Error creating repository", exception); //$NON-NLS-1$
+			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception.getMessage());
 		}
 	}
 
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-			throws IOException {
-		resp.setContentType("application/json"); //$NON-NLS-1$
-		resp.setCharacterEncoding("UTF-8"); //$NON-NLS-1$
-
-		String pathInfo = req.getPathInfo();
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		prepare(response);
+		String pathInfo= request.getPathInfo();
 		if (pathInfo == null || pathInfo.equals("/")) { //$NON-NLS-1$
-			resp.setStatus(HttpServletResponse.SC_OK);
-			try (PrintWriter w = resp.getWriter()) {
-				JsonObject msg = new JsonObject();
-				msg.addProperty("message", //$NON-NLS-1$
-						"Use POST to create repos or GET /repos/{name} for info"); //$NON-NLS-1$
-				w.write(gson.toJson(msg));
+			response.setStatus(HttpServletResponse.SC_OK);
+			try (PrintWriter writer= response.getWriter()) {
+				JsonObject message= new JsonObject();
+				message.addProperty("message", "Use POST to create repos or GET /repos/{name} for info"); //$NON-NLS-1$ //$NON-NLS-2$
+				writer.write(gson.toJson(message));
 			}
 			return;
 		}
 
-		String repoName = pathInfo.substring(1);
+		String repositoryName= pathInfo.substring(1);
 		try {
-			HibernateRepository repo = resolver
-					.getOrCreateRepository(repoName);
-
-			JsonObject result = new JsonObject();
-			result.addProperty("name", repoName); //$NON-NLS-1$
-			result.addProperty("description", //$NON-NLS-1$
-					repo.getGitwebDescription());
-
-			resp.setStatus(HttpServletResponse.SC_OK);
-			try (PrintWriter w = resp.getWriter()) {
-				w.write(gson.toJson(result));
-			}
-		} catch (Exception e) {
-			LOG.log(Level.WARNING, "Error retrieving repository: " //$NON-NLS-1$
-					+ repoName, e);
-			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-			try (PrintWriter w = resp.getWriter()) {
-				JsonObject error = new JsonObject();
-				error.addProperty("error", //$NON-NLS-1$
-						e.getMessage());
-				w.write(gson.toJson(error));
-			}
+			SandboxRepositoryInfo info= repositories.info(repositoryName);
+			response.setStatus(HttpServletResponse.SC_OK);
+			writeInfo(response, info);
+		} catch (Exception exception) {
+			LOG.log(Level.WARNING, "Error retrieving repository: " + repositoryName, exception); //$NON-NLS-1$
+			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception.getMessage());
 		}
 	}
 
+	private static void prepare(HttpServletResponse response) {
+		response.setContentType("application/json"); //$NON-NLS-1$
+		response.setCharacterEncoding("UTF-8"); //$NON-NLS-1$
+	}
+
+	private void writeInfo(HttpServletResponse response, SandboxRepositoryInfo info) throws IOException {
+		try (PrintWriter writer= response.getWriter()) {
+			JsonObject result= new JsonObject();
+			result.addProperty("name", info.name()); //$NON-NLS-1$
+			result.addProperty("description", info.description()); //$NON-NLS-1$
+			writer.write(gson.toJson(result));
+		}
+	}
+
+	private void writeError(HttpServletResponse response, int status, String message) throws IOException {
+		response.setStatus(status);
+		try (PrintWriter writer= response.getWriter()) {
+			JsonObject error= new JsonObject();
+			error.addProperty("error", message); //$NON-NLS-1$
+			writer.write(gson.toJson(error));
+		}
+	}
 }
