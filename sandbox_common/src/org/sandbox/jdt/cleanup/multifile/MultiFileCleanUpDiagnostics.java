@@ -16,9 +16,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
@@ -44,6 +46,23 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 		return new MultiFileCleanUpDiagnostics("unknown", MultiFileScopeDiagnostic.empty(), List.of()); //$NON-NLS-1$
 	}
 
+	/** Returns the impact contract shared by every coordinated multi-file cleanup. */
+	public CleanUpImpact impact() {
+		return CleanUpImpact.PROJECT_CLOSED;
+	}
+
+	/** Returns the number of distinct selected and discovered source units. */
+	public int affectedCompilationUnitCount() {
+		Set<String> handles= new LinkedHashSet<>(scope.selectedCompilationUnitHandles());
+		handles.addAll(scope.addedCompilationUnitHandles());
+		for (MultiFileCandidateDiagnostic candidate : candidates) {
+			handles.add(candidate.ownerCompilationUnitHandle());
+			handles.addAll(candidate.relatedCompilationUnitHandles());
+		}
+		handles.remove(""); //$NON-NLS-1$
+		return handles.size();
+	}
+
 	/** Returns a copy containing the observed host scope expansion. */
 	public MultiFileCleanUpDiagnostics withScope(MultiFileScopeDiagnostic newScope) {
 		return new MultiFileCleanUpDiagnostics(cleanupId, newScope, candidates);
@@ -64,10 +83,11 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 			}
 		}
 		long rejected= rejectedByReason.values().stream().mapToLong(Long::longValue).sum();
-		StringBuilder summary= new StringBuilder(160)
-				.append("Coordinated cleanup ").append(cleanupId).append(": ") //$NON-NLS-1$ //$NON-NLS-2$
+		StringBuilder summary= new StringBuilder(240)
+				.append('[').append(impact()).append("] Coordinated cleanup ").append(cleanupId).append(": ") //$NON-NLS-1$ //$NON-NLS-2$
 				.append(scope.selectedCompilationUnitHandles().size()).append(" selected, ") //$NON-NLS-1$
-				.append(scope.addedCompilationUnitHandles().size()).append(" added; ") //$NON-NLS-1$
+				.append(scope.addedCompilationUnitHandles().size()).append(" added, ") //$NON-NLS-1$
+				.append(affectedCompilationUnitCount()).append(" affected; ") //$NON-NLS-1$
 				.append(transformed).append(" transformed, ").append(rejected).append(" rejected"); //$NON-NLS-1$ //$NON-NLS-2$
 		if (!scope.complete()) {
 			summary.append("; scope incomplete (").append(scope.reasonCode()).append(')'); //$NON-NLS-1$
@@ -83,7 +103,8 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 			}
 			summary.append(')');
 		}
-		status.addInfo(summary.append('.').toString());
+		summary.append(". ").append(impact().compatibilityStatement()); //$NON-NLS-1$
+		status.addInfo(summary.toString());
 	}
 
 	/**
@@ -94,10 +115,15 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 	 * @return privacy-preserving deterministic JSON
 	 */
 	public String toJson() {
-		StringBuilder json= new StringBuilder(512);
+		StringBuilder json= new StringBuilder(768);
 		json.append('{');
-		property(json, "schemaVersion", "1").append(','); //$NON-NLS-1$ //$NON-NLS-2$
+		property(json, "schemaVersion", "2").append(','); //$NON-NLS-1$ //$NON-NLS-2$
 		property(json, "cleanupId", cleanupId).append(','); //$NON-NLS-1$
+		property(json, "impact", impact().name()).append(','); //$NON-NLS-1$
+		json.append("\"affectedCompilationUnitCount\":").append(affectedCompilationUnitCount()).append(','); //$NON-NLS-1$
+		json.append("\"saveActionEligible\":").append(impact().saveActionEligible()).append(','); //$NON-NLS-1$
+		json.append("\"explicitPreviewRequired\":").append(impact().explicitPreviewRequired()).append(','); //$NON-NLS-1$
+		property(json, "compatibilityStatement", impact().compatibilityStatement()).append(','); //$NON-NLS-1$
 		json.append("\"scope\":{"); //$NON-NLS-1$
 		arrayProperty(json, "selectedCompilationUnits", externalUnitIds(scope.selectedCompilationUnitHandles())).append(','); //$NON-NLS-1$
 		arrayProperty(json, "addedCompilationUnits", externalUnitIds(scope.addedCompilationUnitHandles())).append(','); //$NON-NLS-1$

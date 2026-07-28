@@ -23,7 +23,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 class MultiFileCleanUpDiagnosticsTest {
 
 	@Test
-	void normalizesAndSerializesScopeAndCandidatesDeterministically() {
+	void normalizesAndSerializesScopeCandidatesAndImpactDeterministically() {
 		MultiFileCleanUpDiagnostics diagnostics= new MultiFileCleanUpDiagnostics("int-to-enum", //$NON-NLS-1$
 				new MultiFileScopeDiagnostic(List.of("z", "a", "a"), List.of("c", "b"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 						"RELATED_SOURCE_CLOSURE", "Callers added", true), //$NON-NLS-1$ //$NON-NLS-2$
@@ -37,16 +37,21 @@ class MultiFileCleanUpDiagnosticsTest {
 		assertEquals(List.of("b", "c"), diagnostics.scope().addedCompilationUnitHandles()); //$NON-NLS-1$ //$NON-NLS-2$
 		assertEquals("method-a", diagnostics.candidates().get(0).candidateId()); //$NON-NLS-1$
 		assertEquals(List.of("a", "b"), diagnostics.candidates().get(0).relatedCompilationUnitHandles()); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(CleanUpImpact.PROJECT_CLOSED, diagnostics.impact());
+		assertEquals(4, diagnostics.affectedCompilationUnitCount());
 		String json= diagnostics.toJson();
-		assertEquals("""
-				{"schemaVersion":"1","cleanupId":"int-to-enum","scope":{"selectedCompilationUnits":["cu-594e519ae499","cu-ca978112ca1b"],"addedCompilationUnits":["cu-2e7d2c03a950","cu-3e23e8160039"],"reasonCode":"RELATED_SOURCE_CLOSURE","explanation":"Callers added","complete":true},"candidates":[{"candidateId":"method-a","ownerCompilationUnit":"cu-ca978112ca1b","outcome":"TRANSFORMED","reasonCode":"TRANSFORMED","message":"Converted","relatedCompilationUnits":["cu-3e23e8160039","cu-ca978112ca1b"]},{"candidateId":"method-b","ownerCompilationUnit":"cu-594e519ae499","outcome":"REJECTED","reasonCode":"PUBLIC_API","message":"Public method","relatedCompilationUnits":["cu-594e519ae499","cu-ca978112ca1b"]}]}
-				""".strip(), json);
+		assertTrue(json.startsWith("{\"schemaVersion\":\"2\",\"cleanupId\":\"int-to-enum\"")); //$NON-NLS-1$
+		assertTrue(json.contains("\"impact\":\"PROJECT_CLOSED\"")); //$NON-NLS-1$
+		assertTrue(json.contains("\"affectedCompilationUnitCount\":4")); //$NON-NLS-1$
+		assertTrue(json.contains("\"saveActionEligible\":false")); //$NON-NLS-1$
+		assertTrue(json.contains("\"explicitPreviewRequired\":true")); //$NON-NLS-1$
+		assertTrue(json.contains("\"candidateId\":\"method-a\"")); //$NON-NLS-1$
 		assertFalse(json.contains("\"ownerCompilationUnit\":\"a\"")); //$NON-NLS-1$
 		assertFalse(json.contains("\"selectedCompilationUnits\":[\"a\"")); //$NON-NLS-1$
 	}
 
 	@Test
-	void summaryReportsTransformedRejectedAndAddedCounts() {
+	void summaryReportsImpactAffectedTransformedRejectedAndAddedCounts() {
 		MultiFileCleanUpDiagnostics diagnostics= new MultiFileCleanUpDiagnostics("junit", //$NON-NLS-1$
 				new MultiFileScopeDiagnostic(List.of("selected"), List.of("added"), //$NON-NLS-1$ //$NON-NLS-2$
 						"RELATED_SOURCE_CLOSURE", "Rule user added", true), //$NON-NLS-1$ //$NON-NLS-2$
@@ -60,10 +65,23 @@ class MultiFileCleanUpDiagnosticsTest {
 
 		assertTrue(status.hasInfo());
 		String message= status.getMessageMatchingSeverity(RefactoringStatus.INFO);
+		assertTrue(message.contains("[PROJECT_CLOSED]")); //$NON-NLS-1$
 		assertTrue(message.contains("1 selected")); //$NON-NLS-1$
 		assertTrue(message.contains("1 added")); //$NON-NLS-1$
+		assertTrue(message.contains("2 affected")); //$NON-NLS-1$
 		assertTrue(message.contains("1 transformed")); //$NON-NLS-1$
 		assertTrue(message.contains("1 rejected")); //$NON-NLS-1$
 		assertTrue(message.contains("MIXED_RULE_MODES=1")); //$NON-NLS-1$
+		assertTrue(message.contains(CleanUpImpact.PROJECT_CLOSED.compatibilityStatement()));
+	}
+
+	@Test
+	void onlyLocalSafeImpactIsEligibleForSaveActions() {
+		assertTrue(CleanUpImpact.LOCAL_SAFE.saveActionEligible());
+		assertFalse(CleanUpImpact.PROJECT_CLOSED.saveActionEligible());
+		assertFalse(CleanUpImpact.COMPATIBILITY_MANAGED.saveActionEligible());
+		assertFalse(CleanUpImpact.MANUAL_REFACTORING.saveActionEligible());
+		assertFalse(CleanUpImpact.LOCAL_SAFE.explicitPreviewRequired());
+		assertTrue(CleanUpImpact.PROJECT_CLOSED.explicitPreviewRequired());
 	}
 }

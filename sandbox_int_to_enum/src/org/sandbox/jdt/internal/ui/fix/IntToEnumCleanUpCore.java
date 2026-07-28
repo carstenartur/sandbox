@@ -54,6 +54,7 @@ import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
+import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumPackageVisibilityPolicy;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
 
 /** Core cleanup implementation that converts integer constants to enums. */
@@ -93,9 +94,10 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 			return MultiFileCleanUpPlanResult.success(new IntEnumMigrationPlan(selectedScope, List.of()));
 		}
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
-		return closedScope == null
+		MultiFileCleanUpPlanResult<IntEnumMigrationPlan> result= closedScope == null
 				? IntEnumMultiFilePlanner.create(project, compilationUnits, monitor)
 				: IntEnumMultiFilePlanner.create(project, compilationUnits, closedScope.booleanValue(), monitor);
+		return IntEnumPackageVisibilityPolicy.enforce(result, compilationUnits);
 	}
 
 	@Override

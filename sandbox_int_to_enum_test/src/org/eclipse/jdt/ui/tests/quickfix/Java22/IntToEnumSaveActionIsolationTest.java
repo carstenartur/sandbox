@@ -146,7 +146,14 @@ public class IntToEnumSaveActionIsolationTest {
 
 		String savedLocal= Files.readString(local.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8);
 		assertTrue(savedLocal.contains("enum Status"), "The proven local cleanup must run during save"); //$NON-NLS-1$ //$NON-NLS-2$
-		assertTrue(savedLocal.contains("process(Status.PENDING)"), "The local call site must use the generated enum"); //$NON-NLS-1$ //$NON-NLS-2$
+		int invocationStart= savedLocal.indexOf("process("); //$NON-NLS-1$
+		int invocationEnd= invocationStart < 0 ? -1 : savedLocal.indexOf(')', invocationStart);
+		String invocationArgument= invocationEnd < 0 ? "" //$NON-NLS-1$
+				: savedLocal.substring(invocationStart + "process(".length(), invocationEnd).replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertTrue(invocationArgument.endsWith("Status.PENDING"), //$NON-NLS-1$
+				() -> "The local call site must use the generated enum, but was: " + invocationArgument); //$NON-NLS-1$
+		assertFalse(savedLocal.contains("process(STATUS_PENDING)"), //$NON-NLS-1$
+				"The local call site must no longer use the integer constant"); //$NON-NLS-1$
 		assertTrue(savedLocal.contains("process(Status status)"), "The private local signature must be migrated"); //$NON-NLS-1$ //$NON-NLS-2$
 		assertFalse(savedLocal.contains("STATUS_PENDING = 0"), "The local integer constants must be removed"); //$NON-NLS-1$ //$NON-NLS-2$
 

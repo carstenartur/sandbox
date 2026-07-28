@@ -49,6 +49,7 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -63,8 +64,11 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 			SingleVariableDeclaration parameter, Map<FieldDeclaration, Set<String>> constantFragments) {
 	}
 
-	record ResolvedPlan(List<ResolvedOwner> owners, Map<Expression, String> replacements,
-			Set<ASTNode> processedNodes) {
+	record Replacement(IntEnumCandidate candidate, String enumConstantName) {
+	}
+
+	record ResolvedPlan(String compilationUnitHandle, List<ResolvedOwner> owners,
+			Map<Expression, Replacement> replacements, Set<ASTNode> processedNodes) {
 	}
 
 	private final ResolvedPlan plan;
@@ -86,7 +90,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 		Map<IntEnumCandidate, TypeDeclaration> ownerTypes= new LinkedHashMap<>();
 		Map<IntEnumCandidate, MethodDeclaration> ownerMethods= new LinkedHashMap<>();
 		Map<IntEnumCandidate, Map<FieldDeclaration, Set<String>>> ownerFields= new LinkedHashMap<>();
-		Map<Expression, String> replacements= new IdentityHashMap<>();
+		Map<Expression, Replacement> replacements= new IdentityHashMap<>();
 		Map<IntEnumCandidate, Map<String, Integer>> referenceCounts= new HashMap<>();
 		Map<IntEnumCandidate, Integer> callCounts= new HashMap<>();
 		Set<ASTNode> processed= java.util.Collections.newSetFromMap(new IdentityHashMap<>());
@@ -162,10 +166,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 								stale(unit, "unexpected use of " + node.getIdentifier())); //$NON-NLS-1$
 					}
 					IntEnumConstant constant= candidate.constant(constantKey);
-					String qualifier= unitHandle.equals(candidate.ownerCompilationUnitHandle())
-							? candidate.enumTypeName()
-							: candidate.ownerTypeQualifiedName() + "." + candidate.enumTypeName(); //$NON-NLS-1$
-					replacements.put(expression, qualifier + "." + constant.enumName()); //$NON-NLS-1$
+					replacements.put(expression, new Replacement(candidate, constant.enumName()));
 					referenceCounts.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
 							.merge(constantKey, Integer.valueOf(1), Integer::sum);
 					processed.add(expression);
@@ -205,7 +206,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 				owners.add(new ResolvedOwner(candidate, type, method, parameter, fields));
 			}
 		}
-		return new ResolvedPlan(List.copyOf(owners), Map.copyOf(replacements), Set.copyOf(processed));
+		return new ResolvedPlan(unitHandle, List.copyOf(owners), Map.copyOf(replacements), Set.copyOf(processed));
 	}
 
 	private static final class StalePlanRuntimeException extends RuntimeException {
@@ -223,6 +224,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 		TextEditGroup group= createTextEditGroup("Convert package-scoped integer state domain to enum", cuRewrite); //$NON-NLS-1$
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		ImportRewrite imports= cuRewrite.getImportRewrite();
 
 		for (ResolvedOwner owner : plan.owners()) {
 			insertEnum(owner, ast, rewrite, group);
@@ -230,10 +232,44 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 					ast.newSimpleType(ast.newSimpleName(owner.candidate().enumTypeName())), group);
 			removeConstants(owner, rewrite, group);
 		}
-		for (Map.Entry<Expression, String> replacement : plan.replacements().entrySet()) {
-			Name name= ast.newName(replacement.getValue());
-			rewrite.replace(replacement.getKey(), name, group);
+		for (Map.Entry<Expression, Replacement> entry : plan.replacements().entrySet()) {
+			Replacement replacement= entry.getValue();
+			IntEnumCandidate candidate= replacement.candidate();
+			String enumQualifier;
+			if (plan.compilationUnitHandle().equals(candidate.ownerCompilationUnitHandle())) {
+				enumQualifier= candidate.enumTypeName();
+			} else {
+				String ownerReference= ownerReference(cuRewrite.getRoot(), candidate, imports);
+				enumQualifier= ownerReference + '.' + candidate.enumTypeName();
+			}
+			Name name= ast.newName(enumQualifier + '.' + replacement.enumConstantName());
+			rewrite.replace(entry.getKey(), name, group);
 		}
+	}
+
+	private static String ownerReference(org.eclipse.jdt.core.dom.CompilationUnit root,
+			IntEnumCandidate candidate, ImportRewrite imports) {
+		String qualifiedName= candidate.ownerTypeQualifiedName();
+		int separator= qualifiedName.lastIndexOf('.');
+		String simpleName= separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1);
+		boolean[] conflict= { false };
+		root.accept(new ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				if (conflict[0]) {
+					return;
+				}
+				if (node instanceof org.eclipse.jdt.core.dom.AbstractTypeDeclaration declaration
+						&& simpleName.equals(declaration.getName().getIdentifier())) {
+					String key= typeKey(declaration.resolveBinding());
+					conflict[0]= !candidate.ownerTypeBindingKey().equals(key);
+				} else if (node instanceof org.eclipse.jdt.core.dom.TypeParameter parameter
+						&& simpleName.equals(parameter.getName().getIdentifier())) {
+					conflict[0]= true;
+				}
+			}
+		});
+		return conflict[0] ? qualifiedName : imports.addImport(qualifiedName);
 	}
 
 	private static void insertEnum(ResolvedOwner owner, AST ast, ASTRewrite rewrite, TextEditGroup group) {
