@@ -4,16 +4,16 @@ Sandbox currently contains the pre-library JGit/Hibernate schema. Do not switch 
 
 ## Supported database boundary
 
-The published pre-library adoption migrations in `jgit-storage-hibernate-core:0.1.14` support PostgreSQL and HSQLDB. The maintenance command therefore fails before opening H2, MSSQL or any other JDBC family. A schema-shape check alone must not be presented as migration eligibility when no matching published Flyway location exists.
+The published pre-library adoption migrations in `jgit-storage-hibernate-core:0.1.15` support PostgreSQL, HSQLDB and Microsoft SQL Server. The maintenance command rejects H2 and every other JDBC family before opening a connection. A schema-shape check must not be presented as migration eligibility when no matching published Flyway location exists.
 
-The shaded server JAR contains the PostgreSQL and HSQLDB JDBC drivers required by these two supported paths. The existing MSSQL driver remains packaged only for the copied backend until the later production cut-over is complete.
+The shaded server JAR contains the PostgreSQL, HSQLDB and SQL Server JDBC drivers required by the supported paths. SQL Server support applies to Core storage only; `jgit-storage-hibernate-search` does not yet publish SQL Server migrations.
 
 ## Safety boundary
 
 The preflight command:
 
 - opens a plain JDBC connection using the normal `JGIT_DB_*` environment variables;
-- accepts only PostgreSQL or HSQLDB, matching the published legacy-adoption migrations;
+- accepts PostgreSQL, HSQLDB and SQL Server, matching the published 0.1.15 legacy-adoption migrations;
 - requires `;ifexists=true` in an HSQLDB URL so a mistyped file path cannot create a new database;
 - marks the opened JDBC connection read-only before the first schema query;
 - calls `LegacyCoreSchemaAdoption.requireSafeToAdopt(...)` from the pinned non-SNAPSHOT Core release;
@@ -29,9 +29,10 @@ The command is not a migration. A successful report only establishes that the da
 
 1. Stop all writers.
 2. Take a restorable database backup.
-3. Record repository and pack counts, ordered SHA-256 checksums of every `git_packs.data` value, refs and reflog rows.
+3. Record repository and pack counts, ordered SHA-256 checksums of every `git_packs.data` value, refs and complete reflog rows including timestamps.
 4. Use a restored production-like database first. Do not make the initial attempt against the only production copy.
-5. When the current deployment uses MSSQL, first decide between a verified PostgreSQL data transfer and implementing generic MSSQL support upstream. Do not run PostgreSQL migration SQL against MSSQL.
+5. Confirm the JDBC family and select only its matching `CoreSchemaMigrations` location. Never run PostgreSQL or HSQLDB SQL against SQL Server.
+6. Keep Search disabled during the Core cut-over on SQL Server; it has no released SQL Server migration contract.
 
 ## Build and run
 
@@ -52,7 +53,7 @@ java -cp sandbox-jgit-server-webapp/target/jgit-server.jar \
 
 Configure the connection with the same variables as the server:
 
-- `JGIT_DB_URL`, beginning with `jdbc:postgresql:` or `jdbc:hsqldb:`;
+- `JGIT_DB_URL`, beginning with `jdbc:postgresql:`, `jdbc:hsqldb:` or `jdbc:sqlserver:`;
 - for HSQLDB, include `;ifexists=true` in `JGIT_DB_URL`;
 - `JGIT_DB_USER`;
 - `JGIT_DB_PASSWORD` or `JGIT_DB_PASSWORD_FILE`;
@@ -67,7 +68,7 @@ A safe pre-library schema produces JSON containing at least:
 - discovered and missing columns;
 - pack-row count;
 - incomplete-row count;
-- duplicate logical pack identities;
+- deterministically ordered duplicate logical pack identities;
 - presence of `committed` and `committed_at`;
 - `requiresAdoption`.
 
@@ -81,11 +82,37 @@ The validator fails before DDL when it finds:
 - only one of `committed` or `committed_at`;
 - null or otherwise incomplete pack rows;
 - negative file sizes;
-- `pack_extension` values longer than 32 characters;
+- `pack_extension` values longer than 32 Unicode characters;
 - duplicate `(repository_name, pack_name, pack_extension)` identities.
 
 Resolve rejected rows from application knowledge or restore a known-good backup. The preflight never selects a duplicate row or truncates a value automatically.
 
 ## Next step after a successful preflight
 
-The next implementation slice must run the matching PostgreSQL or HSQLDB legacy-adoption Flyway location from `CoreSchemaMigrations`, establish the normal Core schema history, start Hibernate with `hibernate.hbm2ddl.auto=validate`, compare all recorded BLOB checksums and reflogs, and exercise repository traversal and ref updates before writers are enabled. Rollback is database restore plus the previous application artifact; no reverse migration is assumed.
+Run the database-specific legacy-adoption Flyway stream from the released Core artifact:
+
+```java
+Flyway.configure()
+    .dataSource(dataSource)
+    .locations(CoreSchemaMigrations.SQL_SERVER_LEGACY_ADOPTION_LOCATION)
+    .table(CoreSchemaMigrations.LEGACY_ADOPTION_SCHEMA_HISTORY_TABLE)
+    .baselineOnMigrate(true)
+    .baselineVersion(CoreSchemaMigrations.PRE_MIGRATION_BASELINE_VERSION)
+    .baselineDescription("before pre-library core adoption")
+    .load()
+    .migrate();
+```
+
+Use `POSTGRESQL_LEGACY_ADOPTION_LOCATION` or `HSQLDB_LEGACY_ADOPTION_LOCATION` for those databases. SQL Server deployments require Flyway's `flyway-sqlserver` module in the migration tool.
+
+After the adoption stream succeeds, establish the normal Core history at `CURRENT_SCHEMA_VERSION`, apply the remaining regular migrations from the matching Core location, and start Hibernate only with `hibernate.hbm2ddl.auto=validate`. For SQL Server, the released migration normalizes copied `datetime2(6)` values to the Core `datetimeoffset(7)` mapping, preserves legacy inline BLOB bytes and retains the wider physical reflog-message column.
+
+Before enabling writers:
+
+- compare every recorded inline BLOB checksum and reflog row;
+- reopen and traverse existing repositories;
+- verify a ref update creates a queryable reflog;
+- verify a sufficiently large non-compressible payload can use `git_pack_chunks` while small payloads may remain inline by design;
+- archive Flyway output and deployed artifact checksums.
+
+Rollback is database restore plus the previous application artifact; no reverse migration is assumed.
