@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator;
 import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.Allocation;
 import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.NestedTypeRequest;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameHierarchyPolicy;
 
 /**
  * Utility class for naming and string operations.
@@ -91,8 +92,8 @@ public final class NamingUtils {
 	 *
 	 * <p>The historical field-name/checksum convention is retained for stable
 	 * output, but the proposed name is now checked by the shared generated-name
-	 * allocator against type, member, local and import namespaces before any
-	 * rewrite is committed.</p>
+	 * services against type, member, local, import and inherited member-type
+	 * namespaces before any rewrite is committed.</p>
 	 *
 	 * @param anonymousClass the anonymous class declaration
 	 * @param baseName the base name from the field
@@ -127,6 +128,13 @@ public final class NamingUtils {
 			String detail= allocation == null ? "allocation result is missing" : allocation.diagnosticMessage(); //$NON-NLS-1$
 			throw new IllegalStateException("Generated nested helper name " + requestedName //$NON-NLS-1$
 					+ " is unavailable: " + detail); //$NON-NLS-1$
+		}
+		List<String> inheritedCollisions= GeneratedNameHierarchyPolicy
+				.inheritedMemberTypeCollisions(ownerDeclaration, requestedName);
+		if (!inheritedCollisions.isEmpty()) {
+			throw new IllegalStateException("Generated nested helper name " + requestedName //$NON-NLS-1$
+					+ " is unavailable: inherited member type (" //$NON-NLS-1$
+					+ String.join(", ", inheritedCollisions) + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return requestedName;
 	}
