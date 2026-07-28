@@ -13,6 +13,7 @@ package org.eclipse.jgit.server.config;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -89,10 +90,15 @@ public final class LegacyCoreSchemaPreflight {
 	/** Validate one existing JDBC connection without modifying its schema. */
 	static PreflightReport inspect(Connection connection) {
 		LegacySchemaReport report= LegacyCoreSchemaAdoption.requireSafeToAdopt(connection);
+		Comparator<DuplicatePackIdentity> duplicateOrder= Comparator
+				.comparing(DuplicatePackIdentity::repositoryName)
+				.thenComparing(DuplicatePackIdentity::packName)
+				.thenComparing(DuplicatePackIdentity::packExtension)
+				.thenComparingLong(DuplicatePackIdentity::rowCount);
 		return new PreflightReport(report.columns().stream().sorted().toList(),
 				report.missingRequiredColumns().stream().sorted().toList(), report.packRows(),
-				report.incompletePackRows(), report.duplicatePackIdentities(), report.hasCommittedColumn(),
-				report.hasCommittedAtColumn(), report.requiresAdoption());
+				report.incompletePackRows(), report.duplicatePackIdentities().stream().sorted(duplicateOrder).toList(),
+				report.hasCommittedColumn(), report.hasCommittedAtColumn(), report.requiresAdoption());
 	}
 
 	/** Serialize the bounded report without exposing connection credentials. */
