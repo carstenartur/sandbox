@@ -123,6 +123,9 @@ public enum JUnitCleanUpFixCore {
 	}
 
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder<Integer, JunitHolder> hit) {
+		JunitHolder snapshot= hit.get(hit.size() - 1);
+		ReferenceHolder<Integer, JunitHolder> operationData= ReferenceHolder.createIndexed();
+		operationData.put(Integer.valueOf(0), snapshot);
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
@@ -136,9 +139,9 @@ public enum JUnitCleanUpFixCore {
 				} else {
 					rangeComputer= new TightSourceRangeComputer();
 				}
-				rangeComputer.addTightSourceNode(hit.get(0).getMinv());
+				rangeComputer.addTightSourceNode(snapshot.getMinv());
 				rewrite.setTargetSourceRangeComputer(rangeComputer);
-				junitfound.rewrite(JUnitCleanUpFixCore.this, hit, cuRewrite, group);
+				junitfound.rewrite(JUnitCleanUpFixCore.this, operationData, cuRewrite, group);
 			}
 		};
 	}
