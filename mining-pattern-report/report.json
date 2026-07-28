@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 227,
+    "totalMatches": 228,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,9 +33,9 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1015,
-        "matches": 51,
-        "rules": 8
+        "files": 1029,
+        "matches": 52,
+        "rules": 9
       }
     }
   },
@@ -1521,6 +1521,14 @@
     {
       "repository": "sandbox",
       "hintFile": "stream-performance",
+      "rule": "stream-performance.sorted-before-collect.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java",
+      "line": 205,
+      "matchedCode": "group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candidateId.equals(request.requestId())).sorted().collect(Collectors.joining(\", \"))"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
       "rule": "stream-performance.nested-flatmap.review",
       "file": "sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java",
       "line": 258,
@@ -1821,7 +1829,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
-      "line": 177,
+      "line": 179,
       "matchedCode": "computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.toList())"
     },
     {

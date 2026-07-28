@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-07-27
+# Refactoring Mining Report — 2026-07-28
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1015 | 51 | 8 |
+| sandbox | 1029 | 52 | 9 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -241,6 +241,9 @@
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:241` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("============="...`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach(pac...`
 
+#### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
+
 #### Rule: `stream-performance` → `stream-performance.nested-flatmap.review`
 - `sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java:258` — `miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(Simple...`
 
@@ -289,7 +292,7 @@
 - `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
-- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:177` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:179` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:177` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:139` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
