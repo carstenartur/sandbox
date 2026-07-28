@@ -34,7 +34,7 @@ Sandbox owns:
 
 ### First slice
 
-The module consumes released version `0.1.13` from the anonymous static Maven repository documented by the external project. `JGitStorageLibraryBoundary` exposes the public `RepositoryName` and `CoreEntities` contracts to Sandbox code. New integration code must use this boundary or another explicitly reviewed public-library adapter; it must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation classes.
+The module consumes released version `0.1.14` from the anonymous static Maven repository documented by the external project. The release preserves the supported public API of `0.1.13` while adding the migration, repository-lock and chunked-storage work needed by the later database cut-over. `JGitStorageLibraryBoundary` exposes the public `RepositoryName` and `CoreEntities` contracts to Sandbox code. New integration code must use this boundary or another explicitly reviewed public-library adapter; it must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation classes.
 
 ### Repository-service boundary slice
 
