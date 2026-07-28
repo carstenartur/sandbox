@@ -77,122 +77,125 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		}
 <span class="fc" id="L78">		NormalAnnotation annotation = (NormalAnnotation) node;</span>
 <span class="fc" id="L79">		MemberValuePair expectedPair = null;</span>
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		for (Object obj : annotation.values()) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		for (Object obj : annotation.values()) {</span>
 <span class="fc" id="L81">			MemberValuePair pair = (MemberValuePair) obj;</span>
-<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			if (&quot;expected&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L83">				expectedPair = pair;</span>
-<span class="fc" id="L84">				break;</span>
+<span class="fc" id="L82">			String parameterName = pair.getName().getIdentifier();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">			if (&quot;timeout&quot;.equals(parameterName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L84">				return null;</span>
+			}
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">			if (&quot;expected&quot;.equals(parameterName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L87">				expectedPair = pair;</span>
 			}
 		}
-<span class="pc bpc" id="L87" title="2 of 4 branches missed.">		if (expectedPair == null || !(expectedPair.getValue() instanceof TypeLiteral)) {</span>
-<span class="nc" id="L88">			return null;</span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">		if (expectedPair == null || !(expectedPair.getValue() instanceof TypeLiteral)) {</span>
+<span class="nc" id="L91">			return null;</span>
 		}
-<span class="fc" id="L90">		JunitHolder holder = new JunitHolder();</span>
-<span class="fc" id="L91">		holder.setMinv(annotation);</span>
-<span class="fc" id="L92">		holder.setAdditionalInfo(expectedPair);</span>
-<span class="fc" id="L93">		return holder;</span>
+<span class="fc" id="L93">		JunitHolder holder = new JunitHolder();</span>
+<span class="fc" id="L94">		holder.setMinv(annotation);</span>
+<span class="fc" id="L95">		holder.setAdditionalInfo(expectedPair);</span>
+<span class="fc" id="L96">		return holder;</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L99">		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();</span>
-<span class="fc" id="L100">		MemberValuePair expectedPair = (MemberValuePair) junitHolder.getAdditionalInfo();</span>
+<span class="fc" id="L102">		NormalAnnotation testAnnotation = (NormalAnnotation) junitHolder.getAnnotation();</span>
+<span class="fc" id="L103">		MemberValuePair expectedPair = (MemberValuePair) junitHolder.getAdditionalInfo();</span>
 
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (expectedPair == null) {</span>
-<span class="nc" id="L103">			return;</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (expectedPair == null) {</span>
+<span class="nc" id="L106">			return;</span>
 		}
 
-<span class="fc" id="L106">		Expression expectedValue = expectedPair.getValue();</span>
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (!(expectedValue instanceof TypeLiteral)) {</span>
+<span class="fc" id="L109">		Expression expectedValue = expectedPair.getValue();</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (!(expectedValue instanceof TypeLiteral)) {</span>
 			// Can't handle non-TypeLiteral expected values
-<span class="nc" id="L109">			return;</span>
+<span class="nc" id="L112">			return;</span>
 		}
 
-<span class="fc" id="L112">		TypeLiteral expectedTypeLiteral = (TypeLiteral) expectedValue;</span>
+<span class="fc" id="L115">		TypeLiteral expectedTypeLiteral = (TypeLiteral) expectedValue;</span>
 
 		// Get the method declaration
-<span class="fc" id="L115">		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);</span>
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		if (method == null) {</span>
-<span class="nc" id="L117">			return;</span>
+<span class="fc" id="L118">		MethodDeclaration method = ASTNodes.getParent(testAnnotation, MethodDeclaration.class);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (method == null) {</span>
+<span class="nc" id="L120">			return;</span>
 		}
 
-<span class="fc" id="L120">		Block methodBody = method.getBody();</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
-<span class="nc" id="L122">			return;</span>
+<span class="fc" id="L123">		Block methodBody = method.getBody();</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
+<span class="nc" id="L125">			return;</span>
 		}
 
-<span class="fc" id="L125">		List&lt;Statement&gt; statements = methodBody.statements();</span>
+<span class="fc" id="L128">		List&lt;Statement&gt; statements = methodBody.statements();</span>
 
 		// Create assertThrows method invocation
-<span class="fc" id="L128">		MethodInvocation assertThrowsCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L129">		assertThrowsCall.setName(ast.newSimpleName(METHOD_ASSERT_THROWS));</span>
+<span class="fc" id="L131">		MethodInvocation assertThrowsCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L132">		assertThrowsCall.setName(ast.newSimpleName(METHOD_ASSERT_THROWS));</span>
 
 		// Add the exception class as the first argument
-<span class="fc" id="L132">		TypeLiteral exceptionClass = (TypeLiteral) ASTNode.copySubtree(ast, expectedTypeLiteral);</span>
-<span class="fc" id="L133">		assertThrowsCall.arguments().add(exceptionClass);</span>
+<span class="fc" id="L135">		TypeLiteral exceptionClass = (TypeLiteral) ASTNode.copySubtree(ast, expectedTypeLiteral);</span>
+<span class="fc" id="L136">		assertThrowsCall.arguments().add(exceptionClass);</span>
 
 		// Create lambda expression for the method body
-<span class="fc" id="L136">		LambdaExpression lambda = ast.newLambdaExpression();</span>
-<span class="fc" id="L137">		lambda.setParentheses(true);</span>
+<span class="fc" id="L139">		LambdaExpression lambda = ast.newLambdaExpression();</span>
+<span class="fc" id="L140">		lambda.setParentheses(true);</span>
 
-<span class="fc" id="L139">		Block lambdaBody = ast.newBlock();</span>
+<span class="fc" id="L142">		Block lambdaBody = ast.newBlock();</span>
 
 		// Copy all statements from the original method body into the lambda
-<span class="fc bfc" id="L142" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
-<span class="fc" id="L143">			Statement copiedStmt = (Statement) ASTNode.copySubtree(ast, stmt);</span>
-<span class="fc" id="L144">			lambdaBody.statements().add(copiedStmt);</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (Statement stmt : statements) {</span>
+<span class="fc" id="L146">			Statement copiedStmt = (Statement) ASTNode.copySubtree(ast, stmt);</span>
+<span class="fc" id="L147">			lambdaBody.statements().add(copiedStmt);</span>
 		}
 
-<span class="fc" id="L147">		lambda.setBody(lambdaBody);</span>
-<span class="fc" id="L148">		assertThrowsCall.arguments().add(lambda);</span>
+<span class="fc" id="L150">		lambda.setBody(lambdaBody);</span>
+<span class="fc" id="L151">		assertThrowsCall.arguments().add(lambda);</span>
 
 		// Create the new expression statement with assertThrows
-<span class="fc" id="L151">		ExpressionStatement assertThrowsStatement = ast.newExpressionStatement(assertThrowsCall);</span>
+<span class="fc" id="L154">		ExpressionStatement assertThrowsStatement = ast.newExpressionStatement(assertThrowsCall);</span>
 
 		// Remove all existing statements from the method body
-<span class="fc bfc" id="L154" title="All 2 branches covered.">		for (int i = statements.size() - 1; i &gt;= 0; i--) {</span>
-<span class="fc" id="L155">			rewriter.remove(statements.get(i), group);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (int i = statements.size() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L158">			rewriter.remove(statements.get(i), group);</span>
 		}
 
 		// Add the assertThrows statement as the only statement in the method
-<span class="fc" id="L159">		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertThrowsStatement, group);</span>
+<span class="fc" id="L162">		rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY).insertLast(assertThrowsStatement, group);</span>
 
 		// Remove the expected parameter from @Test annotation
 		// If expected is the only parameter remaining, replace with marker annotation
-<span class="fc" id="L163">		List&lt;MemberValuePair&gt; testValues = testAnnotation.values();</span>
+<span class="fc" id="L166">		List&lt;MemberValuePair&gt; testValues = testAnnotation.values();</span>
 
 		// Count how many parameters will remain after removing expected
 		// (need to account for other parameters that might be removed by other plugins
 		// like timeout)
-<span class="fc" id="L168">		int remainingParams = 0;</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (MemberValuePair pair : testValues) {</span>
-<span class="fc" id="L170">			String paramName = pair.getName().getIdentifier();</span>
+<span class="fc" id="L171">		int remainingParams = 0;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		for (MemberValuePair pair : testValues) {</span>
+<span class="fc" id="L173">			String paramName = pair.getName().getIdentifier();</span>
 			// Count parameters that are not expected and not timeout (which is handled by
 			// TestTimeoutJUnitPlugin)
-<span class="pc bpc" id="L173" title="3 of 4 branches missed.">			if (!&quot;expected&quot;.equals(paramName) &amp;&amp; !&quot;timeout&quot;.equals(paramName)) {</span>
-<span class="nc" id="L174">				remainingParams++;</span>
+<span class="pc bpc" id="L176" title="3 of 4 branches missed.">			if (!&quot;expected&quot;.equals(paramName) &amp;&amp; !&quot;timeout&quot;.equals(paramName)) {</span>
+<span class="nc" id="L177">				remainingParams++;</span>
 			}
 		}
 
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (remainingParams == 0) {</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (remainingParams == 0) {</span>
 			// No other meaningful parameters remain, convert to marker annotation @Test
-<span class="fc" id="L180">			MarkerAnnotation markerTestAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);</span>
-<span class="fc" id="L181">			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);</span>
-<span class="fc" id="L182">		} else {</span>
-<span class="nc" id="L183">			rewriter.remove(expectedPair, group);</span>
+<span class="fc" id="L183">			MarkerAnnotation markerTestAnnotation = AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);</span>
+<span class="fc" id="L184">			ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTestAnnotation, group);</span>
+<span class="fc" id="L185">		} else {</span>
+<span class="nc" id="L186">			rewriter.remove(expectedPair, group);</span>
 		}
 
 		// Add imports - order matters: remove old import first, then add new imports
-<span class="fc" id="L187">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
-<span class="fc" id="L188">		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);</span>
-<span class="fc" id="L189">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);</span>
-<span class="fc" id="L190">	}</span>
+<span class="fc" id="L190">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
+<span class="fc" id="L191">		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);</span>
+<span class="fc" id="L192">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);</span>
+<span class="fc" id="L193">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L194" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L195">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L198">			return &quot;&quot;&quot;</span>
 					import static org.junit.jupiter.api.Assertions.assertThrows;
 
 					import org.junit.jupiter.api.Test;
@@ -205,7 +208,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L208">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L211">		return &quot;&quot;&quot;</span>
 				import org.junit.Test;
 
 				@Test(expected = IllegalArgumentException.class)
@@ -217,7 +220,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L220">		return &quot;TestExpected&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L223">		return &quot;TestExpected&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

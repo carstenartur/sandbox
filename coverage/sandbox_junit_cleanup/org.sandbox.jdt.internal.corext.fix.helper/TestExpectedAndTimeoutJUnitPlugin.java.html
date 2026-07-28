@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TestExpectedAndTimeoutJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">TestExpectedAndTimeoutJUnitPlugin.java</span></div><h1>TestExpectedAndTimeoutJUnitPlugin.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ANNOTATION_TEST;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ANNOTATION_TIMEOUT;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_ASSERT_THROWS;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_ASSERTIONS;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_TIMEOUT;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_TEST;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_TEST;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
+import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+
+/**
+ * Coordinates migration of a JUnit 4 {@code @Test} annotation that declares
+ * both {@code expected} and {@code timeout}.
+ *
+ * &lt;p&gt;A single operation must own the annotation because the ordinary timeout
+ * and expected plugins deliberately share a processed-node set. Processing the
+ * attributes independently would either skip one migration or schedule
+ * conflicting replacements for the same annotation.&lt;/p&gt;
+ */
+@CleanupPattern(value = &quot;@Test(expected=$ex, timeout=$t)&quot;, kind = PatternKind.ANNOTATION,
+		qualifiedType = ORG_JUNIT_TEST, cleanupId = &quot;cleanup.junit.test.expected-timeout&quot;,
+		description = &quot;Migrate combined @Test(expected, timeout)&quot;,
+		displayName = &quot;JUnit 4 @Test(expected, timeout) → assertThrows() and @Timeout&quot;)
+<span class="fc" id="L65">public class TestExpectedAndTimeoutJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+
+	private record Parameters(MemberValuePair expected, MemberValuePair timeout) {
+	}
+
+	@Override
+	protected List&lt;Pattern&gt; getPatterns() {
+<span class="fc" id="L72">		return List.of(new Pattern(&quot;@Test(expected=$ex, timeout=$t)&quot;, PatternKind.ANNOTATION, null, null, //$NON-NLS-1$</span>
+<span class="fc" id="L73">				ORG_JUNIT_TEST, null, null));</span>
+	}
+
+	@Override
+	protected JunitHolder createHolder(Match match) {
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (!(match.getMatchedNode() instanceof NormalAnnotation annotation)) {</span>
+<span class="nc" id="L79">			return null;</span>
+		}
+<span class="fc" id="L81">		MemberValuePair expected= pair(annotation, &quot;expected&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L82">		MemberValuePair timeout= pair(annotation, &quot;timeout&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L83" title="3 of 6 branches missed.">		if (expected == null || timeout == null || !(expected.getValue() instanceof TypeLiteral)</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">				|| !(timeout.getValue() instanceof NumberLiteral number) || !isLong(number.getToken())) {</span>
+<span class="nc" id="L85">			return null;</span>
+		}
+<span class="fc" id="L87">		return new JunitHolder().setMinv(annotation).setAdditionalInfo(new Parameters(expected, timeout));</span>
+	}
+
+	@Override
+	@SuppressWarnings(&quot;unchecked&quot;)
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (!(junitHolder.getAnnotation() instanceof NormalAnnotation testAnnotation)</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">				|| !(junitHolder.getAdditionalInfo() instanceof Parameters parameters)</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">				|| !(parameters.expected().getValue() instanceof TypeLiteral expectedType)</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				|| !(parameters.timeout().getValue() instanceof NumberLiteral timeoutLiteral)) {</span>
+<span class="nc" id="L98">			return;</span>
+		}
+<span class="fc" id="L100">		MethodDeclaration method= ASTNodes.getParent(testAnnotation, MethodDeclaration.class);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		Block methodBody= method == null ? null : method.getBody();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (methodBody == null) {</span>
+<span class="nc" id="L103">			return;</span>
+		}
+		long timeoutMillis;
+		try {
+<span class="fc" id="L107">			timeoutMillis= Long.parseLong(timeoutLiteral.getToken());</span>
+<span class="pc" id="L108">		} catch (NumberFormatException exception) {</span>
+<span class="nc" id="L109">			return;</span>
+		}
+
+<span class="fc" id="L112">		MethodInvocation assertThrows= ast.newMethodInvocation();</span>
+<span class="fc" id="L113">		assertThrows.setName(ast.newSimpleName(METHOD_ASSERT_THROWS));</span>
+<span class="fc" id="L114">		assertThrows.arguments().add(ASTNode.copySubtree(ast, expectedType));</span>
+<span class="fc" id="L115">		LambdaExpression lambda= ast.newLambdaExpression();</span>
+<span class="fc" id="L116">		lambda.setParentheses(true);</span>
+<span class="fc" id="L117">		Block lambdaBody= ast.newBlock();</span>
+<span class="fc" id="L118">		List&lt;Statement&gt; statements= methodBody.statements();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">		for (Statement statement : statements) {</span>
+<span class="fc" id="L120">			lambdaBody.statements().add(ASTNode.copySubtree(ast, statement));</span>
+		}
+<span class="fc" id="L122">		lambda.setBody(lambdaBody);</span>
+<span class="fc" id="L123">		assertThrows.arguments().add(lambda);</span>
+<span class="fc" id="L124">		ExpressionStatement assertion= ast.newExpressionStatement(assertThrows);</span>
+<span class="fc" id="L125">		ListRewrite bodyRewrite= rewriter.getListRewrite(methodBody, Block.STATEMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (Statement statement : statements) {</span>
+<span class="fc" id="L127">			bodyRewrite.remove(statement, group);</span>
+		}
+<span class="fc" id="L129">		bodyRewrite.insertLast(assertion, group);</span>
+
+<span class="fc" id="L131">		NormalAnnotation timeoutAnnotation= ast.newNormalAnnotation();</span>
+<span class="fc" id="L132">		timeoutAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TIMEOUT));</span>
+<span class="fc" id="L133">		MemberValuePair valuePair= ast.newMemberValuePair();</span>
+<span class="fc" id="L134">		valuePair.setName(ast.newSimpleName(&quot;value&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L135" title="2 of 4 branches missed.">		boolean seconds= timeoutMillis &gt;= 1000 &amp;&amp; timeoutMillis % 1000 == 0;</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		valuePair.setValue(ast.newNumberLiteral(Long.toString(seconds ? timeoutMillis / 1000 : timeoutMillis)));</span>
+<span class="fc" id="L137">		timeoutAnnotation.values().add(valuePair);</span>
+<span class="fc" id="L138">		MemberValuePair unitPair= ast.newMemberValuePair();</span>
+<span class="fc" id="L139">		unitPair.setName(ast.newSimpleName(&quot;unit&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L140">		QualifiedName unit= ast.newQualifiedName(ast.newSimpleName(&quot;TimeUnit&quot;), //$NON-NLS-1$</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">				ast.newSimpleName(seconds ? &quot;SECONDS&quot; : &quot;MILLISECONDS&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L142">		unitPair.setValue(unit);</span>
+<span class="fc" id="L143">		timeoutAnnotation.values().add(unitPair);</span>
+<span class="fc" id="L144">		ListRewrite modifiers= rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L145">		modifiers.insertAfter(timeoutAnnotation, testAnnotation, group);</span>
+
+<span class="fc" id="L147">		MarkerAnnotation markerTest= AnnotationUtils.createMarkerAnnotation(ast, ANNOTATION_TEST);</span>
+<span class="fc" id="L148">		ASTNodes.replaceButKeepComment(rewriter, testAnnotation, markerTest, group);</span>
+
+<span class="fc" id="L150">		importRewriter.removeImport(ORG_JUNIT_TEST);</span>
+<span class="fc" id="L151">		importRewriter.addImport(ORG_JUNIT_JUPITER_TEST);</span>
+<span class="fc" id="L152">		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TIMEOUT);</span>
+<span class="fc" id="L153">		importRewriter.addImport(&quot;java.util.concurrent.TimeUnit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L154">		importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSERTIONS, METHOD_ASSERT_THROWS, false);</span>
+<span class="fc" id="L155">	}</span>
+
+	private static MemberValuePair pair(NormalAnnotation annotation, String name) {
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		for (Object value : annotation.values()) {</span>
+<span class="fc" id="L159">			MemberValuePair pair= (MemberValuePair) value;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			if (name.equals(pair.getName().getIdentifier())) {</span>
+<span class="fc" id="L161">				return pair;</span>
+			}
+		}
+<span class="nc" id="L164">		return null;</span>
+	}
+
+	private static boolean isLong(String token) {
+		try {
+<span class="fc" id="L169">			Long.parseLong(token);</span>
+<span class="fc" id="L170">			return true;</span>
+<span class="nc" id="L171">		} catch (NumberFormatException exception) {</span>
+<span class="nc" id="L172">			return false;</span>
+		}
+	}
+
+	@Override
+	public String getPreview(boolean afterRefactoring) {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">		return afterRefactoring</span>
+<span class="nc" id="L179">				? &quot;@Test\n@Timeout(value = 1, unit = TimeUnit.SECONDS)\nvoid test() { assertThrows(Exception.class, () -&gt; work()); }&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L180">				: &quot;@Test(expected = Exception.class, timeout = 1000)\nvoid test() { work(); }&quot;; //$NON-NLS-1$</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="fc" id="L185">		return &quot;TestExpectedAndTimeout&quot;; //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -11,47 +11,82 @@
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.Allocation;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.NestedTypeRequest;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 
 /** Immutable plan containing all conservative package-scoped enum candidates. */
 public record IntEnumMigrationPlan(SelectedCompilationUnitPlan selectedScope, List&lt;IntEnumCandidate&gt; candidates) {
 
 	/** Defensively copies plan data. */
-<span class="fc" id="L29">	public IntEnumMigrationPlan {</span>
-<span class="fc" id="L30">		candidates= List.copyOf(candidates);</span>
-<span class="fc" id="L31">	}</span>
+<span class="fc" id="L35">	public IntEnumMigrationPlan {</span>
+<span class="fc" id="L36">		candidates= List.copyOf(candidates);</span>
+<span class="fc" id="L37">	}</span>
 
 	/** Returns whether the unit participates in the cleanup run. */
 	public boolean contains(ICompilationUnit unit) {
-<span class="fc" id="L35">		return selectedScope.contains(unit);</span>
+<span class="fc" id="L41">		return selectedScope.contains(unit);</span>
 	}
 
 	/** Adds the local rewrite operation after resolving all expected plan targets. */
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesProcessed)
 			throws CoreException {
-<span class="fc" id="L42">		String handle= unit.getPrimary().getHandleIdentifier();</span>
-<span class="fc" id="L43">		List&lt;IntEnumCandidate&gt; relevant= candidates.stream()</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">				.filter(candidate -&gt; handle.equals(candidate.ownerCompilationUnitHandle())</span>
-<span class="fc bfc" id="L45" title="All 2 branches covered.">						|| candidate.expectedReferenceCountsByUnit().containsKey(handle)</span>
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">						|| candidate.expectedCallCountsByUnit().containsKey(handle))</span>
-<span class="fc" id="L47">				.toList();</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">		if (relevant.isEmpty()) {</span>
-<span class="fc" id="L49">			return;</span>
+<span class="fc" id="L48">		String handle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="fc" id="L49">		List&lt;IntEnumCandidate&gt; relevant= candidates.stream()</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">				.filter(candidate -&gt; handle.equals(candidate.ownerCompilationUnitHandle())</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">						|| candidate.expectedReferenceCountsByUnit().containsKey(handle)</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">						|| candidate.expectedCallCountsByUnit().containsKey(handle))</span>
+<span class="fc" id="L53">				.toList();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		if (relevant.isEmpty()) {</span>
+<span class="fc" id="L55">			return;</span>
 		}
-<span class="fc" id="L51">		IntEnumMultiFileRewriteOperation.ResolvedPlan resolved= IntEnumMultiFileRewriteOperation.resolve(</span>
-<span class="fc" id="L52">				unit.getPrimary(), root, relevant);</span>
-<span class="fc" id="L53">		nodesProcessed.addAll(resolved.processedNodes());</span>
-<span class="fc" id="L54">		operations.add(new IntEnumMultiFileRewriteOperation(resolved));</span>
-<span class="fc" id="L55">	}</span>
+<span class="fc" id="L57">		validateGeneratedNames(unit.getPrimary(), root, relevant.stream()</span>
+<span class="fc" id="L58">				.filter(candidate -&gt; handle.equals(candidate.ownerCompilationUnitHandle())).toList());</span>
+<span class="fc" id="L59">		IntEnumMultiFileRewriteOperation.ResolvedPlan resolved= IntEnumMultiFileRewriteOperation.resolve(</span>
+<span class="fc" id="L60">				unit.getPrimary(), root, relevant);</span>
+<span class="fc" id="L61">		nodesProcessed.addAll(resolved.processedNodes());</span>
+<span class="fc" id="L62">		operations.add(new IntEnumMultiFileRewriteOperation(resolved));</span>
+<span class="fc" id="L63">	}</span>
+
+	private static void validateGeneratedNames(ICompilationUnit unit, CompilationUnit root,
+			List&lt;IntEnumCandidate&gt; ownerCandidates) throws CoreException {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (ownerCandidates.isEmpty()) {</span>
+<span class="fc" id="L68">			return;</span>
+		}
+<span class="fc" id="L70">		List&lt;NestedTypeRequest&gt; requests= ownerCandidates.stream()</span>
+<span class="fc" id="L71">				.map(candidate -&gt; new NestedTypeRequest(requestId(candidate), candidate.ownerCompilationUnitHandle(),</span>
+<span class="fc" id="L72">						candidate.ownerTypeBindingKey(), candidate.ownerTypeQualifiedName(), candidate.enumTypeName()))</span>
+<span class="fc" id="L73">				.toList();</span>
+<span class="fc" id="L74">		Map&lt;String, Allocation&gt; allocations= GeneratedNameAllocator.allocateNestedTypes(List.of(root), requests);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (NestedTypeRequest request : requests) {</span>
+<span class="fc" id="L76">			Allocation allocation= allocations.get(request.requestId());</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">			if (allocation == null || allocation.available()) {</span>
+<span class="fc" id="L78">				continue;</span>
+			}
+<span class="fc" id="L80">			String message= &quot;The project-wide int-to-enum plan is stale for &quot; + unit.getElementName() //$NON-NLS-1$</span>
+<span class="fc" id="L81">					+ &quot;: generated name &quot; + request.requestedName() + &quot; is not available: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L82">					+ allocation.diagnosticMessage();</span>
+<span class="fc" id="L83">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_int_to_enum&quot;, message)); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L85">	}</span>
+
+	private static String requestId(IntEnumCandidate candidate) {
+<span class="fc" id="L88">		return candidate.ownerTypeBindingKey() + '#' + candidate.methodBindingKey() + ':'</span>
+<span class="fc" id="L89">				+ candidate.parameterIndex() + &quot;-&gt;&quot; + candidate.enumTypeName(); //$NON-NLS-1$</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

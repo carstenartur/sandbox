@@ -301,8 +301,8 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 <span class="fc" id="L301">		List&lt;MemberValuePair&gt; otherPairs = otherAnnotation.values();</span>
 		
 		// Must have same number of pairs
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">		if (patternPairs.size() != otherPairs.size()) {</span>
-<span class="nc" id="L305">			return false;</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">		if (patternPairs.size() != otherPairs.size()) {</span>
+<span class="fc" id="L305">			return false;</span>
 		}
 		
 		// Create a map for O(n) lookup instead of O(n²)

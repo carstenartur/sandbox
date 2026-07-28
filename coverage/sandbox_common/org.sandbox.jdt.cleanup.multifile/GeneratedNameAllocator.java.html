@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GeneratedNameAllocator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">GeneratedNameAllocator.java</span></div><h1>GeneratedNameAllocator.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeParameter;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+/**
+ * Deterministically validates names proposed by multi-file cleanups.
+ *
+ * &lt;p&gt;The allocator deliberately does not invent numeric suffixes for generated
+ * domain types. A requested name is either available or rejected with stable,
+ * structured collision information that can be shown in previews and reused
+ * for stale-plan validation.&lt;/p&gt;
+ */
+public final class GeneratedNameAllocator {
+
+	/** Java namespaces relevant to generated nested type references. */
+<span class="fc" id="L52">	public enum Namespace {</span>
+<span class="fc" id="L53">		/** Existing or prospective type declaration. */</span>
+<span class="fc" id="L54">		TYPE,</span>
+<span class="fc" id="L55">		/** Field, enum constant, method or annotation member. */</span>
+<span class="fc" id="L56">		MEMBER,</span>
+<span class="fc" id="L57">		/** Parameter, local variable or other local declaration. */</span>
+<span class="fc" id="L58">		LOCAL,</span>
+<span class="fc" id="L59">		/** Explicit import using the requested simple name. */</span>
+<span class="fc" id="L60">		IMPORT,</span>
+<span class="fc" id="L61">		/** Another cleanup candidate reserved the same generated name. */</span>
+<span class="fc" id="L62">		PLANNED</span>
+	}
+
+	/** Identity and target of one requested nested type. */
+	public record NestedTypeRequest(String requestId, String ownerCompilationUnitHandle,
+			String ownerTypeBindingKey, String ownerTypeQualifiedName, String requestedName) {
+
+		/** Validates and normalizes request identity. */
+<span class="fc" id="L70">		public NestedTypeRequest {</span>
+<span class="fc" id="L71">			requestId= requireText(requestId, &quot;requestId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L72">			ownerCompilationUnitHandle= normalize(ownerCompilationUnitHandle);</span>
+<span class="fc" id="L73">			ownerTypeBindingKey= normalize(ownerTypeBindingKey);</span>
+<span class="fc" id="L74">			ownerTypeQualifiedName= normalize(ownerTypeQualifiedName);</span>
+<span class="fc" id="L75">			requestedName= requireText(requestedName, &quot;requestedName&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">			if (ownerTypeBindingKey.isEmpty() &amp;&amp; ownerTypeQualifiedName.isEmpty()) {</span>
+<span class="nc" id="L77">				throw new IllegalArgumentException(</span>
+<span class="nc" id="L78">						&quot;Either ownerTypeBindingKey or ownerTypeQualifiedName must be provided.&quot;); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">			if (!isJavaIdentifier(requestedName)) {</span>
+<span class="nc" id="L81">				throw new IllegalArgumentException(&quot;Not a Java identifier: &quot; + requestedName); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L83">		}</span>
+	}
+
+	/** One declaration or reservation conflicting with a requested name. */
+	public record Collision(Namespace namespace, String compilationUnitHandle,
+			String declarationKind, String context) {
+
+		/** Normalizes diagnostic fields. */
+<span class="fc" id="L91">		public Collision {</span>
+<span class="fc" id="L92">			namespace= Objects.requireNonNull(namespace, &quot;namespace&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L93">			compilationUnitHandle= normalize(compilationUnitHandle);</span>
+<span class="fc" id="L94">			declarationKind= requireText(declarationKind, &quot;declarationKind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L95">			context= requireText(context, &quot;context&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L96">		}</span>
+	}
+
+	/** Result for one requested generated name. */
+	public record Allocation(NestedTypeRequest request, List&lt;Collision&gt; collisions) {
+
+		/** Defensively copies and sorts collision diagnostics. */
+<span class="fc" id="L103">		public Allocation {</span>
+<span class="fc" id="L104">			request= Objects.requireNonNull(request, &quot;request&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L105">			collisions= collisions.stream()</span>
+<span class="fc" id="L106">					.map(collision -&gt; Objects.requireNonNull(collision, &quot;collision&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L107">					.sorted(COLLISION_ORDER).toList();</span>
+<span class="fc" id="L108">		}</span>
+
+		/** Returns whether the requested name can be generated unchanged. */
+		public boolean available() {
+<span class="fc" id="L112">			return collisions.isEmpty();</span>
+		}
+
+		/** Returns a stable human-readable explanation of all collisions. */
+		public String diagnosticMessage() {
+<span class="fc" id="L117">			return collisions.stream()</span>
+<span class="fc" id="L118">					.map(collision -&gt; collision.namespace().name().toLowerCase(Locale.ROOT) + &quot; &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L119">							+ collision.declarationKind() + &quot; (&quot; + collision.context() + &quot;)&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L120">					.collect(Collectors.joining(&quot;; &quot;)); //$NON-NLS-1$</span>
+		}
+	}
+
+	private record Owner(CompilationUnit root, AbstractTypeDeclaration type) {
+	}
+
+<span class="fc" id="L127">	private static final Comparator&lt;Collision&gt; COLLISION_ORDER= Comparator</span>
+<span class="fc" id="L128">			.comparing((Collision collision) -&gt; collision.namespace().ordinal())</span>
+<span class="fc" id="L129">			.thenComparing(Collision::compilationUnitHandle)</span>
+<span class="fc" id="L130">			.thenComparing(Collision::declarationKind)</span>
+<span class="fc" id="L131">			.thenComparing(Collision::context);</span>
+
+<span class="fc" id="L133">	private static final Set&lt;String&gt; RESERVED_IDENTIFIERS= Set.of(</span>
+<span class="fc" id="L134">			&quot;abstract&quot;, &quot;assert&quot;, &quot;boolean&quot;, &quot;break&quot;, &quot;byte&quot;, &quot;case&quot;, &quot;catch&quot;, &quot;char&quot;, &quot;class&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$</span>
+<span class="fc" id="L135">			&quot;const&quot;, &quot;continue&quot;, &quot;default&quot;, &quot;do&quot;, &quot;double&quot;, &quot;else&quot;, &quot;enum&quot;, &quot;extends&quot;, &quot;final&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$</span>
+<span class="fc" id="L136">			&quot;finally&quot;, &quot;float&quot;, &quot;for&quot;, &quot;goto&quot;, &quot;if&quot;, &quot;implements&quot;, &quot;import&quot;, &quot;instanceof&quot;, &quot;int&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$</span>
+<span class="fc" id="L137">			&quot;interface&quot;, &quot;long&quot;, &quot;native&quot;, &quot;new&quot;, &quot;package&quot;, &quot;private&quot;, &quot;protected&quot;, &quot;public&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
+<span class="fc" id="L138">			&quot;return&quot;, &quot;short&quot;, &quot;static&quot;, &quot;strictfp&quot;, &quot;super&quot;, &quot;switch&quot;, &quot;synchronized&quot;, &quot;this&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$</span>
+<span class="fc" id="L139">			&quot;throw&quot;, &quot;throws&quot;, &quot;transient&quot;, &quot;try&quot;, &quot;void&quot;, &quot;volatile&quot;, &quot;while&quot;, &quot;true&quot;, &quot;false&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$</span>
+<span class="fc" id="L140">			&quot;null&quot;, &quot;_&quot;, &quot;record&quot;, &quot;sealed&quot;, &quot;permits&quot;, &quot;yield&quot;, &quot;var&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$</span>
+
+	private GeneratedNameAllocator() {
+	}
+
+	/**
+	 * Validates nested type requests against the supplied compilation units and
+	 * against all other prospective requests.
+	 *
+	 * @return allocations keyed by request ID in deterministic request-ID order
+	 */
+	public static Map&lt;String, Allocation&gt; allocateNestedTypes(Collection&lt;CompilationUnit&gt; roots,
+			Collection&lt;NestedTypeRequest&gt; requests) {
+<span class="fc" id="L153">		Objects.requireNonNull(roots, &quot;roots&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L154">		Objects.requireNonNull(requests, &quot;requests&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L156">		List&lt;CompilationUnit&gt; orderedRoots= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (CompilationUnit root : roots) {</span>
+<span class="fc" id="L158">			orderedRoots.add(Objects.requireNonNull(root, &quot;root&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L160">		orderedRoots.sort(Comparator.comparing(GeneratedNameAllocator::compilationUnitKey));</span>
+
+<span class="fc" id="L162">		List&lt;NestedTypeRequest&gt; orderedRequests= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		for (NestedTypeRequest request : requests) {</span>
+<span class="fc" id="L164">			orderedRequests.add(Objects.requireNonNull(request, &quot;request&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L166">		orderedRequests.sort(Comparator.comparing(NestedTypeRequest::requestId));</span>
+<span class="fc" id="L167">		ensureUniqueRequestIds(orderedRequests);</span>
+
+<span class="fc" id="L169">		Map&lt;String, List&lt;NestedTypeRequest&gt;&gt; reservationGroups= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		for (NestedTypeRequest request : orderedRequests) {</span>
+<span class="fc" id="L171">			reservationGroups.computeIfAbsent(reservationKey(request), ignored -&gt; new ArrayList&lt;&gt;()).add(request);</span>
+		}
+
+<span class="fc" id="L174">		Map&lt;String, Allocation&gt; allocations= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		for (NestedTypeRequest request : orderedRequests) {</span>
+<span class="fc" id="L176">			List&lt;Collision&gt; collisions= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L177">			addProspectiveCollisions(request, reservationGroups.get(reservationKey(request)), collisions);</span>
+<span class="fc" id="L178">			Owner owner= findOwner(orderedRoots, request);</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (owner == null) {</span>
+<span class="nc" id="L180">				collisions.add(new Collision(Namespace.TYPE, request.ownerCompilationUnitHandle(),</span>
+<span class="nc" id="L181">						&quot;owner type&quot;, &quot;owner declaration could not be resolved&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L182">			} else {</span>
+<span class="fc" id="L183">				collectImportCollisions(owner, request, collisions);</span>
+<span class="fc" id="L184">				collectDeclarationCollisions(owner, request, collisions);</span>
+			}
+<span class="fc" id="L186">			allocations.put(request.requestId(), new Allocation(request, collisions));</span>
+		}
+<span class="fc" id="L188">		return Collections.unmodifiableMap(allocations);</span>
+	}
+
+	private static void ensureUniqueRequestIds(List&lt;NestedTypeRequest&gt; requests) {
+<span class="fc" id="L192">		Set&lt;String&gt; ids= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">		for (NestedTypeRequest request : requests) {</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (!ids.add(request.requestId())) {</span>
+<span class="nc" id="L195">				throw new IllegalArgumentException(&quot;Duplicate generated-name request ID: &quot; + request.requestId()); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L198">	}</span>
+
+	private static void addProspectiveCollisions(NestedTypeRequest request, List&lt;NestedTypeRequest&gt; group,
+			List&lt;Collision&gt; collisions) {
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">		if (group == null || group.size() &lt; 2) {</span>
+<span class="fc" id="L203">			return;</span>
+		}
+<span class="fc" id="L205">		String competingIds= group.stream().map(NestedTypeRequest::requestId)</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				.filter(candidateId -&gt; !candidateId.equals(request.requestId())).sorted()</span>
+<span class="fc" id="L207">				.collect(Collectors.joining(&quot;, &quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L208">		collisions.add(new Collision(Namespace.PLANNED, request.ownerCompilationUnitHandle(),</span>
+<span class="fc" id="L209">				&quot;nested type reservation&quot;, &quot;also requested by &quot; + competingIds)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L210">	}</span>
+
+	private static Owner findOwner(List&lt;CompilationUnit&gt; roots, NestedTypeRequest request) {
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		if (!request.ownerCompilationUnitHandle().isEmpty()) {</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">			for (CompilationUnit root : roots) {</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">				if (request.ownerCompilationUnitHandle().equals(compilationUnitHandle(root))) {</span>
+<span class="fc" id="L216">					AbstractTypeDeclaration type= findOwnerType(root, request);</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">					if (type != null) {</span>
+<span class="fc" id="L218">						return new Owner(root, type);</span>
+					}
+				}
+			}
+		}
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		for (CompilationUnit root : roots) {</span>
+<span class="fc" id="L224">			AbstractTypeDeclaration type= findOwnerType(root, request);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">			if (type != null) {</span>
+<span class="fc" id="L226">				return new Owner(root, type);</span>
+			}
+		}
+<span class="nc" id="L229">		return null;</span>
+	}
+
+	private static AbstractTypeDeclaration findOwnerType(CompilationUnit root, NestedTypeRequest request) {
+<span class="fc" id="L233">		AbstractTypeDeclaration[] result= new AbstractTypeDeclaration[1];</span>
+<span class="fc" id="L234">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="fc bfc" id="L237" title="All 4 branches covered.">				if (result[0] == null &amp;&amp; node instanceof AbstractTypeDeclaration type</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">						&amp;&amp; matchesOwner(root, type, request)) {</span>
+<span class="fc" id="L239">					result[0]= type;</span>
+				}
+<span class="fc" id="L241">			}</span>
+		});
+<span class="fc" id="L243">		return result[0];</span>
+	}
+
+	private static boolean matchesOwner(CompilationUnit root, AbstractTypeDeclaration type,
+			NestedTypeRequest request) {
+<span class="fc" id="L248">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">		ITypeBinding declaration= binding == null ? null : binding.getTypeDeclaration();</span>
+<span class="pc bpc" id="L250" title="1 of 4 branches missed.">		if (declaration != null &amp;&amp; !request.ownerTypeBindingKey().isEmpty()</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">				&amp;&amp; request.ownerTypeBindingKey().equals(declaration.getKey())) {</span>
+<span class="fc" id="L252">			return true;</span>
+		}
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		String qualifiedName= declaration == null ? qualifiedName(root, type) : declaration.getQualifiedName();</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">		return !request.ownerTypeQualifiedName().isEmpty()</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">				&amp;&amp; request.ownerTypeQualifiedName().equals(qualifiedName);</span>
+	}
+
+	private static void collectImportCollisions(Owner owner, NestedTypeRequest request,
+			List&lt;Collision&gt; collisions) {
+<span class="fc bfc" id="L261" title="All 2 branches covered.">		for (Object importObject : owner.root().imports()) {</span>
+<span class="fc" id="L262">			ImportDeclaration importDeclaration= (ImportDeclaration) importObject;</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">			if (importDeclaration.isOnDemand()) {</span>
+<span class="nc" id="L264">				continue;</span>
+			}
+<span class="fc" id="L266">			String importedName= importDeclaration.getName().getFullyQualifiedName();</span>
+<span class="fc" id="L267">			int separator= importedName.lastIndexOf('.');</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">			String simpleName= separator &lt; 0 ? importedName : importedName.substring(separator + 1);</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">			if (request.requestedName().equals(simpleName)) {</span>
+<span class="fc" id="L270">				collisions.add(collision(Namespace.IMPORT, owner.root(), request,</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">						importDeclaration.isStatic() ? &quot;static import&quot; : &quot;type import&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L272">						importedName, importDeclaration));</span>
+			}
+		}
+<span class="fc" id="L275">	}</span>
+
+	private static void collectDeclarationCollisions(Owner owner, NestedTypeRequest request,
+			List&lt;Collision&gt; collisions) {
+<span class="fc" id="L279">		owner.type().accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="fc" id="L282">				String requestedName= request.requestedName();</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">				if (node instanceof AbstractTypeDeclaration type</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">						&amp;&amp; requestedName.equals(type.getName().getIdentifier())) {</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">					String kind= type == owner.type() ? &quot;owner type&quot; : &quot;type declaration&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L286">					collisions.add(collision(Namespace.TYPE, owner.root(), request, kind,</span>
+<span class="fc" id="L287">							qualifiedName(owner.root(), type), type));</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">				} else if (node instanceof TypeParameter parameter</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">						&amp;&amp; requestedName.equals(parameter.getName().getIdentifier())) {</span>
+<span class="fc" id="L290">					collisions.add(collision(Namespace.TYPE, owner.root(), request,</span>
+<span class="fc" id="L291">							&quot;type parameter&quot;, parameter.getName().getIdentifier(), parameter)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">				} else if (node instanceof FieldDeclaration field) {</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">					for (Object fragmentObject : field.fragments()) {</span>
+<span class="fc" id="L294">						VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObject;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">						if (requestedName.equals(fragment.getName().getIdentifier())) {</span>
+<span class="fc" id="L296">							collisions.add(collision(Namespace.MEMBER, owner.root(), request,</span>
+<span class="fc" id="L297">									&quot;field&quot;, fragment.getName().getIdentifier(), fragment)); //$NON-NLS-1$</span>
+						}
+					}
+<span class="fc bfc" id="L300" title="All 2 branches covered.">				} else if (node instanceof EnumConstantDeclaration enumConstant</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">						&amp;&amp; requestedName.equals(enumConstant.getName().getIdentifier())) {</span>
+<span class="nc" id="L302">					collisions.add(collision(Namespace.MEMBER, owner.root(), request,</span>
+<span class="nc" id="L303">							&quot;enum constant&quot;, enumConstant.getName().getIdentifier(), enumConstant)); //$NON-NLS-1$</span>
+<span class="pc bfc" id="L304" title="All 4 branches covered.">				} else if (node instanceof MethodDeclaration method &amp;&amp; !method.isConstructor()</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">						&amp;&amp; requestedName.equals(method.getName().getIdentifier())) {</span>
+<span class="fc" id="L306">					collisions.add(collision(Namespace.MEMBER, owner.root(), request,</span>
+<span class="fc" id="L307">							&quot;method&quot;, method.getName().getIdentifier(), method)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">				} else if (node instanceof AnnotationTypeMemberDeclaration member</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">						&amp;&amp; requestedName.equals(member.getName().getIdentifier())) {</span>
+<span class="nc" id="L310">					collisions.add(collision(Namespace.MEMBER, owner.root(), request,</span>
+<span class="nc" id="L311">							&quot;annotation member&quot;, member.getName().getIdentifier(), member)); //$NON-NLS-1$</span>
+<span class="pc bfc" id="L312" title="All 2 branches covered.">				} else if (node instanceof SingleVariableDeclaration variable</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">						&amp;&amp; requestedName.equals(variable.getName().getIdentifier())) {</span>
+<span class="fc" id="L314">					collisions.add(collision(Namespace.LOCAL, owner.root(), request,</span>
+<span class="fc" id="L315">							&quot;parameter or local variable&quot;, variable.getName().getIdentifier(), variable)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">				} else if (node instanceof VariableDeclarationFragment fragment</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">						&amp;&amp; !(fragment.getParent() instanceof FieldDeclaration)</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">						&amp;&amp; requestedName.equals(fragment.getName().getIdentifier())) {</span>
+<span class="nc" id="L319">					collisions.add(collision(Namespace.LOCAL, owner.root(), request,</span>
+<span class="nc" id="L320">							&quot;local variable&quot;, fragment.getName().getIdentifier(), fragment)); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L322">			}</span>
+		});
+<span class="fc" id="L324">	}</span>
+
+	private static Collision collision(Namespace namespace, CompilationUnit root, NestedTypeRequest request,
+			String declarationKind, String detail, ASTNode node) {
+<span class="fc" id="L328">		String handle= compilationUnitHandle(root);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">		if (handle.isEmpty()) {</span>
+<span class="fc" id="L330">			handle= request.ownerCompilationUnitHandle();</span>
+		}
+<span class="fc" id="L332">		int line= root.getLineNumber(node.getStartPosition());</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		String position= line &gt; 0 ? &quot;line &quot; + line : &quot;offset &quot; + node.getStartPosition(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L334">		return new Collision(namespace, handle, declarationKind, detail + &quot; at &quot; + position); //$NON-NLS-1$</span>
+	}
+
+	private static String reservationKey(NestedTypeRequest request) {
+<span class="fc bfc" id="L338" title="All 2 branches covered.">		String ownerIdentity= !request.ownerTypeBindingKey().isEmpty()</span>
+<span class="fc" id="L339">				? request.ownerTypeBindingKey()</span>
+<span class="fc" id="L340">				: request.ownerCompilationUnitHandle() + ':' + request.ownerTypeQualifiedName();</span>
+<span class="fc" id="L341">		return ownerIdentity + '\u0000' + request.requestedName();</span>
+	}
+
+	private static String compilationUnitKey(CompilationUnit root) {
+<span class="fc" id="L345">		String handle= compilationUnitHandle(root);</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">		if (!handle.isEmpty()) {</span>
+<span class="fc" id="L347">			return handle;</span>
+		}
+<span class="nc bnc" id="L349" title="All 2 branches missed.">		String packageName= root.getPackage() == null</span>
+<span class="nc" id="L350">				? &quot;&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L351">				: root.getPackage().getName().getFullyQualifiedName();</span>
+<span class="nc" id="L352">		List&lt;String&gt; typeNames= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">		for (Object typeObject : root.types()) {</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">			if (typeObject instanceof AbstractTypeDeclaration type) {</span>
+<span class="nc" id="L355">				typeNames.add(type.getName().getIdentifier());</span>
+			}
+		}
+<span class="nc" id="L358">		Collections.sort(typeNames);</span>
+<span class="nc" id="L359">		return packageName + ':' + String.join(&quot;,&quot;, typeNames); //$NON-NLS-1$</span>
+	}
+
+	private static String compilationUnitHandle(CompilationUnit root) {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">		return root.getJavaElement() instanceof ICompilationUnit unit</span>
+<span class="fc" id="L364">				? unit.getPrimary().getHandleIdentifier()</span>
+<span class="fc" id="L365">				: &quot;&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static String qualifiedName(CompilationUnit root, AbstractTypeDeclaration type) {
+<span class="fc" id="L369">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L370" title="1 of 4 branches missed.">		if (binding != null &amp;&amp; !binding.getTypeDeclaration().getQualifiedName().isEmpty()) {</span>
+<span class="fc" id="L371">			return binding.getTypeDeclaration().getQualifiedName();</span>
+		}
+<span class="fc" id="L373">		List&lt;String&gt; typeNames= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L374">		ASTNode current= type;</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">			if (current instanceof AbstractTypeDeclaration declaration) {</span>
+<span class="fc" id="L377">				typeNames.add(0, declaration.getName().getIdentifier());</span>
+			}
+<span class="fc" id="L379">			current= current.getParent();</span>
+		}
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">		String packageName= root.getPackage() == null</span>
+<span class="nc" id="L382">				? &quot;&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L383">				: root.getPackage().getName().getFullyQualifiedName();</span>
+<span class="fc" id="L384">		String localName= String.join(&quot;.&quot;, typeNames); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">		return packageName.isEmpty() ? localName : packageName + '.' + localName;</span>
+	}
+
+	private static boolean isJavaIdentifier(String value) {
+<span class="pc bpc" id="L389" title="2 of 4 branches missed.">		if (value.isEmpty() || RESERVED_IDENTIFIERS.contains(value)</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">				|| !Character.isJavaIdentifierStart(value.codePointAt(0))) {</span>
+<span class="nc" id="L391">			return false;</span>
+		}
+<span class="fc" id="L393">		int index= Character.charCount(value.codePointAt(0));</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">		while (index &lt; value.length()) {</span>
+<span class="fc" id="L395">			int codePoint= value.codePointAt(index);</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(codePoint)) {</span>
+<span class="nc" id="L397">				return false;</span>
+			}
+<span class="fc" id="L399">			index+= Character.charCount(codePoint);</span>
+		}
+<span class="fc" id="L401">		return true;</span>
+	}
+
+	private static String normalize(String value) {
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value.strip(); //$NON-NLS-1$</span>
+	}
+
+	private static String requireText(String value, String fieldName) {
+<span class="fc" id="L409">		String normalized= normalize(value);</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
+<span class="nc" id="L411">			throw new IllegalArgumentException(fieldName + &quot; must not be blank.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L413">		return normalized;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -237,59 +237,64 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;JUnitMi
 <span class="fc" id="L237">				fixSetCombined.remove(fix);</span>
 			}
 <span class="fc" id="L239">		});</span>
-<span class="fc" id="L240">		return fixSetCombined;</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		if (isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED)</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">				&amp;&amp; isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT)) {</span>
+<span class="fc" id="L242">			fixSetCombined.add(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);</span>
+		}
+<span class="fc" id="L244">		return fixSetCombined;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit4() {
-<span class="fc" id="L244">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
-<span class="fc" id="L245">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
-<span class="fc" id="L246">		return allOf;</span>
+<span class="fc" id="L248">		EnumSet&lt;JUnitCleanUpFixCore&gt; allOf= EnumSet.allOf(JUnitCleanUpFixCore.class);</span>
+<span class="fc" id="L249">		allOf.remove(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L250">		allOf.remove(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);</span>
+<span class="fc" id="L251">		return allOf;</span>
 	}
 
 	private EnumSet&lt;JUnitCleanUpFixCore&gt; allOfJunit3() {
-<span class="fc" id="L250">		return EnumSet.of(JUnitCleanUpFixCore.TEST3);</span>
+<span class="fc" id="L255">		return EnumSet.of(JUnitCleanUpFixCore.TEST3);</span>
 	}
 
 	private Collection&lt;ICompilationUnit&gt; registerRequiredScope(IJavaProject project,
 			Set&lt;String&gt; currentHandles, Collection&lt;ICompilationUnit&gt; requiredUnits) {
-<span class="fc" id="L255">		Set&lt;String&gt; requiredHandles= handles(requiredUnits);</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (currentHandles.containsAll(requiredHandles)) {</span>
-<span class="nc" id="L257">			verifiedClosedScopes.put(project, requiredHandles);</span>
-<span class="nc" id="L258">			pendingExpandedScopes.remove(project);</span>
-<span class="nc" id="L259">			return List.of();</span>
+<span class="fc" id="L260">		Set&lt;String&gt; requiredHandles= handles(requiredUnits);</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">		if (currentHandles.containsAll(requiredHandles)) {</span>
+<span class="nc" id="L262">			verifiedClosedScopes.put(project, requiredHandles);</span>
+<span class="nc" id="L263">			pendingExpandedScopes.remove(project);</span>
+<span class="nc" id="L264">			return List.of();</span>
 		}
-<span class="fc" id="L261">		pendingExpandedScopes.put(project, requiredHandles);</span>
-<span class="fc" id="L262">		verifiedClosedScopes.remove(project);</span>
-<span class="fc" id="L263">		return requiredUnits;</span>
+<span class="fc" id="L266">		pendingExpandedScopes.put(project, requiredHandles);</span>
+<span class="fc" id="L267">		verifiedClosedScopes.remove(project);</span>
+<span class="fc" id="L268">		return requiredUnits;</span>
 	}
 
 	private Boolean consumeClosedScopeDecision(IJavaProject project, ICompilationUnit[] compilationUnits) {
-<span class="pc bpc" id="L267" title="1 of 2 branches missed.">		if (rejectedScopes.remove(project)) {</span>
-<span class="nc" id="L268">			clearScopeDecision(project);</span>
-<span class="nc" id="L269">			return Boolean.FALSE;</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">		if (rejectedScopes.remove(project)) {</span>
+<span class="nc" id="L273">			clearScopeDecision(project);</span>
+<span class="nc" id="L274">			return Boolean.FALSE;</span>
 		}
-<span class="fc" id="L271">		Set&lt;String&gt; expected= verifiedClosedScopes.remove(project);</span>
-<span class="fc" id="L272">		Set&lt;String&gt; pending= pendingExpandedScopes.remove(project);</span>
-<span class="pc bpc" id="L273" title="1 of 2 branches missed.">		if (expected == null) {</span>
-<span class="fc" id="L274">			expected= pending;</span>
+<span class="fc" id="L276">		Set&lt;String&gt; expected= verifiedClosedScopes.remove(project);</span>
+<span class="fc" id="L277">		Set&lt;String&gt; pending= pendingExpandedScopes.remove(project);</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">		if (expected == null) {</span>
+<span class="fc" id="L279">			expected= pending;</span>
 		}
-<span class="pc bpc" id="L276" title="1 of 2 branches missed.">		return expected == null ? null : Boolean.valueOf(handles(List.of(compilationUnits)).containsAll(expected));</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">		return expected == null ? null : Boolean.valueOf(handles(List.of(compilationUnits)).containsAll(expected));</span>
 	}
 
 	private void clearScopeDecision(IJavaProject project) {
-<span class="fc" id="L280">		pendingExpandedScopes.remove(project);</span>
-<span class="fc" id="L281">		verifiedClosedScopes.remove(project);</span>
-<span class="fc" id="L282">	}</span>
+<span class="fc" id="L285">		pendingExpandedScopes.remove(project);</span>
+<span class="fc" id="L286">		verifiedClosedScopes.remove(project);</span>
+<span class="fc" id="L287">	}</span>
 
 	private static Set&lt;String&gt; handles(Collection&lt;ICompilationUnit&gt; units) {
-<span class="pc bpc" id="L285" title="2 of 4 branches missed.">		if (units == null || units.isEmpty()) {</span>
-<span class="nc" id="L286">			return Set.of();</span>
+<span class="pc bpc" id="L290" title="2 of 4 branches missed.">		if (units == null || units.isEmpty()) {</span>
+<span class="nc" id="L291">			return Set.of();</span>
 		}
-<span class="fc" id="L288">		return units.stream()</span>
-<span class="fc" id="L289">				.filter(java.util.Objects::nonNull)</span>
-<span class="fc" id="L290">				.map(ICompilationUnit::getPrimary)</span>
-<span class="fc" id="L291">				.map(ICompilationUnit::getHandleIdentifier)</span>
-<span class="fc" id="L292">				.collect(Collectors.toSet());</span>
+<span class="fc" id="L293">		return units.stream()</span>
+<span class="fc" id="L294">				.filter(java.util.Objects::nonNull)</span>
+<span class="fc" id="L295">				.map(ICompilationUnit::getPrimary)</span>
+<span class="fc" id="L296">				.map(ICompilationUnit::getHandleIdentifier)</span>
+<span class="fc" id="L297">				.collect(Collectors.toSet());</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
