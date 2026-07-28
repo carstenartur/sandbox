@@ -32,9 +32,13 @@ Sandbox owns:
 - optional embedding/rank-fusion experiments not provided by the generic library;
 - migration adapters required only while copied callers are being removed.
 
-### First slice
+### Released dependency baseline
 
-The module consumes released version `0.1.14` from the anonymous static Maven repository documented by the external project. The release preserves the supported public API of `0.1.13` while adding the migration, repository-lock and chunked-storage work needed by the later database cut-over. `JGitStorageLibraryBoundary` exposes the public `RepositoryName` and `CoreEntities` contracts to Sandbox code. New integration code must use this boundary or another explicitly reviewed public-library adapter; it must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation classes.
+Both consuming modules pin released version `0.1.15` from the anonymous static Maven repository documented by the external project. This release preserves the public factory API used by the adapter and adds the fully tested Microsoft SQL Server Core provisioning and copied-Sandbox legacy-adoption paths required by the deployed database.
+
+`JGitStorageLibraryBoundary` exposes the public `RepositoryName` and `CoreEntities` contracts to Sandbox code. New integration code must use this boundary or another explicitly reviewed public-library adapter; it must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation classes.
+
+SQL Server support in this baseline applies to Core storage only. The external Search module does not yet publish SQL Server migrations, so copied or separately isolated search projections remain outside the Core cut-over.
 
 ### Repository-service boundary slice
 
@@ -52,13 +56,19 @@ The resolver retains a deprecated generic compatibility method only so existing 
 
 `ExternalHibernateRepositoryService` adapts the released `HibernateRepositoryFactory` and owns the resulting `HibernateGitStorage` handles. It exposes only public JGit `Repository` instances and `SandboxRepositoryInfo` to the server. Unit tests use a fake implementation of the released factory contract, so the application-side lifecycle, identity normalization, caching, metadata and close semantics can be verified without importing the external implementation packages or requiring a database.
 
-This adapter is deliberately not made the production default in the same slice. The existing Sandbox `SessionFactory` still registers copied Core entity classes and owns a schema whose exact adoption state must be established before the external factory is allowed to write to it. Registering copied and external Core entities together would also create duplicate persistence mappings. Production wiring changes only after the external Core migration runbook, Hibernate validation and repository-level rollback test have succeeded on a restored database.
+This adapter is deliberately not made the production default in the same slice. The existing Sandbox `SessionFactory` still registers copied Core entity classes and owns a schema whose exact adoption state must be established before the external factory is allowed to write to it. Registering copied and external Core entities together would also create duplicate persistence mappings.
+
+### Read-only schema-preflight slice
+
+A standalone maintenance entry point uses the released `LegacyCoreSchemaAdoption` validator through plain JDBC. It accepts only database families with published 0.1.15 adoption migrations, including the deployed SQL Server path, marks the connection read-only and starts neither Hibernate, Jetty nor Flyway. Its deterministic JSON report is evidence for the later maintenance operation; it does not mutate or migrate the database.
+
+Production wiring changes only after the database-specific adoption stream has run on a restored production-like database, all recorded BLOB checksums and reflog rows have been compared, Hibernate `validate` has passed and rollback by database restore has been exercised.
 
 ### Subsequent slices
 
-1. Classify the existing Core schema, apply the matching `jgit-storage-hibernate-core` adoption/migration path and verify backup restoration.
+1. Run the released SQL Server Core adoption/migration path against a restored Sandbox database and verify backup restoration.
 2. Construct a persistence context with external Core entities plus only the still-required Sandbox projection entities, then switch production wiring from `CopiedHibernateRepositoryService` to `ExternalHibernateRepositoryService`.
-3. Replace copied commit/history entities and indexers with `jgit-storage-hibernate-search`.
+3. Replace copied commit/history entities and indexers with `jgit-storage-hibernate-search` after that module has a supported database path, or isolate the projections behind a process/application boundary.
 4. Replace copied Java AST/history analysis with `jgit-storage-hibernate-java-analysis`.
 5. Move Sandbox-only embeddings and REST query composition behind application-owned interfaces.
 6. Remove copied generic packages, migrations and dependencies.
@@ -68,9 +78,11 @@ Each slice must preserve repository data through the external migration/adoption
 
 ## Consequences
 
-- The first slice adds a released dependency without immediately deleting the copied implementation.
+- The released dependency is pinned without immediately deleting the copied implementation.
 - The repository-service boundary makes the later factory cut-over local instead of requiring simultaneous REST, Smart HTTP and startup rewrites.
-- The public factory adapter completes the application-side cut-over point while leaving the persistence migration explicit and independently reversible.
+- The public factory adapter completes the application-side cut-over point while leaving persistence migration explicit and independently reversible.
+- The read-only preflight can classify the deployed SQL Server schema without allowing Hibernate `update` or Flyway DDL to run implicitly.
+- Core and Search database support are not conflated.
 - The temporary coexistence and deprecated compatibility method are explicit and bounded by this migration plan.
 - Public external APIs and application-owned interfaces, not implementation packages, define the replacement contract.
 - Database migration and service cut-over remain separate follow-up changes and cannot be represented as a package rename.
