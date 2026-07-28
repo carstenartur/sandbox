@@ -32,8 +32,8 @@ public class LegacyCoreSchemaPreflightTest {
 
 	@Test
 	public void reportsSupportedLegacySchemaWithoutRunningHibernate() throws Exception {
-		String url= "jdbc:h2:mem:legacy-preflight;DB_CLOSE_DELAY=-1"; //$NON-NLS-1$
-		try (Connection connection= DriverManager.getConnection(url, "sa", "")) { //$NON-NLS-1$ //$NON-NLS-2$
+		String url= "jdbc:hsqldb:mem:legacy_preflight"; //$NON-NLS-1$
+		try (Connection connection= DriverManager.getConnection(url, "SA", "")) { //$NON-NLS-1$ //$NON-NLS-2$
 			createLegacySchema(connection);
 			insertPack(connection, "demo", "pack-a", "pack", new byte[] { 1, 2, 3 }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -69,8 +69,8 @@ public class LegacyCoreSchemaPreflightTest {
 
 	@Test
 	public void rejectsDuplicateLogicalPackIdentitiesWithoutChangingRows() throws Exception {
-		String url= "jdbc:h2:mem:legacy-preflight-duplicates;DB_CLOSE_DELAY=-1"; //$NON-NLS-1$
-		try (Connection connection= DriverManager.getConnection(url, "sa", "")) { //$NON-NLS-1$ //$NON-NLS-2$
+		String url= "jdbc:hsqldb:mem:legacy_preflight_duplicates"; //$NON-NLS-1$
+		try (Connection connection= DriverManager.getConnection(url, "SA", "")) { //$NON-NLS-1$ //$NON-NLS-2$
 			createLegacySchema(connection);
 			insertPack(connection, "demo", "pack-a", "pack", new byte[] { 1 }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			insertPack(connection, "demo", "pack-a", "pack", new byte[] { 2 }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -82,11 +82,13 @@ public class LegacyCoreSchemaPreflightTest {
 	}
 
 	private static Properties connectionProperties(String url) {
+		boolean hsqldb= url.startsWith("jdbc:hsqldb:"); //$NON-NLS-1$
 		Properties properties= new Properties();
 		properties.setProperty("hibernate.connection.url", url); //$NON-NLS-1$
-		properties.setProperty("hibernate.connection.username", "sa"); //$NON-NLS-1$ //$NON-NLS-2$
+		properties.setProperty("hibernate.connection.username", hsqldb ? "SA" : "sa"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		properties.setProperty("hibernate.connection.password", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		properties.setProperty("hibernate.connection.driver_class", "org.h2.Driver"); //$NON-NLS-1$ //$NON-NLS-2$
+		properties.setProperty("hibernate.connection.driver_class", //$NON-NLS-1$
+				hsqldb ? "org.hsqldb.jdbc.JDBCDriver" : "org.h2.Driver"); //$NON-NLS-1$ //$NON-NLS-2$
 		return properties;
 	}
 
