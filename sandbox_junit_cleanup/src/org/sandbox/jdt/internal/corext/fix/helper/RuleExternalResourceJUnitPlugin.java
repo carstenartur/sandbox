@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -41,8 +42,15 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  *
  * @since 1.3.0
  */
-@CleanupPattern(value = "@Rule public $type $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_EXTERNAL_RESOURCE, cleanupId = "cleanup.junit.ruleexternalresource", description = "Migrate @Rule ExternalResource to JUnit 5 extension", displayName = "JUnit 4 @Rule ExternalResource \u2192 JUnit 5 Extension")
+@CleanupPattern(value = "@Rule public $type $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_EXTERNAL_RESOURCE, cleanupId = "cleanup.junit.ruleexternalresource", description = "Migrate @Rule ExternalResource to JUnit 5 extension", displayName = "JUnit 4 @Rule ExternalResource → JUnit 5 Extension")
 public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin {
+
+	private static final Set<String> DEDICATED_RULE_TYPES= Set.of(
+			ORG_JUNIT_RULES_TEST_NAME,
+			ORG_JUNIT_RULES_TEMPORARY_FOLDER,
+			ORG_JUNIT_RULES_TIMEOUT,
+			ORG_JUNIT_RULES_EXPECTED_EXCEPTION,
+			ORG_JUNIT_RULES_ERROR_COLLECTOR);
 
 	/**
 	 * Override getPatterns() to match both @Rule and @ClassRule variants.
@@ -66,15 +74,24 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 		if (binding == null) {
 			return null;
 		}
-		// Exclude specific rule types handled by dedicated plugins
-		String qualifiedName = binding.getQualifiedName();
-		if (ORG_JUNIT_RULES_TEST_NAME.equals(qualifiedName)
-				|| ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedName)) {
+		String qualifiedName= binding.getErasure().getQualifiedName();
+		if (DEDICATED_RULE_TYPES.contains(qualifiedName) || !isExternalResourceHierarchy(binding)) {
 			return null;
 		}
 		JunitHolder holder = new JunitHolder();
 		holder.setMinv(fieldDecl);
 		return holder;
+	}
+
+	private static boolean isExternalResourceHierarchy(ITypeBinding binding) {
+		ITypeBinding current= binding.getErasure();
+		while (current != null) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getQualifiedName())) {
+				return true;
+			}
+			current= current.getSuperclass();
+		}
+		return false;
 	}
 
 	@Override
@@ -112,6 +129,7 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 							protected void afterEach() {
 							}
 						}
+					}
 					"""; //$NON-NLS-1$
 		}
 		return """
@@ -129,6 +147,7 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 
 					@Rule
 					public ExternalResource er= new MyExternalResource();
+				}
 				"""; //$NON-NLS-1$
 	}
 
