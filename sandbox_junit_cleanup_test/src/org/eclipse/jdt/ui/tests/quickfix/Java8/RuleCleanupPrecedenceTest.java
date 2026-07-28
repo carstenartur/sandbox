@@ -17,6 +17,8 @@ import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.junit.JUnitCore;
 
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -31,8 +33,7 @@ public class RuleCleanupPrecedenceTest {
 
 	@Test
 	public void migratesTemporaryFolderWhenGenericExternalResourceCleanupIsAlsoEnabled() throws CoreException {
-		IPackageFragment pack= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH)
-				.createPackageFragment("test", true, null); //$NON-NLS-1$
+		IPackageFragment pack= createJUnit4And5Package();
 		ICompilationUnit unit= pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
 				package test;
@@ -81,8 +82,7 @@ public class RuleCleanupPrecedenceTest {
 
 	@Test
 	public void migratesTimeoutWhenGenericExternalResourceCleanupIsAlsoEnabled() throws CoreException {
-		IPackageFragment pack= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH)
-				.createPackageFragment("test", true, null); //$NON-NLS-1$
+		IPackageFragment pack= createJUnit4And5Package();
 		ICompilationUnit unit= pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 				"""
 				package test;
@@ -121,5 +121,12 @@ public class RuleCleanupPrecedenceTest {
 				}
 				"""
 		}, null);
+	}
+
+	private IPackageFragment createJUnit4And5Package() throws CoreException {
+		IPackageFragmentRoot root= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		AbstractEclipseJava.addToClasspath(context.getJavaProject(),
+				JavaCore.newContainerEntry(JUnitCore.JUNIT5_CONTAINER_PATH));
+		return root.createPackageFragment("test", true, null); //$NON-NLS-1$
 	}
 }
