@@ -14,8 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -39,8 +46,8 @@ class NamingUtilsGeneratedNameTest {
 	void rejectsExistingNestedTypeWithGeneratedName() {
 		AnonymousClassDeclaration initial= parseAnonymous(sourceWithoutCollision());
 		String generated= NamingUtils.generateUniqueNestedClassName(initial, "resource"); //$NON-NLS-1$
-		String source= sourceWithoutCollision().replace("class Owner {", //$NON-NLS-1$
-				"class Owner {\n\tstatic class " + generated + " {} "); //$NON-NLS-1$ //$NON-NLS-2$
+		String source= sourceWithoutCollision().replace("\tObject resource", //$NON-NLS-1$
+				"\tstatic class " + generated + " {}\n\tObject resource"); //$NON-NLS-1$ //$NON-NLS-2$
 		AnonymousClassDeclaration conflicting= parseAnonymous(source);
 
 		IllegalStateException exception= assertThrows(IllegalStateException.class,
@@ -50,11 +57,62 @@ class NamingUtilsGeneratedNameTest {
 		assertTrue(exception.getMessage().contains("type declaration")); //$NON-NLS-1$
 	}
 
+	@Test
+	void rejectsAccessibleInheritedMemberTypeWithGeneratedName() throws IOException {
+		String generated= NamingUtils.generateUniqueNestedClassName(parseAnonymous(sourceWithoutCollision()),
+				"resource"); //$NON-NLS-1$
+		AnonymousClassDeclaration anonymous= parseAnonymousWithSibling(
+				"package test; class Base { protected static class " + generated + " {} }", //$NON-NLS-1$ //$NON-NLS-2$
+				ownerSource("extends Base")); //$NON-NLS-1$
+
+		IllegalStateException exception= assertThrows(IllegalStateException.class,
+				() -> NamingUtils.generateUniqueNestedClassName(anonymous, "resource")); //$NON-NLS-1$
+
+		assertTrue(exception.getMessage().contains("inherited member type")); //$NON-NLS-1$
+		assertTrue(exception.getMessage().contains("test.Base." + generated)); //$NON-NLS-1$
+	}
+
+	@Test
+	void ignoresPrivateMemberTypeInSuperclass() throws IOException {
+		String generated= NamingUtils.generateUniqueNestedClassName(parseAnonymous(sourceWithoutCollision()),
+				"resource"); //$NON-NLS-1$
+		AnonymousClassDeclaration anonymous= parseAnonymousWithSibling(
+				"package test; class Base { private static class " + generated + " {} }", //$NON-NLS-1$ //$NON-NLS-2$
+				ownerSource("extends Base")); //$NON-NLS-1$
+
+		assertEquals(generated, NamingUtils.generateUniqueNestedClassName(anonymous, "resource")); //$NON-NLS-1$
+	}
+
 	private static AnonymousClassDeclaration parseAnonymous(String source) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(source.toCharArray());
-		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		return findAnonymous((CompilationUnit) parser.createAST(null));
+	}
+
+	private static AnonymousClassDeclaration parseAnonymousWithSibling(String baseSource, String ownerSource)
+			throws IOException {
+		Path sourceRoot= Files.createTempDirectory("generated-name-bindings"); //$NON-NLS-1$
+		Path packageDirectory= Files.createDirectories(sourceRoot.resolve("test")); //$NON-NLS-1$
+		Files.writeString(packageDirectory.resolve("Base.java"), baseSource, StandardCharsets.UTF_8); //$NON-NLS-1$
+		Files.writeString(packageDirectory.resolve("Owner.java"), ownerSource, StandardCharsets.UTF_8); //$NON-NLS-1$
+
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		parser.setStatementsRecovery(true);
+		parser.setUnitName("test/Owner.java"); //$NON-NLS-1$
+		parser.setEnvironment(null, new String[] { sourceRoot.toString() },
+				new String[] { StandardCharsets.UTF_8.name() }, true);
+		Map<String, String> options= JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+		parser.setCompilerOptions(options);
+		parser.setSource(ownerSource.toCharArray());
+		return findAnonymous((CompilationUnit) parser.createAST(null));
+	}
+
+	private static AnonymousClassDeclaration findAnonymous(CompilationUnit root) {
 		AnonymousClassDeclaration[] result= new AnonymousClassDeclaration[1];
 		root.accept(new ASTVisitor() {
 			@Override
@@ -66,16 +124,20 @@ class NamingUtilsGeneratedNameTest {
 		return result[0];
 	}
 
-	private static String sourceWithoutCollision() {
+	private static String ownerSource(String inheritance) {
 		return """
 				package test;
 
-				class Owner {
+				class Owner __INHERITANCE__ {
 					Object resource = new Object() {
 						void before() {
 						}
 					};
 				}
-				""";
+				""".replace("__INHERITANCE__", inheritance); //$NON-NLS-1$
+	}
+
+	private static String sourceWithoutCollision() {
+		return ownerSource(""); //$NON-NLS-1$
 	}
 }
