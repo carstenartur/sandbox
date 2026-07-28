@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the minimal p2 repository for the pinned patched JDT UI bundle."""
+"""Verify the minimal p2 feature patch for the pinned JDT UI bundle."""
 
 from __future__ import annotations
 
@@ -22,8 +22,7 @@ def fail(message: str) -> None:
 
 
 def read_json(path: Path) -> dict[str, object]:
-    with path.open(encoding="utf-8") as stream:
-        value = json.load(stream)
+    value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         fail(f"Expected a JSON object in {path}")
     return value
@@ -35,10 +34,9 @@ def repository_xml(repository: Path, stem: str) -> ET.Element:
     if jar.is_file():
         with zipfile.ZipFile(jar) as archive:
             try:
-                raw = archive.read(f"{stem}.xml")
+                return ET.fromstring(archive.read(f"{stem}.xml"))
             except KeyError as error:
                 fail(f"{jar} does not contain {stem}.xml: {error}")
-        return ET.fromstring(raw)
     if xml.is_file():
         return ET.parse(xml).getroot()
     fail(f"Repository is missing {stem}.jar and {stem}.xml: {repository}")
@@ -71,16 +69,27 @@ def properties(element: ET.Element) -> dict[str, str]:
     }
 
 
-def exact_requirement(unit: ET.Element, identifier: str, version: str) -> bool:
-    expected_ranges = {version, f"[{version},{version}]"}
-    for requirement in unit.findall("./requires/required"):
-        if requirement.attrib.get("name") != identifier:
-            continue
-        if requirement.attrib.get("namespace") not in (None, "org.eclipse.equinox.p2.iu"):
-            continue
-        if requirement.attrib.get("range", "") in expected_ranges:
-            return True
-    return False
+def exact_range(version: str) -> set[str]:
+    return {version, f"[{version},{version}]"}
+
+
+def matching_requirements(container: ET.Element | None, identifier: str, version: str) -> list[ET.Element]:
+    if container is None:
+        return []
+    return [
+        item
+        for item in container.findall("required")
+        if item.attrib.get("namespace") in (None, "org.eclipse.equinox.p2.iu")
+        and item.attrib.get("name") == identifier
+        and item.attrib.get("range", "") in exact_range(version)
+    ]
+
+
+def require_one(container: ET.Element | None, identifier: str, version: str, description: str) -> ET.Element:
+    matching = matching_requirements(container, identifier, version)
+    if len(matching) != 1:
+        fail(f"Expected one exact {description} requirement {identifier} {version}, found {len(matching)}")
+    return matching[0]
 
 
 def artifact_file(repository: Path, classifier: str, identifier: str, version: str) -> Path:
@@ -115,6 +124,16 @@ def verify_integrity(path: Path, metadata: dict[str, str]) -> list[str]:
     return sorted(set(checks))
 
 
+def one_unit(units: list[ET.Element], identifier: str, version: str, description: str) -> ET.Element:
+    matching = [
+        unit for unit in units
+        if unit.attrib.get("id") == identifier and unit.attrib.get("version") == version
+    ]
+    if len(matching) != 1:
+        fail(f"Expected one {description} IU {identifier} {version}, found {len(matching)}")
+    return matching[0]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repository", required=True, type=Path)
@@ -122,6 +141,8 @@ def main() -> int:
     parser.add_argument("--compatibility", required=True, type=Path)
     parser.add_argument("--feature-id", required=True)
     parser.add_argument("--feature-version", required=True)
+    parser.add_argument("--patch-target-feature-id", required=True)
+    parser.add_argument("--patch-target-feature-version", required=True)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
@@ -137,7 +158,6 @@ def main() -> int:
         bundle_sha = str(provenance.get("bundleSha256", ""))
         if not bundle_id or not bundle_version or not re.fullmatch(r"[0-9a-f]{64}", bundle_sha):
             fail("Bundle provenance is missing a valid symbolic name, version, or SHA-256")
-
         patched = compatibility.get("patchedBundle")
         if not isinstance(patched, dict):
             fail("Compatibility report has no patchedBundle object")
@@ -147,40 +167,71 @@ def main() -> int:
         content = repository_xml(repository, "content")
         artifacts = repository_xml(repository, "artifacts")
         units = content.findall("./units/unit")
+        group_id = f"{args.feature_id}.feature.group"
+        jar_id = f"{args.feature_id}.feature.jar"
+        target_group_id = f"{args.patch_target_feature_id}.feature.group"
+        expected_units = {
+            (bundle_id, bundle_version),
+            (group_id, args.feature_version),
+            (jar_id, args.feature_version),
+        }
+        actual_units = {
+            (unit.attrib.get("id", ""), unit.attrib.get("version", "")) for unit in units
+        }
+        if actual_units != expected_units:
+            fail(f"Unexpected p2 IU set: expected={sorted(expected_units)}, actual={sorted(actual_units)}")
 
-        bundle_units = [unit for unit in units if unit.attrib.get("id") == bundle_id]
-        found_bundle_units = [
-            (unit.attrib.get("id"), unit.attrib.get("version")) for unit in bundle_units
-        ]
-        if found_bundle_units != [(bundle_id, bundle_version)]:
-            fail(
-                f"Expected exactly one bundle IU {bundle_id} {bundle_version}, "
-                f"found {found_bundle_units}"
-            )
+        one_unit(units, bundle_id, bundle_version, "bundle")
+        group = one_unit(units, group_id, args.feature_version, "patch feature group")
+        one_unit(units, jar_id, args.feature_version, "patch feature jar")
+        group_properties = properties(group)
+        if group_properties.get("org.eclipse.equinox.p2.type.patch") != "true":
+            fail("Feature group is not marked as an Equinox p2 patch")
+        if group_properties.get("org.eclipse.equinox.p2.type.group") != "true":
+            fail("Feature group is not marked as a p2 group")
 
-        feature_group_id = f"{args.feature_id}.feature.group"
-        feature_jar_id = f"{args.feature_id}.feature.jar"
-        feature_groups = [unit for unit in units if unit.attrib.get("id") == feature_group_id]
-        feature_jars = [unit for unit in units if unit.attrib.get("id") == feature_jar_id]
-        if [
-            (unit.attrib.get("id"), unit.attrib.get("version")) for unit in feature_groups
-        ] != [(feature_group_id, args.feature_version)]:
-            fail(f"Expected exactly one feature group IU {feature_group_id} {args.feature_version}")
-        if [
-            (unit.attrib.get("id"), unit.attrib.get("version")) for unit in feature_jars
-        ] != [(feature_jar_id, args.feature_version)]:
-            fail(f"Expected exactly one feature jar IU {feature_jar_id} {args.feature_version}")
-        if not exact_requirement(feature_groups[0], feature_jar_id, args.feature_version):
-            fail("Feature group does not require its exact feature jar IU")
-        if not exact_requirement(feature_groups[0], bundle_id, bundle_version):
-            fail("Feature group does not require the exact patched JDT UI bundle version")
+        require_one(group.find("requires"), jar_id, args.feature_version, "feature jar")
+        lifecycle = require_one(
+            group.find("lifeCycle"), target_group_id, args.patch_target_feature_version, "patch lifecycle"
+        )
+        if lifecycle.attrib.get("greedy") != "false":
+            fail("Patch lifecycle target must be non-greedy")
+        normal_target = require_one(
+            group.find("requires"), target_group_id, args.patch_target_feature_version, "patch target"
+        )
+        if normal_target.attrib.get("greedy") != "false":
+            fail("Patch target requirement must be non-greedy")
+        require_one(
+            group.find("./patchScope/scope/requires"),
+            target_group_id,
+            args.patch_target_feature_version,
+            "patch scope",
+        )
+
+        changes = group.findall("./changes/change")
+        if len(changes) != 1:
+            fail(f"Expected exactly one patch change, found {len(changes)}")
+        from_required = changes[0].find("./from/required")
+        to_required = changes[0].find("./to/required")
+        if from_required is None or from_required.attrib.get("name") != bundle_id:
+            fail("Patch change has no source requirement for the JDT UI bundle")
+        if from_required.attrib.get("namespace") not in (None, "org.eclipse.equinox.p2.iu"):
+            fail("Patch source requirement uses an unexpected namespace")
+        if from_required.attrib.get("range") != "0.0.0":
+            fail(f"Patch source requirement must use wildcard range 0.0.0: {from_required.attrib}")
+        if to_required is None or to_required.attrib.get("name") != bundle_id:
+            fail("Patch change has no replacement requirement for the JDT UI bundle")
+        if to_required.attrib.get("namespace") not in (None, "org.eclipse.equinox.p2.iu"):
+            fail("Patch replacement requirement uses an unexpected namespace")
+        if to_required.attrib.get("range", "") not in exact_range(bundle_version):
+            fail(f"Patch replacement does not pin exact bundle version {bundle_version}: {to_required.attrib}")
 
         artifact_entries = artifacts.findall("./artifacts/artifact")
-        expected_keys = {
+        expected_artifacts = {
             ("osgi.bundle", bundle_id, bundle_version),
             ("org.eclipse.update.feature", args.feature_id, args.feature_version),
         }
-        actual_keys = {
+        actual_artifacts = {
             (
                 item.attrib.get("classifier", ""),
                 item.attrib.get("id", ""),
@@ -188,20 +239,18 @@ def main() -> int:
             )
             for item in artifact_entries
         }
-        if actual_keys != expected_keys:
+        if actual_artifacts != expected_artifacts:
             fail(
-                f"Unexpected p2 artifact keys: expected={sorted(expected_keys)}, "
-                f"actual={sorted(actual_keys)}"
+                f"Unexpected p2 artifact keys: expected={sorted(expected_artifacts)}, "
+                f"actual={sorted(actual_artifacts)}"
             )
 
         integrity: dict[str, list[str]] = {}
         for item in artifact_entries:
-            classifier = item.attrib["classifier"]
-            identifier = item.attrib["id"]
-            version = item.attrib["version"]
-            path = artifact_file(repository, classifier, identifier, version)
+            path = artifact_file(
+                repository, item.attrib["classifier"], item.attrib["id"], item.attrib["version"]
+            )
             integrity[path.name] = verify_integrity(path, properties(item))
-
         bundle_path = repository / "plugins" / f"{bundle_id}_{bundle_version}.jar"
         if sha256(bundle_path) != bundle_sha:
             fail("Published bundle bytes do not match the pinned build provenance")
@@ -209,17 +258,27 @@ def main() -> int:
         feature_path = repository / "features" / f"{args.feature_id}_{args.feature_version}.jar"
         with zipfile.ZipFile(feature_path) as archive:
             feature_xml = ET.fromstring(archive.read("feature.xml"))
-        if (
-            feature_xml.attrib.get("id") != args.feature_id
-            or feature_xml.attrib.get("version") != args.feature_version
-        ):
-            fail("Published feature.xml identity differs from the expected feature")
+        if feature_xml.attrib.get("id") != args.feature_id or feature_xml.attrib.get("version") != args.feature_version:
+            fail("Published feature.xml identity differs from the expected patch feature")
+        patch_imports = [
+            item for item in feature_xml.findall("./requires/import")
+            if item.attrib.get("patch") == "true"
+        ]
+        if len(patch_imports) != 1:
+            fail(f"Expected one feature patch import, found {len(patch_imports)}")
+        patch_import = patch_imports[0]
+        if patch_import.attrib.get("feature") != args.patch_target_feature_id:
+            fail("Feature patch targets an unexpected feature ID")
+        if patch_import.attrib.get("version") != args.patch_target_feature_version:
+            fail("Feature patch targets an unexpected feature version")
+        if patch_import.attrib.get("match") not in (None, "", "perfect"):
+            fail("Feature patch may not use a non-perfect version match")
         plugin = feature_xml.find(f"./plugin[@id='{bundle_id}']")
         if plugin is None or plugin.attrib.get("version") != bundle_version:
-            fail("Published feature.xml does not pin the exact patched bundle version")
+            fail("Patch feature.xml does not pin the exact patched bundle version")
 
         payload: dict[str, object] = {
-            "schemaVersion": 1,
+            "schemaVersion": 2,
             "result": "PASS",
             "repository": str(repository),
             "sourceCommit": provenance.get("sourceCommit"),
@@ -227,8 +286,14 @@ def main() -> int:
             "feature": {
                 "id": args.feature_id,
                 "version": args.feature_version,
-                "groupIU": feature_group_id,
-                "jarIU": feature_jar_id,
+                "groupIU": group_id,
+                "jarIU": jar_id,
+                "kind": "patch",
+                "patchTarget": {
+                    "id": args.patch_target_feature_id,
+                    "version": args.patch_target_feature_version,
+                    "groupIU": target_group_id,
+                },
             },
             "artifactIntegrity": integrity,
             "unitCount": len(units),
@@ -239,16 +304,16 @@ def main() -> int:
             json.dumps(payload, indent=2) + "\n", encoding="utf-8"
         )
         lines = [
-            "# Patched JDT UI p2 repository verification",
+            "# Patched JDT UI p2 feature-patch verification",
             "",
             "- Result: **PASS**",
-            f"- Bundle: `{bundle_id} {bundle_version}`",
-            f"- Feature group: `{feature_group_id} {args.feature_version}`",
+            f"- Patch feature: `{group_id} {args.feature_version}`",
+            f"- Patch target: `{target_group_id} {args.patch_target_feature_version}`",
+            f"- Replacement bundle: `{bundle_id} {bundle_version}`",
             f"- p2 units: **{len(units)}**",
             f"- p2 artifacts: **{len(artifact_entries)}**",
-            "- Bundle bytes match pinned SHA-256 provenance: **PASS**",
-            "- Exact-version feature requirement: **PASS**",
-            "- Published artifact checksums: **PASS**",
+            "- Equinox patch scope, change and lifecycle metadata: **PASS**",
+            "- Bundle bytes and published checksums: **PASS**",
         ]
         (args.output / "repository-verification.md").write_text(
             "\n".join(lines) + "\n", encoding="utf-8"
@@ -261,6 +326,7 @@ def main() -> int:
         ValueError,
         ET.ParseError,
         zipfile.BadZipFile,
+        json.JSONDecodeError,
         VerificationError,
     ) as error:
         print(f"patched JDT UI p2 verification failed: {error}", file=sys.stderr)
