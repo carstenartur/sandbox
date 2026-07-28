@@ -67,10 +67,22 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 
 	@Override
 	public void close() {
+		RuntimeException failure= null;
 		for (HibernateGitStorage storage : storages.values()) {
-			storage.close();
+			try {
+				storage.close();
+			} catch (RuntimeException exception) {
+				if (failure == null) {
+					failure= exception;
+				} else {
+					failure.addSuppressed(exception);
+				}
+			}
 		}
 		storages.clear();
+		if (failure != null) {
+			throw failure;
+		}
 	}
 
 	private HibernateGitStorage storage(String name) {
