@@ -11,7 +11,9 @@
 package org.eclipse.jgit.server.repository;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.LinkedHashMap;
@@ -59,6 +61,23 @@ public class ExternalHibernateRepositoryServiceTest {
 		}
 	}
 
+	@Test
+	public void closesEveryStorageWhenOneCloseFails() throws Exception {
+		FakeFactory factory= new FakeFactory();
+		ExternalHibernateRepositoryService service= new ExternalHibernateRepositoryService(factory);
+		service.openOrCreate("first"); //$NON-NLS-1$
+		service.openOrCreate("second"); //$NON-NLS-1$
+		factory.storages.get("first").closeFailure= new IllegalStateException("first close failed"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		IllegalStateException failure= assertThrows(IllegalStateException.class, service::close);
+
+		assertEquals("first close failed", failure.getMessage()); //$NON-NLS-1$
+		assertTrue(factory.storages.get("first").closed); //$NON-NLS-1$
+		assertTrue(factory.storages.get("second").closed); //$NON-NLS-1$
+		assertFalse(service.isOpen("first")); //$NON-NLS-1$
+		assertFalse(service.isOpen("second")); //$NON-NLS-1$
+	}
+
 	private static final class FakeFactory implements HibernateRepositoryFactory {
 
 		private final Map<String, FakeStorage> storages= new LinkedHashMap<>();
@@ -81,6 +100,7 @@ public class ExternalHibernateRepositoryServiceTest {
 
 		private final Repository repository;
 		private boolean closed;
+		private RuntimeException closeFailure;
 
 		private FakeStorage(Repository repository) {
 			this.repository= repository;
@@ -95,6 +115,9 @@ public class ExternalHibernateRepositoryServiceTest {
 		public void close() {
 			closed= true;
 			repository.close();
+			if (closeFailure != null) {
+				throw closeFailure;
+			}
 		}
 	}
 }
