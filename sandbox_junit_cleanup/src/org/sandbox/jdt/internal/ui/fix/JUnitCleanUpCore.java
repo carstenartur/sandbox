@@ -90,10 +90,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
 		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+		boolean migrateSuites= fixes.contains(JUnitCleanUpFixCore.RUNWITH);
 		return closedScope == null
-				? JUnitMultiFilePlanner.create(project, compilationUnits, migrateExternalResourceRules, monitor)
-				: JUnitMultiFilePlanner.create(project, compilationUnits, migrateExternalResourceRules,
-						closedScope.booleanValue(), monitor);
+				? JUnitMultiFilePlanner.create(project, compilationUnits,
+						migrateExternalResourceRules, migrateSuites, monitor)
+				: JUnitMultiFilePlanner.create(project, compilationUnits,
+						migrateExternalResourceRules, migrateSuites, closedScope.booleanValue(), monitor);
 	}
 
 	@Override
