@@ -84,12 +84,14 @@ public enum JUnitCleanUpFixCore {
 	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),
 	ASSUME(new AssumeJUnitPlugin()),
 	ASSUME_OPTIMIZATION(new AssumeOptimizationJUnitPlugin()),
-	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),
+	// Dedicated rule migrations must claim their types before the generic
+	// ExternalResource rule fallback sees the same field.
 	RULETESTNAME(new RuleTestnameJUnitPlugin()),
 	RULETEMPORARYFOLDER(new RuleTemporayFolderJUnitPlugin()),
 	RULETIMEOUT(new RuleTimeoutJUnitPlugin()),
 	RULEEXPECTEDEXCEPTION(new RuleExpectedExceptionJUnitPlugin()),
 	RULEERRORCOLLECTOR(new RuleErrorCollectorJUnitPlugin()),
+	RULEEXTERNALRESOURCE(new RuleExternalResourceJUnitPlugin()),
 	EXTERNALRESOURCE(new ExternalResourceJUnitPlugin()),
 	LOSTTESTS(new LostTestFinderJUnitPlugin()),
 	PARAMETERIZED(new ParameterizedTestJUnitPlugin()),
