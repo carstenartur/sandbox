@@ -24,6 +24,8 @@ import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.junit.Test;
 
+import io.github.carstenartur.jgit.storage.hibernate.HibernateRepositoryFactory;
+
 /** Contract tests for the application-owned repository lifecycle boundary. */
 public class SandboxRepositoryServiceBoundaryTest {
 
@@ -34,11 +36,20 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertEquals(Repository.class, open.getReturnType());
 		assertNotNull(RepositoryResource.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SandboxRepositoryService.class));
+		assertNotNull(ExternalHibernateRepositoryService.class.getConstructor(HibernateRepositoryFactory.class));
 	}
 
 	@Test
 	public void repositoryResourceHasNoCopiedBackendField() {
 		assertFalse(Arrays.stream(RepositoryResource.class.getDeclaredFields())
+				.map(Field::getType)
+				.map(Class::getName)
+				.anyMatch(name -> name.startsWith("org.eclipse.jgit.storage.hibernate"))); //$NON-NLS-1$
+	}
+
+	@Test
+	public void externalAdapterHasNoCopiedBackendField() {
+		assertFalse(Arrays.stream(ExternalHibernateRepositoryService.class.getDeclaredFields())
 				.map(Field::getType)
 				.map(Class::getName)
 				.anyMatch(name -> name.startsWith("org.eclipse.jgit.storage.hibernate"))); //$NON-NLS-1$
