@@ -95,7 +95,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 					 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
 					 */
 					List<Expression> arguments= visited.arguments();
-
+					
 					// Safely check if argument at index 2 (code) is IStatus.OK
 					Expression codeArg= arguments.get(2);
 					if (!(codeArg instanceof QualifiedName)) {
@@ -105,7 +105,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 					if (!"IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
 						return false;
 					}
-
+					
 					// Safely check if argument at index 0 (severity) matches expected status literal
 					Expression severityArg= arguments.get(0);
 					if (!(severityArg instanceof QualifiedName)) {
@@ -135,7 +135,6 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
-		remover.registerRemovedNode(visited);
 
 		/**
 		 * Create call to Status.warning(), Status.error(), or Status.info()
@@ -143,24 +142,24 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		// Add imports in alphabetical order to match expected test output
 		// IStatus comes before Status alphabetically
 		addImport("org.eclipse.core.runtime.IStatus", cuRewrite, ast);
-
+		
 		MethodInvocation staticCall= ast.newMethodInvocation();
 		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);
 		staticCall.setExpression(statusName);
 		staticCall.setName(ast.newSimpleName(methodName));
-
+		
 		List<ASTNode> arguments= visited.arguments();
 		List<ASTNode> staticCallArguments= staticCall.arguments();
-
+		
 		// Note: preservePluginId parameter is not used for Status factory methods
 		// because the Eclipse Platform Status.error(), Status.warning(), and Status.info()
 		// methods only accept (message, exception) parameters, not plugin ID.
-
+		
 		// Add message argument (always at position 3 for 5-argument constructor)
 		int messagePosition= 3;
 		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));
-
+		
 		// Add throwable argument if present (at position 4) and not null
 		ASTNode throwableArg= arguments.get(4);
 		// Add the exception parameter if it's not a null literal
@@ -168,8 +167,9 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		if (!(throwableArg instanceof NullLiteral)) {
 			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
 		}
-
+		
 		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
+		remover.registerRemovedNode(visited);
 		// Note: Do NOT call remover.applyRemoves(importRewrite) here
 		// ImportRewrite automatically manages import removal/addition throughout the transformation.
 		// The Status import is explicitly added via addImport() above, and IStatus is preserved from the variable declaration.
