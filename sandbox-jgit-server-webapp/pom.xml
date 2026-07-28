@@ -22,7 +22,21 @@
 		<!-- Keep the server's direct ORM dependency aligned with the storage module's Search mapper. -->
 		<hibernate.version>7.4.5.Final</hibernate.version>
 		<hibernate-search.version>8.4.0.Final</hibernate-search.version>
+		<jgit-storage-hibernate.version>0.1.13</jgit-storage-hibernate.version>
 	</properties>
+
+	<repositories>
+		<repository>
+			<id>jgit-storage-hibernate-public</id>
+			<url>https://raw.githubusercontent.com/carstenartur/jgit-storage-hibernate/maven-repository/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<!-- JGit core -->
@@ -39,11 +53,18 @@
 			<version>${jgit.version}</version>
 		</dependency>
 
-		<!-- JGit Hibernate storage module -->
+		<!-- Temporary copied storage implementation. -->
 		<dependency>
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox-jgit-storage-hibernate</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<!-- Released Core API consumed directly by ReleasedCoreRepositoryService. -->
+		<dependency>
+			<groupId>io.github.carstenartur</groupId>
+			<artifactId>jgit-storage-hibernate-core</artifactId>
+			<version>${jgit-storage-hibernate.version}</version>
 		</dependency>
 
 		<!-- Eclipse JDT Core needed by FileTypeStrategyRegistry at runtime -->

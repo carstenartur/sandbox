@@ -45,14 +45,14 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 
 	@Override
 	public SandboxRepositoryInfo info(String name) throws IOException {
-		String normalized= normalize(name);
+		String normalized= SandboxRepositoryNames.normalize(name);
 		HibernateRepository repository= repository(normalized);
 		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
 	}
 
 	@Override
 	public SandboxRepositoryInfo setDescription(String name, String description) throws IOException {
-		String normalized= normalize(name);
+		String normalized= SandboxRepositoryNames.normalize(name);
 		HibernateRepository repository= repository(normalized);
 		repository.setGitwebDescription(description);
 		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
@@ -60,7 +60,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 
 	@Override
 	public boolean isOpen(String name) {
-		return repositories.containsKey(normalize(name));
+		return repositories.containsKey(SandboxRepositoryNames.normalize(name));
 	}
 
 	@Override
@@ -72,7 +72,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 	}
 
 	private HibernateRepository repository(String name) throws IOException {
-		String normalized= normalize(name);
+		String normalized= SandboxRepositoryNames.normalize(name);
 		HibernateRepository existing= repositories.get(normalized);
 		if (existing != null) {
 			return existing;
@@ -88,19 +88,5 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 			return raced;
 		}
 		return created;
-	}
-
-	private static String normalize(String name) {
-		String normalized= Objects.requireNonNull(name, "name").strip(); //$NON-NLS-1$
-		if (normalized.startsWith("/")) { //$NON-NLS-1$
-			normalized= normalized.substring(1);
-		}
-		if (normalized.endsWith(".git")) { //$NON-NLS-1$
-			normalized= normalized.substring(0, normalized.length() - 4);
-		}
-		if (normalized.isEmpty()) {
-			throw new IllegalArgumentException("Repository name must not be blank."); //$NON-NLS-1$
-		}
-		return normalized;
 	}
 }
