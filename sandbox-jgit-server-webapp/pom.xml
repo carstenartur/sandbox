@@ -22,7 +22,7 @@
 		<!-- Keep the server's direct ORM dependency aligned with the storage module's Search mapper. -->
 		<hibernate.version>7.4.5.Final</hibernate.version>
 		<hibernate-search.version>8.4.0.Final</hibernate-search.version>
-		<jgit-storage-hibernate.version>0.1.14</jgit-storage-hibernate.version>
+		<jgit-storage-hibernate.version>0.1.15</jgit-storage-hibernate.version>
 	</properties>
 
 	<repositories>
@@ -106,7 +106,7 @@
 			<version>${gson.version}</version>
 		</dependency>
 
-		<!-- MSSQL JDBC driver retained until the existing server backend is cut over. -->
+		<!-- SQL Server driver for the copied backend and published 0.1.15 adoption path. -->
 		<dependency>
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
@@ -114,7 +114,7 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- JDBC drivers for the two published pre-library legacy-adoption paths. -->
+		<!-- JDBC drivers for the additional published legacy-adoption paths. -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
