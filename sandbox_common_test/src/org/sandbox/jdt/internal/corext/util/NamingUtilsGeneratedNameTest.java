@@ -15,15 +15,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+
 /** Tests shared collision validation for generated JUnit helper classes. */
 class NamingUtilsGeneratedNameTest {
+
+	@RegisterExtension
+	AbstractEclipseJava context= new EclipseJava22();
 
 	@Test
 	void retainsDeterministicFieldAndChecksumNameWhenAvailable() {
@@ -50,11 +61,53 @@ class NamingUtilsGeneratedNameTest {
 		assertTrue(exception.getMessage().contains("type declaration")); //$NON-NLS-1$
 	}
 
+	@Test
+	void rejectsAccessibleInheritedMemberTypeWithGeneratedName() throws CoreException {
+		String generated= NamingUtils.generateUniqueNestedClassName(parseAnonymous(sourceWithoutCollision()),
+				"resource"); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Base.java", //$NON-NLS-1$
+				"package test; class Base { protected static class " + generated + " {} }", false, null); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit owner= pack.createCompilationUnit("Owner.java", ownerSource("extends Base"), false, null); //$NON-NLS-1$ //$NON-NLS-2$
+		AnonymousClassDeclaration anonymous= parseAnonymous(owner);
+
+		IllegalStateException exception= assertThrows(IllegalStateException.class,
+				() -> NamingUtils.generateUniqueNestedClassName(anonymous, "resource")); //$NON-NLS-1$
+
+		assertTrue(exception.getMessage().contains("inherited member type")); //$NON-NLS-1$
+		assertTrue(exception.getMessage().contains("test.Base." + generated)); //$NON-NLS-1$
+	}
+
+	@Test
+	void ignoresPrivateMemberTypeInSuperclass() throws CoreException {
+		String generated= NamingUtils.generateUniqueNestedClassName(parseAnonymous(sourceWithoutCollision()),
+				"resource"); //$NON-NLS-1$
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		pack.createCompilationUnit("Base.java", //$NON-NLS-1$
+				"package test; class Base { private static class " + generated + " {} }", false, null); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit owner= pack.createCompilationUnit("Owner.java", ownerSource("extends Base"), false, null); //$NON-NLS-1$ //$NON-NLS-2$
+		AnonymousClassDeclaration anonymous= parseAnonymous(owner);
+
+		assertEquals(generated, NamingUtils.generateUniqueNestedClassName(anonymous, "resource")); //$NON-NLS-1$
+	}
+
 	private static AnonymousClassDeclaration parseAnonymous(String source) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(source.toCharArray());
-		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		return findAnonymous((CompilationUnit) parser.createAST(null));
+	}
+
+	private static AnonymousClassDeclaration parseAnonymous(ICompilationUnit unit) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		parser.setStatementsRecovery(true);
+		return findAnonymous((CompilationUnit) parser.createAST(null));
+	}
+
+	private static AnonymousClassDeclaration findAnonymous(CompilationUnit root) {
 		AnonymousClassDeclaration[] result= new AnonymousClassDeclaration[1];
 		root.accept(new ASTVisitor() {
 			@Override
@@ -66,16 +119,20 @@ class NamingUtilsGeneratedNameTest {
 		return result[0];
 	}
 
-	private static String sourceWithoutCollision() {
+	private static String ownerSource(String inheritance) {
 		return """
 				package test;
 
-				class Owner {
+				class Owner __INHERITANCE__ {
 					Object resource = new Object() {
 						void before() {
 						}
 					};
 				}
-				""";
+				""".replace("__INHERITANCE__", inheritance); //$NON-NLS-1$
+	}
+
+	private static String sourceWithoutCollision() {
+		return ownerSource(""); //$NON-NLS-1$
 	}
 }
