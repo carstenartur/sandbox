@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -111,6 +112,9 @@ public enum SimplifyPlatformStatusFixCore {
 						cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
 				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder, preservePluginId);
+				if (SimplifyPlatformStatusFixCore.this != MULTISTATUS) {
+					cuRewrite.getImportRemover().registerAddedImport(Status.class.getName());
+				}
 			}
 		};
 	}
