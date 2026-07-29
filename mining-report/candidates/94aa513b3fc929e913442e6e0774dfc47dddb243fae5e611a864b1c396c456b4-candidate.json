@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "94aa513b3fc929e913442e6e0774dfc47dddb243fae5e611a864b1c396c456b4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jdt.internal.ui.text.VersionedWordMatcher($defaultToken$, org.eclipse.jdt.core.JavaCore.VERSION_9, $version$)\n\u003d\u003e new org.eclipse.jdt.internal.ui.text.CombinedWordRule.WordMatcher()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.JavaCore;\n// Mock classes to ensure compilation\nclass Token {}\nclass VersionedWordMatcher {\n    public VersionedWordMatcher(Token t, String s1, String s2) {}\n}\nclass CombinedWordRule {\n    public static class WordMatcher {}\n}\n\npublic class MyClass {\n    void myMethod(Token defaultToken, String version) {\n        VersionedWordMatcher matcher \u003d new VersionedWordMatcher(defaultToken, JavaCore.VERSION_9, version);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.JavaCore;\n// Mock classes to ensure compilation\nclass Token {}\nclass VersionedWordMatcher {\n    public VersionedWordMatcher(Token t, String s1, String s2) {}\n}\nclass CombinedWordRule {\n    public static class WordMatcher {}\n}\n\npublic class MyClass {\n    void myMethod(Token defaultToken, String version) {\n        CombinedWordRule.WordMatcher matcher \u003d new CombinedWordRule.WordMatcher();\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.JavaCore;\n// Mock classes to ensure compilation\nclass Token {}\nclass VersionedWordMatcher {\n    public VersionedWordMatcher(Token t, String s1, String s2) {}\n    public VersionedWordMatcher(Token t) {} // different constructor\n}\nclass CombinedWordRule {\n    public static class WordMatcher {}\n}\n\npublic class MyClass {\n    void myMethod(Token defaultToken, String version) {\n        VersionedWordMatcher otherMatcher \u003d new VersionedWordMatcher(defaultToken); // Should not match\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "929362ad91e5f1608fdd153b76bcb3bbe3442dca",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace the VersionedWordMatcher constructor with the simpler CombinedWordRule.WordMatcher constructor, reflecting Java 9+ API simplification.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.548549132Z",
+  "ruleFingerprint": "sha256:54da49e22470614cbf9f8b61599670f0684ddac428ab225726e6951961c3b916",
+  "behaviorFingerprint": "sha256:d2176e6e2672e9e45bd54cbbc0ce599066797e65aaa658183c1aaa9fcd1edb75",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 13: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-29T03:15:13.578636767Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

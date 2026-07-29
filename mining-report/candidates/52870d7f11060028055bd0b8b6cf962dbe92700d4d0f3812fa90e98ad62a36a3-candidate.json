@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "52870d7f11060028055bd0b8b6cf962dbe92700d4d0f3812fa90e98ad62a36a3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_EDITOR.equals($id$) || org.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_CF_EDITOR.equals($id$)\n\u003d\u003e org.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_EDITOR.equals($id$) || org.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_CF_EDITOR.equals($id$) || org.eclipse.jdt.ui.JavaUI.ID_CF_EDITOR_NO_SOURCE.equals($id$)\n;;",
+  "beforeExample": "package test;\n\npublic class MyClass {\n    public static final String ID_MODULE_INFO_EDITOR \u003d \"module.editor\";\n    public static final String ID_MODULE_INFO_CF_EDITOR \u003d \"module.cf.editor\";\n    // ID_CF_EDITOR_NO_SOURCE is effectively added by the commit, but present here for compilation of afterExample\n    public static final String ID_CF_EDITOR_NO_SOURCE \u003d \"cf.editor.no.source\";\n\n    public void checkId(String id) {\n        boolean isModuleInfo \u003d false;\n        if (ID_MODULE_INFO_EDITOR.equals(id) || ID_MODULE_INFO_CF_EDITOR.equals(id)) {\n            isModuleInfo \u003d true;\n        }\n    }\n}",
+  "afterExample": "package test;\n\npublic class MyClass {\n    public static final String ID_MODULE_INFO_EDITOR \u003d \"module.editor\";\n    public static final String ID_MODULE_INFO_CF_EDITOR \u003d \"module.cf.editor\";\n    public static final String ID_CF_EDITOR_NO_SOURCE \u003d \"cf.editor.no.source\";\n\n    public void checkId(String id) {\n        boolean isModuleInfo \u003d false;\n        if (ID_MODULE_INFO_EDITOR.equals(id) || ID_MODULE_INFO_CF_EDITOR.equals(id) || ID_CF_EDITOR_NO_SOURCE.equals(id)) {\n            isModuleInfo \u003d true;\n        }\n    }\n}",
+  "negativeExample": "package test;\n\npublic class MyClass {\n    public static final String ID_MODULE_INFO_EDITOR \u003d \"module.editor\";\n    public static final String ID_MODULE_INFO_CF_EDITOR \u003d \"module.cf.editor\";\n    public static final String ID_CF_EDITOR_NO_SOURCE \u003d \"cf.editor.no.source\";\n    public static final String ID_OTHER_EDITOR \u003d \"other.editor\";\n\n    public void checkId(String id) {\n        boolean isOther \u003d false;\n        if (ID_MODULE_INFO_EDITOR.equals(id) || ID_OTHER_EDITOR.equals(id)) { // Should not match\n            isOther \u003d true;\n        }\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "4593560a78b7a500f274541e1fd7a3a2ab78092f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Extend the conditional check for module info editor IDs to include the new ID_CF_EDITOR_NO_SOURCE constant for Java 9+ module handling.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.554853485Z",
+  "ruleFingerprint": "sha256:6e59ccd2b6b38a4086b729c7bfef8bdf00d02ad635bab67a7f645ee12e4ed965",
+  "behaviorFingerprint": "sha256:f7390cff4536db8dc8f1fb8f779a3f380acdac851e5fdde0b0b5188979fbd1cd",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-29T03:15:13.593680627Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

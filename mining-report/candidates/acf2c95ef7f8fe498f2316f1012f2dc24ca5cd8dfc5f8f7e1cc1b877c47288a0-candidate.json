@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "acf2c95ef7f8fe498f2316f1012f2dc24ca5cd8dfc5f8f7e1cc1b877c47288a0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-module-info-check\u003e\n\u003c!description: Add module-info check to instanceof conditions for ICompilationUnit and IClassFile elements when handling Java 9+ modules.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!map ELEMENT_TYPE: \"org.eclipse.jdt.core.ICompilationUnit\" \u003d\u003e \"org.eclipse.jdt.core.ICompilationUnit\", \"org.eclipse.jdt.core.IClassFile\" \u003d\u003e \"org.eclipse.jdt.core.IClassFile\"\u003e\n\n$element instanceof #{ELEMENT_TYPE} :: sourceVersionGE(9)\n\u003d\u003e $element instanceof #{ELEMENT_TYPE} \u0026\u0026 !org.eclipse.jdt.internal.ui.JavaModelUtil.isModuleInfo((#{ELEMENT_TYPE_VALUE}) $element)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui;\n\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.ui.IDecoration;\n\npublic class InterfaceIndicatorLabelDecorator {\n\n    public void addOverlays(Object element, IDecoration decoration) throws Exception {\n        if (element instanceof ICompilationUnit) {\n            System.out.println(\"Compilation unit: \" + element);\n        } else if (element instanceof IClassFile) {\n            System.out.println(\"Class file: \" + element);\n        }\n    }\n\n    public static class JavaModelUtil {\n        public static boolean isModuleInfo(ICompilationUnit unit) { return false; }\n        public static boolean isModuleInfo(IClassFile file) { return false; }\n        public static boolean is9OrHigher(org.eclipse.jdt.core.IJavaProject project) { return true; }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui;\n\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.ui.IDecoration;\n\npublic class InterfaceIndicatorLabelDecorator {\n\n    public void addOverlays(Object element, IDecoration decoration) throws Exception {\n        if (element instanceof ICompilationUnit \u0026\u0026 !org.eclipse.jdt.internal.ui.JavaModelUtil.isModuleInfo((org.eclipse.jdt.core.ICompilationUnit) element)) {\n            System.out.println(\"Compilation unit: \" + element);\n        } else if (element instanceof IClassFile \u0026\u0026 !org.eclipse.jdt.internal.ui.JavaModelUtil.isModuleInfo((org.eclipse.jdt.core.IClassFile) element)) {\n            System.out.println(\"Class file: \" + element);\n        }\n    }\n\n    public static class JavaModelUtil {\n        public static boolean isModuleInfo(ICompilationUnit unit) { return false; }\n        public static boolean isModuleInfo(IClassFile file) { return false; }\n        public static boolean is9OrHigher(org.eclipse.jdt.core.IJavaProject project) { return true; }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui;\n\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.ui.IDecoration;\n\npublic class InterfaceIndicatorLabelDecorator {\n\n    public void addOverlays(Object element, IDecoration decoration) throws Exception {\n        // This if statement should NOT be changed as it already contains the check (or inverse)\n        if (element instanceof ICompilationUnit \u0026\u0026 org.eclipse.jdt.internal.ui.JavaModelUtil.isModuleInfo((org.eclipse.jdt.core.ICompilationUnit) element)) {\n            System.out.println(\"Module info compilation unit: \" + element);\n        } else {\n            System.out.println(\"Other element: \" + element);\n        }\n    }\n\n    public static class JavaModelUtil {\n        public static boolean isModuleInfo(ICompilationUnit unit) { return false; }\n        public static boolean isModuleInfo(IClassFile file) { return false; }\n        public static boolean is9OrHigher(org.eclipse.jdt.core.IJavaProject project) { return true; }\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "b4af8d81af90c33f4bd100918f07d67cf6476708",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Adds a check `!JavaModelUtil.isModuleInfo(element)` to existing `instanceof ICompilationUnit` or `instanceof IClassFile` expressions, targeting Java 9+ projects.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.530564654Z",
+  "ruleFingerprint": "sha256:3d7b1fd48b06e421f51c2d53676962fde5ddb6436d1c74e0f4681f246c07b9b9",
+  "behaviorFingerprint": "sha256:701fb28e64374c66ae7ea6a9853eeae6fdcdd5703878a5c669a70071267d9c1c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-29T03:15:13.543880980Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

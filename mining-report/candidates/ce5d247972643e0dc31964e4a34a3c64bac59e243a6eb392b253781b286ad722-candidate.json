@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ce5d247972643e0dc31964e4a34a3c64bac59e243a6eb392b253781b286ad722",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPlugin.getDefault().getWorkbench().getSharedImages().getImageDescriptor(org.eclipse.ui.ide.IDE.SharedImages.IMG_OBJ_PROJECT)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.DESC_OBJS_MODULE\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui.text.java;\n\nimport org.eclipse.jdt.core.CompletionProposal;\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\nimport org.eclipse.ui.ide.IDE;\n\npublic class CompletionProposalLabelProvider {\n    // Assuming JavaPlugin.getDefault() is accessible in a real context\n    // and other imports are managed by the environment.\n\n    public ImageDescriptor getImageDescriptor(CompletionProposal proposal) {\n        switch (proposal.getKind()) {\n            case CompletionProposal.MODULE_REF:\n                // Bug: Using generic project icon for module reference\n                return JavaPlugin.getDefault().getWorkbench().getSharedImages().getImageDescriptor(IDE.SharedImages.IMG_OBJ_PROJECT);\n            default:\n                return JavaPluginImages.DESC_OBJS_CLASS;\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui.text.java;\n\nimport org.eclipse.jdt.core.CompletionProposal;\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\n\npublic class CompletionProposalLabelProvider {\n    // Assuming JavaPlugin.getDefault() is accessible in a real context.\n\n    public ImageDescriptor getImageDescriptor(CompletionProposal proposal) {\n        switch (proposal.getKind()) {\n            case CompletionProposal.MODULE_REF:\n                // Fix: Using specific module icon for module reference\n                return JavaPluginImages.DESC_OBJS_MODULE;\n            default:\n                return JavaPluginImages.DESC_OBJS_CLASS;\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.ui.text.java;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\nimport org.eclipse.ui.ide.IDE;\n\npublic class SomeOtherUtility {\n    // This example shows a legitimate use of the generic project icon\n    // outside the context of a CompletionProposal for modules.\n    // The rule targets the specific expression, assuming its use in the original context was a bug.\n    public ImageDescriptor getAnyProjectIcon() {\n        return JavaPlugin.getDefault().getWorkbench().getSharedImages().getImageDescriptor(IDE.SharedImages.IMG_OBJ_PROJECT);\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "0568adbe94a50d25333540057976076c33cd384a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Misuse Correction",
+  "summary": "Replace generic project image descriptor with specific module image descriptor for module references.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.567281360Z",
+  "ruleFingerprint": "sha256:043fdb0261f2a35118bf75248bd98b741bf7a5d658a437ebfb1d26fa9af796fd",
+  "behaviorFingerprint": "sha256:53295b7f108ff651571740017842c8468fd2935bc3bf611f54724fd0fdef5f2d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.resource cannot be resolved",
+    "verifiedAt": "2026-07-29T03:15:13.619289628Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
