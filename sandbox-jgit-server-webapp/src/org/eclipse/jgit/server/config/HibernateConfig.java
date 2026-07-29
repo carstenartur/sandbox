@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /**
- * Creates a Hibernate {@link HibernateSessionFactoryProvider} from environment
+ * Creates the application-owned Hibernate persistence context from environment
  * variables.
  * <p>
  * Supported environment variables:
@@ -51,10 +51,37 @@ public class HibernateConfig {
 	}
 
 	/**
-	 * Create a session factory provider configured from environment variables.
+	 * Create the application-owned persistence context from environment variables.
+	 *
+	 * @return the persistence context owning the native session factory
+	 */
+	public static ServerPersistenceContext createPersistenceContext() {
+		Properties props= buildProperties();
+		LOG.log(Level.INFO,
+				"Creating Hibernate persistence context with URL: {0}", //$NON-NLS-1$
+				props.getProperty("hibernate.connection.url")); //$NON-NLS-1$
+		return createPersistenceContext(props);
+	}
+
+	/**
+	 * Create the application-owned persistence context from explicit properties.
+	 *
+	 * @param properties
+	 *            Hibernate configuration properties
+	 * @return the persistence context owning the native session factory
+	 */
+	public static ServerPersistenceContext createPersistenceContext(Properties properties) {
+		return new CopiedServerPersistenceContext(properties);
+	}
+
+	/**
+	 * Create a copied session-factory provider configured from environment variables.
 	 *
 	 * @return the configured session factory provider
+	 * @deprecated application startup should own persistence through
+	 *             {@link #createPersistenceContext()}
 	 */
+	@Deprecated(forRemoval = true)
 	public static HibernateSessionFactoryProvider createSessionFactoryProvider() {
 		Properties props = buildProperties();
 		LOG.log(Level.INFO,
@@ -64,12 +91,15 @@ public class HibernateConfig {
 	}
 
 	/**
-	 * Create a session factory provider from explicit properties.
+	 * Create a copied session-factory provider from explicit properties.
 	 *
 	 * @param properties
 	 *            Hibernate configuration properties
 	 * @return the configured session factory provider
+	 * @deprecated application startup should own persistence through
+	 *             {@link #createPersistenceContext(Properties)}
 	 */
+	@Deprecated(forRemoval = true)
 	public static HibernateSessionFactoryProvider createSessionFactoryProvider(
 			Properties properties) {
 		return new HibernateSessionFactoryProvider(properties);
