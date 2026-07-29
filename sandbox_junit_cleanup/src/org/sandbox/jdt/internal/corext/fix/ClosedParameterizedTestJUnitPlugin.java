@@ -41,18 +41,27 @@ final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlu
 		if (holder == null || !(holder.getAdditionalInfo() instanceof TypeDeclaration type)) {
 			return holder;
 		}
-		return hasLocalParametersProvider(type) ? holder : null;
+		return hasSupportedLocalContract(type) ? holder : null;
 	}
 
-	private static boolean hasLocalParametersProvider(TypeDeclaration type) {
+	private static boolean hasSupportedLocalContract(TypeDeclaration type) {
+		int providers= 0;
+		int constructors= 0;
+		boolean parameterizedConstructor= false;
 		for (MethodDeclaration method : type.getMethods()) {
+			if (method.isConstructor()) {
+				constructors++;
+				parameterizedConstructor= !method.parameters().isEmpty();
+				continue;
+			}
 			for (Object modifier : method.modifiers()) {
 				if (modifier instanceof Annotation annotation && isParametersAnnotation(annotation)) {
-					return true;
+					providers++;
+					break;
 				}
 			}
 		}
-		return false;
+		return providers == 1 && constructors == 1 && parameterizedConstructor;
 	}
 
 	private static boolean isParametersAnnotation(Annotation annotation) {
