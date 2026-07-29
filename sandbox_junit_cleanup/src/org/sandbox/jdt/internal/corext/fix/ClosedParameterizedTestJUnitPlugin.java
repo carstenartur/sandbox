@@ -50,6 +50,7 @@ final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlu
 				if (modifier instanceof Annotation annotation && isParametersAnnotation(annotation)) {
 					return true;
 				}
+			}
 		}
 		return false;
 	}
