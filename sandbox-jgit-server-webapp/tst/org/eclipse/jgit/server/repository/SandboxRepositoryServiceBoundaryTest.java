@@ -22,6 +22,7 @@ import java.util.Arrays;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
+import org.hibernate.SessionFactory;
 import org.junit.Test;
 
 import io.github.carstenartur.jgit.storage.hibernate.HibernateRepositoryFactory;
@@ -36,6 +37,7 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertEquals(Repository.class, open.getReturnType());
 		assertNotNull(RepositoryResource.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SandboxRepositoryService.class));
+		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SessionFactory.class));
 		assertNotNull(ExternalHibernateRepositoryService.class.getConstructor(HibernateRepositoryFactory.class));
 	}
 
