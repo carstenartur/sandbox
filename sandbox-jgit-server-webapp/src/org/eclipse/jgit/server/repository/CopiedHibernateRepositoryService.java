@@ -36,7 +36,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 
 	/** Creates the temporary adapter from an application-owned native factory. */
 	public CopiedHibernateRepositoryService(SessionFactory sessionFactory) {
-		this(new HibernateSessionFactoryProvider(Objects.requireNonNull(sessionFactory, "sessionFactory"))); //$NON-NLS-1$
+		this(nonOwningProvider(sessionFactory));
 	}
 
 	/**
@@ -80,6 +80,16 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 			repository.close();
 		}
 		repositories.clear();
+	}
+
+	static HibernateSessionFactoryProvider nonOwningProvider(SessionFactory sessionFactory) {
+		SessionFactory applicationOwnedFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+		return new HibernateSessionFactoryProvider(applicationOwnedFactory) {
+			@Override
+			public void close() {
+				// The enclosing ServerPersistenceContext owns the native factory.
+			}
+		};
 	}
 
 	private HibernateRepository repository(String name) throws IOException {
