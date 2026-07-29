@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fd6fdfa444381f82e6604ea0bf98274287b55f0e22afacfbb926dac8f6212cec",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($binding$).getKind() \u003d\u003d org.eclipse.jdt.core.dom.IBinding.PACKAGE\n\u003d\u003e ( ($binding$).getKind() \u003d\u003d org.eclipse.jdt.core.dom.IBinding.PACKAGE || ($binding$).getKind() \u003d\u003d org.eclipse.jdt.core.dom.IBinding.MODULE )\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.dom.IBinding;\n\npublic class MyClass {\n    public void someMethod(IBinding binding) {\n        if (binding !\u003d null \u0026\u0026 binding.getKind() \u003d\u003d IBinding.PACKAGE) {\n            System.out.println(\"It\u0027s a package!\");\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.dom.IBinding;\n\npublic class MyClass {\n    public void someMethod(IBinding binding) {\n        if (binding !\u003d null \u0026\u0026 (binding.getKind() \u003d\u003d IBinding.PACKAGE || binding.getKind() \u003d\u003d IBinding.MODULE)) {\n            System.out.println(\"It\u0027s a package!\");\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.dom.IBinding;\n\npublic class MyClass {\n    public void someMethod(IBinding binding) {\n        if (binding !\u003d null \u0026\u0026 binding.getKind() \u003d\u003d IBinding.TYPE) { // Should not match\n            System.out.println(\"It\u0027s a type!\");\n        }\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "f1a51d748ed6146408060c31b675c4a5c77e7431",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Extend IBinding kind check to include MODULE, which was introduced in Java 9.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.541767989Z",
+  "ruleFingerprint": "sha256:f3269d9acd0636d265207f6ac843e2c2547b8be399199c48100954363430c05b",
+  "behaviorFingerprint": "sha256:c33459cc1116876689e99eb59a6f66666dfbd53874159a67447eb93b00f2603d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-29T03:15:13.558412033Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

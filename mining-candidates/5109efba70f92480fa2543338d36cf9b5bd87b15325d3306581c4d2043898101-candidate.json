@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5109efba70f92480fa2543338d36cf9b5bd87b15325d3306581c4d2043898101",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "createAttributeElement($curr.getKey(), $curr.getValue(), false)\n:: instanceof($curr, \"org.eclipse.jdt.internal.ui.wizards.buildpaths.CPListElementAttribute\")\n\u003d\u003e\ncreateAttributeElement($curr.getKey(), $curr.getValue(), $curr.isBuiltIn())\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\npublic class CPListElement {\n    // Dummy method for context\n    public void createAttributeElement(String key, String value, boolean isBuiltIn) { /* ... */ }\n\n    public void foo() {\n        CPListElementAttribute curr \u003d new CPListElementAttribute();\n        // The original line\n        createAttributeElement(curr.getKey(), curr.getValue(), false);\n    }\n\n    // Dummy classes for compilation\n    public static class CPListElementAttribute {\n        public String getKey() { return \"\"; }\n        public String getValue() { return \"\"; }\n        public boolean isBuiltIn() { return true; }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\npublic class CPListElement {\n    // Dummy method for context\n    public void createAttributeElement(String key, String value, boolean isBuiltIn) { /* ... */ }\n\n    public void foo() {\n        CPListElementAttribute curr \u003d new CPListElementAttribute();\n        // The transformed line\n        createAttributeElement(curr.getKey(), curr.getValue(), curr.isBuiltIn());\n    }\n\n    // Dummy classes for compilation\n    public static class CPListElementAttribute {\n        public String getKey() { return \"\"; }\n        public String getValue() { return \"\"; }\n        public boolean isBuiltIn() { return true; }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\npublic class CPListElement {\n    // Dummy methods for context\n    public void createAttributeElement(String key, String value, boolean isBuiltIn) { /* ... */ }\n    public void someOtherMethod(String key, String value, boolean flag) { /* ... */ }\n\n    public void foo() {\n        // Matches method call, but last argument is \u0027true\u0027 - should not match\n        CPListElementAttribute curr1 \u003d new CPListElementAttribute();\n        createAttributeElement(curr1.getKey(), curr1.getValue(), true);\n\n        // Matches method call, but $curr is not CPListElementAttribute type - should not match due to guard\n        MyOtherAttribute other \u003d new MyOtherAttribute();\n        createAttributeElement(other.getKey(), other.getValue(), false);\n\n        // Different method call - should not match\n        CPListElementAttribute curr2 \u003d new CPListElementAttribute();\n        someOtherMethod(curr2.getKey(), curr2.getValue(), false);\n\n        // Method call with literal arguments, not $curr.getKey() - should not match\n        createAttributeElement(\"key\", \"value\", false);\n    }\n\n    // Dummy classes for compilation\n    public static class CPListElementAttribute {\n        public String getKey() { return \"\"; }\n        public String getValue() { return \"\"; }\n        public boolean isBuiltIn() { return true; }\n    }\n\n    public static class MyOtherAttribute {\n        public String getKey() { return \"\"; }\n        public String getValue() { return \"\"; }\n    }\n}",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "fd311f1964494491f0d308bf5450516e0daa8a57",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Method call argument replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.573355259Z",
+  "ruleFingerprint": "sha256:d66d3314b4cfa4119a086d9cf88a51773eb52ed80411b75dd5c0ada29743c823",
+  "behaviorFingerprint": "sha256:45ffaa5498d89d90de744d5e721dde9c6b7c3c678ab39922aa8430a26547948c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type CPListElement must be defined in its own file",
+    "verifiedAt": "2026-07-29T03:15:13.634961673Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

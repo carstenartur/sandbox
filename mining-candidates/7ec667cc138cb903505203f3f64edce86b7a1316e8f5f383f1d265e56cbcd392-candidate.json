@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7ec667cc138cb903505203f3f64edce86b7a1316e8f5f383f1d265e56cbcd392",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.typebinding.geterasure\u003e\n\u003c!description: Use ITypeBinding.getErasure().getTypeDeclaration() to get the raw type declaration, avoiding issues with captures and type variables, as per JDT internal fix.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: jdt-api, generics-fix\u003e\n\n$binding.getTypeDeclaration()\n\u003d\u003e\n$binding.getErasure().getTypeDeclaration()\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.dom.ITypeBinding;\n\npublic class MyClass {\n    public ITypeBinding process(ITypeBinding binding) {\n        // Simulate an ITypeBinding from a source element\n        ITypeBinding senderDeclBinding \u003d binding.getTypeDeclaration();\n        return senderDeclBinding;\n    }\n}",
+  "afterExample": "import org.eclipse.jdt.core.dom.ITypeBinding;\n\npublic class MyClass {\n    public ITypeBinding process(ITypeBinding binding) {\n        // Simulate an ITypeBinding from a source element\n        ITypeBinding senderDeclBinding \u003d binding.getErasure().getTypeDeclaration();\n        return senderDeclBinding;\n    }\n}",
+  "negativeExample": "import org.eclipse.jdt.core.dom.ITypeBinding;\n\npublic class MyOtherClass {\n    public ITypeBinding getErasureOnly(ITypeBinding binding) {\n        // This should not be transformed as it only calls getErasure(), not getTypeDeclaration()\n        ITypeBinding erasedBinding \u003d binding.getErasure(); \n        return erasedBinding;\n    }\n}",
+  "targetHintFile": "jdt-api.sandbox-hint",
+  "sourceCommit": "0c96fd2daf3257905345bd2526233299f5dfb957",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Fix",
+  "summary": "Replace ITypeBinding.getTypeDeclaration() with ITypeBinding.getErasure().getTypeDeclaration() to correctly resolve type declarations when dealing with generic type captures or variables.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.522019764Z",
+  "ruleFingerprint": "sha256:736915e97b3b91c2d5c8648bcc6fb37e8bc6f04a013292e4e3a120ac4425089b",
+  "behaviorFingerprint": "sha256:67e08fe86173eb7b0a9d99af7c74c819aa8fe9ad83ceb825a6993e84d997d0b0",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-29T03:15:13.536971235Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

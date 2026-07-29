@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4110d5642377e2be1043c03a14cca23d3afb7abcc984fb5daffd59d0ed11b2a6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.ui.moduleinfoclassfileeditor.id.no.source\u003e\n\u003c!description: Replaces the generic ID_CF_EDITOR_NO_SOURCE with the specific ID_MODULE_INFO_CF_EDITOR_NO_SOURCE for module-info class files.\nThis reflects the refinement of editor IDs for module-info.class files without source code, as introduced in Java 9 module support.\u003e\n\u003c!severity: INFO\u003e\n\norg.eclipse.jdt.ui.JavaUI.ID_CF_EDITOR_NO_SOURCE\n\u003d\u003e\norg.eclipse.jdt.ui.JavaUI.ID_MODULE_INFO_CF_EDITOR_NO_SOURCE\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.ui.JavaUI;\n\npublic class EditorConfig {\n    public void configureEditor(String id) {\n        boolean isModuleInfo \u003d false;\n        // Old code referencing the generic ID for class files without source\n        if (JavaUI.ID_MODULE_INFO_EDITOR.equals(id) || JavaUI.ID_MODULE_INFO_CF_EDITOR.equals(id) || JavaUI.ID_CF_EDITOR_NO_SOURCE.equals(id)) {\n            isModuleInfo \u003d true;\n        }\n        System.out.println(\"Is module info: \" + isModuleInfo);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.ui.JavaUI;\n\npublic class EditorConfig {\n    public void configureEditor(String id) {\n        boolean isModuleInfo \u003d false;\n        // New code referencing the specific module-info ID\n        if (JavaUI.ID_MODULE_INFO_EDITOR.equals(id) || JavaUI.ID_MODULE_INFO_CF_EDITOR.equals(id) || JavaUI.ID_MODULE_INFO_CF_EDITOR_NO_SOURCE.equals(id)) {\n            isModuleInfo \u003d true;\n        }\n        System.out.println(\"Is module info: \" + isModuleInfo);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.ui.JavaUI;\n\npublic class EditorConfigNegative {\n    public void configureEditor(String id) {\n        boolean isJavaEditor \u003d false;\n        // This constant should not be changed as it\u0027s not related to module-info no-source\n        if (JavaUI.ID_JAVA_EDITOR.equals(id)) {\n            isJavaEditor \u003d true;\n        }\n        System.out.println(\"Is Java editor: \" + isJavaEditor);\n\n        String genericClassFileEditorId \u003d JavaUI.ID_CF_EDITOR; // This should not be changed\n        System.out.println(\"Generic class file editor ID: \" + genericClassFileEditorId);\n    }\n}\n",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "39d2a1fe3dec739be79864634e2002844639c1cc",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Replacement",
+  "summary": "Replaces the generic constant `JavaUI.ID_CF_EDITOR_NO_SOURCE` with the more specific `JavaUI.ID_MODULE_INFO_CF_EDITOR_NO_SOURCE` to correctly identify editors for module-info.class files without source.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.561399404Z",
+  "ruleFingerprint": "sha256:03d989f7a9dd429cf11132291ed1ed1f11299a8061bba8fa679aa9f7f207d42f",
+  "behaviorFingerprint": "sha256:bbd1999ba7dc492b5f571f928b9813bf22ad4fbc26ccc36923ba89ed4fcdbcd4",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-29T03:15:13.599813737Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

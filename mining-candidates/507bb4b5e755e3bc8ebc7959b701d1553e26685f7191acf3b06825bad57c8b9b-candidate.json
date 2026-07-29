@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "507bb4b5e755e3bc8ebc7959b701d1553e26685f7191acf3b06825bad57c8b9b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.module_image_rename\u003e\n\u003c!description: Update module icon name from \u0027module_obj.png\u0027 to \u0027module_attrib.png\u0027. This is specific to the Eclipse JDT UI plugin for modularity details.\u003e\n\u003c!severity: INFO\u003e\n\norg.eclipse.jdt.internal.ui.JavaPluginImages.createUnManaged($arg1, \"module_obj.png\")\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.createUnManaged($arg1, \"module_attrib.png\")\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class JavaPluginImages {\n    public static final String T_OBJ \u003d \"obj\";\n\n    public static ImageDescriptor createUnManaged(String type, String path) {\n        // Dummy implementation for example\n        return null;\n    }\n\n    public static final ImageDescriptor DESC_OBJS_MODULE_ATTRIB \u003d createUnManaged(T_OBJ, \"module_obj.png\");\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class JavaPluginImages {\n    public static final String T_OBJ \u003d \"obj\";\n\n    public static ImageDescriptor createUnManaged(String type, String path) {\n        // Dummy implementation for example\n        return null;\n    }\n\n    public static final ImageDescriptor DESC_OBJS_MODULE_ATTRIB \u003d createUnManaged(T_OBJ, \"module_attrib.png\");\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class JavaPluginImages {\n    public static final String T_OBJ \u003d \"obj\";\n\n    public static ImageDescriptor createUnManaged(String type, String path) {\n        // Dummy implementation for example\n        return null;\n    }\n\n    // This should not be matched as the string literal is different\n    public static final ImageDescriptor DESC_OBJS_OTHER_ATTRIB \u003d createUnManaged(T_OBJ, \"another_image.png\");\n    \n    // This should not be matched as it already uses the new string literal\n    public static final ImageDescriptor DESC_OBJS_MODULE_ATTRIB_ALREADY_FIXED \u003d createUnManaged(T_OBJ, \"module_attrib.png\");\n}",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "613198eff7444ff1d0eb654b004fb0b824c0ebb4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Literal Replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.585876580Z",
+  "ruleFingerprint": "sha256:386068ebbe067cd4f9d30560b24173aaf937933e22ed7a347f79107259c9dfa3",
+  "behaviorFingerprint": "sha256:04ce391637c52d9251219909c827893b303616910bf951fc2629d8a49b357880",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-29T03:15:13.666304532Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

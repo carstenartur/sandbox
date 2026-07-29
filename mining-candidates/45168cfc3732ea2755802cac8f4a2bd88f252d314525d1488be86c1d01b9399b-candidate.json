@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "45168cfc3732ea2755802cac8f4a2bd88f252d314525d1488be86c1d01b9399b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.IClasspathAttribute.AUTOMATIC_MODULE\n\u003d\u003e\norg.eclipse.jdt.core.IClasspathAttribute.MODULE\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathAttribute;\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class TestClass {\n    public IClasspathAttribute[] addModuleAttributeIfNeeded(IClasspathAttribute[] extraAttributes) {\n        for (int j \u003d 0; j \u003c extraAttributes.length; j++) {\n            IClasspathAttribute classpathAttribute \u003d extraAttributes[j];\n            if (IClasspathAttribute.AUTOMATIC_MODULE.equals(classpathAttribute.getName())) {\n                extraAttributes[j] \u003d JavaCore.newClasspathAttribute(IClasspathAttribute.AUTOMATIC_MODULE, \"true\");\n                return extraAttributes;\n            }\n        }\n        return new IClasspathAttribute[0];\n    }\n\n    public static final String FIELD_MODULE_NAME \u003d IClasspathAttribute.AUTOMATIC_MODULE;\n\n    public boolean checkAttributeKey(String key) {\n        return key.equals(IClasspathAttribute.AUTOMATIC_MODULE);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathAttribute;\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class TestClass {\n    public IClasspathAttribute[] addModuleAttributeIfNeeded(IClasspathAttribute[] extraAttributes) {\n        for (int j \u003d 0; j \u003c extraAttributes.length; j++) {\n            IClasspathAttribute classpathAttribute \u003d extraAttributes[j];\n            if (IClasspathAttribute.MODULE.equals(classpathAttribute.getName())) {\n                extraAttributes[j] \u003d JavaCore.newClasspathAttribute(IClasspathAttribute.MODULE, \"true\");\n                return extraAttributes;\n            }\n        }\n        return new IClasspathAttribute[0];\n    }\n\n    public static final String FIELD_MODULE_NAME \u003d IClasspathAttribute.MODULE;\n\n    public boolean checkAttributeKey(String key) {\n        return key.equals(IClasspathAttribute.MODULE);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathAttribute;\n\npublic class TestClass {\n    public void method() {\n        String otherConstant \u003d IClasspathAttribute.ADD_EXPORTS; // Must not match\n        boolean check \u003d \"someOtherString\".equals(IClasspathAttribute.ADD_EXPORTS); // Must not match\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "c4be2a6e862af1fa7d16ae0f15ed355e5a96051b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Constant Renaming",
+  "summary": "Rename constant IClasspathAttribute.AUTOMATIC_MODULE to IClasspathAttribute.MODULE.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.579750784Z",
+  "ruleFingerprint": "sha256:62f6fd3eb2841303928ae5a5abd6232182d08f6004bb8f0afc84af3fff7d4f0c",
+  "behaviorFingerprint": "sha256:72b1adfb7e832f7f5913acb6f9fa3f6bc51dc1b28d3ac0934807417eb950c6e6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-07-29T03:15:13.659245915Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

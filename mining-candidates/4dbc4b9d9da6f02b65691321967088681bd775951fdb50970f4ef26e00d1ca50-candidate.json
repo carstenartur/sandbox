@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4dbc4b9d9da6f02b65691321967088681bd775951fdb50970f4ef26e00d1ca50",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: simplify-iparent-module-check*/\n/*!description: Remove explicit exclusion of IModuleDescription from IParent checks, as module support has evolved.*/\n/*!severity: HINT*/\n\n$var instanceof org.eclipse.jdt.core.IParent \u0026\u0026 !($var instanceof org.eclipse.jdt.core.IModuleDescription)\n\u003d\u003e\n$var instanceof org.eclipse.jdt.core.IParent\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IParent;\nimport org.eclipse.jdt.core.IModuleDescription;\n\npublic class TestClass {\n    public void checkParent(Object element) {\n        // Rule match 1\n        if (element instanceof IParent \u0026\u0026 !(element instanceof IModuleDescription)) {\n            System.out.println(\"Valid IParent, not IModuleDescription\");\n        }\n        // Rule match 2 (if part of a larger condition)\n        boolean condition \u003d true;\n        if (condition \u0026\u0026 element instanceof IParent \u0026\u0026 !(element instanceof IModuleDescription)) {\n            System.out.println(\"Combined condition\");\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IParent;\nimport org.eclipse.jdt.core.IModuleDescription;\n\npublic class TestClass {\n    public void checkParent(Object element) {\n        // Rule match 1\n        if (element instanceof IParent) {\n            System.out.println(\"Valid IParent, not IModuleDescription\");\n        }\n        // Rule match 2 (if part of a larger condition)\n        boolean condition \u003d true;\n        if (condition \u0026\u0026 element instanceof IParent) {\n            System.out.println(\"Combined condition\");\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IParent;\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.core.IModuleDescription;\n\npublic class TestClass {\n    public void checkOther(Object element) {\n        // This should not be affected, as it\u0027s not IModuleDescription\n        if (element instanceof IParent \u0026\u0026 !(element instanceof IType)) {\n            System.out.println(\"Valid IParent, not IType\");\n        }\n        // This should not be affected as it\u0027s not the specific exclusion pattern\n        if (!(element instanceof IParent)) {\n            System.out.println(\"Not an IParent\");\n        }\n        // This should not be affected, different type check\n        if (element instanceof String \u0026\u0026 !(element instanceof Integer)) {\n            System.out.println(\"String but not Integer\");\n        }\n        // This should not be affected, as it\u0027s only IModuleDescription check\n        if (element instanceof IModuleDescription) {\n            System.out.println(\"Just IModuleDescription\");\n        }\n    }\n}",
+  "targetHintFile": "java-module-cleanup.sandbox-hint",
+  "sourceCommit": "167ca968cfdf14824b5ccd2381f6183a2e59c085",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Expression Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-29T03:15:11.501043142Z",
+  "ruleFingerprint": "sha256:9d7a567c635cd66ad08c1773590ae8a13c58315e1e150e3f82ae8e1c3bd3aa8e",
+  "behaviorFingerprint": "sha256:3e1ab3428d6cd416c32ef1294a3f3fd3e43e14a5172f25dc46a34f3e6ebd9fac",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-07-29T03:15:13.529752987Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
