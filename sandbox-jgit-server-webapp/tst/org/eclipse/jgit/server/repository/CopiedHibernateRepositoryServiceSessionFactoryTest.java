@@ -12,12 +12,14 @@ package org.eclipse.jgit.server.repository;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Properties;
 
 import org.eclipse.jgit.server.config.HibernateConfig;
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
@@ -38,6 +40,11 @@ public class CopiedHibernateRepositoryServiceSessionFactoryTest {
 		SessionFactory sessionFactory;
 		try (ServerPersistenceContext context= HibernateConfig.createPersistenceContext(properties)) {
 			sessionFactory= context.sessionFactory();
+			HibernateSessionFactoryProvider provider= CopiedHibernateRepositoryService.nonOwningProvider(sessionFactory);
+			assertSame(sessionFactory, provider.getSessionFactory());
+			provider.close();
+			assertFalse(sessionFactory.isClosed());
+
 			CopiedHibernateRepositoryService repositories= new CopiedHibernateRepositoryService(sessionFactory);
 			assertNotNull(repositories.openOrCreate("native-factory")); //$NON-NLS-1$
 
