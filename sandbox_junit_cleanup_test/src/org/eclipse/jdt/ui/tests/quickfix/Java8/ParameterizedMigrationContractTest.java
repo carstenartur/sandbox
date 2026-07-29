@@ -40,8 +40,7 @@ public class ParameterizedMigrationContractTest {
 
 	@Test
 	public void leavesRunnerUntouchedWithoutLocalParametersProvider() throws CoreException {
-		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("MissingProviderTest.java", //$NON-NLS-1$
+		assertNoChange("MissingProviderTest.java", //$NON-NLS-1$
 				"""
 				package test;
 
@@ -62,8 +61,84 @@ public class ParameterizedMigrationContractTest {
 						System.out.println(value);
 					}
 				}
-				""", false, null); //$NON-NLS-1$
+				""");
+	}
 
+	@Test
+	public void leavesRunnerUntouchedWithMultipleConstructors() throws CoreException {
+		assertNoChange("MultipleConstructorsTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.Arrays;
+				import java.util.Collection;
+
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(Parameterized.class)
+				public class MultipleConstructorsTest {
+					private final int value;
+
+					public MultipleConstructorsTest(int value) {
+						this.value = value;
+					}
+
+					public MultipleConstructorsTest(String value) {
+						this(Integer.parseInt(value));
+					}
+
+					@Parameters
+					public static Collection<Object[]> data() {
+						return Arrays.asList(new Object[][] { { 1 }, { 2 } });
+					}
+
+					@Test
+					public void verifiesValue() {
+						System.out.println(value);
+					}
+				}
+				""");
+	}
+
+	@Test
+	public void leavesFieldInjectionUntouched() throws CoreException {
+		assertNoChange("FieldInjectionTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.Arrays;
+				import java.util.Collection;
+
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameter;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(Parameterized.class)
+				public class FieldInjectionTest {
+					@Parameter
+					public int value;
+
+					@Parameters
+					public static Collection<Object[]> data() {
+						return Arrays.asList(new Object[][] { { 1 }, { 2 } });
+					}
+
+					@Test
+					public void verifiesValue() {
+						System.out.println(value);
+					}
+				}
+				""");
+	}
+
+	private void assertNoChange(String fileName, String source) throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit(fileName, source, false, null);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
