@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-07-28
+# Refactoring Mining Report — 2026-07-29
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1029 | 52 | 9 |
+| sandbox | 1044 | 52 | 9 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -248,6 +248,7 @@
 - `sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java:258` — `miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(Simple...`
 
 #### Rule: `arrays` → `arrays.clone.review`
+- `.github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java:312` — `compilationUnits.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:55` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:60` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:71` — `applicationArguments.clone()`
@@ -286,7 +287,6 @@
 - `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:43` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
 - `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:43` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
 - `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewRuleWizardPage.java:459` — `sourcePatternText.getText().trim().isEmpty()` → `sourcePatternText.getText().isBlank()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/RepositoryResource.java:87` — `name.trim().isEmpty()` → `name.isBlank()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java:329` — `newText.trim().isEmpty()` → `newText.isBlank()`
 - `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
 - `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`

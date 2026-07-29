@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1029,
+        "files": 1044,
         "matches": 52,
         "rules": 9
       }
@@ -1547,6 +1547,14 @@
       "repository": "sandbox",
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
+      "file": ".github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java",
+      "line": 312,
+      "matchedCode": "compilationUnits.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
       "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java",
       "line": 55,
       "matchedCode": "applicationArguments.clone()"
@@ -1787,15 +1795,6 @@
       "line": 459,
       "matchedCode": "sourcePatternText.getText().trim().isEmpty()",
       "suggestedReplacement": "sourcePatternText.getText().isBlank()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
-      "file": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/RepositoryResource.java",
-      "line": 87,
-      "matchedCode": "name.trim().isEmpty()",
-      "suggestedReplacement": "name.isBlank()"
     },
     {
       "repository": "sandbox",
