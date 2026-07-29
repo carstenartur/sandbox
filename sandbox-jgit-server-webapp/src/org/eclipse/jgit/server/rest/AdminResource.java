@@ -17,11 +17,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.service.IndexMigrationService;
+import org.hibernate.SessionFactory;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,16 +43,28 @@ public class AdminResource extends HttpServlet {
 	private static final Logger LOG = Logger
 			.getLogger(AdminResource.class.getName());
 
-	private final HibernateSessionFactoryProvider provider;
+	private final SessionFactory sessionFactory;
 
 	/**
-	 * Create an admin endpoint.
+	 * Create an admin endpoint from the application-owned native factory.
+	 *
+	 * @param sessionFactory
+	 *            the native session factory
+	 */
+	public AdminResource(SessionFactory sessionFactory) {
+		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Create an admin endpoint from the copied compatibility provider.
 	 *
 	 * @param provider
 	 *            the session factory provider
+	 * @deprecated application wiring should pass the native {@link SessionFactory}
 	 */
+	@Deprecated(forRemoval = true)
 	public AdminResource(HibernateSessionFactoryProvider provider) {
-		this.provider = provider;
+		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override
@@ -86,8 +100,7 @@ public class AdminResource extends HttpServlet {
 
 	private void handleReindex(HttpServletResponse resp) throws IOException {
 		try {
-			IndexMigrationService migrationService = new IndexMigrationService(
-					provider.getSessionFactory());
+			IndexMigrationService migrationService = new IndexMigrationService(sessionFactory);
 			migrationService.reindexAll();
 			resp.setStatus(HttpServletResponse.SC_OK);
 			try (PrintWriter w = resp.getWriter()) {

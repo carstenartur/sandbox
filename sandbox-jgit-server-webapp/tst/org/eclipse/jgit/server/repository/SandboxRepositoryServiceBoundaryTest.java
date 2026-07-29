@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.rest.AdminResource;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.HealthResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
@@ -42,6 +43,7 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SessionFactory.class));
 		assertNotNull(HealthResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(AnalyticsResource.class.getConstructor(SessionFactory.class));
+		assertNotNull(AdminResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(ExternalHibernateRepositoryService.class.getConstructor(HibernateRepositoryFactory.class));
 	}
 
@@ -58,6 +60,11 @@ public class SandboxRepositoryServiceBoundaryTest {
 	@Test
 	public void analyticsResourceHasNoCopiedBackendField() {
 		assertFalse(hasCopiedBackendField(AnalyticsResource.class));
+	}
+
+	@Test
+	public void adminResourceHasNoCopiedBackendField() {
+		assertFalse(hasCopiedBackendField(AdminResource.class));
 	}
 
 	@Test
