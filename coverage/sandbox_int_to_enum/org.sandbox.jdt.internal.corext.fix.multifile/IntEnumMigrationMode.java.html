@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IntEnumMigrationMode.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">IntEnumMigrationMode.java</span></div><h1>IntEnumMigrationMode.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import org.sandbox.jdt.cleanup.multifile.CleanUpImpact;
+
+/**
+ * Compatibility contract for integer-domain to enum migrations.
+ *
+ * &lt;p&gt;Only {@link #CLOSED_FLOW_AUTOMATIC} is currently executable. The other
+ * modes make future compatibility work explicit without weakening the current
+ * conservative detector.&lt;/p&gt;
+ */
+<span class="fc" id="L22">public enum IntEnumMigrationMode {</span>
+
+<span class="fc" id="L24">	/** Package-private source flow whose complete declaration/caller closure is proven. */</span>
+<span class="fc" id="L25">	CLOSED_FLOW_AUTOMATIC(CleanUpImpact.PROJECT_CLOSED, true, false,</span>
+<span class="fc" id="L26">			&quot;Closed source flow: all declarations and callers are migrated atomically; no public, persisted or wire identity is claimed.&quot;), //$NON-NLS-1$</span>
+
+	/** Public or externally represented numeric identity with explicit adapters. */
+<span class="fc" id="L29">	NUMERIC_ADAPTER_OPT_IN(CleanUpImpact.COMPATIBILITY_MANAGED, false, true,</span>
+<span class="fc" id="L30">			&quot;Compatibility-managed numeric domain: explicit value/fromValue adapters and an unknown-value policy are required.&quot;), //$NON-NLS-1$</span>
+
+	/** Bit flags, aliases or ranged domains that require an interactive design decision. */
+<span class="fc" id="L33">	MANUAL_DOMAIN_REFACTORING(CleanUpImpact.MANUAL_REFACTORING, false, true,</span>
+<span class="fc" id="L34">			&quot;Manual domain refactoring: aliases, ranges or bit flags require an explicit representation such as EnumSet.&quot;); //$NON-NLS-1$</span>
+
+	private final CleanUpImpact impact;
+	private final boolean implemented;
+	private final boolean explicitNumericIdentityRequired;
+	private final String previewStatement;
+
+<span class="fc" id="L41">	IntEnumMigrationMode(CleanUpImpact impact, boolean implemented, boolean explicitNumericIdentityRequired,</span>
+			String previewStatement) {
+<span class="fc" id="L43">		this.impact= impact;</span>
+<span class="fc" id="L44">		this.implemented= implemented;</span>
+<span class="fc" id="L45">		this.explicitNumericIdentityRequired= explicitNumericIdentityRequired;</span>
+<span class="fc" id="L46">		this.previewStatement= previewStatement;</span>
+<span class="fc" id="L47">	}</span>
+
+	/** Returns the cleanup impact shown in previews and reports. */
+	public CleanUpImpact impact() {
+<span class="fc" id="L51">		return impact;</span>
+	}
+
+	/** Returns whether this mode may currently create rewrite operations. */
+	public boolean implemented() {
+<span class="fc" id="L56">		return implemented;</span>
+	}
+
+	/** Returns whether constants require explicit stable numeric values and adapters. */
+	public boolean explicitNumericIdentityRequired() {
+<span class="fc" id="L61">		return explicitNumericIdentityRequired;</span>
+	}
+
+	/** Returns the user-facing compatibility statement. */
+	public String previewStatement() {
+<span class="fc" id="L66">		return previewStatement;</span>
+	}
+
+	/**
+	 * External identity must never be derived from {@link Enum#ordinal()} in any
+	 * migration mode.
+	 */
+	public boolean ordinalAllowedForExternalIdentity() {
+<span class="fc" id="L74">		return false;</span>
+	}
+
+	/** Returns the only mode available to the automatic cleanup. */
+	public static IntEnumMigrationMode automaticMode() {
+<span class="fc" id="L79">		return CLOSED_FLOW_AUTOMATIC;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -286,7 +286,7 @@ public final class GeneratedNameAllocator {
 <span class="fc" id="L286">					collisions.add(collision(Namespace.TYPE, owner.root(), request, kind,</span>
 <span class="fc" id="L287">							qualifiedName(owner.root(), type), type));</span>
 <span class="fc bfc" id="L288" title="All 2 branches covered.">				} else if (node instanceof TypeParameter parameter</span>
-<span class="pc bpc" id="L289" title="1 of 2 branches missed.">						&amp;&amp; requestedName.equals(parameter.getName().getIdentifier())) {</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">						&amp;&amp; requestedName.equals(parameter.getName().getIdentifier())) {</span>
 <span class="fc" id="L290">					collisions.add(collision(Namespace.TYPE, owner.root(), request,</span>
 <span class="fc" id="L291">							&quot;type parameter&quot;, parameter.getName().getIdentifier(), parameter)); //$NON-NLS-1$</span>
 <span class="fc bfc" id="L292" title="All 2 branches covered.">				} else if (node instanceof FieldDeclaration field) {</span>

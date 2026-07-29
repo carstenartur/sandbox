@@ -16,9 +16,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
@@ -28,63 +30,82 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 		List&lt;MultiFileCandidateDiagnostic&gt; candidates) {
 
 	/** Validates and deterministically orders diagnostics. */
-<span class="fc" id="L31">	public MultiFileCleanUpDiagnostics {</span>
-<span class="fc" id="L32">		cleanupId= Objects.requireNonNull(cleanupId);</span>
-<span class="pc bpc" id="L33" title="1 of 2 branches missed.">		scope= scope == null ? MultiFileScopeDiagnostic.empty() : scope;</span>
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">		List&lt;MultiFileCandidateDiagnostic&gt; normalized= candidates == null ? List.of() : new ArrayList&lt;&gt;(candidates);</span>
-<span class="fc" id="L35">		normalized.sort(Comparator.comparing(MultiFileCandidateDiagnostic::ownerCompilationUnitHandle)</span>
-<span class="fc" id="L36">				.thenComparing(MultiFileCandidateDiagnostic::candidateId)</span>
-<span class="pc" id="L37">				.thenComparing(candidate -&gt; candidate.outcome().name())</span>
-<span class="fc" id="L38">				.thenComparing(MultiFileCandidateDiagnostic::reasonCode));</span>
-<span class="fc" id="L39">		candidates= List.copyOf(normalized);</span>
-<span class="fc" id="L40">	}</span>
+<span class="fc" id="L33">	public MultiFileCleanUpDiagnostics {</span>
+<span class="fc" id="L34">		cleanupId= Objects.requireNonNull(cleanupId);</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">		scope= scope == null ? MultiFileScopeDiagnostic.empty() : scope;</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">		List&lt;MultiFileCandidateDiagnostic&gt; normalized= candidates == null ? List.of() : new ArrayList&lt;&gt;(candidates);</span>
+<span class="fc" id="L37">		normalized.sort(Comparator.comparing(MultiFileCandidateDiagnostic::ownerCompilationUnitHandle)</span>
+<span class="fc" id="L38">				.thenComparing(MultiFileCandidateDiagnostic::candidateId)</span>
+<span class="pc" id="L39">				.thenComparing(candidate -&gt; candidate.outcome().name())</span>
+<span class="fc" id="L40">				.thenComparing(MultiFileCandidateDiagnostic::reasonCode));</span>
+<span class="fc" id="L41">		candidates= List.copyOf(normalized);</span>
+<span class="fc" id="L42">	}</span>
 
 	/** @return empty diagnostics for a cleanup with no coordinated candidate */
 	public static MultiFileCleanUpDiagnostics empty() {
-<span class="fc" id="L44">		return new MultiFileCleanUpDiagnostics(&quot;unknown&quot;, MultiFileScopeDiagnostic.empty(), List.of()); //$NON-NLS-1$</span>
+<span class="fc" id="L46">		return new MultiFileCleanUpDiagnostics(&quot;unknown&quot;, MultiFileScopeDiagnostic.empty(), List.of()); //$NON-NLS-1$</span>
+	}
+
+	/** Returns the impact contract shared by every coordinated multi-file cleanup. */
+	public CleanUpImpact impact() {
+<span class="fc" id="L51">		return CleanUpImpact.PROJECT_CLOSED;</span>
+	}
+
+	/** Returns the number of distinct selected and discovered source units. */
+	public int affectedCompilationUnitCount() {
+<span class="fc" id="L56">		Set&lt;String&gt; handles= new LinkedHashSet&lt;&gt;(scope.selectedCompilationUnitHandles());</span>
+<span class="fc" id="L57">		handles.addAll(scope.addedCompilationUnitHandles());</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		for (MultiFileCandidateDiagnostic candidate : candidates) {</span>
+<span class="fc" id="L59">			handles.add(candidate.ownerCompilationUnitHandle());</span>
+<span class="fc" id="L60">			handles.addAll(candidate.relatedCompilationUnitHandles());</span>
+		}
+<span class="fc" id="L62">		handles.remove(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		return handles.size();</span>
 	}
 
 	/** Returns a copy containing the observed host scope expansion. */
 	public MultiFileCleanUpDiagnostics withScope(MultiFileScopeDiagnostic newScope) {
-<span class="nc" id="L49">		return new MultiFileCleanUpDiagnostics(cleanupId, newScope, candidates);</span>
+<span class="nc" id="L68">		return new MultiFileCleanUpDiagnostics(cleanupId, newScope, candidates);</span>
 	}
 
 	/** Adds one concise, nonfatal planning summary to the cleanup preview status. */
 	public void appendSummary(RefactoringStatus status) {
-<span class="pc bpc" id="L54" title="2 of 6 branches missed.">		if (status == null || candidates.isEmpty() &amp;&amp; scope.addedCompilationUnitHandles().isEmpty()</span>
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				&amp;&amp; scope.complete()) {</span>
-<span class="fc" id="L56">			return;</span>
+<span class="pc bpc" id="L73" title="2 of 6 branches missed.">		if (status == null || candidates.isEmpty() &amp;&amp; scope.addedCompilationUnitHandles().isEmpty()</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">				&amp;&amp; scope.complete()) {</span>
+<span class="fc" id="L75">			return;</span>
 		}
-<span class="fc" id="L58">		long transformed= candidates.stream()</span>
-<span class="fc bfc" id="L59" title="All 2 branches covered.">				.filter(candidate -&gt; candidate.outcome() == MultiFileCandidateOutcome.TRANSFORMED).count();</span>
-<span class="fc" id="L60">		Map&lt;String, Long&gt; rejectedByReason= new TreeMap&lt;&gt;();</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">		for (MultiFileCandidateDiagnostic candidate : candidates) {</span>
-<span class="fc bfc" id="L62" title="All 2 branches covered.">			if (candidate.outcome() == MultiFileCandidateOutcome.REJECTED) {</span>
-<span class="fc" id="L63">				rejectedByReason.merge(candidate.reasonCode(), Long.valueOf(1), Long::sum);</span>
+<span class="fc" id="L77">		long transformed= candidates.stream()</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">				.filter(candidate -&gt; candidate.outcome() == MultiFileCandidateOutcome.TRANSFORMED).count();</span>
+<span class="fc" id="L79">		Map&lt;String, Long&gt; rejectedByReason= new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		for (MultiFileCandidateDiagnostic candidate : candidates) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">			if (candidate.outcome() == MultiFileCandidateOutcome.REJECTED) {</span>
+<span class="fc" id="L82">				rejectedByReason.merge(candidate.reasonCode(), Long.valueOf(1), Long::sum);</span>
 			}
 		}
-<span class="fc" id="L66">		long rejected= rejectedByReason.values().stream().mapToLong(Long::longValue).sum();</span>
-<span class="fc" id="L67">		StringBuilder summary= new StringBuilder(160)</span>
-<span class="fc" id="L68">				.append(&quot;Coordinated cleanup &quot;).append(cleanupId).append(&quot;: &quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L69">				.append(scope.selectedCompilationUnitHandles().size()).append(&quot; selected, &quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L70">				.append(scope.addedCompilationUnitHandles().size()).append(&quot; added; &quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L71">				.append(transformed).append(&quot; transformed, &quot;).append(rejected).append(&quot; rejected&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (!scope.complete()) {</span>
-<span class="nc" id="L73">			summary.append(&quot;; scope incomplete (&quot;).append(scope.reasonCode()).append(')'); //$NON-NLS-1$</span>
+<span class="fc" id="L85">		long rejected= rejectedByReason.values().stream().mapToLong(Long::longValue).sum();</span>
+<span class="fc" id="L86">		StringBuilder summary= new StringBuilder(240)</span>
+<span class="fc" id="L87">				.append('[').append(impact()).append(&quot;] Coordinated cleanup &quot;).append(cleanupId).append(&quot;: &quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L88">				.append(scope.selectedCompilationUnitHandles().size()).append(&quot; selected, &quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L89">				.append(scope.addedCompilationUnitHandles().size()).append(&quot; added, &quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L90">				.append(affectedCompilationUnitCount()).append(&quot; affected; &quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L91">				.append(transformed).append(&quot; transformed, &quot;).append(rejected).append(&quot; rejected&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (!scope.complete()) {</span>
+<span class="nc" id="L93">			summary.append(&quot;; scope incomplete (&quot;).append(scope.reasonCode()).append(')'); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (!rejectedByReason.isEmpty()) {</span>
-<span class="fc" id="L76">			summary.append(&quot; (&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L77">			int index= 0;</span>
-<span class="fc bfc" id="L78" title="All 2 branches covered.">			for (Map.Entry&lt;String, Long&gt; entry : rejectedByReason.entrySet()) {</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				if (index++ &gt; 0) {</span>
-<span class="nc" id="L80">					summary.append(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		if (!rejectedByReason.isEmpty()) {</span>
+<span class="fc" id="L96">			summary.append(&quot; (&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">			int index= 0;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">			for (Map.Entry&lt;String, Long&gt; entry : rejectedByReason.entrySet()) {</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">				if (index++ &gt; 0) {</span>
+<span class="nc" id="L100">					summary.append(&quot;, &quot;); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L82">				summary.append(entry.getKey()).append('=').append(entry.getValue());</span>
+<span class="fc" id="L102">				summary.append(entry.getKey()).append('=').append(entry.getValue());</span>
 			}
-<span class="fc" id="L84">			summary.append(')');</span>
+<span class="fc" id="L104">			summary.append(')');</span>
 		}
-<span class="fc" id="L86">		status.addInfo(summary.append('.').toString());</span>
-<span class="fc" id="L87">	}</span>
+<span class="fc" id="L106">		summary.append(&quot;. &quot;).append(impact().compatibilityStatement()); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		status.addInfo(summary.toString());</span>
+<span class="fc" id="L108">	}</span>
 
 	/**
 	 * Returns deterministic JSON suitable for CI artifacts and headless callers.
@@ -94,85 +115,90 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 	 * @return privacy-preserving deterministic JSON
 	 */
 	public String toJson() {
-<span class="fc" id="L97">		StringBuilder json= new StringBuilder(512);</span>
-<span class="fc" id="L98">		json.append('{');</span>
-<span class="fc" id="L99">		property(json, &quot;schemaVersion&quot;, &quot;1&quot;).append(','); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L100">		property(json, &quot;cleanupId&quot;, cleanupId).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L101">		json.append(&quot;\&quot;scope\&quot;:{&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L102">		arrayProperty(json, &quot;selectedCompilationUnits&quot;, externalUnitIds(scope.selectedCompilationUnitHandles())).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L103">		arrayProperty(json, &quot;addedCompilationUnits&quot;, externalUnitIds(scope.addedCompilationUnitHandles())).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L104">		property(json, &quot;reasonCode&quot;, scope.reasonCode()).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L105">		property(json, &quot;explanation&quot;, scope.explanation()).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L106">		json.append(&quot;\&quot;complete\&quot;:&quot;).append(scope.complete()).append(&quot;},&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L107">		json.append(&quot;\&quot;candidates\&quot;:[&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">		for (int index= 0; index &lt; candidates.size(); index++) {</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">			if (index &gt; 0) {</span>
-<span class="fc" id="L110">				json.append(',');</span>
+<span class="fc" id="L118">		StringBuilder json= new StringBuilder(768);</span>
+<span class="fc" id="L119">		json.append('{');</span>
+<span class="fc" id="L120">		property(json, &quot;schemaVersion&quot;, &quot;2&quot;).append(','); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L121">		property(json, &quot;cleanupId&quot;, cleanupId).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L122">		property(json, &quot;impact&quot;, impact().name()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L123">		json.append(&quot;\&quot;affectedCompilationUnitCount\&quot;:&quot;).append(affectedCompilationUnitCount()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L124">		json.append(&quot;\&quot;saveActionEligible\&quot;:&quot;).append(impact().saveActionEligible()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		json.append(&quot;\&quot;explicitPreviewRequired\&quot;:&quot;).append(impact().explicitPreviewRequired()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L126">		property(json, &quot;compatibilityStatement&quot;, impact().compatibilityStatement()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L127">		json.append(&quot;\&quot;scope\&quot;:{&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L128">		arrayProperty(json, &quot;selectedCompilationUnits&quot;, externalUnitIds(scope.selectedCompilationUnitHandles())).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		arrayProperty(json, &quot;addedCompilationUnits&quot;, externalUnitIds(scope.addedCompilationUnitHandles())).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L130">		property(json, &quot;reasonCode&quot;, scope.reasonCode()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L131">		property(json, &quot;explanation&quot;, scope.explanation()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L132">		json.append(&quot;\&quot;complete\&quot;:&quot;).append(scope.complete()).append(&quot;},&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L133">		json.append(&quot;\&quot;candidates\&quot;:[&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		for (int index= 0; index &lt; candidates.size(); index++) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">			if (index &gt; 0) {</span>
+<span class="fc" id="L136">				json.append(',');</span>
 			}
-<span class="fc" id="L112">			MultiFileCandidateDiagnostic candidate= candidates.get(index);</span>
-<span class="fc" id="L113">			json.append('{');</span>
-<span class="fc" id="L114">			property(json, &quot;candidateId&quot;, candidate.candidateId()).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L115">			property(json, &quot;ownerCompilationUnit&quot;, externalUnitId(candidate.ownerCompilationUnitHandle())).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L116">			property(json, &quot;outcome&quot;, candidate.outcome().name()).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L117">			property(json, &quot;reasonCode&quot;, candidate.reasonCode()).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L118">			property(json, &quot;message&quot;, candidate.message()).append(','); //$NON-NLS-1$</span>
-<span class="fc" id="L119">			arrayProperty(json, &quot;relatedCompilationUnits&quot;, externalUnitIds(candidate.relatedCompilationUnitHandles())); //$NON-NLS-1$</span>
-<span class="fc" id="L120">			json.append('}');</span>
+<span class="fc" id="L138">			MultiFileCandidateDiagnostic candidate= candidates.get(index);</span>
+<span class="fc" id="L139">			json.append('{');</span>
+<span class="fc" id="L140">			property(json, &quot;candidateId&quot;, candidate.candidateId()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L141">			property(json, &quot;ownerCompilationUnit&quot;, externalUnitId(candidate.ownerCompilationUnitHandle())).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L142">			property(json, &quot;outcome&quot;, candidate.outcome().name()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L143">			property(json, &quot;reasonCode&quot;, candidate.reasonCode()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L144">			property(json, &quot;message&quot;, candidate.message()).append(','); //$NON-NLS-1$</span>
+<span class="fc" id="L145">			arrayProperty(json, &quot;relatedCompilationUnits&quot;, externalUnitIds(candidate.relatedCompilationUnitHandles())); //$NON-NLS-1$</span>
+<span class="fc" id="L146">			json.append('}');</span>
 		}
-<span class="fc" id="L122">		return json.append(&quot;]}&quot;).toString(); //$NON-NLS-1$</span>
+<span class="fc" id="L148">		return json.append(&quot;]}&quot;).toString(); //$NON-NLS-1$</span>
 	}
 
 	private static List&lt;String&gt; externalUnitIds(List&lt;String&gt; handles) {
-<span class="fc" id="L126">		return handles.stream().map(MultiFileCleanUpDiagnostics::externalUnitId).sorted().toList();</span>
+<span class="fc" id="L152">		return handles.stream().map(MultiFileCleanUpDiagnostics::externalUnitId).sorted().toList();</span>
 	}
 
 	private static String externalUnitId(String handle) {
 		try {
-<span class="fc" id="L131">			byte[] digest= MessageDigest.getInstance(&quot;SHA-256&quot;).digest(handle.getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$</span>
-<span class="fc" id="L132">			return &quot;cu-&quot; + HexFormat.of().formatHex(digest, 0, 6); //$NON-NLS-1$</span>
-<span class="nc" id="L133">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L134">			throw new IllegalStateException(&quot;SHA-256 is unavailable&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L157">			byte[] digest= MessageDigest.getInstance(&quot;SHA-256&quot;).digest(handle.getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$</span>
+<span class="fc" id="L158">			return &quot;cu-&quot; + HexFormat.of().formatHex(digest, 0, 6); //$NON-NLS-1$</span>
+<span class="nc" id="L159">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L160">			throw new IllegalStateException(&quot;SHA-256 is unavailable&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 
 	private static StringBuilder property(StringBuilder json, String name, String value) {
-<span class="fc" id="L139">		return json.append('&quot;').append(escape(name)).append(&quot;\&quot;:\&quot;&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L140">				.append(escape(value)).append('&quot;');</span>
+<span class="fc" id="L165">		return json.append('&quot;').append(escape(name)).append(&quot;\&quot;:\&quot;&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L166">				.append(escape(value)).append('&quot;');</span>
 	}
 
 	private static StringBuilder arrayProperty(StringBuilder json, String name, List&lt;String&gt; values) {
-<span class="fc" id="L144">		json.append('&quot;').append(escape(name)).append(&quot;\&quot;:[&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (int index= 0; index &lt; values.size(); index++) {</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (index &gt; 0) {</span>
-<span class="fc" id="L147">				json.append(',');</span>
+<span class="fc" id="L170">		json.append('&quot;').append(escape(name)).append(&quot;\&quot;:[&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">		for (int index= 0; index &lt; values.size(); index++) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">			if (index &gt; 0) {</span>
+<span class="fc" id="L173">				json.append(',');</span>
 			}
-<span class="fc" id="L149">			json.append('&quot;').append(escape(values.get(index))).append('&quot;');</span>
+<span class="fc" id="L175">			json.append('&quot;').append(escape(values.get(index))).append('&quot;');</span>
 		}
-<span class="fc" id="L151">		return json.append(']');</span>
+<span class="fc" id="L177">		return json.append(']');</span>
 	}
 
 	private static String escape(String value) {
-<span class="fc" id="L155">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
-<span class="fc bfc" id="L156" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
-<span class="fc" id="L157">			char character= value.charAt(index);</span>
-<span class="pc bpc" id="L158" title="7 of 8 branches missed.">			switch (character) {</span>
-<span class="nc" id="L159">				case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L160">				case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L161">				case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L162">				case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L163">				case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L164">				case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L165">				case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L181">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
+<span class="fc" id="L183">			char character= value.charAt(index);</span>
+<span class="pc bpc" id="L184" title="7 of 8 branches missed.">			switch (character) {</span>
+<span class="nc" id="L185">				case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L186">				case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L187">				case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L188">				case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L189">				case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L190">				case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L191">				case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
 				default -&gt; {
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">					if (character &lt; 0x20) {</span>
-<span class="nc" id="L168">						escaped.append(String.format(&quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
-<span class="nc" id="L169">					} else {</span>
-<span class="fc" id="L170">						escaped.append(character);</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">					if (character &lt; 0x20) {</span>
+<span class="nc" id="L194">						escaped.append(String.format(&quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
+<span class="nc" id="L195">					} else {</span>
+<span class="fc" id="L196">						escaped.append(character);</span>
 					}
 				}
 			}
 		}
-<span class="fc" id="L175">		return escaped.toString();</span>
+<span class="fc" id="L201">		return escaped.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

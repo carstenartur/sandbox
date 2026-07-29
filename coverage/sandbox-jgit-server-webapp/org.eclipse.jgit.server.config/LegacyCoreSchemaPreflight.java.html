@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LegacyCoreSchemaPreflight.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.config</a> &gt; <span class="el_source">LegacyCoreSchemaPreflight.java</span></div><h1>LegacyCoreSchemaPreflight.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.jgit.server.config;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Properties;
+
+import com.google.gson.Gson;
+
+import io.github.carstenartur.jgit.storage.hibernate.schema.LegacyCoreSchemaAdoption;
+import io.github.carstenartur.jgit.storage.hibernate.schema.LegacyCoreSchemaAdoption.DuplicatePackIdentity;
+import io.github.carstenartur.jgit.storage.hibernate.schema.LegacyCoreSchemaAdoption.LegacySchemaReport;
+
+/**
+ * Runs the released Core legacy-schema validator without starting Hibernate or
+ * executing DDL.
+ *
+ * &lt;p&gt;The command uses the same database environment variables as the server and
+ * prints one JSON report to standard output. Any unsafe or unsupported schema
+ * causes a non-zero process exit through the validator exception.&lt;/p&gt;
+ */
+public final class LegacyCoreSchemaPreflight {
+
+	private static final String CONNECTION_URL= &quot;hibernate.connection.url&quot;; //$NON-NLS-1$
+	private static final String CONNECTION_USER= &quot;hibernate.connection.username&quot;; //$NON-NLS-1$
+	private static final String CONNECTION_PASSWORD= &quot;hibernate.connection.password&quot;; //$NON-NLS-1$
+	private static final String CONNECTION_DRIVER= &quot;hibernate.connection.driver_class&quot;; //$NON-NLS-1$
+	private static final String POSTGRESQL_URL_PREFIX= &quot;jdbc:postgresql:&quot;; //$NON-NLS-1$
+	private static final String HSQLDB_URL_PREFIX= &quot;jdbc:hsqldb:&quot;; //$NON-NLS-1$
+	private static final String SQL_SERVER_URL_PREFIX= &quot;jdbc:sqlserver:&quot;; //$NON-NLS-1$
+	private static final String HSQLDB_IF_EXISTS= &quot;;ifexists=true&quot;; //$NON-NLS-1$
+
+	private LegacyCoreSchemaPreflight() {
+	}
+
+	/**
+	 * Execute the read-only preflight from the server environment.
+	 *
+	 * @param args
+	 *            ignored
+	 * @throws Exception
+	 *             if the driver cannot be loaded, the database cannot be read or
+	 *             the schema is unsafe to adopt
+	 */
+	public static void main(String[] args) throws Exception {
+<span class="nc" id="L60">		PreflightReport report= inspect(HibernateConfig.buildProperties());</span>
+<span class="nc" id="L61">		System.out.println(toJson(report));</span>
+<span class="nc" id="L62">	}</span>
+
+	/**
+	 * Open a JDBC connection from Hibernate properties and inspect the schema.
+	 *
+	 * @param properties
+	 *            database properties; no Hibernate bootstrap is performed
+	 * @return validated report safe to use for the next adoption decision
+	 * @throws ClassNotFoundException
+	 *             if an explicitly configured JDBC driver cannot be loaded
+	 * @throws SQLException
+	 *             if the database connection fails
+	 */
+	static PreflightReport inspect(Properties properties)
+			throws ClassNotFoundException, SQLException {
+<span class="fc" id="L77">		Objects.requireNonNull(properties, &quot;properties&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L78">		String url= requireProperty(properties, CONNECTION_URL);</span>
+<span class="nc" id="L79">		requirePublishedLegacyAdoptionPath(url);</span>
+<span class="nc" id="L80">		String driver= properties.getProperty(CONNECTION_DRIVER);</span>
+<span class="nc bnc" id="L81" title="All 4 branches missed.">		if (driver != null &amp;&amp; !driver.isBlank()) {</span>
+<span class="nc" id="L82">			Class.forName(driver);</span>
+		}
+<span class="nc" id="L84">		String user= properties.getProperty(CONNECTION_USER, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L85">		String password= properties.getProperty(CONNECTION_PASSWORD, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L86">		try (Connection connection= DriverManager.getConnection(url, user, password)) {</span>
+<span class="nc" id="L87">			connection.setReadOnly(true);</span>
+<span class="nc" id="L88">			return inspect(connection);</span>
+		}
+	}
+
+	/** Validate one existing JDBC connection without modifying its schema. */
+	static PreflightReport inspect(Connection connection) {
+<span class="fc" id="L94">		LegacySchemaReport report= LegacyCoreSchemaAdoption</span>
+<span class="fc" id="L95">				.requireSafeToAdopt(connection);</span>
+<span class="fc" id="L96">		Comparator&lt;DuplicatePackIdentity&gt; duplicateOrder= Comparator</span>
+<span class="fc" id="L97">				.comparing(DuplicatePackIdentity::repositoryName)</span>
+<span class="fc" id="L98">				.thenComparing(DuplicatePackIdentity::packName)</span>
+<span class="fc" id="L99">				.thenComparing(DuplicatePackIdentity::packExtension)</span>
+<span class="fc" id="L100">				.thenComparingLong(DuplicatePackIdentity::rowCount);</span>
+<span class="fc" id="L101">		List&lt;DuplicatePackIdentity&gt; duplicatePackIdentities= report</span>
+<span class="fc" id="L102">				.duplicatePackIdentities().stream().sorted(duplicateOrder).toList();</span>
+<span class="fc" id="L103">		return new PreflightReport(report.columns().stream().sorted().toList(),</span>
+<span class="fc" id="L104">				report.missingRequiredColumns().stream().sorted().toList(),</span>
+<span class="fc" id="L105">				report.packRows(), report.incompletePackRows(),</span>
+<span class="fc" id="L106">				duplicatePackIdentities, report.hasCommittedColumn(),</span>
+<span class="fc" id="L107">				report.hasCommittedAtColumn(), report.requiresAdoption());</span>
+	}
+
+	/** Serialize the bounded report without exposing connection credentials. */
+	static String toJson(PreflightReport report) {
+<span class="fc" id="L112">		return new Gson().toJson(report);</span>
+	}
+
+	/** Require a JDBC family with a published pre-library adoption migration. */
+	static void requirePublishedLegacyAdoptionPath(String url) {
+<span class="fc" id="L117">		String normalizedUrl= Objects.requireNonNull(url, &quot;url&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L118">				.toLowerCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (!normalizedUrl.startsWith(POSTGRESQL_URL_PREFIX)</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">				&amp;&amp; !normalizedUrl.startsWith(HSQLDB_URL_PREFIX)</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">				&amp;&amp; !normalizedUrl.startsWith(SQL_SERVER_URL_PREFIX)) {</span>
+<span class="fc" id="L122">			throw new IllegalArgumentException(</span>
+					&quot;No published pre-library legacy-adoption migration exists &quot; //$NON-NLS-1$
+<span class="fc" id="L124">							+ &quot;for JDBC family &quot; + databaseFamily(normalizedUrl) //$NON-NLS-1$</span>
+							+ &quot;. Use PostgreSQL, HSQLDB or SQL Server, or add &quot; //$NON-NLS-1$
+							+ &quot;and release generic support upstream first.&quot;); //$NON-NLS-1$
+		}
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		if (normalizedUrl.startsWith(HSQLDB_URL_PREFIX)</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">				&amp;&amp; !normalizedUrl.contains(HSQLDB_IF_EXISTS)) {</span>
+<span class="fc" id="L130">			throw new IllegalArgumentException(</span>
+					&quot;HSQLDB legacy-schema preflight requires ;ifexists=true &quot; //$NON-NLS-1$
+							+ &quot;so a mistyped path cannot create a database.&quot;); //$NON-NLS-1$
+		}
+<span class="fc" id="L134">	}</span>
+
+	private static String databaseFamily(String url) {
+<span class="fc" id="L137">		int separator= url.indexOf(':', &quot;jdbc:&quot;.length()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		return separator &gt; 0 ? url.substring(0, separator + 1) : &quot;unknown&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static String requireProperty(Properties properties, String name) {
+<span class="fc" id="L142">		String value= properties.getProperty(name);</span>
+<span class="pc bpc" id="L143" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L144">			throw new IllegalArgumentException(</span>
+					&quot;Missing required database property: &quot; + name); //$NON-NLS-1$
+		}
+<span class="fc" id="L147">		return value;</span>
+	}
+
+	/** Machine-readable result of the released read-only legacy-schema check. */
+<span class="fc" id="L151">	record PreflightReport(List&lt;String&gt; columns,</span>
+			List&lt;String&gt; missingRequiredColumns, long packRows,
+			long incompletePackRows,
+			List&lt;DuplicatePackIdentity&gt; duplicatePackIdentities,
+			boolean hasCommittedColumn, boolean hasCommittedAtColumn,
+			boolean requiresAdoption) {
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

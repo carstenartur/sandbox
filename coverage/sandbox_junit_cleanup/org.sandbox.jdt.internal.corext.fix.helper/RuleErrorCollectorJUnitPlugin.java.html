@@ -168,7 +168,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L168">						SimpleName receiver = (SimpleName) expression;</span>
 <span class="pc bpc" id="L169" title="1 of 2 branches missed.">						if (fieldName.equals(receiver.getIdentifier())) {</span>
 <span class="fc" id="L170">							String methodName = invocation.getName().getIdentifier();</span>
-<span class="pc bpc" id="L171" title="3 of 4 branches missed.">							if (&quot;checkThat&quot;.equals(methodName) || &quot;addError&quot;.equals(methodName)</span>
+<span class="pc bpc" id="L171" title="1 of 4 branches missed.">							if (&quot;checkThat&quot;.equals(methodName) || &quot;addError&quot;.equals(methodName)</span>
 <span class="nc bnc" id="L172" title="All 2 branches missed.">									|| &quot;checkSucceeds&quot;.equals(methodName)) {</span>
 								// Find the parent statement that contains this invocation
 <span class="fc" id="L174">								Statement parentStmt = findParentStatement(invocation);</span>
@@ -202,7 +202,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L202">		MethodInvocation invocation = call.invocation;</span>
 <span class="fc" id="L203">		String methodName = call.methodName;</span>
 
-<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (&quot;checkThat&quot;.equals(methodName)) {</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		if (&quot;checkThat&quot;.equals(methodName)) {</span>
 			// checkThat(actual, matcher) → () -&gt; assertThat(actual, matcher)
 			// Use expression-body lambda for single-expression case
 
@@ -220,19 +220,19 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 			// Add Hamcrest imports for assertThat
 <span class="fc" id="L222">			importRewriter.addStaticImport(&quot;org.hamcrest.MatcherAssert&quot;, &quot;assertThat&quot;, false);</span>
-<span class="pc bnc" id="L223" title="All 2 branches missed.">		} else if (&quot;addError&quot;.equals(methodName)) {</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		} else if (&quot;addError&quot;.equals(methodName)) {</span>
 			// addError(throwable) → () -&gt; { throw throwable; }
 			// This requires a block body since throw is a statement, not an expression
-<span class="nc" id="L226">			Block lambdaBody = ast.newBlock();</span>
+<span class="fc" id="L226">			Block lambdaBody = ast.newBlock();</span>
 
-<span class="nc" id="L228">			ThrowStatement throwStmt = ast.newThrowStatement();</span>
+<span class="fc" id="L228">			ThrowStatement throwStmt = ast.newThrowStatement();</span>
 			// The argument is the throwable to throw
-<span class="nc" id="L230">			Expression throwableArg = (Expression) invocation.arguments().get(0);</span>
-<span class="nc" id="L231">			throwStmt.setExpression((Expression) ASTNode.copySubtree(ast, throwableArg));</span>
+<span class="fc" id="L230">			Expression throwableArg = (Expression) invocation.arguments().get(0);</span>
+<span class="fc" id="L231">			throwStmt.setExpression((Expression) ASTNode.copySubtree(ast, throwableArg));</span>
 
-<span class="nc" id="L233">			lambdaBody.statements().add(throwStmt);</span>
-<span class="nc" id="L234">			lambda.setBody(lambdaBody);</span>
-<span class="nc bnc" id="L235" title="All 2 branches missed.">		} else if (&quot;checkSucceeds&quot;.equals(methodName)) {</span>
+<span class="fc" id="L233">			lambdaBody.statements().add(throwStmt);</span>
+<span class="fc" id="L234">			lambda.setBody(lambdaBody);</span>
+<span class="pc bnc" id="L235" title="All 2 branches missed.">		} else if (&quot;checkSucceeds&quot;.equals(methodName)) {</span>
 			// checkSucceeds(callable) → () -&gt; callable.call()
 			// Use expression-body lambda for single-expression case
 

@@ -301,13 +301,13 @@ public final class JUnitMultiFilePlanner {
 	private static ITypeBinding resourceTypeBinding(VariableDeclarationFragment fragment,
 			IVariableBinding fieldBinding) {
 <span class="fc" id="L303">		Expression initializer= fragment.getInitializer();</span>
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">		if (initializer instanceof ClassInstanceCreation creation) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">		if (initializer instanceof ClassInstanceCreation creation) {</span>
 <span class="fc" id="L305">			ITypeBinding binding= creation.resolveTypeBinding();</span>
 <span class="pc bpc" id="L306" title="1 of 2 branches missed.">			if (binding != null) {</span>
 <span class="fc" id="L307">				return binding;</span>
 			}
 		}
-<span class="nc bnc" id="L310" title="All 2 branches missed.">		return fieldBinding == null ? null : fieldBinding.getType();</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">		return fieldBinding == null ? null : fieldBinding.getType();</span>
 	}
 
 	private static boolean directlyExtendsExternalResource(ITypeBinding binding) {

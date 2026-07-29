@@ -111,23 +111,23 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L111">					String methodName = node.getName().getIdentifier();</span>
 
 					// Handle newFile() and newFile(String)
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">					if (&quot;newFile&quot;.equals(methodName)) {</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">					if (&quot;newFile&quot;.equals(methodName)) {</span>
 <span class="fc" id="L115">						needsFilesImport[0] = true;</span>
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">						if (node.arguments().isEmpty()) {</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">						if (node.arguments().isEmpty()) {</span>
 							// newFile() with no args -&gt; Files.createTempFile(tempDir, &quot;&quot;, null).toFile()
-<span class="nc" id="L118">							MethodInvocation createTempFileInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L119">							createTempFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="nc" id="L120">							createTempFileInvocation.setName(ast.newSimpleName(&quot;createTempFile&quot;));</span>
-<span class="nc" id="L121">							createTempFileInvocation.arguments().add(ast.newSimpleName(originalName));</span>
-<span class="nc" id="L122">							createTempFileInvocation.arguments().add(ast.newStringLiteral());</span>
-<span class="nc" id="L123">							createTempFileInvocation.arguments().add(ast.newNullLiteral());</span>
+<span class="fc" id="L118">							MethodInvocation createTempFileInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L119">							createTempFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L120">							createTempFileInvocation.setName(ast.newSimpleName(&quot;createTempFile&quot;));</span>
+<span class="fc" id="L121">							createTempFileInvocation.arguments().add(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L122">							createTempFileInvocation.arguments().add(ast.newStringLiteral());</span>
+<span class="fc" id="L123">							createTempFileInvocation.arguments().add(ast.newNullLiteral());</span>
 
-<span class="nc" id="L125">							MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L126">							toFileInvocation.setExpression(createTempFileInvocation);</span>
-<span class="nc" id="L127">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L125">							MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L126">							toFileInvocation.setExpression(createTempFileInvocation);</span>
+<span class="fc" id="L127">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 
-<span class="nc" id="L129">							rewriter.replace(node, toFileInvocation, group);</span>
-<span class="nc" id="L130">						} else {</span>
+<span class="fc" id="L129">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L130">						} else {</span>
 							// newFile(String) -&gt; Files.createFile(tempDir.resolve(...)).toFile()
 <span class="fc" id="L132">							MethodInvocation createFileInvocation = ast.newMethodInvocation();</span>
 <span class="fc" id="L133">							createFileInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
@@ -152,41 +152,41 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 						}
 <span class="fc" id="L153">					}</span>
 					// Handle newFolder() and newFolder(String...)
-<span class="nc bnc" id="L155" title="All 2 branches missed.">					else if (&quot;newFolder&quot;.equals(methodName)) {</span>
-<span class="nc" id="L156">						needsFilesImport[0] = true;</span>
-<span class="nc bnc" id="L157" title="All 2 branches missed.">						if (node.arguments().isEmpty()) {</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">					else if (&quot;newFolder&quot;.equals(methodName)) {</span>
+<span class="fc" id="L156">						needsFilesImport[0] = true;</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">						if (node.arguments().isEmpty()) {</span>
 							// newFolder() with no args -&gt; Files.createTempDirectory(tempDir, &quot;&quot;).toFile()
-<span class="nc" id="L159">							MethodInvocation createTempDirInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L160">							createTempDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="nc" id="L161">							createTempDirInvocation.setName(ast.newSimpleName(&quot;createTempDirectory&quot;));</span>
-<span class="nc" id="L162">							createTempDirInvocation.arguments().add(ast.newSimpleName(originalName));</span>
-<span class="nc" id="L163">							createTempDirInvocation.arguments().add(ast.newStringLiteral());</span>
+<span class="fc" id="L159">							MethodInvocation createTempDirInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L160">							createTempDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L161">							createTempDirInvocation.setName(ast.newSimpleName(&quot;createTempDirectory&quot;));</span>
+<span class="fc" id="L162">							createTempDirInvocation.arguments().add(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L163">							createTempDirInvocation.arguments().add(ast.newStringLiteral());</span>
 
-<span class="nc" id="L165">							MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L166">							toFileInvocation.setExpression(createTempDirInvocation);</span>
-<span class="nc" id="L167">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L165">							MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L166">							toFileInvocation.setExpression(createTempDirInvocation);</span>
+<span class="fc" id="L167">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 
-<span class="nc" id="L169">							rewriter.replace(node, toFileInvocation, group);</span>
-<span class="nc" id="L170">						} else {</span>
+<span class="fc" id="L169">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L170">						} else {</span>
 							// newFolder(String...) -&gt;
 							// Files.createDirectories(tempDir.resolve(...).resolve(...)).toFile()
 							// For multiple arguments, chain resolve() calls
-<span class="nc" id="L174">							MethodInvocation createDirInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L175">							createDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
-<span class="nc" id="L176">							createDirInvocation.setName(ast.newSimpleName(&quot;createDirectories&quot;));</span>
+<span class="fc" id="L174">							MethodInvocation createDirInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L175">							createDirInvocation.setExpression(ast.newName(&quot;Files&quot;));</span>
+<span class="fc" id="L176">							createDirInvocation.setName(ast.newSimpleName(&quot;createDirectories&quot;));</span>
 
 							// Build chained resolve() calls for multiple arguments
 							// Start with tempFolder.resolve(&quot;a&quot;)
-<span class="nc" id="L180">							ASTNode firstArg = (ASTNode) node.arguments().get(0);</span>
-<span class="nc" id="L181">							MethodInvocation chainedResolve = ast.newMethodInvocation();</span>
-<span class="nc" id="L182">							chainedResolve.setExpression(ast.newSimpleName(originalName));</span>
-<span class="nc" id="L183">							chainedResolve.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
-<span class="nc" id="L184">							chainedResolve.arguments()</span>
-<span class="nc" id="L185">									.add(TestNameRefactorer.copyAndTransformTestNameReferences(firstArg, ast));</span>
+<span class="fc" id="L180">							ASTNode firstArg = (ASTNode) node.arguments().get(0);</span>
+<span class="fc" id="L181">							MethodInvocation chainedResolve = ast.newMethodInvocation();</span>
+<span class="fc" id="L182">							chainedResolve.setExpression(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L183">							chainedResolve.setName(ast.newSimpleName(&quot;resolve&quot;));</span>
+<span class="fc" id="L184">							chainedResolve.arguments()</span>
+<span class="fc" id="L185">									.add(TestNameRefactorer.copyAndTransformTestNameReferences(firstArg, ast));</span>
 
 							// Chain additional resolve() calls for subsequent arguments
 							// .resolve(&quot;b&quot;).resolve(&quot;c&quot;)...
-<span class="nc bnc" id="L189" title="All 2 branches missed.">							for (int i = 1; i &lt; node.arguments().size(); i++) {</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">							for (int i = 1; i &lt; node.arguments().size(); i++) {</span>
 <span class="nc" id="L190">								ASTNode arg = (ASTNode) node.arguments().get(i);</span>
 <span class="nc" id="L191">								MethodInvocation nextResolve = ast.newMethodInvocation();</span>
 <span class="nc" id="L192">								nextResolve.setExpression(chainedResolve);</span>
@@ -196,23 +196,23 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="nc" id="L196">								chainedResolve = nextResolve;</span>
 							}
 
-<span class="nc" id="L199">							createDirInvocation.arguments().add(chainedResolve);</span>
+<span class="fc" id="L199">							createDirInvocation.arguments().add(chainedResolve);</span>
 
-<span class="nc" id="L201">							MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L202">							toFileInvocation.setExpression(createDirInvocation);</span>
-<span class="nc" id="L203">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L201">							MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L202">							toFileInvocation.setExpression(createDirInvocation);</span>
+<span class="fc" id="L203">							toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 
-<span class="nc" id="L205">							rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L205">							rewriter.replace(node, toFileInvocation, group);</span>
 						}
-<span class="nc" id="L207">					}</span>
+<span class="fc" id="L207">					}</span>
 					// Handle getRoot()
-<span class="nc bnc" id="L209" title="All 2 branches missed.">					else if (&quot;getRoot&quot;.equals(methodName)) {</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">					else if (&quot;getRoot&quot;.equals(methodName)) {</span>
 						// tempDir.toFile()
-<span class="nc" id="L211">						MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
-<span class="nc" id="L212">						toFileInvocation.setExpression(ast.newSimpleName(originalName));</span>
-<span class="nc" id="L213">						toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
+<span class="fc" id="L211">						MethodInvocation toFileInvocation = ast.newMethodInvocation();</span>
+<span class="fc" id="L212">						toFileInvocation.setExpression(ast.newSimpleName(originalName));</span>
+<span class="fc" id="L213">						toFileInvocation.setName(ast.newSimpleName(&quot;toFile&quot;));</span>
 
-<span class="nc" id="L215">						rewriter.replace(node, toFileInvocation, group);</span>
+<span class="fc" id="L215">						rewriter.replace(node, toFileInvocation, group);</span>
 					}
 
 <span class="fc" id="L218">					return true;</span>
@@ -221,7 +221,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		}
 
 		// Add Files import only if needed (determined during transformation)
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (needsFilesImport[0]) {</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		if (needsFilesImport[0]) {</span>
 <span class="fc" id="L225">			importRewriter.addImport(&quot;java.nio.file.Files&quot;);</span>
 		}
 <span class="fc" id="L227">	}</span>

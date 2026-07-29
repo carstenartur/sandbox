@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator;
 import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.Allocation;
 import org.sandbox.jdt.cleanup.multifile.GeneratedNameAllocator.NestedTypeRequest;
+import org.sandbox.jdt.cleanup.multifile.GeneratedNameHierarchyPolicy;
 
 /**
  * Utility class for naming and string operations.
@@ -59,18 +60,18 @@ public final class NamingUtils {
 	 * @return true if the string is a valid Java identifier, false otherwise
 	 */
 	public static boolean isValidJavaIdentifier(String name) {
-<span class="pc bpc" id="L62" title="2 of 4 branches missed.">		if (name == null || name.isEmpty()) {</span>
-<span class="nc" id="L63">			return false;</span>
+<span class="pc bpc" id="L63" title="2 of 4 branches missed.">		if (name == null || name.isEmpty()) {</span>
+<span class="nc" id="L64">			return false;</span>
 		}
-<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (!Character.isJavaIdentifierStart(name.charAt(0))) {</span>
-<span class="fc" id="L66">			return false;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">		if (!Character.isJavaIdentifierStart(name.charAt(0))) {</span>
+<span class="fc" id="L67">			return false;</span>
 		}
-<span class="fc bfc" id="L68" title="All 2 branches covered.">		for (int i = 1; i &lt; name.length(); i++) {</span>
-<span class="fc bfc" id="L69" title="All 2 branches covered.">			if (!Character.isJavaIdentifierPart(name.charAt(i))) {</span>
-<span class="fc" id="L70">				return false;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		for (int i = 1; i &lt; name.length(); i++) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">			if (!Character.isJavaIdentifierPart(name.charAt(i))) {</span>
+<span class="fc" id="L71">				return false;</span>
 			}
 		}
-<span class="fc" id="L73">		return true;</span>
+<span class="fc" id="L74">		return true;</span>
 	}
 
 	/**
@@ -80,10 +81,10 @@ public final class NamingUtils {
 	 * @return the string with first letter capitalized, or the original string if null or empty
 	 */
 	public static String capitalizeFirstLetter(String input) {
-<span class="pc bpc" id="L83" title="2 of 4 branches missed.">		if (input == null || input.isEmpty()) {</span>
-<span class="nc" id="L84">			return input;</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">		if (input == null || input.isEmpty()) {</span>
+<span class="nc" id="L85">			return input;</span>
 		}
-<span class="fc" id="L86">		return Character.toUpperCase(input.charAt(0)) + input.substring(1);</span>
+<span class="fc" id="L87">		return Character.toUpperCase(input.charAt(0)) + input.substring(1);</span>
 	}
 
 	/**
@@ -91,8 +92,8 @@ public final class NamingUtils {
 	 *
 	 * &lt;p&gt;The historical field-name/checksum convention is retained for stable
 	 * output, but the proposed name is now checked by the shared generated-name
-	 * allocator against type, member, local and import namespaces before any
-	 * rewrite is committed.&lt;/p&gt;
+	 * services against type, member, local, import and inherited member-type
+	 * namespaces before any rewrite is committed.&lt;/p&gt;
 	 *
 	 * @param anonymousClass the anonymous class declaration
 	 * @param baseName the base name from the field
@@ -100,35 +101,42 @@ public final class NamingUtils {
 	 * @throws IllegalStateException if owner context is unavailable or the name collides
 	 */
 	public static String generateUniqueNestedClassName(AnonymousClassDeclaration anonymousClass, String baseName) {
-<span class="fc" id="L103">		String anonymousCode = anonymousClass.toString();</span>
-<span class="fc" id="L104">		String checksum = generateChecksum(anonymousCode);</span>
-<span class="fc" id="L105">		String requestedName = capitalizeFirstLetter(baseName) + &quot;_&quot; + checksum; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (!(anonymousClass.getRoot() instanceof CompilationUnit root)) {</span>
-<span class="nc" id="L107">			throw new IllegalStateException(&quot;Cannot validate generated helper name without a compilation unit.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L104">		String anonymousCode = anonymousClass.toString();</span>
+<span class="fc" id="L105">		String checksum = generateChecksum(anonymousCode);</span>
+<span class="fc" id="L106">		String requestedName = capitalizeFirstLetter(baseName) + &quot;_&quot; + checksum; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">		if (!(anonymousClass.getRoot() instanceof CompilationUnit root)) {</span>
+<span class="nc" id="L108">			throw new IllegalStateException(&quot;Cannot validate generated helper name without a compilation unit.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L109">		TypeDeclaration owner= ASTNavigationUtils.findEnclosingTypeDeclaration(anonymousClass);</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (owner == null) {</span>
-<span class="nc" id="L111">			throw new IllegalStateException(&quot;Cannot validate generated helper name without an enclosing type.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L110">		TypeDeclaration owner= ASTNavigationUtils.findEnclosingTypeDeclaration(anonymousClass);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		if (owner == null) {</span>
+<span class="nc" id="L112">			throw new IllegalStateException(&quot;Cannot validate generated helper name without an enclosing type.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L113">		ITypeBinding ownerBinding= owner.resolveBinding();</span>
-<span class="fc bfc" id="L114" title="All 2 branches covered.">		ITypeBinding ownerDeclaration= ownerBinding == null ? null : ownerBinding.getTypeDeclaration();</span>
-<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		String ownerKey= ownerDeclaration == null || ownerDeclaration.getKey() == null</span>
-<span class="fc" id="L116">				? &quot;&quot; : ownerDeclaration.getKey(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		String ownerQualifiedName= ownerDeclaration == null || ownerDeclaration.getQualifiedName().isEmpty()</span>
-<span class="fc" id="L118">				? qualifiedName(root, owner) : ownerDeclaration.getQualifiedName();</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">		String unitHandle= root.getJavaElement() instanceof ICompilationUnit unit</span>
-<span class="fc" id="L120">				? unit.getPrimary().getHandleIdentifier() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">		String requestId= (ownerKey.isEmpty() ? ownerQualifiedName : ownerKey) + &quot;#junit-helper:&quot; + requestedName; //$NON-NLS-1$</span>
-<span class="fc" id="L122">		NestedTypeRequest request= new NestedTypeRequest(requestId, unitHandle, ownerKey, ownerQualifiedName,</span>
-<span class="fc" id="L123">				requestedName);</span>
-<span class="fc" id="L124">		Allocation allocation= GeneratedNameAllocator.allocateNestedTypes(List.of(root), List.of(request))</span>
-<span class="fc" id="L125">				.get(requestId);</span>
-<span class="pc bpc" id="L126" title="1 of 4 branches missed.">		if (allocation == null || !allocation.available()) {</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			String detail= allocation == null ? &quot;allocation result is missing&quot; : allocation.diagnosticMessage(); //$NON-NLS-1$</span>
-<span class="fc" id="L128">			throw new IllegalStateException(&quot;Generated nested helper name &quot; + requestedName //$NON-NLS-1$</span>
-<span class="fc" id="L129">					+ &quot; is unavailable: &quot; + detail); //$NON-NLS-1$</span>
+<span class="fc" id="L114">		ITypeBinding ownerBinding= owner.resolveBinding();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		ITypeBinding ownerDeclaration= ownerBinding == null ? null : ownerBinding.getTypeDeclaration();</span>
+<span class="pc bpc" id="L116" title="1 of 4 branches missed.">		String ownerKey= ownerDeclaration == null || ownerDeclaration.getKey() == null</span>
+<span class="fc" id="L117">				? &quot;&quot; : ownerDeclaration.getKey(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L118" title="1 of 4 branches missed.">		String ownerQualifiedName= ownerDeclaration == null || ownerDeclaration.getQualifiedName().isEmpty()</span>
+<span class="fc" id="L119">				? qualifiedName(root, owner) : ownerDeclaration.getQualifiedName();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		String unitHandle= root.getJavaElement() instanceof ICompilationUnit unit</span>
+<span class="fc" id="L121">				? unit.getPrimary().getHandleIdentifier() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		String requestId= (ownerKey.isEmpty() ? ownerQualifiedName : ownerKey) + &quot;#junit-helper:&quot; + requestedName; //$NON-NLS-1$</span>
+<span class="fc" id="L123">		NestedTypeRequest request= new NestedTypeRequest(requestId, unitHandle, ownerKey, ownerQualifiedName,</span>
+<span class="fc" id="L124">				requestedName);</span>
+<span class="fc" id="L125">		Allocation allocation= GeneratedNameAllocator.allocateNestedTypes(List.of(root), List.of(request))</span>
+<span class="fc" id="L126">				.get(requestId);</span>
+<span class="pc bpc" id="L127" title="1 of 4 branches missed.">		if (allocation == null || !allocation.available()) {</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			String detail= allocation == null ? &quot;allocation result is missing&quot; : allocation.diagnosticMessage(); //$NON-NLS-1$</span>
+<span class="fc" id="L129">			throw new IllegalStateException(&quot;Generated nested helper name &quot; + requestedName //$NON-NLS-1$</span>
+<span class="fc" id="L130">					+ &quot; is unavailable: &quot; + detail); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L131">		return requestedName;</span>
+<span class="fc" id="L132">		List&lt;String&gt; inheritedCollisions= GeneratedNameHierarchyPolicy</span>
+<span class="fc" id="L133">				.inheritedMemberTypeCollisions(ownerDeclaration, requestedName);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (!inheritedCollisions.isEmpty()) {</span>
+<span class="fc" id="L135">			throw new IllegalStateException(&quot;Generated nested helper name &quot; + requestedName //$NON-NLS-1$</span>
+					+ &quot; is unavailable: inherited member type (&quot; //$NON-NLS-1$
+<span class="fc" id="L137">					+ String.join(&quot;, &quot;, inheritedCollisions) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L139">		return requestedName;</span>
 	}
 
 	/**
@@ -140,19 +148,19 @@ public final class NamingUtils {
 	 */
 	public static String generateChecksum(String input) {
 		try {
-<span class="fc" id="L143">			MessageDigest md = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L144">			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L145">			StringBuilder hexString = new StringBuilder();</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">			for (byte b : hashBytes) {</span>
-<span class="fc" id="L147">				String hex = Integer.toHexString(0xff &amp; b);</span>
-<span class="fc bfc" id="L148" title="All 2 branches covered.">				if (hex.length() == 1) {</span>
-<span class="fc" id="L149">					hexString.append('0');</span>
+<span class="fc" id="L151">			MessageDigest md = MessageDigest.getInstance(&quot;SHA-256&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L152">			byte[] hashBytes = md.digest(input.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L153">			StringBuilder hexString = new StringBuilder();</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">			for (byte b : hashBytes) {</span>
+<span class="fc" id="L155">				String hex = Integer.toHexString(0xff &amp; b);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">				if (hex.length() == 1) {</span>
+<span class="fc" id="L157">					hexString.append('0');</span>
 				}
-<span class="fc" id="L151">				hexString.append(hex);</span>
+<span class="fc" id="L159">				hexString.append(hex);</span>
 			}
-<span class="fc" id="L153">			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);</span>
-<span class="nc" id="L154">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L155">			throw new RuntimeException(&quot;SHA-256 algorithm not found&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L161">			return hexString.toString().substring(0, GENERATED_CLASS_NAME_CHECKSUM_LENGTH);</span>
+<span class="nc" id="L162">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L163">			throw new RuntimeException(&quot;SHA-256 algorithm not found&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 
@@ -163,13 +171,13 @@ public final class NamingUtils {
 	 * @return the class name, or null if not found
 	 */
 	public static String extractClassNameFromField(FieldDeclaration field) {
-<span class="nc bnc" id="L166" title="All 2 branches missed.">		for (Object fragmentObj : field.fragments()) {</span>
-<span class="nc bnc" id="L167" title="All 2 branches missed.">			if (fragmentObj instanceof VariableDeclarationFragment fragment</span>
-<span class="nc bnc" id="L168" title="All 2 branches missed.">					&amp;&amp; fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation creation) {</span>
-<span class="nc" id="L169">				return extractTypeName(creation.getType());</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">		for (Object fragmentObj : field.fragments()) {</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">			if (fragmentObj instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">					&amp;&amp; fragment.getInitializer() instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation creation) {</span>
+<span class="nc" id="L177">				return extractTypeName(creation.getType());</span>
 			}
 		}
-<span class="nc" id="L172">		return null;</span>
+<span class="nc" id="L180">		return null;</span>
 	}
 
 	/**
@@ -179,11 +187,11 @@ public final class NamingUtils {
 	 * @return the field name, or &quot;UnnamedField&quot; if not found
 	 */
 	public static String extractFieldName(FieldDeclaration fieldDeclaration) {
-<span class="fc" id="L182">		return (String) fieldDeclaration.fragments().stream()</span>
-<span class="fc" id="L183">				.filter(VariableDeclarationFragment.class::isInstance)</span>
-<span class="fc" id="L184">				.map(fragment -&gt; ((VariableDeclarationFragment) fragment).getName().getIdentifier())</span>
-<span class="fc" id="L185">				.findFirst()</span>
-<span class="fc" id="L186">				.orElse(&quot;UnnamedField&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L190">		return (String) fieldDeclaration.fragments().stream()</span>
+<span class="fc" id="L191">				.filter(VariableDeclarationFragment.class::isInstance)</span>
+<span class="fc" id="L192">				.map(fragment -&gt; ((VariableDeclarationFragment) fragment).getName().getIdentifier())</span>
+<span class="fc" id="L193">				.findFirst()</span>
+<span class="fc" id="L194">				.orElse(&quot;UnnamedField&quot;); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -193,17 +201,17 @@ public final class NamingUtils {
 	 * @return the fully qualified class name
 	 */
 	public static String extractQualifiedTypeName(QualifiedType qualifiedType) {
-<span class="nc" id="L196">		StringBuilder fullClassName = new StringBuilder();</span>
-<span class="nc" id="L197">		Type currentType = qualifiedType;</span>
+<span class="nc" id="L204">		StringBuilder fullClassName = new StringBuilder();</span>
+<span class="nc" id="L205">		Type currentType = qualifiedType;</span>
 
-<span class="nc bnc" id="L199" title="All 2 branches missed.">		while (currentType instanceof QualifiedType currentQualified) {</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">			if (fullClassName.length() &gt; 0) {</span>
-<span class="nc" id="L201">				fullClassName.insert(0, &quot;.&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">		while (currentType instanceof QualifiedType currentQualified) {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">			if (fullClassName.length() &gt; 0) {</span>
+<span class="nc" id="L209">				fullClassName.insert(0, &quot;.&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L203">			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());</span>
-<span class="nc" id="L204">			currentType = currentQualified.getQualifier();</span>
+<span class="nc" id="L211">			fullClassName.insert(0, currentQualified.getName().getFullyQualifiedName());</span>
+<span class="nc" id="L212">			currentType = currentQualified.getQualifier();</span>
 		}
-<span class="nc" id="L206">		return fullClassName.toString();</span>
+<span class="nc" id="L214">		return fullClassName.toString();</span>
 	}
 
 	/**
@@ -213,27 +221,27 @@ public final class NamingUtils {
 	 * @return the type name, or null if not a recognized type
 	 */
 	public static String extractTypeName(Type type) {
-<span class="nc bnc" id="L216" title="All 2 branches missed.">		if (type instanceof QualifiedType qualifiedType) {</span>
-<span class="nc" id="L217">			return extractQualifiedTypeName(qualifiedType);</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">		} else if (type instanceof SimpleType simpleType) {</span>
-<span class="nc" id="L219">			return simpleType.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (type instanceof QualifiedType qualifiedType) {</span>
+<span class="nc" id="L225">			return extractQualifiedTypeName(qualifiedType);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">		} else if (type instanceof SimpleType simpleType) {</span>
+<span class="nc" id="L227">			return simpleType.getName().getFullyQualifiedName();</span>
 		}
-<span class="nc" id="L221">		return null;</span>
+<span class="nc" id="L229">		return null;</span>
 	}
 
 	private static String qualifiedName(CompilationUnit root, TypeDeclaration owner) {
-<span class="fc" id="L225">		List&lt;String&gt; typeNames= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L226">		ASTNode current= owner;</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">		while (current != null) {</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">			if (current instanceof TypeDeclaration type) {</span>
-<span class="fc" id="L229">				typeNames.add(0, type.getName().getIdentifier());</span>
+<span class="fc" id="L233">		List&lt;String&gt; typeNames= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L234">		ASTNode current= owner;</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">			if (current instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L237">				typeNames.add(0, type.getName().getIdentifier());</span>
 			}
-<span class="fc" id="L231">			current= current.getParent();</span>
+<span class="fc" id="L239">			current= current.getParent();</span>
 		}
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">		String packageName= root.getPackage() == null</span>
-<span class="pc" id="L234">				? &quot;&quot; : root.getPackage().getName().getFullyQualifiedName(); //$NON-NLS-1$</span>
-<span class="fc" id="L235">		String localName= String.join(&quot;.&quot;, typeNames); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">		return packageName.isEmpty() ? localName : packageName + '.' + localName;</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">		String packageName= root.getPackage() == null</span>
+<span class="pc" id="L242">				? &quot;&quot; : root.getPackage().getName().getFullyQualifiedName(); //$NON-NLS-1$</span>
+<span class="fc" id="L243">		String localName= String.join(&quot;.&quot;, typeNames); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">		return packageName.isEmpty() ? localName : packageName + '.' + localName;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

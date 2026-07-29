@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalHibernateRepositoryService.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.repository</a> &gt; <span class="el_source">ExternalHibernateRepositoryService.java</span></div><h1>ExternalHibernateRepositoryService.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.jgit.server.repository;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.eclipse.jgit.lib.Repository;
+
+import io.github.carstenartur.jgit.storage.hibernate.HibernateGitStorage;
+import io.github.carstenartur.jgit.storage.hibernate.HibernateRepositoryFactory;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
+
+/**
+ * Adapts the released {@code jgit-storage-hibernate-core} factory to the
+ * application-owned repository service contract.
+ *
+ * &lt;p&gt;The adapter owns every storage handle it opens. Application and transport
+ * code receive only public JGit {@link Repository} instances and Sandbox
+ * metadata. The production cut-over can therefore replace the copied backend
+ * without changing REST or Smart HTTP callers.&lt;/p&gt;
+ */
+public final class ExternalHibernateRepositoryService implements SandboxRepositoryService {
+
+	private final HibernateRepositoryFactory repositoryFactory;
+<span class="fc" id="L36">	private final Map&lt;String, HibernateGitStorage&gt; storages= new ConcurrentHashMap&lt;&gt;();</span>
+
+	/** Creates an adapter for the released public repository factory. */
+<span class="fc" id="L39">	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {</span>
+<span class="fc" id="L40">		this.repositoryFactory= Objects.requireNonNull(repositoryFactory, &quot;repositoryFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L41">	}</span>
+
+	@Override
+	public Repository openOrCreate(String name) throws IOException {
+<span class="fc" id="L45">		return storage(name).repository();</span>
+	}
+
+	@Override
+	public SandboxRepositoryInfo info(String name) throws IOException {
+<span class="fc" id="L50">		String normalized= normalize(name);</span>
+<span class="fc" id="L51">		Repository repository= storage(normalized).repository();</span>
+<span class="fc" id="L52">		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+	}
+
+	@Override
+	public SandboxRepositoryInfo setDescription(String name, String description) throws IOException {
+<span class="fc" id="L57">		String normalized= normalize(name);</span>
+<span class="fc" id="L58">		Repository repository= storage(normalized).repository();</span>
+<span class="fc" id="L59">		repository.setGitwebDescription(description);</span>
+<span class="fc" id="L60">		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+	}
+
+	@Override
+	public boolean isOpen(String name) {
+<span class="fc" id="L65">		return storages.containsKey(normalize(name));</span>
+	}
+
+	@Override
+	public void close() {
+<span class="fc" id="L70">		RuntimeException failure= null;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (HibernateGitStorage storage : storages.values()) {</span>
+			try {
+<span class="fc" id="L73">				storage.close();</span>
+<span class="fc" id="L74">			} catch (RuntimeException exception) {</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">				if (failure == null) {</span>
+<span class="fc" id="L76">					failure= exception;</span>
+				} else {
+<span class="nc" id="L78">					failure.addSuppressed(exception);</span>
+				}
+<span class="fc" id="L80">			}</span>
+<span class="fc" id="L81">		}</span>
+<span class="fc" id="L82">		storages.clear();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (failure != null) {</span>
+<span class="fc" id="L84">			throw failure;</span>
+		}
+<span class="fc" id="L86">	}</span>
+
+	private HibernateGitStorage storage(String name) {
+<span class="fc" id="L89">		String normalized= normalize(name);</span>
+<span class="fc" id="L90">		return storages.computeIfAbsent(normalized,</span>
+<span class="fc" id="L91">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
+	}
+
+	private static String normalize(String name) {
+<span class="fc" id="L95">		String normalized= Objects.requireNonNull(name, &quot;name&quot;).strip(); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (normalized.startsWith(&quot;/&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L97">			normalized= normalized.substring(1);</span>
+		}
+<span class="fc bfc" id="L99" title="All 2 branches covered.">		if (normalized.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L100">			normalized= normalized.substring(0, normalized.length() - 4);</span>
+		}
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
+<span class="nc" id="L103">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L105">		return normalized;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
