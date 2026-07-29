@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.rest.HealthResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.hibernate.SessionFactory;
@@ -38,28 +39,35 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertNotNull(RepositoryResource.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SessionFactory.class));
+		assertNotNull(HealthResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(ExternalHibernateRepositoryService.class.getConstructor(HibernateRepositoryFactory.class));
 	}
 
 	@Test
 	public void repositoryResourceHasNoCopiedBackendField() {
-		assertFalse(Arrays.stream(RepositoryResource.class.getDeclaredFields())
-				.map(Field::getType)
-				.map(Class::getName)
-				.anyMatch(name -> name.startsWith("org.eclipse.jgit.storage.hibernate"))); //$NON-NLS-1$
+		assertFalse(hasCopiedBackendField(RepositoryResource.class));
+	}
+
+	@Test
+	public void healthResourceHasNoCopiedBackendField() {
+		assertFalse(hasCopiedBackendField(HealthResource.class));
 	}
 
 	@Test
 	public void externalAdapterHasNoCopiedBackendField() {
-		assertFalse(Arrays.stream(ExternalHibernateRepositoryService.class.getDeclaredFields())
-				.map(Field::getType)
-				.map(Class::getName)
-				.anyMatch(name -> name.startsWith("org.eclipse.jgit.storage.hibernate"))); //$NON-NLS-1$
+		assertFalse(hasCopiedBackendField(ExternalHibernateRepositoryService.class));
 	}
 
 	@Test
 	public void validatesApplicationMetadataIdentity() {
 		assertEquals("demo", new SandboxRepositoryInfo(" demo ", null).name()); //$NON-NLS-1$ //$NON-NLS-2$
 		assertThrows(IllegalArgumentException.class, () -> new SandboxRepositoryInfo(" ", null)); //$NON-NLS-1$
+	}
+
+	private static boolean hasCopiedBackendField(Class<?> type) {
+		return Arrays.stream(type.getDeclaredFields())
+				.map(Field::getType)
+				.map(Class::getName)
+				.anyMatch(name -> name.startsWith("org.eclipse.jgit.storage.hibernate")); //$NON-NLS-1$
 	}
 }
