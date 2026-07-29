@@ -16,12 +16,14 @@ package org.eclipse.jgit.server.rest;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
+import org.hibernate.SessionFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -47,18 +49,30 @@ public class AnalyticsResource extends HttpServlet {
 	private static final Logger LOG = Logger
 			.getLogger(AnalyticsResource.class.getName());
 
-	private final HibernateSessionFactoryProvider provider;
+	private final SessionFactory sessionFactory;
 
 	private final Gson gson = new Gson();
 
 	/**
-	 * Create an analytics endpoint.
+	 * Create an analytics endpoint from the application-owned native factory.
+	 *
+	 * @param sessionFactory
+	 *            the native session factory
+	 */
+	public AnalyticsResource(SessionFactory sessionFactory) {
+		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Create an analytics endpoint from the copied compatibility provider.
 	 *
 	 * @param provider
 	 *            the session factory provider
+	 * @deprecated application wiring should pass the native {@link SessionFactory}
 	 */
+	@Deprecated(forRemoval = true)
 	public AnalyticsResource(HibernateSessionFactoryProvider provider) {
-		this.provider = provider;
+		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override
@@ -82,8 +96,7 @@ public class AnalyticsResource extends HttpServlet {
 		}
 
 		try {
-			GitDatabaseQueryService queryService = new GitDatabaseQueryService(
-					provider.getSessionFactory());
+			GitDatabaseQueryService queryService = new GitDatabaseQueryService(sessionFactory);
 
 			if (pathInfo.startsWith("/authors")) { //$NON-NLS-1$
 				handleAuthorStats(queryService, repo, resp);
