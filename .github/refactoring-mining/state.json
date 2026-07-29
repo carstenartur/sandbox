@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "89e1ca7a3cba092253362b8a657232d5459fed31",
-      "lastProcessedDate": "2026-07-27T03:18:00.197993560Z",
-      "totalProcessed": 3008,
+      "lastProcessedCommit": "9f35d654c9064bc24856a4e96605624508dbef20",
+      "lastProcessedDate": "2026-07-29T03:15:10.205652232Z",
+      "totalProcessed": 3096,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2555,6 +2555,42 @@
           "deferredAt": "2026-07-27T03:17:09.858443686Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "b0de0039dbf0d93cbd560c80d3ce86176034971c",
+          "message": "Bug 519540: [9] Syntax coloring for IModuleDescription and module-info (.java and .class) files in declaration view and ",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-29T03:09:44.331026654Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "34d3b0539d021603c5af79d8e27707119125d4c0",
+          "message": "Bug 520691: [9] Not all class files contain a type",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-29T03:11:35.899274796Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6e90489bb8bedb191fdd84efeb8a17859d7dcae4",
+          "message": "Bug 519254 - [9] Module declaration name should be validated while creation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-29T03:11:49.030582318Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "46485a8139ffed6862fd7742c179a71cf2e34a20",
+          "message": "Bug 519444: [9] Add --add-exports support in IDE",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-29T03:12:36.593421700Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2706,9 +2742,9 @@
         "Preference Configuration": 1,
         "Typo Fix": 1,
         "Unnecessary Call Removal": 1,
-        "String Literal Replacement": 1,
+        "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 8,
+        "API Modernization": 12,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2716,7 +2752,7 @@
         "API Constant Update": 1,
         "Null Safety": 3,
         "Boolean Simplification": 1,
-        "Constant Replacement": 1,
+        "Constant Replacement": 2,
         "API Simplification": 1,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
@@ -2725,7 +2761,13 @@
         "Configuration Update": 1,
         "Type Mismatch Cleanup": 1,
         "API usage": 1,
-        "UI Color Management": 1
+        "UI Color Management": 1,
+        "Expression Simplification": 1,
+        "API Fix": 1,
+        "API Misuse Correction": 1,
+        "readability": 1,
+        "Method call argument replacement": 1,
+        "API Constant Renaming": 1
       },
       "exhaustedCategories": []
     },
@@ -2766,5 +2808,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25667
+  "globalTotalProcessed": 25755
 }
