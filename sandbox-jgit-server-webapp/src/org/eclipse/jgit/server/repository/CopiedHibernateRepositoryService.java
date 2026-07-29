@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
+ * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -20,6 +20,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.repository.HibernateRepository;
 import org.eclipse.jgit.storage.hibernate.repository.HibernateRepositoryBuilder;
+import org.hibernate.SessionFactory;
 
 /**
  * Temporary adapter for the copied Sandbox Hibernate backend.
@@ -33,7 +34,17 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 	private final HibernateSessionFactoryProvider sessionFactoryProvider;
 	private final Map<String, HibernateRepository> repositories= new ConcurrentHashMap<>();
 
-	/** Creates the temporary copied-backend adapter. */
+	/** Creates the temporary adapter from an application-owned native factory. */
+	public CopiedHibernateRepositoryService(SessionFactory sessionFactory) {
+		this(new HibernateSessionFactoryProvider(Objects.requireNonNull(sessionFactory, "sessionFactory"))); //$NON-NLS-1$
+	}
+
+	/**
+	 * Creates the temporary copied-backend adapter.
+	 *
+	 * @deprecated application wiring should pass the native {@link SessionFactory}
+	 */
+	@Deprecated(forRemoval = true)
 	public CopiedHibernateRepositoryService(HibernateSessionFactoryProvider sessionFactoryProvider) {
 		this.sessionFactoryProvider= Objects.requireNonNull(sessionFactoryProvider, "sessionFactoryProvider"); //$NON-NLS-1$
 	}
