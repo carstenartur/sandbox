@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "9f35d654c9064bc24856a4e96605624508dbef20",
-      "lastProcessedDate": "2026-07-29T03:15:10.205652232Z",
-      "totalProcessed": 3096,
+      "lastProcessedCommit": "6d10ed6d8d5326d1eafc729588d5037d1081daa8",
+      "lastProcessedDate": "2026-07-30T03:15:36.691318512Z",
+      "totalProcessed": 3192,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2591,6 +2591,69 @@
           "deferredAt": "2026-07-29T03:12:36.593421700Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "7ed13eaf0e1dfd4818fcaabb7b14fba718584882",
+          "message": "Bug 520300 - [9] Nodes for module path and class path on Java Build Path",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-30T03:08:33.208146023Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a831e00aca2299cca490e429353c31077e2fd3ab",
+          "message": "Bug 506377 - [1.9][quick fix] Offer quick fix to add module for unresolved import and type",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-30T03:08:33.222276471Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8362220c2bf1e277c0bf682fdd1d0d3624bb63ec",
+          "message": "Bug 521666: [9] Add --add-reads,--patch-module and --limit-modules support in IDE",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-30T03:09:04.241941975Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bd7829ce5c4907a72a1bcd9978a53138ff01db1c",
+          "message": "Fix CHKPII errors.\n\nChange-Id: I9a2ebf69abc474cb944442a26c5ef04b15ec3f2a\n",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-30T03:10:12.536480340Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a07bf2ab53cf0561d0c7fa2cf4ee9a16f9e00915",
+          "message": "Bug 522615: [9] add syntax coloring for \"import\" keyword in module-info\nfile\n\nChange-Id: I6b94dcdc3dbf01f58add8758c547b5",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-07-30T03:10:12.536547229Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "37a355f9cb4d49b8bed9d2c55e64bc9536ca5346",
+          "message": "Bug 522286: [9] Refresh Classpath and Module path elements if non-modular element is made modular or vice versa",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-30T03:13:41.821010685Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "294c7387c27527ffba8def342984bb941ab13845",
+          "message": "Bug 522286: [9] Refresh Classpath and Module path elements if non-modular element is made modular or vice versa",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-30T03:13:41.826795856Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2733,7 +2796,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 3,
+        "API Migration": 5,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -2744,7 +2807,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 12,
+        "API Modernization": 13,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2767,7 +2830,8 @@
         "API Misuse Correction": 1,
         "readability": 1,
         "Method call argument replacement": 1,
-        "API Constant Renaming": 1
+        "API Constant Renaming": 1,
+        "API Renaming": 1
       },
       "exhaustedCategories": []
     },
@@ -2808,5 +2872,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25755
+  "globalTotalProcessed": 25851
 }
