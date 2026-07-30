@@ -109,12 +109,7 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 
 	protected void runGarbageCollection() {
 		for (int iteration= 0; iteration < MAX_GC; iteration++) {
-			long free= Runtime.getRuntime().freeMemory();
 			System.gc();
-			long delta= Runtime.getRuntime().freeMemory() - free;
-			if (delta < Long.MIN_VALUE) {
-				throw new AssertionError(delta);
-			}
 			try {
 				Thread.sleep(TIME_GC);
 			} catch (InterruptedException exception) {
@@ -176,17 +171,7 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 			if (selected.isEmpty()) {
 				return org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled("container");
 			}
-			String name= selected.orElseThrow().getName();
-			java.util.List<String> testNames= java.util.Arrays.stream(
-					context.getRequiredTestClass().getDeclaredMethods())
-					.filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
-					.filter(method -> !java.lang.reflect.Modifier.isStatic(method.getModifiers()))
-					.map(java.lang.reflect.Method::getName)
-					.filter(candidate -> candidate.startsWith(METHOD_PREFIX)).distinct().toList();
-			java.util.List<String> onlyNames= RUN_ONLY_ID == null ? java.util.List.of()
-					: testNames.stream().filter(candidate -> candidate.substring(METHOD_PREFIX.length())
-							.startsWith(RUN_ONLY_ID)).toList();
-			boolean enabled= onlyNames.isEmpty() ? selectedByConfiguredFilter(name) : onlyNames.contains(name);
+			boolean enabled= isSelected(context.getRequiredTestClass(), selected.orElseThrow().getName());
 			return enabled
 					? org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled(
 							"selected by JDT Core filter")
@@ -204,6 +189,18 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 			} finally {
 				Thread.interrupted();
 			}
+		}
+
+		private static boolean isSelected(Class<?> testClass, String name) {
+			java.util.List<String> testNames= java.util.Arrays.stream(testClass.getDeclaredMethods())
+					.filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
+					.filter(method -> !java.lang.reflect.Modifier.isStatic(method.getModifiers()))
+					.map(java.lang.reflect.Method::getName)
+					.filter(candidate -> candidate.startsWith(METHOD_PREFIX)).distinct().toList();
+			java.util.List<String> onlyNames= RUN_ONLY_ID == null ? java.util.List.of()
+					: testNames.stream().filter(candidate -> candidate.substring(METHOD_PREFIX.length())
+							.startsWith(RUN_ONLY_ID)).toList();
+			return onlyNames.isEmpty() ? selectedByConfiguredFilter(name) : onlyNames.contains(name);
 		}
 
 		private static boolean selectedByConfiguredFilter(String name) {
@@ -255,6 +252,11 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 	public static final class JdtCoreMethodOrderer implements org.junit.jupiter.api.MethodOrderer {
 		@Override
 		public void orderMethods(org.junit.jupiter.api.MethodOrdererContext context) {
+			java.util.Comparator<org.junit.jupiter.api.MethodDescriptor> defaultOrder=
+					java.util.Comparator.comparingInt((org.junit.jupiter.api.MethodDescriptor descriptor) ->
+							descriptor.getMethod().getName().hashCode())
+							.thenComparing(descriptor -> descriptor.getMethod().getName());
+			context.getMethodDescriptors().sort(defaultOrder);
 			if (ORDERING == ALPHA_REVERSE_SORT) {
 				context.getMethodDescriptors().sort((left, right) -> right.getMethod().getName()
 						.compareTo(left.getMethod().getName()));
@@ -272,7 +274,29 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 					System.err.println("suite failed to detect test order: " + context.getTestClass().getName());
 				}
 			} else if (ORDERING != NO_ORDER) {
-				java.util.Collections.shuffle(context.getMethodDescriptors(), new java.util.Random(ORDERING));
+				java.util.List<String> selectedNames= context.getMethodDescriptors().stream()
+						.map(descriptor -> descriptor.getMethod().getName())
+						.filter(name -> JdtCoreFilterCondition.isSelected(context.getTestClass(), name))
+						.collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+				java.util.Collections.shuffle(selectedNames, new java.util.Random(ORDERING));
+				java.util.Map<String, Integer> ranks= new java.util.HashMap<>();
+				for (int index= 0; index < selectedNames.size(); index++) {
+					ranks.put(selectedNames.get(index), Integer.valueOf(index));
+				}
+				context.getMethodDescriptors().sort((left, right) -> {
+					Integer leftRank= ranks.get(left.getMethod().getName());
+					Integer rightRank= ranks.get(right.getMethod().getName());
+					if (leftRank != null && rightRank != null) {
+						return leftRank.compareTo(rightRank);
+					}
+					if (leftRank != null) {
+						return -1;
+					}
+					if (rightRank != null) {
+						return 1;
+					}
+					return defaultOrder.compare(left, right);
+				});
 			}
 		}
 	}
