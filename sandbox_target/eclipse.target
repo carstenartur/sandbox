@@ -15,27 +15,33 @@
             <unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
         </location>
 
-        <!-- 2. Orbit dependencies aligned with Eclipse 2026-06 / Platform 4.40 -->
+        <!-- 2. Eclipse test performance API used by the JDT Core Jupiter bridge -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/eclipse/updates/4.40/"/>
+            <unit id="org.eclipse.test.performance" version="0.0.0"/>
+        </location>
+
+        <!-- 3. Orbit dependencies aligned with Eclipse 2026-06 / Platform 4.40 -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
             <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-06/"/>
             <unit id="org.apache.commons.commons-io" version="0.0.0"/>
             <unit id="org.apache.commons.lang3" version="0.0.0"/>
         </location>
 
-        <!-- 3. Eclipse license information -->
+        <!-- 4. Eclipse license information -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
             <repository location="https://download.eclipse.org/cbi/updates/license"/>
             <unit id="org.eclipse.license.feature.group" version="0.0.0"/>
         </location>
 
-        <!-- 4. EGit (Eclipse Git Client) -->
+        <!-- 5. EGit (Eclipse Git Client) -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
             <repository location="https://download.eclipse.org/egit/updates/"/>
             <unit id="org.eclipse.egit.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.jgit.feature.group" version="0.0.0"/>
         </location>
 
-        <!-- 5. Bouncy Castle versions supplied by the Orbit 4.40 release -->
+        <!-- 6. Bouncy Castle versions supplied by the Orbit 4.40 release -->
         <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
             <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.40.0"/>
             <unit id="bcutil" version="1.84.0"/>
@@ -44,7 +50,7 @@
             <unit id="bcpg" version="1.84.0"/>
         </location>
 
-        <!-- 6. SWTBot Testing Framework -->
+        <!-- 7. SWTBot Testing Framework -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
             <repository location="https://download.eclipse.org/technology/swtbot/releases/latest/"/>
             <unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0"/>
