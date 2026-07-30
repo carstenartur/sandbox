@@ -43,6 +43,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.AssumeOptimizationJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeClassJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.CompositeJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
@@ -56,7 +57,6 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedAndTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
-import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ThrowingRunnableJUnitPlugin;
@@ -69,7 +69,7 @@ public enum JUnitCleanUpFixCore {
 	BEFORE(new BeforeJUnitPlugin()),
 	AFTER(new AfterJUnitPlugin()),
 	TEST(new TestJUnitPlugin()),
-	TEST3(new TestJUnit3Plugin()),
+	TEST3(new CompositeJUnit3Plugin()),
 	TEST_EXPECTED_TIMEOUT(new TestExpectedAndTimeoutJUnitPlugin()),
 	TEST_TIMEOUT(new TestTimeoutJUnitPlugin()),
 	TEST_EXPECTED(new TestExpectedJUnitPlugin()),
