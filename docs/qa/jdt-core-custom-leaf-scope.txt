@@ -1,2 +1,0 @@
-Supported: one direct custom-base leaf, one exact named constructor, one exact buildTestSuite suite method, one ordinary test.
-Rejected: multiple tests, inherited tests, custom base API, SuiteOfTestCases, compliance multiplication, performance and stateful suite behavior.
