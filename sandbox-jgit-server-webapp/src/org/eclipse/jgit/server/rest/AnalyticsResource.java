@@ -16,12 +16,14 @@ package org.eclipse.jgit.server.rest;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
+import org.hibernate.SessionFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -31,47 +33,33 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
- * REST endpoint for repository analytics.
- * <ul>
- * <li>{@code GET /api/analytics/authors?repo=...} — author commit
- * statistics</li>
- * <li>{@code GET /api/analytics/objects?repo=...} — object type counts</li>
- * <li>{@code GET /api/analytics/packs?repo=...} — pack file statistics</li>
- * </ul>
- */
+/** REST endpoint for repository analytics. */
 public class AnalyticsResource extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
-
-	private static final Logger LOG = Logger
-			.getLogger(AnalyticsResource.class.getName());
-
-	private final HibernateSessionFactoryProvider provider;
-
+	private static final Logger LOG = Logger.getLogger(AnalyticsResource.class.getName());
+	private final SessionFactory sessionFactory;
 	private final Gson gson = new Gson();
 
-	/**
-	 * Create an analytics endpoint.
-	 *
-	 * @param provider
-	 *            the session factory provider
-	 */
+	/** Creates an analytics endpoint from the application-owned native factory. */
+	public AnalyticsResource(SessionFactory sessionFactory) {
+		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+	}
+
+	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
+	@Deprecated(forRemoval = true)
 	public AnalyticsResource(HibernateSessionFactoryProvider provider) {
-		this.provider = provider;
+		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-			throws IOException {
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		resp.setContentType("application/json"); //$NON-NLS-1$
 		resp.setCharacterEncoding("UTF-8"); //$NON-NLS-1$
-
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
 			pathInfo = "/"; //$NON-NLS-1$
 		}
-
 		String repo = req.getParameter("repo"); //$NON-NLS-1$
 		if (repo == null || repo.isEmpty()) {
 			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -80,11 +68,8 @@ public class AnalyticsResource extends HttpServlet {
 			}
 			return;
 		}
-
 		try {
-			GitDatabaseQueryService queryService = new GitDatabaseQueryService(
-					provider.getSessionFactory());
-
+			GitDatabaseQueryService queryService = new GitDatabaseQueryService(sessionFactory);
 			if (pathInfo.startsWith("/authors")) { //$NON-NLS-1$
 				handleAuthorStats(queryService, repo, resp);
 			} else if (pathInfo.startsWith("/objects")) { //$NON-NLS-1$
@@ -106,13 +91,11 @@ public class AnalyticsResource extends HttpServlet {
 		}
 	}
 
-	private void handleAuthorStats(GitDatabaseQueryService queryService,
-			String repo, HttpServletResponse resp) throws IOException {
+	private void handleAuthorStats(GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
 		List<AuthorStats> stats = queryService.getAuthorStatistics(repo);
-
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
-
 		JsonArray authors = new JsonArray();
 		for (AuthorStats as : stats) {
 			JsonObject author = new JsonObject();
@@ -122,44 +105,34 @@ public class AnalyticsResource extends HttpServlet {
 			authors.add(author);
 		}
 		response.add("authors", authors); //$NON-NLS-1$
-
 		resp.setStatus(HttpServletResponse.SC_OK);
 		try (PrintWriter w = resp.getWriter()) {
 			w.write(gson.toJson(response));
 		}
 	}
 
-	private void handleObjectStats(GitDatabaseQueryService queryService,
-			String repo, HttpServletResponse resp) throws IOException {
+	private void handleObjectStats(GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
-
 		JsonObject counts = new JsonObject();
-		counts.addProperty("commits", //$NON-NLS-1$
-				queryService.countObjectsByType(repo, 1));
-		counts.addProperty("trees", //$NON-NLS-1$
-				queryService.countObjectsByType(repo, 2));
-		counts.addProperty("blobs", //$NON-NLS-1$
-				queryService.countObjectsByType(repo, 3));
-		counts.addProperty("tags", //$NON-NLS-1$
-				queryService.countObjectsByType(repo, 4));
+		counts.addProperty("commits", queryService.countObjectsByType(repo, 1)); //$NON-NLS-1$
+		counts.addProperty("trees", queryService.countObjectsByType(repo, 2)); //$NON-NLS-1$
+		counts.addProperty("blobs", queryService.countObjectsByType(repo, 3)); //$NON-NLS-1$
+		counts.addProperty("tags", queryService.countObjectsByType(repo, 4)); //$NON-NLS-1$
 		response.add("objectCounts", counts); //$NON-NLS-1$
-
 		resp.setStatus(HttpServletResponse.SC_OK);
 		try (PrintWriter w = resp.getWriter()) {
 			w.write(gson.toJson(response));
 		}
 	}
 
-	private void handlePackStats(GitDatabaseQueryService queryService,
-			String repo, HttpServletResponse resp) throws IOException {
+	private void handlePackStats(GitDatabaseQueryService queryService, String repo,
+			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
-		response.addProperty("packCount", //$NON-NLS-1$
-				queryService.countPacks(repo));
-		response.addProperty("totalSizeBytes", //$NON-NLS-1$
-				queryService.getTotalPackSize(repo));
-
+		response.addProperty("packCount", queryService.countPacks(repo)); //$NON-NLS-1$
+		response.addProperty("totalSizeBytes", queryService.getTotalPackSize(repo)); //$NON-NLS-1$
 		resp.setStatus(HttpServletResponse.SC_OK);
 		try (PrintWriter w = resp.getWriter()) {
 			w.write(gson.toJson(response));

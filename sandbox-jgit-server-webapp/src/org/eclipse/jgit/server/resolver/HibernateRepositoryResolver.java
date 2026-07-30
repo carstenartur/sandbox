@@ -22,6 +22,7 @@ import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.transport.resolver.RepositoryResolver;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
+import org.hibernate.SessionFactory;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -32,7 +33,17 @@ public class HibernateRepositoryResolver
 	private final HibernateSessionFactoryProvider sessionFactoryProvider;
 	private final SandboxRepositoryService repositories;
 
-	/** Creates a resolver using the temporary copied-backend adapter. */
+	/** Creates a resolver from the application-owned native session factory. */
+	public HibernateRepositoryResolver(SessionFactory sessionFactory) {
+		this(null, new CopiedHibernateRepositoryService(sessionFactory));
+	}
+
+	/**
+	 * Creates a resolver using the temporary copied-backend adapter.
+	 *
+	 * @deprecated application wiring should pass the native {@link SessionFactory}
+	 */
+	@Deprecated(forRemoval = true)
 	public HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider) {
 		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider));
 	}
@@ -83,6 +94,7 @@ public class HibernateRepositoryResolver
 	 * Returns the legacy provider while Search and analytics still use the copied
 	 * implementation. Repository lifecycle code must use {@link #getRepositoryService()}.
 	 */
+	@Deprecated(forRemoval = true)
 	public HibernateSessionFactoryProvider getSessionFactoryProvider() {
 		if (sessionFactoryProvider == null) {
 			throw new IllegalStateException("This resolver was created without a legacy session factory provider."); //$NON-NLS-1$
