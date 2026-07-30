@@ -36,7 +36,7 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JdtCoreHarnessInventory.Fam
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 
-/** Verifies that JUnit 3 execution-hook declarations cannot be flattened. */
+/** Verifies that JUnit 3 execution hooks and inherited harness state cannot be flattened. */
 public class JdtCoreHarnessExecutionHookRejectionTest {
 
 	@RegisterExtension
@@ -79,6 +79,32 @@ public class JdtCoreHarnessExecutionHookRejectionTest {
 			assertFalse(family.directSliceApplicable(), family::typeName);
 			assertEquals("JDT_CORE_LIFECYCLE_OR_RUN_HOOK_REQUIRED", family.reasonCode()); //$NON-NLS-1$
 		}
+		assertEquals(0, result.directMigrations().size());
+	}
+
+	@Test
+	public void rejectsInheritedHarnessFieldNotRepresentedByBridge() throws Exception {
+		ICompilationUnit harness= unit("org.eclipse.jdt.core.tests.junit.extension", "TestCase.java", //$NON-NLS-1$ //$NON-NLS-2$
+				"""
+				package org.eclipse.jdt.core.tests.junit.extension;
+				public class TestCase extends junit.framework.TestCase {
+					protected boolean abortOnFailure= true;
+					public TestCase(String name) { super(name); }
+					public static junit.framework.Test buildTestSuite(Class<?> type) {
+						return new junit.framework.TestSuite(type);
+					}
+				}
+				""");
+		ICompilationUnit fieldUser= family("InheritedFieldTests.java", "InheritedFieldTests", //$NON-NLS-1$ //$NON-NLS-2$
+				"public void configure() { this.abortOnFailure= false; }"); //$NON-NLS-1$
+
+		ICompilationUnit[] units= { harness, fieldUser };
+		JdtCoreHarnessPlanner.Result result= JdtCoreHarnessPlanner.create(context.getJavaProject(), units,
+				parse(units), true, null);
+		Family family= result.inventory().families().get(0);
+
+		assertFalse(family.directSliceApplicable(), family::typeName);
+		assertEquals("UNSUPPORTED_JDT_CORE_ASSERTION_OR_EXECUTION", family.reasonCode()); //$NON-NLS-1$
 		assertEquals(0, result.directMigrations().size());
 	}
 
