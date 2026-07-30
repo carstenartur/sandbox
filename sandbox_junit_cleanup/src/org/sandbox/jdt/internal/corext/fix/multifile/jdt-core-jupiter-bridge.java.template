@@ -263,11 +263,18 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 		@Override
 		public void orderMethods(org.junit.jupiter.api.MethodOrdererContext context) {
 			initializeTestClass(context.getTestClass());
-			java.util.Comparator<org.junit.jupiter.api.MethodDescriptor> defaultOrder=
-					java.util.Comparator.comparingInt((org.junit.jupiter.api.MethodDescriptor descriptor) ->
-							descriptor.getMethod().getName().hashCode())
-							.thenComparing(descriptor -> descriptor.getMethod().getName());
-			context.getMethodDescriptors().sort(defaultOrder);
+			java.util.List<String> reflectedNames= java.util.Arrays.stream(
+					context.getTestClass().getDeclaredMethods())
+					.filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
+					.filter(method -> !java.lang.reflect.Modifier.isStatic(method.getModifiers()))
+					.map(java.lang.reflect.Method::getName)
+					.filter(name -> name.startsWith(METHOD_PREFIX)).distinct().toList();
+			java.util.Comparator<org.junit.jupiter.api.MethodDescriptor> reflectionOrder=
+					java.util.Comparator.comparingInt((org.junit.jupiter.api.MethodDescriptor descriptor) -> {
+						int index= reflectedNames.indexOf(descriptor.getMethod().getName());
+						return index < 0 ? Integer.MAX_VALUE : index;
+					}).thenComparing(descriptor -> descriptor.getMethod().getName());
+			context.getMethodDescriptors().sort(reflectionOrder);
 			if (ORDERING == ALPHA_REVERSE_SORT) {
 				context.getMethodDescriptors().sort((left, right) -> right.getMethod().getName()
 						.compareTo(left.getMethod().getName()));
@@ -306,7 +313,7 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 					if (rightRank != null) {
 						return 1;
 					}
-					return defaultOrder.compare(left, right);
+					return reflectionOrder.compare(left, right);
 				});
 			}
 		}
