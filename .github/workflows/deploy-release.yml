@@ -182,8 +182,10 @@ jobs:
           echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Maven distribution build and verification
+        timeout-minutes: 150
         run: |
           set -euo pipefail
+          mkdir -p target/distribution-verification
           test_args=()
           if [[ "$SKIP_TESTS" == 'true' ]]; then
             test_args=(-DskipTests)
@@ -192,7 +194,8 @@ jobs:
             -Pdistribution,cli-dist,maven-plugin,benchmark \
             --batch-mode \
             -Dtycho.localArtifacts=ignore \
-            clean verify "${test_args[@]}"
+            clean verify "${test_args[@]}" 2>&1 \
+            | tee target/distribution-verification/maven-release.log
 
       - name: Create and inspect immutable source archives
         run: |
