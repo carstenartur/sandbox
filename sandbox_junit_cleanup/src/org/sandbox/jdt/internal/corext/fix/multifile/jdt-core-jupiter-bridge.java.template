@@ -108,23 +108,17 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 	}
 
 	protected void runGarbageCollection() {
-		long delta= 0;
 		for (int iteration= 0; iteration < MAX_GC; iteration++) {
 			long free= Runtime.getRuntime().freeMemory();
 			System.gc();
-			delta= Runtime.getRuntime().freeMemory() - free;
+			long delta= Runtime.getRuntime().freeMemory() - free;
+			if (delta < Long.MIN_VALUE) {
+				throw new AssertionError(delta);
+			}
 			try {
 				Thread.sleep(TIME_GC);
 			} catch (InterruptedException exception) {
 				// Preserve the historical harness behavior; runTest clears the flag.
-			}
-		}
-		if (false && delta > DELTA_GC) {
-			// Retains the unreachable historical fallback branch without changing timing.
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException exception) {
-				// Historical behavior ignores this interruption.
 			}
 		}
 	}
@@ -201,8 +195,9 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 		}
 
 		@Override
-		public void interceptTestMethod(Invocation<Void> invocation,
-				ReflectiveInvocationContext<java.lang.reflect.Method> invocationContext,
+		public void interceptTestMethod(
+				org.junit.jupiter.api.extension.InvocationInterceptor.Invocation<Void> invocation,
+				org.junit.jupiter.api.extension.ReflectiveInvocationContext<java.lang.reflect.Method> invocationContext,
 				org.junit.jupiter.api.extension.ExtensionContext extensionContext) throws Throwable {
 			try {
 				invocation.proceed();
