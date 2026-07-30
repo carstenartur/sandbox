@@ -17,7 +17,9 @@ The first supported custom-harness shape is deliberately narrow:
 - it has no source subtype and no reference outside its own compilation unit;
 - it declares exactly one public, non-static, parameterless `void test*()` method;
 - its only constructor is `public Type(String name) { super(name); }`;
-- its only `suite()` method is `return buildTestSuite(Type.class);`;
+- its only `suite()` method is either `return buildTestSuite(Type.class);` or the
+  exact package-named wrapper used by real compiler tests such as
+  `IrritantSetTest`;
 - it has no lifecycle override, name access, performance call, inherited field
   access or other custom-harness API use;
 - assertion calls must resolve to the ordinary JUnit 3 assertion API, not to a
@@ -26,8 +28,9 @@ The first supported custom-harness shape is deliberately narrow:
 For this shape the constructor and suite method carry discovery mechanics only.
 The cleanup removes them and the custom superclass, materializes the Jupiter
 `@Test` method and rewrites the ordinary assertion call. An active regression
-runs the same type through JDT's JUnit 5/Vintage launch before and after and
-requires an identical, non-empty, successful runtime tree.
+models the real package-named `TestSuite` construction and runs the same type
+through JDT's JUnit 5/Vintage launch before and after. The migration is accepted
+only if the complete non-empty successful runtime tree remains identical.
 
 Classes with more than one test remain rejected because the JDT harness can
 change their order through the `ordering` system property. Preserving only the
