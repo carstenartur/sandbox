@@ -15,10 +15,12 @@ package org.eclipse.jgit.server.rest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
@@ -38,16 +40,28 @@ public class HealthResource extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
-	private final HibernateSessionFactoryProvider provider;
+	private final SessionFactory sessionFactory;
 
 	/**
-	 * Create a health check endpoint.
+	 * Create a health check endpoint from the application-owned native factory.
+	 *
+	 * @param sessionFactory
+	 *            the native session factory for database and search health checks
+	 */
+	public HealthResource(SessionFactory sessionFactory) {
+		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Create a health check endpoint from the copied compatibility provider.
 	 *
 	 * @param provider
 	 *            the session factory provider for database health checks
+	 * @deprecated application wiring should pass the native {@link SessionFactory}
 	 */
+	@Deprecated(forRemoval = true)
 	public HealthResource(HibernateSessionFactoryProvider provider) {
-		this.provider = provider;
+		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override
@@ -62,7 +76,7 @@ public class HealthResource extends HttpServlet {
 		String searchError = null;
 
 		// Check database connectivity
-		try (Session session = provider.getSessionFactory().openSession()) {
+		try (Session session = sessionFactory.openSession()) {
 			session.createNativeQuery("SELECT 1", Integer.class) //$NON-NLS-1$
 					.uniqueResult();
 			dbOk = true;
@@ -71,7 +85,7 @@ public class HealthResource extends HttpServlet {
 		}
 
 		// Check search backend
-		try (Session session = provider.getSessionFactory().openSession()) {
+		try (Session session = sessionFactory.openSession()) {
 			SearchSession searchSession = Search.session(session);
 			searchSession.search(GitCommitIndex.class)
 					.where(f -> f.matchAll())
