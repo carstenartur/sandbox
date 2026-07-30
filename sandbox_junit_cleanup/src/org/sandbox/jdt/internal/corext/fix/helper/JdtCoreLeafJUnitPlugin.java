@@ -28,7 +28,9 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -47,7 +49,8 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
-import org.eclipse.jdt.core.dom.VariableDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -70,13 +73,15 @@ import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 
 /**
  * Migrates the smallest provably detachable Eclipse JDT Core JUnit 3 harness
- * leaf: one exact named constructor, one exact {@code buildTestSuite(This.class)}
- * suite method and one ordinary test method that uses no custom harness API.
+ * leaf: one exact named constructor, one recognized discovery-only suite method
+ * and one ordinary test method that uses no custom harness API.
  *
- * <p>This intentionally does not support {@code SuiteOfTestCases}, inherited
- * tests, configurable ordering, filters, performance callbacks or lifecycle
- * overrides. Those shapes remain on Vintage until a dedicated harness model is
- * available.</p>
+ * <p>The recognized suite forms are the inherited
+ * {@code buildTestSuite(This.class)} call and the package-named wrapper used by
+ * real compiler tests such as {@code IrritantSetTest}. This intentionally does
+ * not support {@code SuiteOfTestCases}, inherited tests, configurable ordering,
+ * filters, performance callbacks or lifecycle overrides. Those shapes remain
+ * on Vintage until a dedicated harness model is available.</p>
  */
 final class JdtCoreLeafJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
 
@@ -146,7 +151,7 @@ final class JdtCoreLeafJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 			}
 			String name= method.getName().getIdentifier();
 			if ("suite".equals(name)) { //$NON-NLS-1$
-				if (suite != null || !isTrivialSuite(method, binding)) {
+				if (suite != null || !isDiscoveryOnlySuite(method, binding)) {
 					return false;
 				}
 				suite= method;
@@ -189,14 +194,21 @@ final class JdtCoreLeafJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 				&& sameVariable(name.resolveBinding(), parameter.resolveBinding());
 	}
 
-	private boolean isTrivialSuite(MethodDeclaration method, ITypeBinding testType) {
+	private boolean isDiscoveryOnlySuite(MethodDeclaration method, ITypeBinding testType) {
 		if (!Modifier.isPublic(method.getModifiers()) || !Modifier.isStatic(method.getModifiers())
 				|| !method.parameters().isEmpty() || method.getBody() == null
-				|| method.getBody().statements().size() != 1 || !method.thrownExceptionTypes().isEmpty()) {
+				|| !method.thrownExceptionTypes().isEmpty()) {
 			return false;
 		}
 		ITypeBinding returnType= method.getReturnType2() == null ? null : method.getReturnType2().resolveBinding();
 		if (returnType == null || !JUNIT3_TEST.equals(returnType.getErasure().getQualifiedName())) {
+			return false;
+		}
+		return isBuildTestSuiteReturn(method, testType) || isPackageNamedTestSuite(method, testType);
+	}
+
+	private boolean isBuildTestSuiteReturn(MethodDeclaration method, ITypeBinding testType) {
+		if (method.getBody().statements().size() != 1) {
 			return false;
 		}
 		Object statement= method.getBody().statements().get(0);
@@ -208,16 +220,74 @@ final class JdtCoreLeafJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 		}
 		IMethodBinding binding= invocation.resolveMethodBinding();
 		ITypeBinding owner= binding == null ? null : binding.getMethodDeclaration().getDeclaringClass();
-		if (owner == null || !JDT_CORE_TEST_CASE.equals(owner.getErasure().getQualifiedName())
-				|| !Modifier.isStatic(binding.getModifiers())) {
+		return owner != null && JDT_CORE_TEST_CASE.equals(owner.getErasure().getQualifiedName())
+				&& Modifier.isStatic(binding.getModifiers())
+				&& isClassLiteral(invocation.arguments().get(0), testType);
+	}
+
+	private boolean isPackageNamedTestSuite(MethodDeclaration method, ITypeBinding testType) {
+		if (method.getBody().statements().size() != 3
+				|| !(method.getBody().statements().get(0) instanceof VariableDeclarationStatement declaration)
+				|| declaration.fragments().size() != 1
+				|| !(declaration.fragments().get(0) instanceof VariableDeclarationFragment fragment)
+				|| !(fragment.getInitializer() instanceof ClassInstanceCreation outerSuite)
+				|| !isTestSuiteConstruction(outerSuite) || outerSuite.arguments().size() != 1
+				|| !isPackageNameCall(outerSuite.arguments().get(0), testType)
+				|| !(fragment.resolveBinding() instanceof IVariableBinding suiteVariable)) {
 			return false;
 		}
-		Object argument= invocation.arguments().get(0);
-		if (!(argument instanceof TypeLiteral literal)) {
+		ITypeBinding declaredType= declaration.getType().resolveBinding();
+		if (declaredType == null || !JUNIT3_TEST_SUITE.equals(declaredType.getErasure().getQualifiedName())) {
+			return false;
+		}
+
+		if (!(method.getBody().statements().get(1) instanceof ExpressionStatement expressionStatement)
+				|| !(expressionStatement.getExpression() instanceof MethodInvocation addTest)
+				|| !"addTest".equals(addTest.getName().getIdentifier()) || addTest.arguments().size() != 1 //$NON-NLS-1$
+				|| !(addTest.getExpression() instanceof SimpleName suiteReference)
+				|| !sameVariable(suiteReference.resolveBinding(), suiteVariable)
+				|| !(addTest.arguments().get(0) instanceof ClassInstanceCreation innerSuite)
+				|| !isTestSuiteConstruction(innerSuite) || innerSuite.arguments().size() != 1
+				|| !isClassLiteral(innerSuite.arguments().get(0), testType)) {
+			return false;
+		}
+		IMethodBinding addTestBinding= addTest.resolveMethodBinding();
+		ITypeBinding addTestOwner= addTestBinding == null ? null
+				: addTestBinding.getMethodDeclaration().getDeclaringClass();
+		if (addTestOwner == null || !JUNIT3_TEST_SUITE.equals(addTestOwner.getErasure().getQualifiedName())) {
+			return false;
+		}
+
+		Object last= method.getBody().statements().get(2);
+		return last instanceof ReturnStatement returnStatement
+				&& returnStatement.getExpression() instanceof SimpleName returnedSuite
+				&& sameVariable(returnedSuite.resolveBinding(), suiteVariable);
+	}
+
+	private static boolean isTestSuiteConstruction(ClassInstanceCreation creation) {
+		ITypeBinding type= creation.resolveTypeBinding();
+		return type != null && JUNIT3_TEST_SUITE.equals(type.getErasure().getQualifiedName());
+	}
+
+	private static boolean isPackageNameCall(Object expression, ITypeBinding testType) {
+		if (!(expression instanceof MethodInvocation invocation)
+				|| !"getPackageName".equals(invocation.getName().getIdentifier()) //$NON-NLS-1$
+				|| !invocation.arguments().isEmpty()
+				|| !(invocation.getExpression() instanceof TypeLiteral literal)
+				|| !isClassLiteral(literal, testType)) {
+			return false;
+		}
+		IMethodBinding binding= invocation.resolveMethodBinding();
+		ITypeBinding owner= binding == null ? null : binding.getMethodDeclaration().getDeclaringClass();
+		return owner != null && "java.lang.Class".equals(owner.getErasure().getQualifiedName()); //$NON-NLS-1$
+	}
+
+	private static boolean isClassLiteral(Object expression, ITypeBinding expectedType) {
+		if (!(expression instanceof TypeLiteral literal)) {
 			return false;
 		}
 		ITypeBinding literalType= literal.getType().resolveBinding();
-		return literalType != null && testType.getErasure().isEqualTo(literalType.getErasure());
+		return literalType != null && expectedType.getErasure().isEqualTo(literalType.getErasure());
 	}
 
 	private boolean hasUnsupportedHarnessUsage(TypeDeclaration node, ITypeBinding candidate,
