@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f73b419ddc0f36f711f91a93dc8ff4169666d60be378201d2030e50adc37d6f8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: deprecation.iPackageFragment.getClassFile\u003e\n\u003c!description: Replace deprecated IPackageFragment.getClassFile() with IPackageFragment.getOrdinaryClassFile() (Java 9+). IOrdinaryClassFile is a subtype of IClassFile, ensuring backward compatibility in assignments where only IClassFile is expected.\u003e\n\u003c!severity: WARNING\u003e\n*/\norg.eclipse.jdt.core.IPackageFragment.getClassFile($arg$) :: sourceVersionGE(9)\n\u003d\u003e\norg.eclipse.jdt.core.IPackageFragment.getOrdinaryClassFile($arg$)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.IPackageFragment;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyClass {\n    public void processPackage(IPackageFragment pack) throws JavaModelException {\n        // Using deprecated getClassFile\n        IClassFile cf1 \u003d pack.getClassFile(\"MyFile.class\");\n        System.out.println(cf1.getElementName());\n\n        IClassFile cf2 \u003d pack.getClassFile(\"AnotherFile.class\");\n        doSomethingWithClassFile(cf2);\n\n        // Also works with a cast\n        IClassFile cf3 \u003d ((IPackageFragment) pack).getClassFile(\"YetAnother.class\");\n    }\n\n    private void doSomethingWithClassFile(IClassFile cf) {\n        // ...\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.IOrdinaryClassFile;\nimport org.eclipse.jdt.core.IPackageFragment;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyClass {\n    public void processPackage(IPackageFragment pack) throws JavaModelException {\n        // Using modern getOrdinaryClassFile\n        IClassFile cf1 \u003d pack.getOrdinaryClassFile(\"MyFile.class\"); // Type IClassFile still valid as IOrdinaryClassFile extends IClassFile\n        System.out.println(cf1.getElementName());\n\n        IClassFile cf2 \u003d pack.getOrdinaryClassFile(\"AnotherFile.class\");\n        doSomethingWithClassFile(cf2);\n\n        IClassFile cf3 \u003d ((IPackageFragment) pack).getOrdinaryClassFile(\"YetAnother.class\");\n    }\n\n    private void doSomethingWithClassFile(IClassFile cf) {\n        // ...\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.IOrdinaryClassFile;\nimport org.eclipse.jdt.core.IPackageFragment;\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyOtherClass {\n    public void processClassFile(IClassFile classFile) throws JavaModelException {\n        // This should not match, it\u0027s IClassFile.getType(), not IPackageFragment.getClassFile()\n        IType type \u003d classFile.getType();\n        System.out.println(type.getElementName());\n    }\n\n    public void processOrdinaryPackage(IPackageFragment pack) throws JavaModelException {\n        // This should not match, it\u0027s already using the correct method\n        IOrdinaryClassFile ocf \u003d pack.getOrdinaryClassFile(\"Existing.class\");\n        System.out.println(ocf.getElementName());\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "9ba80e9145c3972dbc8263168a72647f9cc95acb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-30T03:15:38.077399159Z",
+  "ruleFingerprint": "sha256:e03ba5ed70aa5b930af6461b79603eec85017fbcdaf88dbbbdf63603a241ebfa",
+  "behaviorFingerprint": "sha256:e86bdc827365533f87f0a24490d809d616abf9e4d2c71d5adce1f5778b8bbeac",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-07-30T03:15:39.979198700Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

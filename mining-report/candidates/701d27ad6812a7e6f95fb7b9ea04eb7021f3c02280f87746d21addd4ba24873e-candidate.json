@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "701d27ad6812a7e6f95fb7b9ea04eb7021f3c02280f87746d21addd4ba24873e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: eclipse.jdt.core.ipackagefragment.getordinaryclassfile\u003e\n\u003c!description: Replace deprecated IPackageFragment.getClassFile() with getOrdinaryClassFile() and update the variable type.\nThis addresses the deprecation of IClassFile in favor of IOrdinaryClassFile for non-modular class files, introduced in Java 9.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: deprecated, java9-migration, eclipse\u003e\n*/\norg.eclipse.jdt.core.IClassFile $classFile \u003d $pack.getClassFile($args$); :: sourceVersionGE(9) \u0026\u0026 instanceof($pack, \"org.eclipse.jdt.core.IPackageFragment\")\n\u003d\u003e\norg.eclipse.jdt.core.IOrdinaryClassFile $classFile \u003d $pack.getOrdinaryClassFile($args$);\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.IPackageFragment;\n// Assume JavaModelUtil exists for compilation\n// public class JavaModelUtil { public static final String PACKAGE_INFO_CLASS \u003d \"package-info.class\"; }\n// Assume IPackageFragment is an interface with methods like getClassFile(String) and exists()\n\npublic class Example {\n    public void foo(IPackageFragment pack) throws Exception {\n        String PACKAGE_INFO_CLASS \u003d \"package-info.class\"; // Placeholder constant\n        IClassFile classFile \u003d pack.getClassFile(PACKAGE_INFO_CLASS);\n        if (classFile !\u003d null \u0026\u0026 classFile.exists()) {\n            System.out.println(\"Found class file: \" + classFile.getElementName());\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.IPackageFragment;\nimport org.eclipse.jdt.core.IOrdinaryClassFile;\n// Assume JavaModelUtil exists for compilation\n// public class JavaModelUtil { public static final String PACKAGE_INFO_CLASS \u003d \"package-info.class\"; }\n// Assume IPackageFragment is an interface with methods like getOrdinaryClassFile(String) and exists()\n\npublic class Example {\n    public void foo(IPackageFragment pack) throws Exception {\n        String PACKAGE_INFO_CLASS \u003d \"package-info.class\"; // Placeholder constant\n        IOrdinaryClassFile classFile \u003d pack.getOrdinaryClassFile(PACKAGE_INFO_CLASS);\n        if (classFile !\u003d null \u0026\u0026 classFile.exists()) {\n            System.out.println(\"Found class file: \" + classFile.getElementName());\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.IClassFile;\nimport org.eclipse.jdt.core.IPackageFragment;\n// Assume JavaModelUtil exists for compilation\n\npublic class NegativeExample {\n    public void foo(IPackageFragment pack) throws Exception {\n        String PACKAGE_INFO_CLASS \u003d \"package-info.class\";\n        // Not a variable declaration, and assigned to a generic Object\n        Object someFile \u003d pack.getClassFile(PACKAGE_INFO_CLASS);\n        if (someFile instanceof IClassFile \u0026\u0026 ((IClassFile)someFile).exists()) {\n            System.out.println(((IClassFile)someFile).getElementName());\n        }\n        // Method call not part of a declaration to IClassFile\n        pack.getClassFile(\"another-file.class\");\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "daa4aa51dea07b67c935e106a16a337fff5158bd",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-30T03:15:38.087605067Z",
+  "ruleFingerprint": "sha256:d6ec736836cd5ae447e9d3a5dd3aa8513c04fb0466e10b7980f9a4062dec5eb2",
+  "behaviorFingerprint": "sha256:d12f39e36514cd3461b653d33a30f97b3a2f60c898ac1716dc7335483a842c9a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 8: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-07-30T03:15:39.995720183Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

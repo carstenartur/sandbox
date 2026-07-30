@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f54b77b611dcbc83bb04b97a451e3162b8e8ffc275de0f327a024ac7e329d7b2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!map labelReplacements:\n  \"CPListLabelProvider_modular_limitsAndModifies_label\" \u003d\u003e \"CPListLabelProvider_modular_modifiesContentsAndEncapsulation_label\",\n  \"CPListLabelProvider_modular_limitsModules_label\" \u003d\u003e \"CPListLabelProvider_modular_modifiesContents_label\"\n\u003e\n\norg.eclipse.jdt.internal.ui.wizards.NewWizardMessages.#{labelReplacements}\n\u003d\u003e\norg.eclipse.jdt.internal.ui.wizards.NewWizardMessages.#{labelReplacements_VALUE}\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n\npublic class TestClass {\n    public String getLabel(boolean modifiesEncaps, boolean limitModules) {\n        if (modifiesEncaps) {\n            if (limitModules)\n                return NewWizardMessages.CPListLabelProvider_modular_limitsAndModifies_label;\n            return NewWizardMessages.CPListLabelProvider_modular_modifiesEncapsulation_label;\n        } else if (limitModules) {\n            return NewWizardMessages.CPListLabelProvider_modular_limitsModules_label;\n        }\n        return NewWizardMessages.CPListLabelProvider_modular_label;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n\npublic class TestClass {\n    public String getLabel(boolean modifiesEncaps, boolean limitModules) {\n        if (modifiesEncaps) {\n            if (limitModules)\n                return NewWizardMessages.CPListLabelProvider_modular_modifiesContentsAndEncapsulation_label;\n            return NewWizardMessages.CPListLabelProvider_modular_modifiesEncapsulation_label;\n        } else if (limitModules) {\n            return NewWizardMessages.CPListLabelProvider_modular_modifiesContents_label;\n        }\n        return NewWizardMessages.CPListLabelProvider_modular_label;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.wizards.NewWizardMessages;\n\npublic class TestClass {\n    public String getOtherLabel() {\n        return NewWizardMessages.CPListLabelProvider_modular_label; // Should not change\n    }\n}",
+  "targetHintFile": "renaming.sandbox-hint",
+  "sourceCommit": "d4f834e9634e28583f297fdb9eef0b92bc268c8b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Renaming",
+  "summary": "Rename deprecated modular label message keys to new names reflecting \u0027modifies contents\u0027 terminology.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-30T03:15:38.068242109Z",
+  "ruleFingerprint": "sha256:0555f753f1e422a9b9ee22d3526d1041d8a3dcc148c2ad0814d38a26218ba9e3",
+  "behaviorFingerprint": "sha256:4f4cd3c0e5425f9216c00cb55b3828e8656afa0d58287089670749158f79377c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
+    "verifiedAt": "2026-07-30T03:15:39.962782803Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
