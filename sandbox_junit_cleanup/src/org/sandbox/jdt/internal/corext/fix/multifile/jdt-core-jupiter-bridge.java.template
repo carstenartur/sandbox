@@ -160,6 +160,15 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 		return result.toString();
 	}
 
+	private static void initializeTestClass(Class<?> testClass) {
+		try {
+			Class.forName(testClass.getName(), true, testClass.getClassLoader());
+		} catch (ClassNotFoundException exception) {
+			throw new IllegalStateException("Cannot initialize JDT Core test class " + testClass.getName(),
+					exception);
+		}
+	}
+
 	public static final class JdtCoreFilterCondition
 			implements org.junit.jupiter.api.extension.ExecutionCondition,
 			org.junit.jupiter.api.extension.InvocationInterceptor {
@@ -192,6 +201,7 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 		}
 
 		private static boolean isSelected(Class<?> testClass, String name) {
+			initializeTestClass(testClass);
 			java.util.List<String> testNames= java.util.Arrays.stream(testClass.getDeclaredMethods())
 					.filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
 					.filter(method -> !java.lang.reflect.Modifier.isStatic(method.getModifiers()))
@@ -252,6 +262,7 @@ public abstract static class Jupiter extends org.eclipse.test.performance.Perfor
 	public static final class JdtCoreMethodOrderer implements org.junit.jupiter.api.MethodOrderer {
 		@Override
 		public void orderMethods(org.junit.jupiter.api.MethodOrdererContext context) {
+			initializeTestClass(context.getTestClass());
 			java.util.Comparator<org.junit.jupiter.api.MethodDescriptor> defaultOrder=
 					java.util.Comparator.comparingInt((org.junit.jupiter.api.MethodDescriptor descriptor) ->
 							descriptor.getMethod().getName().hashCode())
