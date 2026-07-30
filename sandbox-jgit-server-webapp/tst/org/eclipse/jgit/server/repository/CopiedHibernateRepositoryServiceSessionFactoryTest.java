@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import org.eclipse.jgit.server.config.HibernateConfig;
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.server.internal.NonOwningHibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
@@ -40,7 +41,8 @@ public class CopiedHibernateRepositoryServiceSessionFactoryTest {
 		SessionFactory sessionFactory;
 		try (ServerPersistenceContext context= HibernateConfig.createPersistenceContext(properties)) {
 			sessionFactory= context.sessionFactory();
-			HibernateSessionFactoryProvider provider= CopiedHibernateRepositoryService.nonOwningProvider(sessionFactory);
+			HibernateSessionFactoryProvider provider=
+					NonOwningHibernateSessionFactoryProvider.view(sessionFactory);
 			assertSame(sessionFactory, provider.getSessionFactory());
 			provider.close();
 			assertFalse(sessionFactory.isClosed());

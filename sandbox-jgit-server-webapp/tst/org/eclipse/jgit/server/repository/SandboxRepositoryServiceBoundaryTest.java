@@ -21,11 +21,12 @@ import java.util.Arrays;
 
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.server.JGitServerApplication;
+import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.server.rest.AdminResource;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.HealthResource;
+import org.eclipse.jgit.server.rest.NativeSearchResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
-import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
@@ -42,6 +43,7 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SessionFactory.class));
 		assertNotNull(HealthResource.class.getConstructor(SessionFactory.class));
+		assertNotNull(NativeSearchResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(AnalyticsResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(AdminResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(ExternalHibernateRepositoryService.class.getConstructor(HibernateRepositoryFactory.class));
@@ -54,6 +56,7 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertFalse(hasCopiedBackendField(JGitServerApplication.class));
 		assertFalse(hasCopiedBackendField(RepositoryResource.class));
 		assertFalse(hasCopiedBackendField(HealthResource.class));
+		assertFalse(hasCopiedBackendField(NativeSearchResource.class));
 		assertFalse(hasCopiedBackendField(AnalyticsResource.class));
 		assertFalse(hasCopiedBackendField(AdminResource.class));
 		assertFalse(hasCopiedBackendField(ExternalHibernateRepositoryService.class));

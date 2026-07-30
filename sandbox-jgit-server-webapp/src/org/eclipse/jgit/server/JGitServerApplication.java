@@ -38,9 +38,8 @@ import org.eclipse.jgit.server.rest.AdminResource;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.CorsFilter;
 import org.eclipse.jgit.server.rest.HealthResource;
+import org.eclipse.jgit.server.rest.NativeSearchResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
-import org.eclipse.jgit.server.rest.SearchResource;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.resolver.ReceivePackFactory;
 import org.hibernate.SessionFactory;
@@ -139,17 +138,9 @@ public class JGitServerApplication {
 					EnumSet.allOf(DispatcherType.class));
 		}
 
-		// Search remains the one copied projection/query boundary. The compatibility
-		// provider cannot close the application-owned native factory.
-		HibernateSessionFactoryProvider searchCompatibility= new HibernateSessionFactoryProvider(sessionFactory) {
-			@Override
-			public void close() {
-				// The enclosing ServerPersistenceContext owns the native factory.
-			}
-		};
 		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("repos", new RepositoryResource(repositories)), "/repos/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("search", new SearchResource(searchCompatibility)), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory)), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(sessionFactory)), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		return context;
