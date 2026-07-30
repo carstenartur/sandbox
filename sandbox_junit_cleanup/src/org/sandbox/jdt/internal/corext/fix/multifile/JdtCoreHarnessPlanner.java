@@ -72,7 +72,8 @@ final class JdtCoreHarnessPlanner {
 			JDT_CORE_ABSTRACT_COMPILER_TEST);
 	private static final Set<String> DIRECT_SLICE_REJECTED_METHODS= Set.of(
 			"setUp", "tearDown", "setUpSuite", "tearDownSuite", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-			"runTest", "runBare", "run", "setUpTest"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			"runTest", "runBare", "run", "setUpTest", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			"createResult", "countTestCases", "getName", "setName"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	private static final Set<String> FILTER_FIELDS= Set.of(
 			"RUN_ONLY_ID", "TESTS_PREFIX", "TESTS_NAMES", "TESTS_NUMBERS", "TESTS_RANGE"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 	private static final Set<String> SUPPORTED_PERFORMANCE_METHODS= Set.of(
