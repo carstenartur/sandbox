@@ -234,13 +234,13 @@ sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.ui.preferences
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.ui.preferences.cleanup,SandboxCodeTabPage,43,0,0,0,10,0,4,0,4,0
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix,SimplifyPlatformStatusFixCore.new TargetSourceRangeComputer() {...},0,21,0,2,0,4,0,3,0,2
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix,SimplifyPlatformStatusFixCore,18,85,0,0,4,12,3,4,3,4
-sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix,SimplifyPlatformStatusFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange() {...},0,48,0,0,0,8,0,2,0,2
+sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix,SimplifyPlatformStatusFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange() {...},0,57,0,2,0,10,0,3,0,2
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.ui.fix,SimplifyPlatformStatusCleanUpCore,56,107,5,11,14,26,8,9,3,6
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,3,4,0,0,1,2,1,1,1,1
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.ui.fix,SimplifyPlatformStatusCleanUp,0,11,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix.helper,StatusWarningSimplifyPlatformStatus,6,5,2,0,3,2,2,1,1,1
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix.helper,StatusInfoSimplifyPlatformStatus,6,5,2,0,3,2,2,1,1,1
-sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix.helper,AbstractSimplifyPlatformStatus,169,33,14,0,42,12,11,3,4,3
+sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix.helper,AbstractSimplifyPlatformStatus,31,171,5,9,8,46,7,7,2,5
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix.helper,StatusErrorSimplifyPlatformStatus,6,5,2,0,3,2,2,1,1,1
 sandbox_coverage/sandbox_platform_helper,org.sandbox.jdt.internal.corext.fix.helper,MultiStatusSimplifyPlatformStatus,35,157,5,5,10,42,7,5,3,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.preferences.cleanup,SaveActionCleanUpOptionsInitializer,48,0,0,0,13,0,2,0,2,0
@@ -382,6 +382,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.preferences.c
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,CleanUpMessages,4,0,0,0,2,0,1,0,1,0
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,SandboxCodeTabPage.new SelectionAdapter() {...},123,0,0,0,9,0,2,0,2,0
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.preferences.cleanup,DefaultCleanUpOptionsInitializer,0,120,0,0,0,31,0,2,0,2
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix,ClosedParameterizedTestJUnitPlugin,20,104,9,21,3,20,7,12,0,4
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix,JUnitCleanUpFixCore,50,440,7,5,8,45,5,8,1,6
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix,JUnitCleanUpFixCore.new ASTVisitor() {...},8,59,5,9,1,14,5,4,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix,JUnitCleanUpFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange() {...},5,67,1,3,2,12,1,3,0,2
@@ -418,7 +419,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helpe
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,ImportHelper,72,34,13,3,16,7,10,2,2,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,JUnitConstants,7,39,0,0,2,8,1,1,1,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,JunitHolder.Builder,74,0,2,0,22,0,11,0,10,0
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TriggerPatternCleanupPlugin,28,163,5,13,9,38,6,16,1,12
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TriggerPatternCleanupPlugin,28,163,4,14,9,38,5,17,1,12
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,AbstractTestAnnotationParameterPlugin,92,0,10,0,24,0,10,0,5,0
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,TestNameRefactorer,156,431,44,28,39,111,36,19,4,15
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper.lib,ExternalResourceRefactorer.CallbackConfig,0,15,0,0,0,6,0,1,0,1
@@ -935,7 +936,7 @@ sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.action,AutoCommitte
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core,MiningCli,2001,397,202,45,446,114,121,32,12,9
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.category,CategoryManager,126,0,12,0,26,0,14,0,8,0
 sandbox_coverage/sandbox-mining-core,org.sandbox.mining.core.category,CategoryManager.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
-sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.config,HibernateSessionFactoryProvider,9,188,17,19,3,49,17,5,1,3
+sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.config,HibernateSessionFactoryProvider,9,188,14,22,3,49,14,8,1,3
 sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.repository,HibernateRepository,32,56,3,1,8,13,6,5,4,5
 sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.repository,HibernateRepositoryBuilder,14,43,4,4,4,11,5,6,1,6
 sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.objects,HibernateObjDatabase.ByteArrayReadableChannel,14,49,1,1,6,13,5,5,4,5
@@ -982,8 +983,9 @@ sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hiberna
 sandbox_coverage/sandbox-jgit-storage-hibernate,org.eclipse.jgit.storage.hibernate.refs,HibernateRefDatabase,0,23,0,0,0,8,0,3,0,3
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,LegacyCoreSchemaPreflight.PreflightReport,0,27,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,RepositoryManagerConfig,61,0,4,0,15,0,6,0,4,0
-sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,HibernateConfig,70,92,11,3,15,25,8,5,1,5
+sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,HibernateConfig,82,97,11,3,19,26,9,6,2,6
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,LegacyCoreSchemaPreflight,52,125,9,11,13,33,8,9,1,6
+sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,CopiedServerPersistenceContext,0,27,0,0,0,8,0,4,0,4
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.config,ElasticsearchConfig,58,22,20,2,12,10,12,2,1,2
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.rest,RepositoryResource,50,174,4,10,12,49,4,11,0,8
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.rest,HealthResource,107,133,18,8,29,38,16,3,1,3

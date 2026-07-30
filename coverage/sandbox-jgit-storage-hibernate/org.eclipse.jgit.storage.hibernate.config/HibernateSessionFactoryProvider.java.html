@@ -68,7 +68,7 @@ public class HibernateSessionFactoryProvider {
 					root);
 		}
 		// Default to HikariCP connection pool if not explicitly configured
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (!properties.containsKey(&quot;hibernate.connection.provider_class&quot;)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		if (!properties.containsKey(&quot;hibernate.connection.provider_class&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L72">			cfg.setProperty(&quot;hibernate.connection.provider_class&quot;, //$NON-NLS-1$</span>
 					&quot;org.hibernate.hikaricp.internal.HikariCPConnectionProvider&quot;); //$NON-NLS-1$
 		}
@@ -95,7 +95,7 @@ public class HibernateSessionFactoryProvider {
 					&quot;DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION&quot;); //$NON-NLS-1$
 		}
 		// Default to second-level cache with Caffeine/JCache
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (!properties.containsKey(&quot;hibernate.cache.use_second_level_cache&quot;)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		if (!properties.containsKey(&quot;hibernate.cache.use_second_level_cache&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L99">			cfg.setProperty(&quot;hibernate.cache.use_second_level_cache&quot;, //$NON-NLS-1$</span>
 					&quot;true&quot;); //$NON-NLS-1$
 		}
@@ -141,7 +141,7 @@ public class HibernateSessionFactoryProvider {
 	 * Close the session factory and release resources.
 	 */
 	public void close() {
-<span class="pc bpc" id="L144" title="2 of 4 branches missed.">		if (sessionFactory != null &amp;&amp; !sessionFactory.isClosed()) {</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">		if (sessionFactory != null &amp;&amp; !sessionFactory.isClosed()) {</span>
 <span class="fc" id="L145">			sessionFactory.close();</span>
 		}
 <span class="fc" id="L147">	}</span>

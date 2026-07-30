@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClosedParameterizedTestJUnitPlugin.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix</a> &gt; <span class="el_source">ClosedParameterizedTestJUnitPlugin.java</span></div><h1>ClosedParameterizedTestJUnitPlugin.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
+
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
+import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+
+/**
+ * Restricts the local Parameterized rewrite to the provider contract it can
+ * transform atomically.
+ */
+@CleanupPattern(value = &quot;@RunWith($runner)&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH,
+		cleanupId = &quot;cleanup.junit.parameterized&quot;,
+		description = &quot;Migrate @RunWith(Parameterized.class) to @ParameterizedTest&quot;,
+		displayName = &quot;JUnit 4 @RunWith(Parameterized) → JUnit 5 @ParameterizedTest&quot;)
+<span class="fc" id="L34">final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlugin {</span>
+
+	private static final String PARAMETERS_ANNOTATION= &quot;org.junit.runners.Parameterized.Parameters&quot;; //$NON-NLS-1$
+
+	@Override
+	protected JunitHolder createHolder(Match match) {
+<span class="fc" id="L40">		JunitHolder holder= super.createHolder(match);</span>
+<span class="pc bpc" id="L41" title="2 of 4 branches missed.">		if (holder == null || !(holder.getAdditionalInfo() instanceof TypeDeclaration type)) {</span>
+<span class="nc" id="L42">			return holder;</span>
+		}
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		return hasSupportedLocalContract(type) ? holder : null;</span>
+	}
+
+	private static boolean hasSupportedLocalContract(TypeDeclaration type) {
+<span class="fc" id="L48">		int providers= 0;</span>
+<span class="fc" id="L49">		int constructors= 0;</span>
+<span class="fc" id="L50">		boolean parameterizedConstructor= false;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
+<span class="fc" id="L53">				constructors++;</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">				parameterizedConstructor= !method.parameters().isEmpty();</span>
+<span class="fc" id="L55">				continue;</span>
+			}
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L58" title="All 4 branches covered.">				if (modifier instanceof Annotation annotation &amp;&amp; isParametersAnnotation(annotation)) {</span>
+<span class="fc" id="L59">					providers++;</span>
+<span class="fc" id="L60">					break;</span>
+				}
+			}
+		}
+<span class="pc bpc" id="L64" title="1 of 6 branches missed.">		return providers == 1 &amp;&amp; constructors == 1 &amp;&amp; parameterizedConstructor;</span>
+	}
+
+	private static boolean isParametersAnnotation(Annotation annotation) {
+<span class="fc" id="L68">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L70">			return PARAMETERS_ANNOTATION.equals(binding.getQualifiedName());</span>
+		}
+<span class="nc" id="L72">		String name= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L73" title="All 4 branches missed.">		return &quot;Parameters&quot;.equals(name) || PARAMETERS_ANNOTATION.equals(name); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

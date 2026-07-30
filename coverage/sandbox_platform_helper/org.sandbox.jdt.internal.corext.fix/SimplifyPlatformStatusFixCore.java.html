@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -36,20 +37,20 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum SimplifyPlatformStatusFixCore {
 
-<span class="fc" id="L39">	STATUSWARNING(new StatusWarningSimplifyPlatformStatus()),</span>
-<span class="fc" id="L40">	STATUSERROR(new StatusErrorSimplifyPlatformStatus()),</span>
-<span class="fc" id="L41">	STATUSINFO(new StatusInfoSimplifyPlatformStatus()),</span>
-<span class="fc" id="L42">	MULTISTATUS(new MultiStatusSimplifyPlatformStatus());</span>
+<span class="fc" id="L40">	STATUSWARNING(new StatusWarningSimplifyPlatformStatus()),</span>
+<span class="fc" id="L41">	STATUSERROR(new StatusErrorSimplifyPlatformStatus()),</span>
+<span class="fc" id="L42">	STATUSINFO(new StatusInfoSimplifyPlatformStatus()),</span>
+<span class="fc" id="L43">	MULTISTATUS(new MultiStatusSimplifyPlatformStatus());</span>
 
 	AbstractSimplifyPlatformStatus&lt;ASTNode&gt; platformstatus;
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L47">	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus&lt;? extends ASTNode&gt; explicitencoding) {</span>
-<span class="fc" id="L48">		this.platformstatus= (AbstractSimplifyPlatformStatus&lt;ASTNode&gt;) explicitencoding;</span>
-<span class="fc" id="L49">	}</span>
+<span class="fc" id="L48">	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus&lt;? extends ASTNode&gt; explicitencoding) {</span>
+<span class="fc" id="L49">		this.platformstatus= (AbstractSimplifyPlatformStatus&lt;ASTNode&gt;) explicitencoding;</span>
+<span class="fc" id="L50">	}</span>
 
 	public String getPreview(boolean i) {
-<span class="nc" id="L52">		return platformstatus.getPreview(i);</span>
+<span class="nc" id="L53">		return platformstatus.getPreview(i);</span>
 	}
 
 	/**
@@ -65,8 +66,8 @@ public enum SimplifyPlatformStatusFixCore {
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, final Set&lt;ASTNode&gt; nodesprocessed)
 					throws CoreException {
-<span class="nc" id="L68">		findOperations(compilationUnit, operations, nodesprocessed, false);</span>
-<span class="nc" id="L69">	}</span>
+<span class="nc" id="L69">		findOperations(compilationUnit, operations, nodesprocessed, false);</span>
+<span class="nc" id="L70">	}</span>
 
 	/**
 	 * Compute set of CompilationUnitRewriteOperation to refactor supported
@@ -83,11 +84,11 @@ public enum SimplifyPlatformStatusFixCore {
 			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, final Set&lt;ASTNode&gt; nodesprocessed,
 			boolean preservePluginId)
 					throws CoreException {
-<span class="fc" id="L86">		platformstatus.find(this, compilationUnit, operations, nodesprocessed, preservePluginId);</span>
-<span class="fc" id="L87">	}</span>
+<span class="fc" id="L87">		platformstatus.find(this, compilationUnit, operations, nodesprocessed, preservePluginId);</span>
+<span class="fc" id="L88">	}</span>
 
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="nc" id="L90">		return rewrite(visited, holder, false);</span>
+<span class="nc" id="L91">		return rewrite(visited, holder, false);</span>
 	}
 
 	/**
@@ -101,28 +102,31 @@ public enum SimplifyPlatformStatusFixCore {
 	 */
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder, boolean preservePluginId) {
-<span class="fc" id="L104">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
+<span class="fc" id="L105">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
-<span class="fc" id="L108">				TextEditGroup group= createTextEditGroup(</span>
-<span class="fc" id="L109">						Messages.format(MultiFixMessages.PlatformStatusCleanUp_description,</span>
-<span class="fc" id="L110">								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),</span>
-<span class="fc" id="L111">						cuRewrite);</span>
-<span class="fc" id="L112">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
-<span class="fc" id="L113">				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder, preservePluginId);</span>
-<span class="fc" id="L114">			}</span>
+<span class="fc" id="L109">				TextEditGroup group= createTextEditGroup(</span>
+<span class="fc" id="L110">						Messages.format(MultiFixMessages.PlatformStatusCleanUp_description,</span>
+<span class="fc" id="L111">								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),</span>
+<span class="fc" id="L112">						cuRewrite);</span>
+<span class="fc" id="L113">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="fc" id="L114">				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder, preservePluginId);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">				if (SimplifyPlatformStatusFixCore.this != MULTISTATUS) {</span>
+<span class="fc" id="L116">					cuRewrite.getImportRemover().registerAddedImport(Status.class.getName());</span>
+				}
+<span class="fc" id="L118">			}</span>
 		};
 	}
 
-<span class="fc" id="L118">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
+<span class="fc" id="L122">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
 		@Override
 		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
-<span class="fc bfc" id="L121" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
-<span class="fc" id="L122">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L126">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
 			}
-<span class="fc" id="L124">			return super.computeSourceRange(nodeWithComment);</span>
+<span class="fc" id="L128">			return super.computeSourceRange(nodeWithComment);</span>
 		}
-<span class="fc" id="L126">	};</span>
+<span class="fc" id="L130">	};</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

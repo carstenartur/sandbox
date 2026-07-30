@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /**
- * Creates a Hibernate {@link HibernateSessionFactoryProvider} from environment
+ * Creates the application-owned Hibernate persistence context from environment
  * variables.
  * &lt;p&gt;
  * Supported environment variables:
@@ -51,28 +51,58 @@ public class HibernateConfig {
 	}
 
 	/**
-	 * Create a session factory provider configured from environment variables.
+	 * Create the application-owned persistence context from environment variables.
 	 *
-	 * @return the configured session factory provider
+	 * @return the persistence context owning the native session factory
 	 */
-	public static HibernateSessionFactoryProvider createSessionFactoryProvider() {
-<span class="nc" id="L59">		Properties props = buildProperties();</span>
+	public static ServerPersistenceContext createPersistenceContext() {
+<span class="nc" id="L59">		Properties props= buildProperties();</span>
 <span class="nc" id="L60">		LOG.log(Level.INFO,</span>
-				&quot;Creating Hibernate SessionFactory with URL: {0}&quot;, //$NON-NLS-1$
+				&quot;Creating Hibernate persistence context with URL: {0}&quot;, //$NON-NLS-1$
 <span class="nc" id="L62">				props.getProperty(&quot;hibernate.connection.url&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L63">		return new HibernateSessionFactoryProvider(props);</span>
+<span class="nc" id="L63">		return createPersistenceContext(props);</span>
 	}
 
 	/**
-	 * Create a session factory provider from explicit properties.
+	 * Create the application-owned persistence context from explicit properties.
+	 *
+	 * @param properties
+	 *            Hibernate configuration properties
+	 * @return the persistence context owning the native session factory
+	 */
+	public static ServerPersistenceContext createPersistenceContext(Properties properties) {
+<span class="fc" id="L74">		return new CopiedServerPersistenceContext(properties);</span>
+	}
+
+	/**
+	 * Create a copied session-factory provider configured from environment variables.
+	 *
+	 * @return the configured session factory provider
+	 * @deprecated application startup should own persistence through
+	 *             {@link #createPersistenceContext()}
+	 */
+	@Deprecated(forRemoval = true)
+	public static HibernateSessionFactoryProvider createSessionFactoryProvider() {
+<span class="nc" id="L86">		Properties props = buildProperties();</span>
+<span class="nc" id="L87">		LOG.log(Level.INFO,</span>
+				&quot;Creating Hibernate SessionFactory with URL: {0}&quot;, //$NON-NLS-1$
+<span class="nc" id="L89">				props.getProperty(&quot;hibernate.connection.url&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L90">		return new HibernateSessionFactoryProvider(props);</span>
+	}
+
+	/**
+	 * Create a copied session-factory provider from explicit properties.
 	 *
 	 * @param properties
 	 *            Hibernate configuration properties
 	 * @return the configured session factory provider
+	 * @deprecated application startup should own persistence through
+	 *             {@link #createPersistenceContext(Properties)}
 	 */
+	@Deprecated(forRemoval = true)
 	public static HibernateSessionFactoryProvider createSessionFactoryProvider(
 			Properties properties) {
-<span class="fc" id="L75">		return new HibernateSessionFactoryProvider(properties);</span>
+<span class="fc" id="L105">		return new HibernateSessionFactoryProvider(properties);</span>
 	}
 
 	/**
@@ -81,40 +111,40 @@ public class HibernateConfig {
 	 * @return the Hibernate configuration properties
 	 */
 	public static Properties buildProperties() {
-<span class="fc" id="L84">		Properties props = new Properties();</span>
+<span class="fc" id="L114">		Properties props = new Properties();</span>
 
-<span class="fc" id="L86">		String url = getEnvOrDefault(&quot;JGIT_DB_URL&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L116">		String url = getEnvOrDefault(&quot;JGIT_DB_URL&quot;, //$NON-NLS-1$</span>
 				&quot;jdbc:h2:mem:jgit;DB_CLOSE_DELAY=-1&quot;); //$NON-NLS-1$
-<span class="fc" id="L88">		String user = getEnvOrDefault(&quot;JGIT_DB_USER&quot;, &quot;sa&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L89">		String password = readPasswordFromFileOrEnv();</span>
-<span class="fc" id="L90">		String dialect = getEnvOrDefault(&quot;JGIT_DB_DIALECT&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L118">		String user = getEnvOrDefault(&quot;JGIT_DB_USER&quot;, &quot;sa&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L119">		String password = readPasswordFromFileOrEnv();</span>
+<span class="fc" id="L120">		String dialect = getEnvOrDefault(&quot;JGIT_DB_DIALECT&quot;, //$NON-NLS-1$</span>
 				&quot;org.hibernate.dialect.H2Dialect&quot;); //$NON-NLS-1$
-<span class="fc" id="L92">		String driver = System.getenv(&quot;JGIT_DB_DRIVER&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L93">		String ddlAuto = getEnvOrDefault(&quot;JGIT_DB_DDL_AUTO&quot;, &quot;update&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L122">		String driver = System.getenv(&quot;JGIT_DB_DRIVER&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L123">		String ddlAuto = getEnvOrDefault(&quot;JGIT_DB_DDL_AUTO&quot;, &quot;update&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
-<span class="fc" id="L95">		props.put(&quot;hibernate.connection.url&quot;, url); //$NON-NLS-1$</span>
-<span class="fc" id="L96">		props.put(&quot;hibernate.connection.username&quot;, user); //$NON-NLS-1$</span>
-<span class="fc" id="L97">		props.put(&quot;hibernate.connection.password&quot;, password); //$NON-NLS-1$</span>
-<span class="fc" id="L98">		props.put(&quot;hibernate.dialect&quot;, dialect); //$NON-NLS-1$</span>
-<span class="fc" id="L99">		props.put(&quot;hibernate.hbm2ddl.auto&quot;, ddlAuto); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		props.put(&quot;hibernate.connection.url&quot;, url); //$NON-NLS-1$</span>
+<span class="fc" id="L126">		props.put(&quot;hibernate.connection.username&quot;, user); //$NON-NLS-1$</span>
+<span class="fc" id="L127">		props.put(&quot;hibernate.connection.password&quot;, password); //$NON-NLS-1$</span>
+<span class="fc" id="L128">		props.put(&quot;hibernate.dialect&quot;, dialect); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		props.put(&quot;hibernate.hbm2ddl.auto&quot;, ddlAuto); //$NON-NLS-1$</span>
 
-<span class="pc bpc" id="L101" title="3 of 4 branches missed.">		if (driver != null &amp;&amp; !driver.isEmpty()) {</span>
-<span class="nc" id="L102">			props.put(&quot;hibernate.connection.driver_class&quot;, driver); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L131" title="3 of 4 branches missed.">		if (driver != null &amp;&amp; !driver.isEmpty()) {</span>
+<span class="nc" id="L132">			props.put(&quot;hibernate.connection.driver_class&quot;, driver); //$NON-NLS-1$</span>
 		}
 
 		// Reasonable defaults for connection pooling
-<span class="fc" id="L106">		props.put(&quot;hibernate.connection.pool_size&quot;, &quot;10&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L107">		props.put(&quot;hibernate.show_sql&quot;, &quot;false&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L136">		props.put(&quot;hibernate.connection.pool_size&quot;, &quot;10&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L137">		props.put(&quot;hibernate.show_sql&quot;, &quot;false&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
 		// Apply Hibernate Search / Elasticsearch configuration
-<span class="fc" id="L110">		ElasticsearchConfig.applySearchProperties(props);</span>
+<span class="fc" id="L140">		ElasticsearchConfig.applySearchProperties(props);</span>
 
-<span class="fc" id="L112">		return props;</span>
+<span class="fc" id="L142">		return props;</span>
 	}
 
 	private static String getEnvOrDefault(String name, String defaultValue) {
-<span class="fc" id="L116">		String val = System.getenv(name);</span>
-<span class="pc bpc" id="L117" title="3 of 4 branches missed.">		return (val != null &amp;&amp; !val.isEmpty()) ? val : defaultValue;</span>
+<span class="fc" id="L146">		String val = System.getenv(name);</span>
+<span class="pc bpc" id="L147" title="3 of 4 branches missed.">		return (val != null &amp;&amp; !val.isEmpty()) ? val : defaultValue;</span>
 	}
 
 	/**
@@ -128,27 +158,27 @@ public class HibernateConfig {
 	 * @return the database password, or empty string if not configured
 	 */
 	private static String readPasswordFromFileOrEnv() {
-<span class="fc" id="L131">		String passwordFile = System.getenv(&quot;JGIT_DB_PASSWORD_FILE&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L132" title="3 of 4 branches missed.">		if (passwordFile != null &amp;&amp; !passwordFile.isEmpty()) {</span>
+<span class="fc" id="L161">		String passwordFile = System.getenv(&quot;JGIT_DB_PASSWORD_FILE&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L162" title="3 of 4 branches missed.">		if (passwordFile != null &amp;&amp; !passwordFile.isEmpty()) {</span>
 			try {
-<span class="nc" id="L134">				Path path = Path.of(passwordFile);</span>
-<span class="nc" id="L135">				long size = Files.size(path);</span>
-<span class="nc bnc" id="L136" title="All 2 branches missed.">				if (size &gt; 4096) {</span>
-<span class="nc" id="L137">					LOG.log(Level.WARNING,</span>
+<span class="nc" id="L164">				Path path = Path.of(passwordFile);</span>
+<span class="nc" id="L165">				long size = Files.size(path);</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">				if (size &gt; 4096) {</span>
+<span class="nc" id="L167">					LOG.log(Level.WARNING,</span>
 							&quot;Password file too large ({0} bytes), ignoring: {1}&quot;, //$NON-NLS-1$
-<span class="nc" id="L139">							new Object[] { Long.toString(size),</span>
+<span class="nc" id="L169">							new Object[] { Long.toString(size),</span>
 									passwordFile });
 				} else {
-<span class="nc" id="L142">					return Files.readString(path,</span>
-<span class="nc" id="L143">							StandardCharsets.UTF_8).trim();</span>
+<span class="nc" id="L172">					return Files.readString(path,</span>
+<span class="nc" id="L173">							StandardCharsets.UTF_8).trim();</span>
 				}
-<span class="nc" id="L145">			} catch (IOException e) {</span>
-<span class="nc" id="L146">				LOG.log(Level.WARNING,</span>
+<span class="nc" id="L175">			} catch (IOException e) {</span>
+<span class="nc" id="L176">				LOG.log(Level.WARNING,</span>
 						&quot;Failed to read password from file: {0}&quot;, //$NON-NLS-1$
 						passwordFile);
-<span class="nc" id="L149">			}</span>
+<span class="nc" id="L179">			}</span>
 		}
-<span class="fc" id="L151">		return getEnvOrDefault(&quot;JGIT_DB_PASSWORD&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L181">		return getEnvOrDefault(&quot;JGIT_DB_PASSWORD&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
