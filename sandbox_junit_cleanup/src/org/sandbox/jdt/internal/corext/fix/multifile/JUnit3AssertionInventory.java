@@ -22,10 +22,12 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -79,6 +81,26 @@ final class JUnit3AssertionInventory {
 			@Override
 			public boolean visit(SuperMethodInvocation node) {
 				rejection[0]= "Explicit superclass method calls can change lifecycle semantics under Jupiter."; //$NON-NLS-1$
+				return false;
+			}
+
+			@Override
+			public boolean visit(SimpleName node) {
+				if (rejection[0] != null || !jdtCoreHarness
+						|| !(node.resolveBinding() instanceof IVariableBinding variable) || !variable.isField()) {
+					return rejection[0] == null;
+				}
+				IVariableBinding declarationBinding= variable.getVariableDeclaration();
+				ITypeBinding owner= declarationBinding.getDeclaringClass();
+				if (owner == null || !JdtCoreHarnessPlanner.JDT_CORE_TEST_CASE.equals(
+						owner.getErasure().getQualifiedName())
+						|| Modifier.isStatic(declarationBinding.getModifiers())
+						|| "indexDisabledForTest".equals(declarationBinding.getName())) { //$NON-NLS-1$
+					return true;
+				}
+				rejection[0]= "The direct family accesses inherited JDT Core TestCase field " //$NON-NLS-1$
+						+ declarationBinding.getName()
+						+ ", which is not represented by the Jupiter bridge."; //$NON-NLS-1$
 				return false;
 			}
 
