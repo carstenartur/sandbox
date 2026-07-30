@@ -28,6 +28,7 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -66,6 +67,8 @@ final class JdtCoreHarnessPlanner {
 	private static final Set<String> DIRECT_SLICE_REJECTED_METHODS= Set.of(
 			"setUp", "tearDown", "setUpSuite", "tearDownSuite", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			"runTest", "runBare", "run", "setUpTest"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	private static final Set<String> FILTER_FIELDS= Set.of(
+			"RUN_ONLY_ID", "TESTS_PREFIX", "TESTS_NAMES", "TESTS_NUMBERS", "TESTS_RANGE"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 	private static final Set<String> SUPPORTED_PERFORMANCE_METHODS= Set.of(
 			"startMeasuring", "stopMeasuring", "commitMeasurements", "assertPerformance", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			"assertPerformanceInRelativeBand", "tagAsSummary", "tagAsGlobalSummary", "setComment"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -248,6 +251,11 @@ final class JdtCoreHarnessPlanner {
 			return DirectAssessment.rejected("NO_JDT_CORE_TEST_METHODS", //$NON-NLS-1$
 					"The concrete harness family declares no exact JUnit 3 test methods.", baseRelated); //$NON-NLS-1$
 		}
+		String unsupportedFilter= unsupportedFilterConfiguration(type.declaration());
+		if (unsupportedFilter != null) {
+			return DirectAssessment.rejected("JDT_CORE_FILTER_MAPPING_REQUIRED", //$NON-NLS-1$
+					unsupportedFilter, baseRelated);
+		}
 
 		String unsupportedInvocation= unsupportedHarnessInvocation(type.declaration(), suiteMethodKey);
 		if (unsupportedInvocation != null) {
@@ -284,6 +292,35 @@ final class JdtCoreHarnessPlanner {
 				harness.key(), type.unitHandle(), type.key(), constructorKey, suiteMethodKey,
 				testMethods, assertions.invocations());
 		return DirectAssessment.applicable(baseRelated, migration);
+	}
+
+	private static String unsupportedFilterConfiguration(TypeDeclaration declaration) {
+		for (MethodDeclaration method : declaration.getMethods()) {
+			if (method.getName().getIdentifier().startsWith("testONLY_")) { //$NON-NLS-1$
+				return "The family uses JDT Core testONLY_ discovery, which must be mapped before Jupiter annotations are added."; //$NON-NLS-1$
+			}
+		}
+		String[] rejection= new String[1];
+		declaration.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				IBinding binding= node.resolveBinding();
+				if (!(binding instanceof IVariableBinding variable)) {
+					return true;
+				}
+				IVariableBinding declarationBinding= variable.getVariableDeclaration();
+				ITypeBinding owner= declarationBinding.getDeclaringClass();
+				if (owner != null && JDT_CORE_TEST_CASE.equals(owner.getErasure().getQualifiedName())
+						&& FILTER_FIELDS.contains(declarationBinding.getName())) {
+					rejection[0]= "The family reads or writes JDT Core filter field " //$NON-NLS-1$
+							+ declarationBinding.getName()
+							+ "; execution conditions would retain excluded Jupiter nodes and change runtime-tree multiplicity."; //$NON-NLS-1$
+					return false;
+				}
+				return true;
+			}
+		});
+		return rejection[0];
 	}
 
 	private static String unsupportedHarnessInvocation(TypeDeclaration declaration, String suiteMethodKey) {
