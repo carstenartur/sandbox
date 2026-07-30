@@ -232,12 +232,13 @@ final class JdtCoreLeafJUnitPlugin extends AbstractTool<ReferenceHolder<Integer,
 				|| !(declaration.fragments().get(0) instanceof VariableDeclarationFragment fragment)
 				|| !(fragment.getInitializer() instanceof ClassInstanceCreation outerSuite)
 				|| !isTestSuiteConstruction(outerSuite) || outerSuite.arguments().size() != 1
-				|| !isPackageNameCall(outerSuite.arguments().get(0), testType)
-				|| !(fragment.resolveBinding() instanceof IVariableBinding suiteVariable)) {
+				|| !isPackageNameCall(outerSuite.arguments().get(0), testType)) {
 			return false;
 		}
+		IVariableBinding suiteVariable= fragment.resolveBinding();
 		ITypeBinding declaredType= declaration.getType().resolveBinding();
-		if (declaredType == null || !JUNIT3_TEST_SUITE.equals(declaredType.getErasure().getQualifiedName())) {
+		if (suiteVariable == null || declaredType == null
+				|| !JUNIT3_TEST_SUITE.equals(declaredType.getErasure().getQualifiedName())) {
 			return false;
 		}
 
