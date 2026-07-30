@@ -26,7 +26,7 @@ Upstream references:
 
 ## Staged target architecture
 
-### Slice A: direct custom-TestCase families
+### Slice A: unfiltered direct custom-TestCase families
 
 A source-compatible nested Jupiter bridge is inserted into the existing JDT Core `TestCase` source. The original JUnit 3 class remains unchanged for families not migrated yet.
 
@@ -47,11 +47,22 @@ class ExampleTests extends TestCase.Jupiter {
 }
 ```
 
-The bridge uses the existing `PerformanceTestCaseJunit5`, preserves the current test name through `TestInfo`, applies the JDT filter and ordering contract, controls the indexer, clears interrupt state and retains the supported memory/performance hooks. Test methods and assertions are materialized through the existing plan-aware hint backend. Only simple name constructors and exact per-class suite factories are removed.
+The bridge uses the existing `PerformanceTestCaseJunit5`, preserves the current test name through `TestInfo`, applies the JDT ordering contract, controls the indexer, clears interrupt state and retains the supported memory/performance hooks. Test methods and assertions are materialized through the existing plan-aware hint backend. Only simple name constructors and exact per-class suite factories are removed.
 
-The slice rejects lifecycle overrides, suite-state classes, compliance multiplication, decorators, custom `runTest` logic, unsupported TestCase helper calls, out-of-scope suite owners and any stale or unresolved binding.
+This first slice deliberately rejects `TESTS_PREFIX`, `TESTS_NAMES`, `TESTS_NUMBERS`, `TESTS_RANGE`, `RUN_ONLY_ID` use and `testONLY_*` methods. A Jupiter `ExecutionCondition` can disable execution, but Eclipse's JUnit listener still retains those skipped test nodes; that would change runtime-tree identity and multiplicity. Configured selection therefore remains on the unchanged JUnit 3 harness until a discovery-time mapping is implemented and proven.
 
-### Slice B: SuiteOfTestCases state transfer
+The slice also rejects lifecycle overrides, suite-state classes, compliance multiplication, decorators, custom `runTest` logic, unsupported TestCase helper calls, out-of-scope suite owners and any stale or unresolved binding.
+
+### Slice B: configured direct-family selection
+
+Configured selection must be represented before excluded Jupiter methods enter the discovered test tree. The slice must preserve:
+
+- exact `TESTS_PREFIX`, `TESTS_NAMES`, `TESTS_NUMBERS` and `TESTS_RANGE` behavior;
+- `RUN_ONLY_ID` and `testONLY_*` precedence;
+- source or external filter ownership and reset behavior;
+- the same non-empty JDT runtime tree before and after migration, without ignored or skipped replacement nodes.
+
+### Slice C: SuiteOfTestCases state transfer
 
 A Jupiter extension nested in the existing `SuiteOfTestCases` source must reproduce the current semantics rather than approximate them with `@TestInstance(PER_CLASS)`:
 
@@ -62,7 +73,7 @@ A Jupiter extension nested in the existing `SuiteOfTestCases` source must reprod
 - same-thread execution and deterministic order;
 - standalone rerun support.
 
-### Slice C: compiler compliance templates
+### Slice D: compiler compliance templates
 
 Compliance multiplication becomes an explicit Jupiter test-template or suite descriptor. It must retain:
 
@@ -72,9 +83,9 @@ Compliance multiplication becomes an explicit Jupiter test-template or suite des
 - preview-test exclusion on future JREs;
 - test class and method multiplicity in the JDT runtime tree.
 
-### Slice D: aggregate suites and remaining callbacks
+### Slice E: aggregate suites and remaining callbacks
 
-Global `Run*`/`TestAll` owners, decorators, filters, performance callbacks and rerun setup hooks are migrated only after their complete JDT launch tree is captured. Mixed Jupiter/Vintage aggregate suites may be used during the transition.
+Global `Run*`/`TestAll` owners, decorators, performance callbacks and rerun setup hooks are migrated only after their complete JDT launch tree is captured. Mixed Jupiter/Vintage aggregate suites may be used during the transition.
 
 ## Safety rules
 
@@ -83,4 +94,4 @@ Global `Run*`/`TestAll` owners, decorators, filters, performance callbacks and r
 - No migration is applied when a constructor, suite owner, helper call, filter assignment, binary subtype or setup wrapper is outside the closed source scope.
 - Every supported slice runs the same JDT launch before and after and compares a non-empty successful tree including nesting, display name, class/method identity, order and multiplicity.
 - Test execution is part of acceptance; a matching discovery tree alone is insufficient.
-- Compliance and suite-state semantics are never replaced by `@Test` annotations alone.
+- Compliance, filtering and suite-state semantics are never replaced by `@Test` annotations or skipped Jupiter nodes alone.
