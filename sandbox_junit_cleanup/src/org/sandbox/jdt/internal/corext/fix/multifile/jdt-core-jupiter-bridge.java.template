@@ -1,0 +1,366 @@
+@org.junit.jupiter.api.TestMethodOrder(Jupiter.JdtCoreMethodOrderer.class)
+@org.junit.jupiter.api.extension.ExtendWith(Jupiter.JdtCoreFilterCondition.class)
+public abstract static class Jupiter extends org.eclipse.test.performance.PerformanceTestCaseJunit5 {
+	private static final java.text.DecimalFormat JUPITER_DIGIT_FORMAT= new java.text.DecimalFormat("000");
+
+	private String jdtCoreTestName;
+	private boolean first;
+	protected boolean indexDisabledForTest= true;
+
+	@Override
+	@org.junit.jupiter.api.BeforeEach
+	public void setUp(org.junit.jupiter.api.TestInfo testInfo) throws Exception {
+		if (org.eclipse.jdt.core.JavaCore.getPlugin() != null && isIndexDisabledForTest()) {
+			disableIndexer();
+		}
+		super.setUp(testInfo);
+		this.jdtCoreTestName= testInfo.getTestMethod().map(java.lang.reflect.Method::getName)
+				.orElse(testInfo.getDisplayName());
+
+		this.first= false;
+		boolean firstTestRun= CURRENT_CLASS == null;
+		if (firstTestRun || CURRENT_CLASS != getClass()) {
+			if (CURRENT_CLASS != null && RUN_GC) {
+				runGarbageCollection();
+			}
+			CURRENT_CLASS= getClass();
+			this.first= true;
+			CURRENT_CLASS_NAME= getClass().getName();
+			CURRENT_CLASS_NAME= CURRENT_CLASS_NAME.substring(
+					CURRENT_CLASS_NAME.indexOf(".tests.") + 7, CURRENT_CLASS_NAME.length());
+		}
+
+		if (STORE_MEMORY != null && MEM_LOG_FILE != null) {
+			if (firstTestRun) {
+				runGarbageCollection();
+			}
+			if (ALL_TESTS_LOG && MEM_LOG_FILE.exists()) {
+				try (java.io.PrintStream stream= new java.io.PrintStream(
+						new java.io.FileOutputStream(MEM_LOG_FILE, true))) {
+					stream.print(CURRENT_CLASS_NAME);
+					stream.print('\t');
+					stream.print(getName());
+					stream.print('\t');
+					writeMemoryValues(stream);
+				}
+				if (firstTestRun) {
+					long total= Runtime.getRuntime().totalMemory();
+					long used= total - Runtime.getRuntime().freeMemory();
+					System.out.println("\t" + formatMemory(used));
+				}
+			} else if (firstTestRun) {
+				long total= Runtime.getRuntime().totalMemory();
+				long used= total - Runtime.getRuntime().freeMemory();
+				System.out.println("\talready used while starting: " + formatMemory(used));
+			}
+		}
+	}
+
+	@Override
+	@org.junit.jupiter.api.AfterEach
+	public void tearDown() throws Exception {
+		super.tearDown();
+		if (org.eclipse.jdt.core.JavaCore.getPlugin() != null && isIndexDisabledForTest()) {
+			enableIndexer();
+		}
+		if (STORE_MEMORY != null && MEM_LOG_FILE != null
+				&& (this.first || ALL_TESTS_LOG) && MEM_LOG_FILE.exists()) {
+			try (java.io.PrintStream stream= new java.io.PrintStream(
+					new java.io.FileOutputStream(MEM_LOG_FILE, true))) {
+				stream.print(CURRENT_CLASS_NAME);
+				stream.print('\t');
+				if (ALL_TESTS_LOG) {
+					String testName= getName();
+					stream.print(".".repeat(Math.max(0, testName.length() - 4)));
+					stream.print("end:\t");
+				}
+				writeMemoryValues(stream);
+			}
+		}
+	}
+
+	public String getName() {
+		return this.jdtCoreTestName;
+	}
+
+	protected boolean isFirst() {
+		return this.first;
+	}
+
+	public boolean isIndexDisabledForTest() {
+		return this.indexDisabledForTest;
+	}
+
+	public void assertPerformance() {
+		super.assertPerformance();
+	}
+
+	public void commitMeasurements() {
+		super.commitMeasurements();
+	}
+
+	public void startMeasuring() {
+		super.startMeasuring();
+	}
+
+	public void stopMeasuring() {
+		super.stopMeasuring();
+	}
+
+	protected void runGarbageCollection() {
+		long delta= 0;
+		for (int iteration= 0; iteration < MAX_GC; iteration++) {
+			long free= Runtime.getRuntime().freeMemory();
+			System.gc();
+			delta= Runtime.getRuntime().freeMemory() - free;
+			try {
+				Thread.sleep(TIME_GC);
+			} catch (InterruptedException exception) {
+				// Preserve the historical harness behavior; runTest clears the flag.
+			}
+		}
+		if (false && delta > DELTA_GC) {
+			// Retains the unreachable historical fallback branch without changing timing.
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException exception) {
+				// Historical behavior ignores this interruption.
+			}
+		}
+	}
+
+	protected void disableIndexer() {
+		while (org.eclipse.jdt.internal.core.JavaModelManager.getJavaModelManager()
+				.getIndexManager().isEnabled()) {
+			org.eclipse.jdt.internal.core.JavaModelManager.getJavaModelManager()
+					.getIndexManager().disable();
+		}
+	}
+
+	protected void enableIndexer() {
+		while (!org.eclipse.jdt.internal.core.JavaModelManager.getJavaModelManager()
+				.getIndexManager().isEnabled()) {
+			org.eclipse.jdt.internal.core.JavaModelManager.getJavaModelManager()
+					.getIndexManager().enable();
+		}
+	}
+
+	private static void writeMemoryValues(java.io.PrintStream stream) {
+		long total= Runtime.getRuntime().totalMemory();
+		long used= total - Runtime.getRuntime().freeMemory();
+		stream.print(formatMemory(used));
+		stream.print('\t');
+		stream.print(formatMemory(total));
+		stream.print('\t');
+		stream.println(formatMemory(Runtime.getRuntime().maxMemory()));
+	}
+
+	private static String formatMemory(long number) {
+		long quotient= number;
+		int[] values= new int[10];
+		int position= -1;
+		do {
+			long current= quotient;
+			quotient= current / 1000L;
+			values[++position]= (int) (current - quotient * 1000L);
+		} while (quotient > 0 && position + 1 < values.length);
+		StringBuilder result= new StringBuilder(Integer.toString(values[position]));
+		for (int index= position - 1; index >= 0; index--) {
+			result.append(',').append(JUPITER_DIGIT_FORMAT.format(values[index]));
+		}
+		return result.toString();
+	}
+
+	public static final class JdtCoreFilterCondition
+			implements org.junit.jupiter.api.extension.ExecutionCondition,
+			org.junit.jupiter.api.extension.InvocationInterceptor {
+
+		@Override
+		public org.junit.jupiter.api.extension.ConditionEvaluationResult evaluateExecutionCondition(
+				org.junit.jupiter.api.extension.ExtensionContext context) {
+			java.util.Optional<java.lang.reflect.Method> selected= context.getTestMethod();
+			if (selected.isEmpty()) {
+				return org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled("container");
+			}
+			String name= selected.orElseThrow().getName();
+			java.util.List<String> testNames= java.util.Arrays.stream(
+					context.getRequiredTestClass().getDeclaredMethods())
+					.filter(method -> java.lang.reflect.Modifier.isPublic(method.getModifiers()))
+					.filter(method -> !java.lang.reflect.Modifier.isStatic(method.getModifiers()))
+					.map(java.lang.reflect.Method::getName)
+					.filter(candidate -> candidate.startsWith(METHOD_PREFIX)).distinct().toList();
+			java.util.List<String> onlyNames= RUN_ONLY_ID == null ? java.util.List.of()
+					: testNames.stream().filter(candidate -> candidate.substring(METHOD_PREFIX.length())
+							.startsWith(RUN_ONLY_ID)).toList();
+			boolean enabled= onlyNames.isEmpty() ? selectedByConfiguredFilter(name) : onlyNames.contains(name);
+			return enabled
+					? org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled(
+							"selected by JDT Core filter")
+					: org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled(
+							"excluded by JDT Core filter");
+		}
+
+		@Override
+		public void interceptTestMethod(Invocation<Void> invocation,
+				ReflectiveInvocationContext<java.lang.reflect.Method> invocationContext,
+				org.junit.jupiter.api.extension.ExtensionContext extensionContext) throws Throwable {
+			try {
+				invocation.proceed();
+			} finally {
+				Thread.interrupted();
+			}
+		}
+
+		private static boolean selectedByConfiguredFilter(String name) {
+			if (TESTS_PREFIX == null && TESTS_NAMES == null && TESTS_NUMBERS == null && TESTS_RANGE == null) {
+				return true;
+			}
+			if (TESTS_PREFIX != null && !name.startsWith(TESTS_PREFIX)) {
+				return false;
+			}
+			if (TESTS_NAMES != null && java.util.Arrays.stream(TESTS_NAMES).anyMatch(name::contains)) {
+				return true;
+			}
+			int number= testNumber(name);
+			if (TESTS_NUMBERS != null && java.util.Arrays.stream(TESTS_NUMBERS)
+					.anyMatch(candidate -> candidate == number)) {
+				return true;
+			}
+			if (TESTS_RANGE != null && TESTS_RANGE.length == 2 && number >= 0
+					&& (TESTS_RANGE[0] == -1 || number >= TESTS_RANGE[0])
+					&& (TESTS_RANGE[1] == -1 || number <= TESTS_RANGE[1])) {
+				return true;
+			}
+			return TESTS_NAMES == null && TESTS_NUMBERS == null && TESTS_RANGE == null;
+		}
+
+		private static int testNumber(String name) {
+			int index= TESTS_PREFIX == null ? METHOD_PREFIX.length() : TESTS_PREFIX.length();
+			while (index < name.length() && !Character.isDigit(name.charAt(index))) {
+				index++;
+			}
+			while (index < name.length() && name.charAt(index) == '0') {
+				index++;
+			}
+			int end= index;
+			while (end < name.length() && Character.isDigit(name.charAt(end))) {
+				end++;
+			}
+			if (end == index) {
+				return -1;
+			}
+			try {
+				return Integer.parseInt(name.substring(index, end));
+			} catch (NumberFormatException exception) {
+				return -1;
+			}
+		}
+	}
+
+	public static final class JdtCoreMethodOrderer implements org.junit.jupiter.api.MethodOrderer {
+		@Override
+		public void orderMethods(org.junit.jupiter.api.MethodOrdererContext context) {
+			if (ORDERING == ALPHA_REVERSE_SORT) {
+				context.getMethodDescriptors().sort((left, right) -> right.getMethod().getName()
+						.compareTo(left.getMethod().getName()));
+			} else if (ORDERING == ALPHABETICAL_SORT) {
+				context.getMethodDescriptors().sort((left, right) -> left.getMethod().getName()
+						.compareTo(right.getMethod().getName()));
+			} else if (ORDERING == BYTECODE_DECLARATION_ORDER) {
+				try {
+					java.util.List<String> ordered= bytecodeDeclaredTestNames(context.getTestClass());
+					context.getMethodDescriptors().sort(java.util.Comparator.comparingInt(descriptor -> {
+						int index= ordered.indexOf(descriptor.getMethod().getName());
+						return index < 0 ? Integer.MAX_VALUE : index;
+					}));
+				} catch (java.io.IOException exception) {
+					System.err.println("suite failed to detect test order: " + context.getTestClass().getName());
+				}
+			} else if (ORDERING != NO_ORDER) {
+				java.util.Collections.shuffle(context.getMethodDescriptors(), new java.util.Random(ORDERING));
+			}
+		}
+	}
+
+	private static java.util.List<String> bytecodeDeclaredTestNames(Class<?> testClass)
+			throws java.io.IOException {
+		String simpleName= testClass.getName().substring(testClass.getName().lastIndexOf('.') + 1);
+		java.io.InputStream resource= testClass.getResourceAsStream(simpleName + ".class");
+		if (resource == null) {
+			throw new java.io.IOException("Cannot load classfile for " + testClass.getName());
+		}
+		try (java.io.DataInputStream input= new java.io.DataInputStream(
+				new java.io.BufferedInputStream(resource))) {
+			if (input.readInt() != 0xcafebabe) {
+				throw new java.io.IOException("Invalid classfile magic");
+			}
+			input.readUnsignedShort();
+			input.readUnsignedShort();
+			int constantPoolCount= input.readUnsignedShort();
+			String[] utf8= new String[constantPoolCount];
+			for (int index= 1; index < constantPoolCount; index++) {
+				int tag= input.readUnsignedByte();
+				switch (tag) {
+				case 1 -> utf8[index]= input.readUTF();
+				case 3, 4 -> skipFully(input, 4);
+				case 5, 6 -> {
+					skipFully(input, 8);
+					index++;
+				}
+				case 7, 8, 16, 19, 20 -> skipFully(input, 2);
+				case 9, 10, 11, 12, 17, 18 -> skipFully(input, 4);
+				case 15 -> skipFully(input, 3);
+				default -> throw new java.io.IOException("Unknown constant-pool tag " + tag);
+				}
+			}
+			skipFully(input, 6);
+			int interfaces= input.readUnsignedShort();
+			skipFully(input, interfaces * 2L);
+			int fields= input.readUnsignedShort();
+			for (int index= 0; index < fields; index++) {
+				skipMember(input);
+			}
+			int methods= input.readUnsignedShort();
+			java.util.List<String> result= new java.util.ArrayList<>();
+			for (int index= 0; index < methods; index++) {
+				int access= input.readUnsignedShort();
+				String name= utf8[input.readUnsignedShort()];
+				String descriptor= utf8[input.readUnsignedShort()];
+				int attributes= input.readUnsignedShort();
+				for (int attribute= 0; attribute < attributes; attribute++) {
+					input.readUnsignedShort();
+					skipFully(input, Integer.toUnsignedLong(input.readInt()));
+				}
+				if ((access & java.lang.reflect.Modifier.PUBLIC) != 0
+						&& (access & java.lang.reflect.Modifier.STATIC) == 0
+						&& "()V".equals(descriptor) && name.startsWith(METHOD_PREFIX)) {
+					result.add(name);
+				}
+			}
+			return result;
+		}
+	}
+
+	private static void skipMember(java.io.DataInputStream input) throws java.io.IOException {
+		skipFully(input, 6);
+		int attributes= input.readUnsignedShort();
+		for (int attribute= 0; attribute < attributes; attribute++) {
+			input.readUnsignedShort();
+			skipFully(input, Integer.toUnsignedLong(input.readInt()));
+		}
+	}
+
+	private static void skipFully(java.io.DataInputStream input, long count) throws java.io.IOException {
+		long remaining= count;
+		while (remaining > 0) {
+			long skipped= input.skip(remaining);
+			if (skipped <= 0) {
+				if (input.read() < 0) {
+					throw new java.io.IOException("Unexpected end of classfile");
+				}
+				skipped= 1;
+			}
+			remaining-= skipped;
+		}
+	}
+}
