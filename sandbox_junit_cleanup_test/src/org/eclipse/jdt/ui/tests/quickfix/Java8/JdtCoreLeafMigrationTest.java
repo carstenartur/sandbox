@@ -47,13 +47,14 @@ public class JdtCoreLeafMigrationTest {
 	}
 
 	@Test
-	public void migratesSingleTestBuildTestSuiteLeafAndPreservesRuntimeTree() throws CoreException {
+	public void migratesRealPackageNamedSuiteLeafAndPreservesRuntimeTree() throws CoreException {
 		ICompilationUnit harness= createHarness();
 		IPackageFragment pack= root.createPackageFragment("sample", true, null); //$NON-NLS-1$
 		ICompilationUnit test= pack.createCompilationUnit("IrritantSetTest.java", //$NON-NLS-1$
 				"""
 				package sample;
 				import junit.framework.Test;
+				import junit.framework.TestSuite;
 				import org.eclipse.jdt.core.tests.junit.extension.TestCase;
 
 				public class IrritantSetTest extends TestCase {
@@ -62,7 +63,9 @@ public class JdtCoreLeafMigrationTest {
 					}
 
 					public static Test suite() {
-						return buildTestSuite(IrritantSetTest.class);
+						TestSuite suite = new TestSuite(IrritantSetTest.class.getPackageName());
+						suite.addTest(new TestSuite(IrritantSetTest.class));
+						return suite;
 					}
 
 					public void testGroup4() {
@@ -112,7 +115,7 @@ public class JdtCoreLeafMigrationTest {
 		Snapshot after= JUnitRuntimeTestTree.capture(launchTarget);
 		assertTrue(after.successful(), () -> "Migrated JDT Core leaf failed: " + after.entries()); //$NON-NLS-1$
 		assertEquals(before.entries(), after.entries(),
-				"The same JDT launch must preserve the single selected test and its suite path."); //$NON-NLS-1$
+				"The same JDT launch must preserve the real package-named suite path and test identity."); //$NON-NLS-1$
 	}
 
 	@Test
