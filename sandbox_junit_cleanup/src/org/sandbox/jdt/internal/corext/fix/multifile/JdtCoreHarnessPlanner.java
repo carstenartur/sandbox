@@ -25,9 +25,12 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -35,9 +38,12 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -310,17 +316,43 @@ final class JdtCoreHarnessPlanner {
 				}
 				IVariableBinding declarationBinding= variable.getVariableDeclaration();
 				ITypeBinding owner= declarationBinding.getDeclaringClass();
-				if (owner != null && JDT_CORE_TEST_CASE.equals(owner.getErasure().getQualifiedName())
-						&& FILTER_FIELDS.contains(declarationBinding.getName())) {
-					rejection[0]= "The family reads or writes JDT Core filter field " //$NON-NLS-1$
-							+ declarationBinding.getName()
-							+ "; execution conditions would retain excluded Jupiter nodes and change runtime-tree multiplicity."; //$NON-NLS-1$
-					return false;
+				if (owner == null || !JDT_CORE_TEST_CASE.equals(owner.getErasure().getQualifiedName())
+						|| !FILTER_FIELDS.contains(declarationBinding.getName())) {
+					return true;
 				}
-				return true;
+				Assignment assignment= enclosingAssignmentTo(node);
+				if (assignment != null && isDefaultFilterReset(declarationBinding.getName(),
+						assignment.getRightHandSide())) {
+					return true;
+				}
+				rejection[0]= "The family reads or configures JDT Core filter field " //$NON-NLS-1$
+						+ declarationBinding.getName()
+						+ "; execution conditions would retain excluded Jupiter nodes and change runtime-tree multiplicity."; //$NON-NLS-1$
+				return false;
 			}
 		});
 		return rejection[0];
+	}
+
+	private static Assignment enclosingAssignmentTo(SimpleName name) {
+		ASTNode current= name;
+		while (current.getParent() instanceof QualifiedName qualified && qualified.getName() == current
+				|| current.getParent() instanceof FieldAccess access && access.getName() == current) {
+			current= current.getParent();
+		}
+		if (current.getParent() instanceof Assignment assignment
+				&& assignment.getOperator() == Assignment.Operator.ASSIGN
+				&& assignment.getLeftHandSide() == current) {
+			return assignment;
+		}
+		return null;
+	}
+
+	private static boolean isDefaultFilterReset(String fieldName, Expression value) {
+		if ("RUN_ONLY_ID".equals(fieldName)) { //$NON-NLS-1$
+			return value instanceof StringLiteral literal && "ONLY_".equals(literal.getLiteralValue()); //$NON-NLS-1$
+		}
+		return value instanceof NullLiteral;
 	}
 
 	private static String unsupportedHarnessInvocation(TypeDeclaration declaration, String suiteMethodKey) {
