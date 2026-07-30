@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "62d3824f78400fd5923e7d8021a28d0075259f14c8c90c4b26c533c3d3d3aa31",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jdt.internal.ui.wizards.buildpaths.CPListElement(null, $currJProject, org.eclipse.jdt.core.IClasspathEntry.CPE_CONTAINER, $path, $exported, null, null)\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.wizards.buildpaths.CPListElement(null, $currJProject, $createdEntry, org.eclipse.jdt.core.IClasspathEntry.CPE_CONTAINER, $path, null, $exported, null, null)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.core.runtime.IPath;\n\n// Dummy interfaces/classes for compilation\ninterface IPath { /* dummy */ }\ninterface IClasspathEntry {\n    IPath getPath();\n    int CPE_CONTAINER \u003d 2; // static final field\n    boolean equals(Object o);\n}\ninterface IJavaProject { /* dummy */ }\n\nclass CPListElement {\n    // Original constructor signature (7 arguments after \u0027parent\u0027)\n    public CPListElement(Object parent, IJavaProject jproject, int entryKind, IPath path, boolean exported, Object linkTarget, Object[] extraAttributes) {}\n    // New constructor signature (8 arguments after \u0027parent\u0027)\n    public CPListElement(Object parent, IJavaProject jproject, IClasspathEntry entry, int entryKind, IPath path, Object linkTarget, boolean exported, Object[] extraAttributes) {}\n}\n\npublic class TestClass {\n    IJavaProject fCurrJProject; // Matches $currJProject\n    IClasspathEntry created; // Matches $createdEntry\n    IClasspathEntry existingEntry;\n\n    public void foo() {\n        // The line to be transformed\n        CPListElement elem \u003d new CPListElement(null, fCurrJProject, IClasspathEntry.CPE_CONTAINER, created.getPath(), !created.equals(existingEntry), null, null);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.core.runtime.IPath;\n\n// Dummy interfaces/classes for compilation\ninterface IPath { /* dummy */ }\ninterface IClasspathEntry {\n    IPath getPath();\n    int CPE_CONTAINER \u003d 2; // static final field\n    boolean equals(Object o);\n}\ninterface IJavaProject { /* dummy */ }\n\nclass CPListElement {\n    // Original constructor signature (7 arguments after \u0027parent\u0027)\n    public CPListElement(Object parent, IJavaProject jproject, int entryKind, IPath path, boolean exported, Object linkTarget, Object[] extraAttributes) {}\n    // New constructor signature (8 arguments after \u0027parent\u0027)\n    public CPListElement(Object parent, IJavaProject jproject, IClasspathEntry entry, int entryKind, IPath path, Object linkTarget, boolean exported, Object[] extraAttributes) {}\n}\n\npublic class TestClass {\n    IJavaProject fCurrJProject;\n    IClasspathEntry created;\n    IClasspathEntry existingEntry;\n\n    public void foo() {\n        // The transformed line\n        CPListElement elem \u003d new CPListElement(null, fCurrJProject, created, IClasspathEntry.CPE_CONTAINER, created.getPath(), null, !created.equals(existingEntry), null, null);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.core.runtime.IPath;\n\n// Dummy interfaces/classes for compilation\ninterface IPath { /* dummy */ }\ninterface IClasspathEntry {\n    IPath getPath();\n    int CPE_CONTAINER \u003d 2; // static final field\n    boolean equals(Object o);\n}\ninterface IJavaProject { /* dummy */ }\n\nclass CPListElement {\n    public CPListElement(Object parent, IJavaProject jproject, int entryKind, IPath path, boolean exported, Object linkTarget, Object[] extraAttributes) {}\n    public CPListElement(Object parent, IJavaProject jproject, IClasspathEntry entry, int entryKind, IPath path, Object linkTarget, boolean exported, Object[] extraAttributes) {}\n    // A different constructor signature that should not match the rule\n    public CPListElement(String name) {}\n}\n\npublic class TestClass {\n    IJavaProject fCurrJProject;\n    IClasspathEntry created;\n    IClasspathEntry existingEntry;\n\n    public void foo() {\n        // This constructor call has a different signature and should not be matched by the rule.\n        CPListElement anotherElem \u003d new CPListElement(\"Some Name\");\n    }\n}",
+  "targetHintFile": "api-migration.sandbox-hint",
+  "sourceCommit": "4b4529874a08549cf67a56313804a4ea90484254",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces an old CPListElement constructor call with a new one by inserting an IClasspathEntry argument and shifting subsequent arguments.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-30T03:15:38.048086661Z",
+  "ruleFingerprint": "sha256:12d63e2dd1bf4601004041b093d3cb52462970a787bfaeb19650b753015ba6f8",
+  "behaviorFingerprint": "sha256:5d017867ac9444e38fe10499302d75ab135427dc35bda09166f686341f157ac8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.core.IClasspathEntry conflicts with a type defined in the same file",
+    "verifiedAt": "2026-07-30T03:15:39.956800801Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
