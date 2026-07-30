@@ -21,9 +21,12 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -39,6 +42,7 @@ final class JdtCoreHarnessRewriteOperation extends CompilationUnitRewriteOperati
 
 	private static final String BRIDGE_RESOURCE=
 			"org/sandbox/jdt/internal/corext/fix/multifile/jdt-core-jupiter-bridge.java.template"; //$NON-NLS-1$
+	private static final String GLOBAL_HARNESS_LOCK= JdtCoreHarnessPlanner.JDT_CORE_TEST_CASE;
 
 	private enum Kind {
 		ADD_BRIDGE,
@@ -100,6 +104,7 @@ final class JdtCoreHarnessRewriteOperation extends CompilationUnitRewriteOperati
 		members.insertLast(placeholder, group);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void migrateFamily(CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
 		Type superclass= type.getSuperclassType();
 		ITypeBinding binding= superclass == null ? null : superclass.resolveBinding();
@@ -121,7 +126,25 @@ final class JdtCoreHarnessRewriteOperation extends CompilationUnitRewriteOperati
 		SingleMemberAnnotation execution= ast.newSingleMemberAnnotation();
 		execution.setTypeName(ast.newName(executionName));
 		execution.setValue(ast.newName(modeName + ".SAME_THREAD")); //$NON-NLS-1$
+
+		String lockName= cuRewrite.getImportRewrite().addImport("org.junit.jupiter.api.parallel.ResourceLock"); //$NON-NLS-1$
+		String accessModeName= cuRewrite.getImportRewrite()
+				.addImport("org.junit.jupiter.api.parallel.ResourceAccessMode"); //$NON-NLS-1$
+		NormalAnnotation resourceLock= ast.newNormalAnnotation();
+		resourceLock.setTypeName(ast.newName(lockName));
+		MemberValuePair valuePair= ast.newMemberValuePair();
+		valuePair.setName(ast.newSimpleName("value")); //$NON-NLS-1$
+		StringLiteral lockValue= ast.newStringLiteral();
+		lockValue.setLiteralValue(GLOBAL_HARNESS_LOCK);
+		valuePair.setValue(lockValue);
+		resourceLock.values().add(valuePair);
+		MemberValuePair modePair= ast.newMemberValuePair();
+		modePair.setName(ast.newSimpleName("mode")); //$NON-NLS-1$
+		modePair.setValue(ast.newName(accessModeName + ".READ_WRITE")); //$NON-NLS-1$
+		resourceLock.values().add(modePair);
+
 		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(resourceLock, group);
 		modifiers.insertFirst(execution, group);
 
 		rewrite.remove(constructor, group);
@@ -137,7 +160,7 @@ final class JdtCoreHarnessRewriteOperation extends CompilationUnitRewriteOperati
 	public String getAdditionalInfo() {
 		return kind == Kind.ADD_BRIDGE
 				? "Adds a nested Jupiter bridge while retaining the original JUnit 3 harness for unmigrated families." //$NON-NLS-1$
-				: "Moves one closed direct JDT Core TestCase family to the nested Jupiter bridge on one thread."; //$NON-NLS-1$
+				: "Moves one closed direct JDT Core TestCase family to the nested Jupiter bridge under a global lock."; //$NON-NLS-1$
 	}
 
 	private static String loadBridgeSource() throws CoreException {
