@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -50,6 +51,7 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyScopeDetector;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
@@ -90,10 +92,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
 		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
+		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);
 		return closedScope == null
-				? JUnitMultiFilePlanner.create(project, compilationUnits, migrateExternalResourceRules, monitor)
-				: JUnitMultiFilePlanner.create(project, compilationUnits, migrateExternalResourceRules,
-						closedScope.booleanValue(), monitor);
+				? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, migrateExternalResourceRules,
+						migrateJUnit3Hierarchies, monitor)
+				: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, migrateExternalResourceRules,
+						migrateJUnit3Hierarchies, closedScope.booleanValue(), monitor);
 	}
 
 	@Override
@@ -126,7 +130,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
 		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
 		boolean migrateSuites= fixes.contains(JUnitCleanUpFixCore.RUNWITH);
-		if (!migrateExternalResourceRules && !migrateSuites) {
+		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);
+		if (!migrateExternalResourceRules && !migrateSuites && !migrateJUnit3Hierarchies) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
@@ -140,8 +145,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			return List.of();
 		}
 		rejectedScopes.remove(project);
-		JUnitScopeCandidateDetector.SearchSeeds seeds= JUnitScopeCandidateDetector.findSearchSeeds(project,
+		JUnitScopeCandidateDetector.SearchSeeds standardSeeds= JUnitScopeCandidateDetector.findSearchSeeds(project,
 				currentScope, migrateExternalResourceRules, migrateSuites, monitor);
+		JUnitScopeCandidateDetector.SearchSeeds junit3Seeds= migrateJUnit3Hierarchies
+				? JUnit3HierarchyScopeDetector.findSearchSeeds(project, currentScope, monitor)
+				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
+		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(standardSeeds, junit3Seeds);
 		if (!seeds.candidateFound()) {
 			clearScopeDecision(project);
 			return List.of();
@@ -167,6 +176,18 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			requiredUnits= new ArrayList<>(required);
 		}
 		return registerRequiredScope(project, currentHandles, requiredUnits);
+	}
+
+	private static JUnitScopeCandidateDetector.SearchSeeds mergeSeeds(
+			JUnitScopeCandidateDetector.SearchSeeds first,
+			JUnitScopeCandidateDetector.SearchSeeds second) {
+		Set<IJavaElement> elements= new LinkedHashSet<>(first.elements());
+		elements.addAll(second.elements());
+		Set<ICompilationUnit> units= new LinkedHashSet<>(first.directCompilationUnits());
+		units.addAll(second.directCompilationUnits());
+		return new JUnitScopeCandidateDetector.SearchSeeds(
+				first.candidateFound() || second.candidateFound(),
+				first.complete() && second.complete(), new ArrayList<>(elements), new ArrayList<>(units));
 	}
 
 	@Override

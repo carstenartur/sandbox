@@ -1,0 +1,206 @@
+// Local rewrites for an already validated, closed JUnit 3 hierarchy.
+// Every rule is inert without an explicit SemanticRewritePlan role.
+
+<!id: junit3-hierarchy-to-jupiter>
+<!description: Apply planner-authorized JUnit 3 hierarchy rewrites>
+<!severity: warning>
+<!minJavaVersion: 8>
+<!tags: junit, migration, junit3, planned>
+<!requires-plan: junit3-hierarchy>
+
+@id: junit3.planned.test
+void $name($params$) :: plannedRole($name, "JUNIT3_TEST_METHOD")
+=> @org.junit.jupiter.api.Test void $name($params$)
+;;
+
+@id: junit3.planned.beforeEach
+void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH")
+=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+;;
+
+@id: junit3.planned.afterEach
+void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH")
+=> @org.junit.jupiter.api.AfterEach void $name($params$)
+;;
+
+// Message-first JUnit 3 overloads.
+@id: junit3.planned.assertTrue.message
+assertTrue($message, $condition) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertTrue($condition, $message)
+;;
+
+@id: junit3.planned.assertTrue.message.qualified
+$owner.assertTrue($message, $condition) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertTrue($condition, $message)
+;;
+
+@id: junit3.planned.assertFalse.message
+assertFalse($message, $condition) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertFalse($condition, $message)
+;;
+
+@id: junit3.planned.assertFalse.message.qualified
+$owner.assertFalse($message, $condition) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertFalse($condition, $message)
+;;
+
+@id: junit3.planned.assertNull.message
+assertNull($message, $value) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertNull($value, $message)
+;;
+
+@id: junit3.planned.assertNull.message.qualified
+$owner.assertNull($message, $value) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertNull($value, $message)
+;;
+
+@id: junit3.planned.assertNotNull.message
+assertNotNull($message, $value) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertNotNull($value, $message)
+;;
+
+@id: junit3.planned.assertNotNull.message.qualified
+$owner.assertNotNull($message, $value) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertNotNull($value, $message)
+;;
+
+@id: junit3.planned.assertSame.message
+assertSame($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertSame($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertSame.message.qualified
+$owner.assertSame($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertSame($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertNotSame.message
+assertNotSame($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertNotSame($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertNotSame.message.qualified
+$owner.assertNotSame($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertNotSame($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertEquals.message
+assertEquals($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertEquals.message.qualified
+$owner.assertEquals($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertEquals.delta.message
+assertEquals($message, $expected, $actual, $delta) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $delta, $message)
+;;
+
+@id: junit3.planned.assertEquals.delta.message.qualified
+$owner.assertEquals($message, $expected, $actual, $delta) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertEquals($expected, $actual, $delta, $message)
+;;
+
+@id: junit3.planned.assertArrayEquals.message
+assertArrayEquals($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertArrayEquals($expected, $actual, $message)
+;;
+
+@id: junit3.planned.assertArrayEquals.message.qualified
+$owner.assertArrayEquals($message, $expected, $actual) :: plannedRole("JUNIT3_ASSERTION_MESSAGE_FIRST")
+=> org.junit.jupiter.api.Assertions.assertArrayEquals($expected, $actual, $message)
+;;
+
+// All remaining supported overloads keep their argument order and only change owner.
+@id: junit3.planned.assertEquals
+assertEquals($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertEquals($args$)
+;;
+
+@id: junit3.planned.assertEquals.qualified
+$owner.assertEquals($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertEquals($args$)
+;;
+
+@id: junit3.planned.assertArrayEquals
+assertArrayEquals($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertArrayEquals($args$)
+;;
+
+@id: junit3.planned.assertArrayEquals.qualified
+$owner.assertArrayEquals($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertArrayEquals($args$)
+;;
+
+@id: junit3.planned.assertTrue
+assertTrue($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertTrue($args$)
+;;
+
+@id: junit3.planned.assertTrue.qualified
+$owner.assertTrue($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertTrue($args$)
+;;
+
+@id: junit3.planned.assertFalse
+assertFalse($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertFalse($args$)
+;;
+
+@id: junit3.planned.assertFalse.qualified
+$owner.assertFalse($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertFalse($args$)
+;;
+
+@id: junit3.planned.assertNull
+assertNull($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertNull($args$)
+;;
+
+@id: junit3.planned.assertNull.qualified
+$owner.assertNull($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertNull($args$)
+;;
+
+@id: junit3.planned.assertNotNull
+assertNotNull($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertNotNull($args$)
+;;
+
+@id: junit3.planned.assertNotNull.qualified
+$owner.assertNotNull($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertNotNull($args$)
+;;
+
+@id: junit3.planned.assertSame
+assertSame($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertSame($args$)
+;;
+
+@id: junit3.planned.assertSame.qualified
+$owner.assertSame($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertSame($args$)
+;;
+
+@id: junit3.planned.assertNotSame
+assertNotSame($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertNotSame($args$)
+;;
+
+@id: junit3.planned.assertNotSame.qualified
+$owner.assertNotSame($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.assertNotSame($args$)
+;;
+
+@id: junit3.planned.fail
+fail($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.fail($args$)
+;;
+
+@id: junit3.planned.fail.qualified
+$owner.fail($args$) :: plannedRole("JUNIT3_ASSERTION_QUALIFY")
+=> org.junit.jupiter.api.Assertions.fail($args$)
+;;
