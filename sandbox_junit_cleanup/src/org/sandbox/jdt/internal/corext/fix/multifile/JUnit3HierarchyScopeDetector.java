@@ -36,7 +36,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
-/** Finds the source closure needed before any JUnit 3 hierarchy rewrite. */
+/** Finds the source closure needed before any ordinary JUnit 3 hierarchy rewrite. */
 public final class JUnit3HierarchyScopeDetector {
 
 	private JUnit3HierarchyScopeDetector() {
@@ -75,6 +75,9 @@ public final class JUnit3HierarchyScopeDetector {
 					@Override
 					public boolean visit(TypeDeclaration node) {
 						ITypeBinding binding= node.resolveBinding();
+						if (JdtCoreHarnessScopeDetector.inheritsJdtCoreHarness(binding)) {
+							return true;
+						}
 						if (!isJUnit3Type(binding)) {
 							return true;
 						}
