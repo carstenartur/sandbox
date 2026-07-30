@@ -1,10 +1,10 @@
 # Sandbox Project
 
-A collection of experimental Eclipse JDT (Java Development Tools) cleanup plugins and tools. This repository demonstrates how to build custom JDT cleanups, quick fixes, and related tooling for Eclipse-based Java development.
+An experimental Java modernization toolkit built on Eclipse JDT (Java Development Tools). The repository provides tested cleanup plugins, quick fixes, static-analysis tools, and reusable transformation infrastructure for Eclipse-based and standalone Java development.
 
 **Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.3
 
-**Status:** Work in Progress – All plugins are experimental and intended for testing purposes.
+**Status:** Experimental and under active development. Supported transformations are protected by regression tests; maturity and known limitations are documented per module.
 
 ---
 
@@ -37,7 +37,7 @@ This project provides:
 - **Standalone Tooling**: Maven plugin, CLI distributions, Docker packaging, JGit storage backend, and web interface modules
 
 
-All plugins are work-in-progress and intended for experimentation and learning.
+Sandbox remains experimental, but many transformations are actively tested and distributed for evaluation. See the individual module documentation for supported cases, known limitations, and maturity.
 
 ## 🚀 Installation
 
