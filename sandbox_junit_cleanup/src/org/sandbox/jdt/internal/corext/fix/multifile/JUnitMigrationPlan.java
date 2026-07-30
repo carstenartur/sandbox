@@ -67,6 +67,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		List<ExternalResourceRuleMigration> externalResourceRules,
 		List<JUnit3HierarchyMigration> junit3Hierarchies,
+		List<JdtCoreDirectFamilyMigration> jdtCoreDirectFamilies,
 		JUnitTestTypeInventory testTypeInventory) {
 
 	private static final String JUNIT3_HINT_RESOURCE=
@@ -76,12 +77,20 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		Objects.requireNonNull(selectedScope);
 		externalResourceRules= List.copyOf(externalResourceRules);
 		junit3Hierarchies= List.copyOf(junit3Hierarchies);
+		jdtCoreDirectFamilies= List.copyOf(jdtCoreDirectFamilies);
 		testTypeInventory= Objects.requireNonNull(testTypeInventory);
 	}
 
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules,
+			List<JUnit3HierarchyMigration> junit3Hierarchies,
+			JUnitTestTypeInventory testTypeInventory) {
+		this(selectedScope, externalResourceRules, junit3Hierarchies, List.of(), testTypeInventory);
+	}
+
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			List<ExternalResourceRuleMigration> externalResourceRules) {
-		this(selectedScope, externalResourceRules, List.of(), new JUnitTestTypeInventory(List.of()));
+		this(selectedScope, externalResourceRules, List.of(), List.of(), new JUnitTestTypeInventory(List.of()));
 	}
 
 	public boolean contains(ICompilationUnit unit) {
@@ -89,7 +98,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	}
 
 	public boolean hasCoordinatedChanges() {
-		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty();
+		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty()
+				|| !jdtCoreDirectFamilies.isEmpty();
 	}
 
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
@@ -98,6 +108,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		String unitHandle= unit.getPrimary().getHandleIdentifier();
 		addExternalResourceOperations(unit, unitHandle, root, operations, nodesProcessed);
 		addJUnit3HierarchyOperations(unit, unitHandle, root, operations, nodesProcessed);
+		addJdtCoreHarnessOperations(unit, unitHandle, root, operations, nodesProcessed);
 	}
 
 	private void addExternalResourceOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,
@@ -152,35 +163,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		Map<String, TypeDeclaration> resolvedTypes= new LinkedHashMap<>();
 		Map<String, MethodDeclaration> resolvedMethods= new LinkedHashMap<>();
 		Map<NodeKey, MethodInvocation> resolvedInvocations= new LinkedHashMap<>();
-		root.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(TypeDeclaration node) {
-				String key= typeKey(node.resolveBinding());
-				if (key != null && expectedTypes.containsKey(key)) {
-					resolvedTypes.put(key, node);
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodDeclaration node) {
-				IMethodBinding binding= node.resolveBinding();
-				String key= binding == null ? null : binding.getMethodDeclaration().getKey();
-				if (key != null && expectedMethodKeys.contains(key)) {
-					resolvedMethods.put(key, node);
-				}
-				return true;
-			}
-
-			@Override
-			public boolean visit(MethodInvocation node) {
-				NodeKey key= NodeKey.from(node);
-				if (key != null && expectedInvocations.containsKey(key)) {
-					resolvedInvocations.put(key, node);
-				}
-				return true;
-			}
-		});
+		resolveTargets(root, expectedTypes.keySet(), expectedMethodKeys, expectedInvocations.keySet(),
+				resolvedTypes, resolvedMethods, resolvedInvocations);
 		if (!resolvedTypes.keySet().equals(expectedTypes.keySet())
 				|| !resolvedMethods.keySet().equals(expectedMethodKeys)
 				|| !resolvedInvocations.keySet().equals(expectedInvocations.keySet())) {
@@ -220,8 +204,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				}
 			}
 			for (InvocationMigration invocation : planned.invocations()) {
-				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
-						invocation.sourceLength());
+				NodeKey key= invocationKey(invocation);
 				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST
 						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);
 				expectedHintTargets.add(key);
@@ -229,9 +212,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			nodesProcessed.add(type);
 			planned.methods().stream().map(MethodMigration::methodBindingKey)
 					.map(resolvedMethods::get).forEach(nodesProcessed::add);
-			planned.invocations().stream()
-					.map(invocation -> NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
-							invocation.sourceLength()))
+			planned.invocations().stream().map(JUnitMigrationPlan::invocationKey)
 					.map(resolvedInvocations::get).forEach(nodesProcessed::add);
 			if (planned.removeTestCaseSuperclass() || !annotationRemovals.isEmpty()
 					|| !integerAnnotationAdditions.isEmpty() || !typeLiteralAnnotationAdditions.isEmpty()) {
@@ -242,6 +223,99 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			}
 		}
 
+		applyHintProgram(unit, root, operations, nodesProcessed, plan, expectedHintTargets);
+	}
+
+	private void addJdtCoreHarnessOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
+			throws CoreException {
+		List<JdtCoreDirectFamilyMigration> harnessMigrations= jdtCoreDirectFamilies.stream()
+				.filter(migration -> unitHandle.equals(migration.harnessCompilationUnitHandle())).toList();
+		List<JdtCoreDirectFamilyMigration> familyMigrations= jdtCoreDirectFamilies.stream()
+				.filter(migration -> unitHandle.equals(migration.familyCompilationUnitHandle())).toList();
+		if (harnessMigrations.isEmpty() && familyMigrations.isEmpty()) {
+			return;
+		}
+
+		Set<String> expectedTypeKeys= new LinkedHashSet<>();
+		Set<String> expectedMethodKeys= new LinkedHashSet<>();
+		Map<NodeKey, InvocationMigration> expectedInvocations= new LinkedHashMap<>();
+		for (JdtCoreDirectFamilyMigration migration : harnessMigrations) {
+			expectedTypeKeys.add(migration.harnessTypeBindingKey());
+		}
+		for (JdtCoreDirectFamilyMigration migration : familyMigrations) {
+			expectedTypeKeys.add(migration.familyTypeBindingKey());
+			expectedMethodKeys.add(migration.constructorBindingKey());
+			if (migration.localSuiteMethodBindingKey() != null) {
+				expectedMethodKeys.add(migration.localSuiteMethodBindingKey());
+			}
+			migration.testMethods().stream().map(MethodMigration::methodBindingKey)
+					.forEach(expectedMethodKeys::add);
+			for (InvocationMigration invocation : migration.assertionInvocations()) {
+				expectedInvocations.put(invocationKey(invocation), invocation);
+			}
+		}
+
+		Map<String, TypeDeclaration> resolvedTypes= new LinkedHashMap<>();
+		Map<String, MethodDeclaration> resolvedMethods= new LinkedHashMap<>();
+		Map<NodeKey, MethodInvocation> resolvedInvocations= new LinkedHashMap<>();
+		resolveTargets(root, expectedTypeKeys, expectedMethodKeys, expectedInvocations.keySet(),
+				resolvedTypes, resolvedMethods, resolvedInvocations);
+		if (!resolvedTypes.keySet().equals(expectedTypeKeys)
+				|| !resolvedMethods.keySet().equals(expectedMethodKeys)
+				|| !resolvedInvocations.keySet().equals(expectedInvocations.keySet())) {
+			throw staleJdtCorePlan(unit, expectedTypeKeys, expectedMethodKeys, expectedInvocations.keySet(),
+					resolvedTypes.keySet(), resolvedMethods.keySet(), resolvedInvocations.keySet());
+		}
+
+		if (!harnessMigrations.isEmpty()) {
+			Set<String> harnessKeys= harnessMigrations.stream()
+					.map(JdtCoreDirectFamilyMigration::harnessTypeBindingKey).collect(Collectors.toSet());
+			if (harnessKeys.size() != 1) {
+				throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+						"One JDT Core harness source unit resolved multiple bridge target types: " + harnessKeys)); //$NON-NLS-1$
+			}
+			TypeDeclaration harness= resolvedTypes.get(harnessKeys.iterator().next());
+			nodesProcessed.add(harness);
+			operations.add(JdtCoreHarnessRewriteOperation.addBridge(harness));
+		}
+
+		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$
+		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>();
+		for (JdtCoreDirectFamilyMigration migration : familyMigrations) {
+			TypeDeclaration family= resolvedTypes.get(migration.familyTypeBindingKey());
+			MethodDeclaration constructor= resolvedMethods.get(migration.constructorBindingKey());
+			MethodDeclaration suite= migration.localSuiteMethodBindingKey() == null ? null
+					: resolvedMethods.get(migration.localSuiteMethodBindingKey());
+			operations.add(JdtCoreHarnessRewriteOperation.migrateFamily(family, constructor, suite));
+			nodesProcessed.add(family);
+			nodesProcessed.add(constructor);
+			if (suite != null) {
+				nodesProcessed.add(suite);
+			}
+			plan.add(NodeKey.type(migration.familyTypeBindingKey()), ROLE_HIERARCHY_TYPE);
+			for (MethodMigration method : migration.testMethods()) {
+				NodeKey key= NodeKey.method(method.methodBindingKey());
+				plan.add(key, ROLE_TEST_METHOD);
+				expectedHintTargets.add(key);
+				nodesProcessed.add(resolvedMethods.get(method.methodBindingKey()));
+			}
+			for (InvocationMigration invocation : migration.assertionInvocations()) {
+				NodeKey key= invocationKey(invocation);
+				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST
+						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);
+				expectedHintTargets.add(key);
+				nodesProcessed.add(resolvedInvocations.get(key));
+			}
+		}
+		if (!familyMigrations.isEmpty()) {
+			applyHintProgram(unit, root, operations, nodesProcessed, plan, expectedHintTargets);
+		}
+	}
+
+	private static void applyHintProgram(ICompilationUnit unit, CompilationUnit root,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed,
+			SemanticRewritePlan.Builder plan, Set<NodeKey> expectedHintTargets) throws CoreException {
 		Set<NodeKey> covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),
 				plan.build(), unit.getJavaProject().getOptions(true), operations, nodesProcessed);
 		if (!covered.equals(expectedHintTargets)) {
@@ -249,6 +323,45 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 					"The plan-aware JUnit hint program covered " + covered + " but expected " //$NON-NLS-1$ //$NON-NLS-2$
 							+ expectedHintTargets));
 		}
+	}
+
+	private static void resolveTargets(CompilationUnit root, Set<String> expectedTypeKeys,
+			Set<String> expectedMethodKeys, Set<NodeKey> expectedInvocationKeys,
+			Map<String, TypeDeclaration> resolvedTypes, Map<String, MethodDeclaration> resolvedMethods,
+			Map<NodeKey, MethodInvocation> resolvedInvocations) {
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(TypeDeclaration node) {
+				String key= typeKey(node.resolveBinding());
+				if (key != null && expectedTypeKeys.contains(key)) {
+					resolvedTypes.put(key, node);
+				}
+				return true;
+			}
+
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				IMethodBinding binding= node.resolveBinding();
+				String key= binding == null ? null : binding.getMethodDeclaration().getKey();
+				if (key != null && expectedMethodKeys.contains(key)) {
+					resolvedMethods.put(key, node);
+				}
+				return true;
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+				NodeKey key= NodeKey.from(node);
+				if (key != null && expectedInvocationKeys.contains(key)) {
+					resolvedInvocations.put(key, node);
+				}
+				return true;
+			}
+		});
+	}
+
+	private static NodeKey invocationKey(InvocationMigration invocation) {
+		return NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(), invocation.sourceLength());
 	}
 
 	private static String methodRole(MethodKind kind) {
@@ -354,6 +467,16 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			Set<String> expectedMethodKeys, Set<NodeKey> expectedInvocationKeys, Set<String> resolvedTypeKeys,
 			Set<String> resolvedMethodKeys, Set<NodeKey> resolvedInvocationKeys) {
 		String message= "The coordinated JUnit 3 hierarchy plan is stale for " + unit.getElementName() //$NON-NLS-1$
+				+ ". Expected types " + expectedTypeKeys + ", methods " + expectedMethodKeys //$NON-NLS-1$ //$NON-NLS-2$
+				+ " and invocations " + expectedInvocationKeys + ", but resolved types " + resolvedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$
+				+ ", methods " + resolvedMethodKeys + " and invocations " + resolvedInvocationKeys; //$NON-NLS-1$ //$NON-NLS-2$
+		return new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", message)); //$NON-NLS-1$
+	}
+
+	private static CoreException staleJdtCorePlan(ICompilationUnit unit, Set<String> expectedTypeKeys,
+			Set<String> expectedMethodKeys, Set<NodeKey> expectedInvocationKeys, Set<String> resolvedTypeKeys,
+			Set<String> resolvedMethodKeys, Set<NodeKey> resolvedInvocationKeys) {
+		String message= "The JDT Core harness migration plan is stale for " + unit.getElementName() //$NON-NLS-1$
 				+ ". Expected types " + expectedTypeKeys + ", methods " + expectedMethodKeys //$NON-NLS-1$ //$NON-NLS-2$
 				+ " and invocations " + expectedInvocationKeys + ", but resolved types " + resolvedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$
 				+ ", methods " + resolvedMethodKeys + " and invocations " + resolvedInvocationKeys; //$NON-NLS-1$ //$NON-NLS-2$

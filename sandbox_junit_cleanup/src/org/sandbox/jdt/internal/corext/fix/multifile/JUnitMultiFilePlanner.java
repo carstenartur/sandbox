@@ -144,7 +144,7 @@ public final class JUnitMultiFilePlanner {
 					? JUnitTestTypeInventory.capture(project, monitor)
 					: new JUnitTestTypeInventory(List.of());
 			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());
-			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);
+			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), List.of(), inventory);
 			return MultiFileCleanUpPlanResult.success(plan, new RefactoringStatus(),
 					MultiFilePlanningMetrics.empty(), diagnostics);
 		}
@@ -169,11 +169,17 @@ public final class JUnitMultiFilePlanner {
 		JUnit3HierarchyPlanner.Result junit3Result= migrateJUnit3Hierarchies
 				? JUnit3HierarchyPlanner.create(project, selectedUnits, rootsByHandle, true, monitor)
 				: new JUnit3HierarchyPlanner.Result(List.of(), List.of(), new JUnitTestTypeInventory(List.of()));
+		MultiFilePlanningBudget.checkCanceled(monitor);
+		JdtCoreHarnessPlanner.Result jdtCoreResult= migrateJUnit3Hierarchies
+				? JdtCoreHarnessPlanner.create(project, selectedUnits, rootsByHandle, true, monitor)
+				: new JdtCoreHarnessPlanner.Result(JdtCoreHarnessInventory.empty(), List.of(), List.of());
 
 		List<MultiFileCandidateDiagnostic> candidateDiagnostics= new ArrayList<>();
 		candidateDiagnostics.addAll(externalResult.diagnostics());
 		candidateDiagnostics.addAll(junit3Result.diagnostics());
-		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size();
+		candidateDiagnostics.addAll(jdtCoreResult.diagnostics());
+		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size()
+				+ jdtCoreResult.directMigrations().size();
 		MultiFilePlanningMetrics metrics= budget.metrics()
 				.withDurations(parseNanos, System.nanoTime() - planningStarted)
 				.withRetainedPlanEntries(retainedEntries);
@@ -182,12 +188,13 @@ public final class JUnitMultiFilePlanner {
 			return new MultiFileCleanUpPlanResult<>(null, status, metrics, diagnostics);
 		}
 		JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, externalResult.migrations(),
-				junit3Result.migrations(), junit3Result.inventory());
+				junit3Result.migrations(), jdtCoreResult.directMigrations(), junit3Result.inventory());
 		return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);
 	}
 
 	private static JUnitMigrationPlan emptyPlan(SelectedCompilationUnitPlan selectedScope) {
-		return new JUnitMigrationPlan(selectedScope, List.of(), List.of(), new JUnitTestTypeInventory(List.of()));
+		return new JUnitMigrationPlan(selectedScope, List.of(), List.of(), List.of(),
+				new JUnitTestTypeInventory(List.of()));
 	}
 
 	private static MigrationResult planExternalResources(Map<String, CompilationUnit> rootsByHandle,
