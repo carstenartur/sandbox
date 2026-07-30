@@ -64,6 +64,8 @@ final class JUnit3AssertionInventory {
 	 */
 	static Result analyze(TypeDeclaration declaration, Set<String> ignoredMethodBindingKeys) {
 		Set<String> ignored= ignoredMethodBindingKeys == null ? Set.of() : Set.copyOf(ignoredMethodBindingKeys);
+		boolean jdtCoreHarness= declaration != null
+				&& JdtCoreHarnessScopeDetector.inheritsJdtCoreHarness(declaration.resolveBinding());
 		String[] rejection= new String[1];
 		List<InvocationMigration> invocations= new ArrayList<>();
 		declaration.accept(new ASTVisitor() {
@@ -88,13 +90,19 @@ final class JUnit3AssertionInventory {
 				IMethodBinding binding= node.resolveMethodBinding();
 				String name= node.getName().getIdentifier();
 				if (binding == null) {
-					if (CUSTOM_EXECUTION_METHODS.contains(name) || ASSERTION_METHODS.contains(name)) {
+					if (CUSTOM_EXECUTION_METHODS.contains(name) || ASSERTION_METHODS.contains(name)
+							|| jdtCoreHarness && "buildTestSuite".equals(name)) { //$NON-NLS-1$
 						rejection[0]= "A potentially JUnit-related invocation has no resolved method binding."; //$NON-NLS-1$
 					}
 					return rejection[0] == null;
 				}
 				ITypeBinding declaringClass= binding.getDeclaringClass();
 				String owner= declaringClass == null ? "" : declaringClass.getErasure().getQualifiedName(); //$NON-NLS-1$
+				if (jdtCoreHarness && "buildTestSuite".equals(name) //$NON-NLS-1$
+						&& !JdtCoreHarnessPlanner.JDT_CORE_TEST_CASE.equals(owner)) {
+					rejection[0]= "The removable local JDT Core suite delegates to an external harness owner."; //$NON-NLS-1$
+					return false;
+				}
 				if (!JUNIT3_TEST_CASE.equals(owner) && !JUNIT3_ASSERT.equals(owner)) {
 					return true;
 				}
