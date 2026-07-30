@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -114,6 +115,15 @@ final class JdtCoreHarnessRewriteOperation extends CompilationUnitRewriteOperati
 		String harnessName= cuRewrite.getImportRewrite().addImport(JdtCoreHarnessPlanner.JDT_CORE_TEST_CASE);
 		SimpleType replacement= ast.newSimpleType(ast.newName(harnessName + ".Jupiter")); //$NON-NLS-1$
 		rewrite.replace(superclass, replacement, group);
+
+		String executionName= cuRewrite.getImportRewrite().addImport("org.junit.jupiter.api.parallel.Execution"); //$NON-NLS-1$
+		String modeName= cuRewrite.getImportRewrite().addImport("org.junit.jupiter.api.parallel.ExecutionMode"); //$NON-NLS-1$
+		SingleMemberAnnotation execution= ast.newSingleMemberAnnotation();
+		execution.setTypeName(ast.newName(executionName));
+		execution.setValue(ast.newName(modeName + ".SAME_THREAD")); //$NON-NLS-1$
+		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(execution, group);
+
 		rewrite.remove(constructor, group);
 		cuRewrite.getImportRemover().registerRemovedNode(constructor);
 		if (localSuite != null) {
@@ -127,7 +137,7 @@ final class JdtCoreHarnessRewriteOperation extends CompilationUnitRewriteOperati
 	public String getAdditionalInfo() {
 		return kind == Kind.ADD_BRIDGE
 				? "Adds a nested Jupiter bridge while retaining the original JUnit 3 harness for unmigrated families." //$NON-NLS-1$
-				: "Moves one closed direct JDT Core TestCase family to the nested Jupiter bridge."; //$NON-NLS-1$
+				: "Moves one closed direct JDT Core TestCase family to the nested Jupiter bridge on one thread."; //$NON-NLS-1$
 	}
 
 	private static String loadBridgeSource() throws CoreException {
