@@ -373,6 +373,9 @@ final class JdtCoreHarnessPlanner {
 				String owner= declaring == null ? "" : declaring.getErasure().getQualifiedName(); //$NON-NLS-1$
 				String name= binding.getName();
 				if (JDT_CORE_TEST_CASE.equals(owner)) {
+					if (SUPPORTED_PERFORMANCE_METHODS.contains(name)) {
+						return true;
+					}
 					rejection[0]= "The direct family calls custom JDT Core harness method " + name //$NON-NLS-1$
 							+ "(), which is not yet represented by the Jupiter bridge."; //$NON-NLS-1$
 					return false;
