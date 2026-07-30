@@ -35,6 +35,12 @@ import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 /** Finds the exact source chain needed to classify a selected JDT Core harness family. */
 public final class JdtCoreHarnessScopeDetector {
 
+	private static final Set<String> FRAMEWORK_TYPES= Set.of(
+			JdtCoreHarnessPlanner.JDT_CORE_TEST_CASE,
+			JdtCoreHarnessPlanner.JDT_CORE_SUITE_OF_TEST_CASES,
+			"org.eclipse.jdt.core.tests.model.AbstractJavaModelTests", //$NON-NLS-1$
+			JdtCoreHarnessPlanner.JDT_CORE_ABSTRACT_COMPILER_TEST);
+
 	private JdtCoreHarnessScopeDetector() {
 	}
 
@@ -71,11 +77,11 @@ public final class JdtCoreHarnessScopeDetector {
 					@Override
 					public boolean visit(TypeDeclaration node) {
 						ITypeBinding binding= node.resolveBinding();
-						if (!inheritsJdtCoreHarness(binding)) {
+						if (!inheritsJdtCoreHarness(binding) || isFrameworkType(binding)) {
 							return true;
 						}
 						candidateFound[0]= true;
-						IJavaElement selectedElement= binding == null ? null : binding.getErasure().getJavaElement();
+						IJavaElement selectedElement= binding.getErasure().getJavaElement();
 						if (selectedElement instanceof IType selectedType && selectedType.getCompilationUnit() != null) {
 							referenceTargets.add(selectedType);
 							directUnits.add(selectedType.getCompilationUnit().getPrimary());
@@ -102,6 +108,10 @@ public final class JdtCoreHarnessScopeDetector {
 			current= current.getSuperclass();
 		}
 		return false;
+	}
+
+	static boolean isFrameworkType(ITypeBinding binding) {
+		return binding != null && FRAMEWORK_TYPES.contains(binding.getErasure().getQualifiedName());
 	}
 
 	private static boolean addSourceSupertypeChain(ITypeBinding binding, Set<ICompilationUnit> units) {
