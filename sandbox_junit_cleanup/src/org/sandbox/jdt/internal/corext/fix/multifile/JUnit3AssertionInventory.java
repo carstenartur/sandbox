@@ -15,6 +15,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSuppo
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.JUNIT3_TEST_CASE;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -23,8 +24,11 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationKind;
@@ -51,7 +55,7 @@ final class JUnit3AssertionInventory {
 	}
 
 	static Result analyze(TypeDeclaration declaration) {
-		return analyze(declaration, Set.of());
+		return analyze(declaration, removableJdtCoreSuiteKeys(declaration));
 	}
 
 	/**
@@ -111,5 +115,52 @@ final class JUnit3AssertionInventory {
 			}
 		});
 		return new Result(rejection[0], invocations);
+	}
+
+	private static Set<String> removableJdtCoreSuiteKeys(TypeDeclaration declaration) {
+		ITypeBinding owner= declaration == null ? null : declaration.resolveBinding();
+		if (!JdtCoreHarnessScopeDetector.inheritsJdtCoreHarness(owner)) {
+			return Set.of();
+		}
+		Set<String> result= new LinkedHashSet<>();
+		for (MethodDeclaration method : declaration.getMethods()) {
+			String key= exactRemovableJdtCoreSuiteKey(method, owner);
+			if (key != null) {
+				result.add(key);
+			}
+		}
+		return Set.copyOf(result);
+	}
+
+	private static String exactRemovableJdtCoreSuiteKey(MethodDeclaration method, ITypeBinding owner) {
+		if (!"suite".equals(method.getName().getIdentifier()) //$NON-NLS-1$
+				|| !Modifier.isPublic(method.getModifiers()) || !Modifier.isStatic(method.getModifiers())
+				|| !method.parameters().isEmpty() || method.getBody() == null
+				|| method.getBody().statements().size() != 1) {
+			return null;
+		}
+		IMethodBinding binding= method.resolveBinding();
+		ITypeBinding returnType= binding == null ? null : binding.getReturnType();
+		if (returnType == null || !"junit.framework.Test".equals(returnType.getErasure().getQualifiedName())) { //$NON-NLS-1$
+			return null;
+		}
+		Object statement= method.getBody().statements().get(0);
+		if (!(statement instanceof ReturnStatement returnStatement)
+				|| !(returnStatement.getExpression() instanceof MethodInvocation invocation)
+				|| !"buildTestSuite".equals(invocation.getName().getIdentifier()) //$NON-NLS-1$
+				|| invocation.arguments().size() != 1
+				|| !(invocation.arguments().get(0) instanceof TypeLiteral literal)) {
+			return null;
+		}
+		IMethodBinding invoked= invocation.resolveMethodBinding();
+		ITypeBinding invokedOwner= invoked == null ? null : invoked.getDeclaringClass();
+		ITypeBinding selected= literal.getType().resolveBinding();
+		if (invokedOwner == null || selected == null
+				|| !JdtCoreHarnessPlanner.JDT_CORE_TEST_CASE.equals(
+						invokedOwner.getErasure().getQualifiedName())
+				|| !JUnitMigrationPlan.typeKey(owner).equals(JUnitMigrationPlan.typeKey(selected))) {
+			return null;
+		}
+		return binding.getMethodDeclaration().getKey();
 	}
 }
