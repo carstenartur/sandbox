@@ -36,7 +36,7 @@ public class JUnit3HierarchySafetyTest {
 	}
 
 	@Test
-	public void leavesIndirectTestCaseHierarchyUntouched() throws CoreException {
+	public void leavesLifecycleOverrideHierarchyUntouched() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit base= pack.createCompilationUnit("AbstractBase.java", //$NON-NLS-1$
 				"""
@@ -44,6 +44,10 @@ public class JUnit3HierarchySafetyTest {
 				import junit.framework.TestCase;
 
 				public abstract class AbstractBase extends TestCase {
+					@Override
+					protected void setUp() throws Exception {
+					}
+
 					public void testInherited() {
 					}
 				}
@@ -53,6 +57,11 @@ public class JUnit3HierarchySafetyTest {
 				package test;
 
 				public class ConcreteTest extends AbstractBase {
+					@Override
+					protected void setUp() throws Exception {
+						super.setUp();
+					}
+
 					public void testLocal() {
 					}
 				}
@@ -63,7 +72,7 @@ public class JUnit3HierarchySafetyTest {
 	}
 
 	@Test
-	public void leavesDirectTestCaseWithSourceSubclassUntouched() throws CoreException {
+	public void leavesHierarchyWithCustomConstructorUntouched() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
 				"""
@@ -71,6 +80,9 @@ public class JUnit3HierarchySafetyTest {
 				import junit.framework.TestCase;
 
 				public class BaseTest extends TestCase {
+					public BaseTest() {
+					}
+
 					public void testBase() {
 					}
 				}

@@ -10,7 +10,21 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_AFTER_EACH;
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_ASSERTION_MESSAGE_FIRST;
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_ASSERTION_QUALIFY;
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_BEFORE_EACH;
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_HIERARCHY_TYPE;
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.ROLE_TEST_METHOD;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,44 +37,72 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationKind;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationMigration;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodMigration;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.TypeMigration;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
+import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation;
+import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.AnnotationRemoval;
+import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.IntegerAnnotationAddition;
+import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.TypeLiteralAnnotationAddition;
 
 /** Immutable project plan for coordinated JUnit migration edits. */
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
-		List<ExternalResourceRuleMigration> externalResourceRules) {
+		List<ExternalResourceRuleMigration> externalResourceRules,
+		List<JUnit3HierarchyMigration> junit3Hierarchies,
+		JUnitTestTypeInventory testTypeInventory) {
 
-	/** Defensively copies plan data. */
+	private static final String JUNIT3_HINT_RESOURCE=
+			"org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint"; //$NON-NLS-1$
+
 	public JUnitMigrationPlan {
 		Objects.requireNonNull(selectedScope);
 		externalResourceRules= List.copyOf(externalResourceRules);
+		junit3Hierarchies= List.copyOf(junit3Hierarchies);
+		testTypeInventory= Objects.requireNonNull(testTypeInventory);
 	}
 
-	/** Returns whether the compilation unit belongs to this cleanup run. */
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules) {
+		this(selectedScope, externalResourceRules, List.of(), new JUnitTestTypeInventory(List.of()));
+	}
+
 	public boolean contains(ICompilationUnit unit) {
 		return selectedScope.contains(unit);
 	}
 
-	/** Returns whether the plan contains coordinated cross-file work. */
 	public boolean hasCoordinatedChanges() {
-		return !externalResourceRules.isEmpty();
+		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty();
 	}
 
-	/**
-	 * Resolves and adds the operations belonging to the current compilation unit.
-	 * Resolution uses current bindings so stale plans abort the entire cleanup.
-	 */
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
 		String unitHandle= unit.getPrimary().getHandleIdentifier();
+		addExternalResourceOperations(unit, unitHandle, root, operations, nodesProcessed);
+		addJUnit3HierarchyOperations(unit, unitHandle, root, operations, nodesProcessed);
+	}
+
+	private void addExternalResourceOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
+			throws CoreException {
 		List<ExternalResourceRuleMigration> fieldMigrations= externalResourceRules.stream()
 				.filter(migration -> unitHandle.equals(migration.ruleCompilationUnitHandle())).toList();
 		List<ExternalResourceRuleMigration> typeMigrations= externalResourceRules.stream()
@@ -73,17 +115,177 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				.collect(Collectors.toSet());
 		Set<String> expectedTypeKeys= typeMigrations.stream().map(ExternalResourceRuleMigration::resourceTypeBindingKey)
 				.collect(Collectors.toSet());
-		JUnitMultiFileRewriteOperation.ResolvedEdits resolved= resolve(root, fieldMigrations, typeMigrations,
-				expectedFieldKeys, expectedTypeKeys);
+		JUnitMultiFileRewriteOperation.ResolvedEdits resolved= resolveExternalResources(root, fieldMigrations,
+				typeMigrations, expectedFieldKeys, expectedTypeKeys);
 		if (!resolved.fieldKeys().equals(expectedFieldKeys) || !resolved.typeKeys().equals(expectedTypeKeys)) {
-			throw stalePlan(unit, expectedFieldKeys, expectedTypeKeys, resolved);
+			throw staleExternalResourcePlan(unit, expectedFieldKeys, expectedTypeKeys, resolved);
 		}
 		nodesProcessed.addAll(resolved.fields().keySet());
 		nodesProcessed.addAll(resolved.resourceTypes().keySet());
 		operations.add(new JUnitMultiFileRewriteOperation(resolved));
 	}
 
-	private static JUnitMultiFileRewriteOperation.ResolvedEdits resolve(CompilationUnit root,
+	private void addJUnit3HierarchyOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
+			throws CoreException {
+		List<TypeMigration> plannedTypes= junit3Hierarchies.stream()
+				.flatMap(hierarchy -> hierarchy.types().stream())
+				.filter(type -> unitHandle.equals(type.compilationUnitHandle()))
+				.toList();
+		if (plannedTypes.isEmpty()) {
+			return;
+		}
+
+		Map<String, TypeMigration> expectedTypes= plannedTypes.stream()
+				.collect(Collectors.toMap(TypeMigration::typeBindingKey, type -> type));
+		Set<String> expectedMethodKeys= plannedTypes.stream().flatMap(type -> type.methods().stream())
+				.map(MethodMigration::methodBindingKey).collect(Collectors.toCollection(LinkedHashSet::new));
+		Map<NodeKey, InvocationMigration> expectedInvocations= new LinkedHashMap<>();
+		for (TypeMigration type : plannedTypes) {
+			for (InvocationMigration invocation : type.invocations()) {
+				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
+						invocation.sourceLength());
+				expectedInvocations.put(key, invocation);
+			}
+		}
+
+		Map<String, TypeDeclaration> resolvedTypes= new LinkedHashMap<>();
+		Map<String, MethodDeclaration> resolvedMethods= new LinkedHashMap<>();
+		Map<NodeKey, MethodInvocation> resolvedInvocations= new LinkedHashMap<>();
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(TypeDeclaration node) {
+				String key= typeKey(node.resolveBinding());
+				if (key != null && expectedTypes.containsKey(key)) {
+					resolvedTypes.put(key, node);
+				}
+				return true;
+			}
+
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				IMethodBinding binding= node.resolveBinding();
+				String key= binding == null ? null : binding.getMethodDeclaration().getKey();
+				if (key != null && expectedMethodKeys.contains(key)) {
+					resolvedMethods.put(key, node);
+				}
+				return true;
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+				NodeKey key= NodeKey.from(node);
+				if (key != null && expectedInvocations.containsKey(key)) {
+					resolvedInvocations.put(key, node);
+				}
+				return true;
+			}
+		});
+		if (!resolvedTypes.keySet().equals(expectedTypes.keySet())
+				|| !resolvedMethods.keySet().equals(expectedMethodKeys)
+				|| !resolvedInvocations.keySet().equals(expectedInvocations.keySet())) {
+			throw staleJUnit3Plan(unit, expectedTypes.keySet(), expectedMethodKeys, expectedInvocations.keySet(),
+					resolvedTypes.keySet(), resolvedMethods.keySet(), resolvedInvocations.keySet());
+		}
+
+		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$
+		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>();
+		for (TypeMigration planned : plannedTypes) {
+			TypeDeclaration type= resolvedTypes.get(planned.typeBindingKey());
+			plan.add(NodeKey.type(planned.typeBindingKey()), ROLE_HIERARCHY_TYPE);
+			List<AnnotationRemoval> annotationRemovals= new ArrayList<>();
+			List<IntegerAnnotationAddition> integerAnnotationAdditions= new ArrayList<>();
+			List<TypeLiteralAnnotationAddition> typeLiteralAnnotationAdditions= new ArrayList<>();
+			if (planned.removeTestCaseSuperclass()) {
+				typeLiteralAnnotationAdditions.add(new TypeLiteralAnnotationAddition(type,
+						"org.junit.jupiter.api.TestMethodOrder", //$NON-NLS-1$
+						"org.junit.jupiter.api.MethodOrderer.OrderAnnotation")); //$NON-NLS-1$
+			}
+			for (MethodMigration method : planned.methods()) {
+				MethodDeclaration declaration= resolvedMethods.get(method.methodBindingKey());
+				NodeKey key= NodeKey.method(method.methodBindingKey());
+				plan.add(key, methodRole(method.kind()));
+				expectedHintTargets.add(key);
+				if (method.kind() == MethodKind.TEST) {
+					if (method.executionOrder() <= 0) {
+						throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+								"The planned JUnit 3 test order is missing for " + method.methodBindingKey())); //$NON-NLS-1$
+					}
+					integerAnnotationAdditions.add(new IntegerAnnotationAddition(declaration,
+							"org.junit.jupiter.api.Order", method.executionOrder())); //$NON-NLS-1$
+				}
+				if ((method.kind() == MethodKind.BEFORE_EACH || method.kind() == MethodKind.AFTER_EACH)
+						&& hasOverride(declaration)) {
+					annotationRemovals.add(new AnnotationRemoval(declaration, "java.lang.Override")); //$NON-NLS-1$
+				}
+			}
+			for (InvocationMigration invocation : planned.invocations()) {
+				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
+						invocation.sourceLength());
+				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST
+						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);
+				expectedHintTargets.add(key);
+			}
+			nodesProcessed.add(type);
+			planned.methods().stream().map(MethodMigration::methodBindingKey)
+					.map(resolvedMethods::get).forEach(nodesProcessed::add);
+			planned.invocations().stream()
+					.map(invocation -> NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
+							invocation.sourceLength()))
+					.map(resolvedInvocations::get).forEach(nodesProcessed::add);
+			if (planned.removeTestCaseSuperclass() || !annotationRemovals.isEmpty()
+					|| !integerAnnotationAdditions.isEmpty() || !typeLiteralAnnotationAdditions.isEmpty()) {
+				operations.add(new PlannedStructuralRewriteOperation(type,
+						planned.removeTestCaseSuperclass() ? "junit.framework.TestCase" : null, //$NON-NLS-1$
+						annotationRemovals, integerAnnotationAdditions, typeLiteralAnnotationAdditions,
+						"Detach planned JUnit 3 hierarchy structure and preserve test order")); //$NON-NLS-1$
+			}
+		}
+
+		Set<NodeKey> covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),
+				plan.build(), unit.getJavaProject().getOptions(true), operations, nodesProcessed);
+		if (!covered.equals(expectedHintTargets)) {
+			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+					"The plan-aware JUnit hint program covered " + covered + " but expected " //$NON-NLS-1$ //$NON-NLS-2$
+							+ expectedHintTargets));
+		}
+	}
+
+	private static String methodRole(MethodKind kind) {
+		return switch (kind) {
+		case TEST -> ROLE_TEST_METHOD;
+		case BEFORE_EACH -> ROLE_BEFORE_EACH;
+		case AFTER_EACH -> ROLE_AFTER_EACH;
+		};
+	}
+
+	private static boolean hasOverride(BodyDeclaration declaration) {
+		for (Object modifier : declaration.modifiers()) {
+			if (modifier instanceof Annotation annotation) {
+				ITypeBinding binding= annotation.resolveTypeBinding();
+				String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()
+						: binding.getQualifiedName();
+				if ("java.lang.Override".equals(name) || "Override".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static String loadJUnit3HintProgram() throws CoreException {
+		try (InputStream stream= JUnitMigrationPlan.class.getClassLoader().getResourceAsStream(JUNIT3_HINT_RESOURCE)) {
+			if (stream == null) {
+				throw new IOException("Missing resource " + JUNIT3_HINT_RESOURCE); //$NON-NLS-1$
+			}
+			return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+					"Cannot load plan-aware JUnit 3 hint program", e)); //$NON-NLS-1$
+		}
+	}
+
+	private static JUnitMultiFileRewriteOperation.ResolvedEdits resolveExternalResources(CompilationUnit root,
 			List<ExternalResourceRuleMigration> fieldMigrations,
 			List<ExternalResourceRuleMigration> typeMigrations, Set<String> expectedFieldKeys,
 			Set<String> expectedTypeKeys) {
@@ -140,11 +342,21 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		return declaration == null ? null : declaration.getKey();
 	}
 
-	private static CoreException stalePlan(ICompilationUnit unit, Set<String> expectedFieldKeys,
+	private static CoreException staleExternalResourcePlan(ICompilationUnit unit, Set<String> expectedFieldKeys,
 			Set<String> expectedTypeKeys, JUnitMultiFileRewriteOperation.ResolvedEdits resolved) {
 		String message= "The coordinated JUnit migration plan is stale for " + unit.getElementName() //$NON-NLS-1$
 				+ ". Expected fields " + expectedFieldKeys + " and types " + expectedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$
 				+ ", but resolved fields " + resolved.fieldKeys() + " and types " + resolved.typeKeys(); //$NON-NLS-1$ //$NON-NLS-2$
+		return new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", message)); //$NON-NLS-1$
+	}
+
+	private static CoreException staleJUnit3Plan(ICompilationUnit unit, Set<String> expectedTypeKeys,
+			Set<String> expectedMethodKeys, Set<NodeKey> expectedInvocationKeys, Set<String> resolvedTypeKeys,
+			Set<String> resolvedMethodKeys, Set<NodeKey> resolvedInvocationKeys) {
+		String message= "The coordinated JUnit 3 hierarchy plan is stale for " + unit.getElementName() //$NON-NLS-1$
+				+ ". Expected types " + expectedTypeKeys + ", methods " + expectedMethodKeys //$NON-NLS-1$ //$NON-NLS-2$
+				+ " and invocations " + expectedInvocationKeys + ", but resolved types " + resolvedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$
+				+ ", methods " + resolvedMethodKeys + " and invocations " + resolvedInvocationKeys; //$NON-NLS-1$ //$NON-NLS-2$
 		return new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", message)); //$NON-NLS-1$
 	}
 }
