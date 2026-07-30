@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.internal.NonOwningHibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.repository.HibernateRepository;
 import org.eclipse.jgit.storage.hibernate.repository.HibernateRepositoryBuilder;
@@ -36,7 +37,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 
 	/** Creates the temporary adapter from an application-owned native factory. */
 	public CopiedHibernateRepositoryService(SessionFactory sessionFactory) {
-		this(nonOwningProvider(sessionFactory));
+		this(NonOwningHibernateSessionFactoryProvider.view(sessionFactory));
 	}
 
 	/**
@@ -80,16 +81,6 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 			repository.close();
 		}
 		repositories.clear();
-	}
-
-	static HibernateSessionFactoryProvider nonOwningProvider(SessionFactory sessionFactory) {
-		SessionFactory applicationOwnedFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
-		return new HibernateSessionFactoryProvider(applicationOwnedFactory) {
-			@Override
-			public void close() {
-				// The enclosing ServerPersistenceContext owns the native factory.
-			}
-		};
 	}
 
 	private HibernateRepository repository(String name) throws IOException {
