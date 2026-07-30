@@ -186,6 +186,11 @@ final class JdtCoreHarnessPlanner {
 					"Abstract custom TestCase bases require their complete descendant family to be migrated together.", //$NON-NLS-1$
 					baseRelated);
 		}
+		if (!Modifier.isPublic(type.binding().getModifiers())) {
+			return DirectAssessment.rejected("JDT_CORE_PUBLIC_FAMILY_REQUIRED", //$NON-NLS-1$
+					"The JUnit 3 harness constructs direct families reflectively and therefore requires a public test class; Jupiter would otherwise change test multiplicity.", //$NON-NLS-1$
+					baseRelated);
+		}
 		if (!closedScope) {
 			return DirectAssessment.rejected("INCOMPLETE_JDT_CORE_HARNESS_SCOPE", //$NON-NLS-1$
 					"The selected source scope is not closed for the JDT Core harness family.", baseRelated); //$NON-NLS-1$
@@ -195,7 +200,7 @@ final class JdtCoreHarnessPlanner {
 				.filter(MethodDeclaration::isConstructor).toList();
 		if (constructors.size() != 1 || !isSimpleNamedConstructor(constructors.get(0))) {
 			return DirectAssessment.rejected("JDT_CORE_NAMED_CONSTRUCTOR_REQUIRED", //$NON-NLS-1$
-					"Slice A requires exactly the conventional String constructor whose only statement is super(name).", //$NON-NLS-1$
+					"Slice A requires exactly the public conventional String constructor whose only statement is super(name).", //$NON-NLS-1$
 					baseRelated);
 		}
 		String constructorKey= methodKey(constructors.get(0));
@@ -316,8 +321,8 @@ final class JdtCoreHarnessPlanner {
 	}
 
 	private static boolean isSimpleNamedConstructor(MethodDeclaration constructor) {
-		if (constructor.parameters().size() != 1 || constructor.getBody() == null
-				|| constructor.getBody().statements().size() != 1) {
+		if (!Modifier.isPublic(constructor.getModifiers()) || constructor.parameters().size() != 1
+				|| constructor.getBody() == null || constructor.getBody().statements().size() != 1) {
 			return false;
 		}
 		SingleVariableDeclaration parameter= (SingleVariableDeclaration) constructor.parameters().get(0);
