@@ -21,6 +21,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -50,9 +51,25 @@ final class JUnit3AssertionInventory {
 	}
 
 	static Result analyze(TypeDeclaration declaration) {
+		return analyze(declaration, Set.of());
+	}
+
+	/**
+	 * Analyzes assertions while skipping method bodies whose complete semantics were
+	 * separately validated and whose declarations are removed by the same atomic plan.
+	 */
+	static Result analyze(TypeDeclaration declaration, Set<String> ignoredMethodBindingKeys) {
+		Set<String> ignored= ignoredMethodBindingKeys == null ? Set.of() : Set.copyOf(ignoredMethodBindingKeys);
 		String[] rejection= new String[1];
 		List<InvocationMigration> invocations= new ArrayList<>();
 		declaration.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				IMethodBinding binding= node.resolveBinding();
+				String key= binding == null ? null : binding.getMethodDeclaration().getKey();
+				return key == null || !ignored.contains(key);
+			}
+
 			@Override
 			public boolean visit(SuperMethodInvocation node) {
 				rejection[0]= "Explicit superclass method calls can change lifecycle semantics under Jupiter."; //$NON-NLS-1$
