@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - '.github/workflows/deploy-release.yml'
+      - '.github/workflows/deploy-snapshot.yml'
+      - '.github/workflows/mining-core.yml'
+      - '.github/workflows/refactoring-mining.yml'
       - '.github/workflows/release-workflow-validation.yml'
       - '.github/scripts/verify_release_identity.py'
       - '.github/scripts/test_verify_release_identity.py'
@@ -36,3 +39,19 @@ jobs:
           python3 .github/scripts/test_verify_release_identity.py
           python3 .github/scripts/test_wait_for_pages_build.py
           python3 .github/scripts/test_verify_published_repository.py
+      - name: Validate shared gh-pages publication lock
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflows = [
+              Path('.github/workflows/deploy-release.yml'),
+              Path('.github/workflows/deploy-snapshot.yml'),
+              Path('.github/workflows/mining-core.yml'),
+              Path('.github/workflows/refactoring-mining.yml'),
+          ]
+          contract = "concurrency:\n  group: release-workflow\n  cancel-in-progress: false"
+          failures = [str(path) for path in workflows if contract not in path.read_text(encoding='utf-8')]
+          if failures:
+              raise SystemExit(f"gh-pages publishers must share the release-workflow lock: {failures}")
+          PY

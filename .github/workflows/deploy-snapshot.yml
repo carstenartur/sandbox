@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: sandbox-gh-pages-publication
+  group: release-workflow
   cancel-in-progress: false
 
 jobs:

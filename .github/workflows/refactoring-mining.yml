@@ -10,7 +10,7 @@ on:
         required: false
 
 concurrency:
-  group: refactoring-pattern-report
+  group: release-workflow
   cancel-in-progress: false
 
 permissions:
