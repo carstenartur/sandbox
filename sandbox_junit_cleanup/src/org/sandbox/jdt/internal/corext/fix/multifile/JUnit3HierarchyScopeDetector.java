@@ -36,7 +36,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 
-/** Finds the source closure needed before any ordinary JUnit 3 hierarchy rewrite. */
+/** Finds the source closure needed before any JUnit 3 hierarchy rewrite. */
 public final class JUnit3HierarchyScopeDetector {
 
 	private JUnit3HierarchyScopeDetector() {
@@ -45,9 +45,11 @@ public final class JUnit3HierarchyScopeDetector {
 	public static JUnitScopeCandidateDetector.SearchSeeds findSearchSeeds(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) {
 		if (project == null || currentScope == null || currentScope.isEmpty()) {
-			return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
+			return empty();
 		}
 		checkCanceled(monitor);
+		JUnitScopeCandidateDetector.SearchSeeds jdtCoreSeeds=
+				JdtCoreHarnessScopeDetector.findSearchSeeds(project, currentScope, monitor);
 		Set<ICompilationUnit> units= new LinkedHashSet<>();
 		for (ICompilationUnit unit : currentScope) {
 			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
@@ -55,7 +57,7 @@ public final class JUnit3HierarchyScopeDetector {
 			}
 		}
 		if (units.isEmpty()) {
-			return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
+			return jdtCoreSeeds;
 		}
 
 		boolean[] candidateFound= { false };
@@ -118,8 +120,23 @@ public final class JUnit3HierarchyScopeDetector {
 			}
 		}, monitor);
 		checkCanceled(monitor);
-		return new JUnitScopeCandidateDetector.SearchSeeds(candidateFound[0], complete[0],
-				new ArrayList<>(elements), new ArrayList<>(directUnits));
+		JUnitScopeCandidateDetector.SearchSeeds ordinarySeeds=
+				new JUnitScopeCandidateDetector.SearchSeeds(candidateFound[0], complete[0],
+						new ArrayList<>(elements), new ArrayList<>(directUnits));
+		return merge(ordinarySeeds, jdtCoreSeeds);
+	}
+
+	private static JUnitScopeCandidateDetector.SearchSeeds merge(
+			JUnitScopeCandidateDetector.SearchSeeds ordinary,
+			JUnitScopeCandidateDetector.SearchSeeds jdtCore) {
+		Set<IJavaElement> elements= new LinkedHashSet<>(ordinary.elements());
+		elements.addAll(jdtCore.elements());
+		Set<ICompilationUnit> units= new LinkedHashSet<>(ordinary.directCompilationUnits());
+		units.addAll(jdtCore.directCompilationUnits());
+		return new JUnitScopeCandidateDetector.SearchSeeds(
+				ordinary.candidateFound() || jdtCore.candidateFound(),
+				ordinary.complete() && jdtCore.complete(),
+				new ArrayList<>(elements), new ArrayList<>(units));
 	}
 
 	private static boolean isJUnit3Type(ITypeBinding binding) {
@@ -157,6 +174,10 @@ public final class JUnit3HierarchyScopeDetector {
 		elements.add(type);
 		units.add(unit.getPrimary());
 		return true;
+	}
+
+	private static JUnitScopeCandidateDetector.SearchSeeds empty() {
+		return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
