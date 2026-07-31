@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2f742dce876a144cbe9f92401419f9b1e06b83c6c29bc82b860d3b6bcfd0b3ee",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$receiver.setInitialSelections($array)\n:: instanceof($receiver, \"org.eclipse.jface.dialogs.Dialog\") \u0026\u0026 instanceof($array, \"java.lang.Object[]\")\n\u003d\u003e $receiver.setInitialSelections((java.lang.Object[]) $array)\n;;",
+  "beforeExample": "import org.eclipse.jface.dialogs.Dialog;\nimport org.eclipse.jface.window.Window;\n\nclass MySelectionDialog extends Dialog {\n    protected MySelectionDialog(Window parentShell) {\n        super(parentShell.getShell());\n    }\n    public void configure() {\n        String[] items \u003d {\"item1\", \"item2\"};\n        setInitialSelections(items);\n    }\n}",
+  "afterExample": "import org.eclipse.jface.dialogs.Dialog;\nimport org.eclipse.jface.window.Window;\n\nclass MySelectionDialog extends Dialog {\n    protected MySelectionDialog(Window parentShell) {\n        super(parentShell.getShell());\n    }\n    public void configure() {\n        String[] items \u003d {\"item1\", \"item2\"};\n        setInitialSelections((Object[]) items);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.dialogs.Dialog;\nimport org.eclipse.jface.window.Window;\n\nclass MySelectionDialog extends Dialog {\n    protected MySelectionDialog(Window parentShell) {\n        super(parentShell.getShell());\n    }\n    public void configure() {\n        String item \u003d \"singleItem\";\n        // This case passes a single object, not an array, so the rule should not apply.\n        // setInitialSelections(item); \n        // This case already explicitly wraps the item in an array, so no change is needed.\n        setInitialSelections(new Object[]{item}); \n    }\n}",
+  "targetHintFile": "api.sandbox-hint",
+  "sourceCommit": "82ba18f0ee202cdd3ee4475216cda73459bc2015",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage",
+  "summary": "Adds explicit (Object[]) cast to array arguments of setInitialSelections method on Dialog instances.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-31T03:15:50.772950433Z",
+  "ruleFingerprint": "sha256:90c69a4ba32bc204ba5743db4a66434f20b9a1ff30344223902064a5a81c082f",
+  "behaviorFingerprint": "sha256:59049f3496904c506b20ddaf6af54a43f141b800117de1cb8aff762d0ee3843a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.dialogs cannot be resolved",
+    "verifiedAt": "2026-07-31T03:15:52.934887401Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
