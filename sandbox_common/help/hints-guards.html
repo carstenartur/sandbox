@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Guards, predicates and composition</title></head>
+<body>
+<h1>Guards, predicates and composition</h1>
+<p>Guards add semantic constraints to a syntactic pattern. A source guard follows <code>::</code> after the source pattern. An alternative guard follows the replacement or structured-action alternative.</p>
+<h2>Boolean expressions</h2>
+<pre>$receiver.size() == 0 :: hasNoSideEffect($receiver) &amp;&amp; sourceVersionBetween(8, 30)
+=&gt; $receiver.isEmpty()
+;;</pre>
+<p>Guard expressions use function calls, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code> and parentheses. Missing bindings, wrong arity, missing semantic-plan data and rejected type checks evaluate to false; they are not treated as warnings that allow execution to continue.</p>
+<h2>Local predicates</h2>
+<pre>&lt;!predicate hasOverrideAnnotation($method):
+    hasAnnotation($method, Override) ||
+    hasAnnotation($method, java.lang.Override)&gt;
+
+void $method($params$) :: hasOverrideAnnotation($method)
+=&gt;! removeAnnotation(target=$method, annotation="java.lang.Override")
+;;</pre>
+<p>Predicates provide named, parameterized guard expressions. They may call built-in guards and previously declared local predicates. Predicate names and parameters must be unique in their scope. Cycles, unknown predicates and wrong argument counts are rejected during program parsing.</p>
+<h2>Common guard groups</h2>
+<ul>
+<li><b>AST and binding guards</b> constrain resolved owners, types, modifiers, annotations, references and side effects.</li>
+<li><b>Source-level guards</b> constrain Java versions and compiler options.</li>
+<li><b>Plan guards</b> read semantic roles, typed facts and directed relations.</li>
+<li><b>Alternative control</b> uses <code>otherwise()</code> only as an explicit catch-all alternative.</li>
+</ul>
+<h2>Semantic-plan guards</h2>
+<dl>
+<dt><code>plannedRole</code>, <code>enclosingPlannedRole</code></dt>
+<dd>Require a role on the matched, bound or enclosing node.</dd>
+<dt><code>plannedValue</code>, <code>enclosingPlannedValue</code></dt>
+<dd>Compare a typed fact on a node or enclosing declaration.</dd>
+<dt><code>plannedNodeValue</code>, <code>plannedListContains</code></dt>
+<dd>Compare node-reference and homogeneous list values.</dd>
+<dt><code>plannedRelation</code>, <code>plannedRelationValue</code></dt>
+<dd>Require an exact directed relation and optionally one typed relation attribute.</dd>
+<dt><code>plannedOutgoingRelation</code>, <code>plannedIncomingRelation</code>, <code>plannedRelationCount</code></dt>
+<dd>Query relation direction and exact multiplicity. Duplicate relation occurrences are intentional and are never collapsed into a set.</dd>
+</dl>
+<h2>Composition guidelines</h2>
+<ul>
+<li>Give a repeated semantic condition a predicate name instead of copying the expression into several rules.</li>
+<li>Keep predicates project-neutral when they describe reusable AST behaviour.</li>
+<li>Keep project names and migration roles in recipe files, not in the shared guard engine.</li>
+<li>Prefer a false result to an approximation when a binding or plan fact cannot be established.</li>
+<li>Add parser, editor-completion and behaviour tests whenever a guard or predicate feature changes.</li>
+</ul>
+</body>
+</html>

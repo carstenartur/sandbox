@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<contexts>
+   <context id="cleanups" title="Sandbox cleanups">
+      <description>Configure, preview and run Sandbox Java cleanups.</description>
+      <topic label="Using Sandbox cleanups" href="help/cleanups.html"/>
+      <topic label="Running and reviewing cleanups" href="help/running-cleanups.html"/>
+   </context>
+   <context id="junitMigration" title="Sandbox JUnit migration">
+      <description>Plan-aware JUnit migrations and their safety contracts.</description>
+      <topic label="JUnit migration and safety contracts" href="help/junit-migration.html"/>
+   </context>
+   <context id="hintEditor" title="Sandbox Hint Editor">
+      <description>Edit, validate, complete and debug .sandbox-hint programs.</description>
+      <topic label="Hint DSL programmer's guide" href="help/hints-dsl.html"/>
+      <topic label="Debugging, tracing and tests" href="help/debugging-testing.html"/>
+   </context>
+   <context id="triggerPatternApi" title="TriggerPattern API">
+      <description>Embed and extend the TriggerPattern matching and rewrite engine.</description>
+      <topic label="TriggerPattern API programmer's guide" href="help/triggerpattern-api.html"/>
+      <topic label="Extension points" href="help/api-extensions.html"/>
+   </context>
+</contexts>

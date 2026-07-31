@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Debugging, tracing and tests</title></head>
+<body>
+<h1>Debugging, tracing and tests</h1>
+<h2>Editor validation</h2>
+<p>The Sandbox Hint Editor validates metadata, rule terminators, pattern syntax, guards, local predicates, explicit kinds and structured-action schemas. Content assist is derived from the canonical language vocabulary and action catalog. A proposed language feature is incomplete when only the runtime parser understands it.</p>
+<h2>Debug launch</h2>
+<p>Use the <b>Sandbox Hint Debug</b> launch type to execute a hint program with debugger integration. The source locator and source-path computer map execution back to the <code>.sandbox-hint</code> program. Breakpoints and trace output should identify the stable rule ID rather than a generated expansion-only name.</p>
+<h2>Execution console and markers</h2>
+<p>The <b>Sandbox Hint Execution</b> console reports parsing, matching and rewrite diagnostics. Problem markers identify invalid hint or embedded-Java regions. Execution-trace markers carry the rule ID, hint file, selected replacement and timestamp. Plan-aware diagnostics should additionally state missing roles, values, relations, binding keys or coverage mismatches.</p>
+<h2>Recommended test layers</h2>
+<ol>
+<li><b>Parser contract:</b> valid syntax produces the expected typed model; malformed syntax fails with a source-line diagnostic.</li>
+<li><b>Vocabulary/editor contract:</b> directives, guards, kinds and actions offered by the editor are derived from the runtime catalogs.</li>
+<li><b>Matcher behaviour:</b> positive and negative AST fixtures cover spelling, nesting, binding and source-level boundaries.</li>
+<li><b>Rewrite behaviour:</b> compare complete before/after sources, including imports, comments and formatting-sensitive declaration order.</li>
+<li><b>Plan-aware integration:</b> verify required contract, exact planned target authorization, typed values and stale-plan rejection.</li>
+<li><b>Runtime oracle:</b> when discovery or execution semantics change, compare completed execution trees before and after migration.</li>
+</ol>
+<h2>Negative tests</h2>
+<p>For every productive rule, include at least one near miss that must not transform. Important negative cases include unresolved or wrong owners, overload differences, changed modifiers, extra annotations, ambiguous multi-fragment fields, incomplete multi-file scope, absent plan facts and duplicate or reordered relation occurrences.</p>
+<h2>Execution-tree policies</h2>
+<p>Use <code>Policy.strict()</code> when semantic container identity and nesting must remain equal. Use <code>sameShape()</code> only when framework container identities legitimately change. <code>leavesInOrder()</code> ignores wrappers but preserves test order and multiplicity. <code>leafMultiset()</code> also ignores order while still preserving every duplicate occurrence. Relax results, attributes or success requirements only in a test that explains why the dimension is irrelevant.</p>
+<h2>Reproducibility</h2>
+<p>The complete Maven or Tycho command used by CI must be runnable from a checkout. Workflow-only transformations or hidden generated state are not a substitute for a local build. Keep focused core tests fast, but run PDE tests for JDT rewrite, editor and Eclipse-help integration.</p>
+</body>
+</html>

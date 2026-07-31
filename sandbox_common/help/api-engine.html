@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Engine architecture and lifecycle</title></head>
+<body>
+<h1>Engine architecture and lifecycle</h1>
+<h2>1. Parse the complete program</h2>
+<p>Use <code>HintProgramParser</code> for a complete <code>.sandbox-hint</code> program. It preprocesses local predicates, explicit rule-kind metadata and structured-action alternatives, delegates compatibility syntax to the established parser, and rehydrates the result into one typed model. Program diagnostics should retain source lines and stable rule IDs.</p>
+<h2>2. Build or obtain the AST</h2>
+<p>The caller supplies a JDT <code>CompilationUnit</code> configured with the project compiler options. Binding-dependent rules require an AST created with the appropriate Java project, source path and class path. A syntax-only AST must not be presented as binding-complete.</p>
+<h2>3. Index and match</h2>
+<p><code>PatternIndex</code> dispatches candidate nodes by <code>PatternKind</code> and avoids a fresh full-tree traversal for every rule. Specialized parsers and matchers own complex forms such as statement sequences and header-only type declarations. A <code>Match</code> retains the matched node and placeholder bindings.</p>
+<h2>4. Evaluate guards and alternatives</h2>
+<p><code>BatchTransformationProcessor</code> evaluates source guards and selects the first applicable rewrite alternative. Its <code>TransformationResult</code> records the rule, match, replacement or structured actions and descriptive information. A result without a rewrite is not an operation.</p>
+<h2>5. Apply semantic-plan authorization</h2>
+<p>For coordinated migrations, install a <code>SemanticRewritePlan</code> with the compiler options. <code>PlanAwareHintFileFixCore</code> validates the required contract, rejects empty plans and analysis-dependent replacement shortcuts, and checks that every authorized match has a stable <code>NodeKey</code>.</p>
+<h2>6. Create rewrite operations</h2>
+<p>Text results are serialized into an action-free hint program and delegated to the established text rewrite backend. Structured results become <code>StructuredRewriteActionOperation</code> instances. The operation resolves its named arguments, verifies the target against the semantic plan and dispatches to the registered handler.</p>
+<h2>7. Apply AST and import rewrites</h2>
+<p>Handlers use one <code>CompilationUnitRewrite</code> transaction with <code>ASTRewrite</code>, <code>ImportRewrite</code> and text-edit groups. They must preserve comments and existing project formatting behaviour. Ambiguous declaration-wide field operations and unresolved static invocations are rejected.</p>
+<h2>8. Check coverage and verify behaviour</h2>
+<p>Plan-aware callers compare the produced operation targets with the expected planned targets. Multi-file cleanup infrastructure applies the transaction only when its complete scope is valid. Runtime-sensitive migrations then compare completed execution-tree snapshots under an explicit policy.</p>
+<h2>Threading and reuse</h2>
+<p>Immutable program, schema and plan objects may be shared. Mutable builders, AST nodes, rewrite objects and processing contexts belong to one operation. Registries must reject conflicting names and remain deterministic under concurrent reads.</p>
+</body>
+</html>

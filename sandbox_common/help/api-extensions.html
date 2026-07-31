@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Extension points and registered services</title></head>
+<body>
+<h1>Extension points and registered services</h1>
+<h2>Hint providers</h2>
+<p>The <code>org.sandbox.jdt.triggerpattern.hints</code> extension point contributes hint providers to the Eclipse runtime. A provider should return stable, validated programs and must not depend on editor state. Use program IDs and rule IDs that remain stable across formatting or documentation changes.</p>
+<h2>Guard functions</h2>
+<p>The <code>org.sandbox.jdt.triggerpattern.guards</code> extension point contributes guard implementations. A guard receives the active match and arguments through the guard contract. It must validate arity and types, avoid mutating AST state, and return false when required semantic information is unavailable.</p>
+<p>Guard names form one shared language namespace. Registration must reject conflicting implementations instead of silently replacing a built-in or another extension.</p>
+<h2>Structured-action schemas</h2>
+<p><code>RewriteActionCatalog</code> is the portable schema registry. Extend it with a builder initialized from the standard catalog:</p>
+<pre>RewriteActionCatalog catalog = RewriteActionCatalog.standard()
+    .toBuilder()
+    .register(new RewriteActionSchema(
+        "replaceSomething",
+        Set.of("target", "replacement"),
+        Set.of("option"),
+        "Replace one validated element"))
+    .build();</pre>
+<p>The parser and editor vocabulary must use the same catalog. Duplicate action names with a different schema are rejected.</p>
+<h2>Runtime action handlers</h2>
+<p>Eclipse-side handlers implement <code>StructuredRewriteActionHandler</code> and are registered with <code>StructuredRewriteActionRegistry</code>. The handler name must correspond exactly to a schema. A handler receives a <code>StructuredRewriteActionContext</code> that resolves bindings, literals, plan values, names, class literals and lists and exposes the active JDT rewrite transaction.</p>
+<p>Do not register a handler without a schema or document an action without a runtime handler. Registry/catalog drift is a test failure.</p>
+<h2>Editor and debug integrations</h2>
+<p>The Sandbox Hint Editor, quick-assist processors, execution console and debug launch type are Eclipse integrations supplied by the common bundle. New language features must update syntax recognition, content assist, diagnostics and debug rendering through shared vocabulary rather than maintaining separate keyword lists.</p>
+<h2>Choosing an extension mechanism</h2>
+<ul>
+<li>Add a <b>hint provider</b> to distribute new programs.</li>
+<li>Add a <b>guard</b> for a reusable, side-effect-free semantic predicate.</li>
+<li>Add an <b>action schema and handler</b> for a reusable AST mutation that cannot be represented safely as a replacement pattern.</li>
+<li>Add a <b>planner or recipe</b> outside the shared engine when correctness depends on project-specific multi-file discovery.</li>
+</ul>
+<h2>Compatibility</h2>
+<p>Extension implementations should depend only on exported API or deliberate runtime-SPI packages. Internal parser and matcher classes are not binary compatibility promises. A change to a schema, guard arity, plan fact type or NodeKey semantics is an API contract change and requires migration tests.</p>
+</body>
+</html>

@@ -109,4 +109,12 @@
             class="org.sandbox.jdt.triggerpattern.debug.SandboxHintSourcePathComputer">
       </sourcePathComputer>
    </extension>
+
+   <extension point="org.eclipse.help.toc">
+      <toc file="toc.xml" primary="true"/>
+   </extension>
+
+   <extension point="org.eclipse.help.contexts">
+      <contexts file="contexts.xml" plugin="sandbox_common"/>
+   </extension>
 </plugin>

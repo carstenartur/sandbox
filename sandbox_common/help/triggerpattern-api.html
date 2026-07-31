@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>TriggerPattern API programmer's guide</title></head>
+<body>
+<h1>TriggerPattern API programmer's guide</h1>
+<p>TriggerPattern separates the portable transformation language and matching model from Eclipse-specific rewrite execution. API clients can parse and analyse hint programs in the core module; Eclipse integrations add JDT rewrite operations, editors, markers, quick assists and debug support.</p>
+<h2>Main programming surfaces</h2>
+<ul>
+<li><b>Program model:</b> <code>HintFile</code>, <code>TransformationRule</code>, <code>Pattern</code>, <code>RewriteAlternative</code>, <code>GuardExpression</code> and structured-action value types.</li>
+<li><b>Parsing:</b> <code>HintProgramParser</code> is the authoritative composite parser for predicates, explicit rule kinds and structured actions. The compatibility <code>HintFileParser</code> remains an implementation layer, not the recommended entry point for complete programs.</li>
+<li><b>Matching:</b> <code>PatternIndex</code>, pattern parsers and matchers traverse a compilation unit and retain placeholder bindings.</li>
+<li><b>Processing:</b> <code>BatchTransformationProcessor</code> evaluates rules and alternatives and returns typed <code>TransformationResult</code> instances.</li>
+<li><b>Planning:</b> <code>SemanticRewritePlan</code>, <code>NodeKey</code>, typed values and relations authorize coordinated changes.</li>
+<li><b>Execution:</b> Eclipse-side code converts results into text or structured JDT rewrite operations.</li>
+<li><b>Verification:</b> <code>ExecutionTreeSnapshot</code> and <code>ExecutionTreeComparator</code> define framework-neutral runtime contracts.</li>
+</ul>
+<h2>Module boundary</h2>
+<p><code>sandbox_common_core</code> must stay usable without an OSGi runtime. It owns language models, parsing, catalogs, planning, matching and portable tests. The <code>sandbox_common</code> Eclipse bundle owns JDT UI and rewrite integration, runtime action handlers, editors, quick assists, console and debug facilities.</p>
+<h2>Public versus internal packages</h2>
+<p>Code intended for general consumption belongs in <code>org.sandbox.jdt.triggerpattern.api</code>. Packages named <code>internal</code> contain implementation details and may evolve with the language. Eclipse runtime SPI packages such as <code>cleanup.actions</code> are exported deliberately but still require the matching Eclipse bundle and JDT APIs.</p>
+<h2>Fail-closed principle</h2>
+<p>API implementations must not guess when a stable target, binding, action argument, typed value or relation cannot be established. Return no match, reject the program, or raise a structured diagnostic. Do not authorize a broader node merely because a narrower node became unavailable.</p>
+<p>See <a href="api-engine.html">engine architecture and lifecycle</a>, <a href="api-extensions.html">extension points and registered services</a>, and <a href="api-testing.html">API testing and compatibility</a>.</p>
+</body>
+</html>

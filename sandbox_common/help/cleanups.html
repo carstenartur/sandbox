@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Using Sandbox cleanups</title></head>
+<body>
+<h1>Using Sandbox cleanups</h1>
+<p>Sandbox cleanups participate in the Eclipse JDT cleanup and quick-assist workflows. Availability depends on the installed Sandbox features and the Java source level of the project.</p>
+<h2>Configuration</h2>
+<ol>
+<li>Open <b>Window &gt; Preferences &gt; Java &gt; Code Style &gt; Clean Up</b>, or the corresponding project-specific settings.</li>
+<li>Create or edit a cleanup profile.</li>
+<li>Enable only the transformations you intend to review together. Coordinated migrations such as JUnit hierarchy conversion may analyse several compilation units as one transaction.</li>
+<li>Use a project-specific profile when source level, libraries or migration policy differ between projects.</li>
+</ol>
+<h2>Ways to invoke transformations</h2>
+<ul>
+<li><b>Source &gt; Clean Up</b> applies the active profile to the selected scope.</li>
+<li><b>Quick Assist</b> proposes transformations for the current selection or problem location.</li>
+<li>The Sandbox cleanup application can run supported cleanups in batch and check modes for reproducible command-line verification.</li>
+<li><code>.sandbox-hint</code> files can be opened in the Sandbox Hint Editor and executed through the TriggerPattern integration.</li>
+</ul>
+<h2>Review expectations</h2>
+<p>Always inspect the Eclipse preview or generated diff. A cleanup may be syntactically valid while still requiring project-specific judgement about API compatibility, ordering or runtime behaviour. Binding-dependent transformations are not offered when JDT cannot resolve the required types and members.</p>
+<h2>Atomic migrations</h2>
+<p>Multi-file migrations collect their expected inputs before rewriting. If the scope is incomplete, a plan target is stale, or exact rule coverage cannot be established, the migration is rejected rather than partially applied.</p>
+<p>See <a href="running-cleanups.html">Running and reviewing cleanups</a> and <a href="junit-migration.html">JUnit migration and safety contracts</a>.</p>
+</body>
+</html>

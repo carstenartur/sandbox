@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>API testing and compatibility</title></head>
+<body>
+<h1>API testing and compatibility</h1>
+<h2>Portable core tests</h2>
+<p>Language models, parsing, catalogs, plan values, relations and framework-neutral execution-tree comparison belong in non-OSGi tests. These tests should create AST fixtures directly, avoid workspace state where it is not needed and run in the focused core Maven build.</p>
+<h2>PDE integration tests</h2>
+<p>Use PDE tests when behaviour depends on Eclipse bundles, Java projects, resolved class paths, <code>CompilationUnitRewrite</code>, imports, editors, markers, help resources or debug services. A core parser test cannot prove that a structured action produces the correct JDT edit.</p>
+<h2>Contract tests for catalogs and registries</h2>
+<ul>
+<li>Every standard action schema has exactly one runtime handler.</li>
+<li>Every editor action proposal originates from the same schema catalog.</li>
+<li>Every documented directive and operator remains in the canonical language vocabulary.</li>
+<li>Conflicting registrations are rejected deterministically.</li>
+<li>Guard and predicate arity errors fail during parsing or evaluation with a useful diagnostic.</li>
+</ul>
+<h2>Semantic-plan tests</h2>
+<p>Cover typed fact equality, conflicting facts, node-reference values, ordered lists, directed relations, relation attributes, reverse indexes and duplicate occurrence counts. Integration tests must also prove rejection for a missing contract, an empty plan, a missing target, a stale AST binding and incomplete or excessive coverage.</p>
+<h2>Rewrite compatibility</h2>
+<p>Before/after source tests should compare complete compilation units. Include import collision cases, fully qualified and simple annotation names, modifier ordering, multi-fragment fields, records, enums, interfaces and annotation types where relevant. Verify that a no-op or failed action does not leave partial imports or edits behind.</p>
+<h2>Runtime compatibility</h2>
+<p>When a migration changes test discovery, runners, suites, wrappers or providers, successful compilation is insufficient. Capture the completed execution trees on both sides and choose the strictest comparison policy compatible with the intentional framework change.</p>
+<h2>Versioning guidance</h2>
+<p>Additive directives, guards, pattern kinds and action schemas require parser, editor, help and behaviour tests in the same change. Renaming an action, changing required arguments, changing a plan fact type or broadening a matcher can invalidate existing programs and should be treated as a breaking language change. Preserve legacy constructors and parser paths only when their semantics remain unambiguous and covered.</p>
+<h2>Documentation as a tested product surface</h2>
+<p>Eclipse help files are bundle resources. Tests should verify that every TOC target exists and that the language reference mentions every canonical directive and standard action. The documentation must describe fail-closed boundaries and not promise transformations that the runtime deliberately rejects.</p>
+</body>
+</html>
