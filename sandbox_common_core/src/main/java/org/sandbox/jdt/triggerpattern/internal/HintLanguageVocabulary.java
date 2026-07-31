@@ -46,6 +46,15 @@ public final class HintLanguageVocabulary {
 	private static final Map<String, String> DESCRIPTION_OVERRIDES= Map.ofEntries(
 			Map.entry("plannedRole", "Matched or bound node has the supplied semantic-plan role"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("enclosingPlannedRole", "An enclosing node has the supplied semantic-plan role"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedValue", "Matched or bound node has an equal typed semantic-plan value"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("enclosingPlannedValue", "A node or enclosing declaration has an equal typed plan value"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedNodeValue", "A typed semantic-plan value references the supplied bound node"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedListContains", "A typed semantic-plan list contains the supplied value"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedRelation", "An exact directed semantic-plan relation connects two nodes"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedRelationValue", "A semantic-plan relation has an equal typed attribute"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedOutgoingRelation", "A node has an outgoing semantic-plan relation of a kind"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedIncomingRelation", "A node has an incoming semantic-plan relation of a kind"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("plannedRelationCount", "A node has the exact number of outgoing planned relations"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("referencedIn", "A variable is referenced in another bound node"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("hasNoSideEffect", "Expression is side-effect free"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("sourceVersionBetween", "Source version is within the supplied range"), //$NON-NLS-1$ //$NON-NLS-2$
