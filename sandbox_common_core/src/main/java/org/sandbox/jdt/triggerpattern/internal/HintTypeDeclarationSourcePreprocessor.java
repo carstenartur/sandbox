@@ -44,8 +44,9 @@ final class HintTypeDeclarationSourcePreprocessor {
 				sourceSeen= false;
 			}
 
-			if (!sourceSeen && kindsByRuleId.get(ruleId) == PatternKind.TYPE_DECLARATION
-					&& isSourceStart(trimmed)) {
+			boolean explicitTypeRule= ruleId != null
+					&& kindsByRuleId.get(ruleId) == PatternKind.TYPE_DECLARATION;
+			if (!sourceSeen && explicitTypeRule && isSourceStart(trimmed)) {
 				int lastHeaderLine= index;
 				StringBuilder header= new StringBuilder(trimmed);
 				while (lastHeaderLine + 1 < lines.length) {
