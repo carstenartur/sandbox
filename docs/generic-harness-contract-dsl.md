@@ -4,9 +4,9 @@
 
 Legacy test frameworks often encode discovery, construction, ordering, selection,
 lifecycle and matrix execution implicitly in Java inheritance and suite builders.
-The migration engine must not contain project names such as JDT Core. Instead,
-project-specific recipes describe those contracts using generic semantic facts,
-composable predicates and structured rewrite actions.
+The migration engine must not contain project names such as JDT Core or JDT UI.
+Instead, project-specific recipes describe those contracts using generic semantic
+facts, composable predicates and structured rewrite actions.
 
 The existing binding-resolved planner and JDT runtime-tree recorder remain the
 safety boundaries. The DSL describes reusable policy; it does not replace scope
@@ -43,6 +43,57 @@ Predicate contracts are deliberately closed:
 
 These rules keep predicates locally understandable and safe to reuse or rename.
 
+## Typed semantic facts
+
+Roles answer only whether a node participates in a transformation. Harness
+migration also needs properties such as runner kind, lifecycle scope,
+constructor mode, selection policy, ordering and matrix coordinates.
+`SemanticRewritePlan` therefore carries immutable typed values:
+
+- exact strings for enum-like contract values;
+- booleans;
+- signed integers;
+- stable references to another plan node;
+- homogeneous immutable lists.
+
+Fact names have one value kind across a plan. Conflicting duplicate values or
+conflicting kinds fail while the plan is built rather than becoming a silent
+non-match later. The DSL reads those values with fail-closed guards:
+
+```text
+<!predicate selectedJupiterTest($method):
+    plannedValue($method, "test-kind", "JUPITER")
+    && plannedValue($method, "selected", true)>
+```
+
+`plannedNodeValue` compares a node-reference fact with another bound node,
+`plannedListContains` checks a typed list, and `enclosingPlannedValue` searches
+only the node and its semantic ancestors. Missing plans, facts, bindings or
+wrong value kinds return false.
+
+## Ordered semantic relations
+
+Directed relations model suite membership, providers, wrappers, lifecycle
+ownership, inheritance and matrix expansion without hard-coding any test
+framework. Relations carry typed attributes and remain in planner order.
+Duplicate relation occurrences are intentionally preserved because a runtime
+suite may contain the same test more than once.
+
+```text
+<!predicate firstSuiteOccurrence($suite, $test):
+    plannedRelation($suite, "CONTAINS", $test)
+    && plannedRelationValue($suite, "CONTAINS", $test, "index", 0)>
+```
+
+The shared guards also support incoming/outgoing existence and exact outgoing
+relation counts. Contract predicates can combine those primitives rather than
+requiring a new Java guard for every framework concept.
+
+Stable plan keys now cover ordinary, enum, annotation and record types, methods,
+fields and exact method/constructor call sites. Field keys are needed for JUnit
+4 `@Rule`/`@ClassRule` migration; exact constructor call sites are needed for
+named JUnit 3 test construction and custom suite builders.
+
 ## One language vocabulary
 
 `HintLanguageVocabulary` is the canonical source for:
@@ -78,46 +129,78 @@ one parser class.
 
 ## Next generic language slices
 
-Predicates reduce duplication but do not yet express the complete harness
-migration. The next extensions must stay generic and typed:
+Typed facts and relations provide the shared data model, but they do not yet
+express all required AST changes. The next extensions remain generic:
 
 ```text
 contract legacy-tests/v1 {
     discover methods where exactTest($method)
-    construct by namedConstructor(String methodName)
+    construct by planValue("construction")
     order by planValue("ordering")
     select by planValue("selection")
-    lifecycle perSuite("setUpSuite", "tearDownSuite")
-    matrix dimension("compliance", planValue("levels"))
+    lifecycle through relation("OWNS_LIFECYCLE")
+    matrix through relation("EXPANDS_TO")
 }
 ```
 
 Required engine concepts are:
 
-- typed semantic-plan values rather than untyped strings;
-- binding-based graph predicates such as source-subtype and external-reference
-  closure;
 - structured AST actions such as replacing a supertype, removing a validated
-  constructor, adding annotations and generating a nested adapter type;
-- reusable contract fragments for discovery, ordering, selection, suite state
-  and execution matrices;
+  constructor, replacing an annotation, qualifying an invocation and generating
+  a nested adapter type;
+- reusable contract fragments for discovery, ordering, selection, suite state,
+  providers, wrappers and execution matrices;
+- trace output containing rule ID, plan node, relation occurrence, binding key,
+  typed values and rejection/skip reason;
 - a generic runtime oracle requiring an identical non-empty successful test
   tree with configurable identity, nesting, order and multiplicity policies.
 
 Project-specific recipes then supply only type names, method patterns and the
 composition of these generic contracts.
 
+## Migration roadmap
+
+### JDT Core
+
+The first demanding fixture is the JDT Core JUnit 3 harness. The planner must
+capture named test construction, custom `suite()` builders, inherited test-depth
+selection, compliance-level multiplication, setup wrappers, ordering/filtering
+and performance callbacks as typed facts and ordered relations. Unsupported or
+incomplete concepts remain fail-closed. The migrated implementation is accepted
+only when the existing JDT launch infrastructure records an equivalent
+successful runtime tree under the declared identity, nesting, order and
+multiplicity policy.
+
+### JDT UI
+
+After the JDT Core contract is under control, the same engine is applied to JDT
+UI rather than creating a second migration framework. Its dominant input is
+JUnit 4, so the planner and recipes will classify and transform different
+concepts:
+
+- `@RunWith` runners and suites;
+- `@Rule` and `@ClassRule` fields and their extension mappings;
+- parameterized constructors, fields and provider methods;
+- categories, assumptions and custom runners;
+- inherited lifecycle methods and shared assertion helpers;
+- mixed JUnit 3, JUnit 4, Vintage and Jupiter execution during staged migration.
+
+The typed field, call-site, fact and relation model is intentionally shared by
+both projects. Only contract-specific planners, fact names and recipes differ.
+
 ## Acceptance criteria
 
 Every language extension must include:
 
 - parser and model tests for valid composition;
-- negative tests for ambiguity, hidden capture, recursion and stale contracts;
+- negative tests for ambiguity, hidden capture, recursion, stale contracts and
+  conflicting value kinds;
 - syntax-highlighting tests for every new lexical form;
 - content-assist tests for declarations and references;
 - a vocabulary-drift test where applicable;
 - plan-aware end-to-end execution proving that the expanded program reaches the
   existing rewrite backend;
+- relation tests preserving explicit order and duplicate multiplicity;
 - at least one runtime-tree regression when execution semantics are affected.
 
 A feature is not complete when only the parser accepts it. Editor support,
