@@ -23,271 +23,160 @@ import java.util.regex.Matcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
-/**
- * Batch processor for applying all transformation rules from a {@link HintFile}
- * to a compilation unit in a single efficient pass using {@link PatternIndex}.
- *
- * &lt;p&gt;Instead of manually defining each pattern and matching operation (as done in
- * {@code StringSimplificationFixCore}), this processor reads rules from a
- * {@code .sandbox-hint} file and applies them automatically. This eliminates
- * boilerplate code and enables users to define transformation rules declaratively.&lt;/p&gt;
- *
- * &lt;h2&gt;Usage&lt;/h2&gt;
- * &lt;pre&gt;
- * HintFile hintFile = parser.parse(content);
- * BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);
- * List&amp;lt;TransformationResult&amp;gt; results = processor.process(compilationUnit);
- * // Each result contains match details and the applicable replacement
- * &lt;/pre&gt;
- *
- * @since 1.3.3
- */
+/** Batch processor for applying all transformation rules from a {@link HintFile}. */
 public final class BatchTransformationProcessor {
 
 	private final HintFile hintFile;
 	private final PatternIndex patternIndex;
 
-	/**
-	 * Creates a new batch transformation processor for the given hint file.
-	 *
-	 * @param hintFile the hint file containing transformation rules
-	 */
-<span class="fc" id="L55">	public BatchTransformationProcessor(HintFile hintFile) {</span>
-<span class="fc" id="L56">		this.hintFile = hintFile;</span>
-<span class="fc" id="L57">		this.patternIndex = new PatternIndex(hintFile.getRules());</span>
-<span class="fc" id="L58">		this.patternIndex.setCaseInsensitive(hintFile.isCaseInsensitive());</span>
-<span class="fc" id="L59">	}</span>
+<span class="fc" id="L32">	public BatchTransformationProcessor(HintFile hintFile) {</span>
+<span class="fc" id="L33">		this.hintFile= hintFile;</span>
+<span class="fc" id="L34">		this.patternIndex= new PatternIndex(hintFile.getRules());</span>
+<span class="fc" id="L35">		this.patternIndex.setCaseInsensitive(hintFile.isCaseInsensitive());</span>
+<span class="fc" id="L36">	}</span>
 
-	/**
-	 * Creates a new batch transformation processor for the given hint file
-	 * with a pre-resolved list of rules (e.g., after resolving includes
-	 * via pattern composition).
-	 *
-	 * @param hintFile the hint file (for metadata access)
-	 * @param resolvedRules the complete list of rules including composed/included rules
-	 * @since 1.3.4
-	 */
-<span class="fc" id="L70">	public BatchTransformationProcessor(HintFile hintFile, List&lt;TransformationRule&gt; resolvedRules) {</span>
-<span class="fc" id="L71">		this.hintFile = hintFile;</span>
-<span class="fc" id="L72">		this.patternIndex = new PatternIndex(resolvedRules);</span>
-<span class="fc" id="L73">		this.patternIndex.setCaseInsensitive(hintFile.isCaseInsensitive());</span>
-<span class="fc" id="L74">	}</span>
+<span class="fc" id="L38">	public BatchTransformationProcessor(HintFile hintFile, List&lt;TransformationRule&gt; resolvedRules) {</span>
+<span class="fc" id="L39">		this.hintFile= hintFile;</span>
+<span class="fc" id="L40">		this.patternIndex= new PatternIndex(resolvedRules);</span>
+<span class="fc" id="L41">		this.patternIndex.setCaseInsensitive(hintFile.isCaseInsensitive());</span>
+<span class="fc" id="L42">	}</span>
 
-	/**
-	 * Returns the hint file used by this processor.
-	 *
-	 * @return the hint file
-	 */
 	public HintFile getHintFile() {
-<span class="fc" id="L82">		return hintFile;</span>
+<span class="fc" id="L45">		return hintFile;</span>
 	}
 
-	/**
-	 * Returns the pattern index used for efficient matching.
-	 *
-	 * @return the pattern index
-	 */
 	public PatternIndex getPatternIndex() {
-<span class="fc" id="L91">		return patternIndex;</span>
+<span class="fc" id="L49">		return patternIndex;</span>
 	}
 
-	/**
-	 * Processes a compilation unit, finding all matches and determining applicable
-	 * replacements for each match.
-	 *
-	 * &lt;p&gt;For each match, guard conditions are evaluated to select the appropriate
-	 * rewrite alternative. If no alternative matches (all guards fail), the match
-	 * is still reported as a hint-only result.&lt;/p&gt;
-	 *
-	 * @param cu the compilation unit to process
-	 * @return list of transformation results (may be empty, never null)
-	 */
 	public List&lt;TransformationResult&gt; process(CompilationUnit cu) {
-<span class="fc" id="L106">		return process(cu, null);</span>
+<span class="fc" id="L53">		return process(cu, SemanticRewritePlanContext.currentCompilerOptions(),</span>
+<span class="fc" id="L54">				SemanticRewritePlanContext.current());</span>
 	}
 
-	/**
-	 * Processes a compilation unit with explicit compiler options for guard evaluation.
-	 *
-	 * @param cu the compilation unit to process
-	 * @param compilerOptions compiler options for guard context (may be null)
-	 * @return list of transformation results (may be empty, never null)
-	 */
 	public List&lt;TransformationResult&gt; process(CompilationUnit cu, Map&lt;String, String&gt; compilerOptions) {
-<span class="fc bfc" id="L117" title="All 2 branches covered.">		if (cu == null) {</span>
-<span class="fc" id="L118">			return Collections.emptyList();</span>
-		}
-
-<span class="fc" id="L121">		Map&lt;TransformationRule, List&lt;Match&gt;&gt; allMatches = patternIndex.findAllMatches(cu);</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (allMatches.isEmpty()) {</span>
-<span class="fc" id="L123">			return Collections.emptyList();</span>
-		}
-
-<span class="fc" id="L126">		List&lt;TransformationResult&gt; results = new ArrayList&lt;&gt;();</span>
-
-<span class="fc bfc" id="L128" title="All 2 branches covered.">		for (Map.Entry&lt;TransformationRule, List&lt;Match&gt;&gt; entry : allMatches.entrySet()) {</span>
-<span class="fc" id="L129">			TransformationRule rule = entry.getKey();</span>
-<span class="fc" id="L130">			List&lt;Match&gt; matches = entry.getValue();</span>
-
-<span class="fc bfc" id="L132" title="All 2 branches covered.">			for (Match match : matches) {</span>
-				GuardContext guardCtx;
-<span class="fc bfc" id="L134" title="All 2 branches covered.">				if (compilerOptions != null) {</span>
-<span class="fc" id="L135">					guardCtx = GuardContext.fromMatch(match, cu, compilerOptions);</span>
-				} else {
-<span class="fc" id="L137">					guardCtx = GuardContext.fromMatch(match, cu);</span>
-				}
-
-				// Evaluate source guard first
-<span class="fc bfc" id="L141" title="All 4 branches covered.">				if (rule.sourceGuard() != null &amp;&amp; !rule.sourceGuard().evaluate(guardCtx)) {</span>
-<span class="fc" id="L142">					continue;</span>
-				}
-
-				// Find matching alternative
-<span class="fc" id="L146">				Optional&lt;RewriteAlternative&gt; alt = rule.findMatchingAlternative(guardCtx);</span>
-<span class="fc" id="L147">				String replacement = null;</span>
-<span class="fc bfc" id="L148" title="All 2 branches covered.">				if (alt.isPresent()) {</span>
-<span class="fc" id="L149">					replacement = substituteBindings(alt.get().replacementPattern(), match);</span>
-				}
-
-				// Collect import directives
-<span class="fc bfc" id="L153" title="All 2 branches covered.">				ImportDirective imports = rule.hasImportDirective() ? rule.getImportDirective() : null;</span>
-
-<span class="fc" id="L155">				results.add(new TransformationResult(</span>
-						rule, match, replacement, imports,
-<span class="fc" id="L157">						rule.getDescription(),</span>
-<span class="fc" id="L158">						computeLineNumber(cu, match)));</span>
-<span class="fc" id="L159">			}</span>
-<span class="fc" id="L160">		}</span>
-
-<span class="fc" id="L162">		return results;</span>
+<span class="fc" id="L58">		return process(cu, compilerOptions, SemanticRewritePlanContext.current());</span>
 	}
 
-	/**
-	 * Substitutes placeholder bindings in a replacement pattern.
-	 *
-	 * @param pattern the replacement pattern with placeholders
-	 * @param match the match providing binding values
-	 * @return the pattern with placeholders replaced by matched text
-	 */
+	/** Processes a compilation unit with an explicit fail-closed semantic authorization plan. */
+	public List&lt;TransformationResult&gt; process(CompilationUnit cu, Map&lt;String, String&gt; compilerOptions,
+			SemanticRewritePlan semanticPlan) {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (cu == null) {</span>
+<span class="fc" id="L65">			return Collections.emptyList();</span>
+		}
+
+<span class="fc" id="L68">		Map&lt;TransformationRule, List&lt;Match&gt;&gt; allMatches= patternIndex.findAllMatches(cu);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		if (allMatches.isEmpty()) {</span>
+<span class="fc" id="L70">			return Collections.emptyList();</span>
+		}
+
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		SemanticRewritePlan effectivePlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;</span>
+<span class="fc" id="L74">		List&lt;TransformationResult&gt; results= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (Map.Entry&lt;TransformationRule, List&lt;Match&gt;&gt; entry : allMatches.entrySet()) {</span>
+<span class="fc" id="L76">			TransformationRule rule= entry.getKey();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			for (Match match : entry.getValue()) {</span>
+<span class="fc" id="L78">				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions, effectivePlan);</span>
+<span class="fc bfc" id="L79" title="All 4 branches covered.">				if (rule.sourceGuard() != null &amp;&amp; !rule.sourceGuard().evaluate(guardCtx)) {</span>
+<span class="fc" id="L80">					continue;</span>
+				}
+
+<span class="fc" id="L83">				Optional&lt;RewriteAlternative&gt; alternative= rule.findMatchingAlternative(guardCtx);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">				String replacement= alternative.isPresent()</span>
+<span class="fc" id="L85">						? substituteBindings(alternative.get().replacementPattern(), match)</span>
+<span class="fc" id="L86">						: null;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">				ImportDirective imports= rule.hasImportDirective() ? rule.getImportDirective() : null;</span>
+<span class="fc" id="L88">				results.add(new TransformationResult(rule, match, replacement, imports,</span>
+<span class="fc" id="L89">						rule.getDescription(), computeLineNumber(cu, match)));</span>
+<span class="fc" id="L90">			}</span>
+<span class="fc" id="L91">		}</span>
+<span class="fc" id="L92">		return results;</span>
+	}
+
 	private String substituteBindings(String pattern, Match match) {
-<span class="pc bpc" id="L173" title="1 of 4 branches missed.">		if (pattern == null || match.getBindings().isEmpty()) {</span>
-<span class="fc" id="L174">			return pattern;</span>
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">		if (pattern == null || match.getBindings().isEmpty()) {</span>
+<span class="fc" id="L97">			return pattern;</span>
 		}
 
-<span class="fc" id="L177">		String result = pattern;</span>
-<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; binding : match.getBindings().entrySet()) {</span>
-<span class="fc" id="L179">			String placeholder = binding.getKey();</span>
-<span class="fc" id="L180">			Object value = binding.getValue();</span>
+<span class="fc" id="L100">		String result= pattern;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		for (Map.Entry&lt;String, Object&gt; binding : match.getBindings().entrySet()) {</span>
+<span class="fc" id="L102">			String placeholder= binding.getKey();</span>
+<span class="fc" id="L103">			Object value= binding.getValue();</span>
 			String replacement;
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">			if (value instanceof ASTNode astNode) {</span>
-<span class="fc" id="L183">				replacement = astNode.toString();</span>
-<span class="nc bnc" id="L184" title="All 2 branches missed.">			} else if (value instanceof List&lt;?&gt; list) {</span>
-				// Support indexed access: $args$[0], $args$[-1]
-<span class="nc" id="L186">				result = substituteIndexedAccess(result, placeholder, list);</span>
-				// Support $args$.length
-<span class="nc" id="L188">				result = result.replace(placeholder + &quot;.length&quot;, String.valueOf(list.size())); //$NON-NLS-1$</span>
-				// Substitute the full variadic placeholder
-<span class="nc" id="L190">				StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L191" title="All 2 branches missed.">				for (int i = 0; i &lt; list.size(); i++) {</span>
-<span class="nc bnc" id="L192" title="All 2 branches missed.">					if (i &gt; 0) {</span>
-<span class="nc" id="L193">						sb.append(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			if (value instanceof ASTNode astNode) {</span>
+<span class="fc" id="L106">				replacement= astNode.toString();</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			} else if (value instanceof List&lt;?&gt; list) {</span>
+<span class="fc" id="L108">				result= substituteIndexedAccess(result, placeholder, list);</span>
+<span class="fc" id="L109">				result= result.replace(placeholder + &quot;.length&quot;, String.valueOf(list.size())); //$NON-NLS-1$</span>
+<span class="fc" id="L110">				StringBuilder text= new StringBuilder();</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				for (int i= 0; i &lt; list.size(); i++) {</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">					if (i &gt; 0) {</span>
+<span class="nc" id="L113">						text.append(&quot;, &quot;); //$NON-NLS-1$</span>
 					}
-<span class="nc" id="L195">					sb.append(list.get(i));</span>
+<span class="nc" id="L115">					text.append(list.get(i));</span>
 				}
-<span class="nc" id="L197">				replacement = sb.toString();</span>
-<span class="nc" id="L198">			} else {</span>
-<span class="nc" id="L199">				replacement = String.valueOf(value);</span>
+<span class="fc" id="L117">				replacement= text.toString();</span>
+<span class="fc" id="L118">			} else {</span>
+<span class="nc" id="L119">				replacement= String.valueOf(value);</span>
 			}
-<span class="fc" id="L201">			result = result.replace(placeholder, Matcher.quoteReplacement(replacement));</span>
-<span class="fc" id="L202">		}</span>
-<span class="fc" id="L203">		return result;</span>
+<span class="fc" id="L121">			result= result.replace(placeholder, Matcher.quoteReplacement(replacement));</span>
+<span class="fc" id="L122">		}</span>
+<span class="fc" id="L123">		return result;</span>
 	}
 
-	/**
-	 * Substitutes indexed access patterns like {@code $args$[0]}, {@code $args$[-1]}
-	 * with the corresponding element from the variadic placeholder binding.
-	 *
-	 * &lt;p&gt;Positive indices access from the start, negative indices from the end.
-	 * Invalid indices are left unsubstituted.&lt;/p&gt;
-	 *
-	 * @param text the text to substitute in
-	 * @param placeholder the placeholder name (e.g., {@code &quot;$args$&quot;})
-	 * @param list the bound list of values
-	 * @return the text with indexed accesses substituted
-	 * @since 1.4.2
-	 */
 	private static String substituteIndexedAccess(String text, String placeholder, List&lt;?&gt; list) {
-		// Match $args$[N] where N can be negative
-<span class="nc" id="L221">		java.util.regex.Pattern indexPattern = java.util.regex.Pattern.compile(</span>
-<span class="nc" id="L222">				java.util.regex.Pattern.quote(placeholder) + &quot;\\[(-?\\d+)\\]&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L223">		java.util.regex.Matcher m = indexPattern.matcher(text);</span>
-<span class="nc" id="L224">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc bnc" id="L225" title="All 2 branches missed.">		while (m.find()) {</span>
-<span class="nc" id="L226">			int index = Integer.parseInt(m.group(1));</span>
-			// Support negative indexing
-<span class="nc bnc" id="L228" title="All 2 branches missed.">			if (index &lt; 0) {</span>
-<span class="nc" id="L229">				index = list.size() + index;</span>
+<span class="fc" id="L127">		java.util.regex.Pattern indexPattern= java.util.regex.Pattern.compile(</span>
+<span class="fc" id="L128">				java.util.regex.Pattern.quote(placeholder) + &quot;\\[(-?\\d+)\\]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		java.util.regex.Matcher matcher= indexPattern.matcher(text);</span>
+<span class="fc" id="L130">		StringBuilder result= new StringBuilder();</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		while (matcher.find()) {</span>
+<span class="nc" id="L132">			int index= Integer.parseInt(matcher.group(1));</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">			if (index &lt; 0) {</span>
+<span class="nc" id="L134">				index= list.size() + index;</span>
 			}
-<span class="nc bnc" id="L231" title="All 4 branches missed.">			if (index &gt;= 0 &amp;&amp; index &lt; list.size()) {</span>
-<span class="nc" id="L232">				m.appendReplacement(sb, Matcher.quoteReplacement(list.get(index).toString()));</span>
+<span class="nc bnc" id="L136" title="All 4 branches missed.">			if (index &gt;= 0 &amp;&amp; index &lt; list.size()) {</span>
+<span class="nc" id="L137">				matcher.appendReplacement(result, Matcher.quoteReplacement(list.get(index).toString()));</span>
 			}
-			// Out-of-range indices are left as-is (appendReplacement not called → keeps original)
-<span class="nc" id="L235">		}</span>
-<span class="nc" id="L236">		m.appendTail(sb);</span>
-<span class="nc" id="L237">		return sb.toString();</span>
+<span class="nc" id="L139">		}</span>
+<span class="fc" id="L140">		matcher.appendTail(result);</span>
+<span class="fc" id="L141">		return result.toString();</span>
 	}
 
-	/**
-	 * Computes the line number for a match in the compilation unit.
-	 */
 	private int computeLineNumber(CompilationUnit cu, Match match) {
-<span class="fc" id="L244">		return cu.getLineNumber(match.getOffset());</span>
+<span class="fc" id="L145">		return cu.getLineNumber(match.getOffset());</span>
 	}
 
-	/**
-	 * Result of applying a transformation rule to a specific match.
-	 *
-	 * @param rule the transformation rule that matched
-	 * @param match the match details (AST node, bindings, offset, length)
-	 * @param replacement the substituted replacement text (null if hint-only)
-	 * @param importDirective import changes to apply (null if none)
-	 * @param description the rule description (may be null)
-	 * @param lineNumber the line number of the match
-	 * @since 1.3.3
-	 */
-<span class="fc" id="L258">	public record TransformationResult(</span>
-			TransformationRule rule,
-			Match match,
-			String replacement,
-			ImportDirective importDirective,
-			String description,
-			int lineNumber) {
+	private static ImportDirective copyImportDirective(ImportDirective source) {
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		if (source == null) {</span>
+<span class="fc" id="L150">			return null;</span>
+		}
+<span class="fc" id="L152">		ImportDirective copy= new ImportDirective(source.getAddImports(), source.getRemoveImports(),</span>
+<span class="fc" id="L153">				source.getAddStaticImports(), source.getRemoveStaticImports());</span>
+<span class="fc" id="L154">		source.getReplaceStaticImports().forEach(copy::replaceStaticImport);</span>
+<span class="fc" id="L155">		return copy;</span>
+	}
 
-		/**
-		 * Returns whether this result has a replacement.
-		 *
-		 * @return true if a replacement is available
-		 */
+	/** Result of applying a transformation rule to one match. */
+	public record TransformationResult(TransformationRule rule, Match match, String replacement,
+			ImportDirective importDirective, String description, int lineNumber) {
+
+<span class="fc" id="L162">		public TransformationResult {</span>
+<span class="fc" id="L163">			importDirective= copyImportDirective(importDirective);</span>
+<span class="fc" id="L164">		}</span>
+
+		public ImportDirective importDirective() {
+<span class="fc" id="L167">			return copyImportDirective(importDirective);</span>
+		}
+
 		public boolean hasReplacement() {
-<span class="fc bfc" id="L272" title="All 2 branches covered.">			return replacement != null;</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">			return replacement != null;</span>
 		}
 
-		/**
-		 * Returns whether this result has import directives.
-		 *
-		 * @return true if import changes are needed
-		 */
 		public boolean hasImportDirective() {
-<span class="pc bpc" id="L281" title="2 of 4 branches missed.">			return importDirective != null &amp;&amp; !importDirective.isEmpty();</span>
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">			return importDirective != null &amp;&amp; !importDirective.isEmpty();</span>
 		}
 
-		/**
-		 * Returns the matched source text.
-		 *
-		 * @return the matched code text
-		 */
 		public String matchedText() {
-<span class="fc" id="L290">			return match.getMatchedNode().toString();</span>
+<span class="fc" id="L179">			return match.getMatchedNode().toString();</span>
 		}
 	}
 }

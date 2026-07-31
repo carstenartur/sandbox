@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintPlanRequirement.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">HintPlanRequirement.java</span></div><h1>HintPlanRequirement.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Reads the fail-closed {@code &lt;!requires-plan: ...&gt;} contract from a hint
+ * program without otherwise interpreting the DSL.
+ *
+ * &lt;p&gt;The directive deliberately remains separate from ordinary hint metadata:
+ * callers that execute a trusted plan-aware program must opt into validating
+ * it before handing the program to the normal hint backend. Duplicate identical
+ * declarations are tolerated, while missing values, malformed declarations and
+ * conflicting declarations are rejected. Commented declarations are ignored.&lt;/p&gt;
+ */
+public final class HintPlanRequirement {
+
+	private static final String PREFIX= &quot;&lt;!requires-plan&quot;; //$NON-NLS-1$
+<span class="fc" id="L30">	private static final Pattern DIRECTIVE= Pattern.compile(</span>
+			&quot;^\\s*&lt;!requires-plan\\s*:\\s*([^&gt;\\r\\n]*)&gt;\\s*$&quot;); //$NON-NLS-1$
+
+	private HintPlanRequirement() {
+	}
+
+	/**
+	 * Returns the declared semantic-plan contract identifier.
+	 *
+	 * @param content complete hint program text
+	 * @return the required plan identifier, or empty for an ordinary hint program
+	 * @throws IllegalArgumentException for blank, malformed or conflicting declarations
+	 */
+	public static Optional&lt;String&gt; fromContent(String content) {
+<span class="pc bpc" id="L44" title="2 of 4 branches missed.">		if (content == null || content.isBlank()) {</span>
+<span class="nc" id="L45">			return Optional.empty();</span>
+		}
+<span class="fc" id="L47">		String requirement= null;</span>
+<span class="fc" id="L48">		boolean inBlockComment= false;</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">		for (String line : content.split(&quot;\\R&quot;, -1)) { //$NON-NLS-1$</span>
+<span class="fc" id="L50">			VisibleLine visibleLine= visibleLine(line, inBlockComment);</span>
+<span class="fc" id="L51">			inBlockComment= visibleLine.inBlockComment();</span>
+<span class="fc" id="L52">			String visible= visibleLine.text().trim();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">			if (!visible.startsWith(PREFIX)) {</span>
+<span class="fc" id="L54">				continue;</span>
+			}
+<span class="fc" id="L56">			Matcher matcher= DIRECTIVE.matcher(visible);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			if (!matcher.matches()) {</span>
+<span class="fc" id="L58">				throw new IllegalArgumentException(&quot;Malformed requires-plan declaration: &quot; + visible); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L60">			String candidate= matcher.group(1).trim();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">			if (candidate.isEmpty()) {</span>
+<span class="fc" id="L62">				throw new IllegalArgumentException(&quot;requires-plan must name a semantic plan contract&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L64" title="All 4 branches covered.">			if (requirement != null &amp;&amp; !requirement.equals(candidate)) {</span>
+<span class="fc" id="L65">				throw new IllegalArgumentException(</span>
+						&quot;Conflicting requires-plan declarations: &quot; + requirement + &quot; and &quot; + candidate); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+<span class="fc" id="L68">			requirement= candidate;</span>
+		}
+<span class="fc" id="L70">		return Optional.ofNullable(requirement);</span>
+	}
+
+	private static VisibleLine visibleLine(String line, boolean initiallyInBlockComment) {
+<span class="fc" id="L74">		StringBuilder visible= new StringBuilder();</span>
+<span class="fc" id="L75">		boolean inBlockComment= initiallyInBlockComment;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		for (int index= 0; index &lt; line.length();) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			if (inBlockComment) {</span>
+<span class="fc" id="L78">				int end= line.indexOf(&quot;*/&quot;, index); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">				if (end &lt; 0) {</span>
+<span class="fc" id="L80">					return new VisibleLine(visible.toString(), true);</span>
+				}
+<span class="fc" id="L82">				inBlockComment= false;</span>
+<span class="fc" id="L83">				index= end + 2;</span>
+<span class="fc" id="L84">				continue;</span>
+			}
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			if (line.startsWith(&quot;//&quot;, index)) { //$NON-NLS-1$</span>
+<span class="fc" id="L87">				break;</span>
+			}
+<span class="fc bfc" id="L89" title="All 2 branches covered.">			if (line.startsWith(&quot;/*&quot;, index)) { //$NON-NLS-1$</span>
+<span class="fc" id="L90">				inBlockComment= true;</span>
+<span class="fc" id="L91">				index+= 2;</span>
+<span class="fc" id="L92">				continue;</span>
+			}
+<span class="fc" id="L94">			visible.append(line.charAt(index++));</span>
+		}
+<span class="fc" id="L96">		return new VisibleLine(visible.toString(), inBlockComment);</span>
+	}
+
+<span class="fc" id="L99">	private record VisibleLine(String text, boolean inBlockComment) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

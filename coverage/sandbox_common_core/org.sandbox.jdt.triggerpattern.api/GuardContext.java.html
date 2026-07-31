@@ -21,131 +21,71 @@ import java.util.Objects;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
-/**
- * Context for guard evaluation, providing access to match bindings and the
- * compilation unit.
- * 
- * &lt;p&gt;A {@code GuardContext} is created from a {@link Match} and a
- * {@link CompilationUnit}, and optionally a set of compiler options. It
- * provides methods to resolve placeholder bindings and query the Java source
- * version.&lt;/p&gt;
- * 
- * @since 1.3.2
- */
+/** Context for guard evaluation. */
 public final class GuardContext {
 	private final Match match;
 	private final CompilationUnit cu;
 	private final Map&lt;String, String&gt; compilerOptions;
-	
-	/**
-	 * Creates a new guard context.
-	 * 
-	 * @param match the match providing placeholder bindings
-	 * @param cu the compilation unit
-	 * @param compilerOptions compiler options for source version queries
-	 */
-<span class="fc" id="L47">	private GuardContext(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions) {</span>
-<span class="fc" id="L48">		this.match = Objects.requireNonNull(match, &quot;Match cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L49">		this.cu = cu;</span>
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">		this.compilerOptions = compilerOptions != null</span>
-<span class="fc" id="L51">				? Collections.unmodifiableMap(compilerOptions)</span>
-<span class="pc" id="L52">				: Collections.emptyMap();</span>
-<span class="fc" id="L53">	}</span>
-	
-	/**
-	 * Creates a guard context from a match and compilation unit with empty
-	 * compiler options. Use the 3-argument overload to pass explicit compiler
-	 * options.
-	 * 
-	 * @param match the match providing placeholder bindings
-	 * @param cu the compilation unit
-	 * @return a new guard context
-	 */
+	private final SemanticRewritePlan semanticPlan;
+
+	private GuardContext(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions,
+<span class="fc" id="L32">			SemanticRewritePlan semanticPlan) {</span>
+<span class="fc" id="L33">		this.match= Objects.requireNonNull(match, &quot;Match cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L34">		this.cu= cu;</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">		this.compilerOptions= compilerOptions != null</span>
+<span class="fc" id="L36">				? Collections.unmodifiableMap(compilerOptions)</span>
+<span class="pc" id="L37">				: Collections.emptyMap();</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">		this.semanticPlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;</span>
+<span class="fc" id="L39">	}</span>
+
+	/** Creates a context without compiler options or semantic plan. */
 	public static GuardContext fromMatch(Match match, CompilationUnit cu) {
-<span class="fc" id="L65">		return new GuardContext(match, cu, java.util.Collections.emptyMap());</span>
+<span class="fc" id="L43">		return new GuardContext(match, cu, Collections.emptyMap(), SemanticRewritePlan.empty());</span>
 	}
-	
-	/**
-	 * Creates a guard context from a match, compilation unit, and explicit
-	 * compiler options.
-	 * 
-	 * @param match the match providing placeholder bindings
-	 * @param cu the compilation unit
-	 * @param compilerOptions compiler options for source version queries
-	 * @return a new guard context
-	 */
+
+	/** Creates a context with compiler options and no semantic plan. */
 	public static GuardContext fromMatch(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions) {
-<span class="fc" id="L78">		return new GuardContext(match, cu, compilerOptions);</span>
+<span class="fc" id="L48">		return new GuardContext(match, cu, compilerOptions, SemanticRewritePlan.empty());</span>
 	}
-	
-	/**
-	 * Returns the match.
-	 * 
-	 * @return the match
-	 */
+
+	/** Creates a context with explicit compiler options and semantic authorization plan. */
+	public static GuardContext fromMatch(Match match, CompilationUnit cu, Map&lt;String, String&gt; compilerOptions,
+			SemanticRewritePlan semanticPlan) {
+<span class="fc" id="L54">		return new GuardContext(match, cu, compilerOptions, semanticPlan);</span>
+	}
+
 	public Match getMatch() {
-<span class="fc" id="L87">		return match;</span>
+<span class="fc" id="L58">		return match;</span>
 	}
-	
-	/**
-	 * Returns the compilation unit.
-	 * 
-	 * @return the compilation unit, or {@code null} if not available
-	 */
+
 	public CompilationUnit getCompilationUnit() {
-<span class="fc" id="L96">		return cu;</span>
+<span class="fc" id="L62">		return cu;</span>
 	}
-	
-	/**
-	 * Returns the compiler options.
-	 * 
-	 * @return an unmodifiable map of compiler options
-	 */
+
 	public Map&lt;String, String&gt; getCompilerOptions() {
-<span class="fc" id="L105">		return compilerOptions;</span>
+<span class="fc" id="L66">		return compilerOptions;</span>
 	}
-	
-	/**
-	 * Resolves a placeholder to a single AST node.
-	 * 
-	 * @param name the placeholder name including {@code $} marker (e.g., {@code &quot;$x&quot;})
-	 * @return the bound AST node, or {@code null} if not found
-	 */
+
+	/** Returns the immutable semantic plan; empty for ordinary hint execution. */
+	public SemanticRewritePlan getSemanticPlan() {
+<span class="fc" id="L71">		return semanticPlan;</span>
+	}
+
 	public ASTNode getBinding(String name) {
-<span class="fc" id="L115">		return match.getBinding(name);</span>
+<span class="fc" id="L75">		return match.getBinding(name);</span>
 	}
-	
-	/**
-	 * Resolves a placeholder to a list of AST nodes.
-	 * 
-	 * @param name the placeholder name including {@code $} markers (e.g., {@code &quot;$args$&quot;})
-	 * @return the list of matched nodes, or an empty list if not found
-	 */
+
 	public List&lt;ASTNode&gt; getListBinding(String name) {
-<span class="fc" id="L125">		return match.getListBinding(name);</span>
+<span class="fc" id="L79">		return match.getListBinding(name);</span>
 	}
-	
-	/**
-	 * Returns the Java source version from compiler options.
-	 * 
-	 * &lt;p&gt;The source version is determined from the {@code org.eclipse.jdt.core.compiler.source}
-	 * compiler option. If the option is not set, returns {@code &quot;1.8&quot;} as default.&lt;/p&gt;
-	 * 
-	 * @return the source version string (e.g., {@code &quot;11&quot;}, {@code &quot;17&quot;}, {@code &quot;21&quot;})
-	 */
+
 	public String getSourceVersion() {
-<span class="fc" id="L137">		String version = compilerOptions.get(&quot;org.eclipse.jdt.core.compiler.source&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		return version != null ? version : &quot;1.8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L83">		String version= compilerOptions.get(&quot;org.eclipse.jdt.core.compiler.source&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		return version != null ? version : &quot;1.8&quot;; //$NON-NLS-1$</span>
 	}
-	
-	/**
-	 * Returns the matched AST node from the match.
-	 * 
-	 * @return the matched AST node
-	 * @since 1.3.2
-	 */
+
 	public ASTNode getMatchedNode() {
-<span class="fc" id="L148">		return match.getMatchedNode();</span>
+<span class="fc" id="L88">		return match.getMatchedNode();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

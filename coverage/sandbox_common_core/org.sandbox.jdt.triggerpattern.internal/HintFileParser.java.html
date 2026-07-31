@@ -449,7 +449,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L449">					parseForeachDirective(key, value, lineNumber);</span>
 				}
 				// Check for map directive: &lt;!map MAPNAME: &quot;key1&quot; =&gt; &quot;val1&quot;, &quot;key2&quot; =&gt; &quot;val2&quot;&gt;
-<span class="pc bpc" id="L452" title="1 of 2 branches missed.">				else if (key.startsWith(&quot;map &quot;)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L452" title="All 2 branches covered.">				else if (key.startsWith(&quot;map &quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L453">					parseMapDirective(key, value, lineNumber);</span>
 				}
 				// Unknown metadata key is ignored for forward compatibility

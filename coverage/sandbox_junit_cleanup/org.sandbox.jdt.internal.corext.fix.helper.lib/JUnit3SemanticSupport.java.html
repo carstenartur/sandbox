@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3SemanticSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit3SemanticSupport.java</span></div><h1>JUnit3SemanticSupport.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ONEPARAM_ASSERTIONS;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.TWOPARAM_ASSERTIONS;
+
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.Type;
+
+/** Binding-aware semantic facts used by the coordinated JUnit 3 planner. */
+public final class JUnit3SemanticSupport {
+
+	public static final String JUNIT3_TEST_CASE= &quot;junit.framework.TestCase&quot;; //$NON-NLS-1$
+	public static final String JUNIT3_ASSERT= &quot;junit.framework.Assert&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L32">	public static final Set&lt;String&gt; ASSERTION_METHODS= Set.of(</span>
+<span class="fc" id="L33">			&quot;assertEquals&quot;, &quot;assertArrayEquals&quot;, &quot;assertTrue&quot;, &quot;assertFalse&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L34">			&quot;assertNull&quot;, &quot;assertNotNull&quot;, &quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;fail&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+
+	private JUnit3SemanticSupport() {
+	}
+
+	public static boolean isExactTestMethod(MethodDeclaration method) {
+<span class="pc bpc" id="L40" title="2 of 4 branches missed.">		return !method.isConstructor() &amp;&amp; method.getName().getIdentifier().startsWith(&quot;test&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L41" title="2 of 4 branches missed.">				&amp;&amp; Modifier.isPublic(method.getModifiers()) &amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L42" title="2 of 4 branches missed.">				&amp;&amp; method.parameters().isEmpty() &amp;&amp; isVoidReturnType(method);</span>
+	}
+
+	public static boolean isLifecycleMethod(MethodDeclaration method, String expectedName) {
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">		return expectedName.equals(method.getName().getIdentifier())</span>
+<span class="pc bpc" id="L47" title="2 of 4 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers()) &amp;&amp; !Modifier.isPrivate(method.getModifiers())</span>
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">				&amp;&amp; method.parameters().isEmpty() &amp;&amp; isVoidReturnType(method);</span>
+	}
+
+	/** Returns whether the JUnit 3 overload stores a message in its first argument. */
+	public static boolean hasLeadingMessage(MethodInvocation invocation, IMethodBinding binding) {
+<span class="fc" id="L53">		String name= invocation.getName().getIdentifier();</span>
+<span class="fc" id="L54">		int argumentCount= invocation.arguments().size();</span>
+<span class="pc bpc" id="L55" title="3 of 4 branches missed.">		boolean messageShape= argumentCount == 2 &amp;&amp; ONEPARAM_ASSERTIONS.contains(name)</span>
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">				|| argumentCount == 3 &amp;&amp; TWOPARAM_ASSERTIONS.contains(name)</span>
+<span class="pc bpc" id="L57" title="5 of 6 branches missed.">				|| argumentCount == 4 &amp;&amp; (&quot;assertEquals&quot;.equals(name) || &quot;assertArrayEquals&quot;.equals(name)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L58" title="2 of 6 branches missed.">		if (!messageShape || binding == null || binding.getParameterTypes().length == 0) {</span>
+<span class="fc" id="L59">			return false;</span>
+		}
+<span class="fc" id="L61">		ITypeBinding first= binding.getParameterTypes()[0].getErasure();</span>
+<span class="fc" id="L62">		return &quot;java.lang.String&quot;.equals(first.getQualifiedName()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isVoidReturnType(MethodDeclaration method) {
+<span class="fc" id="L66">		Type returnType= method.getReturnType2();</span>
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">		return returnType != null &amp;&amp; returnType.isPrimitiveType()</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">				&amp;&amp; PrimitiveType.VOID.equals(((PrimitiveType) returnType).getPrimitiveTypeCode());</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

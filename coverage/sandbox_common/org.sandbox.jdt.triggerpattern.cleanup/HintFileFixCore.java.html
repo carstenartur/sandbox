@@ -260,25 +260,25 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 	public static void findOperationsFromContent(CompilationUnit compilationUnit,
 			String hintFileContent, Set&lt;CompilationUnitRewriteOperation&gt; operations) {
 		// Ensure built-in guard functions (sourceVersionGE, etc.) are registered
-<span class="nc" id="L263">		GuardRegistry.getInstance();</span>
+<span class="fc" id="L263">		GuardRegistry.getInstance();</span>
 		try {
-<span class="nc" id="L265">			HintFileParser parser = new HintFileParser();</span>
-<span class="nc" id="L266">			HintFile hintFile = parser.parse(hintFileContent);</span>
-<span class="nc" id="L267">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
-<span class="nc" id="L268">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
+<span class="fc" id="L265">			HintFileParser parser = new HintFileParser();</span>
+<span class="fc" id="L266">			HintFile hintFile = parser.parse(hintFileContent);</span>
+<span class="fc" id="L267">			BatchTransformationProcessor processor = new BatchTransformationProcessor(hintFile);</span>
+<span class="fc" id="L268">			List&lt;TransformationResult&gt; results = processor.process(compilationUnit);</span>
 
-<span class="nc bnc" id="L270" title="All 2 branches missed.">			for (TransformationResult result : results) {</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">				if (result.hasReplacement()) {</span>
-<span class="nc bnc" id="L272" title="All 2 branches missed.">					if (isNonWidenableDeclaration(result, compilationUnit)) {</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">			for (TransformationResult result : results) {</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">				if (result.hasReplacement()) {</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">					if (isNonWidenableDeclaration(result, compilationUnit)) {</span>
 <span class="nc" id="L273">						continue;</span>
 					}
-<span class="nc" id="L275">					operations.add(new HintFileRewriteOperation(result));</span>
+<span class="fc" id="L275">					operations.add(new HintFileRewriteOperation(result));</span>
 				}
 			}
-<span class="nc" id="L278">		} catch (HintFileParser.HintParseException e) {</span>
+<span class="pc" id="L278">		} catch (HintFileParser.HintParseException e) {</span>
 			// Skip invalid hint files
 		}
-<span class="nc" id="L281">	}</span>
+<span class="fc" id="L281">	}</span>
 
 	/**
 	 * Registers guard and fix functions from embedded Java blocks in a hint file.

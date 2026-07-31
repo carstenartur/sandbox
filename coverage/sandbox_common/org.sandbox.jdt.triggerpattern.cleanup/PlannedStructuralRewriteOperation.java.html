@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PlannedStructuralRewriteOperation.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup</a> &gt; <span class="el_source">PlannedStructuralRewriteOperation.java</span></div><h1>PlannedStructuralRewriteOperation.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup;
+
+import java.util.List;
+import java.util.Objects;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
+import org.eclipse.text.edits.TextEditGroup;
+
+/** Applies non-textual structural edits authorized and resolved by a semantic planner. */
+public final class PlannedStructuralRewriteOperation extends CompilationUnitRewriteOperationWithSourceRange {
+
+	/** One annotation removal from a resolved declaration. */
+	public record AnnotationRemoval(BodyDeclaration declaration, String annotationName) {
+<span class="fc" id="L43">		public AnnotationRemoval {</span>
+<span class="fc" id="L44">			Objects.requireNonNull(declaration);</span>
+<span class="fc" id="L45">			Objects.requireNonNull(annotationName);</span>
+<span class="fc" id="L46">		}</span>
+	}
+
+	/** Adds a single-member annotation whose value is an integer literal. */
+	public record IntegerAnnotationAddition(BodyDeclaration declaration, String annotationName, int value) {
+<span class="fc" id="L51">		public IntegerAnnotationAddition {</span>
+<span class="fc" id="L52">			Objects.requireNonNull(declaration);</span>
+<span class="fc" id="L53">			Objects.requireNonNull(annotationName);</span>
+<span class="fc" id="L54">		}</span>
+	}
+
+	/** Adds a single-member annotation whose value is a class literal. */
+	public record TypeLiteralAnnotationAddition(BodyDeclaration declaration, String annotationName,
+			String valueTypeName) {
+<span class="fc" id="L60">		public TypeLiteralAnnotationAddition {</span>
+<span class="fc" id="L61">			Objects.requireNonNull(declaration);</span>
+<span class="fc" id="L62">			Objects.requireNonNull(annotationName);</span>
+<span class="fc" id="L63">			Objects.requireNonNull(valueTypeName);</span>
+<span class="fc" id="L64">		}</span>
+	}
+
+	private final TypeDeclaration type;
+	private final String supertypeToRemove;
+	private final List&lt;AnnotationRemoval&gt; annotationRemovals;
+	private final List&lt;IntegerAnnotationAddition&gt; integerAnnotationAdditions;
+	private final List&lt;TypeLiteralAnnotationAddition&gt; typeLiteralAnnotationAdditions;
+	private final String description;
+
+	public PlannedStructuralRewriteOperation(TypeDeclaration type, String supertypeToRemove,
+			List&lt;AnnotationRemoval&gt; annotationRemovals, String description) {
+<span class="nc" id="L76">		this(type, supertypeToRemove, annotationRemovals, List.of(), List.of(), description);</span>
+<span class="nc" id="L77">	}</span>
+
+<span class="fc" id="L79">	public PlannedStructuralRewriteOperation(TypeDeclaration type, String supertypeToRemove,</span>
+			List&lt;AnnotationRemoval&gt; annotationRemovals,
+			List&lt;IntegerAnnotationAddition&gt; integerAnnotationAdditions,
+			List&lt;TypeLiteralAnnotationAddition&gt; typeLiteralAnnotationAdditions, String description) {
+<span class="fc" id="L83">		this.type= type;</span>
+<span class="fc" id="L84">		this.supertypeToRemove= supertypeToRemove;</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		this.annotationRemovals= List.copyOf(annotationRemovals == null ? List.of() : annotationRemovals);</span>
+<span class="fc" id="L86">		this.integerAnnotationAdditions= List.copyOf(</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">				integerAnnotationAdditions == null ? List.of() : integerAnnotationAdditions);</span>
+<span class="fc" id="L88">		this.typeLiteralAnnotationAdditions= List.copyOf(</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				typeLiteralAnnotationAdditions == null ? List.of() : typeLiteralAnnotationAdditions);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		this.description= description == null ? &quot;Apply planned structural rewrite&quot; : description; //$NON-NLS-1$</span>
+<span class="fc" id="L91">	}</span>
+
+	@Override
+	public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)
+			throws CoreException {
+<span class="fc" id="L96">		TextEditGroup group= createTextEditGroup(description, cuRewrite);</span>
+<span class="fc" id="L97">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		if (supertypeToRemove != null) {</span>
+<span class="fc" id="L99">			removeSupertype(rewrite, cuRewrite, group);</span>
+		}
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		for (AnnotationRemoval removal : annotationRemovals) {</span>
+<span class="fc" id="L102">			removeAnnotation(removal, rewrite, group);</span>
+		}
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		for (IntegerAnnotationAddition addition : integerAnnotationAdditions) {</span>
+<span class="fc" id="L105">			addIntegerAnnotation(addition, rewrite, cuRewrite, group);</span>
+		}
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		for (TypeLiteralAnnotationAddition addition : typeLiteralAnnotationAdditions) {</span>
+<span class="fc" id="L108">			addTypeLiteralAnnotation(addition, rewrite, cuRewrite, group);</span>
+		}
+<span class="fc" id="L110">	}</span>
+
+	private void removeSupertype(ASTRewrite rewrite, CompilationUnitRewrite cuRewrite, TextEditGroup group)
+			throws CoreException {
+<span class="pc bpc" id="L114" title="2 of 4 branches missed.">		if (type == null || type.getSuperclassType() == null) {</span>
+<span class="nc" id="L115">			throw failure(&quot;The planned supertype removal target is missing&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L117">		Type superclass= type.getSuperclassType();</span>
+<span class="fc" id="L118">		ITypeBinding binding= superclass.resolveBinding();</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		String actual= binding == null ? null : binding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		if (!supertypeToRemove.equals(actual)) {</span>
+<span class="nc" id="L121">			throw failure(&quot;Expected supertype &quot; + supertypeToRemove + &quot; but resolved &quot; + actual); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L123">		rewrite.remove(superclass, group);</span>
+<span class="fc" id="L124">		cuRewrite.getImportRemover().registerRemovedNode(superclass);</span>
+<span class="fc" id="L125">		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());</span>
+<span class="fc" id="L126">	}</span>
+
+	private static void removeAnnotation(AnnotationRemoval removal, ASTRewrite rewrite, TextEditGroup group)
+			throws CoreException {
+<span class="fc" id="L130">		String expected= removal.annotationName();</span>
+<span class="fc" id="L131">		String expectedSimple= simpleName(expected);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		for (Object modifier : removal.declaration().modifiers()) {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L134">				String actual= annotationName(annotation);</span>
+<span class="pc bpc" id="L135" title="3 of 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(actual)) {</span>
+<span class="fc" id="L136">					rewrite.remove(annotation, group);</span>
+<span class="fc" id="L137">					return;</span>
+				}
+			}
+		}
+<span class="nc" id="L141">		throw failure(&quot;The planned annotation removal target &quot; + expected + &quot; is missing&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static void addIntegerAnnotation(IntegerAnnotationAddition addition, ASTRewrite rewrite,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+<span class="fc" id="L146">		ensureAnnotationMissing(addition.declaration(), addition.annotationName());</span>
+<span class="fc" id="L147">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L148">		SingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L149">		annotation.setTypeName(ast.newName(cuRewrite.getImportRewrite().addImport(addition.annotationName())));</span>
+<span class="fc" id="L150">		annotation.setValue(ast.newNumberLiteral(Integer.toString(addition.value())));</span>
+<span class="fc" id="L151">		modifiers(rewrite, addition.declaration()).insertFirst(annotation, group);</span>
+<span class="fc" id="L152">	}</span>
+
+	private static void addTypeLiteralAnnotation(TypeLiteralAnnotationAddition addition, ASTRewrite rewrite,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+<span class="fc" id="L156">		ensureAnnotationMissing(addition.declaration(), addition.annotationName());</span>
+<span class="fc" id="L157">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L158">		ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L159">		SingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L160">		annotation.setTypeName(ast.newName(imports.addImport(addition.annotationName())));</span>
+<span class="fc" id="L161">		TypeLiteral literal= ast.newTypeLiteral();</span>
+<span class="fc" id="L162">		literal.setType(ast.newSimpleType(ast.newName(imports.addImport(addition.valueTypeName()))));</span>
+<span class="fc" id="L163">		annotation.setValue(literal);</span>
+<span class="fc" id="L164">		modifiers(rewrite, addition.declaration()).insertFirst(annotation, group);</span>
+<span class="fc" id="L165">	}</span>
+
+	private static ListRewrite modifiers(ASTRewrite rewrite, BodyDeclaration declaration) throws CoreException {
+<span class="fc bfc" id="L168" title="All 2 branches covered.">		if (declaration instanceof TypeDeclaration typeDeclaration) {</span>
+<span class="fc" id="L169">			return rewrite.getListRewrite(typeDeclaration, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+		}
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		if (declaration instanceof MethodDeclaration methodDeclaration) {</span>
+<span class="fc" id="L172">			return rewrite.getListRewrite(methodDeclaration, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+		}
+<span class="nc" id="L174">		throw failure(&quot;Unsupported planned annotation target &quot; + declaration.getClass().getName()); //$NON-NLS-1$</span>
+	}
+
+	private static void ensureAnnotationMissing(BodyDeclaration declaration, String expected) throws CoreException {
+<span class="fc" id="L178">		String expectedSimple= simpleName(expected);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="nc" id="L181">				String actual= annotationName(annotation);</span>
+<span class="nc bnc" id="L182" title="All 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(actual)) {</span>
+<span class="nc" id="L183">					throw failure(&quot;The planned annotation addition target already contains &quot; + expected); //$NON-NLS-1$</span>
+				}
+			}
+		}
+<span class="fc" id="L187">	}</span>
+
+	private static String annotationName(Annotation annotation) {
+<span class="fc" id="L190">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		return binding == null ? annotation.getTypeName().getFullyQualifiedName() : binding.getQualifiedName();</span>
+	}
+
+	private static String simpleName(String name) {
+<span class="fc" id="L195">		return name.substring(name.lastIndexOf('.') + 1);</span>
+	}
+
+	private static CoreException failure(String message) {
+<span class="nc" id="L199">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_common&quot;, message)); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

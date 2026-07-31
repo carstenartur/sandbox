@@ -79,8 +79,8 @@ import org.eclipse.jdt.core.dom.WildcardType;
 
 	@Override
 	public boolean match(PrimitiveType patternNode, Object other) {
-<span class="nc" id="L82">		return other instanceof PrimitiveType otherType</span>
-<span class="nc bnc" id="L83" title="All 4 branches missed.">				&amp;&amp; patternNode.getPrimitiveTypeCode().equals(otherType.getPrimitiveTypeCode());</span>
+<span class="fc" id="L82">		return other instanceof PrimitiveType otherType</span>
+<span class="pc bpc" id="L83" title="2 of 4 branches missed.">				&amp;&amp; patternNode.getPrimitiveTypeCode().equals(otherType.getPrimitiveTypeCode());</span>
 	}
 
 	@Override
@@ -230,11 +230,11 @@ import org.eclipse.jdt.core.dom.WildcardType;
 	}
 
 	private boolean receiversEquivalent(Expression patternExpr, Expression sourceExpr) {
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">		if (patternExpr == null) {</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">			return sourceExpr == null;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		if (patternExpr == null) {</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">			return sourceExpr == null;</span>
 		}
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">		if (sourceExpr == null) {</span>
-<span class="nc" id="L237">			return false;</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		if (sourceExpr == null) {</span>
+<span class="fc" id="L237">			return false;</span>
 		}
 <span class="fc bfc" id="L239" title="All 2 branches covered.">		if (patternExpr.subtreeMatch(this, sourceExpr)) {</span>
 <span class="fc" id="L240">			return true;</span>
@@ -245,7 +245,7 @@ import org.eclipse.jdt.core.dom.WildcardType;
 	}
 
 	private boolean methodBindingCompatible(MethodInvocation patternNode, MethodInvocation sourceNode) {
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">		if (!(patternNode.getExpression() instanceof Name patternReceiver)</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">		if (!(patternNode.getExpression() instanceof Name patternReceiver)</span>
 <span class="fc bfc" id="L249" title="All 2 branches covered.">				|| !isFullyQualified(patternReceiver.getFullyQualifiedName())) {</span>
 <span class="fc" id="L250">			return true;</span>
 		}

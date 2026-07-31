@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3HierarchyMigration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnit3HierarchyMigration.java</span></div><h1>JUnit3HierarchyMigration.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.util.List;
+
+/** Immutable semantic plan for one supported JUnit 3 source hierarchy. */
+public record JUnit3HierarchyMigration(String rootTypeName, List&lt;TypeMigration&gt; types,
+		List&lt;String&gt; baselineTestTypeHandles) {
+
+	public static final String ROLE_HIERARCHY_TYPE= &quot;JUNIT3_HIERARCHY_TYPE&quot;; //$NON-NLS-1$
+	public static final String ROLE_TEST_METHOD= &quot;JUNIT3_TEST_METHOD&quot;; //$NON-NLS-1$
+	public static final String ROLE_BEFORE_EACH= &quot;JUNIT3_BEFORE_EACH&quot;; //$NON-NLS-1$
+	public static final String ROLE_AFTER_EACH= &quot;JUNIT3_AFTER_EACH&quot;; //$NON-NLS-1$
+	public static final String ROLE_ASSERTION_QUALIFY= &quot;JUNIT3_ASSERTION_QUALIFY&quot;; //$NON-NLS-1$
+	public static final String ROLE_ASSERTION_MESSAGE_FIRST= &quot;JUNIT3_ASSERTION_MESSAGE_FIRST&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L26">	public JUnit3HierarchyMigration {</span>
+<span class="fc" id="L27">		types= List.copyOf(types);</span>
+<span class="fc" id="L28">		baselineTestTypeHandles= List.copyOf(baselineTestTypeHandles);</span>
+<span class="fc" id="L29">	}</span>
+
+	/** Local semantic targets belonging to one type declaration. */
+	public record TypeMigration(String compilationUnitHandle, String typeBindingKey,
+			boolean removeTestCaseSuperclass, List&lt;MethodMigration&gt; methods,
+			List&lt;InvocationMigration&gt; invocations) {
+<span class="fc" id="L35">		public TypeMigration {</span>
+<span class="fc" id="L36">			methods= List.copyOf(methods);</span>
+<span class="fc" id="L37">			invocations= List.copyOf(invocations);</span>
+<span class="fc" id="L38">		}</span>
+	}
+
+	/**
+	 * One method migration. {@code executionOrder} is the one-based order required
+	 * to reproduce JUnit 3 {@code TestSuite} discovery; lifecycle methods use 0.
+	 */
+	public record MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder) {
+		public MethodMigration(String methodBindingKey, MethodKind kind) {
+<span class="fc" id="L47">			this(methodBindingKey, kind, 0);</span>
+<span class="fc" id="L48">		}</span>
+	}
+
+	/** Exact source invocation authorized for a declarative assertion rewrite. */
+	public record InvocationMigration(String methodBindingKey, int sourceStart, int sourceLength,
+			InvocationKind kind) {
+	}
+
+<span class="fc" id="L56">	public enum MethodKind {</span>
+<span class="fc" id="L57">		TEST,</span>
+<span class="fc" id="L58">		BEFORE_EACH,</span>
+<span class="fc" id="L59">		AFTER_EACH</span>
+	}
+
+<span class="fc" id="L62">	public enum InvocationKind {</span>
+<span class="fc" id="L63">		QUALIFY,</span>
+<span class="fc" id="L64">		MESSAGE_FIRST</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

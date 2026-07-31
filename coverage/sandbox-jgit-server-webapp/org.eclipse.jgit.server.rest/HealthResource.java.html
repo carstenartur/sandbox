@@ -15,10 +15,12 @@ package org.eclipse.jgit.server.rest;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Objects;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 
@@ -38,108 +40,120 @@ public class HealthResource extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
-	private final HibernateSessionFactoryProvider provider;
+	private final SessionFactory sessionFactory;
 
 	/**
-	 * Create a health check endpoint.
+	 * Create a health check endpoint from the application-owned native factory.
+	 *
+	 * @param sessionFactory
+	 *            the native session factory for database and search health checks
+	 */
+<span class="fc" id="L51">	public HealthResource(SessionFactory sessionFactory) {</span>
+<span class="fc" id="L52">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L53">	}</span>
+
+	/**
+	 * Create a health check endpoint from the copied compatibility provider.
 	 *
 	 * @param provider
 	 *            the session factory provider for database health checks
+	 * @deprecated application wiring should pass the native {@link SessionFactory}
 	 */
-<span class="fc" id="L49">	public HealthResource(HibernateSessionFactoryProvider provider) {</span>
-<span class="fc" id="L50">		this.provider = provider;</span>
-<span class="fc" id="L51">	}</span>
+	@Deprecated(forRemoval = true)
+	public HealthResource(HibernateSessionFactoryProvider provider) {
+<span class="fc" id="L64">		this(Objects.requireNonNull(provider, &quot;provider&quot;).getSessionFactory()); //$NON-NLS-1$</span>
+<span class="fc" id="L65">	}</span>
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
-<span class="fc" id="L56">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L57">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L70">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L71">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L59">		boolean dbOk = false;</span>
-<span class="fc" id="L60">		boolean searchOk = false;</span>
-<span class="fc" id="L61">		String dbError = null;</span>
-<span class="fc" id="L62">		String searchError = null;</span>
+<span class="fc" id="L73">		boolean dbOk = false;</span>
+<span class="fc" id="L74">		boolean searchOk = false;</span>
+<span class="fc" id="L75">		String dbError = null;</span>
+<span class="fc" id="L76">		String searchError = null;</span>
 
 		// Check database connectivity
-<span class="fc" id="L65">		try (Session session = provider.getSessionFactory().openSession()) {</span>
-<span class="fc" id="L66">			session.createNativeQuery(&quot;SELECT 1&quot;, Integer.class) //$NON-NLS-1$</span>
-<span class="fc" id="L67">					.uniqueResult();</span>
-<span class="fc" id="L68">			dbOk = true;</span>
-<span class="nc" id="L69">		} catch (Exception e) {</span>
-<span class="nc" id="L70">			dbError = e.getMessage();</span>
-<span class="fc" id="L71">		}</span>
+<span class="fc" id="L79">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L80">			session.createNativeQuery(&quot;SELECT 1&quot;, Integer.class) //$NON-NLS-1$</span>
+<span class="fc" id="L81">					.uniqueResult();</span>
+<span class="fc" id="L82">			dbOk = true;</span>
+<span class="nc" id="L83">		} catch (Exception e) {</span>
+<span class="nc" id="L84">			dbError = e.getMessage();</span>
+<span class="fc" id="L85">		}</span>
 
 		// Check search backend
-<span class="fc" id="L74">		try (Session session = provider.getSessionFactory().openSession()) {</span>
-<span class="fc" id="L75">			SearchSession searchSession = Search.session(session);</span>
-<span class="fc" id="L76">			searchSession.search(GitCommitIndex.class)</span>
-<span class="fc" id="L77">					.where(f -&gt; f.matchAll())</span>
-<span class="fc" id="L78">					.fetch(0, 0);</span>
-<span class="fc" id="L79">			searchOk = true;</span>
-<span class="nc" id="L80">		} catch (Exception e) {</span>
-<span class="nc" id="L81">			searchError = e.getMessage();</span>
-<span class="fc" id="L82">		}</span>
+<span class="fc" id="L88">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L89">			SearchSession searchSession = Search.session(session);</span>
+<span class="fc" id="L90">			searchSession.search(GitCommitIndex.class)</span>
+<span class="fc" id="L91">					.where(f -&gt; f.matchAll())</span>
+<span class="fc" id="L92">					.fetch(0, 0);</span>
+<span class="fc" id="L93">			searchOk = true;</span>
+<span class="nc" id="L94">		} catch (Exception e) {</span>
+<span class="nc" id="L95">			searchError = e.getMessage();</span>
+<span class="fc" id="L96">		}</span>
 
-<span class="pc bpc" id="L84" title="2 of 4 branches missed.">		boolean allOk = dbOk &amp;&amp; searchOk;</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		resp.setStatus(allOk ? HttpServletResponse.SC_OK</span>
-<span class="nc" id="L86">				: HttpServletResponse.SC_SERVICE_UNAVAILABLE);</span>
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">		boolean allOk = dbOk &amp;&amp; searchOk;</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		resp.setStatus(allOk ? HttpServletResponse.SC_OK</span>
+<span class="nc" id="L100">				: HttpServletResponse.SC_SERVICE_UNAVAILABLE);</span>
 
-<span class="fc" id="L88">		try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L89">			StringBuilder json = new StringBuilder();</span>
-<span class="fc" id="L90">			json.append(&quot;{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">			json.append(allOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L92">			json.append(&quot;\&quot;,\&quot;database\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">			json.append(dbOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L94">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">			if (dbError != null) {</span>
-<span class="nc" id="L96">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L97">				json.append(escapeJson(dbError));</span>
-<span class="nc" id="L98">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L102">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L103">			StringBuilder json = new StringBuilder();</span>
+<span class="fc" id="L104">			json.append(&quot;{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			json.append(allOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L106">			json.append(&quot;\&quot;,\&quot;database\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			json.append(dbOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L108">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">			if (dbError != null) {</span>
+<span class="nc" id="L110">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L111">				json.append(escapeJson(dbError));</span>
+<span class="nc" id="L112">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L100">			json.append(&quot;},\&quot;search\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">			json.append(searchOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L102">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">			if (searchError != null) {</span>
-<span class="nc" id="L104">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L105">				json.append(escapeJson(searchError));</span>
-<span class="nc" id="L106">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L114">			json.append(&quot;},\&quot;search\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			json.append(searchOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L116">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">			if (searchError != null) {</span>
+<span class="nc" id="L118">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L119">				json.append(escapeJson(searchError));</span>
+<span class="nc" id="L120">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L108">			json.append(&quot;}}&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L109">			w.write(json.toString());</span>
+<span class="fc" id="L122">			json.append(&quot;}}&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L123">			w.write(json.toString());</span>
 		}
-<span class="fc" id="L111">	}</span>
+<span class="fc" id="L125">	}</span>
 
 	private static String escapeJson(String s) {
-<span class="nc" id="L114">		StringBuilder sb = new StringBuilder(s.length());</span>
-<span class="nc bnc" id="L115" title="All 2 branches missed.">		for (int i = 0; i &lt; s.length(); i++) {</span>
-<span class="nc" id="L116">			char c = s.charAt(i);</span>
-<span class="nc bnc" id="L117" title="All 6 branches missed.">			switch (c) {</span>
+<span class="nc" id="L128">		StringBuilder sb = new StringBuilder(s.length());</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="nc" id="L130">			char c = s.charAt(i);</span>
+<span class="nc bnc" id="L131" title="All 6 branches missed.">			switch (c) {</span>
 			case '&quot;':
-<span class="nc" id="L119">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L120">				break;</span>
+<span class="nc" id="L133">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L134">				break;</span>
 			case '\\':
-<span class="nc" id="L122">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L123">				break;</span>
+<span class="nc" id="L136">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L137">				break;</span>
 			case '\n':
-<span class="nc" id="L125">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L126">				break;</span>
+<span class="nc" id="L139">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L140">				break;</span>
 			case '\r':
-<span class="nc" id="L128">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L129">				break;</span>
+<span class="nc" id="L142">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L143">				break;</span>
 			case '\t':
-<span class="nc" id="L131">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L132">				break;</span>
+<span class="nc" id="L145">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L146">				break;</span>
 			default:
-<span class="nc bnc" id="L134" title="All 2 branches missed.">				if (c &lt; 0x20) {</span>
-<span class="nc" id="L135">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">				if (c &lt; 0x20) {</span>
+<span class="nc" id="L149">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
 				} else {
-<span class="nc" id="L137">					sb.append(c);</span>
+<span class="nc" id="L151">					sb.append(c);</span>
 				}
 				break;
 			}
 		}
-<span class="nc" id="L142">		return sb.toString();</span>
+<span class="nc" id="L156">		return sb.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

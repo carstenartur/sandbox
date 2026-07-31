@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3HierarchyScopeDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnit3HierarchyScopeDetector.java</span></div><h1>JUnit3HierarchyScopeDetector.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.JUNIT3_TEST_CASE;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+/** Finds the source closure needed before any JUnit 3 hierarchy rewrite. */
+public final class JUnit3HierarchyScopeDetector {
+
+	private JUnit3HierarchyScopeDetector() {
+	}
+
+	public static JUnitScopeCandidateDetector.SearchSeeds findSearchSeeds(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) {
+<span class="pc bpc" id="L47" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()) {</span>
+<span class="nc" id="L48">			return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+		}
+<span class="fc" id="L50">		checkCanceled(monitor);</span>
+<span class="fc" id="L51">		Set&lt;ICompilationUnit&gt; units= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">		for (ICompilationUnit unit : currentScope) {</span>
+<span class="pc bpc" id="L53" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L54">				units.add(unit.getPrimary());</span>
+			}
+		}
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		if (units.isEmpty()) {</span>
+<span class="nc" id="L58">			return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+		}
+
+<span class="fc" id="L61">		boolean[] candidateFound= { false };</span>
+<span class="fc" id="L62">		boolean[] complete= { true };</span>
+<span class="fc" id="L63">		Set&lt;IJavaElement&gt; elements= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L64">		Set&lt;ICompilationUnit&gt; directUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L65">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L66">		parser.setProject(project);</span>
+<span class="fc" id="L67">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L68">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L69">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L70">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L71">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L74">				ast.accept(new ASTVisitor() {</span>
+					@Override
+					public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L77">						ITypeBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">						if (!isJUnit3Type(binding)) {</span>
+<span class="nc" id="L79">							return true;</span>
+						}
+<span class="fc" id="L81">						IType root= findSourceRoot(binding);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">						if (root == null) {</span>
+<span class="nc" id="L83">							candidateFound[0]= true;</span>
+<span class="nc" id="L84">							complete[0]= false;</span>
+<span class="nc" id="L85">							return false;</span>
+						}
+						try {
+<span class="fc" id="L88">							ITypeHierarchy hierarchy= root.newTypeHierarchy(null);</span>
+<span class="fc" id="L89">							List&lt;IType&gt; sourceSubtypes= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L90">							boolean binarySubtypeFound= false;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">							for (IType subtype : hierarchy.getAllSubtypes(root)) {</span>
+<span class="nc" id="L92">								ICompilationUnit subtypeUnit= subtype.getCompilationUnit();</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">								if (subtypeUnit == null || !subtypeUnit.exists()) {</span>
+<span class="nc" id="L94">									binarySubtypeFound= true;</span>
+<span class="nc" id="L95">								} else {</span>
+<span class="nc" id="L96">									sourceSubtypes.add(subtype);</span>
+								}
+							}
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">							if (sourceSubtypes.isEmpty()) {</span>
+<span class="fc" id="L100">								return false;</span>
+							}
+<span class="nc" id="L102">							candidateFound[0]= true;</span>
+<span class="nc" id="L103">							complete[0]&amp;= addType(root, elements, directUnits);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">							for (IType subtype : sourceSubtypes) {</span>
+<span class="nc" id="L105">								complete[0]&amp;= addType(subtype, elements, directUnits);</span>
+							}
+<span class="nc bnc" id="L107" title="All 2 branches missed.">							complete[0]&amp;= !binarySubtypeFound;</span>
+<span class="nc" id="L108">						} catch (JavaModelException e) {</span>
+<span class="nc" id="L109">							candidateFound[0]= true;</span>
+<span class="nc" id="L110">							complete[0]= false;</span>
+						}
+<span class="nc" id="L112">						return false;</span>
+					}
+				});
+<span class="fc" id="L115">			}</span>
+<span class="fc" id="L116">		}, monitor);</span>
+<span class="fc" id="L117">		checkCanceled(monitor);</span>
+<span class="fc" id="L118">		return new JUnitScopeCandidateDetector.SearchSeeds(candidateFound[0], complete[0],</span>
+<span class="fc" id="L119">				new ArrayList&lt;&gt;(elements), new ArrayList&lt;&gt;(directUnits));</span>
+	}
+
+	private static boolean isJUnit3Type(ITypeBinding binding) {
+<span class="fc" id="L123">		ITypeBinding current= binding;</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">			if (JUNIT3_TEST_CASE.equals(current.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L126">				return true;</span>
+			}
+<span class="fc" id="L128">			current= current.getSuperclass();</span>
+		}
+<span class="nc" id="L130">		return false;</span>
+	}
+
+	private static IType findSourceRoot(ITypeBinding binding) {
+<span class="fc" id="L134">		ITypeBinding current= binding;</span>
+<span class="pc bpc" id="L135" title="2 of 4 branches missed.">		while (current != null &amp;&amp; current.getSuperclass() != null) {</span>
+<span class="fc" id="L136">			ITypeBinding superclass= current.getSuperclass();</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">			if (JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L138">				IJavaElement element= current.getErasure().getJavaElement();</span>
+<span class="pc bpc" id="L139" title="2 of 4 branches missed.">				return element instanceof IType type &amp;&amp; type.getCompilationUnit() != null ? type : null;</span>
+			}
+<span class="nc" id="L141">			current= superclass;</span>
+		}
+<span class="nc" id="L143">		return null;</span>
+	}
+
+	private static boolean addType(IType type, Set&lt;IJavaElement&gt; elements, Set&lt;ICompilationUnit&gt; units) {
+<span class="nc bnc" id="L147" title="All 4 branches missed.">		if (type == null || !type.exists()) {</span>
+<span class="nc" id="L148">			return false;</span>
+		}
+<span class="nc" id="L150">		ICompilationUnit unit= type.getCompilationUnit();</span>
+<span class="nc bnc" id="L151" title="All 4 branches missed.">		if (unit == null || !unit.exists()) {</span>
+<span class="nc" id="L152">			return false;</span>
+		}
+<span class="nc" id="L154">		elements.add(type);</span>
+<span class="nc" id="L155">		units.add(unit.getPrimary());</span>
+<span class="nc" id="L156">		return true;</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L160" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L161">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L163">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

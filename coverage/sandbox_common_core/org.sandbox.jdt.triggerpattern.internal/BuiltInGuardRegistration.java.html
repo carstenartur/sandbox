@@ -25,103 +25,134 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 
-/**
- * Canonical registration entry point for built-in guard functions.
- *
- * &lt;p&gt;This delegates to {@link BuiltInGuards} and installs strict type-guard
- * implementations that normalize quoted DSL arguments and use resolved JDT
- * bindings when available. Production code and verification tooling should use
- * this class instead of calling {@code BuiltInGuards.registerAll(...)} directly.&lt;/p&gt;
- */
+/** Canonical registration entry point for built-in guard functions. */
 public final class BuiltInGuardRegistration {
 
 	private BuiltInGuardRegistration() {
 	}
 
-	/** Registers all built-in guards with corrected type-guard semantics. */
+	/** Registers built-in guards with strict plan-aware migration guards. */
 	public static void registerAll(Map&lt;String, GuardFunction&gt; guards) {
-<span class="fc" id="L43">		BuiltInGuards.registerAll(guards);</span>
-<span class="fc" id="L44">		guards.put(&quot;instanceof&quot;, BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$</span>
-<span class="fc" id="L45">		guards.put(&quot;genericTypeIs&quot;, BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$</span>
-<span class="fc" id="L46">	}</span>
+<span class="fc" id="L36">		BuiltInGuards.registerAll(guards);</span>
+<span class="fc" id="L37">		guards.put(&quot;instanceof&quot;, BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$</span>
+<span class="fc" id="L38">		guards.put(&quot;genericTypeIs&quot;, BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$</span>
+<span class="fc" id="L39">		guards.put(&quot;plannedRole&quot;, BuiltInGuardRegistration::evaluatePlannedRole); //$NON-NLS-1$</span>
+<span class="fc" id="L40">		guards.put(&quot;enclosingPlannedRole&quot;, BuiltInGuardRegistration::evaluateEnclosingPlannedRole); //$NON-NLS-1$</span>
+<span class="fc" id="L41">	}</span>
+
+	private static boolean evaluatePlannedRole(GuardContext context, Object... args) {
+		ASTNode node;
+		String role;
+<span class="fc bfc" id="L46" title="All 2 branches covered.">		if (args.length == 1) {</span>
+<span class="fc" id="L47">			node= context.getMatchedNode();</span>
+<span class="fc" id="L48">			role= stripQuotes(argument(args, 0));</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		} else if (args.length &gt;= 2) {</span>
+<span class="fc" id="L50">			node= context.getBinding(argument(args, 0));</span>
+<span class="fc" id="L51">			role= stripQuotes(argument(args, 1));</span>
+		} else {
+<span class="nc" id="L53">			return false;</span>
+		}
+<span class="fc bfc" id="L55" title="All 4 branches covered.">		return node != null &amp;&amp; context.getSemanticPlan().hasRole(node, role);</span>
+	}
+
+	private static boolean evaluateEnclosingPlannedRole(GuardContext context, Object... args) {
+		ASTNode node;
+		String role;
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (args.length == 1) {</span>
+<span class="nc" id="L62">			node= context.getMatchedNode();</span>
+<span class="nc" id="L63">			role= stripQuotes(argument(args, 0));</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		} else if (args.length &gt;= 2) {</span>
+<span class="nc" id="L65">			node= context.getBinding(argument(args, 0));</span>
+<span class="nc" id="L66">			role= stripQuotes(argument(args, 1));</span>
+		} else {
+<span class="nc" id="L68">			return false;</span>
+		}
+<span class="nc bnc" id="L70" title="All 4 branches missed.">		return node != null &amp;&amp; context.getSemanticPlan().hasEnclosingRole(node, role);</span>
+	}
 
 	private static boolean evaluateInstanceOf(GuardContext context, Object... args) {
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L50">			return false;</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L75">			return false;</span>
 		}
-<span class="fc" id="L52">		ASTNode node = context.getBinding(args[0].toString());</span>
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L54">			return false;</span>
+<span class="fc" id="L77">		ASTNode node= context.getBinding(argument(args, 0));</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L79">			return false;</span>
 		}
-<span class="fc" id="L56">		ITypeBinding binding = resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L58">			return true;</span>
+<span class="fc" id="L81">		ITypeBinding binding= resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L83">			return true;</span>
 		}
-<span class="fc" id="L60">		String expectedType = stripQuotes(args[1].toString());</span>
-<span class="pc bpc" id="L61" title="3 of 4 branches missed.">		if (expectedType.endsWith(&quot;[]&quot;) &amp;&amp; expectedType.length() &gt; 2) { //$NON-NLS-1$</span>
-<span class="nc bnc" id="L62" title="All 4 branches missed.">			return binding.isArray() &amp;&amp; matchesTypeName(binding.getElementType(),</span>
-<span class="nc" id="L63">					expectedType.substring(0, expectedType.length() - 2));</span>
+<span class="fc" id="L85">		String expectedType= stripQuotes(argument(args, 1));</span>
+<span class="pc bpc" id="L86" title="3 of 4 branches missed.">		if (expectedType.endsWith(&quot;[]&quot;) &amp;&amp; expectedType.length() &gt; 2) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">			return binding.isArray() &amp;&amp; matchesTypeName(binding.getElementType(),</span>
+<span class="nc" id="L88">					expectedType.substring(0, expectedType.length() - 2));</span>
 		}
-<span class="fc" id="L65">		return matchesTypeName(binding, expectedType);</span>
+<span class="fc" id="L90">		return matchesTypeName(binding, expectedType);</span>
 	}
 
 	private static boolean evaluateGenericTypeIs(GuardContext context, Object... args) {
-<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (args.length &lt; 3) {</span>
-<span class="nc" id="L70">			return false;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (args.length &lt; 3) {</span>
+<span class="nc" id="L95">			return false;</span>
 		}
-<span class="nc" id="L72">		ASTNode node = context.getBinding(args[0].toString());</span>
-<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L74">			return false;</span>
+<span class="nc" id="L97">		ASTNode node= context.getBinding(argument(args, 0));</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L99">			return false;</span>
 		}
 		int index;
 		try {
-<span class="nc" id="L78">			index = Integer.parseInt(args[1].toString());</span>
-<span class="nc" id="L79">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L80">			return false;</span>
-<span class="nc" id="L81">		}</span>
-<span class="nc" id="L82">		ITypeBinding binding = resolveTypeBinding(node);</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L84">			return true;</span>
+<span class="nc" id="L103">			index= Integer.parseInt(argument(args, 1));</span>
+<span class="nc" id="L104">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L105">			return false;</span>
+<span class="nc" id="L106">		}</span>
+<span class="nc" id="L107">		ITypeBinding binding= resolveTypeBinding(node);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L109">			return true;</span>
 		}
-<span class="nc" id="L86">		ITypeBinding[] arguments = binding.getTypeArguments();</span>
-<span class="nc bnc" id="L87" title="All 4 branches missed.">		return index &gt;= 0 &amp;&amp; index &lt; arguments.length</span>
-<span class="nc bnc" id="L88" title="All 2 branches missed.">				&amp;&amp; matchesTypeName(arguments[index], stripQuotes(args[2].toString()));</span>
+<span class="nc" id="L111">		ITypeBinding[] arguments= binding.getTypeArguments();</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">		return index &gt;= 0 &amp;&amp; index &lt; arguments.length</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">				&amp;&amp; matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));</span>
+	}
+
+	private static String argument(Object[] args, int index) {
+<span class="pc bpc" id="L117" title="4 of 8 branches missed.">		if (args == null || index &lt; 0 || index &gt;= args.length || args[index] == null) {</span>
+<span class="nc" id="L118">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L120">		return args[index].toString();</span>
 	}
 
 	private static ITypeBinding resolveTypeBinding(ASTNode node) {
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (node instanceof Expression expression) {</span>
-<span class="fc" id="L93">			return expression.resolveTypeBinding();</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (node instanceof Expression expression) {</span>
+<span class="fc" id="L125">			return expression.resolveTypeBinding();</span>
 		}
-<span class="nc bnc" id="L95" title="All 2 branches missed.">		if (node instanceof Type type) {</span>
-<span class="nc" id="L96">			return type.resolveBinding();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (node instanceof Type type) {</span>
+<span class="nc" id="L128">			return type.resolveBinding();</span>
 		}
-<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (node instanceof SingleVariableDeclaration declaration) {</span>
-<span class="nc" id="L99">			IVariableBinding binding = declaration.resolveBinding();</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">			return binding == null ? declaration.getType().resolveBinding() : binding.getType();</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">		if (node instanceof SingleVariableDeclaration declaration) {</span>
+<span class="nc" id="L131">			IVariableBinding binding= declaration.resolveBinding();</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			return binding == null ? declaration.getType().resolveBinding() : binding.getType();</span>
 		}
-<span class="nc bnc" id="L102" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment fragment) {</span>
-<span class="nc" id="L103">			IVariableBinding binding = fragment.resolveBinding();</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">			return binding == null ? null : binding.getType();</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment fragment) {</span>
+<span class="nc" id="L135">			IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">			return binding == null ? null : binding.getType();</span>
 		}
-<span class="nc" id="L106">		return null;</span>
+<span class="nc" id="L138">		return null;</span>
 	}
 
 	private static boolean matchesTypeName(ITypeBinding binding, String expectedType) {
-<span class="pc bpc" id="L110" title="3 of 6 branches missed.">		if (binding == null || expectedType == null || expectedType.isBlank()) {</span>
-<span class="nc" id="L111">			return false;</span>
+<span class="pc bpc" id="L142" title="3 of 6 branches missed.">		if (binding == null || expectedType == null || expectedType.isBlank()) {</span>
+<span class="nc" id="L143">			return false;</span>
 		}
-<span class="fc" id="L113">		ITypeBinding declaration = binding.getTypeDeclaration();</span>
-<span class="fc" id="L114">		String qualifiedName = declaration.getQualifiedName();</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">		return expectedType.equals(qualifiedName)</span>
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				|| expectedType.equals(declaration.getName());</span>
+<span class="fc" id="L145">		ITypeBinding declaration= binding.getTypeDeclaration();</span>
+<span class="fc" id="L146">		String qualifiedName= declaration.getQualifiedName();</span>
+<span class="pc bpc" id="L147" title="1 of 4 branches missed.">		return expectedType.equals(qualifiedName) || expectedType.equals(declaration.getName());</span>
 	}
 
 	private static String stripQuotes(String value) {
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		String stripped = value == null ? &quot;&quot; : value.trim(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L121" title="2 of 6 branches missed.">		if (stripped.length() &gt;= 2 &amp;&amp; stripped.startsWith(&quot;\&quot;&quot;) &amp;&amp; stripped.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L122">			return stripped.substring(1, stripped.length() - 1);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		String stripped= value == null ? &quot;&quot; : value.trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L152" title="2 of 6 branches missed.">		if (stripped.length() &gt;= 2 &amp;&amp; stripped.startsWith(&quot;\&quot;&quot;) &amp;&amp; stripped.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L153">			return stripped.substring(1, stripped.length() - 1);</span>
 		}
-<span class="fc" id="L124">		return stripped;</span>
+<span class="fc" id="L155">		return stripped;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

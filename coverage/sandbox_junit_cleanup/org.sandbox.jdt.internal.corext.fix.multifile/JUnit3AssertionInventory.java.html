@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3AssertionInventory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnit3AssertionInventory.java</span></div><h1>JUnit3AssertionInventory.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.ASSERTION_METHODS;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.JUNIT3_ASSERT;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport.JUNIT3_TEST_CASE;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationKind;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationMigration;
+
+/** Collects exact assertion call sites and rejects custom JUnit 3 API usage. */
+final class JUnit3AssertionInventory {
+
+<span class="fc" id="L35">	private static final Set&lt;String&gt; CUSTOM_EXECUTION_METHODS= Set.of(</span>
+<span class="fc" id="L36">			&quot;suite&quot;, &quot;runTest&quot;, &quot;runBare&quot;, &quot;createResult&quot;, &quot;countTestCases&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+<span class="fc" id="L37">			&quot;getName&quot;, &quot;setName&quot;, &quot;run&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+
+	record Result(String rejectionReason, List&lt;InvocationMigration&gt; invocations) {
+<span class="fc" id="L40">		Result {</span>
+<span class="fc" id="L41">			invocations= List.copyOf(invocations);</span>
+<span class="fc" id="L42">		}</span>
+
+		boolean supported() {
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">			return rejectionReason == null;</span>
+		}
+	}
+
+	private JUnit3AssertionInventory() {
+	}
+
+	static Result analyze(TypeDeclaration declaration) {
+<span class="fc" id="L53">		String[] rejection= new String[1];</span>
+<span class="fc" id="L54">		List&lt;InvocationMigration&gt; invocations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L55">		declaration.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SuperMethodInvocation node) {
+<span class="nc" id="L58">				rejection[0]= &quot;Explicit superclass method calls can change lifecycle semantics under Jupiter.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L59">				return false;</span>
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">				if (rejection[0] != null) {</span>
+<span class="nc" id="L65">					return false;</span>
+				}
+<span class="fc" id="L67">				IMethodBinding binding= node.resolveMethodBinding();</span>
+<span class="fc" id="L68">				String name= node.getName().getIdentifier();</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">				if (binding == null) {</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">					if (CUSTOM_EXECUTION_METHODS.contains(name) || ASSERTION_METHODS.contains(name)) {</span>
+<span class="nc" id="L71">						rejection[0]= &quot;A potentially JUnit-related invocation has no resolved method binding.&quot;; //$NON-NLS-1$</span>
+					}
+<span class="nc bnc" id="L73" title="All 2 branches missed.">					return rejection[0] == null;</span>
+				}
+<span class="fc" id="L75">				ITypeBinding declaringClass= binding.getDeclaringClass();</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">				String owner= declaringClass == null ? &quot;&quot; : declaringClass.getErasure().getQualifiedName(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L77" title="3 of 4 branches missed.">				if (!JUNIT3_TEST_CASE.equals(owner) &amp;&amp; !JUNIT3_ASSERT.equals(owner)) {</span>
+<span class="nc" id="L78">					return true;</span>
+				}
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				if (!ASSERTION_METHODS.contains(name)) {</span>
+<span class="nc" id="L81">					rejection[0]= &quot;The hierarchy calls inherited JUnit 3 API &quot; + owner + &quot;.&quot; + name + &quot;().&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L82">					return false;</span>
+				}
+<span class="fc" id="L84">				String key= binding.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				if (key == null) {</span>
+<span class="nc" id="L86">					rejection[0]= &quot;A JUnit 3 assertion call has no stable method binding key.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L87">					return false;</span>
+				}
+<span class="fc bfc" id="L89" title="All 2 branches covered.">				InvocationKind kind= JUnit3SemanticSupport.hasLeadingMessage(node, binding)</span>
+<span class="fc" id="L90">						? InvocationKind.MESSAGE_FIRST</span>
+<span class="fc" id="L91">						: InvocationKind.QUALIFY;</span>
+<span class="fc" id="L92">				invocations.add(new InvocationMigration(key, node.getStartPosition(), node.getLength(), kind));</span>
+<span class="fc" id="L93">				return true;</span>
+			}
+		});
+<span class="fc" id="L96">		return new Result(rejection[0], invocations);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
