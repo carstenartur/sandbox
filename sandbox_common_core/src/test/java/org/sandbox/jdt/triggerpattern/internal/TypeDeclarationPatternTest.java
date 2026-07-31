@@ -79,6 +79,29 @@ class TypeDeclarationPatternTest {
 	}
 
 	@Test
+	void modifierSubsetBacktracksWithoutLeakingPlaceholderBindings() throws HintParseException {
+		HintFile hintFile= parseProgram("""
+				@id: annotation.header
+				@kind: TYPE_DECLARATION
+				@Pair(key=$key, value="expected")
+				class $name {}
+				=> class $name {}
+				;;
+				""");
+		TransformationRule rule= hintFile.getRules().get(0);
+		CompilationUnit source= parseJava("""
+				@Pair(key="first", value="wrong")
+				@Pair(key="second", value="expected")
+				class Actual {}
+				""");
+
+		List<Match> matches= new BatchTransformationProcessor(hintFile)
+				.getPatternIndex().findAllMatches(source).get(rule);
+		assertEquals(1, matches.size());
+		assertEquals("\"second\"", matches.get(0).getBinding("$key").toString()); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
 	void explicitKindRequiresStableRuleIdKnownKindAndHeaderOnlySource() {
 		assertThrows(HintParseException.class, () -> parseProgram("""
 				@kind: TYPE_DECLARATION
