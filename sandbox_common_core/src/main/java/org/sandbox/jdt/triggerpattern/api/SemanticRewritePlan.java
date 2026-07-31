@@ -53,17 +53,26 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
  * same API remain distinct. Missing contracts or bindings never authorize a
  * plan-aware rewrite.</p>
  */
-public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> rolesByNode,
-		Map<NodeKey, Map<String, SemanticPlanValue>> valuesByNode,
-		List<SemanticPlanRelation> relations) {
+public final class SemanticRewritePlan {
+
+	private final String contractId;
+	private final Map<NodeKey, Set<String>> rolesByNode;
+	private final Map<NodeKey, Map<String, SemanticPlanValue>> valuesByNode;
+	private final List<SemanticPlanRelation> relations;
+	private final Map<NodeKey, Map<String, List<SemanticPlanRelation>>> outgoingRelations;
+	private final Map<NodeKey, Map<String, List<SemanticPlanRelation>>> incomingRelations;
 
 	/** Creates a defensive immutable plan. */
-	public SemanticRewritePlan {
-		contractId= contractId == null || contractId.isBlank() ? null : contractId.trim();
-		rolesByNode= immutableRoles(rolesByNode);
-		valuesByNode= immutableValues(valuesByNode);
-		relations= List.copyOf(relations == null ? List.of() : relations);
-		validateValueKinds(valuesByNode, relations);
+	public SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> rolesByNode,
+			Map<NodeKey, Map<String, SemanticPlanValue>> valuesByNode,
+			List<SemanticPlanRelation> relations) {
+		this.contractId= contractId == null || contractId.isBlank() ? null : contractId.trim();
+		this.rolesByNode= immutableRoles(rolesByNode);
+		this.valuesByNode= immutableValues(valuesByNode);
+		this.relations= List.copyOf(relations == null ? List.of() : relations);
+		validateValueKinds(this.valuesByNode, this.relations);
+		this.outgoingRelations= indexRelations(this.relations, true);
+		this.incomingRelations= indexRelations(this.relations, false);
 	}
 
 	/** Backward-compatible constructor for role-only contracted plans. */
@@ -95,6 +104,23 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 	/** Creates a mutable builder bound to a plan-aware hint contract. */
 	public static Builder builder(String contractId) {
 		return new Builder(contractId);
+	}
+
+	public String contractId() {
+		return contractId;
+	}
+
+	public Map<NodeKey, Set<String>> rolesByNode() {
+		return rolesByNode;
+	}
+
+	public Map<NodeKey, Map<String, SemanticPlanValue>> valuesByNode() {
+		return valuesByNode;
+	}
+
+	/** Returns all relation occurrences in planner order, including duplicates. */
+	public List<SemanticPlanRelation> relations() {
+		return relations;
 	}
 
 	/** Returns whether this plan contains no roles, values or relations. */
@@ -167,9 +193,7 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 		if (source == null || kind == null) {
 			return List.of();
 		}
-		return relations.stream()
-				.filter(relation -> source.equals(relation.source()) && kind.equals(relation.kind()))
-				.toList();
+		return outgoingRelations.getOrDefault(source, Map.of()).getOrDefault(kind, List.of());
 	}
 
 	/** Returns all outgoing relations for an AST target in declared order. */
@@ -182,9 +206,7 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 		if (target == null || kind == null) {
 			return List.of();
 		}
-		return relations.stream()
-				.filter(relation -> target.equals(relation.target()) && kind.equals(relation.kind()))
-				.toList();
+		return incomingRelations.getOrDefault(target, Map.of()).getOrDefault(kind, List.of());
 	}
 
 	/** Returns all incoming relations for an AST target in declared order. */
@@ -236,6 +258,24 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 		return Map.copyOf(copy);
 	}
 
+	private static Map<NodeKey, Map<String, List<SemanticPlanRelation>>> indexRelations(
+			List<SemanticPlanRelation> relations, boolean outgoing) {
+		Map<NodeKey, Map<String, List<SemanticPlanRelation>>> mutable= new LinkedHashMap<>();
+		for (SemanticPlanRelation relation : relations) {
+			NodeKey node= outgoing ? relation.source() : relation.target();
+			mutable.computeIfAbsent(node, ignored -> new LinkedHashMap<>())
+					.computeIfAbsent(relation.kind(), ignored -> new ArrayList<>()).add(relation);
+		}
+		Map<NodeKey, Map<String, List<SemanticPlanRelation>>> result= new LinkedHashMap<>();
+		mutable.forEach((node, byKind) -> {
+			Map<String, List<SemanticPlanRelation>> immutableByKind= new LinkedHashMap<>();
+			byKind.forEach((kind, indexedRelations) ->
+					immutableByKind.put(kind, List.copyOf(indexedRelations)));
+			result.put(node, Map.copyOf(immutableByKind));
+		});
+		return Map.copyOf(result);
+	}
+
 	private static void validateValueKinds(Map<NodeKey, Map<String, SemanticPlanValue>> values,
 			List<SemanticPlanRelation> relations) {
 		Map<String, String> factKinds= new LinkedHashMap<>();
@@ -265,6 +305,31 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 			throw new IllegalArgumentException(label + " name must not be blank"); //$NON-NLS-1$
 		}
 		return value.trim();
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+		if (!(other instanceof SemanticRewritePlan plan)) {
+			return false;
+		}
+		return Objects.equals(contractId, plan.contractId)
+				&& rolesByNode.equals(plan.rolesByNode)
+				&& valuesByNode.equals(plan.valuesByNode)
+				&& relations.equals(plan.relations);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(contractId, rolesByNode, valuesByNode, relations);
+	}
+
+	@Override
+	public String toString() {
+		return "SemanticRewritePlan[contractId=" + contractId + ", rolesByNode=" + rolesByNode //$NON-NLS-1$ //$NON-NLS-2$
+				+ ", valuesByNode=" + valuesByNode + ", relations=" + relations + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	/** Stable supported semantic node kinds. */
