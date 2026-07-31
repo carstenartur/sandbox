@@ -19,6 +19,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jface,
  org.eclipse.ui.workbench,
  org.eclipse.jdt.core.manipulation,
+ sandbox_common,
  org.eclipse.ui.cheatsheets;resolution:=optional
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.eclipse.jdt.core.manipulation
