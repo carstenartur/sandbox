@@ -14,16 +14,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 /** Placeholder-aware matcher for header-only type declaration patterns. */
 public final class TypeDeclarationHeaderMatcher extends PlaceholderAstMatcher {
+
+	private boolean caseInsensitive;
+
+	@Override
+	public void setCaseInsensitive(boolean caseInsensitive) {
+		super.setCaseInsensitive(caseInsensitive);
+		this.caseInsensitive= caseInsensitive;
+	}
 
 	@Override
 	public boolean match(TypeDeclaration pattern, Object other) {
@@ -59,28 +69,37 @@ public final class TypeDeclarationHeaderMatcher extends PlaceholderAstMatcher {
 				&& matchCommon(pattern, candidate);
 	}
 
-	private boolean matchCommon(org.eclipse.jdt.core.dom.AbstractTypeDeclaration pattern,
-			org.eclipse.jdt.core.dom.AbstractTypeDeclaration candidate) {
+	private boolean matchCommon(AbstractTypeDeclaration pattern,
+			AbstractTypeDeclaration candidate) {
 		return pattern.getName().subtreeMatch(this, candidate.getName())
 				&& matchModifierSubset(pattern.modifiers(), candidate.modifiers());
 	}
 
 	private boolean matchModifierSubset(List<?> patternModifiers, List<?> candidateModifiers) {
+		List<Object> unmatched= new ArrayList<>(candidateModifiers);
 		for (Object patternModifier : patternModifiers) {
 			if (!(patternModifier instanceof IExtendedModifier required)) {
 				return false;
 			}
-			boolean found= false;
-			for (Object candidateModifier : candidateModifiers) {
-				if (candidateModifier instanceof IExtendedModifier actual
-						&& ((ASTNode) required).subtreeMatch(this, actual)) {
-					found= true;
+			int matchingIndex= -1;
+			TypeDeclarationHeaderMatcher successfulMatcher= null;
+			for (int index= 0; index < unmatched.size(); index++) {
+				Object candidateModifier= unmatched.get(index);
+				if (!(candidateModifier instanceof IExtendedModifier actual)) {
+					continue;
+				}
+				TypeDeclarationHeaderMatcher trial= speculativeMatcher();
+				if (((ASTNode) required).subtreeMatch(trial, actual)) {
+					matchingIndex= index;
+					successfulMatcher= trial;
 					break;
 				}
 			}
-			if (!found) {
+			if (matchingIndex < 0) {
 				return false;
 			}
+			mergeBindings(successfulMatcher);
+			unmatched.remove(matchingIndex);
 		}
 		return true;
 	}
@@ -99,24 +118,62 @@ public final class TypeDeclarationHeaderMatcher extends PlaceholderAstMatcher {
 				return false;
 			}
 			int matchingIndex= -1;
+			TypeDeclarationHeaderMatcher successfulMatcher= null;
 			for (int index= 0; index < unmatched.size(); index++) {
-				if (unmatched.get(index) instanceof Type actual && matchType(required, actual)) {
+				if (!(unmatched.get(index) instanceof Type actual)) {
+					continue;
+				}
+				TypeDeclarationHeaderMatcher trial= speculativeMatcher();
+				if (trial.matchType(required, actual)) {
 					matchingIndex= index;
+					successfulMatcher= trial;
 					break;
 				}
 			}
 			if (matchingIndex < 0) {
 				return false;
 			}
+			mergeBindings(successfulMatcher);
 			unmatched.remove(matchingIndex);
 		}
 		return true;
 	}
 
 	private boolean matchType(Type pattern, Type candidate) {
-		if (pattern.subtreeMatch(this, candidate)) {
+		if (pattern instanceof ParameterizedType patternParameterized) {
+			if (!(candidate instanceof ParameterizedType candidateParameterized)) {
+				return false;
+			}
+			return matchType(patternParameterized.getType(), candidateParameterized.getType())
+					&& matchTypeList(patternParameterized.typeArguments(),
+							candidateParameterized.typeArguments());
+		}
+		if (candidate instanceof ParameterizedType candidateParameterized) {
+			return matchType(pattern, candidateParameterized.getType());
+		}
+		TypeDeclarationHeaderMatcher structural= speculativeMatcher();
+		if (pattern.subtreeMatch(structural, candidate)) {
+			mergeBindings(structural);
 			return true;
 		}
+		return bindingEquivalent(pattern, candidate);
+	}
+
+	private boolean matchTypeList(List<?> patternTypes, List<?> candidateTypes) {
+		if (patternTypes.size() != candidateTypes.size()) {
+			return false;
+		}
+		for (int index= 0; index < patternTypes.size(); index++) {
+			if (!(patternTypes.get(index) instanceof Type pattern)
+					|| !(candidateTypes.get(index) instanceof Type candidate)
+					|| !matchType(pattern, candidate)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean bindingEquivalent(Type pattern, Type candidate) {
 		ITypeBinding binding= candidate.resolveBinding();
 		if (binding == null) {
 			return false;
@@ -126,8 +183,16 @@ public final class TypeDeclarationHeaderMatcher extends PlaceholderAstMatcher {
 		if (declaration == null) {
 			return false;
 		}
-		String expected= pattern.toString().replace(" ", ""); //$NON-NLS-1$ //$NON-NLS-2$
-		return expected.equals(declaration.getQualifiedName()) || expected.equals(declaration.getName());
+		String expected= removeWhitespace(pattern.toString());
+		return expected.equals(declaration.getQualifiedName())
+				|| expected.equals(declaration.getName());
+	}
+
+	private static String removeWhitespace(String value) {
+		StringBuilder result= new StringBuilder(value.length());
+		value.codePoints().filter(character -> !Character.isWhitespace(character))
+				.forEach(result::appendCodePoint);
+		return result.toString();
 	}
 
 	private boolean matchOptionalList(List<?> patternNodes, List<?> candidateNodes) {
@@ -145,5 +210,12 @@ public final class TypeDeclarationHeaderMatcher extends PlaceholderAstMatcher {
 			}
 		}
 		return true;
+	}
+
+	private TypeDeclarationHeaderMatcher speculativeMatcher() {
+		TypeDeclarationHeaderMatcher matcher= new TypeDeclarationHeaderMatcher();
+		matcher.setCaseInsensitive(caseInsensitive);
+		matcher.mergeBindings(this);
+		return matcher;
 	}
 }
