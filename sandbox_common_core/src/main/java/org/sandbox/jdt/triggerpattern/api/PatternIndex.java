@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -32,9 +33,12 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
 import org.sandbox.jdt.triggerpattern.internal.FqnAwarePlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
+import org.sandbox.jdt.triggerpattern.internal.TypeDeclarationHeaderMatcher;
+import org.sandbox.jdt.triggerpattern.internal.TypeDeclarationPatternParser;
 
 /**
  * Indexes transformation rules by their {@link PatternKind} for efficient
@@ -57,18 +61,21 @@ public final class PatternIndex {
 
 	private final Map<PatternKind, List<IndexEntry>> rulesByKind;
 	private final PatternParser parser;
+	private final TypeDeclarationPatternParser typeParser;
 	private boolean caseInsensitive;
 
 	/**
 	 * Creates a new pattern index from a list of transformation rules.
 	 *
 	 * <p>Pre-parses all source patterns and groups them by kind for efficient
-	 * batch matching.</p>
+	 * batch matching. Explicit type declarations use a dedicated header parser
+	 * so ordinary expression and statement parsing remains unchanged.</p>
 	 *
 	 * @param rules the rules to index
 	 */
 	public PatternIndex(List<TransformationRule> rules) {
 		this.parser = new PatternParser();
+		this.typeParser = new TypeDeclarationPatternParser();
 		this.rulesByKind = buildIndex(rules);
 	}
 
@@ -87,13 +94,15 @@ public final class PatternIndex {
 
 		for (TransformationRule rule : rules) {
 			Pattern sourcePattern = rule.sourcePattern();
-			ASTNode patternNode = parser.parse(sourcePattern);
+			ASTNode patternNode = sourcePattern.getKind() == PatternKind.TYPE_DECLARATION
+					? typeParser.parse(sourcePattern.getValue())
+					: parser.parse(sourcePattern);
 			if (patternNode == null) {
 				continue;
 			}
 
 			PatternKind kind = sourcePattern.getKind();
-			index.computeIfAbsent(kind, k -> new ArrayList<>())
+			index.computeIfAbsent(kind, ignored -> new ArrayList<>())
 					.add(new IndexEntry(rule, sourcePattern, patternNode));
 		}
 
@@ -185,6 +194,9 @@ public final class PatternIndex {
 		if (node instanceof MethodDeclaration) {
 			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, results);
 		}
+		if (node instanceof AbstractTypeDeclaration) {
+			matchAgainstKind(node, PatternKind.TYPE_DECLARATION, results);
+		}
 		if (node instanceof VariableDeclarationStatement) {
 			matchAgainstKind(node, PatternKind.DECLARATION, results);
 		}
@@ -205,12 +217,14 @@ public final class PatternIndex {
 		}
 
 		for (IndexEntry entry : entries) {
-			PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
+			PlaceholderAstMatcher matcher = kind == PatternKind.TYPE_DECLARATION
+					? new TypeDeclarationHeaderMatcher()
+					: new FqnAwarePlaceholderAstMatcher();
 			matcher.setCaseInsensitive(caseInsensitive);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
 				Match match = new Match(node, matcher.getBindings(),
 						node.getStartPosition(), node.getLength());
-				results.computeIfAbsent(entry.rule(), r -> new ArrayList<>()).add(match);
+				results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
 			}
 		}
 	}
@@ -242,8 +256,9 @@ public final class PatternIndex {
 
 			for (int start = 0; start <= statements.size() - patternSize; start++) {
 				Block syntheticBlock = block.getAST().newBlock();
-				for (int i = 0; i < patternSize; i++) {
-					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(), statements.get(start + i)));
+				for (int index = 0; index < patternSize; index++) {
+					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(),
+							statements.get(start + index)));
 				}
 
 				PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
@@ -253,7 +268,7 @@ public final class PatternIndex {
 					Statement last = statements.get(start + patternSize - 1);
 					int length = last.getStartPosition() + last.getLength() - offset;
 					Match match = new Match(block, matcher.getBindings(), offset, length);
-					results.computeIfAbsent(entry.rule(), r -> new ArrayList<>()).add(match);
+					results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
 				}
 			}
 		}

@@ -12,11 +12,15 @@ package org.sandbox.jdt.triggerpattern.internal;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteActionCatalog;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
@@ -29,23 +33,29 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
  */
 public final class HintProgramParser {
 
-	/**
-	 * Immutable local declarations, parser-compatible source and structured action
-	 * attachments. A fresh compatibility model is reconstructed on demand.
-	 */
+	/** Immutable declarations and parser-compatible expanded source. */
 	public record ParsedProgram(List<HintPredicateDefinition> predicates, String expandedSource,
-			Map<String, List<StructuredRewriteAction>> actionsBySentinel) {
+			Map<String, List<StructuredRewriteAction>> actionsBySentinel,
+			Map<String, PatternKind> kindsByRuleId) {
 		public ParsedProgram {
 			predicates= List.copyOf(predicates);
-			Map<String, List<StructuredRewriteAction>> copy= new LinkedHashMap<>();
-			actionsBySentinel.forEach((sentinel, actions) -> copy.put(sentinel, List.copyOf(actions)));
-			actionsBySentinel= Map.copyOf(copy);
+			Map<String, List<StructuredRewriteAction>> actionCopy= new LinkedHashMap<>();
+			actionsBySentinel.forEach((sentinel, actions) ->
+					actionCopy.put(sentinel, List.copyOf(actions)));
+			actionsBySentinel= Map.copyOf(actionCopy);
+			kindsByRuleId= Map.copyOf(kindsByRuleId);
 		}
 
-		/** Returns a fresh validated rule model with structured actions restored. */
+		/** Backward-compatible constructor for programs without explicit rule kinds. */
+		public ParsedProgram(List<HintPredicateDefinition> predicates, String expandedSource,
+				Map<String, List<StructuredRewriteAction>> actionsBySentinel) {
+			this(predicates, expandedSource, actionsBySentinel, Map.of());
+		}
+
+		/** Returns a fresh validated rule model with high-level features restored. */
 		public HintFile hintFile() {
 			try {
-				return parseWithActions(expandedSource, actionsBySentinel);
+				return parseComposed(expandedSource, actionsBySentinel, kindsByRuleId);
 			} catch (HintParseException exception) {
 				throw new IllegalStateException("Validated expanded hint source can no longer be parsed", exception); //$NON-NLS-1$
 			}
@@ -53,10 +63,12 @@ public final class HintProgramParser {
 	}
 
 	private record PreparedProgram(List<HintPredicateDefinition> predicates, String expandedSource,
-			Map<String, List<StructuredRewriteAction>> actionsBySentinel) {
+			Map<String, List<StructuredRewriteAction>> actionsBySentinel,
+			Map<String, PatternKind> kindsByRuleId) {
 		PreparedProgram {
 			predicates= List.copyOf(predicates);
 			actionsBySentinel= Map.copyOf(actionsBySentinel);
+			kindsByRuleId= Map.copyOf(kindsByRuleId);
 		}
 	}
 
@@ -67,7 +79,6 @@ public final class HintProgramParser {
 		this(new HintFileParser(), RewriteActionCatalog.standard());
 	}
 
-	/** Creates a parser with an explicitly composed action catalog. */
 	public HintProgramParser(RewriteActionCatalog actionCatalog) {
 		this(new HintFileParser(), actionCatalog);
 	}
@@ -83,57 +94,91 @@ public final class HintProgramParser {
 
 	public ParsedProgram parse(String source) throws HintParseException {
 		PreparedProgram prepared= prepare(source, actionCatalog);
-		parseWithActions(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel());
+		parseComposed(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel(),
+				prepared.kindsByRuleId());
 		return new ParsedProgram(prepared.predicates(), prepared.expandedSource(),
-				prepared.actionsBySentinel());
+				prepared.actionsBySentinel(), prepared.kindsByRuleId());
 	}
 
-	/** Convenience for consumers that only need the existing rule model. */
 	public HintFile parseHintFile(String source) throws HintParseException {
 		PreparedProgram prepared= prepare(source, actionCatalog);
-		return parseWithActions(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel());
+		return parseComposed(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel(),
+				prepared.kindsByRuleId());
 	}
 
 	private static PreparedProgram prepare(String source, RewriteActionCatalog catalog)
 			throws HintParseException {
 		HintPredicatePreprocessor.Result predicates= HintPredicatePreprocessor.preprocess(source);
 		validatePredicateNames(predicates.predicates());
+		HintRuleKindPreprocessor.Result kinds=
+				HintRuleKindPreprocessor.preprocess(predicates.expandedSource());
+		String normalizedTypeSources= HintTypeDeclarationSourcePreprocessor.preprocess(
+				kinds.parserSource(), kinds.kindsByRuleId());
 		HintStructuredActionPreprocessor.Result actions=
-				HintStructuredActionPreprocessor.preprocess(predicates.expandedSource(), catalog);
+				HintStructuredActionPreprocessor.preprocess(normalizedTypeSources, catalog);
 		return new PreparedProgram(predicates.predicates(), actions.parserSource(),
-				actions.actionsBySentinel());
+				actions.actionsBySentinel(), kinds.kindsByRuleId());
 	}
 
-	private static HintFile parseWithActions(String source,
-			Map<String, List<StructuredRewriteAction>> actionsBySentinel)
-			throws HintParseException {
-		return parseWithActions(new HintFileParser(), source, actionsBySentinel);
+	private static HintFile parseComposed(String source,
+			Map<String, List<StructuredRewriteAction>> actionsBySentinel,
+			Map<String, PatternKind> kindsByRuleId) throws HintParseException {
+		return parseComposed(new HintFileParser(), source, actionsBySentinel, kindsByRuleId);
 	}
 
-	private static HintFile parseWithActions(HintFileParser parser, String source,
-			Map<String, List<StructuredRewriteAction>> actionsBySentinel)
-			throws HintParseException {
+	private static HintFile parseComposed(HintFileParser parser, String source,
+			Map<String, List<StructuredRewriteAction>> actionsBySentinel,
+			Map<String, PatternKind> kindsByRuleId) throws HintParseException {
 		HintFile parsed= parser.parse(source);
-		if (actionsBySentinel.isEmpty()) {
+		if (actionsBySentinel.isEmpty() && kindsByRuleId.isEmpty()) {
 			return parsed;
 		}
 		HintFile result= copyMetadata(parsed);
+		Set<String> appliedKinds= new LinkedHashSet<>();
 		for (TransformationRule rule : parsed.getRules()) {
-			List<RewriteAlternative> alternatives= new ArrayList<>();
-			for (RewriteAlternative alternative : rule.alternatives()) {
-				List<StructuredRewriteAction> actions=
-						actionsBySentinel.get(alternative.replacementPattern());
-				if (actions == null) {
-					alternatives.add(alternative);
-				} else {
-					alternatives.add(RewriteAlternative.structured(actions, alternative.condition()));
-				}
+			List<RewriteAlternative> alternatives= restoreActions(rule, actionsBySentinel);
+			Pattern sourcePattern= rule.sourcePattern();
+			PatternKind explicitKind= rule.getRuleId() == null ? null : kindsByRuleId.get(rule.getRuleId());
+			if (explicitKind != null) {
+				appliedKinds.add(rule.getRuleId());
+				sourcePattern= withKind(sourcePattern, explicitKind, rule.getRuleId());
 			}
 			result.addRule(new TransformationRule(rule.getRuleId(), rule.getDescription(),
-					rule.sourcePattern(), rule.sourceGuard(), alternatives,
+					sourcePattern, rule.sourceGuard(), alternatives,
 					rule.getImportDirective(), rule.getSeverity()));
 		}
+		if (!appliedKinds.equals(kindsByRuleId.keySet())) {
+			Set<String> missing= new LinkedHashSet<>(kindsByRuleId.keySet());
+			missing.removeAll(appliedKinds);
+			throw new HintParseException("Explicit pattern kinds reference missing rule ids " + missing, 0); //$NON-NLS-1$
+		}
 		return result;
+	}
+
+	private static List<RewriteAlternative> restoreActions(TransformationRule rule,
+			Map<String, List<StructuredRewriteAction>> actionsBySentinel) {
+		List<RewriteAlternative> alternatives= new ArrayList<>();
+		for (RewriteAlternative alternative : rule.alternatives()) {
+			List<StructuredRewriteAction> actions=
+					actionsBySentinel.get(alternative.replacementPattern());
+			if (actions == null) {
+				alternatives.add(alternative);
+			} else {
+				alternatives.add(RewriteAlternative.structured(actions, alternative.condition()));
+			}
+		}
+		return alternatives;
+	}
+
+	private static Pattern withKind(Pattern source, PatternKind kind, String ruleId)
+			throws HintParseException {
+		if (kind == PatternKind.TYPE_DECLARATION
+				&& new TypeDeclarationPatternParser().parse(source.getValue()) == null) {
+			throw new HintParseException("Rule " + ruleId //$NON-NLS-1$
+					+ " must contain one syntactically valid type header with an empty body", 0); //$NON-NLS-1$
+		}
+		return new Pattern(source.getValue(), kind, source.getId(), source.getDisplayName(),
+				source.getQualifiedType(), source.getOverridesType(), source.getConstraints());
 	}
 
 	private static HintFile copyMetadata(HintFile source) {
