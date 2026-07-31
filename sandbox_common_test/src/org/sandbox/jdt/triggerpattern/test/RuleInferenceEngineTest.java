@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,6 +60,20 @@ public class RuleInferenceEngineTest {
 		InferredRule rule = result.get();
 		assertNotNull(rule.sourcePattern());
 		assertNotNull(rule.replacementPattern());
+	}
+
+	@Test
+	public void testTypeDeclarationKindsDoNotUseSyntheticClassCasts() {
+		String[][] changes = {
+				{ "class C {}", "final class C {}" }, //$NON-NLS-1$ //$NON-NLS-2$
+				{ "interface I {}", "interface I extends java.io.Serializable {}" }, //$NON-NLS-1$ //$NON-NLS-2$
+				{ "enum E { A }", "enum E { A, B }" }, //$NON-NLS-1$ //$NON-NLS-2$
+				{ "record R(int value) {}", "record R(long value) {}" }, //$NON-NLS-1$ //$NON-NLS-2$
+				{ "@interface A {}", "@interface A { String value(); }" } //$NON-NLS-1$ //$NON-NLS-2$
+		};
+		for (String[] change : changes) {
+			assertDoesNotThrow(() -> engine.inferRule(change[0], change[1], PatternKind.TYPE_DECLARATION));
+		}
 	}
 
 	@Test

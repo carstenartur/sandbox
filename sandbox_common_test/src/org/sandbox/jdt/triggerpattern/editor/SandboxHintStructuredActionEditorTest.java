@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
 
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteActionCatalog;
 import org.sandbox.jdt.triggerpattern.cleanup.actions.StructuredRewriteActionRegistry;
 
@@ -58,6 +60,24 @@ class SandboxHintStructuredActionEditorTest {
 		assertTrue(addAnnotation.replacement().contains("target=")); //$NON-NLS-1$
 		assertFalse(addAnnotation.replacement().contains("?")); //$NON-NLS-1$
 		assertTrue(addAnnotation.cursorPosition() > addAnnotation.replacement().indexOf('='));
+	}
+
+	@Test
+	void patternKindCompletionIsRestrictedToKindMetadataValues() {
+		String kindLine= "@kind: TYPE_D"; //$NON-NLS-1$
+		String ordinaryLine= "class TYPE_D"; //$NON-NLS-1$
+		assertTrue(SandboxHintContentAssistProcessor.isPatternKindContext(kindLine, kindLine.length()));
+		assertFalse(SandboxHintContentAssistProcessor.isPatternKindContext(
+				ordinaryLine, ordinaryLine.length()));
+
+		Map<String, SandboxHintContentAssistProcessor.CompletionEntry> entries=
+				SandboxHintContentAssistProcessor.completionEntries(kindLine, false, false, true).stream()
+						.collect(Collectors.toMap(
+								SandboxHintContentAssistProcessor.CompletionEntry::name,
+								entry -> entry));
+		assertEquals(Arrays.stream(PatternKind.values()).map(Enum::name).collect(Collectors.toSet()),
+				entries.keySet());
+		assertEquals("TYPE_DECLARATION", entries.get("TYPE_DECLARATION").replacement()); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Test

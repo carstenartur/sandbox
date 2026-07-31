@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -74,7 +75,6 @@ public class RuleInferenceEngine {
 			return Optional.empty();
 		}
 
-		// Extract the relevant AST node for the kind
 		ASTNode beforeNode = extractNode(cuBefore, kind);
 		ASTNode afterNode = extractNode(cuAfter, kind);
 
@@ -83,7 +83,6 @@ public class RuleInferenceEngine {
 		}
 
 		AstDiff diff = diffAnalyzer.computeDiff(beforeNode, afterNode);
-
 		ImportDirective importDirective = importAnalyzer.analyzeImportChanges(cuBefore, cuAfter);
 
 		InferredRule rule = generalizer.generalize(diff, codeBefore, codeAfter, kind, importDirective);
@@ -244,8 +243,6 @@ public class RuleInferenceEngine {
 		return hintFile;
 	}
 
-	// ---- helpers ----
-
 	private static CompilationUnit parseCompilationUnit(String source) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());
@@ -274,6 +271,7 @@ public class RuleInferenceEngine {
 		case METHOD_DECLARATION -> "class _Infer { " + snippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
 		case BLOCK -> "class _Infer { void _m() " + snippet + " }"; //$NON-NLS-1$ //$NON-NLS-2$
 		case STATEMENT_SEQUENCE -> "class _Infer { void _m() { " + snippet + " } }"; //$NON-NLS-1$ //$NON-NLS-2$
+		case TYPE_DECLARATION -> snippet;
 		};
 	}
 
@@ -282,8 +280,16 @@ public class RuleInferenceEngine {
 		if (cu.types().isEmpty()) {
 			return null;
 		}
-		org.eclipse.jdt.core.dom.TypeDeclaration type =
-				(org.eclipse.jdt.core.dom.TypeDeclaration) cu.types().get(0);
+		Object firstType = cu.types().get(0);
+		if (!(firstType instanceof ASTNode topLevelType)) {
+			return null;
+		}
+		if (kind == PatternKind.TYPE_DECLARATION) {
+			return topLevelType;
+		}
+		if (!(topLevelType instanceof TypeDeclaration type)) {
+			return null;
+		}
 
 		return switch (kind) {
 		case EXPRESSION, CONSTRUCTOR -> {
@@ -362,6 +368,7 @@ public class RuleInferenceEngine {
 			}
 			yield type.getMethods()[0].getBody();
 		}
+		case TYPE_DECLARATION -> topLevelType;
 		};
 	}
 }

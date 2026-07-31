@@ -13,89 +13,36 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.api;
 
-/**
- * Defines the kinds of AST patterns that can be matched.
- * 
- * @since 1.2.2
- */
+/** Defines the kinds of AST patterns that can be matched. */
 public enum PatternKind {
-	/**
-	 * Pattern represents a Java expression (e.g., {@code $x + 1}, {@code obj.method()})
-	 */
+	/** Java expression. */
 	EXPRESSION,
-	
-	/**
-	 * Pattern represents a Java statement (e.g., {@code if ($cond) $then;}, {@code return $x;})
-	 */
+	/** Java statement. */
 	STATEMENT,
-	
-	/**
-	 * Pattern represents a Java annotation (e.g., {@code @Before}, {@code @Test(expected=$ex)})
-	 * @since 1.2.3
-	 */
+	/** Java annotation. */
 	ANNOTATION,
-	
-	/**
-	 * Pattern represents a Java method invocation (e.g., {@code Assert.assertEquals($a, $b)})
-	 * @since 1.2.3
-	 */
+	/** Java method invocation. */
 	METHOD_CALL,
-	
-	/**
-	 * Pattern represents an import declaration (e.g., {@code import org.junit.Assert})
-	 * @since 1.2.3
-	 */
+	/** Import declaration. */
 	IMPORT,
-	
-	/**
-	 * Pattern represents a field declaration (e.g., {@code @Rule public TemporaryFolder $name})
-	 * @since 1.2.3
-	 */
+	/** Field declaration. */
 	FIELD,
-	
-	/**
-	 * Pattern represents a constructor invocation (e.g., {@code new String($bytes, $enc)})
-	 * @since 1.2.5
-	 */
+	/** Class-instance creation expression. */
 	CONSTRUCTOR,
-	
-	/**
-	 * Pattern represents a method declaration (e.g., {@code void dispose()}, {@code void $name($params$)})
-	 * @since 1.2.6
-	 */
+	/** Method or constructor declaration. */
 	METHOD_DECLARATION,
-	
 	/**
-	 * Pattern represents a block of statements (e.g., {@code { $before$; return $x; }}).
-	 * Used for matching statement sequences with variadic placeholders.
-	 * @since 1.3.2
+	 * Class, interface, enum, record or annotation-type declaration.
+	 *
+	 * <p>Type patterns are header patterns: an empty pattern body does not require
+	 * the source type to have an empty body. Name, kind and every explicitly
+	 * declared modifier, type parameter or supertype remain constraints.</p>
 	 */
+	TYPE_DECLARATION,
+	/** Complete block. */
 	BLOCK,
-	
-	/**
-	 * Pattern represents a sequence of consecutive statements to match within a block
-	 * using a sliding-window approach. Unlike {@link #BLOCK}, which matches the entire
-	 * block, this matches N consecutive statements anywhere within a block.
-	 * 
-	 * <p>Example: A two-statement pattern {@code "$T[] $copy = new $T[$len]; System.arraycopy($src, 0, $copy, 0, $len);"}
-	 * would match those two consecutive statements inside any method body.</p>
-	 * 
-	 * @since 1.3.2
-	 */
+	/** Consecutive statement sequence. */
 	STATEMENT_SEQUENCE,
-
-	/**
-	 * Pattern represents a local variable declaration statement (e.g.,
-	 * {@code $Type $var = $init;}). Used for matching variable declarations
-	 * and applying type-level transformations such as widening to the most
-	 * general type.
-	 *
-	 * <p>Example: A declaration pattern {@code $Type $var = $init;} with
-	 * a {@code canWidenType($var)} guard and a {@code $widestType($var)}
-	 * replacement would widen the declared type to the most general
-	 * supertype/interface that still supports all usages.</p>
-	 *
-	 * @since 1.3.12
-	 */
+	/** Local variable declaration statement. */
 	DECLARATION
 }
