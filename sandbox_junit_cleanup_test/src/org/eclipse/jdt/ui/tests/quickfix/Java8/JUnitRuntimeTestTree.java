@@ -12,6 +12,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,6 +41,10 @@ import org.eclipse.jdt.junit.model.ITestElementContainer;
 import org.eclipse.jdt.junit.model.ITestRunSession;
 import org.eclipse.jdt.junit.model.ITestSuiteElement;
 
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot.Node;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot.NodeKind;
+
 /** Captures one completed JDT JUnit runtime tree without retaining model elements. */
 final class JUnitRuntimeTestTree {
 
@@ -47,19 +52,13 @@ final class JUnitRuntimeTestTree {
 	private static final String JUNIT5_TEST_KIND_ID= "org.eclipse.jdt.junit.loader.junit5"; //$NON-NLS-1$
 	private static final long SESSION_TIMEOUT_SECONDS= 90;
 
-	record Snapshot(List<String> entries, boolean successful) {
-		Snapshot {
-			entries= List.copyOf(entries);
-		}
-	}
-
 	private JUnitRuntimeTestTree() {
 	}
 
-	static Snapshot capture(IJavaElement launchTarget) throws CoreException {
+	static ExecutionTreeSnapshot capture(IJavaElement launchTarget) throws CoreException {
 		ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.FULL_BUILD, null);
 		CountDownLatch completed= new CountDownLatch(1);
-		AtomicReference<Snapshot> captured= new AtomicReference<>();
+		AtomicReference<ExecutionTreeSnapshot> captured= new AtomicReference<>();
 		AtomicReference<Throwable> callbackFailure= new AtomicReference<>();
 		TestRunListener listener= new TestRunListener() {
 			@Override
@@ -87,11 +86,11 @@ final class JUnitRuntimeTestTree {
 			if (callbackFailure.get() != null) {
 				throw failure("Cannot snapshot the completed JDT JUnit runtime test tree", callbackFailure.get()); //$NON-NLS-1$
 			}
-			Snapshot result= captured.get();
+			ExecutionTreeSnapshot result= captured.get();
 			if (result == null) {
 				throw failure("The JDT JUnit launch completed without a runtime test tree", null); //$NON-NLS-1$
 			}
-			if (result.entries().isEmpty()) {
+			if (result.isEmpty()) {
 				throw failure("The JDT JUnit runtime test tree contains no test elements", null); //$NON-NLS-1$
 			}
 			return result;
@@ -104,32 +103,50 @@ final class JUnitRuntimeTestTree {
 		}
 	}
 
-	private static Snapshot snapshot(ITestRunSession session) {
-		List<String> entries= new ArrayList<>();
-		appendChildren(session, "", entries); //$NON-NLS-1$
-		return new Snapshot(entries, session.getTestResult(true) == Result.OK);
+	private static ExecutionTreeSnapshot snapshot(ITestRunSession session) {
+		return new ExecutionTreeSnapshot(snapshotChildren(session),
+				session.getTestResult(true) == Result.OK);
 	}
 
-	private static void appendChildren(ITestElementContainer container, String parentPath, List<String> entries) {
-		int occurrence= 0;
+	private static List<Node> snapshotChildren(ITestElementContainer container) {
+		List<Node> children= new ArrayList<>();
 		for (ITestElement child : container.getChildren()) {
-			String identity= identity(child);
-			String path= parentPath + "/" + occurrence++ + ":" + identity; //$NON-NLS-1$ //$NON-NLS-2$
-			entries.add(path + "=" + child.getTestResult(true)); //$NON-NLS-1$
-			if (child instanceof ITestElementContainer childContainer) {
-				appendChildren(childContainer, path, entries);
-			}
+			children.add(snapshotNode(child));
 		}
+		return List.copyOf(children);
+	}
+
+	private static Node snapshotNode(ITestElement element) {
+		String identity= identity(element);
+		String result= String.valueOf(element.getTestResult(true));
+		if (element instanceof ITestCaseElement testCase) {
+			return new Node(NodeKind.TEST, identity, identity, result,
+					Map.of("testClass", text(testCase.getTestClassName()), //$NON-NLS-1$
+							"testMethod", text(testCase.getTestMethodName())), List.of()); //$NON-NLS-1$
+		}
+		if (element instanceof ITestSuiteElement suite) {
+			return new Node(NodeKind.CONTAINER, identity, identity, result,
+					Map.of("suiteType", text(suite.getSuiteTypeName())), snapshotChildren(suite)); //$NON-NLS-1$
+		}
+		List<Node> children= element instanceof ITestElementContainer container
+				? snapshotChildren(container) : List.of();
+		return new Node(NodeKind.OTHER, identity, identity, result,
+				Map.of("modelType", element.getClass().getName()), children); //$NON-NLS-1$
 	}
 
 	private static String identity(ITestElement element) {
 		if (element instanceof ITestCaseElement testCase) {
-			return "test:" + testCase.getTestClassName() + "#" + testCase.getTestMethodName(); //$NON-NLS-1$ //$NON-NLS-2$
+			return "test:" + text(testCase.getTestClassName()) + "#" //$NON-NLS-1$ //$NON-NLS-2$
+					+ text(testCase.getTestMethodName());
 		}
 		if (element instanceof ITestSuiteElement suite) {
-			return "suite:" + suite.getSuiteTypeName(); //$NON-NLS-1$
+			return "suite:" + text(suite.getSuiteTypeName()); //$NON-NLS-1$
 		}
 		return element.getClass().getName();
+	}
+
+	private static String text(String value) {
+		return value == null ? "<unknown>" : value; //$NON-NLS-1$
 	}
 
 	private static void cleanUp(ILaunch launch, ILaunchConfigurationWorkingCopy configuration) {

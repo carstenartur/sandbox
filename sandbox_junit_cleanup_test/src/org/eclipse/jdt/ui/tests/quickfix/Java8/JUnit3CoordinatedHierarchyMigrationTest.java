@@ -29,10 +29,12 @@ import org.eclipse.jdt.junit.JUnitCore;
 
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitTestTypeInventory;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeComparator;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeComparator.Comparison;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeComparator.Policy;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
-
-import org.eclipse.jdt.ui.tests.quickfix.Java8.JUnitRuntimeTestTree.Snapshot;
 
 /** End-to-end rewrite contract for ordinary closed JUnit 3 hierarchies. */
 public class JUnit3CoordinatedHierarchyMigrationTest {
@@ -83,8 +85,8 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 		IType launchTarget= concrete.findPrimaryType();
 		assertNotNull(launchTarget);
 		JUnitTestTypeInventory before= JUnitTestTypeInventory.capture(context.getJavaProject(), null);
-		Snapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget);
-		assertTrue(runtimeBefore.successful(), () -> "JUnit 3 baseline failed: " + runtimeBefore.entries()); //$NON-NLS-1$
+		ExecutionTreeSnapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget);
+		assertTrue(runtimeBefore.successful(), () -> "JUnit 3 baseline failed: " + runtimeBefore.roots()); //$NON-NLS-1$
 		enableMigration();
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
 				new ICompilationUnit[] { base, concrete }, new String[] {
@@ -166,8 +168,8 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 		IType launchTarget= concrete.findPrimaryType();
 		assertNotNull(launchTarget);
 		JUnitTestTypeInventory before= JUnitTestTypeInventory.capture(context.getJavaProject(), null);
-		Snapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget);
-		assertTrue(runtimeBefore.successful(), () -> "JUnit 3 baseline failed: " + runtimeBefore.entries()); //$NON-NLS-1$
+		ExecutionTreeSnapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget);
+		assertTrue(runtimeBefore.successful(), () -> "JUnit 3 baseline failed: " + runtimeBefore.roots()); //$NON-NLS-1$
 		enableMigration();
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
 				new ICompilationUnit[] { base, middle, concrete }, new String[] {
@@ -228,10 +230,10 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 				"The configured JDT JUnit finder must expose the same test types after migration."); //$NON-NLS-1$
 	}
 
-	private void assertRuntimeTreeUnchanged(Snapshot before, IType launchTarget) throws CoreException {
-		Snapshot after= JUnitRuntimeTestTree.capture(launchTarget);
-		assertTrue(after.successful(), () -> "Migrated Jupiter run failed: " + after.entries()); //$NON-NLS-1$
-		assertEquals(before.entries(), after.entries(),
-				"The same JDT JUnit launch must preserve suite nesting, test identity, order and multiplicity."); //$NON-NLS-1$
+	private void assertRuntimeTreeUnchanged(ExecutionTreeSnapshot before, IType launchTarget)
+			throws CoreException {
+		ExecutionTreeSnapshot after= JUnitRuntimeTestTree.capture(launchTarget);
+		Comparison comparison= ExecutionTreeComparator.compare(before, after, Policy.strict());
+		assertTrue(comparison.equivalent(), comparison::difference);
 	}
 }
