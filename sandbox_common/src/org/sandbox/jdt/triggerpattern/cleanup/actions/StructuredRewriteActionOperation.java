@@ -47,6 +47,7 @@ public final class StructuredRewriteActionOperation
 				new StructuredRewriteActionContext(result, plan, cuRewrite, group);
 		StructuredRewriteActionRegistry registry= StructuredRewriteActionRegistry.getInstance();
 		for (StructuredRewriteAction action : result.structuredActions()) {
+			StructuredRewriteAnnotationGuard.validate(action, context);
 			registry.execute(action, context);
 		}
 	}
