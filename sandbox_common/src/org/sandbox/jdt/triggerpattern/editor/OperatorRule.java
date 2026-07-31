@@ -13,16 +13,18 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import java.util.Objects;
+
 import org.eclipse.jface.text.rules.ICharacterScanner;
 import org.eclipse.jface.text.rules.IRule;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
 
 /**
- * Rule that matches a specific multi-character operator sequence.
+ * Rule that matches one complete operator sequence.
  *
- * <p>Used to highlight {@code =>}, {@code ::}, and {@code ;;} operators
- * in {@code .sandbox-hint} files.</p>
+ * <p>Used to highlight operators such as {@code =>}, {@code =>!},
+ * {@code ::}, and {@code ;;} in {@code .sandbox-hint} files.</p>
  *
  * @since 1.3.6
  */
@@ -34,28 +36,29 @@ public class OperatorRule implements IRule {
 	/**
 	 * Creates an operator rule.
 	 *
-	 * @param operator the operator string to match (e.g., {@code "=>"})
+	 * @param operator the non-empty operator string to match
 	 * @param token the token to return on match
 	 */
 	public OperatorRule(String operator, IToken token) {
-		this.operator = operator;
-		this.token = token;
+		this.operator= Objects.requireNonNull(operator, "operator"); //$NON-NLS-1$
+		if (operator.isEmpty()) {
+			throw new IllegalArgumentException("operator must not be empty"); //$NON-NLS-1$
+		}
+		this.token= Objects.requireNonNull(token, "token"); //$NON-NLS-1$
 	}
 
 	@Override
 	public IToken evaluate(ICharacterScanner scanner) {
-		int c = scanner.read();
-		if (c == operator.charAt(0)) {
-			if (operator.length() == 1) {
-				return token;
+		for (int index= 0; index < operator.length(); index++) {
+			int character= scanner.read();
+			if (character == operator.charAt(index)) {
+				continue;
 			}
-			int c2 = scanner.read();
-			if (c2 == operator.charAt(1)) {
-				return token;
+			for (int consumed= index; consumed >= 0; consumed--) {
+				scanner.unread();
 			}
-			scanner.unread();
+			return Token.UNDEFINED;
 		}
-		scanner.unread();
-		return Token.UNDEFINED;
+		return token;
 	}
 }
