@@ -75,6 +75,8 @@ public class SemanticRewritePlanFactGuardTest {
 		assertFalse(guards.get("plannedValue").evaluate(context, "$type", "runner", "OTHER")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		assertFalse(guards.get("plannedRelation").evaluate(context, "$first", "CONTAINS", "$type")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		assertFalse(guards.get("plannedRelationCount").evaluate(context, "$type", "CONTAINS", "2")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		assertFalse(guards.get("plannedValue").evaluate(context, "$type", "runner", "CUSTOM", "extra")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+		assertFalse(guards.get("plannedRelation").evaluate(context, "$type", "CONTAINS", "$first", "extra")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 	}
 
 	@Test
