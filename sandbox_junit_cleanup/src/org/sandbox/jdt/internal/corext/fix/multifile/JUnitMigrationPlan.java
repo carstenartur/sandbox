@@ -36,7 +36,6 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -197,7 +196,6 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				expectedHintTargets.add(typeKey);
 			}
 			for (MethodMigration method : planned.methods()) {
-				MethodDeclaration declaration= resolvedMethods.get(method.methodBindingKey());
 				NodeKey key= NodeKey.method(method.methodBindingKey());
 				plan.add(key, methodRole(method.kind()));
 				if (method.kind() == MethodKind.TEST) {
@@ -207,7 +205,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 					}
 					plan.putInteger(key, FACT_TEST_ORDER, method.executionOrder());
 				} else {
-					plan.putBoolean(key, FACT_REMOVE_OVERRIDE, hasOverride(declaration));
+					plan.putBoolean(key, FACT_REMOVE_OVERRIDE, method.removeOverride());
 				}
 				expectedHintTargets.add(key);
 			}
@@ -242,20 +240,6 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		case BEFORE_EACH -> ROLE_BEFORE_EACH;
 		case AFTER_EACH -> ROLE_AFTER_EACH;
 		};
-	}
-
-	private static boolean hasOverride(BodyDeclaration declaration) {
-		for (Object modifier : declaration.modifiers()) {
-			if (modifier instanceof Annotation annotation) {
-				ITypeBinding binding= annotation.resolveTypeBinding();
-				String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()
-						: binding.getQualifiedName();
-				if ("java.lang.Override".equals(name) || "Override".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	private static String loadJUnit3HintProgram() throws CoreException {
@@ -295,7 +279,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			public boolean visit(TypeDeclaration node) {
 				ITypeBinding binding= node.resolveBinding();
 				String key= typeKey(binding);
-				if (key != null && expectedTypeKeys.contains(key)) {
+				if (key != null && expectedTypeKeys.containsKey(key)) {
 					ExternalResourceRuleMigration migration= typeMigrations.stream()
 							.filter(candidate -> key.equals(candidate.resourceTypeBindingKey())).findFirst().orElseThrow();
 					builder.addResourceType(node, key, migration.classRule());
@@ -314,6 +298,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				if (binding != null && expected.equals(binding.getQualifiedName())) {
 					return annotation;
 				}
+			}
 		}
 		return null;
 	}
