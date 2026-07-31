@@ -81,6 +81,12 @@ public class SemanticRewritePlanFactsTest {
 		assertThrows(IllegalArgumentException.class, () -> SemanticRewritePlan.builder()
 				.putString(type, "mode", "FIRST") //$NON-NLS-1$ //$NON-NLS-2$
 				.putString(type, "mode", "SECOND")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		SemanticRewritePlan lists= SemanticRewritePlan.builder("lists") //$NON-NLS-1$
+				.putList(type, "levels") //$NON-NLS-1$
+				.putList(method, "levels", SemanticPlanValue.integer(21)) //$NON-NLS-1$
+				.build();
+		assertEquals(SemanticPlanValue.list(), lists.value(type, "levels").orElseThrow()); //$NON-NLS-1$
 	}
 
 	@Test
@@ -108,6 +114,7 @@ public class SemanticRewritePlanFactsTest {
 		});
 
 		NodeKey typeKey= NodeKey.from(type);
+		NodeKey fieldDeclarationKey= NodeKey.from(type.getFields()[0]);
 		NodeKey fieldKey= NodeKey.from(field);
 		NodeKey invocationKey= NodeKey.from(creation[0]);
 		assertNotNull(typeKey);
@@ -115,6 +122,7 @@ public class SemanticRewritePlanFactsTest {
 		assertNotNull(invocationKey);
 		assertEquals(NodeKind.TYPE, typeKey.kind());
 		assertEquals(NodeKind.FIELD, fieldKey.kind());
+		assertEquals(fieldKey, fieldDeclarationKey);
 		assertEquals(NodeKind.INVOCATION, invocationKey.kind());
 		assertTrue(invocationKey.sourceStart() >= 0);
 		assertTrue(invocationKey.sourceLength() > 0);
