@@ -31,7 +31,7 @@ import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintLanguageVocabulary;
 import org.sandbox.jdt.triggerpattern.internal.HintPredicatePreprocessor;
 
-/** Content assist for directives, registered guards and local predicates. */
+/** Content assist for directives, guards, predicates and structured actions. */
 public class SandboxHintContentAssistProcessor implements IContentAssistProcessor {
 
 	/** Pure proposal description used by UI code and PDE unit tests. */
@@ -47,13 +47,16 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		String source= document.get();
 		boolean predicateGuardContext= isPredicateGuardContext(source, replacementOffset);
 		boolean directiveContext= !predicateGuardContext && isDirectiveContext(source, replacementOffset);
-		if (!directiveContext && !predicateGuardContext && !isGuardContext(source, replacementOffset)) {
+		boolean actionContext= !directiveContext && !predicateGuardContext
+				&& isStructuredActionContext(source, replacementOffset);
+		if (!directiveContext && !predicateGuardContext && !actionContext
+				&& !isGuardContext(source, replacementOffset)) {
 			return new ICompletionProposal[0];
 		}
 
 		String lowerPrefix= prefix.toLowerCase(Locale.ROOT);
 		List<ICompletionProposal> proposals= new ArrayList<>();
-		for (CompletionEntry entry : completionEntries(source, directiveContext)) {
+		for (CompletionEntry entry : completionEntries(source, directiveContext, actionContext)) {
 			if (!entry.name().toLowerCase(Locale.ROOT).startsWith(lowerPrefix)) {
 				continue;
 			}
@@ -65,6 +68,11 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 	}
 
 	static List<CompletionEntry> completionEntries(String source, boolean directiveContext) {
+		return completionEntries(source, directiveContext, false);
+	}
+
+	static List<CompletionEntry> completionEntries(String source, boolean directiveContext,
+			boolean actionContext) {
 		if (directiveContext) {
 			return HintLanguageVocabulary.directives().stream().map(directive -> {
 				String syntax= directive.syntax();
@@ -72,6 +80,15 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 						? syntax.substring(2, syntax.length() - 1) : syntax;
 				return new CompletionEntry(directive.name(), replacement, replacement.length(),
 						directive.description() + " — " + directive.syntax()); //$NON-NLS-1$
+			}).toList();
+		}
+		if (actionContext) {
+			return HintLanguageVocabulary.actions().stream().map(action -> {
+				String replacement= action.replacement();
+				int cursor= replacement.indexOf('=');
+				cursor= cursor < 0 ? replacement.length() : cursor + 1;
+				return new CompletionEntry(action.name(), replacement, cursor,
+						action.description() + " — " + action.syntax()); //$NON-NLS-1$
 			}).toList();
 		}
 
@@ -96,7 +113,7 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-		return new char[] { ':', '<' };
+		return new char[] { ':', '<', '!' };
 	}
 
 	@Override
@@ -157,6 +174,22 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		}
 		int colon= source.indexOf(':', parametersEnd + 1);
 		return colon >= 0 && colon < safeOffset;
+	}
+
+	static boolean isStructuredActionContext(String source, int offset) {
+		int safeOffset= Math.max(0, Math.min(offset, source.length()));
+		int actionStart= source.lastIndexOf("=>!", safeOffset); //$NON-NLS-1$
+		int terminator= source.lastIndexOf(";;", safeOffset); //$NON-NLS-1$
+		if (actionStart < 0 || actionStart < terminator) {
+			return false;
+		}
+		int guard= source.lastIndexOf("::", safeOffset); //$NON-NLS-1$
+		if (guard > actionStart) {
+			return false;
+		}
+		int sequenceStart= Math.max(actionStart + 3, source.lastIndexOf(';', safeOffset) + 1);
+		String candidate= source.substring(sequenceStart, safeOffset).trim();
+		return candidate.isEmpty() || candidate.chars().allMatch(Character::isJavaIdentifierPart);
 	}
 
 	private static boolean isGuardContext(String source, int offset) {

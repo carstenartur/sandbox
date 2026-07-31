@@ -13,58 +13,72 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.api;
 
+import java.util.List;
+
 /**
- * Represents a single rewrite alternative in a transformation rule.
- * 
- * <p>Each alternative has a replacement pattern and an optional guard condition.
- * When the guard evaluates to {@code true} (or is {@code null} for unconditional
- * alternatives), this alternative's replacement is applied.</p>
- * 
- * <p>An alternative with a {@code null} condition acts as an "otherwise" catch-all.</p>
- * 
- * @param replacementPattern the replacement pattern with placeholders
- * @param condition the guard condition, or {@code null} for unconditional/otherwise
+ * Represents one guarded rewrite alternative.
+ *
+ * <p>An alternative may contain a traditional Java replacement pattern, one or
+ * more schema-validated structured AST actions, or both. Structured actions are
+ * first-class data and are never hidden in syntactically invalid Java text.</p>
+ *
+ * @param replacementPattern replacement pattern with placeholders, or {@code null}
+ * @param condition guard condition, or {@code null} for unconditional/otherwise
+ * @param embeddedFixFunctionName optional legacy embedded fix reference
+ * @param structuredActions ordered structured AST actions
  * @since 1.3.2
  */
 public record RewriteAlternative(String replacementPattern, GuardExpression condition,
-		String embeddedFixFunctionName) {
+		String embeddedFixFunctionName, List<StructuredRewriteAction> structuredActions) {
 
-	/**
-	 * Creates a rewrite alternative without an embedded fix function reference.
-	 *
-	 * @param replacementPattern the replacement pattern with placeholders
-	 * @param condition the guard condition, or {@code null} for unconditional/otherwise
-	 */
+	public RewriteAlternative {
+		structuredActions= List.copyOf(structuredActions == null ? List.of() : structuredActions);
+	}
+
+	/** Creates a text alternative without an embedded fix or structured action. */
 	public RewriteAlternative(String replacementPattern, GuardExpression condition) {
-		this(replacementPattern, condition, null);
+		this(replacementPattern, condition, null, List.of());
 	}
 
-	/**
-	 * Creates an unconditional (otherwise) rewrite alternative.
-	 * 
-	 * @param replacementPattern the replacement pattern
-	 * @return an unconditional rewrite alternative
-	 */
-	public static RewriteAlternative otherwise(String replacementPattern) {
-		return new RewriteAlternative(replacementPattern, null, null);
+	/** Backward-compatible constructor for one legacy embedded fix reference. */
+	public RewriteAlternative(String replacementPattern, GuardExpression condition,
+			String embeddedFixFunctionName) {
+		this(replacementPattern, condition, embeddedFixFunctionName, List.of());
 	}
-	
-	/**
-	 * Returns {@code true} if this is an unconditional (otherwise) alternative.
-	 * 
-	 * @return {@code true} if no condition is set
-	 */
+
+	/** Creates a structured action-only alternative. */
+	public static RewriteAlternative structured(List<StructuredRewriteAction> actions,
+			GuardExpression condition) {
+		return new RewriteAlternative(null, condition, null, actions);
+	}
+
+	/** Creates an unconditional text alternative. */
+	public static RewriteAlternative otherwise(String replacementPattern) {
+		return new RewriteAlternative(replacementPattern, null, null, List.of());
+	}
+
+	/** Returns whether this is the unconditional catch-all alternative. */
 	public boolean isOtherwise() {
 		return condition == null;
 	}
 
-	/**
-	 * Returns {@code true} if this alternative references an embedded fix function.
-	 *
-	 * @return {@code true} if an embedded fix function name is set
-	 * @since 1.5.0
-	 */
+	/** Returns whether this alternative references a legacy embedded fix function. */
 	public boolean isEmbeddedFix() {
 		return embeddedFixFunctionName != null && !embeddedFixFunctionName.isEmpty();
+	}
+
+	/** Returns whether this alternative has a Java replacement pattern. */
+	public boolean hasTextReplacement() {
+		return replacementPattern != null;
+	}
+
+	/** Returns whether this alternative carries structured AST actions. */
+	public boolean hasStructuredActions() {
+		return !structuredActions.isEmpty();
+	}
+
+	/** Returns whether this alternative can produce any source change. */
+	public boolean hasRewrite() {
+		return hasTextReplacement() || hasStructuredActions();
 	}
 }

@@ -17,12 +17,18 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.RewriteActionCatalog;
+import org.sandbox.jdt.triggerpattern.api.RewriteActionSchema;
 
 /** Canonical internal vocabulary shared by parser tooling and the editor. */
 public final class HintLanguageVocabulary {
 
 	/** One metadata/declaration directive and its concise editor documentation. */
 	public record Directive(String name, String syntax, String description) {
+	}
+
+	/** One schema-validated structured rewrite action. */
+	public record Action(String name, String replacement, String syntax, String description) {
 	}
 
 	private static final List<Directive> DIRECTIVES= List.of(
@@ -41,7 +47,12 @@ public final class HintLanguageVocabulary {
 			new Directive("predicate", "<!predicate name($node): guard-expression>", //$NON-NLS-1$ //$NON-NLS-2$
 					"Named parameterized guard expression; predicates may compose other predicates")); //$NON-NLS-1$
 
-	private static final List<String> OPERATORS= List.of("=>", "::", ";;", "&&", "||", "!"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+	private static final List<Action> ACTIONS= RewriteActionCatalog.standard().schemas().stream()
+			.sorted(java.util.Comparator.comparing(RewriteActionSchema::name))
+			.map(HintLanguageVocabulary::toAction)
+			.toList();
+
+	private static final List<String> OPERATORS= List.of("=>!", "=>", "::", ";;", "&&", "||", "!"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 
 	private static final Map<String, String> DESCRIPTION_OVERRIDES= Map.ofEntries(
 			Map.entry("plannedRole", "Matched or bound node has the supplied semantic-plan role"), //$NON-NLS-1$ //$NON-NLS-2$
@@ -75,6 +86,15 @@ public final class HintLanguageVocabulary {
 				.collect(java.util.stream.Collectors.toUnmodifiableSet());
 	}
 
+	public static List<Action> actions() {
+		return ACTIONS;
+	}
+
+	public static Set<String> actionNames() {
+		return ACTIONS.stream().map(Action::name)
+				.collect(java.util.stream.Collectors.toUnmodifiableSet());
+	}
+
 	public static List<String> operators() {
 		return OPERATORS;
 	}
@@ -91,6 +111,21 @@ public final class HintLanguageVocabulary {
 		Map<String, GuardFunction> functions= new LinkedHashMap<>();
 		BuiltInGuardRegistration.registerAll(functions);
 		return Set.copyOf(functions.keySet());
+	}
+
+	private static Action toAction(RewriteActionSchema schema) {
+		String replacementArguments= schema.requiredArguments().stream().sorted()
+				.map(name -> name + "=") //$NON-NLS-1$
+				.collect(java.util.stream.Collectors.joining(", ")); //$NON-NLS-1$
+		String documentedRequired= schema.requiredArguments().stream().sorted()
+				.map(name -> name + "=VALUE") //$NON-NLS-1$
+				.collect(java.util.stream.Collectors.joining(", ")); //$NON-NLS-1$
+		String documentedOptional= schema.optionalArguments().stream().sorted()
+				.map(name -> "[, " + name + "=VALUE]") //$NON-NLS-1$ //$NON-NLS-2$
+				.collect(java.util.stream.Collectors.joining());
+		String replacement= schema.name() + "(" + replacementArguments + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+		String syntax= "=>! " + schema.name() + "(" + documentedRequired + documentedOptional + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		return new Action(schema.name(), replacement, syntax, schema.description());
 	}
 
 	private static String humanize(String name) {

@@ -20,6 +20,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.RewriteActionCatalog;
 
 class HintLanguageVocabularyTest {
 
@@ -32,7 +33,7 @@ class HintLanguageVocabularyTest {
 		assertEquals(HintLanguageVocabulary.operators().size(),
 				HintLanguageVocabulary.operators().stream().distinct().count());
 		assertTrue(HintLanguageVocabulary.operators().containsAll(
-				java.util.List.of("=>", "::", ";;", "&&", "||", "!"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+				java.util.List.of("=>!", "=>", "::", ";;", "&&", "||", "!"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 	}
 
 	@Test
@@ -43,6 +44,17 @@ class HintLanguageVocabularyTest {
 		assertEquals(guards.keySet(), HintLanguageVocabulary.builtInGuardNames());
 		for (String name : guards.keySet()) {
 			assertFalse(HintLanguageVocabulary.guardDescription(name).isBlank(), name);
+		}
+	}
+
+	@Test
+	void actionVocabularyIsDerivedFromTheStandardSchemaCatalog() {
+		assertEquals(RewriteActionCatalog.standard().names(), HintLanguageVocabulary.actionNames());
+		assertEquals(HintLanguageVocabulary.actions().size(), HintLanguageVocabulary.actionNames().size());
+		for (HintLanguageVocabulary.Action action : HintLanguageVocabulary.actions()) {
+			assertTrue(action.syntax().startsWith("=>! " + action.name() + "(")); //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(action.replacement().startsWith(action.name() + "(")); //$NON-NLS-1$
+			assertFalse(action.description().isBlank());
 		}
 	}
 }
