@@ -24,6 +24,9 @@ import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.api.SemanticPlanValue;
+import org.sandbox.jdt.triggerpattern.api.SemanticPlanValue.ListValue;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 
 /** Canonical registration entry point for built-in guard functions. */
 public final class BuiltInGuardRegistration {
@@ -38,6 +41,15 @@ public final class BuiltInGuardRegistration {
 		guards.put("genericTypeIs", BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$
 		guards.put("plannedRole", BuiltInGuardRegistration::evaluatePlannedRole); //$NON-NLS-1$
 		guards.put("enclosingPlannedRole", BuiltInGuardRegistration::evaluateEnclosingPlannedRole); //$NON-NLS-1$
+		guards.put("plannedValue", BuiltInGuardRegistration::evaluatePlannedValue); //$NON-NLS-1$
+		guards.put("enclosingPlannedValue", BuiltInGuardRegistration::evaluateEnclosingPlannedValue); //$NON-NLS-1$
+		guards.put("plannedNodeValue", BuiltInGuardRegistration::evaluatePlannedNodeValue); //$NON-NLS-1$
+		guards.put("plannedListContains", BuiltInGuardRegistration::evaluatePlannedListContains); //$NON-NLS-1$
+		guards.put("plannedRelation", BuiltInGuardRegistration::evaluatePlannedRelation); //$NON-NLS-1$
+		guards.put("plannedRelationValue", BuiltInGuardRegistration::evaluatePlannedRelationValue); //$NON-NLS-1$
+		guards.put("plannedOutgoingRelation", BuiltInGuardRegistration::evaluatePlannedOutgoingRelation); //$NON-NLS-1$
+		guards.put("plannedIncomingRelation", BuiltInGuardRegistration::evaluatePlannedIncomingRelation); //$NON-NLS-1$
+		guards.put("plannedRelationCount", BuiltInGuardRegistration::evaluatePlannedRelationCount); //$NON-NLS-1$
 	}
 
 	private static boolean evaluatePlannedRole(GuardContext context, Object... args) {
@@ -68,6 +80,181 @@ public final class BuiltInGuardRegistration {
 			return false;
 		}
 		return node != null && context.getSemanticPlan().hasEnclosingRole(node, role);
+	}
+
+	private static boolean evaluatePlannedValue(GuardContext context, Object... args) {
+		ASTNode node;
+		String name;
+		SemanticPlanValue expected;
+		if (args.length == 2) {
+			node= context.getMatchedNode();
+			name= stripQuotes(argument(args, 0));
+			expected= literal(args, 1);
+		} else if (args.length >= 3) {
+			node= context.getBinding(argument(args, 0));
+			name= stripQuotes(argument(args, 1));
+			expected= literal(args, 2);
+		} else {
+			return false;
+		}
+		return node != null && context.getSemanticPlan().hasValue(node, name, expected);
+	}
+
+	private static boolean evaluateEnclosingPlannedValue(GuardContext context, Object... args) {
+		ASTNode node;
+		String name;
+		SemanticPlanValue expected;
+		if (args.length == 2) {
+			node= context.getMatchedNode();
+			name= stripQuotes(argument(args, 0));
+			expected= literal(args, 1);
+		} else if (args.length >= 3) {
+			node= context.getBinding(argument(args, 0));
+			name= stripQuotes(argument(args, 1));
+			expected= literal(args, 2);
+		} else {
+			return false;
+		}
+		return node != null && context.getSemanticPlan().hasEnclosingValue(node, name, expected);
+	}
+
+	private static boolean evaluatePlannedNodeValue(GuardContext context, Object... args) {
+		ASTNode node;
+		String name;
+		ASTNode expectedNode;
+		if (args.length == 2) {
+			node= context.getMatchedNode();
+			name= stripQuotes(argument(args, 0));
+			expectedNode= context.getBinding(argument(args, 1));
+		} else if (args.length >= 3) {
+			node= context.getBinding(argument(args, 0));
+			name= stripQuotes(argument(args, 1));
+			expectedNode= context.getBinding(argument(args, 2));
+		} else {
+			return false;
+		}
+		NodeKey expectedKey= NodeKey.from(expectedNode);
+		return node != null && expectedKey != null
+				&& context.getSemanticPlan().hasValue(node, name, SemanticPlanValue.node(expectedKey));
+	}
+
+	private static boolean evaluatePlannedListContains(GuardContext context, Object... args) {
+		ASTNode node;
+		String name;
+		SemanticPlanValue expected;
+		if (args.length == 2) {
+			node= context.getMatchedNode();
+			name= stripQuotes(argument(args, 0));
+			expected= literal(args, 1);
+		} else if (args.length >= 3) {
+			node= context.getBinding(argument(args, 0));
+			name= stripQuotes(argument(args, 1));
+			expected= literal(args, 2);
+		} else {
+			return false;
+		}
+		return node != null && context.getSemanticPlan().value(node, name)
+				.filter(ListValue.class::isInstance)
+				.map(ListValue.class::cast)
+				.map(value -> value.values().contains(expected))
+				.orElse(false);
+	}
+
+	private static boolean evaluatePlannedRelation(GuardContext context, Object... args) {
+		ASTNode source;
+		String kind;
+		ASTNode target;
+		if (args.length == 2) {
+			source= context.getMatchedNode();
+			kind= stripQuotes(argument(args, 0));
+			target= context.getBinding(argument(args, 1));
+		} else if (args.length >= 3) {
+			source= context.getBinding(argument(args, 0));
+			kind= stripQuotes(argument(args, 1));
+			target= context.getBinding(argument(args, 2));
+		} else {
+			return false;
+		}
+		return source != null && target != null
+				&& context.getSemanticPlan().hasRelation(source, kind, target);
+	}
+
+	private static boolean evaluatePlannedRelationValue(GuardContext context, Object... args) {
+		ASTNode source;
+		String kind;
+		ASTNode target;
+		String name;
+		SemanticPlanValue expected;
+		if (args.length == 4) {
+			source= context.getMatchedNode();
+			kind= stripQuotes(argument(args, 0));
+			target= context.getBinding(argument(args, 1));
+			name= stripQuotes(argument(args, 2));
+			expected= literal(args, 3);
+		} else if (args.length >= 5) {
+			source= context.getBinding(argument(args, 0));
+			kind= stripQuotes(argument(args, 1));
+			target= context.getBinding(argument(args, 2));
+			name= stripQuotes(argument(args, 3));
+			expected= literal(args, 4);
+		} else {
+			return false;
+		}
+		return source != null && target != null
+				&& context.getSemanticPlan().hasRelationValue(source, kind, target, name, expected);
+	}
+
+	private static boolean evaluatePlannedOutgoingRelation(GuardContext context, Object... args) {
+		ASTNode source;
+		String kind;
+		if (args.length == 1) {
+			source= context.getMatchedNode();
+			kind= stripQuotes(argument(args, 0));
+		} else if (args.length >= 2) {
+			source= context.getBinding(argument(args, 0));
+			kind= stripQuotes(argument(args, 1));
+		} else {
+			return false;
+		}
+		return source != null && !context.getSemanticPlan().outgoing(source, kind).isEmpty();
+	}
+
+	private static boolean evaluatePlannedIncomingRelation(GuardContext context, Object... args) {
+		ASTNode target;
+		String kind;
+		if (args.length == 1) {
+			target= context.getMatchedNode();
+			kind= stripQuotes(argument(args, 0));
+		} else if (args.length >= 2) {
+			target= context.getBinding(argument(args, 0));
+			kind= stripQuotes(argument(args, 1));
+		} else {
+			return false;
+		}
+		return target != null && !context.getSemanticPlan().incoming(target, kind).isEmpty();
+	}
+
+	private static boolean evaluatePlannedRelationCount(GuardContext context, Object... args) {
+		ASTNode source;
+		String kind;
+		String countValue;
+		if (args.length == 2) {
+			source= context.getMatchedNode();
+			kind= stripQuotes(argument(args, 0));
+			countValue= argument(args, 1);
+		} else if (args.length >= 3) {
+			source= context.getBinding(argument(args, 0));
+			kind= stripQuotes(argument(args, 1));
+			countValue= argument(args, 2);
+		} else {
+			return false;
+		}
+		try {
+			return source != null
+					&& context.getSemanticPlan().outgoing(source, kind).size() == Integer.parseInt(countValue);
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 
 	private static boolean evaluateInstanceOf(GuardContext context, Object... args) {
@@ -111,6 +298,10 @@ public final class BuiltInGuardRegistration {
 		ITypeBinding[] arguments= binding.getTypeArguments();
 		return index >= 0 && index < arguments.length
 				&& matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));
+	}
+
+	private static SemanticPlanValue literal(Object[] args, int index) {
+		return SemanticPlanValue.fromGuardLiteral(argument(args, index));
 	}
 
 	private static String argument(Object[] args, int index) {
