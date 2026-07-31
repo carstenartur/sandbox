@@ -72,6 +72,41 @@ class PlanAwarePredicateHintTest {
 				=> @org.junit.jupiter.api.Test void $name()
 				;;
 				""";
+		assertAuthorized(method, ast, unit, plan, hint, key);
+	}
+
+	@Test
+	void typedFactWithoutRoleCreatesAuthorizedRewriteOperation() throws CoreException {
+		IPackageFragmentRoot root= context.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
+		IPackageFragment pack= root.createPackageFragment("samplefact", true, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("FactSample.java", //$NON-NLS-1$
+				"""
+				package samplefact;
+				public class FactSample {
+					public void selectedTest() {
+					}
+				}
+				""", false, null);
+		CompilationUnit ast= parse(unit);
+		MethodDeclaration method= findMethod(ast, "selectedTest"); //$NON-NLS-1$
+		IMethodBinding binding= method.resolveBinding();
+		String key= binding.getMethodDeclaration().getKey();
+		SemanticRewritePlan plan= SemanticRewritePlan.builder("typed-fact-demo") //$NON-NLS-1$
+				.putString(NodeKey.method(key), "test-kind", "JUPITER").build(); //$NON-NLS-1$ //$NON-NLS-2$
+		String hint= """
+				<!id: typed-fact-demo>
+				<!requires-plan: typed-fact-demo>
+				<!predicate selected($method):
+				    plannedValue($method, "test-kind", "JUPITER") && isPublic($method)>
+				void $name() :: selected($name)
+				=> @org.junit.jupiter.api.Test void $name()
+				;;
+				""";
+		assertAuthorized(method, ast, unit, plan, hint, key);
+	}
+
+	private static void assertAuthorized(MethodDeclaration method, CompilationUnit ast, ICompilationUnit unit,
+			SemanticRewritePlan plan, String hint, String key) throws CoreException {
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<org.eclipse.jdt.core.dom.ASTNode> processed= new LinkedHashSet<>();
 
