@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
+ * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -7,14 +7,15 @@
  * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -24,97 +25,68 @@ import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
-import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 
-/**
- * Content assist processor for {@code .sandbox-hint} files.
- *
- * <p>Provides completion proposals for guard function names after the
- * {@code ::} guard separator. Proposals are sourced from the
- * {@link GuardRegistry}.</p>
- *
- * @since 1.3.6
- */
+import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
+import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
+import org.sandbox.jdt.triggerpattern.internal.HintLanguageVocabulary;
+import org.sandbox.jdt.triggerpattern.internal.HintPredicatePreprocessor;
+
+/** Content assist for directives, registered guards and local predicates. */
 public class SandboxHintContentAssistProcessor implements IContentAssistProcessor {
 
-	/**
-	 * Guard function entries with name and description.
-	 */
-	private static final String[][] GUARD_PROPOSALS = {
-		{ "instanceof", "$x instanceof Type – type check" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "matchesAny", "matchesAny($x, \"lit1\", \"lit2\") – value is one of the given literals" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "matchesNone", "matchesNone($x, \"lit1\", ...) – value is none of the given literals" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "referencedIn", "referencedIn($x, $y) – variable $x is referenced in expression $y" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "hasNoSideEffect", "hasNoSideEffect($x) – expression has no side effects" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "sourceVersionGE", "sourceVersionGE(n) – source version >= n" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "sourceVersionLE", "sourceVersionLE(n) – source version <= n" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "sourceVersionBetween", "sourceVersionBetween(min, max) – source version in range" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "elementKindMatches", "elementKindMatches($x, KIND) – element is of a specific kind" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "isStatic", "isStatic($x) – element has static modifier" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "isFinal", "isFinal($x) – element has final modifier" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "hasAnnotation", "hasAnnotation($x, \"fully.qualified.Annotation\")" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "isDeprecated", "isDeprecated($x) – element is @Deprecated" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "otherwise", "otherwise – catch-all guard (always true)" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "parent", "parent($x, Type) – parent node is of the given type" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "contains", "contains($x, \"text\") – enclosing method contains the text" }, //$NON-NLS-1$ //$NON-NLS-2$
-		{ "notContains", "notContains($x, \"text\") – enclosing method does not contain the text" }, //$NON-NLS-1$ //$NON-NLS-2$
-	};
+	/** Pure proposal description used by UI code and PDE unit tests. */
+	static record CompletionEntry(String name, String replacement,
+			int cursorPosition, String description) {
+	}
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
-		IDocument document = viewer.getDocument();
-		String prefix = extractPrefix(document, offset);
-
-		// Check if we are after a :: guard separator
-		boolean afterGuard = isAfterGuardSeparator(document, offset - prefix.length());
-
-		if (!afterGuard && prefix.isEmpty()) {
+		IDocument document= viewer.getDocument();
+		String prefix= extractPrefix(document, offset);
+		int replacementOffset= offset - prefix.length();
+		String source= document.get();
+		boolean predicateGuardContext= isPredicateGuardContext(source, replacementOffset);
+		boolean directiveContext= !predicateGuardContext && isDirectiveContext(source, replacementOffset);
+		if (!directiveContext && !predicateGuardContext && !isGuardContext(source, replacementOffset)) {
 			return new ICompletionProposal[0];
 		}
 
-		List<ICompletionProposal> proposals = new ArrayList<>();
-		String lowerPrefix = prefix.toLowerCase();
-
-		for (String[] entry : GUARD_PROPOSALS) {
-			String name = entry[0];
-			String description = entry[1];
-			if (name.toLowerCase().startsWith(lowerPrefix)) {
-				String replacement = name;
-				int replacementOffset = offset - prefix.length();
-				int replacementLength = prefix.length();
-				int cursorPosition = replacement.length();
-				proposals.add(new CompletionProposal(
-						replacement, replacementOffset, replacementLength,
-						cursorPosition, null, name + " – " + description, //$NON-NLS-1$
-						null, description));
+		String lowerPrefix= prefix.toLowerCase(Locale.ROOT);
+		List<ICompletionProposal> proposals= new ArrayList<>();
+		for (CompletionEntry entry : completionEntries(source, directiveContext)) {
+			if (!entry.name().toLowerCase(Locale.ROOT).startsWith(lowerPrefix)) {
+				continue;
 			}
+			proposals.add(new CompletionProposal(entry.replacement(), replacementOffset,
+					prefix.length(), entry.cursorPosition(), null, entry.name(), null,
+					entry.description()));
+		}
+		return proposals.toArray(ICompletionProposal[]::new);
+	}
+
+	static List<CompletionEntry> completionEntries(String source, boolean directiveContext) {
+		if (directiveContext) {
+			return HintLanguageVocabulary.directives().stream().map(directive -> {
+				String syntax= directive.syntax();
+				String replacement= syntax.startsWith("<!") && syntax.endsWith(">") //$NON-NLS-1$ //$NON-NLS-2$
+						? syntax.substring(2, syntax.length() - 1) : syntax;
+				return new CompletionEntry(directive.name(), replacement, replacement.length(),
+						directive.description() + " — " + directive.syntax()); //$NON-NLS-1$
+			}).toList();
 		}
 
-		// Also propose guard functions from the registry
-		GuardRegistry registry = GuardRegistry.getInstance();
-		for (String guardName : registry.getRegisteredNames()) {
-			if (guardName.toLowerCase().startsWith(lowerPrefix)) {
-				boolean alreadyProposed = false;
-				for (String[] entry : GUARD_PROPOSALS) {
-					if (entry[0].equals(guardName)) {
-						alreadyProposed = true;
-						break;
-					}
-				}
-				if (!alreadyProposed) {
-					String replacement = guardName;
-					int replacementOffset = offset - prefix.length();
-					int replacementLength = prefix.length();
-					int cursorPosition = replacement.length();
-					proposals.add(new CompletionProposal(
-							replacement, replacementOffset, replacementLength,
-							cursorPosition, null, guardName,
-							null, "Custom guard function")); //$NON-NLS-1$
-				}
-			}
+		Map<String, CompletionEntry> entries= new LinkedHashMap<>();
+		for (String name : new TreeSet<>(GuardRegistry.getInstance().getRegisteredNames())) {
+			entries.put(name, new CompletionEntry(name, name, name.length(),
+					HintLanguageVocabulary.guardDescription(name)));
 		}
-
-		return proposals.toArray(new ICompletionProposal[0]);
+		for (HintPredicateDefinition predicate : HintPredicatePreprocessor.discover(source)) {
+			String description= "Local predicate " + predicate.signature() //$NON-NLS-1$
+					+ " declared on line " + predicate.lineNumber(); //$NON-NLS-1$
+			entries.put(predicate.name(), new CompletionEntry(predicate.name(), predicate.name(),
+					predicate.name().length(), description));
+		}
+		return List.copyOf(entries.values());
 	}
 
 	@Override
@@ -124,7 +96,7 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-		return new char[] { ':' };
+		return new char[] { ':', '<' };
 	}
 
 	@Override
@@ -142,45 +114,56 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		return null;
 	}
 
-	/**
-	 * Extracts the word prefix before the cursor position.
-	 */
-	private String extractPrefix(IDocument document, int offset) {
+	private static String extractPrefix(IDocument document, int offset) {
 		try {
-			int start = offset;
+			int start= offset;
 			while (start > 0) {
-				char c = document.getChar(start - 1);
-				if (!Character.isLetterOrDigit(c) && c != '_') {
+				char character= document.getChar(start - 1);
+				if (!Character.isJavaIdentifierPart(character)) {
 					break;
 				}
 				start--;
 			}
 			return document.get(start, offset - start);
-		} catch (BadLocationException e) {
+		} catch (BadLocationException exception) {
 			return ""; //$NON-NLS-1$
 		}
 	}
 
-	/**
-	 * Checks if the position is after a {@code ::} guard separator
-	 * (possibly with whitespace in between).
-	 */
-	private boolean isAfterGuardSeparator(IDocument document, int offset) {
-		try {
-			int pos = offset - 1;
-			// Skip whitespace
-			while (pos >= 0 && Character.isWhitespace(document.getChar(pos))) {
-				pos--;
-			}
-			// Check for '::'
-			if (pos >= 1
-					&& document.getChar(pos) == ':'
-					&& document.getChar(pos - 1) == ':') {
-				return true;
-			}
-		} catch (BadLocationException e) {
-			// ignore
+	static boolean isDirectiveContext(String source, int offset) {
+		int safeOffset= Math.max(0, Math.min(offset, source.length()));
+		int opening= source.lastIndexOf("<!", safeOffset); //$NON-NLS-1$
+		int closing= source.lastIndexOf('>', safeOffset);
+		return opening >= 0 && opening > closing;
+	}
+
+	static boolean isPredicateGuardContext(String source, int offset) {
+		int safeOffset= Math.max(0, Math.min(offset, source.length()));
+		int opening= source.lastIndexOf("<!", safeOffset); //$NON-NLS-1$
+		int closing= source.lastIndexOf('>', safeOffset);
+		if (opening < 0 || opening <= closing) {
+			return false;
 		}
-		return false;
+		int nameStart= opening + 2;
+		while (nameStart < safeOffset && Character.isWhitespace(source.charAt(nameStart))) {
+			nameStart++;
+		}
+		if (!source.startsWith("predicate", nameStart)) { //$NON-NLS-1$
+			return false;
+		}
+		int parametersEnd= source.indexOf(')', nameStart + "predicate".length()); //$NON-NLS-1$
+		if (parametersEnd < 0 || parametersEnd >= safeOffset) {
+			return false;
+		}
+		int colon= source.indexOf(':', parametersEnd + 1);
+		return colon >= 0 && colon < safeOffset;
+	}
+
+	private static boolean isGuardContext(String source, int offset) {
+		int safeOffset= Math.max(0, Math.min(offset, source.length()));
+		int guard= source.lastIndexOf("::", safeOffset); //$NON-NLS-1$
+		int rewrite= source.lastIndexOf("=>", safeOffset); //$NON-NLS-1$
+		int terminator= source.lastIndexOf(";;", safeOffset); //$NON-NLS-1$
+		return guard >= 0 && guard > Math.max(rewrite, terminator);
 	}
 }
