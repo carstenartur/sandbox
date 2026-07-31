@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -256,9 +257,6 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 	}
 
 	private static String typeSignature(SemanticPlanValue value) {
-		if (value instanceof SemanticPlanValue.ListValue list) {
-			return list.elementKind() == null ? "LIST" : "LIST<" + list.elementKind() + ">"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		}
 		return value.kind().name();
 	}
 
@@ -317,6 +315,9 @@ public record SemanticRewritePlan(String contractId, Map<NodeKey, Set<String>> r
 			}
 			if (node instanceof MethodDeclaration method) {
 				return method(methodKey(method.resolveBinding()));
+			}
+			if (node instanceof FieldDeclaration field) {
+				return field.fragments().size() == 1 ? from((ASTNode) field.fragments().get(0)) : null;
 			}
 			if (node instanceof VariableDeclarationFragment field) {
 				return field(fieldKey(field.resolveBinding()));
