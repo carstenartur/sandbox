@@ -10,17 +10,17 @@
 
 @id: junit3.planned.test
 void $name($params$) :: plannedRole($name, "JUNIT3_TEST_METHOD")
-=> @org.junit.jupiter.api.Test void $name($params$)
+=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test")
 ;;
 
 @id: junit3.planned.beforeEach
 void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH")
-=> @org.junit.jupiter.api.BeforeEach void $name($params$)
+=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.BeforeEach")
 ;;
 
 @id: junit3.planned.afterEach
 void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH")
-=> @org.junit.jupiter.api.AfterEach void $name($params$)
+=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.AfterEach")
 ;;
 
 // Message-first JUnit 3 overloads.

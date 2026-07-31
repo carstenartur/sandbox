@@ -38,23 +38,24 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
 import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
-import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
 
 /** Tests for the planner-authorized JUnit 3 hierarchy hint program. */
 public class JUnit3MigrationHintFileTest {
 
-	private final HintFileParser parser= new HintFileParser();
+	private final HintProgramParser parser= new HintProgramParser();
 
 	@Test
 	public void loadsPlannedJUnit3MigrationLibrary() throws Exception {
 		String content= loadHintContent();
-		HintFile hintFile= parser.parse(content);
+		HintFile hintFile= parser.parseHintFile(content);
 		assertEquals("junit3-hierarchy-to-jupiter", hintFile.getId()); //$NON-NLS-1$
 		assertEquals(Severity.WARNING, hintFile.getSeverity());
 		assertTrue(hintFile.getTags().contains("planned")); //$NON-NLS-1$
@@ -70,9 +71,23 @@ public class JUnit3MigrationHintFileTest {
 			assertTrue(rule.sourcePattern().getKind() == PatternKind.METHOD_DECLARATION
 					|| rule.sourcePattern().getKind() == PatternKind.METHOD_CALL);
 			assertFalse(rule.alternatives().stream()
-					.anyMatch(alternative -> alternative.replacementPattern().contains("BeforeAll") //$NON-NLS-1$
-							|| alternative.replacementPattern().contains("AfterAll"))); //$NON-NLS-1$
+					.map(RewriteAlternative::replacementPattern)
+					.filter(java.util.Objects::nonNull)
+					.anyMatch(replacement -> replacement.contains("BeforeAll") //$NON-NLS-1$
+							|| replacement.contains("AfterAll"))); //$NON-NLS-1$
 		}
+	}
+
+	@Test
+	public void methodAnnotationRulesUseStructuredActions() throws Exception {
+		Map<String, TransformationRule> rules= loadHintFile().getRules().stream()
+				.collect(java.util.stream.Collectors.toMap(TransformationRule::getRuleId, rule -> rule));
+		assertStructuredAnnotation(rules.get("junit3.planned.test"), //$NON-NLS-1$
+				"org.junit.jupiter.api.Test"); //$NON-NLS-1$
+		assertStructuredAnnotation(rules.get("junit3.planned.beforeEach"), //$NON-NLS-1$
+				"org.junit.jupiter.api.BeforeEach"); //$NON-NLS-1$
+		assertStructuredAnnotation(rules.get("junit3.planned.afterEach"), //$NON-NLS-1$
+				"org.junit.jupiter.api.AfterEach"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -125,8 +140,22 @@ public class JUnit3MigrationHintFileTest {
 		assertTrue(failure.getStatus().getMessage().contains("$widestType")); //$NON-NLS-1$
 	}
 
+	private static void assertStructuredAnnotation(TransformationRule rule, String annotationName) {
+		assertNotNull(rule);
+		assertEquals(1, rule.alternatives().size());
+		RewriteAlternative alternative= rule.alternatives().get(0);
+		assertFalse(alternative.hasTextReplacement());
+		assertEquals(1, alternative.structuredActions().size());
+		assertEquals("addAnnotation", alternative.structuredActions().get(0).name()); //$NON-NLS-1$
+		assertEquals(annotationName,
+				((org.sandbox.jdt.triggerpattern.api.SemanticPlanValue.StringValue)
+						((org.sandbox.jdt.triggerpattern.api.RewriteActionValue.Literal)
+								alternative.structuredActions().get(0).arguments().get("annotation")) //$NON-NLS-1$
+								.value()).value());
+	}
+
 	private HintFile loadHintFile() throws Exception {
-		return parser.parse(loadHintContent());
+		return parser.parseHintFile(loadHintContent());
 	}
 
 	private String loadHintContent() throws Exception {
