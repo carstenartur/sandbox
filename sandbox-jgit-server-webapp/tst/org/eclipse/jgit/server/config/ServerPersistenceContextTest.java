@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Properties;
 
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
@@ -26,9 +27,11 @@ import org.junit.Test;
 public class ServerPersistenceContextTest {
 
 	@Test
-	public void exposesOnlyNativeHibernateContract() throws Exception {
+	public void exposesOnlyApplicationOwnedContracts() throws Exception {
 		Method sessionFactory= ServerPersistenceContext.class.getMethod("sessionFactory"); //$NON-NLS-1$
+		Method repositoryService= ServerPersistenceContext.class.getMethod("repositoryService"); //$NON-NLS-1$
 		assertEquals(SessionFactory.class, sessionFactory.getReturnType());
+		assertEquals(SandboxRepositoryService.class, repositoryService.getReturnType());
 		assertFalse(Modifier.isPublic(CopiedServerPersistenceContext.class.getModifiers()));
 		for (Method method : ServerPersistenceContext.class.getMethods()) {
 			assertFalse(isStorageImplementation(method.getReturnType()));
@@ -42,7 +45,7 @@ public class ServerPersistenceContextTest {
 	}
 
 	@Test
-	public void ownsAndClosesNativeSessionFactory() {
+	public void ownsRepositoryServiceAndClosesNativeSessionFactory() {
 		Properties properties= new Properties();
 		properties.setProperty("hibernate.connection.url", //$NON-NLS-1$
 				"jdbc:h2:mem:server-persistence-context;DB_CLOSE_DELAY=-1"); //$NON-NLS-1$
@@ -56,7 +59,9 @@ public class ServerPersistenceContextTest {
 
 		ServerPersistenceContext context= HibernateConfig.createPersistenceContext(properties);
 		SessionFactory sessionFactory= context.sessionFactory();
+		SandboxRepositoryService repositories= context.repositoryService();
 		assertSame(sessionFactory, context.sessionFactory());
+		assertSame(repositories, context.repositoryService());
 		assertFalse(sessionFactory.isClosed());
 
 		context.close();
