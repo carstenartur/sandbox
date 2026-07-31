@@ -27,11 +27,12 @@ import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
 
 import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintLanguageVocabulary;
 import org.sandbox.jdt.triggerpattern.internal.HintPredicatePreprocessor;
 
-/** Content assist for directives, guards, predicates and structured actions. */
+/** Content assist for directives, guards, predicates, actions and explicit kinds. */
 public class SandboxHintContentAssistProcessor implements IContentAssistProcessor {
 
 	/** Pure proposal description used by UI code and PDE unit tests. */
@@ -47,16 +48,19 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		String source= document.get();
 		boolean predicateGuardContext= isPredicateGuardContext(source, replacementOffset);
 		boolean directiveContext= !predicateGuardContext && isDirectiveContext(source, replacementOffset);
-		boolean actionContext= !directiveContext && !predicateGuardContext
+		boolean patternKindContext= !directiveContext && !predicateGuardContext
+				&& isPatternKindContext(source, replacementOffset);
+		boolean actionContext= !directiveContext && !predicateGuardContext && !patternKindContext
 				&& isStructuredActionContext(source, replacementOffset);
-		if (!directiveContext && !predicateGuardContext && !actionContext
+		if (!directiveContext && !predicateGuardContext && !patternKindContext && !actionContext
 				&& !isGuardContext(source, replacementOffset)) {
 			return new ICompletionProposal[0];
 		}
 
 		String lowerPrefix= prefix.toLowerCase(Locale.ROOT);
 		List<ICompletionProposal> proposals= new ArrayList<>();
-		for (CompletionEntry entry : completionEntries(source, directiveContext, actionContext)) {
+		for (CompletionEntry entry : completionEntries(source, directiveContext, actionContext,
+				patternKindContext)) {
 			if (!entry.name().toLowerCase(Locale.ROOT).startsWith(lowerPrefix)) {
 				continue;
 			}
@@ -68,11 +72,16 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 	}
 
 	static List<CompletionEntry> completionEntries(String source, boolean directiveContext) {
-		return completionEntries(source, directiveContext, false);
+		return completionEntries(source, directiveContext, false, false);
 	}
 
 	static List<CompletionEntry> completionEntries(String source, boolean directiveContext,
 			boolean actionContext) {
+		return completionEntries(source, directiveContext, actionContext, false);
+	}
+
+	static List<CompletionEntry> completionEntries(String source, boolean directiveContext,
+			boolean actionContext, boolean patternKindContext) {
 		if (directiveContext) {
 			return HintLanguageVocabulary.directives().stream().map(directive -> {
 				String syntax= directive.syntax();
@@ -81,6 +90,12 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 				return new CompletionEntry(directive.name(), replacement, replacement.length(),
 						directive.description() + " — " + directive.syntax()); //$NON-NLS-1$
 			}).toList();
+		}
+		if (patternKindContext) {
+			return java.util.Arrays.stream(PatternKind.values())
+					.map(kind -> new CompletionEntry(kind.name(), kind.name(), kind.name().length(),
+							"Explicit source pattern kind " + kind.name())) //$NON-NLS-1$
+					.toList();
 		}
 		if (actionContext) {
 			return HintLanguageVocabulary.actions().stream().map(action -> {
@@ -174,6 +189,18 @@ public class SandboxHintContentAssistProcessor implements IContentAssistProcesso
 		}
 		int colon= source.indexOf(':', parametersEnd + 1);
 		return colon >= 0 && colon < safeOffset;
+	}
+
+	static boolean isPatternKindContext(String source, int offset) {
+		int safeOffset= Math.max(0, Math.min(offset, source.length()));
+		int lineStart= source.lastIndexOf('\n', Math.max(0, safeOffset - 1)) + 1;
+		String prefix= source.substring(lineStart, safeOffset).stripLeading();
+		if (!prefix.startsWith("@kind:")) { //$NON-NLS-1$
+			return false;
+		}
+		String valuePrefix= prefix.substring(6).trim();
+		return valuePrefix.isEmpty() || valuePrefix.chars()
+				.allMatch(character -> Character.isJavaIdentifierPart(character));
 	}
 
 	static boolean isStructuredActionContext(String source, int offset) {
