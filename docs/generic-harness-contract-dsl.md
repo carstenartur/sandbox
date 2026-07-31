@@ -94,6 +94,33 @@ fields and exact method/constructor call sites. Field keys are needed for JUnit
 4 `@Rule`/`@ClassRule` migration; exact constructor call sites are needed for
 named JUnit 3 test construction and custom suite builders.
 
+## Generic execution-tree oracle
+
+`ExecutionTreeSnapshot` is the framework-neutral before/after contract. Adapters
+convert a completed JDT JUnit model, another launcher or a dedicated harness
+fixture into immutable containers and tests with stable semantic identities,
+results, attributes and ordered children. No live framework model object is
+retained after capture.
+
+`ExecutionTreeComparator` requires a named policy rather than silently
+normalizing differences. Available policy shapes include:
+
+- strict structure, container identity, order, results and attributes;
+- identical shape while allowing framework container names to change;
+- ordered leaves while ignoring wrappers;
+- an unordered leaf multiset.
+
+Every policy preserves duplicate occurrences exactly. There is deliberately no
+set-only mode that could hide a lost or duplicated test. Successful execution is
+required by default, and result or attribute comparison can be relaxed only by
+an explicit policy copy. The existing coordinated JUnit 3 hierarchy regression
+now uses this generic model through a small JDT adapter.
+
+For demanding migrations, the planner assigns stable identities to legacy and
+replacement containers. That lets the strict policy compare semantic suite
+structure even when the physical implementation changes from JUnit 3 suite
+objects to Jupiter dynamic containers.
+
 ## One language vocabulary
 
 `HintLanguageVocabulary` is the canonical source for:
@@ -129,8 +156,9 @@ one parser class.
 
 ## Next generic language slices
 
-Typed facts and relations provide the shared data model, but they do not yet
-express all required AST changes. The next extensions remain generic:
+Typed facts, relations and execution-tree verification provide the shared data
+and safety model, but they do not yet express all required AST changes. The next
+extensions remain generic:
 
 ```text
 contract legacy-tests/v1 {
@@ -145,15 +173,15 @@ contract legacy-tests/v1 {
 
 Required engine concepts are:
 
-- structured AST actions such as replacing a supertype, removing a validated
-  constructor, replacing an annotation, qualifying an invocation and generating
-  a nested adapter type;
+- a separate registrable structured-action channel rather than encoding AST
+  operations as syntactically invalid Java replacement text;
+- actions such as replacing a supertype, removing a validated constructor,
+  replacing an annotation, qualifying an invocation and generating a nested
+  adapter type;
 - reusable contract fragments for discovery, ordering, selection, suite state,
   providers, wrappers and execution matrices;
 - trace output containing rule ID, plan node, relation occurrence, binding key,
-  typed values and rejection/skip reason;
-- a generic runtime oracle requiring an identical non-empty successful test
-  tree with configurable identity, nesting, order and multiplicity policies.
+  typed values and rejection/skip reason.
 
 Project-specific recipes then supply only type names, method patterns and the
 composition of these generic contracts.
@@ -201,7 +229,7 @@ Every language extension must include:
 - plan-aware end-to-end execution proving that the expanded program reaches the
   existing rewrite backend;
 - relation tests preserving explicit order and duplicate multiplicity;
-- at least one runtime-tree regression when execution semantics are affected.
+- execution-tree regressions whenever discovery or runtime semantics change.
 
 A feature is not complete when only the parser accepts it. Editor support,
 diagnostics, execution and tests are part of the language contract.
