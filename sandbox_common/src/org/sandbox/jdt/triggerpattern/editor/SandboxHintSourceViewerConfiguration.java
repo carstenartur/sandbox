@@ -33,97 +33,62 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 
-/**
- * Source viewer configuration for the {@code .sandbox-hint} editor.
- *
- * <p>Provides:</p>
- * <ul>
- *   <li>Syntax highlighting via a {@link PresentationReconciler}</li>
- *   <li>Content assist for guard functions after {@code ::} and Java completions in {@code <? ?>} blocks</li>
- *   <li>Background reconciling for validation with error markers</li>
- *   <li>Annotation hover for embedded Java compile errors</li>
- *   <li>Hyperlink detection for navigating to guard function definitions</li>
- * </ul>
- *
- * @since 1.3.6
- */
+/** Source viewer configuration for the {@code .sandbox-hint} editor. */
 public class SandboxHintSourceViewerConfiguration extends SourceViewerConfiguration {
 
 	private SandboxHintEditor editor;
 
-	/**
-	 * Creates a source viewer configuration without an editor reference.
-	 */
 	public SandboxHintSourceViewerConfiguration() {
 	}
 
-	/**
-	 * Creates a source viewer configuration with an editor reference
-	 * for wiring reconciler-driven updates (folding, outline).
-	 *
-	 * @param editor the hint editor
-	 * @since 1.5.0
-	 */
 	public SandboxHintSourceViewerConfiguration(SandboxHintEditor editor) {
-		this.editor = editor;
+		this.editor= editor;
 	}
 
 	@Override
 	public String[] getConfiguredContentTypes(ISourceViewer sourceViewer) {
 		return new String[] {
-			IDocument.DEFAULT_CONTENT_TYPE,
-			SandboxHintPartitionScanner.COMMENT,
-			SandboxHintPartitionScanner.METADATA,
-			SandboxHintPartitionScanner.JAVA_CODE
+				IDocument.DEFAULT_CONTENT_TYPE,
+				SandboxHintPartitionScanner.COMMENT,
+				SandboxHintPartitionScanner.METADATA,
+				SandboxHintPartitionScanner.JAVA_CODE
 		};
 	}
 
 	@Override
 	public IPresentationReconciler getPresentationReconciler(ISourceViewer sourceViewer) {
-		PresentationReconciler reconciler = new PresentationReconciler();
+		PresentationReconciler reconciler= new PresentationReconciler();
 
-		// Default content (code) – uses the code scanner for keywords
-		ITokenScanner codeScanner = new SandboxHintCodeScanner();
-		DefaultDamagerRepairer codeDR = new DefaultDamagerRepairer(codeScanner);
+		DefaultDamagerRepairer codeDR= new DefaultDamagerRepairer(new SandboxHintCodeScanner());
 		reconciler.setDamager(codeDR, IDocument.DEFAULT_CONTENT_TYPE);
 		reconciler.setRepairer(codeDR, IDocument.DEFAULT_CONTENT_TYPE);
 
-		// Comments – green italic (use JDT's shared color manager)
-		Color commentColor = JavaPlugin.getDefault().getJavaTextTools()
+		Color commentColor= JavaPlugin.getDefault().getJavaTextTools()
 				.getColorManager().getColor(new RGB(63, 127, 95));
-		TextAttribute commentAttr = new TextAttribute(commentColor, null, SWT.ITALIC);
-		DefaultDamagerRepairer commentDR = new DefaultDamagerRepairer(
+		TextAttribute commentAttr= new TextAttribute(commentColor, null, SWT.ITALIC);
+		DefaultDamagerRepairer commentDR= new DefaultDamagerRepairer(
 				new SingleTokenScanner(new Token(commentAttr)));
 		reconciler.setDamager(commentDR, SandboxHintPartitionScanner.COMMENT);
 		reconciler.setRepairer(commentDR, SandboxHintPartitionScanner.COMMENT);
 
-		// Metadata directives – dark blue bold
-		Color metadataColor = JavaPlugin.getDefault().getJavaTextTools()
-				.getColorManager().getColor(new RGB(0, 0, 128));
-		TextAttribute metadataAttr = new TextAttribute(metadataColor, null, SWT.BOLD);
-		DefaultDamagerRepairer metadataDR = new DefaultDamagerRepairer(
-				new SingleTokenScanner(new Token(metadataAttr)));
+		DefaultDamagerRepairer metadataDR= new DefaultDamagerRepairer(new SandboxHintMetadataScanner());
 		reconciler.setDamager(metadataDR, SandboxHintPartitionScanner.METADATA);
 		reconciler.setRepairer(metadataDR, SandboxHintPartitionScanner.METADATA);
 
-		// Embedded Java code – reuses JDT's Java code scanner for full keyword,
-		// string, annotation, and operator highlighting with theme/preference support
-		ITokenScanner javaScanner = JavaPlugin.getDefault().getJavaTextTools().getCodeScanner();
-		DefaultDamagerRepairer javaDR = new DefaultDamagerRepairer(javaScanner);
+		ITokenScanner javaScanner= JavaPlugin.getDefault().getJavaTextTools().getCodeScanner();
+		DefaultDamagerRepairer javaDR= new DefaultDamagerRepairer(javaScanner);
 		reconciler.setDamager(javaDR, SandboxHintPartitionScanner.JAVA_CODE);
 		reconciler.setRepairer(javaDR, SandboxHintPartitionScanner.JAVA_CODE);
-
 		return reconciler;
 	}
 
 	@Override
 	public IContentAssistant getContentAssistant(ISourceViewer sourceViewer) {
-		ContentAssistant assistant = new ContentAssistant();
-		assistant.setContentAssistProcessor(
-				new SandboxHintContentAssistProcessor(),
-				IDocument.DEFAULT_CONTENT_TYPE);
-		assistant.setContentAssistProcessor(
-				new EmbeddedJavaContentAssistProcessor(),
+		ContentAssistant assistant= new ContentAssistant();
+		SandboxHintContentAssistProcessor hintProcessor= new SandboxHintContentAssistProcessor();
+		assistant.setContentAssistProcessor(hintProcessor, IDocument.DEFAULT_CONTENT_TYPE);
+		assistant.setContentAssistProcessor(hintProcessor, SandboxHintPartitionScanner.METADATA);
+		assistant.setContentAssistProcessor(new EmbeddedJavaContentAssistProcessor(),
 				SandboxHintPartitionScanner.JAVA_CODE);
 		assistant.enableAutoActivation(true);
 		assistant.setAutoActivationDelay(500);
@@ -137,28 +102,25 @@ public class SandboxHintSourceViewerConfiguration extends SourceViewerConfigurat
 
 	@Override
 	public IReconciler getReconciler(ISourceViewer sourceViewer) {
-		SandboxHintReconcilingStrategy strategy = new SandboxHintReconcilingStrategy();
+		SandboxHintReconcilingStrategy strategy= new SandboxHintReconcilingStrategy();
 		strategy.setSourceViewer(sourceViewer);
 		if (editor != null) {
 			strategy.setEditor(editor);
 		}
-		MonoReconciler reconciler = new MonoReconciler(strategy, false);
+		MonoReconciler reconciler= new MonoReconciler(strategy, false);
 		reconciler.setDelay(500);
 		return reconciler;
 	}
 
 	@Override
 	public IHyperlinkDetector[] getHyperlinkDetectors(ISourceViewer sourceViewer) {
-		// Keep default detectors and add the guard function hyperlink detector
-		IHyperlinkDetector[] defaults = super.getHyperlinkDetectors(sourceViewer);
-		IHyperlinkDetector[] result;
-		if (defaults != null) {
-			result = new IHyperlinkDetector[defaults.length + 1];
-			System.arraycopy(defaults, 0, result, 0, defaults.length);
-			result[defaults.length] = new SandboxHintHyperlinkDetector();
-		} else {
-			result = new IHyperlinkDetector[] { new SandboxHintHyperlinkDetector() };
+		IHyperlinkDetector[] defaults= super.getHyperlinkDetectors(sourceViewer);
+		if (defaults == null) {
+			return new IHyperlinkDetector[] { new SandboxHintHyperlinkDetector() };
 		}
+		IHyperlinkDetector[] result= new IHyperlinkDetector[defaults.length + 1];
+		System.arraycopy(defaults, 0, result, 0, defaults.length);
+		result[defaults.length]= new SandboxHintHyperlinkDetector();
 		return result;
 	}
 }

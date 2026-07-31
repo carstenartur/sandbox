@@ -48,6 +48,8 @@ import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser.ParsedProgram;
 
 /**
  * Adds semantic-plan authorization and exact coverage checks around the existing
@@ -82,7 +84,9 @@ public final class PlanAwareHintFileFixCore {
 		if (hintFileContent.contains("$widestType")) { //$NON-NLS-1$
 			throw failure("Plan-aware hint programs may not use analysis-dependent $widestType replacements", null); //$NON-NLS-1$
 		}
-		HintFile hintFile= parse(hintFileContent);
+		ParsedProgram program= parse(hintFileContent);
+		HintFile hintFile= program.hintFile();
+		String executableContent= program.expandedSource();
 		BatchTransformationProcessor processor= new BatchTransformationProcessor(hintFile);
 		List<TransformationResult> authorized= processor.process(compilationUnit, compilerOptions, plan).stream()
 				.filter(TransformationResult::hasReplacement)
@@ -102,7 +106,7 @@ public final class PlanAwareHintFileFixCore {
 		Set<CompilationUnitRewriteOperation> delegated= new LinkedHashSet<>();
 		try (SemanticRewritePlanContext.Scope ignored=
 				SemanticRewritePlanContext.install(plan, compilerOptions)) {
-			HintFileFixCore.findOperationsFromContent(compilationUnit, hintFileContent, delegated);
+			HintFileFixCore.findOperationsFromContent(compilationUnit, executableContent, delegated);
 		}
 		if (delegated.size() != authorized.size()) {
 			throw failure("The existing hint backend produced " + delegated.size() //$NON-NLS-1$
@@ -133,9 +137,9 @@ public final class PlanAwareHintFileFixCore {
 		}
 	}
 
-	private static HintFile parse(String content) throws CoreException {
+	private static ParsedProgram parse(String content) throws CoreException {
 		try {
-			return new HintFileParser().parse(content);
+			return new HintProgramParser().parse(content);
 		} catch (HintFileParser.HintParseException e) {
 			throw failure("Cannot parse trusted plan-aware hint program", e); //$NON-NLS-1$
 		}
