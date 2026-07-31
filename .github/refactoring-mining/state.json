@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "6d10ed6d8d5326d1eafc729588d5037d1081daa8",
-      "lastProcessedDate": "2026-07-30T03:15:36.691318512Z",
-      "totalProcessed": 3192,
+      "lastProcessedCommit": "da6623602e470797e52f788591707cde85a3ee75",
+      "lastProcessedDate": "2026-07-31T03:15:49.361212253Z",
+      "totalProcessed": 3276,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2654,6 +2654,15 @@
           "deferredAt": "2026-07-30T03:13:41.826795856Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "f50229cd0a4156ed3b557903ef0aec57726779ea",
+          "message": "Bug 525428 - [quick fix][null] quick fix to add @NonNullByDefault to package",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-07-31T03:09:37.491687175Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2667,7 +2676,7 @@
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
         "Code Simplification": 10,
-        "Performance": 26,
+        "Performance": 27,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
@@ -2807,7 +2816,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 13,
+        "API Modernization": 15,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2825,13 +2834,14 @@
         "Type Mismatch Cleanup": 1,
         "API usage": 1,
         "UI Color Management": 1,
-        "Expression Simplification": 1,
+        "Expression Simplification": 2,
         "API Fix": 1,
         "API Misuse Correction": 1,
         "readability": 1,
         "Method call argument replacement": 1,
         "API Constant Renaming": 1,
-        "API Renaming": 1
+        "API Renaming": 1,
+        "API Usage": 1
       },
       "exhaustedCategories": []
     },
@@ -2872,5 +2882,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25851
+  "globalTotalProcessed": 25935
 }
