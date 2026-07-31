@@ -43,11 +43,15 @@ import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
+import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext;
+import org.sandbox.jdt.triggerpattern.api.TransformationRule;
+import org.sandbox.jdt.triggerpattern.cleanup.actions.StructuredRewriteActionOperation;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
 import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
 import org.sandbox.jdt.triggerpattern.internal.HintProgramParser.ParsedProgram;
 
@@ -86,10 +90,10 @@ public final class PlanAwareHintFileFixCore {
 		}
 		ParsedProgram program= parse(hintFileContent);
 		HintFile hintFile= program.hintFile();
-		String executableContent= program.expandedSource();
+		validateAlternativeKinds(hintFile);
 		BatchTransformationProcessor processor= new BatchTransformationProcessor(hintFile);
 		List<TransformationResult> authorized= processor.process(compilationUnit, compilerOptions, plan).stream()
-				.filter(TransformationResult::hasReplacement)
+				.filter(TransformationResult::hasRewrite)
 				.toList();
 
 		Set<NodeKey> covered= new LinkedHashSet<>();
@@ -103,21 +107,32 @@ public final class PlanAwareHintFileFixCore {
 			nodesProcessed.add(matched);
 		}
 
+		List<TransformationResult> textResults= authorized.stream()
+				.filter(TransformationResult::hasReplacement).toList();
 		Set<CompilationUnitRewriteOperation> delegated= new LinkedHashSet<>();
-		try (SemanticRewritePlanContext.Scope ignored=
-				SemanticRewritePlanContext.install(plan, compilerOptions)) {
-			HintFileFixCore.findOperationsFromContent(compilationUnit, executableContent, delegated);
+		if (!textResults.isEmpty()) {
+			HintFile textHints= textOnlyHintFile(hintFile);
+			String textProgram= new HintFileSerializer().serialize(textHints);
+			try (SemanticRewritePlanContext.Scope ignored=
+					SemanticRewritePlanContext.install(plan, compilerOptions)) {
+				HintFileFixCore.findOperationsFromContent(compilationUnit, textProgram, delegated);
+			}
 		}
-		if (delegated.size() != authorized.size()) {
+		if (delegated.size() != textResults.size()) {
 			throw failure("The existing hint backend produced " + delegated.size() //$NON-NLS-1$
-					+ " operations for " + authorized.size() + " authorized replacements", null); //$NON-NLS-1$ //$NON-NLS-2$
+					+ " operations for " + textResults.size() + " authorized text rewrites", null); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 
-		Iterator<TransformationResult> resultIterator= authorized.iterator();
-		Iterator<CompilationUnitRewriteOperation> operationIterator= delegated.iterator();
-		while (resultIterator.hasNext() && operationIterator.hasNext()) {
-			TransformationResult result= resultIterator.next();
-			CompilationUnitRewriteOperation delegate= operationIterator.next();
+		Iterator<CompilationUnitRewriteOperation> textIterator= delegated.iterator();
+		for (TransformationResult result : authorized) {
+			if (result.hasStructuredActions()) {
+				operations.add(new StructuredRewriteActionOperation(result, plan));
+				continue;
+			}
+			if (!textIterator.hasNext()) {
+				throw failure("The existing hint backend text operation order is incomplete", null); //$NON-NLS-1$
+			}
+			CompilationUnitRewriteOperation delegate= textIterator.next();
 			if (result.match().getMatchedNode() instanceof MethodDeclaration) {
 				operations.add(new PlannedMethodAnnotationOperation(result));
 			} else {
@@ -125,6 +140,37 @@ public final class PlanAwareHintFileFixCore {
 			}
 		}
 		return Set.copyOf(covered);
+	}
+
+	private static void validateAlternativeKinds(HintFile hintFile) throws CoreException {
+		for (TransformationRule rule : hintFile.getRules()) {
+			boolean hasText= rule.alternatives().stream().anyMatch(RewriteAlternative::hasTextReplacement);
+			boolean hasActions= rule.alternatives().stream().anyMatch(RewriteAlternative::hasStructuredActions);
+			if (hasText && hasActions) {
+				throw failure("Plan-aware rule " + rule.getRuleId() //$NON-NLS-1$
+						+ " mixes text and structured alternatives; split it into separate rules", null); //$NON-NLS-1$
+			}
+		}
+	}
+
+	private static HintFile textOnlyHintFile(HintFile source) {
+		HintFile copy= new HintFile();
+		copy.setId(source.getId());
+		copy.setDescription(source.getDescription());
+		copy.setSeverity(source.getSeverity());
+		copy.setMinJavaVersion(source.getMinJavaVersion());
+		copy.setTags(source.getTags());
+		copy.setCaseInsensitive(source.isCaseInsensitive());
+		copy.setSuppressWarnings(source.getSuppressWarnings());
+		copy.setTreeKindNodeTypes(source.getTreeKindNodeTypes());
+		source.getIncludes().forEach(copy::addInclude);
+		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);
+		for (TransformationRule rule : source.getRules()) {
+			if (rule.alternatives().stream().noneMatch(RewriteAlternative::hasStructuredActions)) {
+				copy.addRule(rule);
+			}
+		}
+		return copy;
 	}
 
 	private static String requiredPlan(String content) throws CoreException {
@@ -167,8 +213,8 @@ public final class PlanAwareHintFileFixCore {
 	}
 
 	/**
-	 * Applies marker annotations declared by an authorized method-declaration hint
-	 * using real AST nodes and {@link ImportRewrite} rather than text placeholders.
+	 * Applies marker annotations declared by a legacy authorized method rule using
+	 * real AST nodes. New declarative programs should use {@code addAnnotation}.
 	 */
 	private static final class PlannedMethodAnnotationOperation
 			extends CompilationUnitRewriteOperationWithSourceRange {

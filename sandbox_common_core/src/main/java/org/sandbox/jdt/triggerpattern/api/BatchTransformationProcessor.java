@@ -81,11 +81,13 @@ public final class BatchTransformationProcessor {
 				}
 
 				Optional<RewriteAlternative> alternative= rule.findMatchingAlternative(guardCtx);
-				String replacement= alternative.isPresent()
+				String replacement= alternative.isPresent() && alternative.get().hasTextReplacement()
 						? substituteBindings(alternative.get().replacementPattern(), match)
 						: null;
+				List<StructuredRewriteAction> actions= alternative
+						.map(RewriteAlternative::structuredActions).orElse(List.of());
 				ImportDirective imports= rule.hasImportDirective() ? rule.getImportDirective() : null;
-				results.add(new TransformationResult(rule, match, replacement, imports,
+				results.add(new TransformationResult(rule, match, replacement, actions, imports,
 						rule.getDescription(), computeLineNumber(cu, match)));
 			}
 		}
@@ -155,12 +157,20 @@ public final class BatchTransformationProcessor {
 		return copy;
 	}
 
-	/** Result of applying a transformation rule to one match. */
+	/** Result of applying one selected rewrite alternative to one match. */
 	public record TransformationResult(TransformationRule rule, Match match, String replacement,
-			ImportDirective importDirective, String description, int lineNumber) {
+			List<StructuredRewriteAction> structuredActions, ImportDirective importDirective,
+			String description, int lineNumber) {
 
 		public TransformationResult {
+			structuredActions= List.copyOf(structuredActions == null ? List.of() : structuredActions);
 			importDirective= copyImportDirective(importDirective);
+		}
+
+		/** Backward-compatible constructor for text-only transformation results. */
+		public TransformationResult(TransformationRule rule, Match match, String replacement,
+				ImportDirective importDirective, String description, int lineNumber) {
+			this(rule, match, replacement, List.of(), importDirective, description, lineNumber);
 		}
 
 		public ImportDirective importDirective() {
@@ -169,6 +179,14 @@ public final class BatchTransformationProcessor {
 
 		public boolean hasReplacement() {
 			return replacement != null;
+		}
+
+		public boolean hasStructuredActions() {
+			return !structuredActions.isEmpty();
+		}
+
+		public boolean hasRewrite() {
+			return hasReplacement() || hasStructuredActions();
 		}
 
 		public boolean hasImportDirective() {
