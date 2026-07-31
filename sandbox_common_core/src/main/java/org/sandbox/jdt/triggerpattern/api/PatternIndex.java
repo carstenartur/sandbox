@@ -40,7 +40,23 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.internal.TypeDeclarationHeaderMatcher;
 import org.sandbox.jdt.triggerpattern.internal.TypeDeclarationPatternParser;
 
-/** Indexes transformation rules by pattern kind for one-pass AST matching. */
+/**
+ * Indexes transformation rules by their {@link PatternKind} for efficient
+ * batch matching against a compilation unit.
+ *
+ * <p>Instead of traversing the AST once per rule (O(N*M) where N is the number
+ * of AST nodes and M is the number of rules), a {@code PatternIndex} groups
+ * rules by their pattern kind and traverses the AST only once. Each visited
+ * node is checked against only the rules of the matching kind.</p>
+ *
+ * <h2>Usage</h2>
+ * <pre>
+ * PatternIndex index = new PatternIndex(hintFile.getRules());
+ * Map&lt;TransformationRule, List&lt;Match&gt;&gt; results = index.findAllMatches(cu);
+ * </pre>
+ *
+ * @since 1.3.3
+ */
 public final class PatternIndex {
 
 	private final Map<PatternKind, List<IndexEntry>> rulesByKind;
@@ -48,60 +64,112 @@ public final class PatternIndex {
 	private final TypeDeclarationPatternParser typeParser;
 	private boolean caseInsensitive;
 
+	/**
+	 * Creates a new pattern index from a list of transformation rules.
+	 *
+	 * <p>Pre-parses all source patterns and groups them by kind for efficient
+	 * batch matching. Explicit type declarations use a dedicated header parser
+	 * so ordinary expression and statement parsing remains unchanged.</p>
+	 *
+	 * @param rules the rules to index
+	 */
 	public PatternIndex(List<TransformationRule> rules) {
-		this.parser= new PatternParser();
-		this.typeParser= new TypeDeclarationPatternParser();
-		this.rulesByKind= buildIndex(rules);
+		this.parser = new PatternParser();
+		this.typeParser = new TypeDeclarationPatternParser();
+		this.rulesByKind = buildIndex(rules);
 	}
 
+	/**
+	 * Sets whether string literal matching should be case-insensitive.
+	 *
+	 * @param caseInsensitive {@code true} to enable case-insensitive matching
+	 * @since 1.3.8
+	 */
 	public void setCaseInsensitive(boolean caseInsensitive) {
-		this.caseInsensitive= caseInsensitive;
+		this.caseInsensitive = caseInsensitive;
 	}
 
 	private Map<PatternKind, List<IndexEntry>> buildIndex(List<TransformationRule> rules) {
-		Map<PatternKind, List<IndexEntry>> index= new EnumMap<>(PatternKind.class);
+		Map<PatternKind, List<IndexEntry>> index = new EnumMap<>(PatternKind.class);
+
 		for (TransformationRule rule : rules) {
-			Pattern sourcePattern= rule.sourcePattern();
-			ASTNode patternNode= sourcePattern.getKind() == PatternKind.TYPE_DECLARATION
-					? typeParser.parse(sourcePattern.getValue()) : parser.parse(sourcePattern);
+			Pattern sourcePattern = rule.sourcePattern();
+			ASTNode patternNode = sourcePattern.getKind() == PatternKind.TYPE_DECLARATION
+					? typeParser.parse(sourcePattern.getValue())
+					: parser.parse(sourcePattern);
 			if (patternNode == null) {
 				continue;
 			}
-			PatternKind kind= sourcePattern.getKind();
+
+			PatternKind kind = sourcePattern.getKind();
 			index.computeIfAbsent(kind, ignored -> new ArrayList<>())
 					.add(new IndexEntry(rule, sourcePattern, patternNode));
 		}
+
 		return index;
 	}
 
+	/**
+	 * Returns the number of indexed rules.
+	 *
+	 * @return the total number of rules in the index
+	 */
 	public int size() {
 		return rulesByKind.values().stream().mapToInt(List::size).sum();
 	}
 
+	/**
+	 * Returns the number of distinct pattern kinds in the index.
+	 *
+	 * @return the number of distinct pattern kinds
+	 */
 	public int kindCount() {
 		return rulesByKind.size();
 	}
 
+	/**
+	 * Returns the rules for a specific pattern kind.
+	 *
+	 * @param kind the pattern kind
+	 * @return unmodifiable list of transformation rules for the given kind
+	 */
 	public List<TransformationRule> getRulesForKind(PatternKind kind) {
-		List<IndexEntry> entries= rulesByKind.getOrDefault(kind, Collections.emptyList());
+		List<IndexEntry> entries = rulesByKind.getOrDefault(kind, Collections.emptyList());
 		return entries.stream().map(IndexEntry::rule).toList();
 	}
 
+	/**
+	 * Finds all matches for all indexed rules in a single AST traversal.
+	 *
+	 * <p>This is significantly more efficient than calling
+	 * {@link TriggerPatternEngine#findMatches(CompilationUnit, Pattern)} once per
+	 * rule, because the AST is traversed only once.</p>
+	 *
+	 * @param cu the compilation unit to search
+	 * @return map from each rule that had matches to its list of matches
+	 */
 	public Map<TransformationRule, List<Match>> findAllMatches(CompilationUnit cu) {
 		if (cu == null || rulesByKind.isEmpty()) {
 			return Collections.emptyMap();
 		}
-		Map<TransformationRule, List<Match>> results= new java.util.LinkedHashMap<>();
+
+		Map<TransformationRule, List<Match>> results = new java.util.LinkedHashMap<>();
+
 		cu.accept(new ASTVisitor() {
 			@Override
 			public void preVisit(ASTNode node) {
 				checkNodeAgainstIndex(node, results);
 			}
 		});
+
 		return results;
 	}
 
+	/**
+	 * Checks a single AST node against all applicable indexed patterns.
+	 */
 	private void checkNodeAgainstIndex(ASTNode node, Map<TransformationRule, List<Match>> results) {
+		// Determine which pattern kinds could match this node type
 		if (node instanceof Expression) {
 			matchAgainstKind(node, PatternKind.EXPRESSION, results);
 		}
@@ -138,56 +206,68 @@ public final class PatternIndex {
 		}
 	}
 
+	/**
+	 * Attempts to match a node against all rules of the given pattern kind.
+	 */
 	private void matchAgainstKind(ASTNode node, PatternKind kind,
 			Map<TransformationRule, List<Match>> results) {
-		List<IndexEntry> entries= rulesByKind.get(kind);
+		List<IndexEntry> entries = rulesByKind.get(kind);
 		if (entries == null || entries.isEmpty()) {
 			return;
 		}
+
 		for (IndexEntry entry : entries) {
-			PlaceholderAstMatcher matcher= kind == PatternKind.TYPE_DECLARATION
-					? new TypeDeclarationHeaderMatcher() : new FqnAwarePlaceholderAstMatcher();
+			PlaceholderAstMatcher matcher = kind == PatternKind.TYPE_DECLARATION
+					? new TypeDeclarationHeaderMatcher()
+					: new FqnAwarePlaceholderAstMatcher();
 			matcher.setCaseInsensitive(caseInsensitive);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
-				Match match= new Match(node, matcher.getBindings(),
+				Match match = new Match(node, matcher.getBindings(),
 						node.getStartPosition(), node.getLength());
 				results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
 			}
 		}
 	}
 
+	/**
+	 * Attempts statement sequence matching for all STATEMENT_SEQUENCE rules.
+	 */
 	private void matchStatementSequences(Block block,
 			Map<TransformationRule, List<Match>> results) {
-		List<IndexEntry> entries= rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);
+		List<IndexEntry> entries = rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);
 		if (entries == null || entries.isEmpty()) {
 			return;
 		}
+
 		@SuppressWarnings("unchecked")
-		List<Statement> statements= block.statements();
+		List<Statement> statements = block.statements();
+
 		for (IndexEntry entry : entries) {
-			ASTNode patternNode= entry.patternNode();
+			ASTNode patternNode = entry.patternNode();
 			if (!(patternNode instanceof Block patternBlock)) {
 				continue;
 			}
 			@SuppressWarnings("unchecked")
-			List<Statement> patternStatements= patternBlock.statements();
-			int patternSize= patternStatements.size();
+			List<Statement> patternStatements = patternBlock.statements();
+			int patternSize = patternStatements.size();
 			if (patternSize == 0 || patternSize > statements.size()) {
 				continue;
 			}
-			for (int start= 0; start <= statements.size() - patternSize; start++) {
-				Block syntheticBlock= block.getAST().newBlock();
-				for (int index= 0; index < patternSize; index++) {
+
+			for (int start = 0; start <= statements.size() - patternSize; start++) {
+				Block syntheticBlock = block.getAST().newBlock();
+				for (int index = 0; index < patternSize; index++) {
 					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(),
 							statements.get(start + index)));
 				}
-				PlaceholderAstMatcher matcher= new FqnAwarePlaceholderAstMatcher();
+
+				PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
 				matcher.setCaseInsensitive(caseInsensitive);
 				if (patternBlock.subtreeMatch(matcher, syntheticBlock)) {
-					int offset= statements.get(start).getStartPosition();
-					Statement last= statements.get(start + patternSize - 1);
-					int length= last.getStartPosition() + last.getLength() - offset;
-					Match match= new Match(block, matcher.getBindings(), offset, length);
+					int offset = statements.get(start).getStartPosition();
+					Statement last = statements.get(start + patternSize - 1);
+					int length = last.getStartPosition() + last.getLength() - offset;
+					Match match = new Match(block, matcher.getBindings(), offset, length);
 					results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
 				}
 			}
