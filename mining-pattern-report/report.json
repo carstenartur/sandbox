@@ -8,7 +8,7 @@
         "rules": 0
       },
       "eclipse.jdt.ui": {
-        "files": 1474,
+        "files": 1476,
         "matches": 52,
         "rules": 9
       },
@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1049,
+        "files": 1071,
         "matches": 52,
         "rules": 9
       }
@@ -1836,7 +1836,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 177,
+      "line": 198,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
