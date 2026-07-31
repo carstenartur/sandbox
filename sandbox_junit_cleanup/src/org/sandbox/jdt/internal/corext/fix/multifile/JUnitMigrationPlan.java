@@ -279,7 +279,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			public boolean visit(TypeDeclaration node) {
 				ITypeBinding binding= node.resolveBinding();
 				String key= typeKey(binding);
-				if (key != null && expectedTypeKeys.containsKey(key)) {
+				if (key != null && expectedTypeKeys.contains(key)) {
 					ExternalResourceRuleMigration migration= typeMigrations.stream()
 							.filter(candidate -> key.equals(candidate.resourceTypeBindingKey())).findFirst().orElseThrow();
 					builder.addResourceType(node, key, migration.classRule());
