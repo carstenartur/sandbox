@@ -12,6 +12,7 @@ package org.eclipse.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,10 +39,13 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.api.RewriteActionValue;
 import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
+import org.sandbox.jdt.triggerpattern.api.SemanticPlanValue;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 import org.sandbox.jdt.triggerpattern.api.Severity;
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
 import org.sandbox.jdt.triggerpattern.internal.BuiltInGuardRegistration;
@@ -65,10 +69,11 @@ public class JUnit3MigrationHintFileTest {
 	@Test
 	public void allRulesAreGuardedAndLocallyRewritable() throws Exception {
 		HintFile hintFile= loadHintFile();
-		assertEquals(39, hintFile.getRules().size());
+		assertEquals(42, hintFile.getRules().size());
 		for (TransformationRule rule : hintFile.getRules()) {
 			assertNotNull(rule.sourceGuard(), "Every JUnit 3 rule must require a semantic plan role"); //$NON-NLS-1$
-			assertTrue(rule.sourcePattern().getKind() == PatternKind.METHOD_DECLARATION
+			assertTrue(rule.sourcePattern().getKind() == PatternKind.TYPE_DECLARATION
+					|| rule.sourcePattern().getKind() == PatternKind.METHOD_DECLARATION
 					|| rule.sourcePattern().getKind() == PatternKind.METHOD_CALL);
 			assertFalse(rule.alternatives().stream()
 					.map(RewriteAlternative::replacementPattern)
@@ -79,14 +84,38 @@ public class JUnit3MigrationHintFileTest {
 	}
 
 	@Test
-	public void methodAnnotationRulesUseStructuredActions() throws Exception {
+	public void hierarchyAndMethodRulesUsePlanBackedStructuredActions() throws Exception {
 		Map<String, TransformationRule> rules= loadHintFile().getRules().stream()
 				.collect(java.util.stream.Collectors.toMap(TransformationRule::getRuleId, rule -> rule));
-		assertStructuredAnnotation(rules.get("junit3.planned.test"), //$NON-NLS-1$
-				"org.junit.jupiter.api.Test"); //$NON-NLS-1$
+
+		TransformationRule hierarchy= rules.get("junit3.planned.hierarchyRoot"); //$NON-NLS-1$
+		assertNotNull(hierarchy);
+		assertEquals(PatternKind.TYPE_DECLARATION, hierarchy.sourcePattern().getKind());
+		assertActionNames(hierarchy, "removeSupertype", "addAnnotation"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertLiteralString(action(hierarchy, 0), "type", "junit.framework.TestCase"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertLiteralString(action(hierarchy, 1), "annotation", //$NON-NLS-1$
+				"org.junit.jupiter.api.TestMethodOrder"); //$NON-NLS-1$
+		RewriteActionValue.ClassLiteral orderer= assertInstanceOf(RewriteActionValue.ClassLiteral.class,
+				action(hierarchy, 1).arguments().get("value")); //$NON-NLS-1$
+		RewriteActionValue.Literal ordererType= assertInstanceOf(RewriteActionValue.Literal.class,
+				orderer.typeName());
+		assertEquals(SemanticPlanValue.string("org.junit.jupiter.api.MethodOrderer.OrderAnnotation"), //$NON-NLS-1$
+				ordererType.value());
+
+		TransformationRule test= rules.get("junit3.planned.test"); //$NON-NLS-1$
+		assertActionNames(test, "addAnnotation", "addAnnotation"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertLiteralString(action(test, 0), "annotation", "org.junit.jupiter.api.Order"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(new RewriteActionValue.PlanValue("$name", "testOrder"), //$NON-NLS-1$ //$NON-NLS-2$
+				action(test, 0).arguments().get("value")); //$NON-NLS-1$
+		assertLiteralString(action(test, 1), "annotation", "org.junit.jupiter.api.Test"); //$NON-NLS-1$ //$NON-NLS-2$
+
 		assertStructuredAnnotation(rules.get("junit3.planned.beforeEach"), //$NON-NLS-1$
 				"org.junit.jupiter.api.BeforeEach"); //$NON-NLS-1$
 		assertStructuredAnnotation(rules.get("junit3.planned.afterEach"), //$NON-NLS-1$
+				"org.junit.jupiter.api.AfterEach"); //$NON-NLS-1$
+		assertLifecycleOverrideRule(rules.get("junit3.planned.beforeEach.override"), //$NON-NLS-1$
+				"org.junit.jupiter.api.BeforeEach"); //$NON-NLS-1$
+		assertLifecycleOverrideRule(rules.get("junit3.planned.afterEach.override"), //$NON-NLS-1$
 				"org.junit.jupiter.api.AfterEach"); //$NON-NLS-1$
 	}
 
@@ -140,18 +169,34 @@ public class JUnit3MigrationHintFileTest {
 		assertTrue(failure.getStatus().getMessage().contains("$widestType")); //$NON-NLS-1$
 	}
 
+	private static void assertLifecycleOverrideRule(TransformationRule rule, String annotationName) {
+		assertActionNames(rule, "removeAnnotation", "addAnnotation"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertLiteralString(action(rule, 0), "annotation", "java.lang.Override"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertLiteralString(action(rule, 1), "annotation", annotationName); //$NON-NLS-1$
+	}
+
 	private static void assertStructuredAnnotation(TransformationRule rule, String annotationName) {
+		assertActionNames(rule, "addAnnotation"); //$NON-NLS-1$
+		assertLiteralString(action(rule, 0), "annotation", annotationName); //$NON-NLS-1$
+	}
+
+	private static void assertActionNames(TransformationRule rule, String... names) {
 		assertNotNull(rule);
 		assertEquals(1, rule.alternatives().size());
 		RewriteAlternative alternative= rule.alternatives().get(0);
 		assertFalse(alternative.hasTextReplacement());
-		assertEquals(1, alternative.structuredActions().size());
-		assertEquals("addAnnotation", alternative.structuredActions().get(0).name()); //$NON-NLS-1$
-		assertEquals(annotationName,
-				((org.sandbox.jdt.triggerpattern.api.SemanticPlanValue.StringValue)
-						((org.sandbox.jdt.triggerpattern.api.RewriteActionValue.Literal)
-								alternative.structuredActions().get(0).arguments().get("annotation")) //$NON-NLS-1$
-								.value()).value());
+		assertEquals(java.util.List.of(names), alternative.structuredActions().stream()
+				.map(StructuredRewriteAction::name).toList());
+	}
+
+	private static StructuredRewriteAction action(TransformationRule rule, int index) {
+		return rule.alternatives().get(0).structuredActions().get(index);
+	}
+
+	private static void assertLiteralString(StructuredRewriteAction action, String argument, String expected) {
+		RewriteActionValue.Literal literal= assertInstanceOf(RewriteActionValue.Literal.class,
+				action.arguments().get(argument));
+		assertEquals(SemanticPlanValue.string(expected), literal.value());
 	}
 
 	private HintFile loadHintFile() throws Exception {

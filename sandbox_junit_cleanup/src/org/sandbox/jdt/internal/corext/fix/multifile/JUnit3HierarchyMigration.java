@@ -39,12 +39,21 @@ public record JUnit3HierarchyMigration(String rootTypeName, List<TypeMigration> 
 	}
 
 	/**
-	 * One method migration. {@code executionOrder} is the one-based order required
-	 * to reproduce JUnit 3 {@code TestSuite} discovery; lifecycle methods use 0.
+	 * One method migration.
+	 *
+	 * @param methodBindingKey stable method-declaration binding key
+	 * @param kind semantic JUnit method role
+	 * @param executionOrder one-based JUnit 3 discovery order for tests; lifecycle methods use 0
+	 * @param removeOverride whether {@code java.lang.Override} was present when the immutable plan was built
 	 */
-	public record MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder) {
+	public record MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder,
+			boolean removeOverride) {
 		public MethodMigration(String methodBindingKey, MethodKind kind) {
-			this(methodBindingKey, kind, 0);
+			this(methodBindingKey, kind, 0, false);
+		}
+
+		public MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder) {
+			this(methodBindingKey, kind, executionOrder, false);
 		}
 	}
 
