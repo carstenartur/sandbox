@@ -73,7 +73,7 @@ public final class PlanAwareHintFileFixCore {
 			throws CoreException {
 		GuardRegistry.getInstance();
 		String requiredPlan= requiredPlan(hintFileContent);
-		if (plan == null || plan.rolesByNode().isEmpty()) {
+		if (plan == null || plan.isEmpty()) {
 			throw failure("Hint program requires semantic plan " + requiredPlan //$NON-NLS-1$
 					+ " but no non-empty authorization plan was supplied", null); //$NON-NLS-1$
 		}
