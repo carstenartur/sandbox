@@ -70,6 +70,7 @@ final class JUnitRuntimeTestTree {
 				} finally {
 					completed.countDown();
 				}
+			}
 		};
 
 		ILaunchConfigurationWorkingCopy configuration= null;
