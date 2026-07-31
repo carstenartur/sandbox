@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e11936338b1128dcc6596592a4f473b235ef8d48d026c2a0b3e9b9023ad405bb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: boolean.equals.false.to.not\u003e\n\u003c!description: Replace \u0027variable \u003d\u003d false\u0027 with \u0027!variable\u0027 for boolean expressions, improving readability.\u003e\n\u003c!severity: HINT\u003e\n\n$x \u003d\u003d false\n\u003d\u003e !$x\n;;",
+  "beforeExample": "public class TestClass {\n    boolean instanceFlag \u003d true;\n    public void example(boolean status) {\n        if (status \u003d\u003d false) {\n            System.out.println(\"Status is false\");\n        }\n        boolean localFlag \u003d instanceFlag;\n        if (localFlag \u003d\u003d false) {\n            System.out.println(\"Local flag is false\");\n        }\n    }\n}",
+  "afterExample": "public class TestClass {\n    boolean instanceFlag \u003d true;\n    public void example(boolean status) {\n        if (!status) {\n            System.out.println(\"Status is false\");\n        }\n        boolean localFlag \u003d instanceFlag;\n        if (!localFlag) {\n            System.out.println(\"Local flag is false\");\n        }\n    }\n}",
+  "negativeExample": "public class TestClass {\n    public void example(int value) {\n        // This should not match, as `value \u003d\u003d false` is a compile error in Java.\n        // The pattern `$x \u003d\u003d false` implicitly matches only boolean-compatible expressions.\n        if (value \u003d\u003d 0) {\n            System.out.println(\"Value is zero\");\n        }\n    }\n}",
+  "targetHintFile": "common.sandbox-hint",
+  "sourceCommit": "ee8c997a9b3bf6c34588d2e6ba52b1f86f00674e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Expression Simplification",
+  "summary": "Simplifies boolean comparison `x \u003d\u003d false` to `!x`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-31T03:15:50.763387760Z",
+  "ruleFingerprint": "sha256:d29f31f3aef328bcbad2706fecf775e1a1d5df7c552c8ece8b26695d14d43cb1",
+  "behaviorFingerprint": "sha256:865a1c9f5a32a9f2db0acf5ae6f2a2c70d33890dcb14486bd92cf0cdcaec23ee",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-07-31T03:15:52.920398124Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

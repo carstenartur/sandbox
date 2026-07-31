@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6e6e36120aed1127590bf9f683055a772ab586928201825d4d03f59961d37f2f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "@id: swt.filedialog.add.sheet\nnew org.eclipse.swt.widgets.FileDialog($shell, $style)\n\u003d\u003e new org.eclipse.swt.widgets.FileDialog($shell, $style | org.eclipse.swt.SWT.SHEET)\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.FileDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void testMethod() {\n        Shell shell \u003d new Shell(Display.getDefault());\n        FileDialog dialog \u003d new FileDialog(shell, SWT.OPEN);\n        FileDialog saveDialog \u003d new FileDialog(shell, SWT.SAVE | SWT.MULTI);\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.FileDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void testMethod() {\n        Shell shell \u003d new Shell(Display.getDefault());\n        FileDialog dialog \u003d new FileDialog(shell, SWT.OPEN | org.eclipse.swt.SWT.SHEET);\n        FileDialog saveDialog \u003d new FileDialog(shell, SWT.SAVE | SWT.MULTI | org.eclipse.swt.SWT.SHEET);\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.DirectoryDialog;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.FileDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class NegativeTestClass {\n    public void testMethod() {\n        Shell shell \u003d new Shell(Display.getDefault());\n        // Should not match DirectoryDialog\n        DirectoryDialog dirDialog \u003d new DirectoryDialog(shell, SWT.OPEN);\n        // Should not match FileDialog constructor without style argument\n        FileDialog anotherDialog \u003d new FileDialog(shell);\n    }\n}",
+  "targetHintFile": "swt-api.sandbox-hint",
+  "sourceCommit": "a25fd5af0fab86e62a9540abd2687d756182ea19",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Adds SWT.SHEET flag to FileDialog constructor when a style argument is already present.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-31T03:15:50.742516824Z",
+  "ruleFingerprint": "sha256:8185f5f9beca4a5c37780d5454df60a1f1848ebca4bdf44409ea26f4b9fb9c13",
+  "behaviorFingerprint": "sha256:b3923d8592e1e875107a0d904d47997e82a53088400cd01eddaad135369e10f9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-07-31T03:15:52.913476435Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

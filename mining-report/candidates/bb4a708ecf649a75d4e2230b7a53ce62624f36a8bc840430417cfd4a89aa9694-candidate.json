@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bb4a708ecf649a75d4e2230b7a53ce62624f36a8bc840430417cfd4a89aa9694",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e\nnew java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "import java.lang.StringBuffer;\n\nclass Example {\n    void foo() {\n        StringBuffer buffer \u003d new StringBuffer();\n        System.out.println(buffer.toString());\n    }\n    void bar(String s) {\n        StringBuffer anotherBuffer \u003d new StringBuffer(s);\n        System.out.println(anotherBuffer.toString());\n    }\n}",
+  "afterExample": "import java.lang.StringBuilder;\n\nclass Example {\n    void foo() {\n        StringBuilder buffer \u003d new StringBuilder();\n        System.out.println(buffer.toString());\n    }\n    void bar(String s) {\n        StringBuilder anotherBuffer \u003d new StringBuilder(s);\n        System.out.println(anotherBuffer.toString());\n    }\n}",
+  "negativeExample": "import java.lang.StringBuffer;\n\nclass Example {\n    StringBuffer sharedBuffer \u003d new StringBuffer(); // This is a field, not a local variable\n    void foo() {\n        System.out.println(sharedBuffer.toString());\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "da6623602e470797e52f788591707cde85a3ee75",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Performance",
+  "summary": "Replaces \u0027new StringBuffer()\u0027 with \u0027new StringBuilder()\u0027 for local variables to improve performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-07-31T03:15:50.787714629Z",
+  "ruleFingerprint": "sha256:83492ab35d1e13403fe033a61eec8b855bb45ff2d3ed8bbc1f487153b0ef6489",
+  "behaviorFingerprint": "sha256:39cceb8bf750a04430ae5007c1c818b24e830f2b089f9a493f0a158824e3bcf1",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-07-31T03:15:52.970721616Z",
+    "verifierVersion": "7",
+    "matches": 2,
+    "replacements": 2
+  },
+  "transitions": []
+}
