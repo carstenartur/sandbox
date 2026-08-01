@@ -14,7 +14,7 @@ The preflight command:
 
 - opens a plain JDBC connection using the normal `JGIT_DB_*` environment variables;
 - accepts PostgreSQL, HSQLDB and SQL Server, matching the published 0.1.15 legacy-adoption migrations;
-- requires `;ifexists=true` in an HSQLDB URL so a mistyped file path cannot create a new database;
+- requires `;ifexists=true` in an HSQLDB URL so a mistyped file path cannot create a database;
 - marks the opened JDBC connection read-only before the first schema query;
 - calls `LegacyCoreSchemaAdoption.requireSafeToAdopt(...)` from the pinned non-SNAPSHOT Core release;
 - does not build a Hibernate `SessionFactory`;
@@ -116,3 +116,30 @@ Before enabling writers:
 - archive Flyway output and deployed artifact checksums.
 
 Rollback is database restore plus the previous application artifact; no reverse migration is assumed.
+
+## Prepared external-Core runtime boundary
+
+After the database-specific adoption or installation has established the normal Core Flyway history, application code can explicitly construct the prepared runtime boundary with:
+
+```java
+ServerPersistenceContext context =
+    HibernateConfig.createExternalPersistenceContext(properties);
+```
+
+This factory is deliberately separate from the normal server startup path. Before Hibernate starts, it requires:
+
+- `hibernate.hbm2ddl.auto=validate` exactly;
+- the normal `jgit_storage_hibernate_core_schema_history` table in the selected schema;
+- no unsuccessful row in that history;
+- at least one successful versioned Core migration.
+
+The subsequent Hibernate bootstrap performs the definitive physical-schema validation. The startup guard neither runs Flyway nor repairs a history table.
+
+The external context registers the released `CoreEntities` exactly once and adds only the explicitly reviewed Sandbox projections `GitCommitIndex`, `JavaBlobIndex` and `FilePathHistory`. It deliberately excludes:
+
+- the copied `GitPackEntity` and `GitReflogEntity`, whose Hibernate entity names collide with released Core mappings;
+- the copied `GitObjectEntity` and `GitRefEntity`, because the released pack/reftable backend does not maintain those legacy tables.
+
+Repository handles are served through `ExternalHibernateRepositoryService` and closed before the application-owned `SessionFactory`. This makes the Core lifecycle executable without leaking the external implementation into REST or Smart HTTP callers.
+
+Normal `JGitServerApplication` startup still selects the copied persistence context. Activating the external context globally remains blocked until Search, analytics and Java-analysis queries no longer depend on copied Core/query entities and their schema/data transition has independent integration evidence. No environment switch is provided that could bypass this boundary accidentally.
