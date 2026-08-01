@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java10;
 
-import java.nio.charset.UnsupportedCharsetException;
 import java.util.Hashtable;
 
 import org.eclipse.core.runtime.CoreException;
@@ -31,7 +30,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava10;
 public class EncodingImportRetentionTest {
 
 	@BeforeEach
-	protected void setUp() throws Exception, UnsupportedCharsetException {
+	protected void setUp() throws Exception {
 		Hashtable<String, String> defaultOptions= TestOptions.getDefaultOptions();
 		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, Integer.toString(120));
 		JavaCore.setOptions(defaultOptions);
