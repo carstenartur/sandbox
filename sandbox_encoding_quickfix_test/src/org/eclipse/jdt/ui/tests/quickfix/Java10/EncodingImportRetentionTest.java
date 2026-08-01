@@ -85,7 +85,7 @@ public class EncodingImportRetentionTest {
 	}
 
 	@Test
-	public void removesObsoleteImportForAnotherEncodingHandler() throws CoreException {
+	public void removesImportAfterMultipleEncodingCatchesAreUnwrapped() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
 				"""
@@ -94,6 +94,14 @@ public class EncodingImportRetentionTest {
 						import java.io.UnsupportedEncodingException;
 
 						public class E1 {
+						    static String decode(byte[] bytes) {
+						        try {
+						            return new String(bytes, "UTF-8");
+						        } catch (UnsupportedEncodingException exception) {
+						            throw new IllegalStateException(exception);
+						        }
+						    }
+
 						    static int encodedLength() {
 						        try {
 						            return "value".getBytes("UTF-8").length;
@@ -113,6 +121,10 @@ public class EncodingImportRetentionTest {
 						import java.nio.charset.StandardCharsets;
 
 						public class E1 {
+						    static String decode(byte[] bytes) {
+						        return new String(bytes, StandardCharsets.UTF_8);
+						    }
+
 						    static int encodedLength() {
 						        return "value".getBytes(StandardCharsets.UTF_8).length;
 						    }
