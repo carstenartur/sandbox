@@ -1,5 +1,5 @@
 // Local rewrites for an already validated, closed JUnit 3 hierarchy.
-// Every rule is inert without an explicit SemanticRewritePlan role.
+// Every rule is inert without an explicit SemanticRewritePlan role and facts.
 
 <!id: junit3-hierarchy-to-jupiter>
 <!description: Apply planner-authorized JUnit 3 hierarchy rewrites>
@@ -7,19 +7,44 @@
 <!minJavaVersion: 8>
 <!tags: junit, migration, junit3, planned>
 <!requires-plan: junit3-hierarchy>
+<!predicate hasOverrideAnnotation($method):
+    hasAnnotation($method, Override) || hasAnnotation($method, java.lang.Override)>
+
+@id: junit3.planned.hierarchyRoot
+@kind: TYPE_DECLARATION
+class $name extends junit.framework.TestCase {} :: plannedRole($name, "JUNIT3_HIERARCHY_TYPE") && plannedValue($name, "removeTestCaseSuperclass", true)
+=>! removeSupertype(target=$name, type="junit.framework.TestCase");
+    addAnnotation(target=$name,
+        annotation="org.junit.jupiter.api.TestMethodOrder",
+        value=classLiteral("org.junit.jupiter.api.MethodOrderer.OrderAnnotation"))
+;;
 
 @id: junit3.planned.test
 void $name($params$) :: plannedRole($name, "JUNIT3_TEST_METHOD")
-=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test")
+=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Order",
+        value=planValue($name, "testOrder"));
+    addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test")
+;;
+
+@id: junit3.planned.beforeEach.override
+void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", true) && hasOverrideAnnotation($name)
+=>! removeAnnotation(target=$name, annotation="java.lang.Override");
+    addAnnotation(target=$name, annotation="org.junit.jupiter.api.BeforeEach")
 ;;
 
 @id: junit3.planned.beforeEach
-void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH")
+void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)
 =>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.BeforeEach")
 ;;
 
+@id: junit3.planned.afterEach.override
+void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", true) && hasOverrideAnnotation($name)
+=>! removeAnnotation(target=$name, annotation="java.lang.Override");
+    addAnnotation(target=$name, annotation="org.junit.jupiter.api.AfterEach")
+;;
+
 @id: junit3.planned.afterEach
-void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH")
+void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)
 =>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.AfterEach")
 ;;
 

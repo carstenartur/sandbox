@@ -95,6 +95,12 @@ final class JUnit3HierarchyPlanner {
 		}
 	}
 
+	private enum OverrideRemoval {
+		REMOVE,
+		KEEP,
+		UNRESOLVED
+	}
+
 	private JUnit3HierarchyPlanner() {
 	}
 
@@ -315,8 +321,15 @@ final class JUnit3HierarchyPlanner {
 						return Classification.rejected("JUNIT3_LIFECYCLE_OVERRIDE_CHAIN", //$NON-NLS-1$
 								"Lifecycle override chains require explicit semantic migration."); //$NON-NLS-1$
 					}
+					OverrideRemoval overrideRemoval= plannedOverrideRemoval(method);
+					if (overrideRemoval == OverrideRemoval.UNRESOLVED) {
+						return Classification.rejected("UNRESOLVED_JUNIT3_OVERRIDE_ANNOTATION", //$NON-NLS-1$
+								"The lifecycle method " + name //$NON-NLS-1$
+										+ " has an unresolved simple @Override annotation; exact annotation identity is required."); //$NON-NLS-1$
+					}
 					methods.add(new MethodMigration(bindingKey,
-							"setUp".equals(name) ? MethodKind.BEFORE_EACH : MethodKind.AFTER_EACH)); //$NON-NLS-1$
+							"setUp".equals(name) ? MethodKind.BEFORE_EACH : MethodKind.AFTER_EACH, //$NON-NLS-1$
+							0, overrideRemoval == OverrideRemoval.REMOVE));
 				}
 			}
 			JUnit3AssertionInventory.Result assertions= JUnit3AssertionInventory.analyze(type.declaration());
@@ -357,6 +370,34 @@ final class JUnit3HierarchyPlanner {
 
 	private static boolean hasSingleTopLevelType(SourceType type) {
 		return type.declaration().getRoot() instanceof CompilationUnit root && root.types().size() == 1;
+	}
+
+	/**
+	 * Captures exact {@code java.lang.Override} presence while the immutable
+	 * hierarchy plan is built. A simple unresolved {@code @Override} is ambiguous
+	 * with a user-defined annotation and therefore rejects the candidate.
+	 */
+	private static OverrideRemoval plannedOverrideRemoval(MethodDeclaration method) {
+		for (Object modifier : method.modifiers()) {
+			if (!(modifier instanceof Annotation annotation)) {
+				continue;
+			}
+			ITypeBinding binding= annotation.resolveTypeBinding();
+			String writtenName= annotation.getTypeName().getFullyQualifiedName();
+			if (binding != null && !binding.isRecovered()) {
+				if ("java.lang.Override".equals(binding.getQualifiedName())) { //$NON-NLS-1$
+					return OverrideRemoval.REMOVE;
+				}
+				continue;
+			}
+			if ("java.lang.Override".equals(writtenName)) { //$NON-NLS-1$
+				return OverrideRemoval.REMOVE;
+			}
+			if ("Override".equals(writtenName)) { //$NON-NLS-1$
+				return OverrideRemoval.UNRESOLVED;
+			}
+		}
+		return OverrideRemoval.KEEP;
 	}
 
 	private static boolean hasJUnitAnnotation(BodyDeclaration declaration) {

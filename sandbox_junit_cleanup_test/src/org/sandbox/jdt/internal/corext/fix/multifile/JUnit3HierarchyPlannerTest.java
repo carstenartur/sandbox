@@ -29,6 +29,8 @@ import org.eclipse.jdt.junit.JUnitCore;
 
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodMigration;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 
@@ -56,6 +58,7 @@ public class JUnit3HierarchyPlannerTest {
 				import junit.framework.TestCase;
 
 				public abstract class BaseTest extends TestCase {
+					@Override
 					protected void setUp() {
 					}
 
@@ -85,6 +88,12 @@ public class JUnit3HierarchyPlannerTest {
 		assertEquals(1, migration.baselineTestTypeHandles().size());
 		assertTrue(result.plan().testTypeInventory().typeHandles()
 				.containsAll(migration.baselineTestTypeHandles()));
+		MethodMigration setUp= migration.types().stream()
+				.flatMap(type -> type.methods().stream())
+				.filter(method -> method.kind() == MethodKind.BEFORE_EACH)
+				.findFirst().orElseThrow();
+		assertTrue(setUp.removeOverride(),
+				"The immutable plan must retain planning-time java.lang.Override presence"); //$NON-NLS-1$
 		assertEquals(MultiFileCandidateOutcome.TRANSFORMED,
 				result.diagnostics().candidates().get(0).outcome());
 	}

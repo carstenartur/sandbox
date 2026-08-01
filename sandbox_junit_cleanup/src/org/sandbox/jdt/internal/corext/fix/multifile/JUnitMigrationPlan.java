@@ -20,7 +20,6 @@ import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigra
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -37,7 +36,6 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -58,10 +56,6 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.Ty
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
 import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
-import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation;
-import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.AnnotationRemoval;
-import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.IntegerAnnotationAddition;
-import org.sandbox.jdt.triggerpattern.cleanup.PlannedStructuralRewriteOperation.TypeLiteralAnnotationAddition;
 
 /** Immutable project plan for coordinated JUnit migration edits. */
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
@@ -71,6 +65,9 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 
 	private static final String JUNIT3_HINT_RESOURCE=
 			"org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint"; //$NON-NLS-1$
+	private static final String FACT_REMOVE_TEST_CASE_SUPERCLASS= "removeTestCaseSuperclass"; //$NON-NLS-1$
+	private static final String FACT_TEST_ORDER= "testOrder"; //$NON-NLS-1$
+	private static final String FACT_REMOVE_OVERRIDE= "removeOverride"; //$NON-NLS-1$
 
 	public JUnitMigrationPlan {
 		Objects.requireNonNull(selectedScope);
@@ -191,33 +188,26 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$
 		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>();
 		for (TypeMigration planned : plannedTypes) {
-			TypeDeclaration type= resolvedTypes.get(planned.typeBindingKey());
-			plan.add(NodeKey.type(planned.typeBindingKey()), ROLE_HIERARCHY_TYPE);
-			List<AnnotationRemoval> annotationRemovals= new ArrayList<>();
-			List<IntegerAnnotationAddition> integerAnnotationAdditions= new ArrayList<>();
-			List<TypeLiteralAnnotationAddition> typeLiteralAnnotationAdditions= new ArrayList<>();
+			NodeKey typeKey= NodeKey.type(planned.typeBindingKey());
+			plan.add(typeKey, ROLE_HIERARCHY_TYPE)
+					.putBoolean(typeKey, FACT_REMOVE_TEST_CASE_SUPERCLASS,
+							planned.removeTestCaseSuperclass());
 			if (planned.removeTestCaseSuperclass()) {
-				typeLiteralAnnotationAdditions.add(new TypeLiteralAnnotationAddition(type,
-						"org.junit.jupiter.api.TestMethodOrder", //$NON-NLS-1$
-						"org.junit.jupiter.api.MethodOrderer.OrderAnnotation")); //$NON-NLS-1$
+				expectedHintTargets.add(typeKey);
 			}
 			for (MethodMigration method : planned.methods()) {
-				MethodDeclaration declaration= resolvedMethods.get(method.methodBindingKey());
 				NodeKey key= NodeKey.method(method.methodBindingKey());
 				plan.add(key, methodRole(method.kind()));
-				expectedHintTargets.add(key);
 				if (method.kind() == MethodKind.TEST) {
 					if (method.executionOrder() <= 0) {
 						throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
 								"The planned JUnit 3 test order is missing for " + method.methodBindingKey())); //$NON-NLS-1$
 					}
-					integerAnnotationAdditions.add(new IntegerAnnotationAddition(declaration,
-							"org.junit.jupiter.api.Order", method.executionOrder())); //$NON-NLS-1$
+					plan.putInteger(key, FACT_TEST_ORDER, method.executionOrder());
+				} else {
+					plan.putBoolean(key, FACT_REMOVE_OVERRIDE, method.removeOverride());
 				}
-				if ((method.kind() == MethodKind.BEFORE_EACH || method.kind() == MethodKind.AFTER_EACH)
-						&& hasOverride(declaration)) {
-					annotationRemovals.add(new AnnotationRemoval(declaration, "java.lang.Override")); //$NON-NLS-1$
-				}
+				expectedHintTargets.add(key);
 			}
 			for (InvocationMigration invocation : planned.invocations()) {
 				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
@@ -226,20 +216,13 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);
 				expectedHintTargets.add(key);
 			}
-			nodesProcessed.add(type);
+			nodesProcessed.add(resolvedTypes.get(planned.typeBindingKey()));
 			planned.methods().stream().map(MethodMigration::methodBindingKey)
 					.map(resolvedMethods::get).forEach(nodesProcessed::add);
 			planned.invocations().stream()
 					.map(invocation -> NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),
 							invocation.sourceLength()))
 					.map(resolvedInvocations::get).forEach(nodesProcessed::add);
-			if (planned.removeTestCaseSuperclass() || !annotationRemovals.isEmpty()
-					|| !integerAnnotationAdditions.isEmpty() || !typeLiteralAnnotationAdditions.isEmpty()) {
-				operations.add(new PlannedStructuralRewriteOperation(type,
-						planned.removeTestCaseSuperclass() ? "junit.framework.TestCase" : null, //$NON-NLS-1$
-						annotationRemovals, integerAnnotationAdditions, typeLiteralAnnotationAdditions,
-						"Detach planned JUnit 3 hierarchy structure and preserve test order")); //$NON-NLS-1$
-			}
 		}
 
 		Set<NodeKey> covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),
@@ -257,20 +240,6 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		case BEFORE_EACH -> ROLE_BEFORE_EACH;
 		case AFTER_EACH -> ROLE_AFTER_EACH;
 		};
-	}
-
-	private static boolean hasOverride(BodyDeclaration declaration) {
-		for (Object modifier : declaration.modifiers()) {
-			if (modifier instanceof Annotation annotation) {
-				ITypeBinding binding= annotation.resolveTypeBinding();
-				String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()
-						: binding.getQualifiedName();
-				if ("java.lang.Override".equals(name) || "Override".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	private static String loadJUnit3HintProgram() throws CoreException {
