@@ -136,6 +136,75 @@ public class ParameterizedMigrationContractTest {
 				""");
 	}
 
+	@Test
+	public void leavesExplicitRunWithValueSyntaxUntouched() throws CoreException {
+		assertNoChange("ExplicitRunnerTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.Arrays;
+				import java.util.Collection;
+
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(value = Parameterized.class)
+				public class ExplicitRunnerTest {
+					private final int value;
+
+					public ExplicitRunnerTest(int value) {
+						this.value = value;
+					}
+
+					@Parameters
+					public static Collection<Object[]> data() {
+						return Arrays.asList(new Object[][] { { 1 }, { 2 } });
+					}
+
+					@Test
+					public void verifiesValue() {
+						System.out.println(value);
+					}
+				}
+				""");
+	}
+
+	@Test
+	public void leavesUnsupportedProviderBodyUntouched() throws CoreException {
+		assertNoChange("UnsupportedProviderTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import java.util.List;
+
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(Parameterized.class)
+				public class UnsupportedProviderTest {
+					private final int value;
+
+					public UnsupportedProviderTest(int value) {
+						this.value = value;
+					}
+
+					@Parameters
+					public static List<Object[]> data() {
+						return List.<Object[]>of(new Object[] { 1 });
+					}
+
+					@Test
+					public void verifiesValue() {
+						System.out.println(value);
+					}
+				}
+				""");
+	}
+
 	private void assertNoChange(String fileName, String source) throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit(fileName, source, false, null);
