@@ -13,6 +13,7 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/cleanup-action/**'
+      - '.github/actions/use-runner-maven/**'
       - '.github/workflows/maven.yml'
   pull_request:
     branches: [ main ]
@@ -26,6 +27,7 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/cleanup-action/**'
+      - '.github/actions/use-runner-maven/**'
       - '.github/workflows/maven.yml'
   workflow_dispatch:
 
@@ -58,10 +60,8 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Set up Maven 3.9.14
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
 
       - name: Set up Node.js for CSS tests
         uses: actions/setup-node@v6
