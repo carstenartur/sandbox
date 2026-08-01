@@ -42,7 +42,7 @@ public class EncodingImportRetentionTest {
 	AbstractEclipseJava context= new EclipseJava10();
 
 	@Test
-	public void retainsImportsUsedByTheInlinedTryBody() throws CoreException {
+	public void retainsImportsAndFormattingUsedByTheInlinedTryBody() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
 				"""
@@ -54,7 +54,9 @@ public class EncodingImportRetentionTest {
 						public class E1 {
 						    static void methodWithCatchChange(byte[] bytes) {
 						        try {
-						            System.out.println(List.of(new String(bytes, "UTF-8")).get(0));
+						            List<String> values = List.of("value");
+						            String text = new String(bytes, "UTF-8");
+						            System.out.println(values.get(0) + text);
 						        } catch (UnsupportedEncodingException exception) {
 						            exception.printStackTrace();
 						        }
@@ -73,7 +75,46 @@ public class EncodingImportRetentionTest {
 
 						public class E1 {
 						    static void methodWithCatchChange(byte[] bytes) {
-						        System.out.println(List.of(new String(bytes, StandardCharsets.UTF_8)).get(0));
+						        List<String> values = List.of("value");
+						        String text = new String(bytes, StandardCharsets.UTF_8);
+						        System.out.println(values.get(0) + text);
+						    }
+						}
+						"""
+		}, null);
+	}
+
+	@Test
+	public void removesObsoleteImportForAnotherEncodingHandler() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
+				"""
+						package test1;
+
+						import java.io.UnsupportedEncodingException;
+
+						public class E1 {
+						    static int encodedLength() {
+						        try {
+						            return "value".getBytes("UTF-8").length;
+						        } catch (UnsupportedEncodingException exception) {
+						            throw new IllegalStateException(exception);
+						        }
+						    }
+						}
+						""",
+				false, null);
+
+		enableExplicitEncodingCleanup();
+		context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] {
+				"""
+						package test1;
+
+						import java.nio.charset.StandardCharsets;
+
+						public class E1 {
+						    static int encodedLength() {
+						        return "value".getBytes(StandardCharsets.UTF_8).length;
 						    }
 						}
 						"""
