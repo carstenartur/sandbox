@@ -487,11 +487,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * Handles the case where a string literal replacement is needed inside a try body
 	 * that will be unwrapped (single catch clause for UnsupportedEncodingException only).
 	 *
-	 * <p>This method creates string placeholders for each statement in the try body
-	 * with the argument replacement already baked in, then replaces the entire try
-	 * statement with these inlined statements. This avoids the conflict between
-	 * {@code rewrite.replace()} on child nodes and {@code createMoveTarget()} on
-	 * parent statements.
+	 * <p>Unchanged statements remain AST move targets so their source formatting and
+	 * attached comments are preserved. Only the statement containing the replaced
+	 * encoding literal is recreated as a placeholder.
 	 *
 	 * @return {@code true} if the try-catch was successfully unwrapped
 	 */
@@ -515,17 +513,20 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			List<?> tryStatements = block.statements();
 			for (int i = tryStatements.size() - 1; i >= 0; i--) {
 				ASTNode stmt = (ASTNode) tryStatements.get(i);
-				int stmtStart = cu.getExtendedStartPosition(stmt);
-				int stmtLength = cu.getExtendedLength(stmt);
-				String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);
-				stmtSource = Pattern.compile("^[ \\t]*").matcher(stmtSource).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
-				stmtSource = Pattern.compile("\n[ \\t]*").matcher(stmtSource).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				ASTNode inlinedStatement;
 				if (stmt == statement) {
+					int stmtStart = cu.getExtendedStartPosition(stmt);
+					int stmtLength = cu.getExtendedLength(stmt);
+					String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);
+					stmtSource = Pattern.compile("^[ \\t]*").matcher(stmtSource).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
+					stmtSource = Pattern.compile("\n[ \\t]*").matcher(stmtSource).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
 					stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(""); //$NON-NLS-1$
 					stmtSource = stmtSource.replace(visitedString, replacementString);
+					inlinedStatement = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());
+				} else {
+					inlinedStatement = rewrite.createMoveTarget(stmt);
 				}
-				ASTNode placeholder = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());
-				parentListRewrite.insertAfter(placeholder, tryStatement, group);
+				parentListRewrite.insertAfter(inlinedStatement, tryStatement, group);
 			}
 			rewrite.remove(tryStatement, group);
 			registerUnwrappedTryForImportRemoval(tryStatement, cuRewrite);
@@ -539,8 +540,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	/**
 	 * Registers the removed try/catch while retaining its inlined body. Placeholder
 	 * rewrites do not provide {@link ImportRemover} with a reliable reference balance,
-	 * so the obsolete exception import is removed explicitly only when no bound type
-	 * reference survives outside the deleted catch clause.
+	 * so the obsolete exception import is removed explicitly only when no type reference
+	 * survives outside the deleted catch clause.
 	 */
 	private static void registerUnwrappedTryForImportRemoval(TryStatement tryStatement,
 			CompilationUnitRewrite cuRewrite) {
@@ -564,8 +565,12 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 					return !found[0];
 				}
 				ITypeBinding typeBinding = node.resolveTypeBinding();
-				if (typeBinding != null
-						&& JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(typeBinding.getErasure().getQualifiedName())) {
+				if (typeBinding != null) {
+					if (JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(typeBinding.getErasure().getQualifiedName())) {
+						found[0] = true;
+					}
+				} else if (UNSUPPORTED_ENCODING_EXCEPTION.equals(node.getIdentifier())) {
+					// Fail closed for incomplete or recovered bindings.
 					found[0] = true;
 				}
 				return !found[0];
