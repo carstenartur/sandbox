@@ -63,10 +63,7 @@ public class EncodingImportRetentionTest {
 						""",
 				false, null);
 
-		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
-		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
-		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
-		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
+		enableExplicitEncodingCleanup();
 		context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] {
 				"""
 						package test1;
@@ -81,5 +78,58 @@ public class EncodingImportRetentionTest {
 						}
 						"""
 		}, null);
+	}
+
+	@Test
+	public void retainsUnsupportedEncodingImportWhenAnotherTypeReferenceSurvives() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
+				"""
+						package test1;
+
+						import java.io.UnsupportedEncodingException;
+
+						public class E1 {
+						    static void methodWithCatchChange(byte[] bytes) {
+						        try {
+						            System.out.println(new String(bytes, "UTF-8"));
+						        } catch (UnsupportedEncodingException exception) {
+						            exception.printStackTrace();
+						        }
+						    }
+
+						    static void report(UnsupportedEncodingException exception) {
+						        exception.printStackTrace();
+						    }
+						}
+						""",
+				false, null);
+
+		enableExplicitEncodingCleanup();
+		context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] {
+				"""
+						package test1;
+
+						import java.io.UnsupportedEncodingException;
+						import java.nio.charset.StandardCharsets;
+
+						public class E1 {
+						    static void methodWithCatchChange(byte[] bytes) {
+						        System.out.println(new String(bytes, StandardCharsets.UTF_8));
+						    }
+
+						    static void report(UnsupportedEncodingException exception) {
+						        exception.printStackTrace();
+						    }
+						}
+						"""
+		}, null);
+	}
+
+	private void enableExplicitEncodingCleanup() {
+		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
+		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
+		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
+		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 	}
 }
