@@ -75,6 +75,28 @@ public class HibernateConfig {
 	}
 
 	/**
+	 * Create an explicitly requested persistence context backed by the released
+	 * generic Core implementation.
+	 *
+	 * <p>The method fails before Hibernate bootstrap unless the normal Core Flyway
+	 * history is present without failed rows and
+	 * {@code hibernate.hbm2ddl.auto=validate}. Normal server startup deliberately
+	 * continues to use {@link #createPersistenceContext(Properties)} until the
+	 * remaining copied Search/query implementation has its own migration boundary.</p>
+	 *
+	 * @param properties
+	 *            Hibernate configuration properties for an already migrated schema
+	 * @return the external-Core persistence context
+	 * @throws IllegalStateException
+	 *             if migration evidence or validate-only startup is missing
+	 */
+	public static ServerPersistenceContext createExternalPersistenceContext(
+			Properties properties) {
+		ExternalCoreStartupGuard.requireReady(properties);
+		return new ExternalServerPersistenceContext(properties);
+	}
+
+	/**
 	 * Create a copied session-factory provider configured from environment variables.
 	 *
 	 * @return the configured session factory provider
