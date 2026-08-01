@@ -562,7 +562,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc" id="L562">			String entryKey = entry.substring(0, arrowIdx).trim();</span>
 <span class="fc" id="L563">			String entryValue = entry.substring(arrowIdx + 2).trim();</span>
 			// Strip quotes from key if present
-<span class="pc bpc" id="L565" title="2 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L565" title="1 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L566">				entryKey = entryKey.substring(1, entryKey.length() - 1);</span>
 			}
 <span class="fc" id="L568">			mappings.put(entryKey, entryValue);</span>
@@ -1130,10 +1130,10 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		// Second token must be a variable name: placeholder ($var) or lowercase identifier
 <span class="fc" id="L1131">		String nameToken = tokens[1];</span>
 <span class="fc" id="L1132">		boolean typeIsPlaceholder = typeToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1133" title="2 of 4 branches missed.">		boolean typeIsUppercase = !typeToken.isEmpty() &amp;&amp; Character.isUpperCase(typeToken.charAt(0));</span>
+<span class="pc bpc" id="L1133" title="1 of 4 branches missed.">		boolean typeIsUppercase = !typeToken.isEmpty() &amp;&amp; Character.isUpperCase(typeToken.charAt(0));</span>
 <span class="fc" id="L1134">		boolean typeIsFqn = typeToken.contains(&quot;.&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L1135">		boolean nameIsPlaceholder = nameToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1136" title="1 of 8 branches missed.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
+<span class="fc bfc" id="L1136" title="All 8 branches covered.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
 <span class="pc bpc" id="L1137" title="1 of 2 branches missed.">				&amp;&amp; (nameIsPlaceholder || !nameToken.isEmpty());</span>
 	}
 	

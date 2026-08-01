@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintPredicatePreprocessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">HintPredicatePreprocessor.java</span></div><h1>HintPredicatePreprocessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/** Extracts and expands declarative {@code &lt;!predicate ...&gt;} definitions. */
+public final class HintPredicatePreprocessor {
+
+	private static final String PREDICATE_KEYWORD= &quot;predicate&quot;; //$NON-NLS-1$
+
+	/** Preprocessed source plus the immutable local predicate model. */
+	public record Result(String expandedSource, List&lt;HintPredicateDefinition&gt; predicates) {
+<span class="fc" id="L34">		public Result {</span>
+<span class="fc" id="L35">			predicates= List.copyOf(predicates);</span>
+<span class="fc" id="L36">		}</span>
+	}
+
+<span class="fc" id="L39">	private record Extraction(String sourceWithoutDefinitions,</span>
+			Map&lt;String, HintPredicateDefinition&gt; definitions) {
+	}
+
+	private HintPredicatePreprocessor() {
+	}
+
+	public static Result preprocess(String source) throws HintParseException {
+<span class="pc bpc" id="L47" title="2 of 4 branches missed.">		if (source == null || source.isBlank()) {</span>
+<span class="nc" id="L48">			throw new HintParseException(&quot;Hint file content is empty&quot;, 0); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L50">		Extraction extraction= extractDefinitions(source);</span>
+<span class="fc" id="L51">		ParsedPredicates predicates= new ParsedPredicates(extraction.definitions());</span>
+<span class="fc" id="L52">		predicates.validate();</span>
+<span class="fc" id="L53">		String expanded= expandGuardFragments(extraction.sourceWithoutDefinitions(), predicates);</span>
+<span class="fc" id="L54">		return new Result(expanded, new ArrayList&lt;&gt;(extraction.definitions().values()));</span>
+	}
+
+	/** Returns local definitions without requiring the remaining program to be valid. */
+	public static List&lt;HintPredicateDefinition&gt; discover(String source) {
+<span class="pc bpc" id="L59" title="2 of 4 branches missed.">		if (source == null || source.isBlank()) {</span>
+<span class="nc" id="L60">			return List.of();</span>
+		}
+		try {
+<span class="fc" id="L63">			return new ArrayList&lt;&gt;(extractDefinitions(source).definitions().values());</span>
+<span class="nc" id="L64">		} catch (HintParseException exception) {</span>
+<span class="nc" id="L65">			return List.of();</span>
+		}
+	}
+
+	private static Extraction extractDefinitions(String source) throws HintParseException {
+<span class="fc" id="L70">		StringBuilder cleaned= new StringBuilder(source);</span>
+<span class="fc" id="L71">		Map&lt;String, HintPredicateDefinition&gt; definitions= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L72">		int cursor= 0;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		while (cursor &lt; source.length()) {</span>
+<span class="fc" id="L74">			int start= nextPredicateDirective(source, cursor);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">			if (start &lt; 0) {</span>
+<span class="fc" id="L76">				break;</span>
+			}
+<span class="fc" id="L78">			int end= directiveEnd(source, start + 2);</span>
+<span class="fc" id="L79">			int line= lineNumber(source, start);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">			if (end &lt; 0) {</span>
+<span class="nc" id="L81">				throw new HintParseException(&quot;Unterminated predicate directive&quot;, line); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L83">			HintPredicateDefinition definition= parseDefinition(source.substring(start + 2, end), line);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (definitions.putIfAbsent(definition.name(), definition) != null) {</span>
+<span class="fc" id="L85">				throw new HintParseException(&quot;Duplicate predicate &quot; + definition.name(), line); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L87">			blankExceptLineDelimiters(cleaned, start, end);</span>
+<span class="fc" id="L88">			cursor= end + 1;</span>
+<span class="fc" id="L89">		}</span>
+<span class="fc" id="L90">		return new Extraction(cleaned.toString(),</span>
+<span class="fc" id="L91">				Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(definitions)));</span>
+	}
+
+	private static HintPredicateDefinition parseDefinition(String directive, int line)
+			throws HintParseException {
+<span class="fc" id="L96">		String text= directive.trim();</span>
+<span class="fc" id="L97">		int nameStart= PREDICATE_KEYWORD.length();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		boolean keywordBoundary= text.length() &gt; nameStart</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">				&amp;&amp; Character.isWhitespace(text.charAt(nameStart));</span>
+<span class="fc" id="L100">		int open= text.indexOf('(', nameStart);</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		int close= open &lt; 0 ? -1 : text.indexOf(')', open + 1);</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		int colon= close &lt; 0 ? -1 : text.indexOf(':', close + 1);</span>
+<span class="pc bpc" id="L103" title="5 of 10 branches missed.">		if (!text.startsWith(PREDICATE_KEYWORD) || !keywordBoundary</span>
+				|| open &lt;= nameStart || close &lt; open || colon &lt; close) {
+<span class="nc" id="L105">			throw new HintParseException(</span>
+					&quot;Predicate syntax is &lt;!predicate name($arg): guard-expression&gt;&quot;, line); //$NON-NLS-1$
+		}
+<span class="fc" id="L108">		String name= text.substring(nameStart, open).trim();</span>
+<span class="fc" id="L109">		List&lt;String&gt; parameters= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L110">		String parameterText= text.substring(open + 1, close).trim();</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		if (!parameterText.isEmpty()) {</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			for (String parameter : parameterText.split(&quot;,&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L113">				parameters.add(parameter.trim());</span>
+			}
+		}
+<span class="fc" id="L116">		String expression= text.substring(colon + 1).trim();</span>
+		try {
+<span class="fc" id="L118">			return new HintPredicateDefinition(name, parameters, expression, line);</span>
+<span class="nc" id="L119">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L120">			throw parseFailure(exception.getMessage(), line, exception);</span>
+		}
+	}
+
+	private static String expandGuardFragments(String source, ParsedPredicates predicates)
+			throws HintParseException {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (predicates.isEmpty()) {</span>
+<span class="fc" id="L127">			return source;</span>
+		}
+<span class="fc" id="L129">		StringBuilder result= new StringBuilder(source.length());</span>
+<span class="fc" id="L130">		int offset= 0;</span>
+<span class="fc" id="L131">		int lineNumber= 1;</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">		while (offset &lt; source.length()) {</span>
+<span class="fc" id="L133">			int lineEnd= source.indexOf('\n', offset);</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">			if (lineEnd &lt; 0) {</span>
+<span class="nc" id="L135">				lineEnd= source.length();</span>
+			}
+<span class="fc" id="L137">			result.append(expandLine(source.substring(offset, lineEnd), predicates, lineNumber));</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">			if (lineEnd &lt; source.length()) {</span>
+<span class="fc" id="L139">				result.append('\n');</span>
+			}
+<span class="fc" id="L141">			offset= lineEnd + 1;</span>
+<span class="fc" id="L142">			lineNumber++;</span>
+<span class="fc" id="L143">		}</span>
+<span class="fc" id="L144">		return result.toString();</span>
+	}
+
+	private static String expandLine(String line, ParsedPredicates predicates, int lineNumber)
+			throws HintParseException {
+<span class="fc" id="L149">		int comment= commentStart(line);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		String code= comment &lt; 0 ? line : line.substring(0, comment);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		String suffix= comment &lt; 0 ? &quot;&quot; : line.substring(comment); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		StringBuilder result= new StringBuilder(code.length());</span>
+<span class="fc" id="L153">		int cursor= 0;</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		while (cursor &lt; code.length()) {</span>
+<span class="fc" id="L155">			int separator= findOutsideString(code, &quot;::&quot;, cursor); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">			if (separator &lt; 0) {</span>
+<span class="fc" id="L157">				result.append(code, cursor, code.length());</span>
+<span class="fc" id="L158">				break;</span>
+			}
+<span class="fc" id="L160">			result.append(code, cursor, separator + 2);</span>
+<span class="fc" id="L161">			int guardStart= separator + 2;</span>
+<span class="fc" id="L162">			int guardEnd= nextBoundary(code, guardStart);</span>
+<span class="fc" id="L163">			String guard= code.substring(guardStart, guardEnd);</span>
+<span class="fc" id="L164">			result.append(predicates.expandAndFormat(guard, lineNumber));</span>
+<span class="fc" id="L165">			cursor= guardEnd;</span>
+<span class="fc" id="L166">		}</span>
+<span class="fc" id="L167">		return result.append(suffix).toString();</span>
+	}
+
+	private static int nextBoundary(String line, int start) {
+<span class="fc" id="L171">		int arrow= findOutsideString(line, &quot;=&gt;&quot;, start); //$NON-NLS-1$</span>
+<span class="fc" id="L172">		int terminator= findOutsideString(line, &quot;;;&quot;, start); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (arrow &lt; 0) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			return terminator &lt; 0 ? line.length() : terminator;</span>
+		}
+<span class="nc bnc" id="L176" title="All 2 branches missed.">		return terminator &lt; 0 ? arrow : Math.min(arrow, terminator);</span>
+	}
+
+	private static final class ParsedPredicates {
+		private final Map&lt;String, HintPredicateDefinition&gt; definitions;
+		private final Map&lt;String, GuardExpression&gt; expressions;
+<span class="fc" id="L182">		private final GuardExpressionParser parser= new GuardExpressionParser();</span>
+
+<span class="fc" id="L184">		ParsedPredicates(Map&lt;String, HintPredicateDefinition&gt; definitions) throws HintParseException {</span>
+<span class="fc" id="L185">			this.definitions= Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(definitions));</span>
+<span class="fc" id="L186">			this.expressions= new LinkedHashMap&lt;&gt;(mapCapacity(this.definitions.size()));</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">			for (HintPredicateDefinition definition : this.definitions.values()) {</span>
+				try {
+<span class="fc" id="L189">					GuardExpression expression= parser.parse(definition.expression());</span>
+<span class="fc" id="L190">					validateParameterContract(definition, expression);</span>
+<span class="fc" id="L191">					expressions.put(definition.name(), expression);</span>
+<span class="fc" id="L192">				} catch (IllegalArgumentException exception) {</span>
+<span class="fc" id="L193">					throw parseFailure(&quot;Invalid predicate &quot; + definition.signature() + &quot;: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L194">							+ exception.getMessage(), definition.lineNumber(), exception);</span>
+<span class="fc" id="L195">				}</span>
+<span class="fc" id="L196">			}</span>
+<span class="fc" id="L197">		}</span>
+
+		boolean isEmpty() {
+<span class="fc" id="L200">			return definitions.isEmpty();</span>
+		}
+
+		void validate() throws HintParseException {
+<span class="fc bfc" id="L204" title="All 2 branches covered.">			for (HintPredicateDefinition definition : definitions.values()) {</span>
+<span class="fc" id="L205">				expand(expressions.get(definition.name()), Map.of(),</span>
+<span class="fc" id="L206">						new ArrayDeque&lt;&gt;(List.of(definition.name())), definition.lineNumber());</span>
+<span class="fc" id="L207">			}</span>
+<span class="fc" id="L208">		}</span>
+
+		String expandAndFormat(String guard, int lineNumber) throws HintParseException {
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			if (guard.isBlank()) {</span>
+<span class="nc" id="L212">				return guard;</span>
+			}
+			try {
+<span class="fc" id="L215">				GuardExpression parsed= parser.parse(guard.trim());</span>
+<span class="fc" id="L216">				return &quot; &quot; + format(expand(parsed, Map.of(), new ArrayDeque&lt;&gt;(), lineNumber)) + &quot; &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L217">			} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L218">				throw parseFailure(&quot;Invalid guard expression: &quot; + exception.getMessage(), //$NON-NLS-1$</span>
+						lineNumber, exception);
+			}
+		}
+
+		private GuardExpression expand(GuardExpression expression, Map&lt;String, String&gt; substitutions,
+				Deque&lt;String&gt; stack, int lineNumber) throws HintParseException {
+<span class="pc bpc" id="L225" title="1 of 4 branches missed.">			return switch (expression) {</span>
+<span class="fc" id="L226">				case GuardExpression.And and -&gt; new GuardExpression.And(</span>
+<span class="fc" id="L227">						expand(and.left(), substitutions, stack, lineNumber),</span>
+<span class="fc" id="L228">						expand(and.right(), substitutions, stack, lineNumber));</span>
+<span class="nc" id="L229">				case GuardExpression.Or or -&gt; new GuardExpression.Or(</span>
+<span class="nc" id="L230">						expand(or.left(), substitutions, stack, lineNumber),</span>
+<span class="nc" id="L231">						expand(or.right(), substitutions, stack, lineNumber));</span>
+<span class="fc" id="L232">				case GuardExpression.Not not -&gt; new GuardExpression.Not(</span>
+<span class="fc" id="L233">						expand(not.operand(), substitutions, stack, lineNumber));</span>
+<span class="fc" id="L234">				case GuardExpression.FunctionCall call -&gt; expandCall(call, substitutions, stack, lineNumber);</span>
+			};
+		}
+
+		private GuardExpression expandCall(GuardExpression.FunctionCall call,
+				Map&lt;String, String&gt; substitutions, Deque&lt;String&gt; stack, int lineNumber)
+				throws HintParseException {
+<span class="fc" id="L241">			List&lt;String&gt; arguments= call.args().stream()</span>
+<span class="fc" id="L242">					.map(argument -&gt; substitutions.getOrDefault(argument, argument)).toList();</span>
+<span class="fc" id="L243">			HintPredicateDefinition definition= definitions.get(call.name());</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">			if (definition == null) {</span>
+<span class="fc" id="L245">				return new GuardExpression.FunctionCall(call.name(), arguments);</span>
+			}
+<span class="fc bfc" id="L247" title="All 2 branches covered.">			if (arguments.size() != definition.parameters().size()) {</span>
+<span class="fc" id="L248">				throw new HintParseException(&quot;Predicate &quot; + definition.signature() + &quot; expects &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L249">						+ definition.parameters().size() + &quot; arguments but received &quot; + arguments.size(), lineNumber); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L251" title="All 2 branches covered.">			if (stack.contains(definition.name())) {</span>
+<span class="fc" id="L252">				List&lt;String&gt; cycle= new ArrayList&lt;&gt;(stack);</span>
+<span class="fc" id="L253">				cycle.add(definition.name());</span>
+<span class="fc" id="L254">				throw new HintParseException(&quot;Recursive predicate cycle: &quot; + String.join(&quot; -&gt; &quot;, cycle), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L255">						definition.lineNumber());</span>
+			}
+<span class="fc" id="L257">			Map&lt;String, String&gt; nested= new LinkedHashMap&lt;&gt;(mapCapacity(arguments.size()));</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">			for (int index= 0; index &lt; arguments.size(); index++) {</span>
+<span class="fc" id="L259">				nested.put(definition.parameters().get(index), arguments.get(index));</span>
+			}
+<span class="fc" id="L261">			stack.addLast(definition.name());</span>
+<span class="fc" id="L262">			GuardExpression expanded= expand(expressions.get(definition.name()), nested, stack,</span>
+<span class="fc" id="L263">					definition.lineNumber());</span>
+<span class="fc" id="L264">			stack.removeLast();</span>
+<span class="fc" id="L265">			return expanded;</span>
+		}
+
+		private static void validateParameterContract(HintPredicateDefinition definition,
+				GuardExpression expression) {
+<span class="fc" id="L270">			Set&lt;String&gt; referenced= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L271">			collectPlaceholders(expression, referenced);</span>
+<span class="fc" id="L272">			Set&lt;String&gt; undeclared= new LinkedHashSet&lt;&gt;(referenced);</span>
+<span class="fc" id="L273">			undeclared.removeAll(definition.parameters());</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">			if (!undeclared.isEmpty()) {</span>
+<span class="fc" id="L275">				throw new IllegalArgumentException(&quot;undeclared placeholder references &quot; + undeclared); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L277">			Set&lt;String&gt; unused= new LinkedHashSet&lt;&gt;(definition.parameters());</span>
+<span class="fc" id="L278">			unused.removeAll(referenced);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">			if (!unused.isEmpty()) {</span>
+<span class="fc" id="L280">				throw new IllegalArgumentException(&quot;unused parameters &quot; + unused); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L282">		}</span>
+
+		private static void collectPlaceholders(GuardExpression expression, Set&lt;String&gt; target) {
+<span class="pc bpc" id="L285" title="1 of 4 branches missed.">			switch (expression) {</span>
+<span class="fc" id="L286">				case GuardExpression.And and -&gt; {</span>
+<span class="fc" id="L287">					collectPlaceholders(and.left(), target);</span>
+<span class="fc" id="L288">					collectPlaceholders(and.right(), target);</span>
+<span class="fc" id="L289">				}</span>
+<span class="nc" id="L290">				case GuardExpression.Or or -&gt; {</span>
+<span class="nc" id="L291">					collectPlaceholders(or.left(), target);</span>
+<span class="nc" id="L292">					collectPlaceholders(or.right(), target);</span>
+<span class="nc" id="L293">				}</span>
+<span class="fc" id="L294">				case GuardExpression.Not not -&gt; collectPlaceholders(not.operand(), target);</span>
+<span class="fc" id="L295">				case GuardExpression.FunctionCall call -&gt; call.args().stream()</span>
+<span class="fc" id="L296">						.filter(argument -&gt; argument.startsWith(&quot;$&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L297">						.forEach(target::add);</span>
+			}
+<span class="fc" id="L299">		}</span>
+	}
+
+	private static String format(GuardExpression expression) {
+<span class="pc bpc" id="L303" title="1 of 4 branches missed.">		return switch (expression) {</span>
+<span class="fc" id="L304">			case GuardExpression.And and -&gt; '(' + format(and.left()) + &quot; &amp;&amp; &quot; + format(and.right()) + ')'; //$NON-NLS-1$</span>
+<span class="nc" id="L305">			case GuardExpression.Or or -&gt; '(' + format(or.left()) + &quot; || &quot; + format(or.right()) + ')'; //$NON-NLS-1$</span>
+<span class="fc" id="L306">			case GuardExpression.Not not -&gt; &quot;!(&quot; + format(not.operand()) + ')'; //$NON-NLS-1$</span>
+<span class="fc" id="L307">			case GuardExpression.FunctionCall call -&gt; call.name() + '(' + String.join(&quot;, &quot;, call.args()) + ')'; //$NON-NLS-1$</span>
+		};
+	}
+
+	private static int nextPredicateDirective(String source, int start) {
+<span class="fc" id="L312">		boolean inString= false;</span>
+<span class="fc" id="L313">		boolean escaped= false;</span>
+<span class="fc" id="L314">		boolean lineComment= false;</span>
+<span class="fc" id="L315">		boolean blockComment= false;</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">		for (int index= start; index &lt; source.length(); index++) {</span>
+<span class="fc" id="L317">			char current= source.charAt(index);</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">			char next= index + 1 &lt; source.length() ? source.charAt(index + 1) : '\0';</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">			if (lineComment) {</span>
+<span class="pc bpc" id="L320" title="1 of 4 branches missed.">				if (current == '\n' || current == '\r') {</span>
+<span class="fc" id="L321">					lineComment= false;</span>
+				}
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">			} else if (blockComment) {</span>
+<span class="nc bnc" id="L324" title="All 4 branches missed.">				if (current == '*' &amp;&amp; next == '/') {</span>
+<span class="nc" id="L325">					blockComment= false;</span>
+<span class="nc" id="L326">					index++;</span>
+				}
+<span class="fc bfc" id="L328" title="All 2 branches covered.">			} else if (inString) {</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">				if (escaped) {</span>
+<span class="nc" id="L330">					escaped= false;</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">				} else if (current == '\\') {</span>
+<span class="nc" id="L332">					escaped= true;</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">				} else if (current == '&quot;') {</span>
+<span class="fc" id="L334">					inString= false;</span>
+				}
+<span class="fc bfc" id="L336" title="All 2 branches covered.">			} else if (current == '&quot;') {</span>
+<span class="fc" id="L337">				inString= true;</span>
+<span class="fc bfc" id="L338" title="All 4 branches covered.">			} else if (current == '/' &amp;&amp; next == '/') {</span>
+<span class="fc" id="L339">				lineComment= true;</span>
+<span class="fc" id="L340">				index++;</span>
+<span class="pc bpc" id="L341" title="1 of 4 branches missed.">			} else if (current == '/' &amp;&amp; next == '*') {</span>
+<span class="nc" id="L342">				blockComment= true;</span>
+<span class="nc" id="L343">				index++;</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">			} else if (source.startsWith(&quot;&lt;!&quot; + PREDICATE_KEYWORD, index)) { //$NON-NLS-1$</span>
+<span class="fc" id="L345">				int boundary= index + 2 + PREDICATE_KEYWORD.length();</span>
+<span class="pc bpc" id="L346" title="1 of 4 branches missed.">				if (boundary &lt; source.length() &amp;&amp; Character.isWhitespace(source.charAt(boundary))) {</span>
+<span class="fc" id="L347">					return index;</span>
+				}
+			}
+		}
+<span class="fc" id="L351">		return -1;</span>
+	}
+
+	private static int directiveEnd(String source, int start) {
+<span class="fc" id="L355">		return findOutsideString(source, &quot;&gt;&quot;, start); //$NON-NLS-1$</span>
+	}
+
+	private static int findOutsideString(String source, String token, int start) {
+<span class="fc" id="L359">		boolean inString= false;</span>
+<span class="fc" id="L360">		boolean escaped= false;</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">		for (int index= start; index + token.length() &lt;= source.length(); index++) {</span>
+<span class="fc" id="L362">			char current= source.charAt(index);</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">			if (inString) {</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">				if (escaped) {</span>
+<span class="nc" id="L365">					escaped= false;</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">				} else if (current == '\\') {</span>
+<span class="nc" id="L367">					escaped= true;</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">				} else if (current == '&quot;') {</span>
+<span class="fc" id="L369">					inString= false;</span>
+				}
+<span class="fc bfc" id="L371" title="All 2 branches covered.">			} else if (current == '&quot;') {</span>
+<span class="fc" id="L372">				inString= true;</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">			} else if (source.startsWith(token, index)) {</span>
+<span class="fc" id="L374">				return index;</span>
+			}
+		}
+<span class="fc" id="L377">		return -1;</span>
+	}
+
+	private static int commentStart(String line) {
+<span class="fc" id="L381">		return findOutsideString(line, &quot;//&quot;, 0); //$NON-NLS-1$</span>
+	}
+
+	private static void blankExceptLineDelimiters(StringBuilder source, int start, int end) {
+<span class="fc bfc" id="L385" title="All 2 branches covered.">		for (int index= start; index &lt;= end; index++) {</span>
+<span class="fc" id="L386">			char character= source.charAt(index);</span>
+<span class="pc bpc" id="L387" title="1 of 4 branches missed.">			if (character != '\n' &amp;&amp; character != '\r') {</span>
+<span class="fc" id="L388">				source.setCharAt(index, ' ');</span>
+			}
+		}
+<span class="fc" id="L391">	}</span>
+
+	private static int lineNumber(String source, int offset) {
+<span class="fc" id="L394">		int line= 1;</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">		for (int index= 0; index &lt; Math.min(offset, source.length()); index++) {</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">			if (source.charAt(index) == '\n') {</span>
+<span class="fc" id="L397">				line++;</span>
+			}
+		}
+<span class="fc" id="L400">		return line;</span>
+	}
+
+	private static int mapCapacity(int expectedSize) {
+<span class="fc" id="L404">		return Math.max(1, (int) Math.ceil(expectedSize / 0.75d));</span>
+	}
+
+	private static HintParseException parseFailure(String message, int line, Throwable cause) {
+<span class="fc" id="L408">		HintParseException failure= new HintParseException(message, line);</span>
+<span class="fc" id="L409">		failure.initCause(cause);</span>
+<span class="fc" id="L410">		return failure;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -186,16 +186,16 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	private static String formatGuard(GuardExpression guard, int parentPrecedence) {
 		final int myPrecedence;
 		final String result;
-<span class="pc bpc" id="L189" title="3 of 4 branches missed.">		switch (guard) {</span>
+<span class="pc bpc" id="L189" title="2 of 4 branches missed.">		switch (guard) {</span>
 <span class="fc" id="L190">			case GuardExpression.FunctionCall fc -&gt; {</span>
 <span class="fc" id="L191">				myPrecedence = 4;</span>
 <span class="fc" id="L192">				result = formatFunctionCall(fc);</span>
 <span class="fc" id="L193">			}</span>
-<span class="nc" id="L194">			case GuardExpression.And and -&gt; {</span>
-<span class="nc" id="L195">				myPrecedence = 2;</span>
-<span class="nc" id="L196">				result = formatGuard(and.left(), myPrecedence) + &quot; &amp;&amp; &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L197">						+ formatGuard(and.right(), myPrecedence);</span>
-<span class="nc" id="L198">			}</span>
+<span class="fc" id="L194">			case GuardExpression.And and -&gt; {</span>
+<span class="fc" id="L195">				myPrecedence = 2;</span>
+<span class="fc" id="L196">				result = formatGuard(and.left(), myPrecedence) + &quot; &amp;&amp; &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L197">						+ formatGuard(and.right(), myPrecedence);</span>
+<span class="fc" id="L198">			}</span>
 <span class="nc" id="L199">			case GuardExpression.Or or -&gt; {</span>
 <span class="nc" id="L200">				myPrecedence = 1;</span>
 <span class="nc" id="L201">				result = formatGuard(or.left(), myPrecedence) + &quot; || &quot; //$NON-NLS-1$</span>

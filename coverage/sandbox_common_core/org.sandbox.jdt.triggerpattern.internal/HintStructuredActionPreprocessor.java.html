@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintStructuredActionPreprocessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">HintStructuredActionPreprocessor.java</span></div><h1>HintStructuredActionPreprocessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.sandbox.jdt.triggerpattern.api.RewriteActionCatalog;
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/** Converts high-level {@code =&gt;! action(...)} alternatives into parser sentinels. */
+final class HintStructuredActionPreprocessor {
+
+	record Result(String parserSource,
+			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel) {
+<span class="fc" id="L27">		Result {</span>
+<span class="fc" id="L28">			actionsBySentinel= Map.copyOf(actionsBySentinel);</span>
+<span class="fc" id="L29">		}</span>
+	}
+
+	private HintStructuredActionPreprocessor() {
+	}
+
+	static Result preprocess(String source, RewriteActionCatalog catalog) throws HintParseException {
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">		String normalized= source == null ? &quot;&quot; : source.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L37">		String[] lines= normalized.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="fc" id="L38">		List&lt;String&gt; output= new ArrayList&lt;&gt;(lines.length);</span>
+<span class="fc" id="L39">		Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actions= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L40">		boolean inBlockComment= false;</span>
+<span class="fc" id="L41">		boolean inEmbeddedJava= false;</span>
+<span class="fc" id="L42">		int actionIndex= 0;</span>
+
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		for (int lineIndex= 0; lineIndex &lt; lines.length; lineIndex++) {</span>
+<span class="fc" id="L45">			String line= lines[lineIndex];</span>
+<span class="fc" id="L46">			String trimmed= line.stripLeading();</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">			if (inEmbeddedJava) {</span>
+<span class="nc" id="L48">				output.add(line);</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L50">					inEmbeddedJava= false;</span>
+				}
+				continue;
+			}
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">			if (inBlockComment) {</span>
+<span class="nc" id="L55">				output.add(line);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L57">					inBlockComment= false;</span>
+				}
+				continue;
+			}
+<span class="pc bpc" id="L61" title="3 of 4 branches missed.">			if (trimmed.startsWith(&quot;&lt;?&quot;) &amp;&amp; !trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L62">				inEmbeddedJava= true;</span>
+<span class="nc" id="L63">				output.add(line);</span>
+<span class="nc" id="L64">				continue;</span>
+			}
+<span class="pc bpc" id="L66" title="3 of 4 branches missed.">			if (trimmed.startsWith(&quot;/*&quot;) &amp;&amp; !trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L67">				inBlockComment= true;</span>
+<span class="nc" id="L68">				output.add(line);</span>
+<span class="nc" id="L69">				continue;</span>
+			}
+<span class="fc bfc" id="L71" title="All 2 branches covered.">			if (!trimmed.startsWith(&quot;=&gt;!&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L72">				output.add(line);</span>
+<span class="fc" id="L73">				continue;</span>
+			}
+
+<span class="fc" id="L76">			int firstLine= lineIndex + 1;</span>
+<span class="fc" id="L77">			int indentationLength= line.length() - trimmed.length();</span>
+<span class="fc" id="L78">			String indentation= line.substring(0, indentationLength);</span>
+<span class="fc" id="L79">			StringBuilder alternative= new StringBuilder(trimmed.substring(3).trim());</span>
+<span class="fc" id="L80">			int lastLine= lineIndex;</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">			while (lastLine + 1 &lt; lines.length) {</span>
+<span class="fc" id="L82">				String nextTrimmed= lines[lastLine + 1].stripLeading();</span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">				if (nextTrimmed.startsWith(&quot;=&gt;&quot;) || &quot;;;&quot;.equals(nextTrimmed)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L84">					break;</span>
+				}
+<span class="fc" id="L86">				lastLine++;</span>
+<span class="fc" id="L87">				alternative.append('\n').append(nextTrimmed);</span>
+<span class="fc" id="L88">			}</span>
+
+<span class="fc" id="L90">			ActionAndGuard split= splitGuard(alternative.toString());</span>
+<span class="fc" id="L91">			List&lt;StructuredRewriteAction&gt; parsed= StructuredRewriteActionParser.parse(</span>
+<span class="fc" id="L92">					split.actionText().trim(), firstLine, catalog);</span>
+			String sentinel;
+			do {
+<span class="fc" id="L95">				sentinel= &quot;__sandbox_structured_action_&quot; + actionIndex++ + &quot;__&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			} while (normalized.contains(sentinel));</span>
+<span class="fc" id="L97">			actions.put(sentinel, parsed);</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			String guardSuffix= split.guardText() == null ? &quot;&quot; : &quot; :: &quot; + split.guardText().trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L99">			output.add(indentation + &quot;=&gt; &quot; + sentinel + guardSuffix); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			for (int consumed= lineIndex + 1; consumed &lt;= lastLine; consumed++) {</span>
+<span class="fc" id="L101">				output.add(&quot;&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L103">			lineIndex= lastLine;</span>
+		}
+<span class="fc" id="L105">		return new Result(String.join(&quot;\n&quot;, output), actions); //$NON-NLS-1$</span>
+	}
+
+	private static ActionAndGuard splitGuard(String text) {
+<span class="fc" id="L109">		int depth= 0;</span>
+<span class="fc" id="L110">		boolean inQuote= false;</span>
+<span class="fc" id="L111">		boolean escaped= false;</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		for (int index= 0; index &lt; text.length() - 1; index++) {</span>
+<span class="fc" id="L113">			char current= text.charAt(index);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">			if (inQuote) {</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">				if (escaped) {</span>
+<span class="nc" id="L116">					escaped= false;</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				} else if (current == '\\') {</span>
+<span class="nc" id="L118">					escaped= true;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				} else if (current == '&quot;') {</span>
+<span class="fc" id="L120">					inQuote= false;</span>
+				}
+				continue;
+			}
+<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (current == '&quot;') {</span>
+<span class="fc" id="L125">				inQuote= true;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			} else if (current == '(') {</span>
+<span class="fc" id="L127">				depth++;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			} else if (current == ')') {</span>
+<span class="fc" id="L129">				depth--;</span>
+<span class="pc bpc" id="L130" title="3 of 6 branches missed.">			} else if (depth == 0 &amp;&amp; current == ':' &amp;&amp; text.charAt(index + 1) == ':') {</span>
+<span class="nc" id="L131">				return new ActionAndGuard(text.substring(0, index), text.substring(index + 2));</span>
+			}
+		}
+<span class="fc" id="L134">		return new ActionAndGuard(text, null);</span>
+	}
+
+<span class="fc" id="L137">	private record ActionAndGuard(String actionText, String guardText) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

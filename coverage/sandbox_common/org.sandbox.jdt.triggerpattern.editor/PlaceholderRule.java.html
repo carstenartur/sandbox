@@ -40,33 +40,33 @@ public class PlaceholderRule implements IRule {
 	 * @param placeholderToken token for single placeholders ({@code $name})
 	 * @param variadicToken token for variadic placeholders ({@code $name$})
 	 */
-<span class="nc" id="L43">	public PlaceholderRule(IToken placeholderToken, IToken variadicToken) {</span>
-<span class="nc" id="L44">		this.placeholderToken = placeholderToken;</span>
-<span class="nc" id="L45">		this.variadicToken = variadicToken;</span>
-<span class="nc" id="L46">	}</span>
+<span class="fc" id="L43">	public PlaceholderRule(IToken placeholderToken, IToken variadicToken) {</span>
+<span class="fc" id="L44">		this.placeholderToken = placeholderToken;</span>
+<span class="fc" id="L45">		this.variadicToken = variadicToken;</span>
+<span class="fc" id="L46">	}</span>
 
 	@Override
 	public IToken evaluate(ICharacterScanner scanner) {
-<span class="nc" id="L50">		int c = scanner.read();</span>
-<span class="nc bnc" id="L51" title="All 2 branches missed.">		if (c != '$') {</span>
-<span class="nc" id="L52">			scanner.unread();</span>
-<span class="nc" id="L53">			return Token.UNDEFINED;</span>
+<span class="fc" id="L50">		int c = scanner.read();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">		if (c != '$') {</span>
+<span class="fc" id="L52">			scanner.unread();</span>
+<span class="fc" id="L53">			return Token.UNDEFINED;</span>
 		}
 
 		// Read the placeholder name
-<span class="nc" id="L57">		int length = 1; // '$' already read</span>
-<span class="nc" id="L58">		boolean hasNameChars = false;</span>
+<span class="fc" id="L57">		int length = 1; // '$' already read</span>
+<span class="fc" id="L58">		boolean hasNameChars = false;</span>
 		while (true) {
-<span class="nc" id="L60">			c = scanner.read();</span>
-<span class="nc" id="L61">			length++;</span>
-<span class="nc bnc" id="L62" title="All 2 branches missed.">			if (c == ICharacterScanner.EOF) {</span>
+<span class="fc" id="L60">			c = scanner.read();</span>
+<span class="fc" id="L61">			length++;</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">			if (c == ICharacterScanner.EOF) {</span>
 				// Unread all and fail
 <span class="nc bnc" id="L64" title="All 2 branches missed.">				for (int i = 0; i &lt; length; i++) {</span>
 <span class="nc" id="L65">					scanner.unread();</span>
 				}
 <span class="nc" id="L67">				return Token.UNDEFINED;</span>
 			}
-<span class="nc bnc" id="L69" title="All 2 branches missed.">			if (c == '$') {</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (c == '$') {</span>
 				// Variadic: $name$
 <span class="nc bnc" id="L71" title="All 2 branches missed.">				if (hasNameChars) {</span>
 <span class="nc" id="L72">					return variadicToken;</span>
@@ -77,13 +77,13 @@ public class PlaceholderRule implements IRule {
 				}
 <span class="nc" id="L78">				return Token.UNDEFINED;</span>
 			}
-<span class="nc bnc" id="L80" title="All 4 branches missed.">			if (Character.isLetterOrDigit((char) c) || c == '_') {</span>
-<span class="nc" id="L81">				hasNameChars = true;</span>
-<span class="nc" id="L82">			} else {</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">			if (Character.isLetterOrDigit((char) c) || c == '_') {</span>
+<span class="fc" id="L81">				hasNameChars = true;</span>
+<span class="fc" id="L82">			} else {</span>
 				// End of placeholder name
-<span class="nc" id="L84">				scanner.unread();</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">				if (hasNameChars) {</span>
-<span class="nc" id="L86">					return placeholderToken;</span>
+<span class="fc" id="L84">				scanner.unread();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				if (hasNameChars) {</span>
+<span class="fc" id="L86">					return placeholderToken;</span>
 				}
 				// Just '$' followed by non-name char
 <span class="nc" id="L89">				scanner.unread(); // unread the '$'</span>

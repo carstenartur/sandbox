@@ -117,7 +117,7 @@ import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
 
 <span class="pc bpc" id="L118" title="1 of 4 branches missed.">		if (inserted &gt; 0 || deleted &gt; 0) {</span>
 <span class="fc" id="L119">			long identical = diff.alignments().stream()</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">					.filter(a -&gt; a.kind() == AlignmentKind.IDENTICAL).count();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">					.filter(a -&gt; a.kind() == AlignmentKind.IDENTICAL).count();</span>
 <span class="fc" id="L121">			long total = diff.alignments().size();</span>
 <span class="fc" id="L122">			return Math.max(MIN_INCOMPATIBLE_CONFIDENCE,</span>
 <span class="fc" id="L123">					INCOMPATIBLE_IDENTICAL_SCALE * ((double) identical / total));</span>

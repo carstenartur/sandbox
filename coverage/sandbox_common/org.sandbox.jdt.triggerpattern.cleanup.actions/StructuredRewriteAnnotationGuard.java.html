@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StructuredRewriteAnnotationGuard.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup.actions</a> &gt; <span class="el_source">StructuredRewriteAnnotationGuard.java</span></div><h1>StructuredRewriteAnnotationGuard.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup.actions;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
+
+/**
+ * Fail-closed identity check for qualified annotation removals.
+ *
+ * &lt;p&gt;The standard action accepts simple annotation names for deliberately
+ * source-oriented rules. A qualified action argument, however, is an exact
+ * semantic contract and must never remove another annotation that merely has
+ * the same simple name.&lt;/p&gt;
+ */
+final class StructuredRewriteAnnotationGuard {
+
+<span class="fc" id="L33">	enum AnnotationMatch {</span>
+<span class="fc" id="L34">		EXACT,</span>
+<span class="fc" id="L35">		COLLISION,</span>
+<span class="fc" id="L36">		DIFFERENT</span>
+	}
+
+	private StructuredRewriteAnnotationGuard() {
+	}
+
+	static void validate(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (!&quot;removeAnnotation&quot;.equals(action.name())) { //$NON-NLS-1$</span>
+<span class="fc" id="L45">			return;</span>
+		}
+<span class="nc" id="L47">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (expected.indexOf('.') &lt; 0) {</span>
+<span class="nc" id="L49">			return;</span>
+		}
+<span class="nc" id="L51">		BodyDeclaration declaration= declarationTarget(context, action);</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="nc" id="L54">				AnnotationMatch match= classifyAnnotation(annotation, expected);</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">				if (match == AnnotationMatch.EXACT) {</span>
+<span class="nc" id="L56">					return;</span>
+				}
+<span class="nc bnc" id="L58" title="All 2 branches missed.">				if (match == AnnotationMatch.COLLISION) {</span>
+<span class="nc" id="L59">					throw context.failure(&quot;Refusing to remove annotation &quot; + expected //$NON-NLS-1$</span>
+							+ &quot; because a different annotation with the same simple name is selected&quot;); //$NON-NLS-1$
+				}
+			}
+		}
+<span class="nc" id="L64">		throw context.failure(&quot;Structured action cannot find annotation &quot; + expected); //$NON-NLS-1$</span>
+	}
+
+	private static BodyDeclaration declarationTarget(StructuredRewriteActionContext context,
+			StructuredRewriteAction action) throws CoreException {
+<span class="nc" id="L69">		ASTNode current= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">			if (current instanceof BodyDeclaration declaration) {</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">				if (declaration instanceof FieldDeclaration field &amp;&amp; field.fragments().size() != 1) {</span>
+<span class="nc" id="L73">					throw context.failure(</span>
+<span class="nc" id="L74">							&quot;Declaration-wide action is ambiguous for a multi-fragment field&quot;); //$NON-NLS-1$</span>
+				}
+<span class="nc" id="L76">				return declaration;</span>
+			}
+<span class="nc" id="L78">			current= current.getParent();</span>
+		}
+<span class="nc" id="L80">		throw context.failure(&quot;Structured action target is not a Java declaration&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static AnnotationMatch classifyAnnotation(Annotation annotation, String expected) {
+<span class="nc" id="L84">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">		String resolvedName= binding == null ? null : binding.getQualifiedName();</span>
+<span class="nc" id="L86">		return classifyAnnotationName(expected, annotation.getTypeName().getFullyQualifiedName(),</span>
+<span class="nc" id="L87">				resolvedName);</span>
+	}
+
+	static AnnotationMatch classifyAnnotationName(String expected, String sourceName,
+			String resolvedName) {
+<span class="pc bpc" id="L92" title="4 of 8 branches missed.">		if (expected == null || expected.isBlank() || sourceName == null || sourceName.isBlank()) {</span>
+<span class="nc" id="L93">			return AnnotationMatch.DIFFERENT;</span>
+		}
+<span class="pc bpc" id="L95" title="1 of 4 branches missed.">		String actual= resolvedName == null || resolvedName.isBlank() ? sourceName : resolvedName;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (expected.equals(actual)) {</span>
+<span class="fc" id="L97">			return AnnotationMatch.EXACT;</span>
+		}
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		return simpleName(expected).equals(simpleName(actual))</span>
+<span class="pc" id="L100">				? AnnotationMatch.COLLISION : AnnotationMatch.DIFFERENT;</span>
+	}
+
+	private static String simpleName(String qualifiedName) {
+<span class="fc" id="L104">		int separator= qualifiedName.lastIndexOf('.');</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

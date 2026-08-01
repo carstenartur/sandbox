@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExecutionTreeSnapshot.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">ExecutionTreeSnapshot.java</span></div><h1>ExecutionTreeSnapshot.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Immutable framework-neutral snapshot of one completed execution tree.
+ *
+ * &lt;p&gt;The model deliberately contains no JUnit or Eclipse launch types. Adapters
+ * assign stable semantic identities to containers and tests while retaining
+ * optional display names and attributes for diagnostics. Child order and
+ * duplicate occurrences are preserved, so ordering and multiplicity remain
+ * observable migration contracts.&lt;/p&gt;
+ */
+public record ExecutionTreeSnapshot(List&lt;Node&gt; roots, boolean successful) {
+
+	/** Creates a defensive immutable snapshot. */
+<span class="fc" id="L30">	public ExecutionTreeSnapshot {</span>
+<span class="fc" id="L31">		roots= immutableNodes(roots);</span>
+<span class="fc" id="L32">	}</span>
+
+	/** Returns whether no execution element was captured. */
+	public boolean isEmpty() {
+<span class="fc" id="L36">		return roots.isEmpty();</span>
+	}
+
+	/** Stable execution element kinds. */
+<span class="fc" id="L40">	public enum NodeKind {</span>
+<span class="fc" id="L41">		CONTAINER,</span>
+<span class="fc" id="L42">		TEST,</span>
+<span class="fc" id="L43">		OTHER</span>
+	}
+
+	/**
+	 * One immutable execution element.
+	 *
+	 * @param kind semantic element kind
+	 * @param identity stable comparison identity supplied by the adapter
+	 * @param displayName optional framework display name, normalized to an empty string
+	 * @param result optional result token, normalized to an empty string
+	 * @param attributes immutable adapter-defined diagnostic attributes
+	 * @param children ordered child occurrences
+	 */
+	public record Node(NodeKind kind, String identity, String displayName, String result,
+			Map&lt;String, String&gt; attributes, List&lt;Node&gt; children) {
+
+		/** Creates a defensive immutable node. */
+<span class="fc" id="L60">		public Node {</span>
+<span class="fc" id="L61">			kind= Objects.requireNonNull(kind);</span>
+<span class="fc" id="L62">			identity= requireText(identity, &quot;Execution node identity&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">			displayName= displayName == null ? &quot;&quot; : displayName; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">			result= result == null ? &quot;&quot; : result; //$NON-NLS-1$</span>
+<span class="fc" id="L65">			attributes= immutableAttributes(attributes);</span>
+<span class="fc" id="L66">			children= immutableNodes(children);</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">			if (kind == NodeKind.TEST &amp;&amp; !children.isEmpty()) {</span>
+<span class="fc" id="L68">				throw new IllegalArgumentException(&quot;Execution test nodes cannot contain children&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L70">		}</span>
+
+		/** Creates a container node without attributes. */
+		public static Node container(String identity, String displayName, String result, List&lt;Node&gt; children) {
+<span class="fc" id="L74">			return new Node(NodeKind.CONTAINER, identity, displayName, result, Map.of(), children);</span>
+		}
+
+		/** Creates a test node without attributes. */
+		public static Node test(String identity, String displayName, String result) {
+<span class="fc" id="L79">			return new Node(NodeKind.TEST, identity, displayName, result, Map.of(), List.of());</span>
+		}
+
+		/** Creates an adapter-specific node. */
+		public static Node other(String identity, String displayName, String result,
+				Map&lt;String, String&gt; attributes, List&lt;Node&gt; children) {
+<span class="nc" id="L85">			return new Node(NodeKind.OTHER, identity, displayName, result, attributes, children);</span>
+		}
+	}
+
+	private static List&lt;Node&gt; immutableNodes(List&lt;Node&gt; nodes) {
+<span class="pc bpc" id="L90" title="1 of 4 branches missed.">		if (nodes == null || nodes.isEmpty()) {</span>
+<span class="fc" id="L91">			return List.of();</span>
+		}
+<span class="fc" id="L93">		return nodes.stream().map(Objects::requireNonNull).toList();</span>
+	}
+
+	private static Map&lt;String, String&gt; immutableAttributes(Map&lt;String, String&gt; attributes) {
+<span class="pc bpc" id="L97" title="1 of 4 branches missed.">		if (attributes == null || attributes.isEmpty()) {</span>
+<span class="fc" id="L98">			return Map.of();</span>
+		}
+<span class="fc" id="L100">		Map&lt;String, String&gt; copy= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L101">		attributes.forEach((key, value) -&gt; copy.put(requireText(key, &quot;Execution attribute name&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L102">				Objects.requireNonNull(value)));</span>
+<span class="fc" id="L103">		return Map.copyOf(copy);</span>
+	}
+
+	private static String requireText(String value, String label) {
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L108">			throw new IllegalArgumentException(label + &quot; must not be blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L110">		return value;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

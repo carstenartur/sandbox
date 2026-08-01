@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RewriteActionValue.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">RewriteActionValue.java</span></div><h1>RewriteActionValue.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Immutable value expression used by a {@link StructuredRewriteAction}.
+ *
+ * &lt;p&gt;Action values remain declarative. They can reference one pattern binding,
+ * read a typed semantic-plan fact, or describe Java annotation expressions such
+ * as class literals, names and arrays without embedding arbitrary Java code.&lt;/p&gt;
+ */
+public sealed interface RewriteActionValue permits RewriteActionValue.Literal,
+		RewriteActionValue.Binding, RewriteActionValue.PlanValue,
+		RewriteActionValue.ClassLiteral, RewriteActionValue.Name,
+		RewriteActionValue.ListValue {
+
+	/** Creates a typed literal value. */
+	static Literal literal(SemanticPlanValue value) {
+<span class="fc" id="L31">		return new Literal(value);</span>
+	}
+
+	/** Creates a reference to an exact pattern binding such as {@code $method}. */
+	static Binding binding(String placeholder) {
+<span class="fc" id="L36">		return new Binding(placeholder);</span>
+	}
+
+	/** Reads one plan fact from the matched node. */
+	static PlanValue planValue(String factName) {
+<span class="nc" id="L41">		return new PlanValue(null, factName);</span>
+	}
+
+	/** Reads one plan fact from an exact pattern binding. */
+	static PlanValue planValue(String placeholder, String factName) {
+<span class="fc" id="L46">		return new PlanValue(placeholder, factName);</span>
+	}
+
+	/** Interprets the resolved nested value as a Java class literal. */
+	static ClassLiteral classLiteral(RewriteActionValue typeName) {
+<span class="fc" id="L51">		return new ClassLiteral(typeName);</span>
+	}
+
+	/** Interprets the resolved nested value as a qualified Java name expression. */
+	static Name name(RewriteActionValue qualifiedName) {
+<span class="fc" id="L56">		return new Name(qualifiedName);</span>
+	}
+
+	/** Creates an ordered immutable list expression. */
+	static ListValue list(RewriteActionValue... values) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		return new ListValue(values == null ? List.of() : Arrays.asList(values));</span>
+	}
+
+	/** Typed literal transported directly into an action handler. */
+	record Literal(SemanticPlanValue value) implements RewriteActionValue {
+<span class="fc" id="L66">		public Literal {</span>
+<span class="fc" id="L67">			Objects.requireNonNull(value);</span>
+<span class="fc" id="L68">		}</span>
+	}
+
+	/** Exact pattern-binding reference. */
+	record Binding(String placeholder) implements RewriteActionValue {
+<span class="fc" id="L73">		public Binding {</span>
+<span class="fc" id="L74">			placeholder= requirePlaceholder(placeholder);</span>
+<span class="fc" id="L75">		}</span>
+	}
+
+	/** Typed semantic-plan fact reference. */
+	record PlanValue(String placeholder, String factName) implements RewriteActionValue {
+<span class="fc" id="L80">		public PlanValue {</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">			if (placeholder != null) {</span>
+<span class="fc" id="L82">				placeholder= requirePlaceholder(placeholder);</span>
+			}
+<span class="fc" id="L84">			factName= requireName(factName, &quot;Plan fact&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L85">		}</span>
+	}
+
+	/** Java class-literal expression such as {@code SomeType.class}. */
+	record ClassLiteral(RewriteActionValue typeName) implements RewriteActionValue {
+<span class="fc" id="L90">		public ClassLiteral {</span>
+<span class="fc" id="L91">			Objects.requireNonNull(typeName);</span>
+<span class="fc" id="L92">		}</span>
+	}
+
+	/** Qualified Java name expression such as one enum constant. */
+	record Name(RewriteActionValue qualifiedName) implements RewriteActionValue {
+<span class="fc" id="L97">		public Name {</span>
+<span class="fc" id="L98">			Objects.requireNonNull(qualifiedName);</span>
+<span class="fc" id="L99">		}</span>
+	}
+
+	/** Ordered list expression, primarily for annotation array values. */
+	record ListValue(List&lt;RewriteActionValue&gt; values) implements RewriteActionValue {
+<span class="fc" id="L104">		public ListValue {</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			values= List.copyOf(values == null ? List.of() : values);</span>
+<span class="fc" id="L106">			values.forEach(Objects::requireNonNull);</span>
+<span class="fc" id="L107">		}</span>
+	}
+
+	private static String requirePlaceholder(String value) {
+<span class="fc" id="L111">		String placeholder= requireName(value, &quot;Binding placeholder&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">		if (!placeholder.startsWith(&quot;$&quot;) || placeholder.length() == 1) { //$NON-NLS-1$</span>
+<span class="nc" id="L113">			throw new IllegalArgumentException(&quot;Binding placeholder must start with '$': &quot; + placeholder); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L115">		return placeholder;</span>
+	}
+
+	private static String requireName(String value, String label) {
+<span class="pc bpc" id="L119" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L120">			throw new IllegalArgumentException(label + &quot; must not be blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L122">		return value.trim();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

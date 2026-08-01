@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SemanticPlanValue.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">SemanticPlanValue.java</span></div><h1>SemanticPlanValue.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
+
+/**
+ * Closed typed value model for semantic-plan facts and relation attributes.
+ *
+ * &lt;p&gt;The model deliberately contains only immutable transport values. Project
+ * planners may define contract-specific fact names, while the shared hint
+ * engine can compare values without depending on JUnit, JDT Core or JDT UI
+ * concepts.&lt;/p&gt;
+ */
+public sealed interface SemanticPlanValue permits SemanticPlanValue.StringValue,
+		SemanticPlanValue.BooleanValue, SemanticPlanValue.IntegerValue,
+		SemanticPlanValue.NodeValue, SemanticPlanValue.ListValue {
+
+	/** Stable value kinds used for contract validation and diagnostics. */
+<span class="fc" id="L32">	enum Kind {</span>
+<span class="fc" id="L33">		STRING,</span>
+<span class="fc" id="L34">		BOOLEAN,</span>
+<span class="fc" id="L35">		INTEGER,</span>
+<span class="fc" id="L36">		NODE,</span>
+<span class="fc" id="L37">		LIST</span>
+	}
+
+	/** Returns the stable kind of this value. */
+	Kind kind();
+
+	/** Creates an exact text value. */
+	static StringValue string(String value) {
+<span class="fc" id="L45">		return new StringValue(value);</span>
+	}
+
+	/** Creates a boolean value. */
+	static BooleanValue bool(boolean value) {
+<span class="fc" id="L50">		return new BooleanValue(value);</span>
+	}
+
+	/** Creates a signed integer value. */
+	static IntegerValue integer(long value) {
+<span class="fc" id="L55">		return new IntegerValue(value);</span>
+	}
+
+	/** Creates a reference to another stable semantic-plan node. */
+	static NodeValue node(NodeKey value) {
+<span class="fc" id="L60">		return new NodeValue(value);</span>
+	}
+
+	/** Creates a homogeneous immutable list value. */
+	static ListValue list(SemanticPlanValue... values) {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		return new ListValue(values == null ? List.of() : Arrays.asList(values));</span>
+	}
+
+	/**
+	 * Parses the literal forms accepted by typed plan guards.
+	 *
+	 * &lt;p&gt;Quoted values are strings, {@code true}/{@code false} are booleans and
+	 * signed decimal values are integers. Remaining unquoted values are exact
+	 * strings, which keeps enum-like contract values concise.&lt;/p&gt;
+	 */
+	static SemanticPlanValue fromGuardLiteral(String literal) {
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		String value= literal == null ? &quot;&quot; : literal.trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L77" title="1 of 6 branches missed.">		if (value.length() &gt;= 2 &amp;&amp; value.startsWith(&quot;\&quot;&quot;) &amp;&amp; value.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L78">			return string(value.substring(1, value.length() - 1));</span>
+		}
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">		if (&quot;true&quot;.equalsIgnoreCase(value) || &quot;false&quot;.equalsIgnoreCase(value)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L81">			return bool(Boolean.parseBoolean(value));</span>
+		}
+		try {
+<span class="fc" id="L84">			return integer(Long.parseLong(value));</span>
+<span class="fc" id="L85">		} catch (NumberFormatException e) {</span>
+<span class="fc" id="L86">			return string(value);</span>
+		}
+	}
+
+	/** Exact text fact. */
+	record StringValue(String value) implements SemanticPlanValue {
+<span class="fc" id="L92">		public StringValue {</span>
+<span class="fc" id="L93">			Objects.requireNonNull(value);</span>
+<span class="fc" id="L94">		}</span>
+
+		@Override
+		public Kind kind() {
+<span class="fc" id="L98">			return Kind.STRING;</span>
+		}
+	}
+
+	/** Boolean fact. */
+<span class="fc" id="L103">	record BooleanValue(boolean value) implements SemanticPlanValue {</span>
+		@Override
+		public Kind kind() {
+<span class="fc" id="L106">			return Kind.BOOLEAN;</span>
+		}
+	}
+
+	/** Signed integer fact. */
+<span class="fc" id="L111">	record IntegerValue(long value) implements SemanticPlanValue {</span>
+		@Override
+		public Kind kind() {
+<span class="fc" id="L114">			return Kind.INTEGER;</span>
+		}
+	}
+
+	/** Reference to another stable semantic-plan node. */
+	record NodeValue(NodeKey value) implements SemanticPlanValue {
+<span class="fc" id="L120">		public NodeValue {</span>
+<span class="fc" id="L121">			Objects.requireNonNull(value);</span>
+<span class="fc" id="L122">		}</span>
+
+		@Override
+		public Kind kind() {
+<span class="fc" id="L126">			return Kind.NODE;</span>
+		}
+	}
+
+	/** Homogeneous immutable list fact. */
+	record ListValue(List&lt;SemanticPlanValue&gt; values) implements SemanticPlanValue {
+<span class="fc" id="L132">		public ListValue {</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">			values= List.copyOf(values == null ? List.of() : values);</span>
+<span class="fc" id="L134">			Kind elementKind= null;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">			for (SemanticPlanValue value : values) {</span>
+<span class="fc" id="L136">				Objects.requireNonNull(value);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">				if (elementKind == null) {</span>
+<span class="fc" id="L138">					elementKind= value.kind();</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">				} else if (elementKind != value.kind()) {</span>
+<span class="fc" id="L140">					throw new IllegalArgumentException(&quot;Semantic plan lists must be homogeneous&quot;); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L142">			}</span>
+<span class="fc" id="L143">		}</span>
+
+		@Override
+		public Kind kind() {
+<span class="fc" id="L147">			return Kind.LIST;</span>
+		}
+
+		/** Returns the element kind, or {@code null} for an empty list. */
+		public Kind elementKind() {
+<span class="nc bnc" id="L152" title="All 2 branches missed.">			return values.isEmpty() ? null : values.get(0).kind();</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

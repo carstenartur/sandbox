@@ -109,7 +109,7 @@ import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
 	private boolean diffLists(List&lt;ASTNode&gt; before, List&lt;ASTNode&gt; after,
 			List&lt;NodeAlignment&gt; alignments) {
 <span class="fc" id="L111">		int minSize = Math.min(before.size(), after.size());</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		boolean allCompatible = before.size() == after.size();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		boolean allCompatible = before.size() == after.size();</span>
 
 <span class="fc bfc" id="L114" title="All 2 branches covered.">		for (int i = 0; i &lt; minSize; i++) {</span>
 <span class="fc bfc" id="L115" title="All 2 branches covered.">			if (!diff(before.get(i), after.get(i), alignments)) {</span>
@@ -120,9 +120,9 @@ import org.eclipse.jdt.core.dom.StructuralPropertyDescriptor;
 <span class="nc" id="L120">			alignments.add(new NodeAlignment(before.get(i), null, AlignmentKind.DELETED));</span>
 <span class="nc" id="L121">			allCompatible = false;</span>
 		}
-<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		for (int i = minSize; i &lt; after.size(); i++) {</span>
-<span class="nc" id="L124">			alignments.add(new NodeAlignment(null, after.get(i), AlignmentKind.INSERTED));</span>
-<span class="nc" id="L125">			allCompatible = false;</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		for (int i = minSize; i &lt; after.size(); i++) {</span>
+<span class="fc" id="L124">			alignments.add(new NodeAlignment(null, after.get(i), AlignmentKind.INSERTED));</span>
+<span class="fc" id="L125">			allCompatible = false;</span>
 		}
 <span class="fc" id="L127">		return allCompatible;</span>
 	}

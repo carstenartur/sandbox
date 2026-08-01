@@ -54,9 +54,9 @@ import org.eclipse.ui.PlatformUI;
  *
  * @since 1.5.0
  */
-<span class="nc" id="L57">public class EmbeddedJavaContentAssistProcessor implements IContentAssistProcessor {</span>
+<span class="fc" id="L57">public class EmbeddedJavaContentAssistProcessor implements IContentAssistProcessor {</span>
 
-<span class="nc" id="L59">	private static final Logger LOGGER = Logger.getLogger(EmbeddedJavaContentAssistProcessor.class.getName());</span>
+<span class="fc" id="L59">	private static final Logger LOGGER = Logger.getLogger(EmbeddedJavaContentAssistProcessor.class.getName());</span>
 
 	private static final String SYNTHETIC_PACKAGE = &quot;org.sandbox.generated&quot;; //$NON-NLS-1$
 	private static final String SYNTHETIC_CLASS_NAME = &quot;HintCode_assist&quot;; //$NON-NLS-1$
@@ -70,7 +70,7 @@ import org.eclipse.ui.PlatformUI;
 			&quot;import org.eclipse.jdt.core.dom.*;\n&quot; + //$NON-NLS-1$
 			&quot;public class &quot; + SYNTHETIC_CLASS_NAME + &quot; {\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$
 
-<span class="nc" id="L73">	private static final String SYNTHETIC_FOOTER = &quot;\n}\n&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L73">	private static final String SYNTHETIC_FOOTER = &quot;\n}\n&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {

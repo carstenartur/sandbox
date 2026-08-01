@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintMetadataScanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintMetadataScanner.java</span></div><h1>SandboxHintMetadataScanner.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import org.eclipse.jface.text.TextAttribute;
+import org.eclipse.jface.text.rules.IRule;
+import org.eclipse.jface.text.rules.IToken;
+import org.eclipse.jface.text.rules.IWordDetector;
+import org.eclipse.jface.text.rules.RuleBasedScanner;
+import org.eclipse.jface.text.rules.SingleLineRule;
+import org.eclipse.jface.text.rules.Token;
+import org.eclipse.jface.text.rules.WordRule;
+
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.RGB;
+
+import org.sandbox.jdt.triggerpattern.internal.HintLanguageVocabulary;
+
+/** Highlights directive names and embedded guard expressions in metadata blocks. */
+final class SandboxHintMetadataScanner extends RuleBasedScanner {
+
+<span class="fc" id="L34">	private final IToken directiveToken= token(SandboxHintCodeScanner.DIRECTIVE_RGB, SWT.BOLD);</span>
+<span class="fc" id="L35">	private final IToken operatorToken= token(SandboxHintCodeScanner.OPERATOR_RGB, SWT.BOLD);</span>
+<span class="fc" id="L36">	private final IToken placeholderToken= token(SandboxHintCodeScanner.PLACEHOLDER_RGB, SWT.NORMAL);</span>
+<span class="fc" id="L37">	private final IToken variadicToken= token(SandboxHintCodeScanner.PLACEHOLDER_RGB, SWT.BOLD);</span>
+<span class="fc" id="L38">	private final IToken functionToken= token(SandboxHintCodeScanner.FUNCTION_RGB, SWT.BOLD);</span>
+<span class="fc" id="L39">	private final IToken stringToken= token(SandboxHintCodeScanner.STRING_RGB, SWT.NORMAL);</span>
+
+<span class="fc" id="L41">	SandboxHintMetadataScanner() {</span>
+<span class="fc" id="L42">		setDefaultReturnToken(directiveToken);</span>
+
+<span class="fc" id="L44">		List&lt;IRule&gt; rules= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">		rules.add(new SingleLineRule(&quot;\&quot;&quot;, &quot;\&quot;&quot;, stringToken, '\\')); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L46">		HintLanguageVocabulary.operators().stream()</span>
+<span class="fc" id="L47">				.sorted(Comparator.comparingInt(String::length).reversed())</span>
+<span class="fc" id="L48">				.map(operator -&gt; new OperatorRule(operator, operatorToken))</span>
+<span class="fc" id="L49">				.forEach(rules::add);</span>
+<span class="fc" id="L50">		rules.add(new PlaceholderRule(placeholderToken, variadicToken));</span>
+<span class="fc" id="L51">		rules.add(new SandboxHintFunctionCallRule(functionToken));</span>
+
+<span class="fc" id="L53">		WordRule directives= new WordRule(new IWordDetector() {</span>
+			@Override
+			public boolean isWordStart(char character) {
+<span class="fc" id="L56">				return Character.isJavaIdentifierStart(character);</span>
+			}
+
+			@Override
+			public boolean isWordPart(char character) {
+<span class="pc bpc" id="L61" title="1 of 4 branches missed.">				return Character.isJavaIdentifierPart(character) || character == '-';</span>
+			}
+<span class="fc" id="L63">		}, Token.UNDEFINED);</span>
+<span class="fc" id="L64">		HintLanguageVocabulary.directiveNames().stream().sorted()</span>
+<span class="fc" id="L65">				.forEach(name -&gt; directives.addWord(name, directiveToken));</span>
+<span class="fc" id="L66">		rules.add(directives);</span>
+<span class="fc" id="L67">		setRules(rules.toArray(IRule[]::new));</span>
+<span class="fc" id="L68">	}</span>
+
+	IToken operatorToken() {
+<span class="fc" id="L71">		return operatorToken;</span>
+	}
+
+	IToken placeholderToken() {
+<span class="fc" id="L75">		return placeholderToken;</span>
+	}
+
+	IToken functionToken() {
+<span class="fc" id="L79">		return functionToken;</span>
+	}
+
+	private static IToken token(RGB rgb, int style) {
+<span class="fc" id="L83">		return new Token(new TextAttribute(SandboxHintCodeScanner.managedColor(rgb), null, style));</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

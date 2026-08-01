@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StructuredRewriteActionParser.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">StructuredRewriteActionParser.java</span></div><h1>StructuredRewriteActionParser.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.sandbox.jdt.triggerpattern.api.RewriteActionCatalog;
+import org.sandbox.jdt.triggerpattern.api.RewriteActionValue;
+import org.sandbox.jdt.triggerpattern.api.SemanticPlanValue;
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/** Recursive-descent parser for {@code =&gt;! action(...)} alternatives. */
+final class StructuredRewriteActionParser {
+
+	private final String source;
+	private final int lineNumber;
+	private final RewriteActionCatalog catalog;
+	private int offset;
+
+	private StructuredRewriteActionParser(String source, int lineNumber,
+<span class="fc" id="L33">			RewriteActionCatalog catalog) {</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">		this.source= source == null ? &quot;&quot; : source; //$NON-NLS-1$</span>
+<span class="fc" id="L35">		this.lineNumber= lineNumber;</span>
+<span class="fc" id="L36">		this.catalog= catalog;</span>
+<span class="fc" id="L37">	}</span>
+
+	static List&lt;StructuredRewriteAction&gt; parse(String source, int lineNumber,
+			RewriteActionCatalog catalog) throws HintParseException {
+<span class="fc" id="L41">		StructuredRewriteActionParser parser= new StructuredRewriteActionParser(source, lineNumber, catalog);</span>
+<span class="fc" id="L42">		return parser.parseSequence();</span>
+	}
+
+	private List&lt;StructuredRewriteAction&gt; parseSequence() throws HintParseException {
+<span class="fc" id="L46">		List&lt;StructuredRewriteAction&gt; actions= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L47">		skipWhitespace();</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		while (!atEnd()) {</span>
+<span class="fc" id="L49">			StructuredRewriteAction action= parseAction();</span>
+			try {
+<span class="fc" id="L51">				catalog.validate(action);</span>
+<span class="fc" id="L52">			} catch (IllegalArgumentException exception) {</span>
+<span class="fc" id="L53">				throw error(exception.getMessage());</span>
+<span class="fc" id="L54">			}</span>
+<span class="fc" id="L55">			actions.add(action);</span>
+<span class="fc" id="L56">			skipWhitespace();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			if (atEnd()) {</span>
+<span class="fc" id="L58">				break;</span>
+			}
+<span class="fc" id="L60">			expect(';');</span>
+<span class="fc" id="L61">			skipWhitespace();</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			if (atEnd()) {</span>
+<span class="fc" id="L63">				throw error(&quot;Structured action sequence ends after ';'&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L65">		}</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">		if (actions.isEmpty()) {</span>
+<span class="nc" id="L67">			throw error(&quot;Structured rewrite alternative contains no action&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L69">		return List.copyOf(actions);</span>
+	}
+
+	private StructuredRewriteAction parseAction() throws HintParseException {
+<span class="fc" id="L73">		String name= parseIdentifier(&quot;action name&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		skipWhitespace();</span>
+<span class="fc" id="L75">		expect('(');</span>
+<span class="fc" id="L76">		skipWhitespace();</span>
+<span class="fc" id="L77">		Map&lt;String, RewriteActionValue&gt; arguments= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (!peek(')')) {</span>
+			while (true) {
+<span class="fc" id="L80">				String argumentName= parseIdentifier(&quot;action argument&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L81">				skipWhitespace();</span>
+<span class="fc" id="L82">				expect('=');</span>
+<span class="fc" id="L83">				skipWhitespace();</span>
+<span class="fc" id="L84">				RewriteActionValue value= parseValue();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">				if (arguments.putIfAbsent(argumentName, value) != null) {</span>
+<span class="fc" id="L86">					throw error(&quot;Duplicate action argument &quot; + argumentName); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L88">				skipWhitespace();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">				if (!peek(',')) {</span>
+<span class="fc" id="L90">					break;</span>
+				}
+<span class="fc" id="L92">				offset++;</span>
+<span class="fc" id="L93">				skipWhitespace();</span>
+<span class="fc" id="L94">			}</span>
+		}
+<span class="fc" id="L96">		expect(')');</span>
+		try {
+<span class="fc" id="L98">			return new StructuredRewriteAction(name, arguments, lineNumber);</span>
+<span class="nc" id="L99">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L100">			throw error(exception.getMessage());</span>
+		}
+	}
+
+	private RewriteActionValue parseValue() throws HintParseException {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (atEnd()) {</span>
+<span class="nc" id="L106">			throw error(&quot;Missing action argument value&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L108">		char current= source.charAt(offset);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (current == '&quot;') {</span>
+<span class="fc" id="L110">			return RewriteActionValue.literal(SemanticPlanValue.string(parseString()));</span>
+		}
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (current == '$') {</span>
+<span class="fc" id="L113">			return RewriteActionValue.binding(parsePlaceholder());</span>
+		}
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		if (current == '-' || Character.isDigit(current)) {</span>
+<span class="fc" id="L116">			return parseIntegerLiteral();</span>
+		}
+<span class="fc" id="L118">		String token= parseQualifiedIdentifier();</span>
+<span class="fc" id="L119">		skipWhitespace();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		if (peek('(')) {</span>
+<span class="fc" id="L121">			return parseValueFunction(token);</span>
+		}
+<span class="pc bpc" id="L123" title="1 of 4 branches missed.">		if (&quot;true&quot;.equals(token) || &quot;false&quot;.equals(token)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L124">			return RewriteActionValue.literal(SemanticPlanValue.bool(Boolean.parseBoolean(token)));</span>
+		}
+<span class="fc" id="L126">		return RewriteActionValue.literal(SemanticPlanValue.string(token));</span>
+	}
+
+	private RewriteActionValue parseValueFunction(String function) throws HintParseException {
+<span class="fc" id="L130">		expect('(');</span>
+<span class="fc" id="L131">		skipWhitespace();</span>
+<span class="fc" id="L132">		List&lt;RewriteActionValue&gt; arguments= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if (!peek(')')) {</span>
+			while (true) {
+<span class="fc" id="L135">				arguments.add(parseValue());</span>
+<span class="fc" id="L136">				skipWhitespace();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">				if (!peek(',')) {</span>
+<span class="fc" id="L138">					break;</span>
+				}
+<span class="fc" id="L140">				offset++;</span>
+<span class="fc" id="L141">				skipWhitespace();</span>
+			}
+		}
+<span class="fc" id="L144">		expect(')');</span>
+<span class="pc bpc" id="L145" title="1 of 5 branches missed.">		return switch (function) {</span>
+<span class="fc" id="L146">			case &quot;planValue&quot; -&gt; planValue(arguments); //$NON-NLS-1$</span>
+<span class="fc" id="L147">			case &quot;classLiteral&quot; -&gt; unary(function, arguments, RewriteActionValue::classLiteral); //$NON-NLS-1$</span>
+<span class="fc" id="L148">			case &quot;name&quot; -&gt; unary(function, arguments, RewriteActionValue::name); //$NON-NLS-1$</span>
+<span class="fc" id="L149">			case &quot;list&quot; -&gt; new RewriteActionValue.ListValue(arguments); //$NON-NLS-1$</span>
+<span class="nc" id="L150">			default -&gt; throw error(&quot;Unknown action value function &quot; + function); //$NON-NLS-1$</span>
+		};
+	}
+
+	private RewriteActionValue planValue(List&lt;RewriteActionValue&gt; arguments) throws HintParseException {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (arguments.size() == 1) {</span>
+<span class="nc" id="L156">			return RewriteActionValue.planValue(stringLiteral(arguments.get(0), &quot;planValue fact name&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">		if (arguments.size() == 2 &amp;&amp; arguments.get(0) instanceof RewriteActionValue.Binding binding) {</span>
+<span class="fc" id="L159">			return RewriteActionValue.planValue(binding.placeholder(),</span>
+<span class="fc" id="L160">					stringLiteral(arguments.get(1), &quot;planValue fact name&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L162">		throw error(&quot;planValue expects a fact name or one binding and a fact name&quot;); //$NON-NLS-1$</span>
+	}
+
+	private RewriteActionValue unary(String function, List&lt;RewriteActionValue&gt; arguments,
+			java.util.function.Function&lt;RewriteActionValue, RewriteActionValue&gt; factory)
+			throws HintParseException {
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">		if (arguments.size() != 1) {</span>
+<span class="nc" id="L169">			throw error(function + &quot; expects exactly one value&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L171">		return factory.apply(arguments.get(0));</span>
+	}
+
+	private String stringLiteral(RewriteActionValue value, String label) throws HintParseException {
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		if (value instanceof RewriteActionValue.Literal literal</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				&amp;&amp; literal.value() instanceof SemanticPlanValue.StringValue text) {</span>
+<span class="fc" id="L177">			return text.value();</span>
+		}
+<span class="fc" id="L179">		throw error(label + &quot; must be a string literal&quot;); //$NON-NLS-1$</span>
+	}
+
+	private RewriteActionValue parseIntegerLiteral() throws HintParseException {
+<span class="fc" id="L183">		int start= offset;</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		if (source.charAt(offset) == '-') {</span>
+<span class="nc" id="L185">			offset++;</span>
+		}
+<span class="fc" id="L187">		int digitStart= offset;</span>
+<span class="pc bpc" id="L188" title="1 of 4 branches missed.">		while (!atEnd() &amp;&amp; Character.isDigit(source.charAt(offset))) {</span>
+<span class="fc" id="L189">			offset++;</span>
+		}
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		if (digitStart == offset) {</span>
+<span class="nc" id="L192">			throw error(&quot;Invalid integer action value&quot;); //$NON-NLS-1$</span>
+		}
+		try {
+<span class="fc" id="L195">			return RewriteActionValue.literal(</span>
+<span class="fc" id="L196">					SemanticPlanValue.integer(Long.parseLong(source.substring(start, offset))));</span>
+<span class="nc" id="L197">		} catch (NumberFormatException exception) {</span>
+<span class="nc" id="L198">			throw error(&quot;Integer action value is out of range&quot;); //$NON-NLS-1$</span>
+		}
+	}
+
+	private String parseString() throws HintParseException {
+<span class="fc" id="L203">		expect('&quot;');</span>
+<span class="fc" id="L204">		StringBuilder value= new StringBuilder();</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		while (!atEnd()) {</span>
+<span class="fc" id="L206">			char current= source.charAt(offset++);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">			if (current == '&quot;') {</span>
+<span class="fc" id="L208">				return value.toString();</span>
+			}
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">			if (current != '\\') {</span>
+<span class="fc" id="L211">				value.append(current);</span>
+<span class="fc" id="L212">				continue;</span>
+			}
+<span class="nc bnc" id="L214" title="All 2 branches missed.">			if (atEnd()) {</span>
+<span class="nc" id="L215">				throw error(&quot;Unterminated escape in action string&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L217">			char escaped= source.charAt(offset++);</span>
+<span class="nc bnc" id="L218" title="All 6 branches missed.">			value.append(switch (escaped) {</span>
+<span class="nc" id="L219">				case 'n' -&gt; '\n';</span>
+<span class="nc" id="L220">				case 'r' -&gt; '\r';</span>
+<span class="nc" id="L221">				case 't' -&gt; '\t';</span>
+<span class="nc" id="L222">				case '&quot;' -&gt; '&quot;';</span>
+<span class="nc" id="L223">				case '\\' -&gt; '\\';</span>
+<span class="nc" id="L224">				default -&gt; throw error(&quot;Unsupported action string escape \\&quot; + escaped); //$NON-NLS-1$</span>
+			});
+<span class="nc" id="L226">		}</span>
+<span class="nc" id="L227">		throw error(&quot;Unterminated action string&quot;); //$NON-NLS-1$</span>
+	}
+
+	private String parsePlaceholder() throws HintParseException {
+<span class="fc" id="L231">		int start= offset++;</span>
+<span class="pc bpc" id="L232" title="2 of 4 branches missed.">		if (atEnd() || !Character.isJavaIdentifierStart(source.charAt(offset))) {</span>
+<span class="nc" id="L233">			throw error(&quot;Invalid binding placeholder&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L235">		offset++;</span>
+<span class="pc bpc" id="L236" title="1 of 4 branches missed.">		while (!atEnd() &amp;&amp; Character.isJavaIdentifierPart(source.charAt(offset))) {</span>
+<span class="fc" id="L237">			offset++;</span>
+		}
+<span class="pc bpc" id="L239" title="2 of 4 branches missed.">		if (!atEnd() &amp;&amp; source.charAt(offset) == '$') {</span>
+<span class="nc" id="L240">			offset++;</span>
+		}
+<span class="fc" id="L242">		return source.substring(start, offset);</span>
+	}
+
+	private String parseIdentifier(String label) throws HintParseException {
+<span class="fc" id="L246">		skipWhitespace();</span>
+<span class="pc bpc" id="L247" title="2 of 4 branches missed.">		if (atEnd() || !Character.isJavaIdentifierStart(source.charAt(offset))) {</span>
+<span class="nc" id="L248">			throw error(&quot;Expected &quot; + label); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L250">		int start= offset++;</span>
+<span class="pc bpc" id="L251" title="1 of 4 branches missed.">		while (!atEnd() &amp;&amp; Character.isJavaIdentifierPart(source.charAt(offset))) {</span>
+<span class="fc" id="L252">			offset++;</span>
+		}
+<span class="fc" id="L254">		return source.substring(start, offset);</span>
+	}
+
+	private String parseQualifiedIdentifier() throws HintParseException {
+<span class="fc" id="L258">		int start= offset;</span>
+<span class="fc" id="L259">		parseIdentifier(&quot;action value&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L260" title="2 of 4 branches missed.">		while (!atEnd() &amp;&amp; source.charAt(offset) == '.') {</span>
+<span class="nc" id="L261">			offset++;</span>
+<span class="nc" id="L262">			parseIdentifier(&quot;qualified action value segment&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L264">		return source.substring(start, offset);</span>
+	}
+
+	private void expect(char expected) throws HintParseException {
+<span class="fc" id="L268">		skipWhitespace();</span>
+<span class="pc bpc" id="L269" title="2 of 4 branches missed.">		if (atEnd() || source.charAt(offset) != expected) {</span>
+<span class="nc" id="L270">			throw error(&quot;Expected '&quot; + expected + &quot;'&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L272">		offset++;</span>
+<span class="fc" id="L273">	}</span>
+
+	private boolean peek(char expected) {
+<span class="fc" id="L276">		skipWhitespace();</span>
+<span class="pc bpc" id="L277" title="1 of 4 branches missed.">		return !atEnd() &amp;&amp; source.charAt(offset) == expected;</span>
+	}
+
+	private void skipWhitespace() {
+<span class="fc bfc" id="L281" title="All 4 branches covered.">		while (!atEnd() &amp;&amp; Character.isWhitespace(source.charAt(offset))) {</span>
+<span class="fc" id="L282">			offset++;</span>
+		}
+<span class="fc" id="L284">	}</span>
+
+	private boolean atEnd() {
+<span class="fc bfc" id="L287" title="All 2 branches covered.">		return offset &gt;= source.length();</span>
+	}
+
+	private HintParseException error(String message) {
+<span class="fc" id="L291">		return new HintParseException(message + &quot; at action offset &quot; + offset, lineNumber); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

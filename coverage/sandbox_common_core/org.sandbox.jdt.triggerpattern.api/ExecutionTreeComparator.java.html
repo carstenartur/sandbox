@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExecutionTreeComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">ExecutionTreeComparator.java</span></div><h1>ExecutionTreeComparator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot.Node;
+import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot.NodeKind;
+
+/** Compares framework-neutral execution trees under an explicit safety policy. */
+public final class ExecutionTreeComparator {
+
+	/**
+	 * Explicit comparison dimensions.
+	 *
+	 * &lt;p&gt;Multiplicity is always exact: canonical entries retain every occurrence.
+	 * A migration may relax wrapper identity, nesting or order only by selecting a
+	 * corresponding policy. There is deliberately no set-only mode that could hide
+	 * duplicate or lost tests.&lt;/p&gt;
+	 */
+<span class="fc" id="L34">	public record Policy(boolean compareNesting, boolean compareContainerIdentity,</span>
+			boolean compareOrder, boolean compareResults, boolean compareAttributes,
+			boolean compareDisplayNames, boolean requireSuccessful) {
+
+		/** Strict comparison of structure, semantic identities, order, results and attributes. */
+		public static Policy strict() {
+<span class="fc" id="L40">			return new Policy(true, true, true, true, true, false, true);</span>
+		}
+
+		/** Compares tree shape and leaves while allowing framework container names to change. */
+		public static Policy sameShape() {
+<span class="fc" id="L45">			return new Policy(true, false, true, true, true, false, true);</span>
+		}
+
+		/** Compares ordered leaf identities and multiplicity while ignoring all wrappers. */
+		public static Policy leavesInOrder() {
+<span class="fc" id="L50">			return new Policy(false, false, true, true, true, false, true);</span>
+		}
+
+		/** Compares the unordered leaf multiset while preserving exact multiplicity. */
+		public static Policy leafMultiset() {
+<span class="fc" id="L55">			return new Policy(false, false, false, true, true, false, true);</span>
+		}
+
+		/** Returns a copy with result comparison changed. */
+		public Policy withResults(boolean enabled) {
+<span class="fc" id="L60">			return new Policy(compareNesting, compareContainerIdentity, compareOrder, enabled,</span>
+					compareAttributes, compareDisplayNames, requireSuccessful);
+		}
+
+		/** Returns a copy with adapter attributes changed. */
+		public Policy withAttributes(boolean enabled) {
+<span class="fc" id="L66">			return new Policy(compareNesting, compareContainerIdentity, compareOrder, compareResults,</span>
+					enabled, compareDisplayNames, requireSuccessful);
+		}
+
+		/** Returns a copy with display-name comparison changed. */
+		public Policy withDisplayNames(boolean enabled) {
+<span class="nc" id="L72">			return new Policy(compareNesting, compareContainerIdentity, compareOrder, compareResults,</span>
+					compareAttributes, enabled, requireSuccessful);
+		}
+
+		/** Returns a copy with the successful-execution requirement changed. */
+		public Policy requiringSuccessful(boolean enabled) {
+<span class="fc" id="L78">			return new Policy(compareNesting, compareContainerIdentity, compareOrder, compareResults,</span>
+					compareAttributes, compareDisplayNames, enabled);
+		}
+	}
+
+	/** Complete deterministic comparison result and diagnostic canonical forms. */
+	public record Comparison(boolean equivalent, List&lt;String&gt; beforeEntries,
+			List&lt;String&gt; afterEntries, String difference) {
+<span class="fc" id="L86">		public Comparison {</span>
+<span class="fc" id="L87">			beforeEntries= List.copyOf(beforeEntries);</span>
+<span class="fc" id="L88">			afterEntries= List.copyOf(afterEntries);</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			difference= difference == null ? &quot;&quot; : difference; //$NON-NLS-1$</span>
+<span class="fc" id="L90">		}</span>
+	}
+
+	private ExecutionTreeComparator() {
+	}
+
+	/** Compares two snapshots under the supplied explicit policy. */
+	public static Comparison compare(ExecutionTreeSnapshot before, ExecutionTreeSnapshot after,
+			Policy policy) {
+<span class="fc" id="L99">		Objects.requireNonNull(before);</span>
+<span class="fc" id="L100">		Objects.requireNonNull(after);</span>
+<span class="fc" id="L101">		Objects.requireNonNull(policy);</span>
+<span class="fc" id="L102">		List&lt;String&gt; beforeEntries= canonicalEntries(before, policy);</span>
+<span class="fc" id="L103">		List&lt;String&gt; afterEntries= canonicalEntries(after, policy);</span>
+<span class="pc bpc" id="L104" title="1 of 6 branches missed.">		if (policy.requireSuccessful() &amp;&amp; (!before.successful() || !after.successful())) {</span>
+<span class="fc" id="L105">			return new Comparison(false, beforeEntries, afterEntries,</span>
+					&quot;Execution must be successful before and after migration: before=&quot; //$NON-NLS-1$
+<span class="fc" id="L107">							+ before.successful() + &quot;, after=&quot; + after.successful()); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (beforeEntries.equals(afterEntries)) {</span>
+<span class="fc" id="L110">			return new Comparison(true, beforeEntries, afterEntries, &quot;&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L112">		return new Comparison(false, beforeEntries, afterEntries,</span>
+<span class="fc" id="L113">				firstDifference(beforeEntries, afterEntries));</span>
+	}
+
+	private static List&lt;String&gt; canonicalEntries(ExecutionTreeSnapshot snapshot, Policy policy) {
+<span class="fc" id="L117">		List&lt;String&gt; entries= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		if (policy.compareNesting()) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">			for (Node root : snapshot.roots()) {</span>
+<span class="fc" id="L120">				entries.add(canonicalNode(root, policy));</span>
+<span class="fc" id="L121">			}</span>
+		} else {
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			for (Node root : snapshot.roots()) {</span>
+<span class="fc" id="L124">				appendLeaves(root, policy, entries);</span>
+<span class="fc" id="L125">			}</span>
+		}
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (!policy.compareOrder()) {</span>
+<span class="fc" id="L128">			entries.sort(Comparator.naturalOrder());</span>
+		}
+<span class="fc" id="L130">		return List.copyOf(entries);</span>
+	}
+
+	private static String canonicalNode(Node node, Policy policy) {
+<span class="fc" id="L134">		List&lt;String&gt; children= node.children().stream()</span>
+<span class="fc" id="L135">				.map(child -&gt; canonicalNode(child, policy))</span>
+<span class="fc" id="L136">				.collect(java.util.stream.Collectors.toCollection(ArrayList::new));</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (!policy.compareOrder()) {</span>
+<span class="nc" id="L138">			children.sort(Comparator.naturalOrder());</span>
+		}
+<span class="fc" id="L140">		StringBuilder result= new StringBuilder();</span>
+<span class="fc" id="L141">		result.append(node.kind()).append('{');</span>
+<span class="fc bfc" id="L142" title="All 4 branches covered.">		if (node.kind() != NodeKind.CONTAINER || policy.compareContainerIdentity()) {</span>
+<span class="fc" id="L143">			appendValue(result, node.identity());</span>
+		}
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (policy.compareDisplayNames()) {</span>
+<span class="nc" id="L146">			appendValue(result, node.displayName());</span>
+		}
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (policy.compareResults()) {</span>
+<span class="fc" id="L149">			appendValue(result, node.result());</span>
+		}
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		if (policy.compareAttributes()) {</span>
+<span class="fc" id="L152">			appendAttributes(result, node.attributes());</span>
+		}
+<span class="fc" id="L154">		result.append('}').append('[');</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		for (String child : children) {</span>
+<span class="fc" id="L156">			appendValue(result, child);</span>
+<span class="fc" id="L157">		}</span>
+<span class="fc" id="L158">		return result.append(']').toString();</span>
+	}
+
+	private static void appendLeaves(Node node, Policy policy, List&lt;String&gt; entries) {
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">		if (node.kind() == NodeKind.TEST || node.children().isEmpty()) {</span>
+<span class="fc" id="L163">			entries.add(canonicalLeaf(node, policy));</span>
+<span class="fc" id="L164">			return;</span>
+		}
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		for (Node child : node.children()) {</span>
+<span class="fc" id="L167">			appendLeaves(child, policy, entries);</span>
+<span class="fc" id="L168">		}</span>
+<span class="fc" id="L169">	}</span>
+
+	private static String canonicalLeaf(Node node, Policy policy) {
+<span class="fc" id="L172">		StringBuilder result= new StringBuilder(node.kind().name()).append('{');</span>
+<span class="fc" id="L173">		appendValue(result, node.identity());</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (policy.compareDisplayNames()) {</span>
+<span class="nc" id="L175">			appendValue(result, node.displayName());</span>
+		}
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		if (policy.compareResults()) {</span>
+<span class="fc" id="L178">			appendValue(result, node.result());</span>
+		}
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (policy.compareAttributes()) {</span>
+<span class="fc" id="L181">			appendAttributes(result, node.attributes());</span>
+		}
+<span class="fc" id="L183">		return result.append('}').toString();</span>
+	}
+
+	private static void appendAttributes(StringBuilder target, Map&lt;String, String&gt; attributes) {
+<span class="fc" id="L187">		Map&lt;String, String&gt; sorted= new TreeMap&lt;&gt;(attributes);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : sorted.entrySet()) {</span>
+<span class="fc" id="L189">			appendValue(target, entry.getKey());</span>
+<span class="fc" id="L190">			appendValue(target, entry.getValue());</span>
+<span class="fc" id="L191">		}</span>
+<span class="fc" id="L192">	}</span>
+
+	private static void appendValue(StringBuilder target, String value) {
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		String text= value == null ? &quot;&quot; : value; //$NON-NLS-1$</span>
+<span class="fc" id="L196">		target.append(text.length()).append(':').append(text).append(';');</span>
+<span class="fc" id="L197">	}</span>
+
+	private static String firstDifference(List&lt;String&gt; before, List&lt;String&gt; after) {
+<span class="fc" id="L200">		int common= Math.min(before.size(), after.size());</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">		for (int index= 0; index &lt; common; index++) {</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">			if (!before.get(index).equals(after.get(index))) {</span>
+<span class="fc" id="L203">				return &quot;Execution tree differs at canonical entry &quot; + index //$NON-NLS-1$</span>
+<span class="fc" id="L204">						+ &quot;: before=&quot; + before.get(index) + &quot;, after=&quot; + after.get(index); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+		}
+<span class="nc" id="L207">		return &quot;Execution tree occurrence count differs: before=&quot; + before.size() //$NON-NLS-1$</span>
+<span class="nc" id="L208">				+ &quot;, after=&quot; + after.size(); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

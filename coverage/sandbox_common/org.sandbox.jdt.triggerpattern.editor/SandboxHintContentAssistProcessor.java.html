@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintContentAssistProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintContentAssistProcessor.java</span></div><h1>SandboxHintContentAssistProcessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintContentAssistProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintContentAssistProcessor.java</span></div><h1>SandboxHintContentAssistProcessor.java</h1><pre class="source lang-java linenums"><span class="pc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -7,14 +7,15 @@
  * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -24,164 +25,206 @@ import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
+
+import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
+import org.sandbox.jdt.triggerpattern.internal.HintLanguageVocabulary;
+import org.sandbox.jdt.triggerpattern.internal.HintPredicatePreprocessor;
 
-/**
- * Content assist processor for {@code .sandbox-hint} files.
- *
- * &lt;p&gt;Provides completion proposals for guard function names after the
- * {@code ::} guard separator. Proposals are sourced from the
- * {@link GuardRegistry}.&lt;/p&gt;
- *
- * @since 1.3.6
- */
-<span class="nc" id="L38">public class SandboxHintContentAssistProcessor implements IContentAssistProcessor {</span>
+/** Content assist for directives, guards, predicates, actions and explicit kinds. */
+<span class="fc" id="L36">public class SandboxHintContentAssistProcessor implements IContentAssistProcessor {</span>
 
-	/**
-	 * Guard function entries with name and description.
-	 */
-<span class="nc" id="L43">	private static final String[][] GUARD_PROPOSALS = {</span>
-<span class="nc" id="L44">		{ &quot;instanceof&quot;, &quot;$x instanceof Type – type check&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L45">		{ &quot;matchesAny&quot;, &quot;matchesAny($x, \&quot;lit1\&quot;, \&quot;lit2\&quot;) – value is one of the given literals&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L46">		{ &quot;matchesNone&quot;, &quot;matchesNone($x, \&quot;lit1\&quot;, ...) – value is none of the given literals&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L47">		{ &quot;referencedIn&quot;, &quot;referencedIn($x, $y) – variable $x is referenced in expression $y&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L48">		{ &quot;hasNoSideEffect&quot;, &quot;hasNoSideEffect($x) – expression has no side effects&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L49">		{ &quot;sourceVersionGE&quot;, &quot;sourceVersionGE(n) – source version &gt;= n&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L50">		{ &quot;sourceVersionLE&quot;, &quot;sourceVersionLE(n) – source version &lt;= n&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L51">		{ &quot;sourceVersionBetween&quot;, &quot;sourceVersionBetween(min, max) – source version in range&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L52">		{ &quot;elementKindMatches&quot;, &quot;elementKindMatches($x, KIND) – element is of a specific kind&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L53">		{ &quot;isStatic&quot;, &quot;isStatic($x) – element has static modifier&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L54">		{ &quot;isFinal&quot;, &quot;isFinal($x) – element has final modifier&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L55">		{ &quot;hasAnnotation&quot;, &quot;hasAnnotation($x, \&quot;fully.qualified.Annotation\&quot;)&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L56">		{ &quot;isDeprecated&quot;, &quot;isDeprecated($x) – element is @Deprecated&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L57">		{ &quot;otherwise&quot;, &quot;otherwise – catch-all guard (always true)&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L58">		{ &quot;parent&quot;, &quot;parent($x, Type) – parent node is of the given type&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L59">		{ &quot;contains&quot;, &quot;contains($x, \&quot;text\&quot;) – enclosing method contains the text&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L60">		{ &quot;notContains&quot;, &quot;notContains($x, \&quot;text\&quot;) – enclosing method does not contain the text&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L61">	};</span>
+	/** Pure proposal description used by UI code and PDE unit tests. */
+	static record CompletionEntry(String name, String replacement,
+			int cursorPosition, String description) {
+	}
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
-<span class="nc" id="L65">		IDocument document = viewer.getDocument();</span>
-<span class="nc" id="L66">		String prefix = extractPrefix(document, offset);</span>
-
-		// Check if we are after a :: guard separator
-<span class="nc" id="L69">		boolean afterGuard = isAfterGuardSeparator(document, offset - prefix.length());</span>
-
-<span class="nc bnc" id="L71" title="All 4 branches missed.">		if (!afterGuard &amp;&amp; prefix.isEmpty()) {</span>
-<span class="nc" id="L72">			return new ICompletionProposal[0];</span>
+<span class="nc" id="L45">		IDocument document= viewer.getDocument();</span>
+<span class="nc" id="L46">		String prefix= extractPrefix(document, offset);</span>
+<span class="nc" id="L47">		int replacementOffset= offset - prefix.length();</span>
+<span class="nc" id="L48">		String source= document.get();</span>
+<span class="nc" id="L49">		boolean predicateGuardContext= isPredicateGuardContext(source, replacementOffset);</span>
+<span class="nc bnc" id="L50" title="All 4 branches missed.">		boolean directiveContext= !predicateGuardContext &amp;&amp; isDirectiveContext(source, replacementOffset);</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">		boolean patternKindContext= !directiveContext &amp;&amp; !predicateGuardContext</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">				&amp;&amp; isPatternKindContext(source, replacementOffset);</span>
+<span class="nc bnc" id="L53" title="All 6 branches missed.">		boolean actionContext= !directiveContext &amp;&amp; !predicateGuardContext &amp;&amp; !patternKindContext</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">				&amp;&amp; isStructuredActionContext(source, replacementOffset);</span>
+<span class="nc bnc" id="L55" title="All 8 branches missed.">		if (!directiveContext &amp;&amp; !predicateGuardContext &amp;&amp; !patternKindContext &amp;&amp; !actionContext</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">				&amp;&amp; !isGuardContext(source, replacementOffset)) {</span>
+<span class="nc" id="L57">			return new ICompletionProposal[0];</span>
 		}
 
-<span class="nc" id="L75">		List&lt;ICompletionProposal&gt; proposals = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L76">		String lowerPrefix = prefix.toLowerCase();</span>
-
-<span class="nc bnc" id="L78" title="All 2 branches missed.">		for (String[] entry : GUARD_PROPOSALS) {</span>
-<span class="nc" id="L79">			String name = entry[0];</span>
-<span class="nc" id="L80">			String description = entry[1];</span>
-<span class="nc bnc" id="L81" title="All 2 branches missed.">			if (name.toLowerCase().startsWith(lowerPrefix)) {</span>
-<span class="nc" id="L82">				String replacement = name;</span>
-<span class="nc" id="L83">				int replacementOffset = offset - prefix.length();</span>
-<span class="nc" id="L84">				int replacementLength = prefix.length();</span>
-<span class="nc" id="L85">				int cursorPosition = replacement.length();</span>
-<span class="nc" id="L86">				proposals.add(new CompletionProposal(</span>
-<span class="nc" id="L87">						replacement, replacementOffset, replacementLength,</span>
-<span class="nc" id="L88">						cursorPosition, null, name + &quot; – &quot; + description, //$NON-NLS-1$</span>
-<span class="nc" id="L89">						null, description));</span>
+<span class="nc" id="L60">		String lowerPrefix= prefix.toLowerCase(Locale.ROOT);</span>
+<span class="nc" id="L61">		List&lt;ICompletionProposal&gt; proposals= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		for (CompletionEntry entry : completionEntries(source, directiveContext, actionContext,</span>
+<span class="nc" id="L63">				patternKindContext)) {</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">			if (!entry.name().toLowerCase(Locale.ROOT).startsWith(lowerPrefix)) {</span>
+<span class="nc" id="L65">				continue;</span>
 			}
+<span class="nc" id="L67">			proposals.add(new CompletionProposal(entry.replacement(), replacementOffset,</span>
+<span class="nc" id="L68">					prefix.length(), entry.cursorPosition(), null, entry.name(), null,</span>
+<span class="nc" id="L69">					entry.description()));</span>
+		}
+<span class="nc" id="L71">		return proposals.toArray(ICompletionProposal[]::new);</span>
+	}
+
+	static List&lt;CompletionEntry&gt; completionEntries(String source, boolean directiveContext) {
+<span class="fc" id="L75">		return completionEntries(source, directiveContext, false, false);</span>
+	}
+
+	static List&lt;CompletionEntry&gt; completionEntries(String source, boolean directiveContext,
+			boolean actionContext) {
+<span class="fc" id="L80">		return completionEntries(source, directiveContext, actionContext, false);</span>
+	}
+
+	static List&lt;CompletionEntry&gt; completionEntries(String source, boolean directiveContext,
+			boolean actionContext, boolean patternKindContext) {
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		if (directiveContext) {</span>
+<span class="fc" id="L86">			return HintLanguageVocabulary.directives().stream().map(directive -&gt; {</span>
+<span class="fc" id="L87">				String syntax= directive.syntax();</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">				String replacement= syntax.startsWith(&quot;&lt;!&quot;) &amp;&amp; syntax.endsWith(&quot;&gt;&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc" id="L89">						? syntax.substring(2, syntax.length() - 1) : syntax;</span>
+<span class="fc" id="L90">				return new CompletionEntry(directive.name(), replacement, replacement.length(),</span>
+<span class="fc" id="L91">						directive.description() + &quot; — &quot; + directive.syntax()); //$NON-NLS-1$</span>
+<span class="fc" id="L92">			}).toList();</span>
+		}
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (patternKindContext) {</span>
+<span class="fc" id="L95">			return java.util.Arrays.stream(PatternKind.values())</span>
+<span class="fc" id="L96">					.map(kind -&gt; new CompletionEntry(kind.name(), kind.name(), kind.name().length(),</span>
+<span class="fc" id="L97">							&quot;Explicit source pattern kind &quot; + kind.name())) //$NON-NLS-1$</span>
+<span class="fc" id="L98">					.toList();</span>
+		}
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (actionContext) {</span>
+<span class="fc" id="L101">			return HintLanguageVocabulary.actions().stream().map(action -&gt; {</span>
+<span class="fc" id="L102">				String replacement= action.replacement();</span>
+<span class="fc" id="L103">				int cursor= replacement.indexOf('=');</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">				cursor= cursor &lt; 0 ? replacement.length() : cursor + 1;</span>
+<span class="fc" id="L105">				return new CompletionEntry(action.name(), replacement, cursor,</span>
+<span class="fc" id="L106">						action.description() + &quot; — &quot; + action.syntax()); //$NON-NLS-1$</span>
+<span class="fc" id="L107">			}).toList();</span>
 		}
 
-		// Also propose guard functions from the registry
-<span class="nc" id="L94">		GuardRegistry registry = GuardRegistry.getInstance();</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">		for (String guardName : registry.getRegisteredNames()) {</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">			if (guardName.toLowerCase().startsWith(lowerPrefix)) {</span>
-<span class="nc" id="L97">				boolean alreadyProposed = false;</span>
-<span class="nc bnc" id="L98" title="All 2 branches missed.">				for (String[] entry : GUARD_PROPOSALS) {</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">					if (entry[0].equals(guardName)) {</span>
-<span class="nc" id="L100">						alreadyProposed = true;</span>
-<span class="nc" id="L101">						break;</span>
-					}
-				}
-<span class="nc bnc" id="L104" title="All 2 branches missed.">				if (!alreadyProposed) {</span>
-<span class="nc" id="L105">					String replacement = guardName;</span>
-<span class="nc" id="L106">					int replacementOffset = offset - prefix.length();</span>
-<span class="nc" id="L107">					int replacementLength = prefix.length();</span>
-<span class="nc" id="L108">					int cursorPosition = replacement.length();</span>
-<span class="nc" id="L109">					proposals.add(new CompletionProposal(</span>
-<span class="nc" id="L110">							replacement, replacementOffset, replacementLength,</span>
-<span class="nc" id="L111">							cursorPosition, null, guardName,</span>
-<span class="nc" id="L112">							null, &quot;Custom guard function&quot;)); //$NON-NLS-1$</span>
-				}
-			}
+<span class="fc" id="L110">		Map&lt;String, CompletionEntry&gt; entries= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		for (String name : new TreeSet&lt;&gt;(GuardRegistry.getInstance().getRegisteredNames())) {</span>
+<span class="fc" id="L112">			entries.put(name, new CompletionEntry(name, name, name.length(),</span>
+<span class="fc" id="L113">					HintLanguageVocabulary.guardDescription(name)));</span>
 		}
-
-<span class="nc" id="L117">		return proposals.toArray(new ICompletionProposal[0]);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		for (HintPredicateDefinition predicate : HintPredicatePreprocessor.discover(source)) {</span>
+<span class="fc" id="L116">			String description= &quot;Local predicate &quot; + predicate.signature() //$NON-NLS-1$</span>
+<span class="fc" id="L117">					+ &quot; declared on line &quot; + predicate.lineNumber(); //$NON-NLS-1$</span>
+<span class="fc" id="L118">			entries.put(predicate.name(), new CompletionEntry(predicate.name(), predicate.name(),</span>
+<span class="fc" id="L119">					predicate.name().length(), description));</span>
+		}
+<span class="fc" id="L121">		return List.copyOf(entries.values());</span>
 	}
 
 	@Override
 	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
-<span class="nc" id="L122">		return new IContextInformation[0];</span>
+<span class="nc" id="L126">		return new IContextInformation[0];</span>
 	}
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-<span class="nc" id="L127">		return new char[] { ':' };</span>
+<span class="nc" id="L131">		return new char[] { ':', '&lt;', '!' };</span>
 	}
 
 	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
-<span class="nc" id="L132">		return null;</span>
+<span class="nc" id="L136">		return null;</span>
 	}
 
 	@Override
 	public String getErrorMessage() {
-<span class="nc" id="L137">		return null;</span>
+<span class="nc" id="L141">		return null;</span>
 	}
 
 	@Override
 	public IContextInformationValidator getContextInformationValidator() {
-<span class="nc" id="L142">		return null;</span>
+<span class="nc" id="L146">		return null;</span>
 	}
 
-	/**
-	 * Extracts the word prefix before the cursor position.
-	 */
-	private String extractPrefix(IDocument document, int offset) {
+	private static String extractPrefix(IDocument document, int offset) {
 		try {
-<span class="nc" id="L150">			int start = offset;</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">			while (start &gt; 0) {</span>
-<span class="nc" id="L152">				char c = document.getChar(start - 1);</span>
-<span class="nc bnc" id="L153" title="All 4 branches missed.">				if (!Character.isLetterOrDigit(c) &amp;&amp; c != '_') {</span>
-<span class="nc" id="L154">					break;</span>
+<span class="nc" id="L151">			int start= offset;</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">			while (start &gt; 0) {</span>
+<span class="nc" id="L153">				char character= document.getChar(start - 1);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">				if (!Character.isJavaIdentifierPart(character)) {</span>
+<span class="nc" id="L155">					break;</span>
 				}
-<span class="nc" id="L156">				start--;</span>
+<span class="nc" id="L157">				start--;</span>
 			}
-<span class="nc" id="L158">			return document.get(start, offset - start);</span>
-<span class="nc" id="L159">		} catch (BadLocationException e) {</span>
-<span class="nc" id="L160">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L159">			return document.get(start, offset - start);</span>
+<span class="nc" id="L160">		} catch (BadLocationException exception) {</span>
+<span class="nc" id="L161">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
 	}
 
-	/**
-	 * Checks if the position is after a {@code ::} guard separator
-	 * (possibly with whitespace in between).
-	 */
-	private boolean isAfterGuardSeparator(IDocument document, int offset) {
-		try {
-<span class="nc" id="L170">			int pos = offset - 1;</span>
-			// Skip whitespace
-<span class="nc bnc" id="L172" title="All 4 branches missed.">			while (pos &gt;= 0 &amp;&amp; Character.isWhitespace(document.getChar(pos))) {</span>
-<span class="nc" id="L173">				pos--;</span>
-			}
-			// Check for '::'
-<span class="nc bnc" id="L176" title="All 2 branches missed.">			if (pos &gt;= 1</span>
-<span class="nc bnc" id="L177" title="All 2 branches missed.">					&amp;&amp; document.getChar(pos) == ':'</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">					&amp;&amp; document.getChar(pos - 1) == ':') {</span>
-<span class="nc" id="L179">				return true;</span>
-			}
-<span class="nc" id="L181">		} catch (BadLocationException e) {</span>
-			// ignore
+	static boolean isDirectiveContext(String source, int offset) {
+<span class="fc" id="L166">		int safeOffset= Math.max(0, Math.min(offset, source.length()));</span>
+<span class="fc" id="L167">		int opening= source.lastIndexOf(&quot;&lt;!&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="fc" id="L168">		int closing= source.lastIndexOf('&gt;', safeOffset);</span>
+<span class="pc bpc" id="L169" title="2 of 4 branches missed.">		return opening &gt;= 0 &amp;&amp; opening &gt; closing;</span>
+	}
+
+	static boolean isPredicateGuardContext(String source, int offset) {
+<span class="fc" id="L173">		int safeOffset= Math.max(0, Math.min(offset, source.length()));</span>
+<span class="fc" id="L174">		int opening= source.lastIndexOf(&quot;&lt;!&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="fc" id="L175">		int closing= source.lastIndexOf('&gt;', safeOffset);</span>
+<span class="pc bpc" id="L176" title="2 of 4 branches missed.">		if (opening &lt; 0 || opening &lt;= closing) {</span>
+<span class="nc" id="L177">			return false;</span>
 		}
-<span class="nc" id="L184">		return false;</span>
+<span class="fc" id="L179">		int nameStart= opening + 2;</span>
+<span class="pc bpc" id="L180" title="2 of 4 branches missed.">		while (nameStart &lt; safeOffset &amp;&amp; Character.isWhitespace(source.charAt(nameStart))) {</span>
+<span class="nc" id="L181">			nameStart++;</span>
+		}
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		if (!source.startsWith(&quot;predicate&quot;, nameStart)) { //$NON-NLS-1$</span>
+<span class="fc" id="L184">			return false;</span>
+		}
+<span class="fc" id="L186">		int parametersEnd= source.indexOf(')', nameStart + &quot;predicate&quot;.length()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L187" title="2 of 4 branches missed.">		if (parametersEnd &lt; 0 || parametersEnd &gt;= safeOffset) {</span>
+<span class="nc" id="L188">			return false;</span>
+		}
+<span class="fc" id="L190">		int colon= source.indexOf(':', parametersEnd + 1);</span>
+<span class="pc bpc" id="L191" title="2 of 4 branches missed.">		return colon &gt;= 0 &amp;&amp; colon &lt; safeOffset;</span>
+	}
+
+	static boolean isPatternKindContext(String source, int offset) {
+<span class="fc" id="L195">		int safeOffset= Math.max(0, Math.min(offset, source.length()));</span>
+<span class="fc" id="L196">		int lineStart= source.lastIndexOf('\n', Math.max(0, safeOffset - 1)) + 1;</span>
+<span class="fc" id="L197">		String prefix= source.substring(lineStart, safeOffset).stripLeading();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		if (!prefix.startsWith(&quot;@kind:&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L199">			return false;</span>
+		}
+<span class="fc" id="L201">		String valuePrefix= prefix.substring(6).trim();</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		return valuePrefix.isEmpty() || valuePrefix.chars()</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">				.allMatch(character -&gt; Character.isJavaIdentifierPart(character));</span>
+	}
+
+	static boolean isStructuredActionContext(String source, int offset) {
+<span class="fc" id="L207">		int safeOffset= Math.max(0, Math.min(offset, source.length()));</span>
+<span class="fc" id="L208">		int actionStart= source.lastIndexOf(&quot;=&gt;!&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="fc" id="L209">		int terminator= source.lastIndexOf(&quot;;;&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">		if (actionStart &lt; 0 || actionStart &lt; terminator) {</span>
+<span class="nc" id="L211">			return false;</span>
+		}
+<span class="fc" id="L213">		int guard= source.lastIndexOf(&quot;::&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		if (guard &gt; actionStart) {</span>
+<span class="fc" id="L215">			return false;</span>
+		}
+<span class="fc" id="L217">		int sequenceStart= Math.max(actionStart + 3, source.lastIndexOf(';', safeOffset) + 1);</span>
+<span class="fc" id="L218">		String candidate= source.substring(sequenceStart, safeOffset).trim();</span>
+<span class="pc bpc" id="L219" title="1 of 4 branches missed.">		return candidate.isEmpty() || candidate.chars().allMatch(Character::isJavaIdentifierPart);</span>
+	}
+
+	private static boolean isGuardContext(String source, int offset) {
+<span class="nc" id="L223">		int safeOffset= Math.max(0, Math.min(offset, source.length()));</span>
+<span class="nc" id="L224">		int guard= source.lastIndexOf(&quot;::&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="nc" id="L225">		int rewrite= source.lastIndexOf(&quot;=&gt;&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="nc" id="L226">		int terminator= source.lastIndexOf(&quot;;;&quot;, safeOffset); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L227" title="All 4 branches missed.">		return guard &gt;= 0 &amp;&amp; guard &gt; Math.max(rewrite, terminator);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BuiltInStructuredRewriteActions.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup.actions</a> &gt; <span class="el_source">BuiltInStructuredRewriteActions.java</span></div><h1>BuiltInStructuredRewriteActions.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup.actions;
+
+import java.util.List;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.ChildListPropertyDescriptor;
+import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.RecordDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.sandbox.jdt.triggerpattern.api.RewriteActionValue;
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
+
+/** Canonical built-in runtime handlers for the standard action catalog. */
+final class BuiltInStructuredRewriteActions {
+
+	private BuiltInStructuredRewriteActions() {
+	}
+
+	static void registerAll(StructuredRewriteActionRegistry registry) {
+<span class="fc" id="L50">		registry.register(&quot;addAnnotation&quot;, BuiltInStructuredRewriteActions::addAnnotation); //$NON-NLS-1$</span>
+<span class="fc" id="L51">		registry.register(&quot;removeAnnotation&quot;, BuiltInStructuredRewriteActions::removeAnnotation); //$NON-NLS-1$</span>
+<span class="fc" id="L52">		registry.register(&quot;addModifier&quot;, BuiltInStructuredRewriteActions::addModifier); //$NON-NLS-1$</span>
+<span class="fc" id="L53">		registry.register(&quot;removeModifier&quot;, BuiltInStructuredRewriteActions::removeModifier); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		registry.register(&quot;removeSupertype&quot;, BuiltInStructuredRewriteActions::removeSupertype); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		registry.register(&quot;replaceSupertype&quot;, BuiltInStructuredRewriteActions::replaceSupertype); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		registry.register(&quot;removeDeclaration&quot;, BuiltInStructuredRewriteActions::removeDeclaration); //$NON-NLS-1$</span>
+<span class="fc" id="L57">		registry.register(&quot;qualifyInvocation&quot;, BuiltInStructuredRewriteActions::qualifyInvocation); //$NON-NLS-1$</span>
+<span class="fc" id="L58">	}</span>
+
+	private static void addAnnotation(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="fc" id="L62">		BodyDeclaration declaration= declarationTarget(context,</span>
+<span class="fc" id="L63">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		String annotationName= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		ensureAnnotationMissing(declaration, annotationName, context);</span>
+<span class="fc" id="L66">		AST ast= context.ast();</span>
+<span class="fc" id="L67">		String importedName= context.cuRewrite().getImportRewrite().addImport(annotationName);</span>
+		Annotation annotation;
+<span class="fc" id="L69">		RewriteActionValue value= action.arguments().get(&quot;value&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="fc" id="L71">			MarkerAnnotation marker= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L72">			marker.setTypeName(ast.newName(importedName));</span>
+<span class="fc" id="L73">			annotation= marker;</span>
+<span class="fc" id="L74">		} else {</span>
+<span class="nc" id="L75">			SingleMemberAnnotation single= ast.newSingleMemberAnnotation();</span>
+<span class="nc" id="L76">			single.setTypeName(ast.newName(importedName));</span>
+<span class="nc" id="L77">			single.setValue(context.createExpression(value));</span>
+<span class="nc" id="L78">			annotation= single;</span>
+		}
+<span class="fc" id="L80">		modifiers(context.cuRewrite().getASTRewrite(), declaration, context)</span>
+<span class="fc" id="L81">				.insertFirst(annotation, context.editGroup());</span>
+<span class="fc" id="L82">	}</span>
+
+	private static void removeAnnotation(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L86">		BodyDeclaration declaration= declarationTarget(context,</span>
+<span class="nc" id="L87">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L88">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L89">		String expectedSimple= simpleName(expected);</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="nc" id="L92">				String actual= annotationName(annotation);</span>
+<span class="nc bnc" id="L93" title="All 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
+<span class="nc" id="L94">					context.cuRewrite().getASTRewrite().remove(annotation, context.editGroup());</span>
+<span class="nc" id="L95">					context.cuRewrite().getImportRemover().registerRemovedNode(annotation);</span>
+<span class="nc" id="L96">					context.cuRewrite().getImportRemover()</span>
+<span class="nc" id="L97">							.applyRemoves(context.cuRewrite().getImportRewrite());</span>
+<span class="nc" id="L98">					return;</span>
+				}
+			}
+		}
+<span class="nc" id="L102">		throw context.failure(&quot;Structured action cannot find annotation &quot; + expected); //$NON-NLS-1$</span>
+	}
+
+	private static void addModifier(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L107">		BodyDeclaration declaration= declarationTarget(context,</span>
+<span class="nc" id="L108">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L109">		Modifier.ModifierKeyword keyword= modifierKeyword(</span>
+<span class="nc" id="L110">				context.resolveString(action.requiredArgument(&quot;modifier&quot;)), context); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">			if (modifier instanceof Modifier existing &amp;&amp; existing.getKeyword() == keyword) {</span>
+<span class="nc" id="L113">				throw context.failure(&quot;Structured action modifier already exists: &quot; + keyword); //$NON-NLS-1$</span>
+			}
+		}
+<span class="nc" id="L116">		modifiers(context.cuRewrite().getASTRewrite(), declaration, context)</span>
+<span class="nc" id="L117">				.insertLast(context.ast().newModifier(keyword), context.editGroup());</span>
+<span class="nc" id="L118">	}</span>
+
+	private static void removeModifier(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L122">		BodyDeclaration declaration= declarationTarget(context,</span>
+<span class="nc" id="L123">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L124">		Modifier.ModifierKeyword keyword= modifierKeyword(</span>
+<span class="nc" id="L125">				context.resolveString(action.requiredArgument(&quot;modifier&quot;)), context); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">			if (modifier instanceof Modifier existing &amp;&amp; existing.getKeyword() == keyword) {</span>
+<span class="nc" id="L128">				context.cuRewrite().getASTRewrite().remove(existing, context.editGroup());</span>
+<span class="nc" id="L129">				return;</span>
+			}
+		}
+<span class="nc" id="L132">		throw context.failure(&quot;Structured action cannot find modifier &quot; + keyword); //$NON-NLS-1$</span>
+	}
+
+	private static void removeSupertype(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L137">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L138">		String expected= context.resolveString(action.requiredArgument(&quot;type&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L139">		rewriteSupertype(target, expected, null, context);</span>
+<span class="nc" id="L140">	}</span>
+
+	private static void replaceSupertype(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L144">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L145">		String expected= context.resolveString(action.requiredArgument(&quot;type&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L146">		String replacement= context.resolveString(action.requiredArgument(&quot;replacement&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L147">		rewriteSupertype(target, expected, replacement, context);</span>
+<span class="nc" id="L148">	}</span>
+
+	private static void removeDeclaration(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L152">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L153">		ASTNode removable= exactDeclarationTarget(target, context);</span>
+<span class="nc" id="L154">		ASTRewrite rewrite= context.cuRewrite().getASTRewrite();</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (removable instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">				&amp;&amp; fragment.getParent() instanceof FieldDeclaration field</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">				&amp;&amp; field.fragments().size() &gt; 1) {</span>
+<span class="nc" id="L158">			rewrite.getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY)</span>
+<span class="nc" id="L159">					.remove(fragment, context.editGroup());</span>
+<span class="nc" id="L160">		} else {</span>
+<span class="nc" id="L161">			rewrite.remove(removable, context.editGroup());</span>
+<span class="nc" id="L162">			context.cuRewrite().getImportRemover().registerRemovedNode(removable);</span>
+<span class="nc" id="L163">			context.cuRewrite().getImportRemover()</span>
+<span class="nc" id="L164">					.applyRemoves(context.cuRewrite().getImportRewrite());</span>
+		}
+<span class="nc" id="L166">	}</span>
+
+	private static void qualifyInvocation(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L170">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L171">		MethodInvocation invocation= invocationTarget(target, context);</span>
+<span class="nc" id="L172">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">		if (binding == null || !Modifier.isStatic(binding.getModifiers())) {</span>
+<span class="nc" id="L174">			throw context.failure(&quot;qualifyInvocation requires one resolved static method&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L176" title="All 2 branches missed.">		if (invocation.getExpression() != null) {</span>
+<span class="nc" id="L177">			throw context.failure(&quot;qualifyInvocation target is already qualified&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L179">		String owner= context.resolveString(action.requiredArgument(&quot;owner&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L180">		String imported= context.cuRewrite().getImportRewrite().addImport(owner);</span>
+<span class="nc" id="L181">		context.cuRewrite().getASTRewrite().set(invocation, MethodInvocation.EXPRESSION_PROPERTY,</span>
+<span class="nc" id="L182">				context.ast().newName(imported), context.editGroup());</span>
+<span class="nc" id="L183">	}</span>
+
+	private static BodyDeclaration declarationTarget(StructuredRewriteActionContext context,
+			RewriteActionValue value) throws CoreException {
+<span class="fc" id="L187">		ASTNode current= context.resolveAuthorizedNode(value);</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">			if (current instanceof BodyDeclaration declaration) {</span>
+<span class="pc bpc" id="L190" title="3 of 4 branches missed.">				if (declaration instanceof FieldDeclaration field &amp;&amp; field.fragments().size() != 1) {</span>
+<span class="nc" id="L191">					throw context.failure(</span>
+<span class="nc" id="L192">							&quot;Declaration-wide action is ambiguous for a multi-fragment field&quot;); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L194">				return declaration;</span>
+			}
+<span class="fc" id="L196">			current= current.getParent();</span>
+		}
+<span class="nc" id="L198">		throw context.failure(&quot;Structured action target is not a Java declaration&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static ASTNode exactDeclarationTarget(ASTNode target,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L203">		ASTNode current= target;</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">		while (current instanceof SimpleName) {</span>
+<span class="nc" id="L205">			current= current.getParent();</span>
+		}
+<span class="nc bnc" id="L207" title="All 4 branches missed.">		if (current instanceof VariableDeclarationFragment || current instanceof BodyDeclaration) {</span>
+<span class="nc" id="L208">			return current;</span>
+		}
+<span class="nc bnc" id="L210" title="All 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof BodyDeclaration)) {</span>
+<span class="nc" id="L211">			current= current.getParent();</span>
+		}
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		if (current == null) {</span>
+<span class="nc" id="L214">			throw context.failure(&quot;removeDeclaration target is not a removable declaration&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L216">		return current;</span>
+	}
+
+	private static MethodInvocation invocationTarget(ASTNode target,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc bnc" id="L221" title="All 2 branches missed.">		if (target instanceof MethodInvocation invocation) {</span>
+<span class="nc" id="L222">			return invocation;</span>
+		}
+<span class="nc bnc" id="L224" title="All 4 branches missed.">		if (target instanceof SimpleName name &amp;&amp; name.getParent() instanceof MethodInvocation invocation</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">				&amp;&amp; invocation.getName() == name) {</span>
+<span class="nc" id="L226">			return invocation;</span>
+		}
+<span class="nc" id="L228">		throw context.failure(&quot;Structured action target is not an exact method invocation&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static void rewriteSupertype(ASTNode target, String expected, String replacement,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L233">		ASTNode current= target;</span>
+<span class="nc bnc" id="L234" title="All 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)</span>
+<span class="nc bnc" id="L235" title="All 4 branches missed.">				&amp;&amp; !(current instanceof EnumDeclaration) &amp;&amp; !(current instanceof RecordDeclaration)) {</span>
+<span class="nc" id="L236">			current= current.getParent();</span>
+		}
+<span class="nc bnc" id="L238" title="All 2 branches missed.">		if (current instanceof TypeDeclaration type) {</span>
+<span class="nc" id="L239">			Type superclass= type.getSuperclassType();</span>
+<span class="nc bnc" id="L240" title="All 4 branches missed.">			if (superclass != null &amp;&amp; matchesType(superclass, expected)) {</span>
+<span class="nc" id="L241">				rewriteType(superclass, replacement, context);</span>
+<span class="nc" id="L242">				return;</span>
+			}
+<span class="nc bnc" id="L244" title="All 2 branches missed.">			if (rewriteInterface(type.superInterfaceTypes(), expected, replacement, context)) {</span>
+<span class="nc" id="L245">				return;</span>
+			}
+<span class="nc bnc" id="L247" title="All 2 branches missed.">		} else if (current instanceof EnumDeclaration type) {</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">			if (rewriteInterface(type.superInterfaceTypes(), expected, replacement, context)) {</span>
+<span class="nc" id="L249">				return;</span>
+			}
+<span class="nc bnc" id="L251" title="All 2 branches missed.">		} else if (current instanceof RecordDeclaration type) {</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">			if (rewriteInterface(type.superInterfaceTypes(), expected, replacement, context)) {</span>
+<span class="nc" id="L253">				return;</span>
+			}
+		}
+<span class="nc" id="L256">		throw context.failure(&quot;Structured action cannot find supertype &quot; + expected); //$NON-NLS-1$</span>
+	}
+
+	private static boolean rewriteInterface(List&lt;?&gt; interfaces, String expected, String replacement,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc bnc" id="L261" title="All 2 branches missed.">		for (Object candidate : interfaces) {</span>
+<span class="nc bnc" id="L262" title="All 4 branches missed.">			if (candidate instanceof Type type &amp;&amp; matchesType(type, expected)) {</span>
+<span class="nc" id="L263">				rewriteType(type, replacement, context);</span>
+<span class="nc" id="L264">				return true;</span>
+			}
+		}
+<span class="nc" id="L267">		return false;</span>
+	}
+
+	private static void rewriteType(Type existing, String replacement,
+			StructuredRewriteActionContext context) {
+<span class="nc bnc" id="L272" title="All 2 branches missed.">		if (replacement == null) {</span>
+<span class="nc" id="L273">			context.cuRewrite().getASTRewrite().remove(existing, context.editGroup());</span>
+<span class="nc" id="L274">		} else {</span>
+<span class="nc" id="L275">			String imported= context.cuRewrite().getImportRewrite().addImport(replacement);</span>
+<span class="nc" id="L276">			Type newType= context.ast().newSimpleType(context.ast().newName(imported));</span>
+<span class="nc" id="L277">			context.cuRewrite().getASTRewrite().replace(existing, newType, context.editGroup());</span>
+		}
+<span class="nc" id="L279">		context.cuRewrite().getImportRemover().registerRemovedNode(existing);</span>
+<span class="nc" id="L280">		context.cuRewrite().getImportRemover().applyRemoves(context.cuRewrite().getImportRewrite());</span>
+<span class="nc" id="L281">	}</span>
+
+	private static boolean matchesType(Type type, String expected) {
+<span class="nc" id="L284">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L286">			return false;</span>
+		}
+<span class="nc" id="L288">		ITypeBinding erasure= binding.getErasure();</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">		ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
+<span class="nc bnc" id="L290" title="All 4 branches missed.">		return declaration != null &amp;&amp; (expected.equals(declaration.getQualifiedName())</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">				|| expected.equals(declaration.getName()));</span>
+	}
+
+	private static ListRewrite modifiers(ASTRewrite rewrite, BodyDeclaration declaration,
+			StructuredRewriteActionContext context) throws CoreException {
+		ChildListPropertyDescriptor property;
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">		if (declaration instanceof TypeDeclaration) {</span>
+<span class="nc" id="L298">			property= TypeDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">		} else if (declaration instanceof EnumDeclaration) {</span>
+<span class="nc" id="L300">			property= EnumDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">		} else if (declaration instanceof AnnotationTypeDeclaration) {</span>
+<span class="nc" id="L302">			property= AnnotationTypeDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		} else if (declaration instanceof RecordDeclaration) {</span>
+<span class="nc" id="L304">			property= RecordDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">		} else if (declaration instanceof MethodDeclaration) {</span>
+<span class="fc" id="L306">			property= MethodDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="pc bnc" id="L307" title="All 2 branches missed.">		} else if (declaration instanceof FieldDeclaration) {</span>
+<span class="nc" id="L308">			property= FieldDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="nc" id="L309">		} else {</span>
+<span class="nc" id="L310">			throw context.failure(&quot;Unsupported declaration modifiers: &quot; + declaration.getClass().getName()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L312">		return rewrite.getListRewrite(declaration, property);</span>
+	}
+
+	private static Modifier.ModifierKeyword modifierKeyword(String value,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L317">		Modifier.ModifierKeyword keyword= Modifier.ModifierKeyword.toKeyword(value);</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">		if (keyword == null) {</span>
+<span class="nc" id="L319">			throw context.failure(&quot;Unknown Java modifier &quot; + value); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L321">		return keyword;</span>
+	}
+
+	private static void ensureAnnotationMissing(BodyDeclaration declaration, String expected,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="fc" id="L326">		String expectedSimple= simpleName(expected);</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L329">				String actual= annotationName(annotation);</span>
+<span class="pc bpc" id="L330" title="2 of 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
+<span class="nc" id="L331">					throw context.failure(&quot;Structured action annotation already exists: &quot; + expected); //$NON-NLS-1$</span>
+				}
+			}
+		}
+<span class="fc" id="L335">	}</span>
+
+	private static String annotationName(Annotation annotation) {
+<span class="fc" id="L338">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">		return binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
+<span class="fc" id="L340">				: binding.getQualifiedName();</span>
+	}
+
+	private static String simpleName(String qualifiedName) {
+<span class="fc" id="L344">		int separator= qualifiedName.lastIndexOf('.');</span>
+<span class="pc bpc" id="L345" title="1 of 2 branches missed.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

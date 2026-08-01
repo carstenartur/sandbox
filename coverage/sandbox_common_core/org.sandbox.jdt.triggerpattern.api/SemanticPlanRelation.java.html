@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SemanticPlanRelation.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">SemanticPlanRelation.java</span></div><h1>SemanticPlanRelation.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
+
+/**
+ * One ordered directed relation between two stable semantic-plan nodes.
+ *
+ * &lt;p&gt;Relations are stored in plan order and may occur more than once. This is
+ * intentional: suite construction and runtime trees can contain duplicate test
+ * occurrences, while relation attributes can record order, matrix coordinates
+ * or other contract-specific data without adding project concepts to the core
+ * model.&lt;/p&gt;
+ */
+public record SemanticPlanRelation(String kind, NodeKey source, NodeKey target,
+		Map&lt;String, SemanticPlanValue&gt; attributes) {
+
+	/** Creates a defensive immutable relation. */
+<span class="fc" id="L33">	public SemanticPlanRelation {</span>
+<span class="fc" id="L34">		kind= requireName(kind, &quot;Relation kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L35">		Objects.requireNonNull(source);</span>
+<span class="fc" id="L36">		Objects.requireNonNull(target);</span>
+<span class="fc" id="L37">		Map&lt;String, SemanticPlanValue&gt; copy= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">		if (attributes != null) {</span>
+<span class="fc" id="L39">			attributes.forEach((name, value) -&gt; copy.put(requireName(name, &quot;Relation attribute&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L40">					Objects.requireNonNull(value)));</span>
+		}
+<span class="fc" id="L42">		attributes= Map.copyOf(copy);</span>
+<span class="fc" id="L43">	}</span>
+
+	/** Creates a relation without attributes. */
+	public SemanticPlanRelation(String kind, NodeKey source, NodeKey target) {
+<span class="nc" id="L47">		this(kind, source, target, Map.of());</span>
+<span class="nc" id="L48">	}</span>
+
+	/** Returns one typed relation attribute. */
+	public Optional&lt;SemanticPlanValue&gt; attribute(String name) {
+<span class="fc" id="L52">		return Optional.ofNullable(attributes.get(name));</span>
+	}
+
+	/** Returns whether an attribute equals the supplied typed value. */
+	public boolean hasAttribute(String name, SemanticPlanValue expected) {
+<span class="pc bpc" id="L57" title="1 of 4 branches missed.">		return expected != null &amp;&amp; expected.equals(attributes.get(name));</span>
+	}
+
+	private static String requireName(String value, String label) {
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L62">			throw new IllegalArgumentException(label + &quot; must not be blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L64">		return value.trim();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

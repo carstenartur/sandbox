@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHintFunctionCallRule.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.editor</a> &gt; <span class="el_source">SandboxHintFunctionCallRule.java</span></div><h1>SandboxHintFunctionCallRule.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.editor;
+
+import org.eclipse.jface.text.rules.ICharacterScanner;
+import org.eclipse.jface.text.rules.IRule;
+import org.eclipse.jface.text.rules.IToken;
+import org.eclipse.jface.text.rules.Token;
+
+/** Highlights every Java-identifier-shaped function call without a keyword list. */
+final class SandboxHintFunctionCallRule implements IRule {
+
+	private final IToken token;
+
+<span class="fc" id="L23">	SandboxHintFunctionCallRule(IToken token) {</span>
+<span class="fc" id="L24">		this.token= token;</span>
+<span class="fc" id="L25">	}</span>
+
+	@Override
+	public IToken evaluate(ICharacterScanner scanner) {
+<span class="fc" id="L29">		int consumed= 0;</span>
+<span class="fc" id="L30">		int identifierLength= 0;</span>
+<span class="fc" id="L31">		int character= scanner.read();</span>
+<span class="fc" id="L32">		consumed++;</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">		if (character == ICharacterScanner.EOF</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">				|| !Character.isJavaIdentifierStart((char) character)) {</span>
+<span class="fc" id="L35">			unread(scanner, consumed);</span>
+<span class="fc" id="L36">			return Token.UNDEFINED;</span>
+		}
+<span class="fc" id="L38">		identifierLength= 1;</span>
+<span class="fc" id="L39">		while (true) {</span>
+<span class="fc" id="L40">			character= scanner.read();</span>
+<span class="fc" id="L41">			consumed++;</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">			if (character != ICharacterScanner.EOF</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">					&amp;&amp; Character.isJavaIdentifierPart((char) character)) {</span>
+<span class="fc" id="L44">				identifierLength++;</span>
+				continue;
+			}
+			break;
+		}
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">		while (character != ICharacterScanner.EOF &amp;&amp; Character.isWhitespace((char) character)) {</span>
+<span class="fc" id="L50">			character= scanner.read();</span>
+<span class="fc" id="L51">			consumed++;</span>
+		}
+<span class="fc bfc" id="L53" title="All 2 branches covered.">		if (character == '(') {</span>
+<span class="fc" id="L54">			unread(scanner, consumed - identifierLength);</span>
+<span class="fc" id="L55">			return token;</span>
+		}
+<span class="fc" id="L57">		unread(scanner, consumed);</span>
+<span class="fc" id="L58">		return Token.UNDEFINED;</span>
+	}
+
+	private static void unread(ICharacterScanner scanner, int count) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		for (int index= 0; index &lt; count; index++) {</span>
+<span class="fc" id="L63">			scanner.unread();</span>
+		}
+<span class="fc" id="L65">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StructuredRewriteAction.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">StructuredRewriteAction.java</span></div><h1>StructuredRewriteAction.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * One schema-validated structured rewrite action attached to a rewrite
+ * alternative.
+ *
+ * @param name stable registered action name
+ * @param arguments immutable named argument expressions
+ * @param lineNumber one-based source line used for diagnostics
+ */
+public record StructuredRewriteAction(String name, Map&lt;String, RewriteActionValue&gt; arguments,
+		int lineNumber) {
+
+<span class="fc" id="L28">	public StructuredRewriteAction {</span>
+<span class="fc" id="L29">		name= requireIdentifier(name, &quot;Action name&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L30">		Map&lt;String, RewriteActionValue&gt; copy= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">		if (arguments != null) {</span>
+<span class="fc" id="L32">			arguments.forEach((argumentName, value) -&gt; copy.put(</span>
+<span class="fc" id="L33">					requireIdentifier(argumentName, &quot;Action argument&quot;), Objects.requireNonNull(value))); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L35">		arguments= Map.copyOf(copy);</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">		if (lineNumber &lt; 1) {</span>
+<span class="nc" id="L37">			throw new IllegalArgumentException(&quot;Action line number must be positive&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L39">	}</span>
+
+	/** Returns one required argument or fails with an actionable diagnostic. */
+	public RewriteActionValue requiredArgument(String argumentName) {
+<span class="fc" id="L43">		RewriteActionValue value= arguments.get(argumentName);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L45">			throw new IllegalArgumentException(&quot;Action &quot; + name + &quot; requires argument &quot; + argumentName); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L47">		return value;</span>
+	}
+
+	private static String requireIdentifier(String value, String label) {
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L52">			throw new IllegalArgumentException(label + &quot; must not be blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L54">		String identifier= value.trim();</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(identifier.charAt(0))) {</span>
+<span class="nc" id="L56">			throw new IllegalArgumentException(label + &quot; is not an identifier: &quot; + identifier); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		for (int index= 1; index &lt; identifier.length(); index++) {</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(identifier.charAt(index))) {</span>
+<span class="nc" id="L60">				throw new IllegalArgumentException(label + &quot; is not an identifier: &quot; + identifier); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L63">		return identifier;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

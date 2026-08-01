@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintRuleKindPreprocessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">HintRuleKindPreprocessor.java</span></div><h1>HintRuleKindPreprocessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/** Removes explicit {@code @kind:} metadata before compatibility parsing. */
+final class HintRuleKindPreprocessor {
+
+	record Result(String parserSource, Map&lt;String, PatternKind&gt; kindsByRuleId) {
+<span class="fc" id="L23">		Result {</span>
+<span class="fc" id="L24">			kindsByRuleId= Map.copyOf(kindsByRuleId);</span>
+<span class="fc" id="L25">		}</span>
+	}
+
+	private HintRuleKindPreprocessor() {
+	}
+
+	static Result preprocess(String source) throws HintParseException {
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">		String normalized= source == null ? &quot;&quot; : source.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L33">		String[] lines= normalized.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="fc" id="L34">		StringBuilder output= new StringBuilder(normalized.length());</span>
+<span class="fc" id="L35">		Map&lt;String, PatternKind&gt; kinds= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L36">		String ruleId= null;</span>
+<span class="fc" id="L37">		PatternKind ruleKind= null;</span>
+<span class="fc" id="L38">		int kindLine= -1;</span>
+<span class="fc" id="L39">		boolean inBlockComment= false;</span>
+<span class="fc" id="L40">		boolean inEmbeddedJava= false;</span>
+
+<span class="fc bfc" id="L42" title="All 2 branches covered.">		for (int index= 0; index &lt; lines.length; index++) {</span>
+<span class="fc" id="L43">			String line= lines[index];</span>
+<span class="fc" id="L44">			String trimmed= line.stripLeading();</span>
+<span class="fc" id="L45">			boolean metadataVisible= true;</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">			if (inEmbeddedJava) {</span>
+<span class="nc" id="L47">				metadataVisible= false;</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L49">					inEmbeddedJava= false;</span>
+				}
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">			} else if (inBlockComment) {</span>
+<span class="nc" id="L52">				metadataVisible= false;</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L54">					inBlockComment= false;</span>
+				}
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">			} else if (trimmed.startsWith(&quot;&lt;?&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L57">				metadataVisible= false;</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">				inEmbeddedJava= !trimmed.contains(&quot;?&gt;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">			} else if (trimmed.startsWith(&quot;/*&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L60">				metadataVisible= false;</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">				inBlockComment= !trimmed.contains(&quot;*/&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			} else if (trimmed.startsWith(&quot;//&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L63">				metadataVisible= false;</span>
+			}
+
+<span class="fc" id="L66">			boolean stripLine= false;</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">			if (metadataVisible &amp;&amp; trimmed.startsWith(&quot;@id:&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L68">				String parsedId= trimmed.substring(4).trim();</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">				if (parsedId.isBlank()) {</span>
+<span class="nc" id="L70">					throw new HintParseException(&quot;Per-rule id must not be blank&quot;, index + 1); //$NON-NLS-1$</span>
+				}
+<span class="pc bpc" id="L72" title="3 of 4 branches missed.">				if (ruleId != null &amp;&amp; !ruleId.equals(parsedId)) {</span>
+<span class="nc" id="L73">					throw new HintParseException(&quot;Rule contains multiple @id values&quot;, index + 1); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L75">				ruleId= parsedId;</span>
+<span class="fc bfc" id="L76" title="All 4 branches covered.">			} else if (metadataVisible &amp;&amp; trimmed.startsWith(&quot;@kind:&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">				if (ruleKind != null) {</span>
+<span class="nc" id="L78">					throw new HintParseException(&quot;Rule contains multiple @kind values&quot;, index + 1); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L80">				String value= trimmed.substring(6).trim();</span>
+				try {
+<span class="fc" id="L82">					ruleKind= PatternKind.valueOf(value);</span>
+<span class="fc" id="L83">				} catch (IllegalArgumentException exception) {</span>
+<span class="fc" id="L84">					throw new HintParseException(&quot;Unknown pattern kind &quot; + value, index + 1); //$NON-NLS-1$</span>
+<span class="fc" id="L85">				}</span>
+<span class="fc" id="L86">				kindLine= index + 1;</span>
+<span class="fc" id="L87">				stripLine= true;</span>
+			}
+
+<span class="fc bfc" id="L90" title="All 4 branches covered.">			if (metadataVisible &amp;&amp; &quot;;;&quot;.equals(trimmed)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">				if (ruleKind != null) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">					if (ruleId == null) {</span>
+<span class="fc" id="L93">						throw new HintParseException(&quot;@kind requires an explicit @id in the same rule&quot;, //$NON-NLS-1$</span>
+								kindLine);
+					}
+<span class="fc" id="L96">					PatternKind previous= kinds.putIfAbsent(ruleId, ruleKind);</span>
+<span class="pc bpc" id="L97" title="3 of 4 branches missed.">					if (previous != null &amp;&amp; previous != ruleKind) {</span>
+<span class="nc" id="L98">						throw new HintParseException(&quot;Conflicting @kind values for rule &quot; + ruleId, kindLine); //$NON-NLS-1$</span>
+					}
+				}
+<span class="fc" id="L101">				ruleId= null;</span>
+<span class="fc" id="L102">				ruleKind= null;</span>
+<span class="fc" id="L103">				kindLine= -1;</span>
+			}
+
+<span class="fc bfc" id="L106" title="All 2 branches covered.">			if (!stripLine) {</span>
+<span class="fc" id="L107">				output.append(line);</span>
+			}
+<span class="fc bfc" id="L109" title="All 2 branches covered.">			if (index + 1 &lt; lines.length) {</span>
+<span class="fc" id="L110">				output.append('\n');</span>
+			}
+		}
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (ruleKind != null) {</span>
+<span class="nc" id="L114">			throw new HintParseException(&quot;Rule with @kind is missing ';;' terminator&quot;, kindLine); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L116">		return new Result(output.toString(), kinds);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

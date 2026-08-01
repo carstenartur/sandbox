@@ -27,6 +27,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -45,12 +46,12 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  *
  * @since 1.2.6
  */
-<span class="fc" id="L48">public class RuleInferenceEngine {</span>
+<span class="fc" id="L49">public class RuleInferenceEngine {</span>
 
-<span class="fc" id="L50">	private final AstDiffAnalyzer diffAnalyzer = new AstDiffAnalyzer();</span>
-<span class="fc" id="L51">	private final PlaceholderGeneralizer generalizer = new PlaceholderGeneralizer();</span>
-<span class="fc" id="L52">	private final ImportDiffAnalyzer importAnalyzer = new ImportDiffAnalyzer();</span>
-<span class="fc" id="L53">	private final InferredRuleValidator validator = new InferredRuleValidator();</span>
+<span class="fc" id="L51">	private final AstDiffAnalyzer diffAnalyzer = new AstDiffAnalyzer();</span>
+<span class="fc" id="L52">	private final PlaceholderGeneralizer generalizer = new PlaceholderGeneralizer();</span>
+<span class="fc" id="L53">	private final ImportDiffAnalyzer importAnalyzer = new ImportDiffAnalyzer();</span>
+<span class="fc" id="L54">	private final InferredRuleValidator validator = new InferredRuleValidator();</span>
 
 	/**
 	 * Infers a transformation rule by comparing two code snippets.
@@ -64,17 +65,16 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return an inferred rule if one could be derived, empty otherwise
 	 */
 	public Optional&lt;InferredRule&gt; inferRule(String codeBefore, String codeAfter, PatternKind kind) {
-<span class="fc" id="L67">		String wrapBefore = wrapForKind(codeBefore, kind);</span>
-<span class="fc" id="L68">		String wrapAfter = wrapForKind(codeAfter, kind);</span>
+<span class="fc" id="L68">		String wrapBefore = wrapForKind(codeBefore, kind);</span>
+<span class="fc" id="L69">		String wrapAfter = wrapForKind(codeAfter, kind);</span>
 
-<span class="fc" id="L70">		CompilationUnit cuBefore = parseCompilationUnit(wrapBefore);</span>
-<span class="fc" id="L71">		CompilationUnit cuAfter = parseCompilationUnit(wrapAfter);</span>
+<span class="fc" id="L71">		CompilationUnit cuBefore = parseCompilationUnit(wrapBefore);</span>
+<span class="fc" id="L72">		CompilationUnit cuAfter = parseCompilationUnit(wrapAfter);</span>
 
-<span class="pc bpc" id="L73" title="2 of 4 branches missed.">		if (cuBefore == null || cuAfter == null) {</span>
-<span class="nc" id="L74">			return Optional.empty();</span>
+<span class="pc bpc" id="L74" title="2 of 4 branches missed.">		if (cuBefore == null || cuAfter == null) {</span>
+<span class="nc" id="L75">			return Optional.empty();</span>
 		}
 
-		// Extract the relevant AST node for the kind
 <span class="fc" id="L78">		ASTNode beforeNode = extractNode(cuBefore, kind);</span>
 <span class="fc" id="L79">		ASTNode afterNode = extractNode(cuAfter, kind);</span>
 
@@ -83,20 +83,19 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		}
 
 <span class="fc" id="L85">		AstDiff diff = diffAnalyzer.computeDiff(beforeNode, afterNode);</span>
+<span class="fc" id="L86">		ImportDirective importDirective = importAnalyzer.analyzeImportChanges(cuBefore, cuAfter);</span>
 
-<span class="fc" id="L87">		ImportDirective importDirective = importAnalyzer.analyzeImportChanges(cuBefore, cuAfter);</span>
-
-<span class="fc" id="L89">		InferredRule rule = generalizer.generalize(diff, codeBefore, codeAfter, kind, importDirective);</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if (rule == null) {</span>
-<span class="nc" id="L91">			return Optional.empty();</span>
+<span class="fc" id="L88">		InferredRule rule = generalizer.generalize(diff, codeBefore, codeAfter, kind, importDirective);</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">		if (rule == null) {</span>
+<span class="nc" id="L90">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L94">		InferredRuleValidator.ValidationResult validation = validator.validate(rule);</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">		if (validation.status() != InferredRuleValidator.ValidationStatus.VALID) {</span>
-<span class="nc" id="L96">			return Optional.empty();</span>
+<span class="fc" id="L93">		InferredRuleValidator.ValidationResult validation = validator.validate(rule);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (validation.status() != InferredRuleValidator.ValidationStatus.VALID) {</span>
+<span class="fc" id="L95">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L99">		return Optional.of(rule);</span>
+<span class="fc" id="L98">		return Optional.of(rule);</span>
 	}
 
 	/**
@@ -106,7 +105,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return an inferred rule if one could be derived
 	 */
 	public Optional&lt;InferredRule&gt; inferRule(CodeChangePair change) {
-<span class="fc" id="L109">		return inferRule(change.beforeSnippet(), change.afterSnippet(), change.inferredKind());</span>
+<span class="fc" id="L108">		return inferRule(change.beforeSnippet(), change.afterSnippet(), change.inferredKind());</span>
 	}
 
 	/**
@@ -123,28 +122,28 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	public List&lt;InferredRule&gt; inferFromCommit(GitHistoryProvider git, Path repositoryPath,
 			String commitId) {
-<span class="nc" id="L126">		DiffHunkRefiner refiner = new DiffHunkRefiner();</span>
-<span class="nc" id="L127">		RuleGrouper grouper = new RuleGrouper();</span>
+<span class="nc" id="L125">		DiffHunkRefiner refiner = new DiffHunkRefiner();</span>
+<span class="nc" id="L126">		RuleGrouper grouper = new RuleGrouper();</span>
 
-<span class="nc" id="L129">		List&lt;FileDiff&gt; diffs = git.getDiffs(repositoryPath, commitId);</span>
-<span class="nc" id="L130">		List&lt;InferredRule&gt; allRules = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L128">		List&lt;FileDiff&gt; diffs = git.getDiffs(repositoryPath, commitId);</span>
+<span class="nc" id="L129">		List&lt;InferredRule&gt; allRules = new ArrayList&lt;&gt;();</span>
 
-<span class="nc bnc" id="L132" title="All 2 branches missed.">		for (FileDiff diff : diffs) {</span>
-<span class="nc" id="L133">			List&lt;CodeChangePair&gt; pairs = refiner.refineToStatements(diff);</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">			for (CodeChangePair pair : pairs) {</span>
-<span class="nc" id="L135">				inferRule(pair).ifPresent(allRules::add);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		for (FileDiff diff : diffs) {</span>
+<span class="nc" id="L132">			List&lt;CodeChangePair&gt; pairs = refiner.refineToStatements(diff);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">			for (CodeChangePair pair : pairs) {</span>
+<span class="nc" id="L134">				inferRule(pair).ifPresent(allRules::add);</span>
 			}
 		}
 
-<span class="nc bnc" id="L139" title="All 2 branches missed.">		if (allRules.size() &gt; 1) {</span>
-<span class="nc" id="L140">			List&lt;RuleGroup&gt; groups = grouper.groupSimilar(allRules);</span>
-<span class="nc" id="L141">			allRules = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">			for (RuleGroup group : groups) {</span>
-<span class="nc" id="L143">				allRules.add(group.generalizedRule());</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">		if (allRules.size() &gt; 1) {</span>
+<span class="nc" id="L139">			List&lt;RuleGroup&gt; groups = grouper.groupSimilar(allRules);</span>
+<span class="nc" id="L140">			allRules = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">			for (RuleGroup group : groups) {</span>
+<span class="nc" id="L142">				allRules.add(group.generalizedRule());</span>
 			}
 		}
 
-<span class="nc" id="L147">		return allRules;</span>
+<span class="nc" id="L146">		return allRules;</span>
 	}
 
 	/**
@@ -160,29 +159,29 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	public List&lt;InferredRule&gt; inferFromHistory(GitHistoryProvider git, Path repositoryPath,
 			int maxCommits) {
-<span class="nc" id="L163">		RuleGrouper grouper = new RuleGrouper();</span>
+<span class="nc" id="L162">		RuleGrouper grouper = new RuleGrouper();</span>
 
-<span class="nc" id="L165">		List&lt;CommitInfo&gt; commits = git.getHistory(repositoryPath, maxCommits);</span>
-<span class="nc" id="L166">		List&lt;InferredRule&gt; allRules = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L164">		List&lt;CommitInfo&gt; commits = git.getHistory(repositoryPath, maxCommits);</span>
+<span class="nc" id="L165">		List&lt;InferredRule&gt; allRules = new ArrayList&lt;&gt;();</span>
 
-<span class="nc bnc" id="L168" title="All 2 branches missed.">		for (CommitInfo commit : commits) {</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">		for (CommitInfo commit : commits) {</span>
 			try {
-<span class="nc" id="L170">				List&lt;InferredRule&gt; commitRules = inferFromCommit(git, repositoryPath, commit.id());</span>
-<span class="nc" id="L171">				allRules.addAll(commitRules);</span>
-<span class="nc" id="L172">			} catch (Exception e) {</span>
+<span class="nc" id="L169">				List&lt;InferredRule&gt; commitRules = inferFromCommit(git, repositoryPath, commit.id());</span>
+<span class="nc" id="L170">				allRules.addAll(commitRules);</span>
+<span class="nc" id="L171">			} catch (Exception e) {</span>
 				// Skip commits that fail to analyze
 			}
 		}
 
-<span class="nc bnc" id="L177" title="All 2 branches missed.">		if (allRules.size() &gt; 1) {</span>
-<span class="nc" id="L178">			List&lt;RuleGroup&gt; groups = grouper.groupSimilar(allRules);</span>
-<span class="nc" id="L179">			allRules = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L180" title="All 2 branches missed.">			for (RuleGroup group : groups) {</span>
-<span class="nc" id="L181">				allRules.add(group.generalizedRule());</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">		if (allRules.size() &gt; 1) {</span>
+<span class="nc" id="L177">			List&lt;RuleGroup&gt; groups = grouper.groupSimilar(allRules);</span>
+<span class="nc" id="L178">			allRules = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">			for (RuleGroup group : groups) {</span>
+<span class="nc" id="L180">				allRules.add(group.generalizedRule());</span>
 			}
 		}
 
-<span class="nc" id="L185">		return allRules;</span>
+<span class="nc" id="L184">		return allRules;</span>
 	}
 
 	/**
@@ -193,14 +192,14 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return the transformation rule
 	 */
 	public TransformationRule toTransformationRule(InferredRule rule) {
-<span class="fc" id="L196">		Pattern source = Pattern.of(rule.sourcePattern(), rule.kind());</span>
-<span class="fc" id="L197">		RewriteAlternative alternative = RewriteAlternative.otherwise(rule.replacementPattern());</span>
-<span class="fc" id="L198">		return new TransformationRule(</span>
-<span class="fc" id="L199">				null,</span>
-<span class="fc" id="L200">				&quot;Inferred: &quot; + rule.sourcePattern() + &quot; =&gt; &quot; + rule.replacementPattern(), //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L201">				source, null, List.of(alternative),</span>
-<span class="fc bfc" id="L202" title="All 2 branches covered.">				rule.importChanges() != null ? rule.importChanges() : new ImportDirective(),</span>
-<span class="fc" id="L203">				null);</span>
+<span class="fc" id="L195">		Pattern source = Pattern.of(rule.sourcePattern(), rule.kind());</span>
+<span class="fc" id="L196">		RewriteAlternative alternative = RewriteAlternative.otherwise(rule.replacementPattern());</span>
+<span class="fc" id="L197">		return new TransformationRule(</span>
+<span class="fc" id="L198">				null,</span>
+<span class="fc" id="L199">				&quot;Inferred: &quot; + rule.sourcePattern() + &quot; =&gt; &quot; + rule.replacementPattern(), //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L200">				source, null, List.of(alternative),</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">				rule.importChanges() != null ? rule.importChanges() : new ImportDirective(),</span>
+<span class="fc" id="L202">				null);</span>
 	}
 
 	/**
@@ -213,18 +212,18 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return the hint-file content
 	 */
 	public String toHintFileString(List&lt;InferredRule&gt; rules) {
-<span class="fc" id="L216">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L217">		sb.append(&quot;&lt;!id: inferred-rules&gt;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L218">		sb.append(&quot;&lt;!description: Rules inferred from code changes&gt;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L219">		sb.append(&quot;&lt;!severity: info&gt;\n&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L220">		sb.append(&quot;&lt;!tags: inferred, mining&gt;\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L215">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L216">		sb.append(&quot;&lt;!id: inferred-rules&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L217">		sb.append(&quot;&lt;!description: Rules inferred from code changes&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L218">		sb.append(&quot;&lt;!severity: info&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L219">		sb.append(&quot;&lt;!tags: inferred, mining&gt;\n\n&quot;); //$NON-NLS-1$</span>
 
-<span class="fc bfc" id="L222" title="All 2 branches covered.">		for (InferredRule rule : rules) {</span>
-<span class="fc" id="L223">			sb.append(rule.sourcePattern()).append('\n');</span>
-<span class="fc" id="L224">			sb.append(&quot;=&gt; &quot;).append(rule.replacementPattern()).append('\n'); //$NON-NLS-1$</span>
-<span class="fc" id="L225">			sb.append(&quot;;;\n\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">		for (InferredRule rule : rules) {</span>
+<span class="fc" id="L222">			sb.append(rule.sourcePattern()).append('\n');</span>
+<span class="fc" id="L223">			sb.append(&quot;=&gt; &quot;).append(rule.replacementPattern()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L224">			sb.append(&quot;;;\n\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L227">		return sb.toString();</span>
+<span class="fc" id="L226">		return sb.toString();</span>
 	}
 
 	/**
@@ -234,134 +233,142 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return the hint file
 	 */
 	public HintFile toHintFile(List&lt;InferredRule&gt; rules) {
-<span class="fc" id="L237">		HintFile hintFile = new HintFile();</span>
-<span class="fc" id="L238">		hintFile.setId(&quot;inferred-rules&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L239">		hintFile.setDescription(&quot;Rules inferred from code changes&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L240">		hintFile.setSeverity(&quot;info&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L241" title="All 2 branches covered.">		for (InferredRule rule : rules) {</span>
-<span class="fc" id="L242">			hintFile.addRule(toTransformationRule(rule));</span>
+<span class="fc" id="L236">		HintFile hintFile = new HintFile();</span>
+<span class="fc" id="L237">		hintFile.setId(&quot;inferred-rules&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L238">		hintFile.setDescription(&quot;Rules inferred from code changes&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L239">		hintFile.setSeverity(&quot;info&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		for (InferredRule rule : rules) {</span>
+<span class="fc" id="L241">			hintFile.addRule(toTransformationRule(rule));</span>
 		}
-<span class="fc" id="L244">		return hintFile;</span>
+<span class="fc" id="L243">		return hintFile;</span>
 	}
 
-	// ---- helpers ----
-
 	private static CompilationUnit parseCompilationUnit(String source) {
-<span class="fc" id="L250">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L251">		parser.setSource(source.toCharArray());</span>
-<span class="fc" id="L252">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L253">		Map&lt;String, String&gt; options = new HashMap&lt;&gt;(JavaCore.getOptions());</span>
-<span class="fc" id="L254">		options.put(JavaCore.COMPILER_SOURCE, &quot;21&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L255">		options.put(JavaCore.COMPILER_COMPLIANCE, &quot;21&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L256">		options.put(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, &quot;21&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L257">		parser.setCompilerOptions(options);</span>
-<span class="fc" id="L258">		ASTNode node = parser.createAST(null);</span>
-<span class="pc bpc" id="L259" title="1 of 2 branches missed.">		if (node instanceof CompilationUnit cu) {</span>
-<span class="fc" id="L260">			return cu;</span>
+<span class="fc" id="L247">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L248">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L249">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L250">		Map&lt;String, String&gt; options = new HashMap&lt;&gt;(JavaCore.getOptions());</span>
+<span class="fc" id="L251">		options.put(JavaCore.COMPILER_SOURCE, &quot;21&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L252">		options.put(JavaCore.COMPILER_COMPLIANCE, &quot;21&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L253">		options.put(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, &quot;21&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L254">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L255">		ASTNode node = parser.createAST(null);</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (node instanceof CompilationUnit cu) {</span>
+<span class="fc" id="L257">			return cu;</span>
 		}
-<span class="nc" id="L262">		return null;</span>
+<span class="nc" id="L259">		return null;</span>
 	}
 
 	private static String wrapForKind(String snippet, PatternKind kind) {
-<span class="pc bpc" id="L266" title="7 of 10 branches missed.">		return switch (kind) {</span>
-<span class="nc" id="L267">		case EXPRESSION -&gt; &quot;class _Infer { void _m() { Object _r = &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L268">		case STATEMENT, DECLARATION -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L269">		case METHOD_CALL -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L270">		case CONSTRUCTOR -&gt; &quot;class _Infer { void _m() { Object _r = &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L271">		case ANNOTATION -&gt; snippet + &quot; class _Infer {}&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L272">		case IMPORT -&gt; snippet + &quot; class _Infer {}&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L273">		case FIELD -&gt; &quot;class _Infer { &quot; + snippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L274">		case METHOD_DECLARATION -&gt; &quot;class _Infer { &quot; + snippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L275">		case BLOCK -&gt; &quot;class _Infer { void _m() &quot; + snippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L276">		case STATEMENT_SEQUENCE -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L263" title="7 of 11 branches missed.">		return switch (kind) {</span>
+<span class="nc" id="L264">		case EXPRESSION -&gt; &quot;class _Infer { void _m() { Object _r = &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L265">		case STATEMENT, DECLARATION -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L266">		case METHOD_CALL -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L267">		case CONSTRUCTOR -&gt; &quot;class _Infer { void _m() { Object _r = &quot; + snippet + &quot;; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L268">		case ANNOTATION -&gt; snippet + &quot; class _Infer {}&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L269">		case IMPORT -&gt; snippet + &quot; class _Infer {}&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L270">		case FIELD -&gt; &quot;class _Infer { &quot; + snippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L271">		case METHOD_DECLARATION -&gt; &quot;class _Infer { &quot; + snippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L272">		case BLOCK -&gt; &quot;class _Infer { void _m() &quot; + snippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L273">		case STATEMENT_SEQUENCE -&gt; &quot;class _Infer { void _m() { &quot; + snippet + &quot; } }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L274">		case TYPE_DECLARATION -&gt; snippet;</span>
 		};
 	}
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static ASTNode extractNode(CompilationUnit cu, PatternKind kind) {
-<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
-<span class="nc" id="L283">			return null;</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		if (cu.types().isEmpty()) {</span>
+<span class="nc" id="L281">			return null;</span>
 		}
-<span class="fc" id="L285">		org.eclipse.jdt.core.dom.TypeDeclaration type =</span>
-<span class="fc" id="L286">				(org.eclipse.jdt.core.dom.TypeDeclaration) cu.types().get(0);</span>
+<span class="fc" id="L283">		Object firstType = cu.types().get(0);</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">		if (!(firstType instanceof ASTNode topLevelType)) {</span>
+<span class="nc" id="L285">			return null;</span>
+		}
+<span class="fc bfc" id="L287" title="All 2 branches covered.">		if (kind == PatternKind.TYPE_DECLARATION) {</span>
+<span class="fc" id="L288">			return topLevelType;</span>
+		}
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">		if (!(topLevelType instanceof TypeDeclaration type)) {</span>
+<span class="nc" id="L291">			return null;</span>
+		}
 
-<span class="pc bpc" id="L288" title="5 of 8 branches missed.">		return switch (kind) {</span>
+<span class="pc bpc" id="L294" title="6 of 9 branches missed.">		return switch (kind) {</span>
 		case EXPRESSION, CONSTRUCTOR -&gt; {
-<span class="pc bpc" id="L290" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
-<span class="nc" id="L291">				yield null;</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
+<span class="nc" id="L297">				yield null;</span>
 			}
-<span class="fc" id="L293">			org.eclipse.jdt.core.dom.Block body = type.getMethods()[0].getBody();</span>
-<span class="pc bpc" id="L294" title="2 of 4 branches missed.">			if (body == null || body.statements().isEmpty()) {</span>
-<span class="nc" id="L295">				yield null;</span>
+<span class="fc" id="L299">			org.eclipse.jdt.core.dom.Block body = type.getMethods()[0].getBody();</span>
+<span class="pc bpc" id="L300" title="2 of 4 branches missed.">			if (body == null || body.statements().isEmpty()) {</span>
+<span class="nc" id="L301">				yield null;</span>
 			}
-<span class="fc" id="L297">			Object firstStmt = body.statements().get(0);</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">			if (firstStmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement vds) {</span>
-<span class="fc" id="L299">				var fragments = vds.fragments();</span>
-<span class="pc bpc" id="L300" title="1 of 2 branches missed.">				if (!fragments.isEmpty()) {</span>
-<span class="fc" id="L301">					yield ((org.eclipse.jdt.core.dom.VariableDeclarationFragment) fragments.get(0))</span>
-<span class="fc" id="L302">							.getInitializer();</span>
+<span class="fc" id="L303">			Object firstStmt = body.statements().get(0);</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">			if (firstStmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement vds) {</span>
+<span class="fc" id="L305">				var fragments = vds.fragments();</span>
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">				if (!fragments.isEmpty()) {</span>
+<span class="fc" id="L307">					yield ((org.eclipse.jdt.core.dom.VariableDeclarationFragment) fragments.get(0))</span>
+<span class="fc" id="L308">							.getInitializer();</span>
 				}
 			}
-<span class="nc" id="L305">			yield null;</span>
+<span class="nc" id="L311">			yield null;</span>
 		}
 		case STATEMENT, STATEMENT_SEQUENCE, DECLARATION -&gt; {
-<span class="pc bpc" id="L308" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
-<span class="nc" id="L309">				yield null;</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
+<span class="nc" id="L315">				yield null;</span>
 			}
-<span class="fc" id="L311">			org.eclipse.jdt.core.dom.Block body = type.getMethods()[0].getBody();</span>
-<span class="pc bpc" id="L312" title="2 of 4 branches missed.">			if (body == null || body.statements().isEmpty()) {</span>
-<span class="nc" id="L313">				yield null;</span>
-			}
-<span class="fc" id="L315">			yield (ASTNode) body.statements().get(0);</span>
-		}
-		case METHOD_CALL -&gt; {
-<span class="pc bpc" id="L318" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
+<span class="fc" id="L317">			org.eclipse.jdt.core.dom.Block body = type.getMethods()[0].getBody();</span>
+<span class="pc bpc" id="L318" title="2 of 4 branches missed.">			if (body == null || body.statements().isEmpty()) {</span>
 <span class="nc" id="L319">				yield null;</span>
 			}
-<span class="fc" id="L321">			org.eclipse.jdt.core.dom.Block body = type.getMethods()[0].getBody();</span>
-<span class="pc bpc" id="L322" title="2 of 4 branches missed.">			if (body == null || body.statements().isEmpty()) {</span>
-<span class="nc" id="L323">				yield null;</span>
+<span class="fc" id="L321">			yield (ASTNode) body.statements().get(0);</span>
+		}
+		case METHOD_CALL -&gt; {
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">			if (type.getMethods().length == 0) {</span>
+<span class="nc" id="L325">				yield null;</span>
 			}
-<span class="fc" id="L325">			Object stmt = body.statements().get(0);</span>
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">			if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement es) {</span>
-<span class="fc" id="L327">				yield es.getExpression();</span>
+<span class="fc" id="L327">			org.eclipse.jdt.core.dom.Block body = type.getMethods()[0].getBody();</span>
+<span class="pc bpc" id="L328" title="2 of 4 branches missed.">			if (body == null || body.statements().isEmpty()) {</span>
+<span class="nc" id="L329">				yield null;</span>
 			}
-<span class="nc" id="L329">			yield null;</span>
+<span class="fc" id="L331">			Object stmt = body.statements().get(0);</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">			if (stmt instanceof org.eclipse.jdt.core.dom.ExpressionStatement es) {</span>
+<span class="fc" id="L333">				yield es.getExpression();</span>
+			}
+<span class="nc" id="L335">			yield null;</span>
 		}
 		case ANNOTATION -&gt; {
-<span class="nc bnc" id="L332" title="All 2 branches missed.">			if (type.modifiers().isEmpty()) {</span>
-<span class="nc" id="L333">				yield null;</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">			if (type.modifiers().isEmpty()) {</span>
+<span class="nc" id="L339">				yield null;</span>
 			}
-<span class="nc" id="L335">			Object first = type.modifiers().get(0);</span>
-<span class="nc bnc" id="L336" title="All 2 branches missed.">			if (first instanceof ASTNode ann) {</span>
-<span class="nc" id="L337">				yield ann;</span>
+<span class="nc" id="L341">			Object first = type.modifiers().get(0);</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">			if (first instanceof ASTNode ann) {</span>
+<span class="nc" id="L343">				yield ann;</span>
 			}
-<span class="nc" id="L339">			yield null;</span>
+<span class="nc" id="L345">			yield null;</span>
 		}
 		case IMPORT -&gt; {
-<span class="nc bnc" id="L342" title="All 2 branches missed.">			if (cu.imports().isEmpty()) {</span>
-<span class="nc" id="L343">				yield null;</span>
-			}
-<span class="nc" id="L345">			yield (ASTNode) cu.imports().get(0);</span>
-		}
-		case FIELD -&gt; {
-<span class="nc bnc" id="L348" title="All 2 branches missed.">			if (type.getFields().length == 0) {</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">			if (cu.imports().isEmpty()) {</span>
 <span class="nc" id="L349">				yield null;</span>
 			}
-<span class="nc" id="L351">			yield type.getFields()[0];</span>
+<span class="nc" id="L351">			yield (ASTNode) cu.imports().get(0);</span>
 		}
-		case METHOD_DECLARATION -&gt; {
-<span class="nc bnc" id="L354" title="All 2 branches missed.">			if (type.getMethods().length == 0) {</span>
+		case FIELD -&gt; {
+<span class="nc bnc" id="L354" title="All 2 branches missed.">			if (type.getFields().length == 0) {</span>
 <span class="nc" id="L355">				yield null;</span>
 			}
-<span class="nc" id="L357">			yield type.getMethods()[0];</span>
+<span class="nc" id="L357">			yield type.getFields()[0];</span>
 		}
-		case BLOCK -&gt; {
+		case METHOD_DECLARATION -&gt; {
 <span class="nc bnc" id="L360" title="All 2 branches missed.">			if (type.getMethods().length == 0) {</span>
 <span class="nc" id="L361">				yield null;</span>
 			}
-<span class="nc" id="L363">			yield type.getMethods()[0].getBody();</span>
+<span class="nc" id="L363">			yield type.getMethods()[0];</span>
 		}
+		case BLOCK -&gt; {
+<span class="nc bnc" id="L366" title="All 2 branches missed.">			if (type.getMethods().length == 0) {</span>
+<span class="nc" id="L367">				yield null;</span>
+			}
+<span class="nc" id="L369">			yield type.getMethods()[0].getBody();</span>
+		}
+<span class="nc" id="L371">		case TYPE_DECLARATION -&gt; topLevelType;</span>
 		};
 	}
 }

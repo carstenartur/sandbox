@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
@@ -32,9 +33,12 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
 import org.sandbox.jdt.triggerpattern.internal.FqnAwarePlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
+import org.sandbox.jdt.triggerpattern.internal.TypeDeclarationHeaderMatcher;
+import org.sandbox.jdt.triggerpattern.internal.TypeDeclarationPatternParser;
 
 /**
  * Indexes transformation rules by their {@link PatternKind} for efficient
@@ -57,20 +61,23 @@ public final class PatternIndex {
 
 	private final Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; rulesByKind;
 	private final PatternParser parser;
+	private final TypeDeclarationPatternParser typeParser;
 	private boolean caseInsensitive;
 
 	/**
 	 * Creates a new pattern index from a list of transformation rules.
 	 *
 	 * &lt;p&gt;Pre-parses all source patterns and groups them by kind for efficient
-	 * batch matching.&lt;/p&gt;
+	 * batch matching. Explicit type declarations use a dedicated header parser
+	 * so ordinary expression and statement parsing remains unchanged.&lt;/p&gt;
 	 *
 	 * @param rules the rules to index
 	 */
-<span class="fc" id="L70">	public PatternIndex(List&lt;TransformationRule&gt; rules) {</span>
-<span class="fc" id="L71">		this.parser = new PatternParser();</span>
-<span class="fc" id="L72">		this.rulesByKind = buildIndex(rules);</span>
-<span class="fc" id="L73">	}</span>
+<span class="fc" id="L76">	public PatternIndex(List&lt;TransformationRule&gt; rules) {</span>
+<span class="fc" id="L77">		this.parser = new PatternParser();</span>
+<span class="fc" id="L78">		this.typeParser = new TypeDeclarationPatternParser();</span>
+<span class="fc" id="L79">		this.rulesByKind = buildIndex(rules);</span>
+<span class="fc" id="L80">	}</span>
 
 	/**
 	 * Sets whether string literal matching should be case-insensitive.
@@ -79,25 +86,27 @@ public final class PatternIndex {
 	 * @since 1.3.8
 	 */
 	public void setCaseInsensitive(boolean caseInsensitive) {
-<span class="fc" id="L82">		this.caseInsensitive = caseInsensitive;</span>
-<span class="fc" id="L83">	}</span>
+<span class="fc" id="L89">		this.caseInsensitive = caseInsensitive;</span>
+<span class="fc" id="L90">	}</span>
 
 	private Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; buildIndex(List&lt;TransformationRule&gt; rules) {
-<span class="fc" id="L86">		Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; index = new EnumMap&lt;&gt;(PatternKind.class);</span>
+<span class="fc" id="L93">		Map&lt;PatternKind, List&lt;IndexEntry&gt;&gt; index = new EnumMap&lt;&gt;(PatternKind.class);</span>
 
-<span class="fc bfc" id="L88" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
-<span class="fc" id="L89">			Pattern sourcePattern = rule.sourcePattern();</span>
-<span class="fc" id="L90">			ASTNode patternNode = parser.parse(sourcePattern);</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (patternNode == null) {</span>
-<span class="fc" id="L92">				continue;</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
+<span class="fc" id="L96">			Pattern sourcePattern = rule.sourcePattern();</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">			ASTNode patternNode = sourcePattern.getKind() == PatternKind.TYPE_DECLARATION</span>
+<span class="fc" id="L98">					? typeParser.parse(sourcePattern.getValue())</span>
+<span class="fc" id="L99">					: parser.parse(sourcePattern);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			if (patternNode == null) {</span>
+<span class="fc" id="L101">				continue;</span>
 			}
 
-<span class="fc" id="L95">			PatternKind kind = sourcePattern.getKind();</span>
-<span class="fc" id="L96">			index.computeIfAbsent(kind, k -&gt; new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L97">					.add(new IndexEntry(rule, sourcePattern, patternNode));</span>
-<span class="fc" id="L98">		}</span>
+<span class="fc" id="L104">			PatternKind kind = sourcePattern.getKind();</span>
+<span class="fc" id="L105">			index.computeIfAbsent(kind, ignored -&gt; new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L106">					.add(new IndexEntry(rule, sourcePattern, patternNode));</span>
+<span class="fc" id="L107">		}</span>
 
-<span class="fc" id="L100">		return index;</span>
+<span class="fc" id="L109">		return index;</span>
 	}
 
 	/**
@@ -106,7 +115,7 @@ public final class PatternIndex {
 	 * @return the total number of rules in the index
 	 */
 	public int size() {
-<span class="fc" id="L109">		return rulesByKind.values().stream().mapToInt(List::size).sum();</span>
+<span class="fc" id="L118">		return rulesByKind.values().stream().mapToInt(List::size).sum();</span>
 	}
 
 	/**
@@ -115,7 +124,7 @@ public final class PatternIndex {
 	 * @return the number of distinct pattern kinds
 	 */
 	public int kindCount() {
-<span class="fc" id="L118">		return rulesByKind.size();</span>
+<span class="fc" id="L127">		return rulesByKind.size();</span>
 	}
 
 	/**
@@ -125,8 +134,8 @@ public final class PatternIndex {
 	 * @return unmodifiable list of transformation rules for the given kind
 	 */
 	public List&lt;TransformationRule&gt; getRulesForKind(PatternKind kind) {
-<span class="fc" id="L128">		List&lt;IndexEntry&gt; entries = rulesByKind.getOrDefault(kind, Collections.emptyList());</span>
-<span class="fc" id="L129">		return entries.stream().map(IndexEntry::rule).toList();</span>
+<span class="fc" id="L137">		List&lt;IndexEntry&gt; entries = rulesByKind.getOrDefault(kind, Collections.emptyList());</span>
+<span class="fc" id="L138">		return entries.stream().map(IndexEntry::rule).toList();</span>
 	}
 
 	/**
@@ -140,20 +149,20 @@ public final class PatternIndex {
 	 * @return map from each rule that had matches to its list of matches
 	 */
 	public Map&lt;TransformationRule, List&lt;Match&gt;&gt; findAllMatches(CompilationUnit cu) {
-<span class="fc bfc" id="L143" title="All 4 branches covered.">		if (cu == null || rulesByKind.isEmpty()) {</span>
-<span class="fc" id="L144">			return Collections.emptyMap();</span>
+<span class="fc bfc" id="L152" title="All 4 branches covered.">		if (cu == null || rulesByKind.isEmpty()) {</span>
+<span class="fc" id="L153">			return Collections.emptyMap();</span>
 		}
 
-<span class="fc" id="L147">		Map&lt;TransformationRule, List&lt;Match&gt;&gt; results = new java.util.LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L156">		Map&lt;TransformationRule, List&lt;Match&gt;&gt; results = new java.util.LinkedHashMap&lt;&gt;();</span>
 
-<span class="fc" id="L149">		cu.accept(new ASTVisitor() {</span>
+<span class="fc" id="L158">		cu.accept(new ASTVisitor() {</span>
 			@Override
 			public void preVisit(ASTNode node) {
-<span class="fc" id="L152">				checkNodeAgainstIndex(node, results);</span>
-<span class="fc" id="L153">			}</span>
+<span class="fc" id="L161">				checkNodeAgainstIndex(node, results);</span>
+<span class="fc" id="L162">			}</span>
 		});
 
-<span class="fc" id="L156">		return results;</span>
+<span class="fc" id="L165">		return results;</span>
 	}
 
 	/**
@@ -161,105 +170,111 @@ public final class PatternIndex {
 	 */
 	private void checkNodeAgainstIndex(ASTNode node, Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
 		// Determine which pattern kinds could match this node type
-<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (node instanceof Expression) {</span>
-<span class="fc" id="L165">			matchAgainstKind(node, PatternKind.EXPRESSION, results);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (node instanceof Expression) {</span>
+<span class="fc" id="L174">			matchAgainstKind(node, PatternKind.EXPRESSION, results);</span>
 		}
-<span class="fc bfc" id="L167" title="All 2 branches covered.">		if (node instanceof MethodInvocation) {</span>
-<span class="fc" id="L168">			matchAgainstKind(node, PatternKind.METHOD_CALL, results);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (node instanceof MethodInvocation) {</span>
+<span class="fc" id="L177">			matchAgainstKind(node, PatternKind.METHOD_CALL, results);</span>
 		}
-<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (node instanceof ClassInstanceCreation) {</span>
-<span class="fc" id="L171">			matchAgainstKind(node, PatternKind.CONSTRUCTOR, results);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (node instanceof ClassInstanceCreation) {</span>
+<span class="fc" id="L180">			matchAgainstKind(node, PatternKind.CONSTRUCTOR, results);</span>
 		}
-<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (node instanceof Statement) {</span>
-<span class="fc" id="L174">			matchAgainstKind(node, PatternKind.STATEMENT, results);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (node instanceof Statement) {</span>
+<span class="fc" id="L183">			matchAgainstKind(node, PatternKind.STATEMENT, results);</span>
 		}
-<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (node instanceof Annotation) {</span>
-<span class="fc" id="L177">			matchAgainstKind(node, PatternKind.ANNOTATION, results);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">		if (node instanceof Annotation) {</span>
+<span class="fc" id="L186">			matchAgainstKind(node, PatternKind.ANNOTATION, results);</span>
 		}
-<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (node instanceof ImportDeclaration) {</span>
-<span class="fc" id="L180">			matchAgainstKind(node, PatternKind.IMPORT, results);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		if (node instanceof ImportDeclaration) {</span>
+<span class="fc" id="L189">			matchAgainstKind(node, PatternKind.IMPORT, results);</span>
 		}
-<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (node instanceof FieldDeclaration) {</span>
-<span class="fc" id="L183">			matchAgainstKind(node, PatternKind.FIELD, results);</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		if (node instanceof FieldDeclaration) {</span>
+<span class="fc" id="L192">			matchAgainstKind(node, PatternKind.FIELD, results);</span>
 		}
-<span class="fc bfc" id="L185" title="All 2 branches covered.">		if (node instanceof MethodDeclaration) {</span>
-<span class="fc" id="L186">			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, results);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		if (node instanceof MethodDeclaration) {</span>
+<span class="fc" id="L195">			matchAgainstKind(node, PatternKind.METHOD_DECLARATION, results);</span>
 		}
-<span class="fc bfc" id="L188" title="All 2 branches covered.">		if (node instanceof VariableDeclarationStatement) {</span>
-<span class="fc" id="L189">			matchAgainstKind(node, PatternKind.DECLARATION, results);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		if (node instanceof AbstractTypeDeclaration) {</span>
+<span class="fc" id="L198">			matchAgainstKind(node, PatternKind.TYPE_DECLARATION, results);</span>
 		}
-<span class="fc bfc" id="L191" title="All 2 branches covered.">		if (node instanceof Block block) {</span>
-<span class="fc" id="L192">			matchAgainstKind(node, PatternKind.BLOCK, results);</span>
-<span class="fc" id="L193">			matchStatementSequences(block, results);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		if (node instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L201">			matchAgainstKind(node, PatternKind.DECLARATION, results);</span>
 		}
-<span class="fc" id="L195">	}</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		if (node instanceof Block block) {</span>
+<span class="fc" id="L204">			matchAgainstKind(node, PatternKind.BLOCK, results);</span>
+<span class="fc" id="L205">			matchStatementSequences(block, results);</span>
+		}
+<span class="fc" id="L207">	}</span>
 
 	/**
 	 * Attempts to match a node against all rules of the given pattern kind.
 	 */
 	private void matchAgainstKind(ASTNode node, PatternKind kind,
 			Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
-<span class="fc" id="L202">		List&lt;IndexEntry&gt; entries = rulesByKind.get(kind);</span>
-<span class="pc bpc" id="L203" title="1 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
-<span class="fc" id="L204">			return;</span>
+<span class="fc" id="L214">		List&lt;IndexEntry&gt; entries = rulesByKind.get(kind);</span>
+<span class="pc bpc" id="L215" title="1 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
+<span class="fc" id="L216">			return;</span>
 		}
 
-<span class="fc bfc" id="L207" title="All 2 branches covered.">		for (IndexEntry entry : entries) {</span>
-<span class="fc" id="L208">			PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();</span>
-<span class="fc" id="L209">			matcher.setCaseInsensitive(caseInsensitive);</span>
-<span class="fc bfc" id="L210" title="All 2 branches covered.">			if (entry.patternNode().subtreeMatch(matcher, node)) {</span>
-<span class="fc" id="L211">				Match match = new Match(node, matcher.getBindings(),</span>
-<span class="fc" id="L212">						node.getStartPosition(), node.getLength());</span>
-<span class="fc" id="L213">				results.computeIfAbsent(entry.rule(), r -&gt; new ArrayList&lt;&gt;()).add(match);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		for (IndexEntry entry : entries) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">			PlaceholderAstMatcher matcher = kind == PatternKind.TYPE_DECLARATION</span>
+<span class="fc" id="L221">					? new TypeDeclarationHeaderMatcher()</span>
+<span class="fc" id="L222">					: new FqnAwarePlaceholderAstMatcher();</span>
+<span class="fc" id="L223">			matcher.setCaseInsensitive(caseInsensitive);</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">			if (entry.patternNode().subtreeMatch(matcher, node)) {</span>
+<span class="fc" id="L225">				Match match = new Match(node, matcher.getBindings(),</span>
+<span class="fc" id="L226">						node.getStartPosition(), node.getLength());</span>
+<span class="fc" id="L227">				results.computeIfAbsent(entry.rule(), ignored -&gt; new ArrayList&lt;&gt;()).add(match);</span>
 			}
-<span class="fc" id="L215">		}</span>
-<span class="fc" id="L216">	}</span>
+<span class="fc" id="L229">		}</span>
+<span class="fc" id="L230">	}</span>
 
 	/**
 	 * Attempts statement sequence matching for all STATEMENT_SEQUENCE rules.
 	 */
 	private void matchStatementSequences(Block block,
 			Map&lt;TransformationRule, List&lt;Match&gt;&gt; results) {
-<span class="fc" id="L223">		List&lt;IndexEntry&gt; entries = rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);</span>
-<span class="pc bpc" id="L224" title="3 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
-<span class="fc" id="L225">			return;</span>
+<span class="fc" id="L237">		List&lt;IndexEntry&gt; entries = rulesByKind.get(PatternKind.STATEMENT_SEQUENCE);</span>
+<span class="pc bpc" id="L238" title="3 of 4 branches missed.">		if (entries == null || entries.isEmpty()) {</span>
+<span class="fc" id="L239">			return;</span>
 		}
 
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L229">		List&lt;Statement&gt; statements = block.statements();</span>
+<span class="nc" id="L243">		List&lt;Statement&gt; statements = block.statements();</span>
 
-<span class="nc bnc" id="L231" title="All 2 branches missed.">		for (IndexEntry entry : entries) {</span>
-<span class="nc" id="L232">			ASTNode patternNode = entry.patternNode();</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">			if (!(patternNode instanceof Block patternBlock)) {</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">		for (IndexEntry entry : entries) {</span>
+<span class="nc" id="L246">			ASTNode patternNode = entry.patternNode();</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">			if (!(patternNode instanceof Block patternBlock)) {</span>
 				continue;
 			}
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L237">			List&lt;Statement&gt; patternStatements = patternBlock.statements();</span>
-<span class="nc" id="L238">			int patternSize = patternStatements.size();</span>
-<span class="nc bnc" id="L239" title="All 4 branches missed.">			if (patternSize == 0 || patternSize &gt; statements.size()) {</span>
-<span class="nc" id="L240">				continue;</span>
+<span class="nc" id="L251">			List&lt;Statement&gt; patternStatements = patternBlock.statements();</span>
+<span class="nc" id="L252">			int patternSize = patternStatements.size();</span>
+<span class="nc bnc" id="L253" title="All 4 branches missed.">			if (patternSize == 0 || patternSize &gt; statements.size()) {</span>
+<span class="nc" id="L254">				continue;</span>
 			}
 
-<span class="nc bnc" id="L243" title="All 2 branches missed.">			for (int start = 0; start &lt;= statements.size() - patternSize; start++) {</span>
-<span class="nc" id="L244">				Block syntheticBlock = block.getAST().newBlock();</span>
-<span class="nc bnc" id="L245" title="All 2 branches missed.">				for (int i = 0; i &lt; patternSize; i++) {</span>
-<span class="nc" id="L246">					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(), statements.get(start + i)));</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">			for (int start = 0; start &lt;= statements.size() - patternSize; start++) {</span>
+<span class="nc" id="L258">				Block syntheticBlock = block.getAST().newBlock();</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">				for (int index = 0; index &lt; patternSize; index++) {</span>
+<span class="nc" id="L260">					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(),</span>
+<span class="nc" id="L261">							statements.get(start + index)));</span>
 				}
 
-<span class="nc" id="L249">				PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();</span>
-<span class="nc" id="L250">				matcher.setCaseInsensitive(caseInsensitive);</span>
-<span class="nc bnc" id="L251" title="All 2 branches missed.">				if (patternBlock.subtreeMatch(matcher, syntheticBlock)) {</span>
-<span class="nc" id="L252">					int offset = statements.get(start).getStartPosition();</span>
-<span class="nc" id="L253">					Statement last = statements.get(start + patternSize - 1);</span>
-<span class="nc" id="L254">					int length = last.getStartPosition() + last.getLength() - offset;</span>
-<span class="nc" id="L255">					Match match = new Match(block, matcher.getBindings(), offset, length);</span>
-<span class="nc" id="L256">					results.computeIfAbsent(entry.rule(), r -&gt; new ArrayList&lt;&gt;()).add(match);</span>
+<span class="nc" id="L264">				PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();</span>
+<span class="nc" id="L265">				matcher.setCaseInsensitive(caseInsensitive);</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">				if (patternBlock.subtreeMatch(matcher, syntheticBlock)) {</span>
+<span class="nc" id="L267">					int offset = statements.get(start).getStartPosition();</span>
+<span class="nc" id="L268">					Statement last = statements.get(start + patternSize - 1);</span>
+<span class="nc" id="L269">					int length = last.getStartPosition() + last.getLength() - offset;</span>
+<span class="nc" id="L270">					Match match = new Match(block, matcher.getBindings(), offset, length);</span>
+<span class="nc" id="L271">					results.computeIfAbsent(entry.rule(), ignored -&gt; new ArrayList&lt;&gt;()).add(match);</span>
 				}
 			}
-<span class="nc" id="L259">		}</span>
-<span class="nc" id="L260">	}</span>
+<span class="nc" id="L274">		}</span>
+<span class="nc" id="L275">	}</span>
 
-<span class="fc" id="L262">	private record IndexEntry(TransformationRule rule, Pattern sourcePattern, ASTNode patternNode) {</span>
+<span class="fc" id="L277">	private record IndexEntry(TransformationRule rule, Pattern sourcePattern, ASTNode patternNode) {</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

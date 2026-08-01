@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintPredicateDefinition.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">HintPredicateDefinition.java</span></div><h1>HintPredicateDefinition.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.List;
+import java.util.Objects;
+
+/** Immutable declaration model shared by core parsing and editor tooling. */
+public record HintPredicateDefinition(String name, List&lt;String&gt; parameters,
+		String expression, int lineNumber) {
+
+<span class="fc" id="L20">	public HintPredicateDefinition {</span>
+<span class="fc" id="L21">		name= requireIdentifier(name, &quot;predicate name&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L22">		parameters= List.copyOf(Objects.requireNonNull(parameters, &quot;parameters&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">		for (String parameter : parameters) {</span>
+<span class="pc bpc" id="L24" title="3 of 6 branches missed.">			if (parameter == null || parameter.length() &lt; 2 || parameter.charAt(0) != '$') {</span>
+<span class="nc" id="L25">				throw new IllegalArgumentException(&quot;Predicate parameters must be placeholders: &quot; + parameter); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">			int end= parameter.endsWith(&quot;$&quot;) ? parameter.length() - 1 : parameter.length(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">			if (end &lt;= 1) {</span>
+<span class="nc" id="L29">				throw new IllegalArgumentException(&quot;Predicate parameters must be placeholders: &quot; + parameter); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L31">			requireIdentifier(parameter.substring(1, end), &quot;predicate parameter&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L32">		}</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">		if (parameters.stream().distinct().count() != parameters.size()) {</span>
+<span class="nc" id="L34">			throw new IllegalArgumentException(&quot;Predicate parameters must be unique: &quot; + parameters); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L36">		expression= Objects.requireNonNull(expression, &quot;expression&quot;).trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">		if (expression.isEmpty()) {</span>
+<span class="nc" id="L38">			throw new IllegalArgumentException(&quot;Predicate expression must not be blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">		if (lineNumber &lt; 1) {</span>
+<span class="nc" id="L41">			throw new IllegalArgumentException(&quot;Predicate line number must be positive&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L43">	}</span>
+
+	/** Returns a compact signature suitable for outline and content-assist labels. */
+	public String signature() {
+<span class="fc" id="L47">		return name + '(' + String.join(&quot;, &quot;, parameters) + ')'; //$NON-NLS-1$</span>
+	}
+
+	private static String requireIdentifier(String value, String label) {
+<span class="fc" id="L51">		String identifier= Objects.requireNonNull(value, label).trim();</span>
+<span class="pc bpc" id="L52" title="2 of 4 branches missed.">		if (identifier.isEmpty() || !Character.isJavaIdentifierStart(identifier.charAt(0))) {</span>
+<span class="nc" id="L53">			throw new IllegalArgumentException(&quot;Invalid &quot; + label + &quot;: &quot; + value); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		for (int index= 1; index &lt; identifier.length(); index++) {</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(identifier.charAt(index))) {</span>
+<span class="nc" id="L57">				throw new IllegalArgumentException(&quot;Invalid &quot; + label + &quot;: &quot; + value); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+		}
+<span class="fc" id="L60">		return identifier;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

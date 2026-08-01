@@ -13,16 +13,18 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.editor;
 
+import java.util.Objects;
+
 import org.eclipse.jface.text.rules.ICharacterScanner;
 import org.eclipse.jface.text.rules.IRule;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.jface.text.rules.Token;
 
 /**
- * Rule that matches a specific multi-character operator sequence.
+ * Rule that matches one complete operator sequence.
  *
- * &lt;p&gt;Used to highlight {@code =&gt;}, {@code ::}, and {@code ;;} operators
- * in {@code .sandbox-hint} files.&lt;/p&gt;
+ * &lt;p&gt;Used to highlight operators such as {@code =&gt;}, {@code =&gt;!},
+ * {@code ::}, and {@code ;;} in {@code .sandbox-hint} files.&lt;/p&gt;
  *
  * @since 1.3.6
  */
@@ -34,29 +36,30 @@ public class OperatorRule implements IRule {
 	/**
 	 * Creates an operator rule.
 	 *
-	 * @param operator the operator string to match (e.g., {@code &quot;=&gt;&quot;})
+	 * @param operator the non-empty operator string to match
 	 * @param token the token to return on match
 	 */
-<span class="nc" id="L40">	public OperatorRule(String operator, IToken token) {</span>
-<span class="nc" id="L41">		this.operator = operator;</span>
-<span class="nc" id="L42">		this.token = token;</span>
-<span class="nc" id="L43">	}</span>
+<span class="fc" id="L42">	public OperatorRule(String operator, IToken token) {</span>
+<span class="fc" id="L43">		this.operator= Objects.requireNonNull(operator, &quot;operator&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (operator.isEmpty()) {</span>
+<span class="nc" id="L45">			throw new IllegalArgumentException(&quot;operator must not be empty&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L47">		this.token= Objects.requireNonNull(token, &quot;token&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L48">	}</span>
 
 	@Override
 	public IToken evaluate(ICharacterScanner scanner) {
-<span class="nc" id="L47">		int c = scanner.read();</span>
-<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (c == operator.charAt(0)) {</span>
-<span class="nc bnc" id="L49" title="All 2 branches missed.">			if (operator.length() == 1) {</span>
-<span class="nc" id="L50">				return token;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">		for (int index= 0; index &lt; operator.length(); index++) {</span>
+<span class="fc" id="L53">			int character= scanner.read();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">			if (character == operator.charAt(index)) {</span>
+<span class="fc" id="L55">				continue;</span>
 			}
-<span class="nc" id="L52">			int c2 = scanner.read();</span>
-<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (c2 == operator.charAt(1)) {</span>
-<span class="nc" id="L54">				return token;</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			for (int consumed= index; consumed &gt;= 0; consumed--) {</span>
+<span class="fc" id="L58">				scanner.unread();</span>
 			}
-<span class="nc" id="L56">			scanner.unread();</span>
+<span class="fc" id="L60">			return Token.UNDEFINED;</span>
 		}
-<span class="nc" id="L58">		scanner.unread();</span>
-<span class="nc" id="L59">		return Token.UNDEFINED;</span>
+<span class="fc" id="L62">		return token;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
