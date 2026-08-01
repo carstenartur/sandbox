@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -76,6 +78,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	/** Simple name of UnsupportedEncodingException for matching in exception types. */
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
+
+	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =
+			AbstractExplicitEncoding.class.getName() + ".removedUnsupportedEncodingCatches"; //$NON-NLS-1$
 
 	/**
 	 * Immutable map of standard charset names (e.g., "UTF-8") to their corresponding
@@ -541,7 +546,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	 * Registers the removed try/catch while retaining its inlined body. Placeholder
 	 * rewrites do not provide {@link ImportRemover} with a reliable reference balance,
 	 * so the obsolete exception import is removed explicitly only when no type reference
-	 * survives outside the deleted catch clause.
+	 * survives outside any catch clause that has actually been unwrapped in this rewrite.
 	 */
 	private static void registerUnwrappedTryForImportRemoval(TryStatement tryStatement,
 			CompilationUnitRewrite cuRewrite) {
@@ -549,18 +554,31 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		cuRewrite.getImportRemover().registerRetainedNode(tryStatement.getBody());
 		CatchClause removedCatch = (CatchClause) tryStatement.catchClauses().get(0);
 		CompilationUnit root = (CompilationUnit) tryStatement.getRoot();
-		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatch)) {
+		Set<CatchClause> removedCatches = removedUnsupportedEncodingCatches(root);
+		removedCatches.add(removedCatch);
+		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {
 			cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	private static Set<CatchClause> removedUnsupportedEncodingCatches(CompilationUnit root) {
+		Object stored = root.getProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY);
+		if (stored instanceof Set<?>) {
+			return (Set<CatchClause>) stored;
+		}
+		Set<CatchClause> removedCatches = Collections.newSetFromMap(new IdentityHashMap<>());
+		root.setProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY, removedCatches);
+		return removedCatches;
+	}
+
 	private static boolean hasSurvivingUnsupportedEncodingExceptionReference(CompilationUnit root,
-			CatchClause removedCatch) {
+			Set<CatchClause> removedCatches) {
 		boolean[] found = { false };
 		root.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName node) {
-				if (found[0] || isDescendantOf(node, removedCatch)
+				if (found[0] || isDescendantOfAny(node, removedCatches)
 						|| ASTNodes.getFirstAncestorOrNull(node, ImportDeclaration.class) != null) {
 					return !found[0];
 				}
@@ -579,9 +597,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return found[0];
 	}
 
-	private static boolean isDescendantOf(ASTNode node, ASTNode ancestor) {
+	private static boolean isDescendantOfAny(ASTNode node, Set<CatchClause> ancestors) {
 		for (ASTNode current = node; current != null; current = current.getParent()) {
-			if (current == ancestor) {
+			if (ancestors.contains(current)) {
 				return true;
 			}
 		}
