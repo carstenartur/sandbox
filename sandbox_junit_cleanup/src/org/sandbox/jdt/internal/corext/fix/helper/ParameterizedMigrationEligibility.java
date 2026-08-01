@@ -17,9 +17,12 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import java.util.Objects;
 
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -58,13 +61,14 @@ public final class ParameterizedMigrationEligibility {
 	public static boolean hasParameterizedRunner(TypeDeclaration type) {
 		Objects.requireNonNull(type);
 		for (Object modifier : type.modifiers()) {
-			if (!(modifier instanceof SingleMemberAnnotation annotation)) {
+			if (!(modifier instanceof Annotation annotation)) {
 				continue;
 			}
 			ITypeBinding annotationBinding= annotation.resolveTypeBinding();
+			Expression value= runnerValue(annotation);
 			if (annotationBinding == null
 					|| !ORG_JUNIT_RUNWITH.equals(annotationBinding.getQualifiedName())
-					|| !(annotation.getValue() instanceof TypeLiteral literal)) {
+					|| !(value instanceof TypeLiteral literal)) {
 				continue;
 			}
 			ITypeBinding runnerBinding= literal.getType().resolveBinding();
@@ -120,6 +124,21 @@ public final class ParameterizedMigrationEligibility {
 		}
 		return new Assessment(true, "PARAMETERIZED_LOCAL_CONTRACT", //$NON-NLS-1$
 				"One local provider and one parameterized constructor form the supported local rewrite contract."); //$NON-NLS-1$
+	}
+
+	private static Expression runnerValue(Annotation annotation) {
+		if (annotation instanceof SingleMemberAnnotation single) {
+			return single.getValue();
+		}
+		if (annotation instanceof NormalAnnotation normal) {
+			for (Object value : normal.values()) {
+				if (value instanceof MemberValuePair pair
+						&& "value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
+					return pair.getValue();
+				}
+			}
+		}
+		return null;
 	}
 
 	private static boolean hasParametersAnnotation(MethodDeclaration method) {
