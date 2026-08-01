@@ -98,12 +98,12 @@ public class ParameterizedMigrationDiagnosticsTest {
 
 					@Parameters
 					public static List<Object[]> first() {
-						return List.of(new Object[] { 1 });
+						return List.<Object[]>of(new Object[] { 1 });
 					}
 
 					@Parameters
 					public static List<Object[]> second() {
-						return List.of(new Object[] { 2 });
+						return List.<Object[]>of(new Object[] { 2 });
 					}
 
 					@Test
@@ -133,7 +133,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 
 					@Parameters
 					public static List<Object[]> data() {
-						return List.of(new Object[] { 1 });
+						return List.<Object[]>of(new Object[] { 1 });
 					}
 
 					@Test
@@ -165,7 +165,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 
 					@Parameters
 					public static List<Object[]> data() {
-						return List.of(new Object[] { 1 });
+						return List.<Object[]>of(new Object[] { 1 });
 					}
 
 					@Test
