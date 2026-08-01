@@ -87,6 +87,44 @@ public class ExternalHibernateRepositoryServiceTest {
 	}
 
 	@Test
+	public void shutdownClosesAStorageWhoseOpenWasAlreadyInFlight() throws Exception {
+		FakeFactory factory= new FakeFactory();
+		factory.openStarted= new CountDownLatch(1);
+		factory.allowOpen= new CountDownLatch(1);
+		ExternalHibernateRepositoryService service= new ExternalHibernateRepositoryService(factory);
+		ExecutorService executor= Executors.newFixedThreadPool(2);
+		Future<Repository> opening= executor.submit(() -> service.openOrCreate("demo")); //$NON-NLS-1$
+		Future<?> closing= null;
+		try {
+			assertTrue(factory.openStarted.await(5, TimeUnit.SECONDS));
+			CountDownLatch closeThreadStarted= new CountDownLatch(1);
+			closing= executor.submit(() -> {
+				closeThreadStarted.countDown();
+				service.close();
+			});
+			assertTrue(closeThreadStarted.await(5, TimeUnit.SECONDS));
+
+			factory.allowOpen.countDown();
+			Repository opened= opening.get(5, TimeUnit.SECONDS);
+			closing.get(5, TimeUnit.SECONDS);
+
+			FakeStorage storage= factory.storages.get("demo"); //$NON-NLS-1$
+			assertSame(opened, storage.repository());
+			assertTrue(storage.closed);
+			assertEquals(1, storage.closeCalls.get());
+			assertFalse(service.isOpen("demo")); //$NON-NLS-1$
+			assertThrows(IllegalStateException.class,
+					() -> service.openOrCreate("demo")); //$NON-NLS-1$
+		} finally {
+			factory.allowOpen.countDown();
+			if (closing != null) {
+				closing.get(5, TimeUnit.SECONDS);
+			}
+			executor.shutdownNow();
+		}
+	}
+
+	@Test
 	public void readsAndUpdatesDescriptionThroughPublicRepository() throws Exception {
 		FakeFactory factory= new FakeFactory();
 		try (ExternalHibernateRepositoryService service= new ExternalHibernateRepositoryService(factory)) {
@@ -164,10 +202,23 @@ public class ExternalHibernateRepositoryServiceTest {
 
 		private final Map<String, FakeStorage> storages= new LinkedHashMap<>();
 		private final AtomicInteger openCalls= new AtomicInteger();
+		private CountDownLatch openStarted;
+		private CountDownLatch allowOpen;
 
 		@Override
 		public HibernateGitStorage open(RepositoryName repositoryName) {
 			openCalls.incrementAndGet();
+			if (openStarted != null) {
+				openStarted.countDown();
+			}
+			if (allowOpen != null) {
+				try {
+					allowOpen.await();
+				} catch (InterruptedException exception) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException("Interrupted while opening storage.", exception); //$NON-NLS-1$
+				}
+			}
 			FakeStorage storage= new FakeStorage(new InMemoryRepository(
 					new DfsRepositoryDescription(repositoryName.value())));
 			storages.put(repositoryName.value(), storage);
