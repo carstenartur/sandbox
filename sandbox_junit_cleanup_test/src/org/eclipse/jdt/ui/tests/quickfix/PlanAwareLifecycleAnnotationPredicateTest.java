@@ -66,7 +66,7 @@ class PlanAwareLifecycleAnnotationPredicateTest {
 
 	@Test
 	void acceptsBothOverrideSpellingsWhenThePlanRecordedTheAnnotation() throws CoreException {
-		ICompilationUnit unit= createUnit("lifecyclespelling", """ //$NON-NLS-1$
+		ICompilationUnit unit= createUnit("lifecyclespelling", """
 				package lifecyclespelling;
 				interface Contract {
 					void simple();
@@ -81,7 +81,7 @@ class PlanAwareLifecycleAnnotationPredicateTest {
 					public void qualified() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 		CompilationUnit ast= parse(unit);
 		MethodDeclaration simple= findMethod(ast, "simple"); //$NON-NLS-1$
 		MethodDeclaration qualified= findMethod(ast, "qualified"); //$NON-NLS-1$
@@ -105,7 +105,7 @@ class PlanAwareLifecycleAnnotationPredicateTest {
 
 	@Test
 	void rejectsAFalseFactWhenOverrideAppearedAfterPlanning() throws CoreException {
-		ICompilationUnit unit= createUnit("lifecyclestale", """ //$NON-NLS-1$
+		ICompilationUnit unit= createUnit("lifecyclestale", """
 				package lifecyclestale;
 				interface Contract {
 					void changed();
@@ -115,7 +115,7 @@ class PlanAwareLifecycleAnnotationPredicateTest {
 					public void changed() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 		CompilationUnit ast= parse(unit);
 		MethodDeclaration method= findMethod(ast, "changed"); //$NON-NLS-1$
 		NodeKey key= NodeKey.from(method);
