@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "da6623602e470797e52f788591707cde85a3ee75",
-      "lastProcessedDate": "2026-07-31T03:15:49.361212253Z",
-      "totalProcessed": 3276,
+      "lastProcessedCommit": "4420764c33654e7ef2a0e719cdf3b51b82e07e5b",
+      "lastProcessedDate": "2026-08-01T03:15:26.847680246Z",
+      "totalProcessed": 3352,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2663,6 +2663,15 @@
           "deferredAt": "2026-07-31T03:09:37.491687175Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "8119564255ab90c9cb9ad43efe91a6de0c1a709d",
+          "message": "Bug 521334 - [testsources][package explorer] Decorate test package fragment roots in the package explorer",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-01T03:11:10.676909016Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2822,7 +2831,7 @@
         "Extract Method Refactoring": 1,
         "Generics": 1,
         "API Constant Update": 1,
-        "Null Safety": 3,
+        "Null Safety": 4,
         "Boolean Simplification": 1,
         "Constant Replacement": 2,
         "API Simplification": 1,
@@ -2841,7 +2850,10 @@
         "Method call argument replacement": 1,
         "API Constant Renaming": 1,
         "API Renaming": 1,
-        "API Usage": 1
+        "API Usage": 1,
+        "String Comparison": 1,
+        "Method Call Update": 1,
+        "Return Value Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -2882,5 +2894,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 25935
+  "globalTotalProcessed": 26011
 }
