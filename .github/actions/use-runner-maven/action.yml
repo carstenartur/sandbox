@@ -1,0 +1,22 @@
+name: Use runner Maven
+description: Verify and use the Maven installation supplied by the GitHub-hosted runner.
+
+runs:
+  using: composite
+  steps:
+    - name: Verify runner Maven
+      shell: bash
+      run: |
+        set -euo pipefail
+        command -v mvn
+        maven_version="$(mvn --version | awk '/Apache Maven/ { print $3; exit }')"
+        required_version=3.9.0
+        if [ -z "$maven_version" ]; then
+          echo "::error::Could not determine the Maven version supplied by the runner."
+          exit 1
+        fi
+        if [ "$(printf '%s\n%s\n' "$required_version" "$maven_version" | sort -V | head -n 1)" != "$required_version" ]; then
+          echo "::error::Maven $maven_version is older than the required $required_version."
+          exit 1
+        fi
+        mvn --version

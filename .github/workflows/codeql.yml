@@ -20,6 +20,7 @@ on:
     paths:
       - '**.java'
       - '**/pom.xml'
+      - '.github/actions/use-runner-maven/**'
       - '.github/workflows/codeql.yml'
   schedule:
     - cron: '37 10 * * 6'
@@ -45,10 +46,6 @@ jobs:
         # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
 
     steps:
-    - name: Set up Maven
-      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
-      with:
-        maven-version: 3.9.9
     - name: Checkout repository
       uses: actions/checkout@v6
 
@@ -58,6 +55,9 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
+
+    - name: Use runner Maven
+      uses: ./.github/actions/use-runner-maven
 
     - name: Cache Maven dependencies
       uses: actions/cache@v5
