@@ -6,10 +6,15 @@ name: Release Workflow
 on:
   workflow_dispatch:
     inputs:
-      release_version:
-        description: Stable version matching the current SNAPSHOT without -SNAPSHOT
+      next_version_increment:
+        description: Select how the development version advances after this release
         required: true
-        type: string
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
       skip_tests:
         description: Skip tests for a dry-run diagnostic build only
         required: false
@@ -84,7 +89,9 @@ jobs:
           python3 .github/scripts/test_wait_for_pages_build.py
           python3 .github/scripts/test_verify_published_repository.py
 
-      - name: Validate requested version and immutable starting state
+      - name: Derive release plan and validate immutable starting state
+        env:
+          NEXT_VERSION_INCREMENT: ${{ inputs.next_version_increment }}
         run: |
           set -euo pipefail
           starting_sha=$(git rev-parse HEAD)
@@ -95,8 +102,14 @@ jobs:
           fi
 
           current_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          if ! [[ "$current_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$ ]]; then
+            echo "::error::Current project version '$current_version' must use X.Y.Z-SNAPSHOT."
+            exit 1
+          fi
+
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-            release_version='${{ inputs.release_version }}'
+            release_version="${current_version%-SNAPSHOT}"
+            next_increment="$NEXT_VERSION_INCREMENT"
           else
             git fetch --no-tags origin "${{ github.sha }}"
             branch_version="${GITHUB_REF_NAME#release-request/}"
@@ -106,6 +119,7 @@ jobs:
               exit 1
             fi
             release_version="$marker_version"
+            next_increment=patch
           fi
 
           if ! [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -113,7 +127,7 @@ jobs:
             exit 1
           fi
           if [[ "$current_version" != "${release_version}-SNAPSHOT" ]]; then
-            echo "::error::Requested release '$release_version' does not match project version '$current_version'."
+            echo "::error::Repository release '$release_version' does not match project version '$current_version'."
             exit 1
           fi
 
@@ -136,8 +150,24 @@ jobs:
           fi
 
           IFS='.' read -r major minor patch <<< "$release_version"
-          next_snapshot="${major}.${minor}.$((patch + 1))-SNAPSHOT"
-          next_release="${major}.${minor}.$((patch + 1))"
+          case "$next_increment" in
+            patch)
+              next_snapshot="${major}.${minor}.$((patch + 1))-SNAPSHOT"
+              next_release="${major}.${minor}.$((patch + 1))"
+              ;;
+            minor)
+              next_snapshot="${major}.$((minor + 1)).0-SNAPSHOT"
+              next_release="${major}.$((minor + 1)).0"
+              ;;
+            major)
+              next_snapshot="$((major + 1)).0.0-SNAPSHOT"
+              next_release="$((major + 1)).0.0"
+              ;;
+            *)
+              echo "::error::Unsupported next_version_increment '$next_increment'."
+              exit 1
+              ;;
+          esac
 
           {
             echo "STARTING_SHA=$starting_sha"
