@@ -29,13 +29,13 @@
     <Bug pattern="SE_BAD_FIELD"/>
     <Class name="~edu.umd.cs.findbugs.gui.*"/>
   </Match>
-  <Match>
+   <Match>
     <Bug pattern="UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
   </Match>
-  <Match>
+   <Match>
     <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
   </Match>
-  <Match>
+   <Match>
     <Bug pattern="URF_UNREAD_FIELD"/>
   </Match>
   <Match>
