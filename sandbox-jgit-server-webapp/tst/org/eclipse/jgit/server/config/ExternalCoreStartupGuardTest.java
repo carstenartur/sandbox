@@ -69,6 +69,27 @@ public class ExternalCoreStartupGuardTest {
 		ExternalCoreStartupGuard.requireReady(properties);
 	}
 
+	@Test
+	public void acceptsMetadataQuotedConfiguredSchema() throws Exception {
+		Properties properties= properties(databaseUrl());
+		String schema= "tenant\"one"; //$NON-NLS-1$
+		properties.setProperty("hibernate.default_schema", schema); //$NON-NLS-1$
+		Class.forName(properties.getProperty("hibernate.connection.driver_class")); //$NON-NLS-1$
+		try (Connection connection= connection(properties);
+				Statement statement= connection.createStatement()) {
+			String quotedSchema= '"' + schema.replace("\"", "\"\"") + '"'; //$NON-NLS-1$ //$NON-NLS-2$
+			statement.execute("CREATE SCHEMA " + quotedSchema); //$NON-NLS-1$
+			statement.execute("CREATE TABLE " + quotedSchema + '.' //$NON-NLS-1$
+					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
+					+ " (installed_rank INT PRIMARY KEY, version VARCHAR(50), success BOOLEAN NOT NULL)"); //$NON-NLS-1$
+			statement.execute("INSERT INTO " + quotedSchema + '.' //$NON-NLS-1$
+					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
+					+ " (installed_rank, version, success) VALUES (1, '0.1.15', TRUE)"); //$NON-NLS-1$
+		}
+
+		ExternalCoreStartupGuard.requireReady(properties);
+	}
+
 	private static Properties properties(String url) {
 		Properties properties= new Properties();
 		properties.setProperty("hibernate.connection.url", url); //$NON-NLS-1$
@@ -87,10 +108,7 @@ public class ExternalCoreStartupGuardTest {
 	private static void createHistory(Properties properties, boolean success)
 			throws Exception {
 		Class.forName(properties.getProperty("hibernate.connection.driver_class")); //$NON-NLS-1$
-		try (Connection connection= DriverManager.getConnection(
-				properties.getProperty("hibernate.connection.url"), //$NON-NLS-1$
-				properties.getProperty("hibernate.connection.username"), //$NON-NLS-1$
-				properties.getProperty("hibernate.connection.password")); //$NON-NLS-1$
+		try (Connection connection= connection(properties);
 				Statement statement= connection.createStatement()) {
 			statement.execute("CREATE TABLE " //$NON-NLS-1$
 					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
@@ -100,5 +118,12 @@ public class ExternalCoreStartupGuardTest {
 					+ " (installed_rank, version, success) VALUES (1, '0.1.15', " //$NON-NLS-1$
 					+ success + ')');
 		}
+	}
+
+	private static Connection connection(Properties properties) throws Exception {
+		return DriverManager.getConnection(
+				properties.getProperty("hibernate.connection.url"), //$NON-NLS-1$
+				properties.getProperty("hibernate.connection.username"), //$NON-NLS-1$
+				properties.getProperty("hibernate.connection.password")); //$NON-NLS-1$
 	}
 }
