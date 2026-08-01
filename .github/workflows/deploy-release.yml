@@ -10,6 +10,20 @@ on:
         description: Stable version matching the current SNAPSHOT without -SNAPSHOT
         required: true
         type: string
+      next_development_version:
+        description: Exact next development version (X.Y.Z-SNAPSHOT); leave empty to use the increment choice
+        required: false
+        default: ''
+        type: string
+      next_version_increment:
+        description: Fallback when the exact next development version is empty
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
       skip_tests:
         description: Skip tests for a dry-run diagnostic build only
         required: false
@@ -80,11 +94,16 @@ jobs:
 
       - name: Test release publication helpers
         run: |
+          python3 .github/scripts/test-release-version-plan.py
           python3 .github/scripts/test_verify_release_identity.py
           python3 .github/scripts/test_wait_for_pages_build.py
           python3 .github/scripts/test_verify_published_repository.py
 
       - name: Validate requested version and immutable starting state
+        env:
+          RELEASE_VERSION_INPUT: ${{ inputs.release_version }}
+          NEXT_DEVELOPMENT_VERSION_INPUT: ${{ inputs.next_development_version }}
+          NEXT_VERSION_INCREMENT_INPUT: ${{ inputs.next_version_increment }}
         run: |
           set -euo pipefail
           starting_sha=$(git rev-parse HEAD)
@@ -96,7 +115,9 @@ jobs:
 
           current_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-            release_version='${{ inputs.release_version }}'
+            release_version_input="$RELEASE_VERSION_INPUT"
+            next_development_version_input="$NEXT_DEVELOPMENT_VERSION_INPUT"
+            next_version_increment="${NEXT_VERSION_INCREMENT_INPUT:-patch}"
           else
             git fetch --no-tags origin "${{ github.sha }}"
             branch_version="${GITHUB_REF_NAME#release-request/}"
@@ -105,13 +126,27 @@ jobs:
               echo "::error::Release request branch '$branch_version' differs from marker '$marker_version'."
               exit 1
             fi
-            release_version="$marker_version"
+            release_version_input="$marker_version"
+            if git cat-file -e "${{ github.sha }}:.github/next-development-version" 2>/dev/null; then
+              next_development_version_input=$(git show "${{ github.sha }}:.github/next-development-version")
+            else
+              next_development_version_input=''
+            fi
+            next_version_increment=patch
           fi
 
-          if ! [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Invalid stable release version '$release_version'."
-            exit 1
-          fi
+          plan_file="$RUNNER_TEMP/release-version-plan"
+          : > "$plan_file"
+          python3 .github/scripts/release-version-plan.py \
+            --release "$release_version_input" \
+            --next-development-version "$next_development_version_input" \
+            --increment "$next_version_increment" \
+            --github-output "$plan_file"
+          # Values are regex-validated semantic versions produced by the planner.
+          source "$plan_file"
+          release_version="$release"
+          next_snapshot="$next"
+
           if [[ "$current_version" != "${release_version}-SNAPSHOT" ]]; then
             echo "::error::Requested release '$release_version' does not match project version '$current_version'."
             exit 1
@@ -134,10 +169,6 @@ jobs:
             echo "::error::GitHub Release v${release_version} already exists."
             exit 1
           fi
-
-          IFS='.' read -r major minor patch <<< "$release_version"
-          next_snapshot="${major}.${minor}.$((patch + 1))-SNAPSHOT"
-          next_release="${major}.${minor}.$((patch + 1))"
 
           {
             echo "STARTING_SHA=$starting_sha"
