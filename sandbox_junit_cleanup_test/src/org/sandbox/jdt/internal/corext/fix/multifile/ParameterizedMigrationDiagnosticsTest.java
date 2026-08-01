@@ -146,6 +146,35 @@ public class ParameterizedMigrationDiagnosticsTest {
 	}
 
 	@Test
+	public void recognizesExplicitRunWithValueSyntax() throws CoreException {
+		ICompilationUnit unit= compilationUnit("explicitrunner", "ExplicitRunnerTest", """ //$NON-NLS-1$ //$NON-NLS-2$
+				import java.util.List;
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameter;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(value = Parameterized.class)
+				public class ExplicitRunnerTest {
+					@Parameter
+					public int value;
+
+					@Parameters
+					public static List<Object[]> data() {
+						return List.<Object[]>of(new Object[] { 1 });
+					}
+
+					@Test
+					public void testValue() {
+					}
+				}
+				""");
+
+		assertReason(planClosed(unit), "PARAMETERIZED_FIELD_INJECTION"); //$NON-NLS-1$
+	}
+
+	@Test
 	public void supportedLocalContractHasNoRejectionDiagnostic()
 			throws CoreException {
 		ICompilationUnit unit= compilationUnit("supported", "SupportedTest", """ //$NON-NLS-1$ //$NON-NLS-2$
