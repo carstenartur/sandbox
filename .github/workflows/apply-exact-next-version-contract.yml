@@ -1,8 +1,8 @@
 name: Apply optional exact next-version contract
 
 on:
-  push:
-    branches: [ fix/derive-release-versions ]
+  pull_request:
+    branches: [ main ]
     paths:
       - '.github/workflows/apply-exact-next-version-contract.yml'
 
@@ -144,29 +144,42 @@ jobs:
 
           validation = Path('.github/workflows/release-workflow-validation.yml')
           checks = validation.read_text(encoding='utf-8')
-          checks = checks.replace(
-              "              '      next_version_increment:\\n',\n",
-              "              '      next_development_version:\\n',\n"
-              "              'Optional exact next version (X.Y.Z-SNAPSHOT)',\n"
-              "              '      next_version_increment:\\n',\n",
+          old_contract = """          required = (
+              '      next_version_increment:\\n',
+              '        type: choice\\n',
+              '          - patch\\n          - minor\\n          - major\\n',
+              'release_version="${current_version%-SNAPSHOT}"',
+              'NEXT_VERSION_INCREMENT: ${{ github.event.inputs.next_version_increment }}',
+              'ref: main',
           )
-          checks = checks.replace(
-              "              'NEXT_VERSION_INCREMENT: ${{ github.event.inputs.next_version_increment }}',\n",
-              "              'EXACT_NEXT_VERSION: ${{ github.event.inputs.next_development_version }}',\n"
-              "              'NEXT_VERSION_INCREMENT: ${{ github.event.inputs.next_version_increment }}',\n"
-              "              'next_development_version must use X.Y.Z-SNAPSHOT',\n"
-              "              'must be newer than release',\n",
+          forbidden = (
+              '      release_version:\\n',
+              '      next_development_version:\\n',
+              '${{ inputs.release_version }}',
+              '${{ inputs.next_development_version }}',
           )
-          checks = checks.replace(
-              "              '      next_development_version:\\n',\n",
-              "",
-              1,
+"""
+          new_contract = """          required = (
+              '      next_development_version:\\n',
+              'Optional exact next version (X.Y.Z-SNAPSHOT)',
+              '      next_version_increment:\\n',
+              '        type: choice\\n',
+              '          - patch\\n          - minor\\n          - major\\n',
+              'release_version="${current_version%-SNAPSHOT}"',
+              'EXACT_NEXT_VERSION: ${{ github.event.inputs.next_development_version }}',
+              'NEXT_VERSION_INCREMENT: ${{ github.event.inputs.next_version_increment }}',
+              'next_development_version must use X.Y.Z-SNAPSHOT',
+              'must be newer than release',
+              'ref: main',
           )
-          checks = checks.replace(
-              "              '${{ inputs.next_development_version }}',\n",
-              "",
+          forbidden = (
+              '      release_version:\\n',
+              '${{ inputs.release_version }}',
           )
-          validation.write_text(checks, encoding='utf-8')
+"""
+          if checks.count(old_contract) != 1:
+              raise SystemExit('Expected exactly one release validation contract block')
+          validation.write_text(checks.replace(old_contract, new_contract), encoding='utf-8')
           PY
 
           rm .github/workflows/apply-exact-next-version-contract.yml
