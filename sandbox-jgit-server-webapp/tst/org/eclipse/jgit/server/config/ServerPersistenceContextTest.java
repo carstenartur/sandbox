@@ -33,6 +33,7 @@ public class ServerPersistenceContextTest {
 		assertEquals(SessionFactory.class, sessionFactory.getReturnType());
 		assertEquals(SandboxRepositoryService.class, repositoryService.getReturnType());
 		assertFalse(Modifier.isPublic(CopiedServerPersistenceContext.class.getModifiers()));
+		assertFalse(Modifier.isPublic(ExternalServerPersistenceContext.class.getModifiers()));
 		for (Method method : ServerPersistenceContext.class.getMethods()) {
 			assertFalse(isStorageImplementation(method.getReturnType()));
 			for (Class<?> parameterType : method.getParameterTypes()) {

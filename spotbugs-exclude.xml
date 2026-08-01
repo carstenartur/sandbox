@@ -68,4 +68,13 @@
     <Bug pattern="SE_BAD_FIELD"/>
     <Class name="~org\.eclipse\.jgit\.server\.rest\.\w+Resource"/>
   </Match>
+  <Match>
+    <!-- The method executes only a ValidatedHistoryQuery. Table and column names
+         are exact allow-listed Flyway identifiers discovered through JDBC metadata;
+         the optional metadata schema is driver-quoted with embedded quotes escaped.
+         Quoted-schema integration coverage protects this trust boundary. -->
+    <Bug pattern="SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE"/>
+    <Class name="org.eclipse.jgit.server.config.ExternalCoreStartupGuard"/>
+    <Method name="readValidatedHistory"/>
+  </Match>
 </FindBugsFilter>
