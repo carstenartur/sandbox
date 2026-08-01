@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "issue": 1303,
+  "baselineCommit": "714bec5cf26e1554520ef063850865ec931a6624",
+  "purpose": "Machine-readable baseline for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
+  "releasePolicy": {
+    "required": "non-SNAPSHOT",
+    "minimumDocumentedCandidate": "0.1.13",
+    "selectedVersion": null,
+    "selectionState": "pending compatibility verification"
+  },
+  "runtime": {
+    "currentDatabase": "MSSQL",
+    "currentSearchBackend": "Elasticsearch",
+    "preferredTargetDatabase": "PostgreSQL",
+    "preferredTargetSearchBackend": "Lucene",
+    "decisionState": "pending production-like migration evidence"
+  },
+  "capabilities": [
+    {
+      "id": "repository-open-create",
+      "currentOwner": "sandbox-jgit-server-webapp",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.repository.SandboxRepositoryService",
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService"
+      ],
+      "currentBackend": "copied HibernateRepositoryBuilder and HibernateRepository",
+      "targetOwner": "jgit-storage-hibernate-core",
+      "targetApi": [
+        "HibernateRepositoryFactory",
+        "DefaultHibernateRepositoryFactory",
+        "HibernateGitStorage",
+        "RepositoryName"
+      ],
+      "migrationStatus": "adapter-boundary-present",
+      "requiredEvidence": [
+        "open/create/close/reopen on H2",
+        "two logical repositories in one schema",
+        "concurrent opens",
+        "shutdown without leaked handles"
+      ]
+    },
+    {
+      "id": "repository-name-normalization",
+      "currentOwner": "sandbox-jgit-server-webapp",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService"
+      ],
+      "currentBackend": "Sandbox-owned normalization of leading slash and .git suffix",
+      "targetOwner": "sandbox-jgit-server-webapp",
+      "targetApi": [
+        "RepositoryName"
+      ],
+      "migrationStatus": "retain-adapter-policy",
+      "requiredEvidence": [
+        "/name, name.git and name resolve to one cached repository identity"
+      ]
+    },
+    {
+      "id": "repository-description",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService.info",
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService.setDescription"
+      ],
+      "currentBackend": "HibernateRepository Gitweb description",
+      "targetOwner": "sandbox-jgit-server-webapp",
+      "targetApi": [],
+      "migrationStatus": "sandbox-extension-required",
+      "requiredEvidence": [
+        "description remains available without treating it as authoritative Git storage state"
+      ]
+    },
+    {
+      "id": "git-smart-http",
+      "currentOwner": "sandbox-jgit-server-webapp",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.resolver.HibernateRepositoryResolver"
+      ],
+      "currentBackend": "Repository returned by SandboxRepositoryService",
+      "targetOwner": "jgit-storage-hibernate-core",
+      "targetApi": [
+        "HibernateGitStorage.repository"
+      ],
+      "migrationStatus": "adapter-boundary-present",
+      "requiredEvidence": [
+        "clone/fetch/push after restart",
+        "normal RefUpdate creates queryable reflog entries",
+        "failed optimistic ref updates create no reflog entries"
+      ]
+    },
+    {
+      "id": "repository-delete",
+      "currentOwner": "sandbox-jgit-server-webapp",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.rest.RepositoryResource",
+        "org.eclipse.jgit.server.rest.AdminResource"
+      ],
+      "currentBackend": "copied backend lifecycle and deletion behavior",
+      "targetOwner": "jgit-storage-hibernate-core",
+      "targetApi": [
+        "HibernateRepositoryFactory.deleteRepository"
+      ],
+      "migrationStatus": "not-migrated",
+      "requiredEvidence": [
+        "delete rejected while coordinated handle is open",
+        "repeated deletion is idempotent",
+        "Search deletion participant removes projections"
+      ]
+    },
+    {
+      "id": "commit-history-search",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService",
+        "org.eclipse.jgit.server.rest.SearchResource"
+      ],
+      "currentBackend": "copied history entities and Hibernate Search queries",
+      "targetOwner": "jgit-storage-hibernate-search",
+      "targetApi": [
+        "GitHistorySearchService",
+        "CommitHistoryQuery"
+      ],
+      "migrationStatus": "not-migrated",
+      "requiredEvidence": [
+        "message and full-text search",
+        "bounded pagination",
+        "queries remain usable after the JGit Repository handle closes"
+      ]
+    },
+    {
+      "id": "changed-path-search",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService",
+        "org.eclipse.jgit.server.rest.SearchResource"
+      ],
+      "currentBackend": "copied changed-path projection",
+      "targetOwner": "jgit-storage-hibernate-search",
+      "targetApi": [
+        "GitHistorySearchService",
+        "CommitHistoryQuery"
+      ],
+      "migrationStatus": "not-migrated",
+      "requiredEvidence": [
+        "root commit paths",
+        "first-parent merge semantics",
+        "added, modified and deleted paths"
+      ]
+    },
+    {
+      "id": "author-time-search",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService",
+        "org.eclipse.jgit.server.rest.SearchResource"
+      ],
+      "currentBackend": "copied query service",
+      "targetOwner": "jgit-storage-hibernate-search",
+      "targetApi": [
+        "GitHistorySearchService",
+        "CommitHistoryQuery"
+      ],
+      "migrationStatus": "not-migrated",
+      "requiredEvidence": [
+        "author name and email filters",
+        "inclusive time ranges",
+        "combined author/path/time/text query"
+      ]
+    },
+    {
+      "id": "java-symbol-history",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.rest.SearchResource",
+        "org.eclipse.jgit.server.rest.AnalyticsResource"
+      ],
+      "currentBackend": "copied single-blob JDT analysis and persistence entities",
+      "targetOwner": "jgit-storage-hibernate-java-analysis",
+      "targetApi": [
+        "public Java analysis services and semantic DTOs"
+      ],
+      "migrationStatus": "compatibility-mapping-required",
+      "requiredEvidence": [
+        "declaration and usage history",
+        "type and method hierarchy relations",
+        "binding quality is exposed as resolved, partial or unresolved"
+      ]
+    },
+    {
+      "id": "file-history",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.rest.SearchResource"
+      ],
+      "currentBackend": "copied query and projection services",
+      "targetOwner": "jgit-storage-hibernate-search",
+      "targetApi": [
+        "GitHistorySearchService"
+      ],
+      "migrationStatus": "not-migrated",
+      "requiredEvidence": [
+        "history follows add, modify, delete and rename/move policy explicitly"
+      ]
+    },
+    {
+      "id": "api-diff-migration-impact",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.rest.AnalyticsResource"
+      ],
+      "currentBackend": "copied specialized analysis services",
+      "targetOwner": "jgit-storage-hibernate-java-analysis or Sandbox extension",
+      "targetApi": [
+        "JavaSemanticDiff",
+        "symbol timeline and software graph queries"
+      ],
+      "migrationStatus": "semantic-equivalence-review-required",
+      "requiredEvidence": [
+        "every retained endpoint has documented equivalent, versioned improvement, extension owner or deprecation"
+      ]
+    },
+    {
+      "id": "semantic-hybrid-search",
+      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.rest.SearchResource"
+      ],
+      "currentBackend": "DJL/ONNX embeddings, vector persistence and rank fusion",
+      "targetOwner": "Sandbox analysis extension",
+      "targetApi": [
+        "SemanticCodeSearch SPI"
+      ],
+      "migrationStatus": "sandbox-extension-required",
+      "requiredEvidence": [
+        "server operates without native embedding dependencies",
+        "disabled capability is reported explicitly",
+        "extension depends only on public Search/Java Analysis APIs"
+      ]
+    },
+    {
+      "id": "analytics-administration",
+      "currentOwner": "sandbox-jgit-server-webapp",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.rest.AnalyticsResource",
+        "org.eclipse.jgit.server.rest.HealthResource",
+        "org.eclipse.jgit.server.rest.AdminResource"
+      ],
+      "currentBackend": "REST resources coupled to copied services and entities",
+      "targetOwner": "sandbox-jgit-server-webapp",
+      "targetApi": [
+        "SandboxRepositoryService",
+        "SandboxHistorySearch",
+        "SandboxJavaHistory"
+      ],
+      "migrationStatus": "repository-adapter-only",
+      "requiredEvidence": [
+        "resources import no copied builder, storage entity or implementation package",
+        "endpoint payload compatibility is protected by Sandbox DTOs"
+      ]
+    },
+    {
+      "id": "schema-provisioning",
+      "currentOwner": "sandbox-jgit-server-webapp and sandbox-jgit-storage-hibernate",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.config.HibernateConfig",
+        "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
+      ],
+      "currentBackend": "application SessionFactory with guarded external Core entity registration",
+      "targetOwner": "jgit-storage-hibernate-core and jgit-storage-hibernate-search",
+      "targetApi": [
+        "CoreEntities",
+        "SearchEntities",
+        "library Flyway migrations and legacy preflight APIs"
+      ],
+      "migrationStatus": "guarded-core-preparation-present",
+      "requiredEvidence": [
+        "Core migrations precede Hibernate validation",
+        "Search migrations follow Core migrations",
+        "production uses hbm2ddl.auto=validate",
+        "pack BLOB checksums and reflogs survive legacy adoption"
+      ]
+    }
+  ],
+  "classifications": [
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/SandboxRepositoryService.java",
+      "classification": "sandbox-adapter-retained"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/CopiedHibernateRepositoryService.java",
+      "classification": "temporary-copied-adapter",
+      "replacement": "Core-backed SandboxRepositoryService implementation"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/config/ExternalServerPersistenceContext.java",
+      "classification": "guarded-external-core-preparation"
+    },
+    {
+      "path": "sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/repository/HibernateRepositoryBuilder.java",
+      "classification": "replace-by-core"
+    },
+    {
+      "path": "sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java",
+      "classification": "split-between-search-java-analysis-and-sandbox-extension"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/RepositoryResource.java",
+      "classification": "sandbox-rest-retained-adapter-only"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java",
+      "classification": "sandbox-rest-retained-needs-search-adapter"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AnalyticsResource.java",
+      "classification": "sandbox-rest-retained-needs-java-and-extension-adapters"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/HealthResource.java",
+      "classification": "sandbox-rest-retained-needs-capability-status-boundary"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AdminResource.java",
+      "classification": "sandbox-rest-retained-needs-lifecycle-and-rebuild-boundary"
+    }
+  ]
+}
