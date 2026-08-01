@@ -51,7 +51,9 @@ public class ParameterizedMigrationDiagnosticsTest {
 	@Test
 	public void reportsInheritedOrExternalProviderContractInIncompleteScope()
 			throws CoreException {
-		ICompilationUnit unit= compilationUnit("missingprovider", "MissingProviderTest", """ //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= compilationUnit("missingprovider", //$NON-NLS-1$
+				"MissingProviderTest", //$NON-NLS-1$
+				"""
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
 				import org.junit.runners.Parameterized;
@@ -68,7 +70,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 					public void testValue() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 
 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result=
 				JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(),
@@ -81,7 +83,9 @@ public class ParameterizedMigrationDiagnosticsTest {
 
 	@Test
 	public void reportsMultipleLocalProviders() throws CoreException {
-		ICompilationUnit unit= compilationUnit("multipleproviders", "MultipleProvidersTest", """ //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= compilationUnit("multipleproviders", //$NON-NLS-1$
+				"MultipleProvidersTest", //$NON-NLS-1$
+				"""
 				import java.util.List;
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
@@ -110,7 +114,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 					public void testValue() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 
 		assertReason(planClosed(unit),
 				"PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS"); //$NON-NLS-1$
@@ -118,7 +122,9 @@ public class ParameterizedMigrationDiagnosticsTest {
 
 	@Test
 	public void reportsFieldInjection() throws CoreException {
-		ICompilationUnit unit= compilationUnit("fieldinjection", "FieldInjectionTest", """ //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= compilationUnit("fieldinjection", //$NON-NLS-1$
+				"FieldInjectionTest", //$NON-NLS-1$
+				"""
 				import java.util.List;
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
@@ -140,14 +146,16 @@ public class ParameterizedMigrationDiagnosticsTest {
 					public void testValue() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 
 		assertReason(planClosed(unit), "PARAMETERIZED_FIELD_INJECTION"); //$NON-NLS-1$
 	}
 
 	@Test
 	public void recognizesExplicitRunWithValueSyntax() throws CoreException {
-		ICompilationUnit unit= compilationUnit("explicitrunner", "ExplicitRunnerTest", """ //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= compilationUnit("explicitrunner", //$NON-NLS-1$
+				"ExplicitRunnerTest", //$NON-NLS-1$
+				"""
 				import java.util.List;
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
@@ -169,7 +177,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 					public void testValue() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 
 		assertReason(planClosed(unit), "PARAMETERIZED_FIELD_INJECTION"); //$NON-NLS-1$
 	}
@@ -177,7 +185,9 @@ public class ParameterizedMigrationDiagnosticsTest {
 	@Test
 	public void supportedLocalContractHasNoRejectionDiagnostic()
 			throws CoreException {
-		ICompilationUnit unit= compilationUnit("supported", "SupportedTest", """ //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit unit= compilationUnit("supported", //$NON-NLS-1$
+				"SupportedTest", //$NON-NLS-1$
+				"""
 				import java.util.List;
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
@@ -201,7 +211,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 					public void testValue() {
 					}
 				}
-				""");
+				"""); //$NON-NLS-1$
 
 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= planClosed(unit);
 
