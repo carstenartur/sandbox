@@ -91,19 +91,48 @@ final class ExternalCoreStartupGuard {
 		DatabaseMetaData metadata= connection.getMetaData();
 		TableReference history= findHistoryTable(connection, metadata,
 				preferredSchema);
-		Map<String, String> columns= columns(metadata, history);
+		ValidatedHistoryQuery query= validatedHistoryQuery(metadata, history,
+				columns(metadata, history));
+		HistoryEvidence evidence= readValidatedHistory(connection, query);
+		if (!evidence.sawRow() || !evidence.sawVersionedSuccess()) {
+			throw new IllegalStateException(
+					"Core Flyway history contains no successful versioned migration."); //$NON-NLS-1$
+		}
+	}
+
+	private static ValidatedHistoryQuery validatedHistoryQuery(
+			DatabaseMetaData metadata, TableReference history,
+			Map<String, String> columns) throws SQLException {
+		if (!CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
+				.equalsIgnoreCase(history.name())) {
+			throw new IllegalStateException(
+					"Refusing to query an unexpected schema-history table: " //$NON-NLS-1$
+							+ history.name());
+		}
 		String installedRank= requiredColumn(columns, "installed_rank"); //$NON-NLS-1$
 		String version= requiredColumn(columns, "version"); //$NON-NLS-1$
 		String success= requiredColumn(columns, "success"); //$NON-NLS-1$
-		String sql= "SELECT " + quote(metadata, version) + ", " //$NON-NLS-1$ //$NON-NLS-2$
-				+ quote(metadata, success) + " FROM " //$NON-NLS-1$
-				+ qualifiedName(metadata, history) + " ORDER BY " //$NON-NLS-1$
-				+ quote(metadata, installedRank);
+		return new ValidatedHistoryQuery(
+				"SELECT " + quote(metadata, version) + ", " //$NON-NLS-1$ //$NON-NLS-2$
+						+ quote(metadata, success) + " FROM " //$NON-NLS-1$
+						+ qualifiedName(metadata, history) + " ORDER BY " //$NON-NLS-1$
+						+ quote(metadata, installedRank));
+	}
 
+	/**
+	 * Execute a query produced only by {@link #validatedHistoryQuery}.
+	 *
+	 * <p>The SQL contains no value supplied by a caller. Its table and column
+	 * names are exact allow-listed Flyway identifiers obtained from JDBC metadata;
+	 * the optional schema also comes from metadata, and every identifier is quoted
+	 * with the driver's quote string with embedded quotes doubled.</p>
+	 */
+	private static HistoryEvidence readValidatedHistory(Connection connection,
+			ValidatedHistoryQuery query) throws SQLException {
 		boolean sawRow= false;
 		boolean sawVersionedSuccess= false;
 		try (Statement statement= connection.createStatement();
-				ResultSet rows= statement.executeQuery(sql)) {
+				ResultSet rows= statement.executeQuery(query.sql())) {
 			while (rows.next()) {
 				sawRow= true;
 				String migrationVersion= rows.getString(1);
@@ -117,10 +146,7 @@ final class ExternalCoreStartupGuard {
 				}
 			}
 		}
-		if (!sawRow || !sawVersionedSuccess) {
-			throw new IllegalStateException(
-					"Core Flyway history contains no successful versioned migration."); //$NON-NLS-1$
-		}
+		return new HistoryEvidence(sawRow, sawVersionedSuccess);
 	}
 
 	private static TableReference findHistoryTable(Connection connection,
@@ -205,6 +231,11 @@ final class ExternalCoreStartupGuard {
 					"Core Flyway history table is missing required column " //$NON-NLS-1$
 							+ logicalName + '.');
 		}
+		if (!logicalName.equalsIgnoreCase(actualName)) {
+			throw new IllegalStateException(
+					"Core Flyway history column has an unexpected identifier: " //$NON-NLS-1$
+							+ actualName);
+		}
 		return actualName;
 	}
 
@@ -235,6 +266,13 @@ final class ExternalCoreStartupGuard {
 		return value;
 	}
 
+	private record HistoryEvidence(boolean sawRow,
+			boolean sawVersionedSuccess) {
+	}
+
 	private record TableReference(String catalog, String schema, String name) {
+	}
+
+	private record ValidatedHistoryQuery(String sql) {
 	}
 }
