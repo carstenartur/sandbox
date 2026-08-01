@@ -19,8 +19,13 @@ import java.util.Set;
 import org.eclipse.text.edits.TextEditGroup;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -51,6 +56,8 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
  *
  */
 public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstanceCreation> {
+
+	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION= "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
@@ -128,8 +135,9 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 	/**
 	 * Registers the original try statement as removed while retaining the body whose
 	 * statements were recreated as placeholders by the combined replacement/unwrap
-	 * rewrite. This lets {@code ImportRemover} discard imports referenced only by the
-	 * removed catch clause without treating imports used by the inlined body as dead.
+	 * rewrite. If no surviving type reference exists outside the deleted catch clause,
+	 * the obsolete import is removed explicitly because placeholder rewrites do not
+	 * provide {@code ImportRemover} with a reliable reference balance.
 	 */
 	private static void registerUnwrappedTryForImportRemoval(ClassInstanceCreation visited,
 			CompilationUnitRewrite cuRewrite) {
@@ -139,6 +147,41 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 		}
 		cuRewrite.getImportRemover().registerRemovedNode(tryStatement);
 		cuRewrite.getImportRemover().registerRetainedNode(tryStatement.getBody());
+		CatchClause removedCatch= (CatchClause) tryStatement.catchClauses().get(0);
+		CompilationUnit root= (CompilationUnit) tryStatement.getRoot();
+		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatch)) {
+			cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
+		}
+	}
+
+	private static boolean hasSurvivingUnsupportedEncodingExceptionReference(CompilationUnit root,
+			CatchClause removedCatch) {
+		boolean[] found= { false };
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				if (found[0] || isDescendantOf(node, removedCatch)
+						|| ASTNodes.getFirstAncestorOrNull(node, ImportDeclaration.class) != null) {
+					return !found[0];
+				}
+				ITypeBinding typeBinding= node.resolveTypeBinding();
+				if (typeBinding != null
+						&& JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(typeBinding.getErasure().getQualifiedName())) {
+					found[0]= true;
+				}
+				return !found[0];
+			}
+		});
+		return found[0];
+	}
+
+	private static boolean isDescendantOf(ASTNode node, ASTNode ancestor) {
+		for (ASTNode current= node; current != null; current= current.getParent()) {
+			if (current == ancestor) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
