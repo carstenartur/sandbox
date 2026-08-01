@@ -23,11 +23,15 @@ import java.util.regex.Pattern;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
@@ -35,11 +39,11 @@ import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -50,7 +54,6 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.util.ImportUtils;
 import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
-
 
 /**
  * Abstract base class for encoding-related quick fixes. Provides common functionality
@@ -119,7 +122,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	/**
 	 * Immutable record to hold node data for encoding transformations.
 	 * Replaces the mutable Nodedata class for better thread safety and immutability.
-	 * 
+	 *
 	 * @param replace Whether to replace an existing encoding parameter (true) or appended (false)
 	 * @param visited The AST node that was visited and needs modification
 	 * @param encoding The encoding constant name (e.g., "UTF_8"), or null for default charset
@@ -135,7 +138,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	/**
 	 * Returns the charset constants map for use in encoding transformations.
-	 * 
+	 *
 	 * @return thread-safe map of charset constants
 	 */
 	protected static Map<String, QualifiedName> getCharsetConstants() {
@@ -291,11 +294,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		}
 		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
 		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);
-		
-		// Return the closest ancestor. In Java, methods are always declared inside types,
-		// so if a MethodDeclaration exists, it is guaranteed to be closer than any TypeDeclaration.
-		// getFirstAncestorOrNull returns the nearest ancestor of each type, so we just need to
-		// prefer the more specific (nested) one.
+
 		if (methodDecl != null) {
 			return methodDecl;
 		}
@@ -457,30 +456,21 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			ASTNode replacement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
 		ASTNode st = ASTNodes.getFirstAncestorOrNull(visited, Statement.class, FieldDeclaration.class);
 		if (st != null && isInsideTryBodyWithOnlyUnsupportedEncodingCatch(st)) {
-			// Statement is in a try body that will be unwrapped.
-			// Handle BOTH the argument replacement AND the try-catch unwrapping
-			// in a single text-based operation to avoid conflicts between
-			// rewrite.replace() and createMoveTarget().
 			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, st, group, cuRewrite);
 		}
 		if (st == null) {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
-		// Safe to use the full statement replacement with NLS removal
-		// (same approach as ASTNodes.replaceAndRemoveNLS)
 		try {
 			String buffer = cuRewrite.getCu().getBuffer().getContents();
 			CompilationUnit cu = (CompilationUnit) st.getRoot();
 			int origStart = cu.getExtendedStartPosition(st);
 			int origLength = cu.getExtendedLength(st);
 			String original = buffer.substring(origStart, origStart + origLength);
-			// Remove last NLS comment (the one for the replaced encoding string literal)
 			original = LAST_NLS_COMMENT.matcher(original).replaceFirst(""); //$NON-NLS-1$
-			// Remove leading whitespace
 			original = Pattern.compile("^[ \\t]*").matcher(original).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
 			original = Pattern.compile("\n[ \\t]*").matcher(original).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
-			// Replace visited text with replacement text
 			String visitedString = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
 			String replacementString = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
@@ -488,7 +478,6 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			ASTNode placeholder = rewrite.createStringPlaceholder(modified, st.getNodeType());
 			rewrite.replace(st, placeholder, group);
 		} catch (JavaModelException e) {
-			// Fall back to simple replacement without NLS removal
 			rewrite.replace(visited, replacement, group);
 		}
 		return false;
@@ -509,10 +498,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	private static boolean replaceTryBodyAndUnwrap(ASTRewrite rewrite, ASTNode visited,
 			ASTNode replacement, ASTNode statement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
 		Block block = (Block) statement.getParent();
-		org.eclipse.jdt.core.dom.TryStatement tryStatement = (org.eclipse.jdt.core.dom.TryStatement) block.getParent();
+		TryStatement tryStatement = (TryStatement) block.getParent();
 		ASTNode tryParent = tryStatement.getParent();
 		if (!(tryParent instanceof Block parentBlock)) {
-			// Cannot inline statements if the try's parent is not a block
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
@@ -523,7 +511,6 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 					visited.getStartPosition() + visited.getLength());
 			String replacementString = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
 
-			// Create string placeholders for each statement in the try body
 			ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
 			List<?> tryStatements = block.statements();
 			for (int i = tryStatements.size() - 1; i >= 0; i--) {
@@ -531,12 +518,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 				int stmtStart = cu.getExtendedStartPosition(stmt);
 				int stmtLength = cu.getExtendedLength(stmt);
 				String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);
-				// Remove leading whitespace
 				stmtSource = Pattern.compile("^[ \\t]*").matcher(stmtSource).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
 				stmtSource = Pattern.compile("\n[ \\t]*").matcher(stmtSource).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
-				// Apply the argument replacement if this statement contains the visited node
 				if (stmt == statement) {
-					// Remove last NLS comment (the one for the replaced encoding string literal)
 					stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(""); //$NON-NLS-1$
 					stmtSource = stmtSource.replace(visitedString, replacementString);
 				}
@@ -544,25 +528,64 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 				parentListRewrite.insertAfter(placeholder, tryStatement, group);
 			}
 			rewrite.remove(tryStatement, group);
+			registerUnwrappedTryForImportRemoval(tryStatement, cuRewrite);
 			return true;
 		} catch (JavaModelException e) {
-			// Fall back to simple replacement without NLS removal
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
 	}
 
 	/**
+	 * Registers the removed try/catch while retaining its inlined body. Placeholder
+	 * rewrites do not provide {@link ImportRemover} with a reliable reference balance,
+	 * so the obsolete exception import is removed explicitly only when no bound type
+	 * reference survives outside the deleted catch clause.
+	 */
+	private static void registerUnwrappedTryForImportRemoval(TryStatement tryStatement,
+			CompilationUnitRewrite cuRewrite) {
+		cuRewrite.getImportRemover().registerRemovedNode(tryStatement);
+		cuRewrite.getImportRemover().registerRetainedNode(tryStatement.getBody());
+		CatchClause removedCatch = (CatchClause) tryStatement.catchClauses().get(0);
+		CompilationUnit root = (CompilationUnit) tryStatement.getRoot();
+		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatch)) {
+			cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
+		}
+	}
+
+	private static boolean hasSurvivingUnsupportedEncodingExceptionReference(CompilationUnit root,
+			CatchClause removedCatch) {
+		boolean[] found = { false };
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				if (found[0] || isDescendantOf(node, removedCatch)
+						|| ASTNodes.getFirstAncestorOrNull(node, ImportDeclaration.class) != null) {
+					return !found[0];
+				}
+				ITypeBinding typeBinding = node.resolveTypeBinding();
+				if (typeBinding != null
+						&& JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(typeBinding.getErasure().getQualifiedName())) {
+					found[0] = true;
+				}
+				return !found[0];
+			}
+		});
+		return found[0];
+	}
+
+	private static boolean isDescendantOf(ASTNode node, ASTNode ancestor) {
+		for (ASTNode current = node; current != null; current = current.getParent()) {
+			if (current == ancestor) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Checks whether the given statement is directly inside the body of a try statement
-	 * that will be fully unwrapped by removeUnsupportedEncodingException. This happens when:
-	 * <ul>
-	 *   <li>The statement is in the try body (not a catch/finally block)</li>
-	 *   <li>The try has no resources (not try-with-resources)</li>
-	 *   <li>The try has no finally block</li>
-	 *   <li>The try has exactly one catch clause catching only UnsupportedEncodingException</li>
-	 * </ul>
-	 * In this case, simplifyEmptyTryStatement will use createMoveTarget to move
-	 * statements out of the try body, so we must not use statement-level replacement.
+	 * that will be fully unwrapped by removeUnsupportedEncodingException.
 	 */
 	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
 		ASTNode parent = statement.getParent();
@@ -570,14 +593,12 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			return false;
 		}
 		ASTNode grandParent = block.getParent();
-		if (!(grandParent instanceof org.eclipse.jdt.core.dom.TryStatement tryStatement)) {
+		if (!(grandParent instanceof TryStatement tryStatement)) {
 			return false;
 		}
-		// Check if the block is the try body (not a catch or finally block)
 		if (tryStatement.getBody() != block) {
 			return false;
 		}
-		// Try-with-resources won't be unwrapped even if catch is removed
 		if (!tryStatement.resources().isEmpty()) {
 			return false;
 		}
@@ -585,18 +606,15 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			return false;
 		}
 		@SuppressWarnings("unchecked")
-		List<org.eclipse.jdt.core.dom.CatchClause> catchClauses = tryStatement.catchClauses();
+		List<CatchClause> catchClauses = tryStatement.catchClauses();
 		if (catchClauses.size() != 1) {
 			return false;
 		}
-		org.eclipse.jdt.core.dom.CatchClause catchClause = catchClauses.get(0);
+		CatchClause catchClause = catchClauses.get(0);
 		org.eclipse.jdt.core.dom.Type exType = catchClause.getException().getType();
 		if (exType instanceof org.eclipse.jdt.core.dom.SimpleType simpleType) {
 			return UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleType.getName().toString());
 		}
-		// Union type (e.g., FileNotFoundException | UnsupportedEncodingException):
-		// After removing UnsupportedEncodingException, another catch type remains,
-		// so the try won't be unwrapped → no conflict with createMoveTarget.
 		return false;
 	}
 
