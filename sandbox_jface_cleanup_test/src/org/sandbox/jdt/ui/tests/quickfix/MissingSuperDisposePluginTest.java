@@ -22,7 +22,6 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -215,31 +214,6 @@ class AnotherWidget extends Widget {
 			this.given = given;
 			this.expected = expected;
 		}
-	}
-
-	/**
-	 * Disabled: Full cleanup test following the standard pattern.
-	 * 
-	 * <p>This test would run the MissingSuperDisposePlugin cleanup on code with
-	 * missing super.dispose() calls and verify the fix is applied correctly.</p>
-	 * 
-	 * <p><b>Requires:</b> TriggerPattern engine with override detection and body constraints.</p>
-	 * 
-	 * <p><b>Pattern:</b> Same as Java8CleanUpTest - parameterized test with enum cases,
-	 * before/after code comparison.</p>
-	 */
-	@Test
-	@Disabled("Requires TriggerPattern engine enhancements: override detection and body constraints")
-	public void testMissingSuperDisposeCleanup() {
-		// Pattern when implemented:
-		// @ParameterizedTest
-		// @EnumSource(MissingSuperDisposeTestCases.class)
-		// public void testMissingSuperDisposeCleanup(MissingSuperDisposeTestCases test) throws CoreException {
-		//     IPackageFragment pack = context.getSourceFolder().createPackageFragment("test", false, null);
-		//     ICompilationUnit cu = pack.createCompilationUnit("MyWidget.java", test.given, false, null);
-		//     context.enable(MYCleanUpConstants.MISSING_SUPER_DISPOSE_CLEANUP); // Constant TBD
-		//     context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
-		// }
 	}
 
 	/**

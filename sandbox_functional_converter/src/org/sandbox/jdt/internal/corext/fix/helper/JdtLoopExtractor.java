@@ -146,7 +146,8 @@ public class JdtLoopExtractor {
             return;
         }
         int varDeclCount = countVariableDeclarations(statements);
-        if (varDeclCount > 1) {
+        if (varDeclCount > 1
+                && !isLinearVariableDeclarationChain(statements, variableName)) {
             addSimpleForEachTerminal(statements, builder);
             return;
         }
@@ -288,11 +289,11 @@ public class JdtLoopExtractor {
             return; // No terminal → NOT_CONVERTIBLE
         }
         
-        // Guard: if body has multiple variable declarations, use simple forEach
-        // instead of trying to decompose into map chains (which can be incorrect)
+        // Decompose multiple declarations only when every initializer consumes
+        // the current pipeline value without referring back to an earlier one.
         int varDeclCount = countVariableDeclarations(statements);
-        if (varDeclCount > 1) {
-            // Convert directly to simple forEach with body as-is
+        if (varDeclCount > 1
+                && !isLinearVariableDeclarationChain(statements, varName)) {
             addSimpleForEachTerminal(statements, builder);
             return;
         }
@@ -332,7 +333,73 @@ public class JdtLoopExtractor {
         }
         return count;
     }
-    
+
+    /**
+     * Returns whether multiple local declarations form a linear stream map chain.
+     * Each declaration becomes the sole pipeline value available to the next
+     * declaration. References to pipeline values that are no longer in scope
+     * make the decomposition unsafe and retain the original block in one
+     * {@code forEach} lambda instead.
+     */
+    private boolean isLinearVariableDeclarationChain(
+            java.util.List<Statement> statements, String initialVariableName) {
+        java.util.Set<String> unavailableVariables = new java.util.HashSet<>();
+        String currentVariableName = initialVariableName;
+        boolean declarationSequenceEnded = false;
+        int declarationCount = 0;
+
+        for (int index = 0; index < statements.size(); index++) {
+            Statement statement = statements.get(index);
+            if (!(statement instanceof VariableDeclarationStatement declaration)) {
+                if (declarationCount > 0) {
+                    declarationSequenceEnded = true;
+                    if (referencesAnyVariable(statement, unavailableVariables)) {
+                        return false;
+                    }
+                }
+                continue;
+            }
+            if (declarationSequenceEnded || index == statements.size() - 1) {
+                return false;
+            }
+
+            @SuppressWarnings("unchecked")
+            java.util.List<VariableDeclarationFragment> fragments = declaration.fragments();
+            if (fragments.size() != 1 || fragments.get(0).getInitializer() == null) {
+                return false;
+            }
+            VariableDeclarationFragment fragment = fragments.get(0);
+            if (referencesAnyVariable(fragment.getInitializer(), unavailableVariables)) {
+                return false;
+            }
+
+            unavailableVariables.add(currentVariableName);
+            currentVariableName = fragment.getName().getIdentifier();
+            declarationCount++;
+        }
+        return declarationCount > 1;
+    }
+
+    private boolean referencesAnyVariable(ASTNode node,
+            java.util.Set<String> variableNames) {
+        boolean[] found = { false };
+        node.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (!variableNames.contains(name.getIdentifier())) {
+                    return true;
+                }
+                IBinding binding = name.resolveBinding();
+                if (binding == null || binding.getKind() == IBinding.VARIABLE) {
+                    found[0] = true;
+                    return false;
+                }
+                return true;
+            }
+        });
+        return found[0];
+    }
+
     /**
      * Adds a simple forEach terminal with all statements in the body.
      * Used when the body is too complex to decompose into map/filter chains.

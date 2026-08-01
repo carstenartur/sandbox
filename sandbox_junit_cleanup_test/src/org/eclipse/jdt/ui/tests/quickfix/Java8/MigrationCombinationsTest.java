@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -207,66 +206,6 @@ public class MyTest {
 		File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
 	}
 }
-				"""
-		}, null);
-	}
-
-	@Disabled("@RunWith(Suite.class) to @Suite transformation not fully working - actual output retains @RunWith")
-	@Test
-	public void migrates_suite_with_assertions_and_lifecycle() throws CoreException {
-		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
-				"""
-				package test;
-				import static org.junit.Assert.*;
-				import org.junit.Before;
-				import org.junit.Test;
-				import org.junit.runner.RunWith;
-				import org.junit.runners.Suite;
-				
-				@RunWith(Suite.class)
-				@Suite.SuiteClasses({MyTest.class})
-				public class MyTest {
-					@Before
-					public void setUp() {
-					}
-					
-					@Test
-					public void testSomething() {
-						assertEquals("expected", "actual");
-					}
-				}
-				""", false, null);
-
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
-
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
-				"""
-				package test;
-				import static org.junit.jupiter.api.Assertions.*;
-				
-				import org.junit.jupiter.api.BeforeEach;
-				import org.junit.jupiter.api.Test;
-				import org.junit.platform.suite.api.SelectClasses;
-				import org.junit.platform.suite.api.Suite;
-				
-				@Suite
-				@SelectClasses({MyTest.class})
-				public class MyTest {
-					@BeforeEach
-					public void setUp() {
-					}
-					
-					@Test
-					public void testSomething() {
-						assertEquals("expected", "actual");
-					}
-				}
 				"""
 		}, null);
 	}

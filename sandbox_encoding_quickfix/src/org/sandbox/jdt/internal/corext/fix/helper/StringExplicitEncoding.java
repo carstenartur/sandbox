@@ -22,8 +22,10 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 
 import org.sandbox.jdt.internal.common.HelperVisitor;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
@@ -116,9 +118,27 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 		} else {
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
 		}
-		if (!tryAlreadyUnwrapped) {
+		if (tryAlreadyUnwrapped) {
+			registerUnwrappedTryForImportRemoval(visited, cuRewrite);
+		} else {
 			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());
 		}
+	}
+
+	/**
+	 * Registers the original try statement as removed while retaining the body whose
+	 * statements were recreated as placeholders by the combined replacement/unwrap
+	 * rewrite. This lets {@code ImportRemover} discard imports referenced only by the
+	 * removed catch clause without treating imports used by the inlined body as dead.
+	 */
+	private static void registerUnwrappedTryForImportRemoval(ClassInstanceCreation visited,
+			CompilationUnitRewrite cuRewrite) {
+		TryStatement tryStatement= ASTNodes.getFirstAncestorOrNull(visited, TryStatement.class);
+		if (tryStatement == null || tryStatement.catchClauses().size() != 1) {
+			return;
+		}
+		cuRewrite.getImportRemover().registerRemovedNode(tryStatement);
+		cuRewrite.getImportRemover().registerRetainedNode(tryStatement.getBody());
 	}
 
 	@Override

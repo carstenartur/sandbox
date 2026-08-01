@@ -24,7 +24,6 @@ import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -144,17 +143,11 @@ public class ExplicitEncodingCleanUpTest {
 	 * try-catch unwrapping (removing single UnsupportedEncodingException catch)
 	 * both work correctly when combined in the same statement.
 	 *
-	 * <p>This is a known limitation: Eclipse's ASTRewrite.createMoveTarget()
-	 * (used to move statements out of the try body) does not preserve child
-	 * node replacements registered via rewrite.replace(). The encoding
-	 * replacement is silently lost when the parent statement is moved.
-	 *
-	 * <p>The workaround in replaceTryBodyAndUnwrap uses text-based placeholder
-	 * replacement, but this still needs to be verified in CI.
+	 * <p>The replacement and try unwrapping must be emitted as one rewrite so
+	 * moving the parent statement cannot discard the child charset change.
 	 *
 	 * @see AbstractExplicitEncoding#replaceTryBodyAndUnwrap
 	 */
-	@Disabled("Known limitation: encoding replacement inside try-catch with UnsupportedEncodingException unwrap — see replaceTryBodyAndUnwrap") //$NON-NLS-1$
 	@Test
 	public void testStringEncodingReplacementInsideTryCatchUnwrap() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
