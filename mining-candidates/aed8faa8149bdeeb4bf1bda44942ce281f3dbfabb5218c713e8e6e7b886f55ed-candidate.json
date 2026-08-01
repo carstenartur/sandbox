@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "aed8faa8149bdeeb4bf1bda44942ce281f3dbfabb5218c713e8e6e7b886f55ed",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modify-dialog-null-preview-code\u003e\n\u003c!description: Replace specific preview code comment return with null in ModifyDialog.getPreviewCode method.\u003e\n\u003c!severity: INFO\u003e\n\nreturn \"// \" + org.eclipse.jdt.internal.ui.preferences.formatter.FormatterMessages.ModifyDialog_previewMissing_comment;\n\u003d\u003e return null;\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nclass FormatterMessages {\n    public static String ModifyDialog_previewMissing_comment \u003d \"Preview is not available\";\n}\n\nclass PreferenceTreeNode\u003cT\u003e {\n    public PreferenceTreeNode\u003c?\u003e getParent() { return null; }\n}\n\npublic class ModifyDialog {\n    PreferenceTreeNode\u003c?\u003e fCurrentlyFocused \u003d null; \n\n    protected String getPreviewCode() {\n        PreferenceTreeNode\u003c?\u003e currentNode\u003d fCurrentlyFocused;\n        if (currentNode \u003d\u003d null)\n            return \"// \" + FormatterMessages.ModifyDialog_previewMissing_comment; \n        \n        String previewCode\u003d doGetPreviewCode(currentNode);\n        if (previewCode !\u003d null)\n            return previewCode;\n\n        PreferenceTreeNode\u003c?\u003e node \u003d currentNode; \n        while (node !\u003d null) { \n            node\u003d node.getParent();\n        }\n        return \"// \" + FormatterMessages.ModifyDialog_previewMissing_comment; \n    }\n\n    private String doGetPreviewCode(PreferenceTreeNode\u003c?\u003e node) {\n        return null; \n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nclass FormatterMessages {\n    public static String ModifyDialog_previewMissing_comment \u003d \"Preview is not available\";\n}\n\nclass PreferenceTreeNode\u003cT\u003e {\n    public PreferenceTreeNode\u003c?\u003e getParent() { return null; }\n}\n\npublic class ModifyDialog {\n    PreferenceTreeNode\u003c?\u003e fCurrentlyFocused \u003d null; \n\n    protected String getPreviewCode() {\n        PreferenceTreeNode\u003c?\u003e currentNode\u003d fCurrentlyFocused;\n        if (currentNode \u003d\u003d null)\n            return null; \n        \n        String previewCode\u003d doGetPreviewCode(currentNode);\n        if (previewCode !\u003d null)\n            return previewCode;\n\n        PreferenceTreeNode\u003c?\u003e node \u003d currentNode; \n        while (node !\u003d null) { \n            node\u003d node.getParent();\n        }\n        return null; \n    }\n\n    private String doGetPreviewCode(PreferenceTreeNode\u003c?\u003e node) {\n        return null; \n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nclass FormatterMessages {\n    public static String ModifyDialog_previewMissing_comment \u003d \"Preview is not available\";\n    public static String Other_comment \u003d \"Another comment\";\n}\n\npublic class OtherClass {\n    public String getSomeText() {\n        // This is a different constant, should not match\n        return \"// \" + FormatterMessages.Other_comment;\n    }\n\n    public String getAnotherText() {\n        // This is the same constant, but prefixed differently, should not match\n        return \"PREFIX // \" + FormatterMessages.ModifyDialog_previewMissing_comment;\n    }\n}\n",
+  "targetHintFile": "return-statement-refactoring.sandbox-hint",
+  "sourceCommit": "150162331c142e735364b0bb0aaa07ee0c1dd342",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Return Value Refactoring",
+  "summary": "Replaces specific `return` statements that produce a default comment string with `return null` in `ModifyDialog.getPreviewCode()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-01T03:15:28.216639749Z",
+  "ruleFingerprint": "sha256:72fee3ed749d10aba18cf5f67ba9d24c3a23403cc0ff4a0f37237fe6a0afeb9e",
+  "behaviorFingerprint": "sha256:58d5ec31e4a6973e41e6d41602e55976c6cff7657772a507c5b064dffef710e3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-01T03:15:30.513248100Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
