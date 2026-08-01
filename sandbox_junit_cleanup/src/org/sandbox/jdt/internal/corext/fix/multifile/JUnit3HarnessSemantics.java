@@ -59,29 +59,33 @@ final class JUnit3HarnessSemantics {
 		}
 
 		String name= method.getName().getIdentifier();
-		return switch (name) {
-			case "suite" when isSuiteBuilder(method) -> Optional.of(new Rejection( //$NON-NLS-1$
-					"CUSTOM_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$
+		if ("suite".equals(name) && isSuiteBuilder(method)) { //$NON-NLS-1$
+			return Optional.of(new Rejection("CUSTOM_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$
 					"The hierarchy declares suite(), so test composition, nesting, duplication or ordering must be migrated as an explicit suite model.")); //$NON-NLS-1$
-			case "runTest" when isRunTestHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
-					"CUSTOM_JUNIT3_TEST_SELECTION", //$NON-NLS-1$
+		}
+		if ("runTest".equals(name) && isRunTestHook(method)) { //$NON-NLS-1$
+			return Optional.of(new Rejection("CUSTOM_JUNIT3_TEST_SELECTION", //$NON-NLS-1$
 					"The hierarchy overrides runTest(), so runtime test selection is not equivalent to method-name discovery.")); //$NON-NLS-1$
-			case "runBare" when isRunBareHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
-					"CUSTOM_JUNIT3_LIFECYCLE_WRAPPER", //$NON-NLS-1$
+		}
+		if ("runBare".equals(name) && isRunBareHook(method)) { //$NON-NLS-1$
+			return Optional.of(new Rejection("CUSTOM_JUNIT3_LIFECYCLE_WRAPPER", //$NON-NLS-1$
 					"The hierarchy overrides runBare(), so its setup/test/teardown wrapper and exception behavior require an explicit extension or invocation migration.")); //$NON-NLS-1$
-			case "createResult" when isCreateResultHook(method), //$NON-NLS-1$
-					"countTestCases" when isCountTestCasesHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
-					"CUSTOM_JUNIT3_RESULT_MODEL", //$NON-NLS-1$
+		}
+		if (("createResult".equals(name) && isCreateResultHook(method)) //$NON-NLS-1$
+				|| ("countTestCases".equals(name) && isCountTestCasesHook(method))) { //$NON-NLS-1$
+			return Optional.of(new Rejection("CUSTOM_JUNIT3_RESULT_MODEL", //$NON-NLS-1$
 					"The hierarchy customizes JUnit 3 result creation or test counting, which has no ordinary Jupiter annotation equivalent.")); //$NON-NLS-1$
-			case "getName" when isGetNameHook(method), //$NON-NLS-1$
-					"setName" when isSetNameHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
-					"NAMED_JUNIT3_TEST_CONTRACT", //$NON-NLS-1$
+		}
+		if (("getName".equals(name) && isGetNameHook(method)) //$NON-NLS-1$
+				|| ("setName".equals(name) && isSetNameHook(method))) { //$NON-NLS-1$
+			return Optional.of(new Rejection("NAMED_JUNIT3_TEST_CONTRACT", //$NON-NLS-1$
 					"The hierarchy customizes the mutable JUnit 3 test name used for selected-method execution and reporting.")); //$NON-NLS-1$
-			case "run" when isRunHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
-					"CUSTOM_JUNIT3_RUNNER_INTEGRATION", //$NON-NLS-1$
+		}
+		if ("run".equals(name) && isRunHook(method)) { //$NON-NLS-1$
+			return Optional.of(new Rejection("CUSTOM_JUNIT3_RUNNER_INTEGRATION", //$NON-NLS-1$
 					"The hierarchy overrides run(TestResult), so listener, result or execution delegation semantics require an explicit framework migration.")); //$NON-NLS-1$
-			default -> Optional.empty();
-		};
+		}
+		return Optional.empty();
 	}
 
 	private static boolean isNamedTestConstructor(MethodDeclaration method) {
