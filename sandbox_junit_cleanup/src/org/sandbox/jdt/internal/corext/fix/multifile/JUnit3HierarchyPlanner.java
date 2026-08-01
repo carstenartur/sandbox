@@ -53,10 +53,6 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.Ty
 /** Classifies and plans ordinary closed JUnit 3 source hierarchies. */
 final class JUnit3HierarchyPlanner {
 
-	private static final Set<String> CUSTOM_EXECUTION_METHODS= Set.of(
-			"suite", "runTest", "runBare", "createResult", "countTestCases", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-			"getName", "setName", "run"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-
 	/** Mirrors JUnit 4's {@code org.junit.internal.MethodSorter.DEFAULT}. */
 	private static final Comparator<MethodDeclaration> JUNIT3_METHOD_ORDER=
 			Comparator.comparingInt((MethodDeclaration method) -> method.getName().getIdentifier().hashCode())
@@ -281,19 +277,17 @@ final class JUnit3HierarchyPlanner {
 			Map<String, Integer> executionOrders= plannedExecutionOrders(type, maxDepth, depth, orderStride);
 			List<MethodMigration> methods= new ArrayList<>();
 			for (MethodDeclaration method : type.declaration().getMethods()) {
-				if (method.isConstructor()) {
-					return Classification.rejected("CUSTOM_JUNIT3_CONSTRUCTOR", //$NON-NLS-1$
-							"Explicit JUnit 3 constructors require a project-specific migration."); //$NON-NLS-1$
+				JUnit3HarnessSemantics.Rejection harnessRejection=
+						JUnit3HarnessSemantics.rejection(method).orElse(null);
+				if (harnessRejection != null) {
+					return Classification.rejected(harnessRejection.reasonCode(),
+							harnessRejection.explanation());
 				}
 				if (hasJUnitAnnotation(method)) {
 					return Classification.rejected("MIXED_JUNIT_GENERATIONS", //$NON-NLS-1$
 							"The hierarchy already mixes annotation-driven and JUnit 3 execution semantics."); //$NON-NLS-1$
 				}
 				String name= method.getName().getIdentifier();
-				if (CUSTOM_EXECUTION_METHODS.contains(name)) {
-					return Classification.rejected("CUSTOM_JUNIT3_EXECUTION", //$NON-NLS-1$
-							"The hierarchy customizes JUnit 3 execution through " + name + "()."); //$NON-NLS-1$ //$NON-NLS-2$
-				}
 				String bindingKey= methodKey(method);
 				if (name.startsWith("test")) { //$NON-NLS-1$
 					if (!JUnit3SemanticSupport.isExactTestMethod(method) || bindingKey == null) {
