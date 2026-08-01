@@ -1,0 +1,120 @@
+name: Temporary PR 1350 SpotBugs repair
+
+on:
+  push:
+    branches:
+      - feature/junit3-complete-structured-actions
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/junit3-complete-structured-actions
+          fetch-depth: 0
+
+      - name: Replace nullable Boolean with explicit tri-state
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          source = Path("sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyPlanner.java")
+          text = source.read_text(encoding="utf-8")
+
+          replacements = [
+              (
+                  "\tprivate JUnit3HierarchyPlanner() {",
+                  "\tprivate enum OverrideRemoval {\n"
+                  "\t\tREMOVE,\n"
+                  "\t\tKEEP,\n"
+                  "\t\tUNRESOLVED\n"
+                  "\t}\n\n"
+                  "\tprivate JUnit3HierarchyPlanner() {",
+              ),
+              (
+                  "\t\t\t\t\tBoolean removeOverride= plannedOverrideRemoval(method);\n"
+                  "\t\t\t\t\tif (removeOverride == null) {",
+                  "\t\t\t\t\tOverrideRemoval overrideRemoval= plannedOverrideRemoval(method);\n"
+                  "\t\t\t\t\tif (overrideRemoval == OverrideRemoval.UNRESOLVED) {",
+              ),
+              (
+                  "\t\t\t\t\t\t\t0, removeOverride.booleanValue()));",
+                  "\t\t\t\t\t\t\t0, overrideRemoval == OverrideRemoval.REMOVE));",
+              ),
+              (
+                  "\tprivate static Boolean plannedOverrideRemoval(MethodDeclaration method) {\n"
+                  "\t\tfor (Object modifier : method.modifiers()) {\n"
+                  "\t\t\tif (!(modifier instanceof Annotation annotation)) {\n"
+                  "\t\t\t\tcontinue;\n"
+                  "\t\t\t}\n"
+                  "\t\t\tITypeBinding binding= annotation.resolveTypeBinding();\n"
+                  "\t\t\tString writtenName= annotation.getTypeName().getFullyQualifiedName();\n"
+                  "\t\t\tif (binding != null && !binding.isRecovered()) {\n"
+                  "\t\t\t\tif (\"java.lang.Override\".equals(binding.getQualifiedName())) { //$NON-NLS-1$\n"
+                  "\t\t\t\t\treturn Boolean.TRUE;\n"
+                  "\t\t\t\t}\n"
+                  "\t\t\t\tcontinue;\n"
+                  "\t\t\t}\n"
+                  "\t\t\tif (\"java.lang.Override\".equals(writtenName)) { //$NON-NLS-1$\n"
+                  "\t\t\t\treturn Boolean.TRUE;\n"
+                  "\t\t\t}\n"
+                  "\t\t\tif (\"Override\".equals(writtenName)) { //$NON-NLS-1$\n"
+                  "\t\t\t\treturn null;\n"
+                  "\t\t\t}\n"
+                  "\t\t}\n"
+                  "\t\treturn Boolean.FALSE;\n"
+                  "\t}",
+                  "\tprivate static OverrideRemoval plannedOverrideRemoval(MethodDeclaration method) {\n"
+                  "\t\tfor (Object modifier : method.modifiers()) {\n"
+                  "\t\t\tif (!(modifier instanceof Annotation annotation)) {\n"
+                  "\t\t\t\tcontinue;\n"
+                  "\t\t\t}\n"
+                  "\t\t\tITypeBinding binding= annotation.resolveTypeBinding();\n"
+                  "\t\t\tString writtenName= annotation.getTypeName().getFullyQualifiedName();\n"
+                  "\t\t\tif (binding != null && !binding.isRecovered()) {\n"
+                  "\t\t\t\tif (\"java.lang.Override\".equals(binding.getQualifiedName())) { //$NON-NLS-1$\n"
+                  "\t\t\t\t\treturn OverrideRemoval.REMOVE;\n"
+                  "\t\t\t\t}\n"
+                  "\t\t\t\tcontinue;\n"
+                  "\t\t\t}\n"
+                  "\t\t\tif (\"java.lang.Override\".equals(writtenName)) { //$NON-NLS-1$\n"
+                  "\t\t\t\treturn OverrideRemoval.REMOVE;\n"
+                  "\t\t\t}\n"
+                  "\t\t\tif (\"Override\".equals(writtenName)) { //$NON-NLS-1$\n"
+                  "\t\t\t\treturn OverrideRemoval.UNRESOLVED;\n"
+                  "\t\t\t}\n"
+                  "\t\t}\n"
+                  "\t\treturn OverrideRemoval.KEEP;\n"
+                  "\t}",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one source match, found {count}: {old[:80]!r}")
+              text = text.replace(old, new, 1)
+
+          source.write_text(text, encoding="utf-8")
+
+          workflow = Path(".github/workflows/fix-pr1350-spotbugs.yml")
+          if not workflow.is_file():
+              raise SystemExit("Temporary workflow did not find itself")
+          workflow.unlink()
+          PY
+
+      - name: Commit repair and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyPlanner.java .github/workflows/fix-pr1350-spotbugs.yml
+          git diff --cached --check
+          git commit -m "Fix tri-state override planning representation"
+          git push origin HEAD:feature/junit3-complete-structured-actions
