@@ -54,9 +54,7 @@ public class EncodingImportRetentionTest {
 						public class E1 {
 						    static void methodWithCatchChange(byte[] bytes) {
 						        try {
-						            List<String> values = List.of("value");
-						            String text = new String(bytes, "UTF-8");
-						            System.out.println(values.get(0) + text);
+						            System.out.println(List.of(new String(bytes, "UTF-8")).get(0));
 						        } catch (UnsupportedEncodingException exception) {
 						            exception.printStackTrace();
 						        }
@@ -78,9 +76,7 @@ public class EncodingImportRetentionTest {
 
 						public class E1 {
 						    static void methodWithCatchChange(byte[] bytes) {
-						        List<String> values = List.of("value");
-						        String text = new String(bytes, StandardCharsets.UTF_8);
-						        System.out.println(values.get(0) + text);
+						        System.out.println(List.of(new String(bytes, StandardCharsets.UTF_8)).get(0));
 						    }
 						}
 						"""
