@@ -66,6 +66,11 @@ final class JUnitRuntimeTestTree {
 		String id() {
 			return id;
 		}
+
+		@Override
+		public String toString() {
+			return id;
+		}
 	}
 
 	private JUnitRuntimeTestTree() {
