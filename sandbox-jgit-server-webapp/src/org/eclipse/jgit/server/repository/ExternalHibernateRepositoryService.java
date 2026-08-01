@@ -11,9 +11,11 @@
 package org.eclipse.jgit.server.repository;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jgit.lib.Repository;
 
@@ -33,7 +35,9 @@ import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
 public final class ExternalHibernateRepositoryService implements SandboxRepositoryService {
 
 	private final HibernateRepositoryFactory repositoryFactory;
-	private final Map<String, HibernateGitStorage> storages= new ConcurrentHashMap<>();
+	private final Object lifecycleLock= new Object();
+	private final Map<String, HibernateGitStorage> storages= new LinkedHashMap<>();
+	private boolean closed;
 
 	/** Creates an adapter for the released public repository factory. */
 	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {
@@ -42,33 +46,51 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 
 	@Override
 	public Repository openOrCreate(String name) throws IOException {
-		return storage(name).repository();
+		synchronized (lifecycleLock) {
+			return storageLocked(name).repository();
+		}
 	}
 
 	@Override
 	public SandboxRepositoryInfo info(String name) throws IOException {
-		String normalized= normalize(name);
-		Repository repository= storage(normalized).repository();
-		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
+		synchronized (lifecycleLock) {
+			String normalized= normalize(name);
+			Repository repository= storageLocked(normalized).repository();
+			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
+		}
 	}
 
 	@Override
 	public SandboxRepositoryInfo setDescription(String name, String description) throws IOException {
-		String normalized= normalize(name);
-		Repository repository= storage(normalized).repository();
-		repository.setGitwebDescription(description);
-		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
+		synchronized (lifecycleLock) {
+			String normalized= normalize(name);
+			Repository repository= storageLocked(normalized).repository();
+			repository.setGitwebDescription(description);
+			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
+		}
 	}
 
 	@Override
 	public boolean isOpen(String name) {
-		return storages.containsKey(normalize(name));
+		synchronized (lifecycleLock) {
+			return !closed && storages.containsKey(normalize(name));
+		}
 	}
 
 	@Override
 	public void close() {
+		List<HibernateGitStorage> storagesToClose;
+		synchronized (lifecycleLock) {
+			if (closed) {
+				return;
+			}
+			closed= true;
+			storagesToClose= new ArrayList<>(storages.values());
+			storages.clear();
+		}
+
 		RuntimeException failure= null;
-		for (HibernateGitStorage storage : storages.values()) {
+		for (HibernateGitStorage storage : storagesToClose) {
 			try {
 				storage.close();
 			} catch (RuntimeException exception) {
@@ -79,13 +101,15 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 				}
 			}
 		}
-		storages.clear();
 		if (failure != null) {
 			throw failure;
 		}
 	}
 
-	private HibernateGitStorage storage(String name) {
+	private HibernateGitStorage storageLocked(String name) {
+		if (closed) {
+			throw new IllegalStateException("Repository service is already closed."); //$NON-NLS-1$
+		}
 		String normalized= normalize(name);
 		return storages.computeIfAbsent(normalized,
 				key -> repositoryFactory.open(new RepositoryName(key)));
