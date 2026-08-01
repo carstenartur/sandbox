@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.jgit.server.config;
 
-import static org.junit.Assert.assertDoesNotThrow;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -67,8 +66,7 @@ public class ExternalCoreStartupGuardTest {
 		Properties properties= properties(databaseUrl());
 		createHistory(properties, true);
 
-		assertDoesNotThrow(
-				() -> ExternalCoreStartupGuard.requireReady(properties));
+		ExternalCoreStartupGuard.requireReady(properties);
 	}
 
 	private static Properties properties(String url) {
