@@ -39,6 +39,39 @@ jobs:
           python3 .github/scripts/test_verify_release_identity.py
           python3 .github/scripts/test_wait_for_pages_build.py
           python3 .github/scripts/test_verify_published_repository.py
+      - name: Validate repository-derived release inputs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/deploy-release.yml')
+          workflow = path.read_text(encoding='utf-8')
+          required = (
+              '      next_version_increment:\n',
+              '        type: choice\n',
+              '          - patch\n          - minor\n          - major\n',
+              'release_version="${current_version%-SNAPSHOT}"',
+              'NEXT_VERSION_INCREMENT: ${{ inputs.next_version_increment }}',
+              'ref: main',
+          )
+          forbidden = (
+              '      release_version:\n',
+              '      next_development_version:\n',
+              '${{ inputs.release_version }}',
+              '${{ inputs.next_development_version }}',
+          )
+          failures = [f'missing {needle!r}' for needle in required if needle not in workflow]
+          failures.extend(
+              f'forbidden free-form release input remains: {needle!r}'
+              for needle in forbidden
+              if needle in workflow
+          )
+          if failures:
+              raise SystemExit(
+                  'Repository-derived release input contract failed:\n- '
+                  + '\n- '.join(failures)
+              )
+          PY
       - name: Validate shared gh-pages publication lock
         run: |
           python3 - <<'PY'
