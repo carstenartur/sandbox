@@ -209,6 +209,7 @@ public final class ParameterizedMigrationEligibility {
 						&& "value".equals(pair.getName().getIdentifier())) { //$NON-NLS-1$
 					return pair.getValue();
 				}
+			}
 		}
 		return null;
 	}
@@ -233,6 +234,7 @@ public final class ParameterizedMigrationEligibility {
 								"Parameter")) { //$NON-NLS-1$
 					return true;
 				}
+			}
 		}
 		return false;
 	}
