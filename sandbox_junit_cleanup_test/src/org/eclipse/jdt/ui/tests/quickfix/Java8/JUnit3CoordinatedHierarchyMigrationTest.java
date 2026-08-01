@@ -46,8 +46,8 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		// Keep Vintage and Jupiter on one classpath so the configured JDT finder and
-		// runtime launch kind are the same before and after the migration.
+		// Keep JUnit 3, Vintage and Jupiter on one classpath. The baseline is launched
+		// by JDT's JUnit 3 loader and the migrated code by JDT's JUnit 5 loader.
 		root= context.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 	}
 
@@ -85,7 +85,8 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 		IType launchTarget= concrete.findPrimaryType();
 		assertNotNull(launchTarget);
 		JUnitTestTypeInventory before= JUnitTestTypeInventory.capture(context.getJavaProject(), null);
-		ExecutionTreeSnapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget);
+		ExecutionTreeSnapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget,
+				JUnitRuntimeTestTree.TestKind.JUNIT3);
 		assertTrue(runtimeBefore.successful(), () -> "JUnit 3 baseline failed: " + runtimeBefore.roots()); //$NON-NLS-1$
 		enableMigration();
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
@@ -130,7 +131,7 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 						"""
 				}, null);
 		assertFinderInventoryUnchanged(before);
-		assertRuntimeTreeUnchanged(runtimeBefore, launchTarget);
+		assertRuntimeTreePreservedAcrossLoaders(runtimeBefore, launchTarget);
 	}
 
 	@Test
@@ -168,7 +169,8 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 		IType launchTarget= concrete.findPrimaryType();
 		assertNotNull(launchTarget);
 		JUnitTestTypeInventory before= JUnitTestTypeInventory.capture(context.getJavaProject(), null);
-		ExecutionTreeSnapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget);
+		ExecutionTreeSnapshot runtimeBefore= JUnitRuntimeTestTree.capture(launchTarget,
+				JUnitRuntimeTestTree.TestKind.JUNIT3);
 		assertTrue(runtimeBefore.successful(), () -> "JUnit 3 baseline failed: " + runtimeBefore.roots()); //$NON-NLS-1$
 		enableMigration();
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
@@ -216,7 +218,7 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 						"""
 				}, null);
 		assertFinderInventoryUnchanged(before);
-		assertRuntimeTreeUnchanged(runtimeBefore, launchTarget);
+		assertRuntimeTreePreservedAcrossLoaders(runtimeBefore, launchTarget);
 	}
 
 	private void enableMigration() throws CoreException {
@@ -230,10 +232,12 @@ public class JUnit3CoordinatedHierarchyMigrationTest {
 				"The configured JDT JUnit finder must expose the same test types after migration."); //$NON-NLS-1$
 	}
 
-	private void assertRuntimeTreeUnchanged(ExecutionTreeSnapshot before, IType launchTarget)
+	private void assertRuntimeTreePreservedAcrossLoaders(ExecutionTreeSnapshot before, IType launchTarget)
 			throws CoreException {
-		ExecutionTreeSnapshot after= JUnitRuntimeTestTree.capture(launchTarget);
-		Comparison comparison= ExecutionTreeComparator.compare(before, after, Policy.strict());
+		ExecutionTreeSnapshot after= JUnitRuntimeTestTree.capture(launchTarget,
+				JUnitRuntimeTestTree.TestKind.JUNIT5);
+		Policy crossLoaderPolicy= Policy.sameShape().withAttributes(false);
+		Comparison comparison= ExecutionTreeComparator.compare(before, after, crossLoaderPolicy);
 		assertTrue(comparison.equivalent(), comparison::difference);
 	}
 }

@@ -13,6 +13,7 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,13 +50,30 @@ import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot.NodeKind;
 final class JUnitRuntimeTestTree {
 
 	private static final String ATTR_TEST_RUNNER_KIND= "org.eclipse.jdt.junit.TEST_KIND"; //$NON-NLS-1$
-	private static final String JUNIT5_TEST_KIND_ID= "org.eclipse.jdt.junit.loader.junit5"; //$NON-NLS-1$
 	private static final long SESSION_TIMEOUT_SECONDS= 90;
+
+	/** JDT test kinds used as the authoritative migration oracle. */
+	enum TestKind {
+		JUNIT3("org.eclipse.jdt.junit.loader.junit3"), //$NON-NLS-1$
+		JUNIT5("org.eclipse.jdt.junit.loader.junit5"); //$NON-NLS-1$
+
+		private final String id;
+
+		TestKind(String id) {
+			this.id= id;
+		}
+
+		String id() {
+			return id;
+		}
+	}
 
 	private JUnitRuntimeTestTree() {
 	}
 
-	static ExecutionTreeSnapshot capture(IJavaElement launchTarget) throws CoreException {
+	static ExecutionTreeSnapshot capture(IJavaElement launchTarget, TestKind testKind) throws CoreException {
+		Objects.requireNonNull(launchTarget);
+		Objects.requireNonNull(testKind);
 		ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.FULL_BUILD, null);
 		CountDownLatch completed= new CountDownLatch(1);
 		AtomicReference<ExecutionTreeSnapshot> captured= new AtomicReference<>();
@@ -78,25 +96,30 @@ final class JUnitRuntimeTestTree {
 		JUnitCore.addTestRunListener(listener);
 		try {
 			configuration= TestLaunchShortcut.createConfiguration(launchTarget);
-			configuration.setAttribute(ATTR_TEST_RUNNER_KIND, JUNIT5_TEST_KIND_ID);
+			configuration.setAttribute(ATTR_TEST_RUNNER_KIND, testKind.id());
 			launch= configuration.launch(ILaunchManager.RUN_MODE, null);
 			if (!completed.await(SESSION_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-				throw failure("Timed out waiting for the JDT JUnit runtime test tree", null); //$NON-NLS-1$
+				throw failure("Timed out waiting for the JDT " + testKind //$NON-NLS-1$
+						+ " runtime test tree", null); //$NON-NLS-1$
 			}
 			if (callbackFailure.get() != null) {
-				throw failure("Cannot snapshot the completed JDT JUnit runtime test tree", callbackFailure.get()); //$NON-NLS-1$
+				throw failure("Cannot snapshot the completed JDT " + testKind //$NON-NLS-1$
+						+ " runtime test tree", callbackFailure.get()); //$NON-NLS-1$
 			}
 			ExecutionTreeSnapshot result= captured.get();
 			if (result == null) {
-				throw failure("The JDT JUnit launch completed without a runtime test tree", null); //$NON-NLS-1$
+				throw failure("The JDT " + testKind //$NON-NLS-1$
+						+ " launch completed without a runtime test tree", null); //$NON-NLS-1$
 			}
 			if (result.isEmpty()) {
-				throw failure("The JDT JUnit runtime test tree contains no test elements", null); //$NON-NLS-1$
+				throw failure("The JDT " + testKind //$NON-NLS-1$
+						+ " runtime test tree contains no test elements", null); //$NON-NLS-1$
 			}
 			return result;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw failure("Interrupted while waiting for the JDT JUnit runtime test tree", e); //$NON-NLS-1$
+			throw failure("Interrupted while waiting for the JDT " + testKind //$NON-NLS-1$
+					+ " runtime test tree", e); //$NON-NLS-1$
 		} finally {
 			JUnitCore.removeTestRunListener(listener);
 			cleanUp(launch, configuration);
