@@ -1,13 +1,14 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "issue": 1303,
   "baselineCommit": "714bec5cf26e1554520ef063850865ec931a6624",
-  "purpose": "Machine-readable baseline for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
+  "lastVerifiedCommit": "0804ae99532cbb9bfa551fbb6870c053c1938e5d",
+  "purpose": "Machine-readable baseline and evidence ledger for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": null,
-    "selectionState": "pending compatibility verification"
+    "selectedVersion": "0.1.15",
+    "selectionState": "selected; Core adapter lifecycle and restart verified on H2"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -22,9 +23,11 @@
       "currentOwner": "sandbox-jgit-server-webapp",
       "currentEntrypoints": [
         "org.eclipse.jgit.server.repository.SandboxRepositoryService",
-        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService"
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService",
+        "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
+        "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "copied HibernateRepositoryBuilder and HibernateRepository",
+      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.1.15 for guarded external startup",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
@@ -32,43 +35,60 @@
         "HibernateGitStorage",
         "RepositoryName"
       ],
-      "migrationStatus": "adapter-boundary-present",
+      "migrationStatus": "core-adapter-lifecycle-verified",
       "requiredEvidence": [
         "open/create/close/reopen on H2",
         "two logical repositories in one schema",
         "concurrent opens",
         "shutdown without leaked handles"
+      ],
+      "verifiedEvidence": [
+        "ExternalHibernateRepositoryServiceTest.concurrentNormalizedOpensShareOneFactoryHandle",
+        "ExternalHibernateRepositoryServiceTest.shutdownClosesAStorageWhoseOpenWasAlreadyInFlight",
+        "ExternalHibernateRepositoryServiceTest.closeDoesNotHoldLifecycleLockWhileClosingStorage",
+        "ExternalRepositoryLifecycleH2Test.normalizesIsolatesAndReopensRepositories",
+        "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d"
       ]
     },
     {
       "id": "repository-name-normalization",
       "currentOwner": "sandbox-jgit-server-webapp",
       "currentEntrypoints": [
-        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService"
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService",
+        "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService"
       ],
-      "currentBackend": "Sandbox-owned normalization of leading slash and .git suffix",
+      "currentBackend": "Sandbox-owned normalization of leading slash and .git suffix before backend-specific repository access",
       "targetOwner": "sandbox-jgit-server-webapp",
       "targetApi": [
         "RepositoryName"
       ],
-      "migrationStatus": "retain-adapter-policy",
+      "migrationStatus": "core-adapter-verified-retain-policy",
       "requiredEvidence": [
         "/name, name.git and name resolve to one cached repository identity"
+      ],
+      "verifiedEvidence": [
+        "ExternalHibernateRepositoryServiceTest.normalizesAndCachesFactoryOwnedStorage",
+        "ExternalRepositoryLifecycleH2Test.normalizesIsolatesAndReopensRepositories"
       ]
     },
     {
       "id": "repository-description",
-      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentOwner": "sandbox-jgit-server-webapp",
       "currentEntrypoints": [
         "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService.info",
-        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService.setDescription"
+        "org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService.setDescription",
+        "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService.info",
+        "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService.setDescription"
       ],
-      "currentBackend": "HibernateRepository Gitweb description",
+      "currentBackend": "Sandbox metadata DTO backed by the repository Gitweb description",
       "targetOwner": "sandbox-jgit-server-webapp",
       "targetApi": [],
-      "migrationStatus": "sandbox-extension-required",
+      "migrationStatus": "core-adapter-verified-sandbox-policy-retained",
       "requiredEvidence": [
         "description remains available without treating it as authoritative Git storage state"
+      ],
+      "verifiedEvidence": [
+        "ExternalHibernateRepositoryServiceTest.readsAndUpdatesDescriptionThroughPublicRepository"
       ]
     },
     {
@@ -82,7 +102,7 @@
       "targetApi": [
         "HibernateGitStorage.repository"
       ],
-      "migrationStatus": "adapter-boundary-present",
+      "migrationStatus": "adapter-boundary-present-runtime-cutover-pending",
       "requiredEvidence": [
         "clone/fetch/push after restart",
         "normal RefUpdate creates queryable reflog entries",
@@ -92,20 +112,21 @@
     {
       "id": "repository-delete",
       "currentOwner": "sandbox-jgit-server-webapp",
-      "currentEntrypoints": [
-        "org.eclipse.jgit.server.rest.RepositoryResource",
-        "org.eclipse.jgit.server.rest.AdminResource"
-      ],
-      "currentBackend": "copied backend lifecycle and deletion behavior",
+      "currentEntrypoints": [],
+      "currentBackend": "No application deletion boundary is currently exposed; Sandbox-owned open handles are cached until service shutdown",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory.deleteRepository"
       ],
-      "migrationStatus": "not-migrated",
+      "migrationStatus": "core-api-available-adapter-policy-required",
       "requiredEvidence": [
-        "delete rejected while coordinated handle is open",
+        "delete rejected while a coordinated handle is open",
+        "Sandbox adapter either reports in-use or atomically evicts and closes its owned handle before deletion",
         "repeated deletion is idempotent",
         "Search deletion participant removes projections"
+      ],
+      "verifiedEvidence": [
+        "Core 0.1.15 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles"
       ]
     },
     {
@@ -273,12 +294,16 @@
         "SearchEntities",
         "library Flyway migrations and legacy preflight APIs"
       ],
-      "migrationStatus": "guarded-core-preparation-present",
+      "migrationStatus": "guarded-core-preparation-h2-validated",
       "requiredEvidence": [
         "Core migrations precede Hibernate validation",
         "Search migrations follow Core migrations",
         "production uses hbm2ddl.auto=validate",
         "pack BLOB checksums and reflogs survive legacy adoption"
+      ],
+      "verifiedEvidence": [
+        "ExternalRepositoryLifecycleH2Test reopens the same schema with hbm2ddl.auto=validate",
+        "ExternalServerPersistenceContextTest verifies application-owned lifecycle"
       ]
     }
   ],
@@ -290,11 +315,16 @@
     {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/CopiedHibernateRepositoryService.java",
       "classification": "temporary-copied-adapter",
-      "replacement": "Core-backed SandboxRepositoryService implementation"
+      "replacement": "ExternalHibernateRepositoryService"
+    },
+    {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/ExternalHibernateRepositoryService.java",
+      "classification": "released-core-adapter-lifecycle-verified",
+      "evidence": "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d"
     },
     {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/config/ExternalServerPersistenceContext.java",
-      "classification": "guarded-external-core-preparation"
+      "classification": "guarded-external-core-preparation-h2-validated"
     },
     {
       "path": "sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/repository/HibernateRepositoryBuilder.java",
