@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "03b50c0f541c1fe576736d201c489e91a8d1f212e65d39250259c65321807e04",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: filtered-preference-tree-expand-all-refactor\u003e\n\u003c!description: Update call to FilteredPreferenceTree.setAllExpanded to pass null for the new start node parameter.\u003e\n\u003c!severity: INFO\u003e\n\n$instance.setAllExpanded($expanded$) :: instanceof($instance, \"org.eclipse.jdt.internal.ui.preferences.FilteredPreferenceTree\")\n\u003d\u003e $instance.setAllExpanded(null, $expanded$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\nimport org.eclipse.swt.events.SelectionAdapter;\nimport org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.widgets.MenuItem;\nimport java.util.ArrayList;\n\nclass PreferenceTreeNode\u003cT\u003e {\n    ArrayList\u003cPreferenceTreeNode\u003c?\u003e\u003e children \u003d new ArrayList\u003c\u003e();\n    public ArrayList\u003cPreferenceTreeNode\u003c?\u003e\u003e getChildren() { return children; }\n}\n\nclass ScrolledPageContent {\n    public void setRedraw(boolean redraw) {}\n    public void setReflow(boolean reflow) {}\n}\n\npublic class FilteredPreferenceTree {\n    private ScrolledPageContent fScrolledPageContent \u003d new ScrolledPageContent();\n    private PreferenceTreeNode\u003c?\u003e fRoot \u003d new PreferenceTreeNode\u003c\u003e();\n\n    protected void setAllExpanded(boolean expanded) {\n        fScrolledPageContent.setRedraw(false);\n        fScrolledPageContent.setReflow(false);\n        ArrayList\u003cPreferenceTreeNode\u003c?\u003e\u003e bfsNodes\u003d new ArrayList\u003c\u003e();\n        bfsNodes.addAll(fRoot.getChildren());\n        for (int i\u003d 0; i \u003c bfsNodes.size(); i++) {\n            PreferenceTreeNode\u003c?\u003e node\u003d bfsNodes.get(i);\n            bfsNodes.addAll(bfsNodes.get(i).getChildren());\n        }\n    }\n\n    public void someMethod(MenuItem item, boolean expand) {\n        item.addSelectionListener(new SelectionAdapter() {\n            @Override\n            public void widgetSelected(SelectionEvent e) {\n                // The rule will match calls like this (implicit \u0027this\u0027) or explicit \u0027FilteredPreferenceTree.this.setAllExpanded(expand)\u0027\n                setAllExpanded(expand);\n            }\n        });\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\nimport org.eclipse.swt.events.SelectionAdapter;\nimport org.eclipse.swt.events.SelectionEvent;\nimport org.eclipse.swt.widgets.MenuItem;\nimport java.util.ArrayList;\n\nclass PreferenceTreeNode\u003cT\u003e {\n    ArrayList\u003cPreferenceTreeNode\u003c?\u003e\u003e children \u003d new ArrayList\u003c\u003e();\n    public ArrayList\u003cPreferenceTreeNode\u003c?\u003e\u003e getChildren() { return children; }\n}\n\nclass ScrolledPageContent {\n    public void setRedraw(boolean redraw) {}\n    public void setReflow(boolean reflow) {}\n}\n\npublic class FilteredPreferenceTree {\n    private ScrolledPageContent fScrolledPageContent \u003d new ScrolledPageContent();\n    private PreferenceTreeNode\u003c?\u003e fRoot \u003d new PreferenceTreeNode\u003c\u003e();\n\n    protected void setAllExpanded(PreferenceTreeNode\u003c?\u003e start, boolean expanded) {\n        fScrolledPageContent.setRedraw(false);\n        fScrolledPageContent.setReflow(false);\n        ArrayList\u003cPreferenceTreeNode\u003c?\u003e\u003e bfsNodes\u003d new ArrayList\u003c\u003e();\n        if (start !\u003d null) {\n            bfsNodes.add(start);\n        } else {\n            bfsNodes.addAll(fRoot.getChildren());\n        }\n        for (int i\u003d 0; i \u003c bfsNodes.size(); i++) {\n            PreferenceTreeNode\u003c?\u003e node\u003d bfsNodes.get(i);\n            bfsNodes.addAll(bfsNodes.get(i).getChildren());\n        }\n    }\n\n    public void someMethod(MenuItem item, boolean expand) {\n        item.addSelectionListener(new SelectionAdapter() {\n            @Override\n            public void widgetSelected(SelectionEvent e) {\n                // The rule will transform \u0027setAllExpanded(expand)\u0027 to this\n                setAllExpanded(null, expand);\n            }\n        });\n    }\n}\n",
+  "negativeExample": "package some.other.package;\npublic class AnotherTree {\n    public void setAllExpanded(boolean expanded) {\n        System.out.println(\"AnotherTree expanded: \" + expanded);\n    }\n\n    public void callIt() {\n        // This call will not match because \u0027this\u0027 is not an instance of FilteredPreferenceTree\n        setAllExpanded(true);\n    }\n}\n",
+  "targetHintFile": "method-call-updates.sandbox-hint",
+  "sourceCommit": "2dd69f1b5925839d25836c48d577827ce6a50b15",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Method Call Update",
+  "summary": "Updates calls to `FilteredPreferenceTree.setAllExpanded(boolean)` to `setAllExpanded(null, boolean)` due to method signature change within the `FilteredPreferenceTree` class hierarchy.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-01T03:15:28.204659551Z",
+  "ruleFingerprint": "sha256:f42926966b2a8398a032c8c241f0d7639a094eaae2d8e071f2abedee99cc938d",
+  "behaviorFingerprint": "sha256:f438e462fa2cef9f92347b1ccda93ce35687ab7a154872a0b8411b5fc4b99edd",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-01T03:15:30.508397729Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

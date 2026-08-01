@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a3a100dceb95a9368e40a46ca4365c3749b4d204faf52221fdbb2f411f987863",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.String $seg.contains(\"JRE_CONTAINER\")\n\u003d\u003e\n$seg.equals(org.eclipse.jdt.launching.JavaRuntime.JRE_CONTAINER)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.jdt.launching.JavaRuntime; // Assume JavaRuntime is in this package or imported\n\npublic class LibrariesWorkbookPage {\n    public boolean isJREContainer(IPath path) {\n        if (path \u003d\u003d null)\n            return false;\n        String[] segments\u003d path.segments();\n        for (String seg : segments) {\n            if (seg.contains(\"JRE_CONTAINER\")) { //$NON-NLS-1${\n                return true;\n            }\n        }\n        return false;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.jdt.launching.JavaRuntime;\n\npublic class LibrariesWorkbookPage {\n    public boolean isJREContainer(IPath path) {\n        if (path \u003d\u003d null)\n            return false;\n        String[] segments\u003d path.segments();\n        for (String seg : segments) {\n            if (seg.equals(org.eclipse.jdt.launching.JavaRuntime.JRE_CONTAINER)) {\n                return true;\n            }\n        }\n        return false;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.jdt.launching.JavaRuntime;\n\npublic class LibrariesWorkbookPage {\n    public boolean isOtherContainer(IPath path) {\n        if (path \u003d\u003d null)\n            return false;\n        String[] segments\u003d path.segments();\n        for (String seg : segments) {\n            if (seg.contains(JavaRuntime.JRE_CONTAINER)) { // Uses constant, not literal \"JRE_CONTAINER\"\n                return true;\n            }\n            if (seg.contains(\"SOME_OTHER_TEXT\")) { // Different literal\n                return true;\n            }\n        }\n        return false;\n    }\n}",
+  "targetHintFile": "jdt-ui-cleanups.sandbox-hint",
+  "sourceCommit": "26b37821b65cbef6aa110740c230651d55fd4356",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Comparison",
+  "summary": "Replaces String.contains(\"JRE_CONTAINER\") with String.equals(JavaRuntime.JRE_CONTAINER) for an exact match.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-01T03:15:28.169370215Z",
+  "ruleFingerprint": "sha256:5245a64f74bcd1157453c646f77fc4061473c3922a1fb2030659badb7a66047e",
+  "behaviorFingerprint": "sha256:bbbf9aa33c08608186766f1353d830e1da2652f9b3ed1397f08c581c3640eb8b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.launching cannot be resolved",
+    "verifiedAt": "2026-08-01T03:15:30.489159578Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

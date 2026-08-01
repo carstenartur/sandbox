@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a9b3e001f83ee0586cd06183f42abc53d4e417f9f9bf63366d83895e64d95b92",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "!$x.isEmpty()\n\u003d\u003e\n$x !\u003d null \u0026\u0026 !$x.isEmpty()\n;;",
+  "beforeExample": "public class Example {\n    public void method(String value) {\n        // Assume \u0027value\u0027 could be null from external input or a parameter.\n        if (!value.isEmpty()) {\n            System.out.println(\"Value is not empty.\");\n        }\n    }\n}",
+  "afterExample": "public class Example {\n    public void method(String value) {\n        // Assume \u0027value\u0027 could be null from external input or a parameter.\n        if (value !\u003d null \u0026\u0026 !value.isEmpty()) {\n            System.out.println(\"Value is not empty.\");\n        }\n    }\n}",
+  "negativeExample": "public class Example {\n    public void method(String value) {\n        // This condition does not match \u0027!$x.isEmpty()\u0027.\n        if (value !\u003d null \u0026\u0026 value.length() \u003e 0) {\n            System.out.println(\"Value has length.\");\n        }\n        // This condition already includes the null check, demonstrating idempotency.\n        if (value !\u003d null \u0026\u0026 !value.isEmpty()) {\n            System.out.println(\"Value is already checked for null.\");\n        }\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "5d9eb9cdd9906f6d35bcfffc0cac7f8487d18e61",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Adds a null check before calling String.isEmpty() to prevent potential NullPointerExceptions, making the code more robust.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-01T03:15:28.193578965Z",
+  "ruleFingerprint": "sha256:d19e5afc8226eb7fbe0bb3918bee33080ee197c89f2c95ab6b40ee62329375d7",
+  "behaviorFingerprint": "sha256:376ac58c76c3c595659b7d10d37da0bc7a87f947cce59f255da592e667b3507f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-08-01T03:15:30.502137914Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
