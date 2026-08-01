@@ -35,7 +35,7 @@ class JUnit3HarnessSemanticsTest {
 
 	@Test
 	void distinguishesSuiteSelectionAndLifecycleContracts() {
-		assertReason("public static Object suite() { return null; }", //$NON-NLS-1$
+		assertReason("public static junit.framework.Test suite() { return null; }", //$NON-NLS-1$
 				"CUSTOM_JUNIT3_SUITE_BUILDER"); //$NON-NLS-1$
 		assertReason("protected void runTest() {}", //$NON-NLS-1$
 				"CUSTOM_JUNIT3_TEST_SELECTION"); //$NON-NLS-1$
@@ -45,7 +45,7 @@ class JUnit3HarnessSemanticsTest {
 
 	@Test
 	void distinguishesResultNameAndRunnerContracts() {
-		assertReason("protected Object createResult() { return null; }", //$NON-NLS-1$
+		assertReason("protected junit.framework.TestResult createResult() { return null; }", //$NON-NLS-1$
 				"CUSTOM_JUNIT3_RESULT_MODEL"); //$NON-NLS-1$
 		assertReason("public int countTestCases() { return 1; }", //$NON-NLS-1$
 				"CUSTOM_JUNIT3_RESULT_MODEL"); //$NON-NLS-1$
@@ -53,18 +53,25 @@ class JUnit3HarnessSemanticsTest {
 				"NAMED_JUNIT3_TEST_CONTRACT"); //$NON-NLS-1$
 		assertReason("public void setName(String name) {}", //$NON-NLS-1$
 				"NAMED_JUNIT3_TEST_CONTRACT"); //$NON-NLS-1$
-		assertReason("public void run(Object result) {}", //$NON-NLS-1$
+		assertReason("public void run(junit.framework.TestResult result) {}", //$NON-NLS-1$
 				"CUSTOM_JUNIT3_RUNNER_INTEGRATION"); //$NON-NLS-1$
 	}
 
 	@Test
+	void ignoresSameNamedMethodsThatAreNotJUnit3Hooks() {
+		assertUnclassified("public void suite(int value) {}"); //$NON-NLS-1$
+		assertUnclassified("public static Object suite() { return null; }"); //$NON-NLS-1$
+		assertUnclassified("public void run() {}"); //$NON-NLS-1$
+		assertUnclassified("public void run(Object result) {}"); //$NON-NLS-1$
+		assertUnclassified("public String getName(int index) { return null; }"); //$NON-NLS-1$
+		assertUnclassified("public void setName(Object name) {}"); //$NON-NLS-1$
+		assertUnclassified("private void runBare() {}"); //$NON-NLS-1$
+	}
+
+	@Test
 	void leavesOrdinaryTestsAndHelpersUnclassified() {
-		assertTrue(JUnit3HarnessSemantics
-				.rejection(parseMethod("public void testOne() {}")) //$NON-NLS-1$
-				.isEmpty());
-		assertTrue(JUnit3HarnessSemantics
-				.rejection(parseMethod("private int helper() { return 1; }")) //$NON-NLS-1$
-				.isEmpty());
+		assertUnclassified("public void testOne() {}"); //$NON-NLS-1$
+		assertUnclassified("private int helper() { return 1; }"); //$NON-NLS-1$
 	}
 
 	private static void assertReason(String member, String reasonCode) {
@@ -72,6 +79,10 @@ class JUnit3HarnessSemanticsTest {
 				.rejection(parseMethod(member)).orElseThrow();
 		assertEquals(reasonCode, rejection.reasonCode());
 		assertFalse(rejection.explanation().isBlank());
+	}
+
+	private static void assertUnclassified(String member) {
+		assertTrue(JUnit3HarnessSemantics.rejection(parseMethod(member)).isEmpty());
 	}
 
 	private static MethodDeclaration parseMethod(String member) {
