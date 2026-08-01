@@ -19,6 +19,7 @@ import org.eclipse.jface.text.source.IVerticalRuler;
 import org.eclipse.jface.text.source.projection.ProjectionSupport;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
@@ -47,6 +48,9 @@ public class SandboxHintEditor extends TextEditor {
 	 */
 	public static final String EDITOR_ID = "org.sandbox.jdt.triggerpattern.editor.sandboxHint"; //$NON-NLS-1$
 
+	/** Eclipse help context for the Hint DSL programming guide. */
+	public static final String HELP_CONTEXT_ID = "sandbox_common.hintEditor"; //$NON-NLS-1$
+
 	private SandboxHintOutlinePage outlinePage;
 	private ProjectionSupport projectionSupport;
 
@@ -67,8 +71,9 @@ public class SandboxHintEditor extends TextEditor {
 	@Override
 	public void createPartControl(Composite parent) {
 		super.createPartControl(parent);
-		// Enable projection (code folding)
 		ISourceViewer viewer = getSourceViewer();
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getTextWidget(), HELP_CONTEXT_ID);
+		// Enable projection (code folding)
 		if (viewer instanceof ProjectionViewer projectionViewer) {
 			projectionSupport = new ProjectionSupport(projectionViewer,
 					getAnnotationAccess(), getSharedColors());

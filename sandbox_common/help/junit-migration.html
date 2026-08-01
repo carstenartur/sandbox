@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>JUnit migration and safety contracts</title></head>
+<body>
+<h1>JUnit migration and safety contracts</h1>
+<p>JUnit migrations range from local annotation or assertion changes to coordinated hierarchy and suite conversions. Sandbox distinguishes these cases so that a local matcher cannot accidentally authorize a project-wide structural change.</p>
+<h2>Plan-aware JUnit 3 hierarchy migration</h2>
+<p>The JUnit 3 hierarchy migration first resolves the closed hierarchy and records stable semantic targets. The plan carries facts such as whether a type must lose <code>junit.framework.TestCase</code>, the preserved execution order of a test method, and whether a lifecycle method originally declared <code>@Override</code>.</p>
+<p>The bundled hint program then performs the source edits:</p>
+<ul>
+<li>remove the validated <code>TestCase</code> supertype;</li>
+<li>add <code>@TestMethodOrder(MethodOrderer.OrderAnnotation.class)</code>;</li>
+<li>add <code>@Test</code> and plan-backed <code>@Order(n)</code> annotations;</li>
+<li>add <code>@BeforeEach</code> and <code>@AfterEach</code> and remove only the planned lifecycle <code>@Override</code> annotation;</li>
+<li>qualify or reorder supported assertion invocations.</li>
+</ul>
+<h2>Fail-closed execution</h2>
+<p>The rewrite is rejected when the supplied plan contract is missing, the source bindings changed after planning, a required plan value is absent, a structured action targets a different node, or the set of rewritten nodes does not exactly cover the planned targets. A changed annotation shape is not treated as an optional removal.</p>
+<h2>Execution-tree verification</h2>
+<p><code>ExecutionTreeSnapshot</code> captures completed test containers and tests without retaining JUnit or Eclipse model objects. <code>ExecutionTreeComparator</code> applies an explicit policy for identity, nesting, order, results and attributes. Duplicate occurrences are always preserved; there is no set-only comparison that could hide a lost or duplicated test.</p>
+<h2>Current boundary</h2>
+<p>The generic plan, action and execution-tree layers are intended to support later JUnit 4 runner, suite, <code>@Rule</code> and <code>@ClassRule</code> migrations. Each new recipe must define its own discovery plan and runtime-equivalence policy instead of adding another Java-side special operation.</p>
+</body>
+</html>

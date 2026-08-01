@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Running and reviewing cleanups</title></head>
+<body>
+<h1>Running and reviewing cleanups</h1>
+<h2>Before execution</h2>
+<ul>
+<li>Build the project so that JDT bindings and class paths are current.</li>
+<li>Select the complete source scope required by coordinated transformations.</li>
+<li>Commit or otherwise preserve the working tree before applying broad changes.</li>
+<li>Prefer one coherent cleanup group per review instead of combining unrelated mechanical changes.</li>
+</ul>
+<h2>Preview and apply</h2>
+<p>The Eclipse cleanup dialog displays the compilation units that will be changed. Review import changes, modifier order, moved or removed declarations and generated annotations. For a quick assist, compare the proposal preview with the original source before accepting it.</p>
+<h2>After execution</h2>
+<ol>
+<li>Build with the same Java level and target platform used by the project.</li>
+<li>Run focused tests for the transformed component.</li>
+<li>For discovery-sensitive test migrations, run the before/after execution-tree regression rather than checking only whether both test runs are green.</li>
+<li>Inspect warnings for unresolved bindings, incomplete scope or skipped candidates.</li>
+</ol>
+<h2>Batch use</h2>
+<p>The cleanup application supports apply, check and diff-oriented workflows. Treat its result as the same transformation contract as the IDE: the command-line path must not invent additional rules or silently relax binding checks. A CI job should invoke a reproducible Maven or application command that developers can run locally.</p>
+<h2>Diagnosing a missing proposal</h2>
+<p>A proposal may be absent because the project does not meet the minimum Java level, required types are unresolved, the AST shape is outside the documented pattern, a semantic-plan role or value is missing, or the candidate would require an unsafe partial rewrite. Use the Hint Editor trace and validation facilities for DSL-backed transformations.</p>
+</body>
+</html>

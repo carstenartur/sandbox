@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Sandbox Hint DSL programmer's guide</title></head>
+<body>
+<h1>Sandbox Hint DSL programmer's guide</h1>
+<p>A <code>.sandbox-hint</code> file is a versioned transformation program. It declares metadata, optional reusable predicates and one or more source-pattern rules with text replacements or schema-validated structured actions.</p>
+<h2>Minimal program</h2>
+<pre>&lt;!id: collections.empty-list&gt;
+&lt;!description: Prefer List.of()&gt;
+&lt;!minJavaVersion: 9&gt;
+
+Collections.emptyList()
+=&gt; java.util.List.of()
+;;</pre>
+<h2>Program directives</h2>
+<p>Common directives include <code>id</code>, <code>description</code>, <code>severity</code>, <code>minJavaVersion</code>, <code>tags</code>, <code>include</code>, <code>caseInsensitive</code>, <code>suppressWarnings</code> and <code>treeKind</code>. Advanced programs may declare <code>map</code>, <code>foreach</code>, local <code>predicate</code> definitions and a required semantic-plan contract with <code>requires-plan</code>.</p>
+<h2>Rule structure</h2>
+<pre>@id: stable.rule.id
+source-pattern :: sourceGuard($node)
+=&gt; replacement-pattern :: alternativeGuard($node)
+=&gt; fallback-pattern :: otherwise()
+;;</pre>
+<p>Every production rule should have a stable <code>@id</code>. An explicit <code>@kind</code> also requires an ID. The source guard authorizes the match; each alternative may add another condition. The first matching alternative is selected.</p>
+<h2>Structured alternative</h2>
+<pre>@id: add.test.annotation
+void $method($params$) :: plannedRole($method, "TEST_METHOD")
+=&gt;! addAnnotation(target=$method,
+        annotation="org.junit.jupiter.api.Test")
+;;</pre>
+<p><code>=&gt;!</code> introduces ordered structured actions. They are parsed into typed values and executed through registered AST handlers; they are not fake Java replacement text.</p>
+<h2>Design rules</h2>
+<ul>
+<li>Match the smallest stable AST shape that expresses the transformation.</li>
+<li>Use bindings and guards for semantic constraints rather than spelling variants.</li>
+<li>Use a semantic plan when correctness depends on more than the local match.</li>
+<li>Split text and structured alternatives into separate rules.</li>
+<li>Treat parser acceptance, editor support, diagnostics and tests as one language contract.</li>
+</ul>
+<p>Continue with <a href="hints-patterns.html">patterns</a>, <a href="hints-guards.html">guards and predicates</a>, and <a href="hints-actions-plans.html">actions and semantic plans</a>.</p>
+</body>
+</html>

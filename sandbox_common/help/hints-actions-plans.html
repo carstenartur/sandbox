@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Structured actions and semantic plans</title></head>
+<body>
+<h1>Structured actions and semantic plans</h1>
+<p>Use a structured action when the rewrite changes declaration structure, modifiers, annotations, supertypes or invocation ownership. Structured actions preserve JDT AST and import-rewrite semantics and are validated against one shared action catalog.</p>
+<h2>Action syntax</h2>
+<pre>@id: ordered.jupiter.test
+void $method($params$) :: plannedRole($method, "TEST_METHOD")
+=&gt;! addAnnotation(target=$method,
+        annotation="org.junit.jupiter.api.Order",
+        value=planValue($method, "testOrder"));
+    addAnnotation(target=$method,
+        annotation="org.junit.jupiter.api.Test")
+;;</pre>
+<p>Arguments are named. Required, optional, unknown and duplicate arguments are checked during parsing. Actions execute in source order. This order can matter when several nodes are inserted at the same JDT list position.</p>
+<h2>Standard actions</h2>
+<table border="1" cellspacing="0" cellpadding="4">
+<tr><th>Action</th><th>Arguments</th><th>Effect</th></tr>
+<tr><td><code>addAnnotation</code></td><td><code>target</code>, <code>annotation</code>, optional <code>value</code></td><td>Add a marker, single-value or array annotation.</td></tr>
+<tr><td><code>removeAnnotation</code></td><td><code>target</code>, <code>annotation</code></td><td>Remove one validated annotation.</td></tr>
+<tr><td><code>addModifier</code></td><td><code>target</code>, <code>modifier</code></td><td>Add one declaration modifier.</td></tr>
+<tr><td><code>removeModifier</code></td><td><code>target</code>, <code>modifier</code></td><td>Remove one declaration modifier.</td></tr>
+<tr><td><code>removeSupertype</code></td><td><code>target</code>, <code>type</code></td><td>Remove one binding-validated superclass or interface.</td></tr>
+<tr><td><code>replaceSupertype</code></td><td><code>target</code>, <code>type</code>, <code>replacement</code></td><td>Replace one binding-validated superclass or interface.</td></tr>
+<tr><td><code>removeDeclaration</code></td><td><code>target</code></td><td>Remove one exact declaration or field fragment.</td></tr>
+<tr><td><code>qualifyInvocation</code></td><td><code>target</code>, <code>owner</code></td><td>Qualify one exact unqualified static invocation.</td></tr>
+</table>
+<h2>Action values</h2>
+<ul>
+<li>Quoted strings, booleans and integers are typed literal values.</li>
+<li>A placeholder such as <code>$method</code> refers to the corresponding pattern binding.</li>
+<li><code>planValue($method, "testOrder")</code> reads a typed fact for a planned node.</li>
+<li><code>classLiteral("example.Owner.Nested")</code> creates a class-literal annotation value with import handling.</li>
+<li><code>name("example.Qualified.Name")</code> represents a Java name rather than a string literal.</li>
+<li><code>list(...)</code> creates an ordered homogeneous action value list.</li>
+</ul>
+<h2>Semantic plan model</h2>
+<p><code>SemanticRewritePlan</code> is an immutable authorization graph. Stable <code>NodeKey</code> values identify types, methods, constructors, fields and exact call sites. A plan can assign roles, typed facts and directed relation occurrences with typed attributes. Relation order and duplicate occurrences are preserved.</p>
+<h2>Declaring a plan dependency</h2>
+<pre>&lt;!requires-plan: junit3-hierarchy&gt;
+
+@id: hierarchy.root
+@kind: TYPE_DECLARATION
+class $type extends junit.framework.TestCase {}
+    :: plannedRole($type, "JUNIT3_HIERARCHY_TYPE")
+    &amp;&amp; plannedValue($type, "removeTestCaseSuperclass", true)
+=&gt;! removeSupertype(target=$type, type="junit.framework.TestCase")
+;;</pre>
+<p>A plan-aware program is rejected unless a non-empty plan with the required contract is installed. Every structured target must resolve to a stable key authorized by that plan. After matching, exact coverage checks compare the planned targets with the targets for which rewrite operations were produced.</p>
+<h2>Text versus structured rules</h2>
+<p>A rule may use ordinary text replacement or structured actions, but a plan-aware rule must not mix both kinds in its alternatives. Split such behaviour into separately identified rules. Text-only rules continue through the established hint rewrite backend; action-only rules create typed AST operations directly.</p>
+</body>
+</html>

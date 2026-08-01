@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<toc label="Sandbox Java Tools" topic="help/index.html">
+   <topic label="Using Sandbox cleanups" href="help/cleanups.html">
+      <topic label="Running and reviewing cleanups" href="help/running-cleanups.html"/>
+      <topic label="JUnit migration and safety contracts" href="help/junit-migration.html"/>
+   </topic>
+   <topic label="Sandbox Hint DSL programmer's guide" href="help/hints-dsl.html">
+      <topic label="Patterns, placeholders and rule kinds" href="help/hints-patterns.html"/>
+      <topic label="Guards, predicates and composition" href="help/hints-guards.html"/>
+      <topic label="Structured actions and semantic plans" href="help/hints-actions-plans.html"/>
+      <topic label="Debugging, tracing and tests" href="help/debugging-testing.html"/>
+      <topic label="Language reference" href="help/language-reference.html"/>
+   </topic>
+   <topic label="TriggerPattern API programmer's guide" href="help/triggerpattern-api.html">
+      <topic label="Engine architecture and lifecycle" href="help/api-engine.html"/>
+      <topic label="Extension points and registered services" href="help/api-extensions.html"/>
+      <topic label="API testing and compatibility" href="help/api-testing.html"/>
+   </topic>
+</toc>

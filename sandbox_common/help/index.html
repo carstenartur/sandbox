@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sandbox Java Tools</title>
+</head>
+<body>
+<h1>Sandbox Java Tools</h1>
+<p>Sandbox extends Eclipse JDT with Java cleanups, quick assists and the TriggerPattern rule engine. This help describes both day-to-day use and the programming interfaces used to create, test and debug transformations.</p>
+<h2>Choose a starting point</h2>
+<ul>
+<li><a href="cleanups.html">Using Sandbox cleanups</a> explains configuration, preview, application and rollback expectations.</li>
+<li><a href="hints-dsl.html">Sandbox Hint DSL programmer's guide</a> documents <code>.sandbox-hint</code> programs, patterns, guards, structured actions and semantic plans.</li>
+<li><a href="triggerpattern-api.html">TriggerPattern API programmer's guide</a> documents the Java model, engine lifecycle and extension contracts.</li>
+</ul>
+<h2>Safety model</h2>
+<p>Local rules may rewrite one AST match directly. Coordinated migrations first create a semantic plan, authorize stable AST targets and then execute only rules whose guards agree with that plan. Migrations that affect test discovery can additionally compare framework-neutral execution-tree snapshots before and after the change.</p>
+<p>Sandbox deliberately fails closed when bindings, plan values, action schemas or expected target coverage no longer match the source.</p>
+</body>
+</html>

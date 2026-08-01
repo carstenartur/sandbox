@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Sandbox Hint language reference</title></head>
+<body>
+<h1>Sandbox Hint language reference</h1>
+<h2>File directives</h2>
+<table border="1" cellspacing="0" cellpadding="4">
+<tr><th>Directive</th><th>Example</th><th>Purpose</th></tr>
+<tr><td><code>id</code></td><td><code>&lt;!id: program.id&gt;</code></td><td>Stable program identifier.</td></tr>
+<tr><td><code>description</code></td><td><code>&lt;!description: Text&gt;</code></td><td>Human-readable description.</td></tr>
+<tr><td><code>severity</code></td><td><code>&lt;!severity: warning&gt;</code></td><td>Default reported severity: info, warning, error or hint.</td></tr>
+<tr><td><code>minJavaVersion</code></td><td><code>&lt;!minJavaVersion: 17&gt;</code></td><td>Minimum Java source version.</td></tr>
+<tr><td><code>tags</code></td><td><code>&lt;!tags: junit, migration&gt;</code></td><td>Searchable program tags.</td></tr>
+<tr><td><code>include</code></td><td><code>&lt;!include: common.rules&gt;</code></td><td>Compose another hint program.</td></tr>
+<tr><td><code>caseInsensitive</code></td><td><code>&lt;!caseInsensitive&gt;</code></td><td>Enable case-insensitive literal matching.</td></tr>
+<tr><td><code>suppressWarnings</code></td><td><code>&lt;!suppressWarnings: key&gt;</code></td><td>Recognized suppression keys.</td></tr>
+<tr><td><code>treeKind</code></td><td><code>&lt;!treeKind: METHOD_DECLARATION&gt;</code></td><td>Restrict indexed AST node kinds.</td></tr>
+<tr><td><code>requires-plan</code></td><td><code>&lt;!requires-plan: contract-id&gt;</code></td><td>Require a semantic-plan contract.</td></tr>
+<tr><td><code>map</code></td><td><code>&lt;!map N: old =&gt; new&gt;</code></td><td>Reusable source/replacement mapping.</td></tr>
+<tr><td><code>foreach</code></td><td><code>&lt;!foreach N: source -&gt; target&gt;</code></td><td>Generate rules from mapping entries.</td></tr>
+<tr><td><code>predicate</code></td><td><code>&lt;!predicate p($n): guard($n)&gt;</code></td><td>Named parameterized guard expression.</td></tr>
+</table>
+<h2>Per-rule metadata</h2>
+<ul>
+<li><code>@id: stable.rule.id</code> assigns a stable rule identity.</li>
+<li><code>@severity: info|warning|error|hint</code> overrides the program severity.</li>
+<li><code>@kind: TYPE_DECLARATION</code> selects an explicit pattern kind and requires <code>@id</code>.</li>
+</ul>
+<h2>Operators</h2>
+<table border="1" cellspacing="0" cellpadding="4">
+<tr><td><code>::</code></td><td>Attach a guard to a source pattern or alternative.</td></tr>
+<tr><td><code>=&gt;</code></td><td>Ordinary text or pattern replacement.</td></tr>
+<tr><td><code>=&gt;!</code></td><td>Ordered schema-validated structured actions.</td></tr>
+<tr><td><code>;;</code></td><td>Terminate one rule.</td></tr>
+<tr><td><code>&amp;&amp;</code>, <code>||</code>, <code>!</code></td><td>Guard conjunction, disjunction and negation.</td></tr>
+</table>
+<h2>Standard structured actions</h2>
+<ul>
+<li><code>addAnnotation(target=VALUE, annotation=VALUE [, value=VALUE])</code></li>
+<li><code>removeAnnotation(target=VALUE, annotation=VALUE)</code></li>
+<li><code>addModifier(target=VALUE, modifier=VALUE)</code></li>
+<li><code>removeModifier(target=VALUE, modifier=VALUE)</code></li>
+<li><code>removeSupertype(target=VALUE, type=VALUE)</code></li>
+<li><code>replaceSupertype(target=VALUE, type=VALUE, replacement=VALUE)</code></li>
+<li><code>removeDeclaration(target=VALUE)</code></li>
+<li><code>qualifyInvocation(target=VALUE, owner=VALUE)</code></li>
+</ul>
+<h2>Important plan guards</h2>
+<p><code>plannedRole</code>, <code>enclosingPlannedRole</code>, <code>plannedValue</code>, <code>enclosingPlannedValue</code>, <code>plannedNodeValue</code>, <code>plannedListContains</code>, <code>plannedRelation</code>, <code>plannedRelationValue</code>, <code>plannedOutgoingRelation</code>, <code>plannedIncomingRelation</code> and <code>plannedRelationCount</code>.</p>
+<h2>Compatibility note</h2>
+<p>The authoritative vocabulary is the runtime <code>HintLanguageVocabulary</code>, registered guard set and <code>RewriteActionCatalog</code>. This page is checked as product documentation, but implementations and extensions must derive editor completion and validation from those catalogs rather than parsing this HTML.</p>
+</body>
+</html>

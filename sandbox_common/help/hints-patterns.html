@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Patterns, placeholders and rule kinds</title></head>
+<body>
+<h1>Patterns, placeholders and rule kinds</h1>
+<h2>Pattern kinds</h2>
+<p>The engine supports expression, statement, statement-sequence, method-call, constructor, annotation, import, field, method-declaration, block, declaration and type-declaration patterns. Ordinary rules infer their kind from the source syntax. Use <code>@kind</code> when inference would be ambiguous or when a type header must be matched explicitly.</p>
+<h2>Placeholders</h2>
+<ul>
+<li><code>$name</code> binds one AST node or identifier.</li>
+<li>Variadic placeholders such as <code>$args$</code> and <code>$params$</code> bind ordered lists.</li>
+<li>The same placeholder used more than once requires structurally compatible occurrences.</li>
+<li>Bindings are available to guards, replacement patterns and structured-action values.</li>
+</ul>
+<h2>Type declaration patterns</h2>
+<pre>@id: remove.legacy.base
+@kind: TYPE_DECLARATION
+class $type extends legacy.Base {}
+=&gt;! removeSupertype(target=$type, type="legacy.Base")
+;;</pre>
+<p>Type-declaration patterns are header-only. An empty pattern body intentionally ignores fields, methods and nested declarations in the candidate. The declared type kind, modifiers, type parameters, record components and supertypes remain constraints. A non-empty pattern body is rejected rather than being interpreted partially.</p>
+<p>Classes, interfaces, enums, records and annotation types are supported. The matcher uses <code>AbstractTypeDeclaration</code> and does not cast every top-level type to an ordinary class declaration.</p>
+<h2>Statement sequences</h2>
+<p>A statement-sequence pattern preserves order and matches a contiguous sequence. Use it when one replacement depends on several neighbouring statements; do not simulate a sequence by running independent rules that could match different control-flow regions.</p>
+<h2>Binding quality</h2>
+<p>Syntax matching can identify candidates, but guards and actions may require resolved JDT bindings. A rule that needs an exact method owner, supertype or declaration must fail when the binding is missing or recovered ambiguously.</p>
+</body>
+</html>
