@@ -11,6 +11,7 @@
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -70,7 +71,7 @@ class JUnit3HarnessSemanticsTest {
 		JUnit3HarnessSemantics.Rejection rejection= JUnit3HarnessSemantics
 				.rejection(parseMethod(member)).orElseThrow();
 		assertEquals(reasonCode, rejection.reasonCode());
-		assertTrue(!rejection.explanation().isBlank());
+		assertFalse(rejection.explanation().isBlank());
 	}
 
 	private static MethodDeclaration parseMethod(String member) {
