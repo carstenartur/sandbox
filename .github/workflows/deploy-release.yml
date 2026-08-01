@@ -91,7 +91,7 @@ jobs:
 
       - name: Derive release plan and validate immutable starting state
         env:
-          NEXT_VERSION_INCREMENT: ${{ inputs.next_version_increment }}
+          NEXT_VERSION_INCREMENT: ${{ github.event.inputs.next_version_increment }}
         run: |
           set -euo pipefail
           starting_sha=$(git rev-parse HEAD)

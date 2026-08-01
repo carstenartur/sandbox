@@ -51,7 +51,7 @@ jobs:
               '        type: choice\n',
               '          - patch\n          - minor\n          - major\n',
               'release_version="${current_version%-SNAPSHOT}"',
-              'NEXT_VERSION_INCREMENT: ${{ inputs.next_version_increment }}',
+              'NEXT_VERSION_INCREMENT: ${{ github.event.inputs.next_version_increment }}',
               'ref: main',
           )
           forbidden = (
