@@ -10,22 +10,31 @@
  *******************************************************************************/
 package org.eclipse.jgit.server.config;
 
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.hibernate.SessionFactory;
 
 /**
  * Application-owned persistence context used by server resources and repository
  * adapters.
  *
- * <p>The boundary exposes only the native Hibernate contract and lifecycle. It
- * deliberately does not expose copied or released JGit storage implementation
- * types, so entity registration can be replaced independently from callers.</p>
+ * <p>The boundary exposes only the native Hibernate contract, the
+ * application-owned repository-service contract and their coordinated
+ * lifecycle. It deliberately does not expose copied or released JGit storage
+ * implementation types, so entity registration and the active Core backend can
+ * be replaced independently from REST and Smart HTTP callers.</p>
  */
 public interface ServerPersistenceContext extends AutoCloseable {
 
 	/** Returns the application-owned native Hibernate session factory. */
 	SessionFactory sessionFactory();
 
-	/** Closes the owned session factory and its connection/search resources. */
+	/**
+	 * Returns the application-owned repository service sharing this persistence
+	 * context's lifecycle.
+	 */
+	SandboxRepositoryService repositoryService();
+
+	/** Closes repository handles before the owned session factory. */
 	@Override
 	void close();
 }

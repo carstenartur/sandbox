@@ -83,7 +83,7 @@ public class JGitServerApplication {
 		persistenceContext= Objects.requireNonNull(context, "context"); //$NON-NLS-1$
 		try {
 			SessionFactory sessionFactory= persistenceContext.sessionFactory();
-			repositoryResolver= new HibernateRepositoryResolver(sessionFactory);
+			repositoryResolver= new HibernateRepositoryResolver(persistenceContext.repositoryService());
 			SandboxRepositoryService repositories= repositoryResolver.getRepositoryService();
 			if (defaultRepositories != null && !defaultRepositories.isBlank()) {
 				RepositoryManagerConfig.initDefaultRepositories(repositories, defaultRepositories);
@@ -161,7 +161,7 @@ public class JGitServerApplication {
 		}
 	}
 
-	/** Stops the server and closes repository handles before the owned factory. */
+	/** Stops the server and closes the application-owned persistence context. */
 	public void stop() throws Exception {
 		Exception failure= null;
 		try {
@@ -170,17 +170,6 @@ public class JGitServerApplication {
 			}
 		} catch (Exception exception) {
 			failure= exception;
-		}
-		try {
-			if (repositoryResolver != null) {
-				repositoryResolver.close();
-			}
-		} catch (RuntimeException exception) {
-			if (failure == null) {
-				failure= exception;
-			} else {
-				failure.addSuppressed(exception);
-			}
 		}
 		try {
 			if (persistenceContext != null) {

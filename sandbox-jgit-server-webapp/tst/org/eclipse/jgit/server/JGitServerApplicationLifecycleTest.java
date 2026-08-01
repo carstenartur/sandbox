@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
@@ -32,6 +33,11 @@ public class JGitServerApplicationLifecycleTest {
 			@Override
 			public SessionFactory sessionFactory() {
 				throw new IllegalStateException("factory unavailable"); //$NON-NLS-1$
+			}
+
+			@Override
+			public SandboxRepositoryService repositoryService() {
+				throw new AssertionError("Repository service must not be requested after factory failure"); //$NON-NLS-1$
 			}
 
 			@Override

@@ -32,31 +32,37 @@ public class HibernateRepositoryResolver
 
 	private final HibernateSessionFactoryProvider sessionFactoryProvider;
 	private final SandboxRepositoryService repositories;
+	private final boolean ownsRepositoryService;
 
-	/** Creates a resolver from the application-owned native session factory. */
+	/** Creates a resolver that owns a copied adapter for the native session factory. */
 	public HibernateRepositoryResolver(SessionFactory sessionFactory) {
-		this(null, new CopiedHibernateRepositoryService(sessionFactory));
+		this(null, new CopiedHibernateRepositoryService(sessionFactory), true);
 	}
 
 	/**
-	 * Creates a resolver using the temporary copied-backend adapter.
+	 * Creates a resolver using and owning the temporary copied-backend adapter.
 	 *
-	 * @deprecated application wiring should pass the native {@link SessionFactory}
+	 * @deprecated application wiring should pass its application-owned
+	 *             {@link SandboxRepositoryService}
 	 */
 	@Deprecated(forRemoval = true)
 	public HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider) {
-		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider));
+		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider), true);
 	}
 
-	/** Creates a resolver for an application-owned repository service. */
+	/**
+	 * Creates a resolver for an application-owned repository service without
+	 * taking lifecycle ownership.
+	 */
 	public HibernateRepositoryResolver(SandboxRepositoryService repositories) {
-		this(null, repositories);
+		this(null, repositories, false);
 	}
 
 	private HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider,
-			SandboxRepositoryService repositories) {
+			SandboxRepositoryService repositories, boolean ownsRepositoryService) {
 		this.sessionFactoryProvider= sessionFactoryProvider;
 		this.repositories= Objects.requireNonNull(repositories, "repositories"); //$NON-NLS-1$
+		this.ownsRepositoryService= ownsRepositoryService;
 	}
 
 	@Override
@@ -104,6 +110,8 @@ public class HibernateRepositoryResolver
 
 	@Override
 	public void close() {
-		repositories.close();
+		if (ownsRepositoryService) {
+			repositories.close();
+		}
 	}
 }
