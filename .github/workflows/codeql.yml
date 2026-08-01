@@ -20,6 +20,7 @@ on:
     paths:
       - '**.java'
       - '**/pom.xml'
+      - '.github/actions/use-runner-maven/**'
       - '.github/workflows/codeql.yml'
   schedule:
     - cron: '37 10 * * 6'
@@ -42,13 +43,9 @@ jobs:
       matrix:
         language: [ 'java' ]
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
-        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+        # Learn more about GitHub language support at https://aka.ms/codeql-docs/language-support
 
     steps:
-    - name: Set up Maven
-      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
-      with:
-        maven-version: 3.9.9
     - name: Checkout repository
       uses: actions/checkout@v6
 
@@ -58,6 +55,9 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
+
+    - name: Use runner Maven
+      uses: ./.github/actions/use-runner-maven
 
     - name: Cache Maven dependencies
       uses: actions/cache@v5
@@ -72,7 +72,7 @@ jobs:
       with:
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified queries in a config file.
+        # By default, queries listed here will override any specified queries in the config file.
         # Prefix the list here with "+" to use these queries and those in the config file.
 
     # Build with the versions declared by the reactor. Hard-coding Tycho here can
