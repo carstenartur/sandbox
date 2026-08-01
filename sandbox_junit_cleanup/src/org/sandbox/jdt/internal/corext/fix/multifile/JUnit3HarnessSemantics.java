@@ -16,13 +16,19 @@ import java.util.Optional;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
 
 /**
  * Stable fail-closed taxonomy for JUnit 3 execution semantics that are not
  * equivalent to ordinary annotation-driven Jupiter tests.
  */
 final class JUnit3HarnessSemantics {
+
+	private static final String JAVA_LANG_STRING= "java.lang.String"; //$NON-NLS-1$
+	private static final String JUNIT_FRAMEWORK_TEST= "junit.framework.Test"; //$NON-NLS-1$
+	private static final String JUNIT_FRAMEWORK_TEST_RESULT= "junit.framework.TestResult"; //$NON-NLS-1$
 
 	record Rejection(String reasonCode, String explanation) {
 		Rejection {
@@ -54,41 +60,145 @@ final class JUnit3HarnessSemantics {
 
 		String name= method.getName().getIdentifier();
 		return switch (name) {
-			case "suite" -> Optional.of(new Rejection( //$NON-NLS-1$
+			case "suite" when isSuiteBuilder(method) -> Optional.of(new Rejection( //$NON-NLS-1$
 					"CUSTOM_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$
 					"The hierarchy declares suite(), so test composition, nesting, duplication or ordering must be migrated as an explicit suite model.")); //$NON-NLS-1$
-			case "runTest" -> Optional.of(new Rejection( //$NON-NLS-1$
+			case "runTest" when isRunTestHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
 					"CUSTOM_JUNIT3_TEST_SELECTION", //$NON-NLS-1$
 					"The hierarchy overrides runTest(), so runtime test selection is not equivalent to method-name discovery.")); //$NON-NLS-1$
-			case "runBare" -> Optional.of(new Rejection( //$NON-NLS-1$
+			case "runBare" when isRunBareHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
 					"CUSTOM_JUNIT3_LIFECYCLE_WRAPPER", //$NON-NLS-1$
 					"The hierarchy overrides runBare(), so its setup/test/teardown wrapper and exception behavior require an explicit extension or invocation migration.")); //$NON-NLS-1$
-			case "createResult", "countTestCases" -> Optional.of(new Rejection( //$NON-NLS-1$ //$NON-NLS-2$
+			case "createResult" when isCreateResultHook(method), //$NON-NLS-1$
+					"countTestCases" when isCountTestCasesHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
 					"CUSTOM_JUNIT3_RESULT_MODEL", //$NON-NLS-1$
 					"The hierarchy customizes JUnit 3 result creation or test counting, which has no ordinary Jupiter annotation equivalent.")); //$NON-NLS-1$
-			case "getName", "setName" -> Optional.of(new Rejection( //$NON-NLS-1$ //$NON-NLS-2$
+			case "getName" when isGetNameHook(method), //$NON-NLS-1$
+					"setName" when isSetNameHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
 					"NAMED_JUNIT3_TEST_CONTRACT", //$NON-NLS-1$
 					"The hierarchy customizes the mutable JUnit 3 test name used for selected-method execution and reporting.")); //$NON-NLS-1$
-			case "run" -> Optional.of(new Rejection( //$NON-NLS-1$
+			case "run" when isRunHook(method) -> Optional.of(new Rejection( //$NON-NLS-1$
 					"CUSTOM_JUNIT3_RUNNER_INTEGRATION", //$NON-NLS-1$
-					"The hierarchy overrides run(), so listener, result or execution delegation semantics require an explicit framework migration.")); //$NON-NLS-1$
+					"The hierarchy overrides run(TestResult), so listener, result or execution delegation semantics require an explicit framework migration.")); //$NON-NLS-1$
 			default -> Optional.empty();
 		};
 	}
 
 	private static boolean isNamedTestConstructor(MethodDeclaration method) {
+		return hasParameters(method, JAVA_LANG_STRING);
+	}
+
+	private static boolean isSuiteBuilder(MethodDeclaration method) {
+		return Modifier.isPublic(method.getModifiers())
+				&& Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, JUNIT_FRAMEWORK_TEST)
+				&& hasParameters(method);
+	}
+
+	private static boolean isRunTestHook(MethodDeclaration method) {
+		return isProtectedOrPublic(method)
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, "void") //$NON-NLS-1$
+				&& hasParameters(method);
+	}
+
+	private static boolean isRunBareHook(MethodDeclaration method) {
+		return Modifier.isPublic(method.getModifiers())
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, "void") //$NON-NLS-1$
+				&& hasParameters(method);
+	}
+
+	private static boolean isCreateResultHook(MethodDeclaration method) {
+		return isProtectedOrPublic(method)
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, JUNIT_FRAMEWORK_TEST_RESULT)
+				&& hasParameters(method);
+	}
+
+	private static boolean isCountTestCasesHook(MethodDeclaration method) {
+		return Modifier.isPublic(method.getModifiers())
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, "int") //$NON-NLS-1$
+				&& hasParameters(method);
+	}
+
+	private static boolean isGetNameHook(MethodDeclaration method) {
+		return Modifier.isPublic(method.getModifiers())
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, JAVA_LANG_STRING)
+				&& hasParameters(method);
+	}
+
+	private static boolean isSetNameHook(MethodDeclaration method) {
+		return Modifier.isPublic(method.getModifiers())
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, "void") //$NON-NLS-1$
+				&& hasParameters(method, JAVA_LANG_STRING);
+	}
+
+	private static boolean isRunHook(MethodDeclaration method) {
+		return Modifier.isPublic(method.getModifiers())
+				&& !Modifier.isStatic(method.getModifiers())
+				&& hasReturnType(method, "void") //$NON-NLS-1$
+				&& hasParameters(method, JUNIT_FRAMEWORK_TEST_RESULT);
+	}
+
+	private static boolean isProtectedOrPublic(MethodDeclaration method) {
+		return Modifier.isProtected(method.getModifiers())
+				|| Modifier.isPublic(method.getModifiers());
+	}
+
+	private static boolean hasReturnType(MethodDeclaration method, String qualifiedName) {
 		IMethodBinding binding= method.resolveBinding();
-		if (binding != null && binding.getParameterTypes().length == 1) {
-			ITypeBinding parameter= binding.getParameterTypes()[0];
-			return parameter != null && "java.lang.String" //$NON-NLS-1$
-					.equals(parameter.getErasure().getQualifiedName());
+		if (binding != null) {
+			return isType(binding.getReturnType(), qualifiedName);
 		}
-		if (method.parameters().size() != 1
-				|| !(method.parameters().get(0) instanceof SingleVariableDeclaration parameter)
-				|| parameter.isVarargs()) {
+		return isType(method.getReturnType2(), qualifiedName);
+	}
+
+	private static boolean hasParameters(MethodDeclaration method, String... qualifiedNames) {
+		IMethodBinding binding= method.resolveBinding();
+		if (binding != null) {
+			ITypeBinding[] parameters= binding.getParameterTypes();
+			if (parameters.length != qualifiedNames.length) {
+				return false;
+			}
+			for (int index= 0; index < parameters.length; index++) {
+				if (!isType(parameters[index], qualifiedNames[index])) {
+					return false;
+				}
+			}
+			return true;
+		}
+		if (method.parameters().size() != qualifiedNames.length) {
 			return false;
 		}
-		String sourceType= parameter.getType().toString();
-		return "String".equals(sourceType) || "java.lang.String".equals(sourceType); //$NON-NLS-1$ //$NON-NLS-2$
+		for (int index= 0; index < qualifiedNames.length; index++) {
+			if (!(method.parameters().get(index) instanceof SingleVariableDeclaration parameter)
+					|| parameter.isVarargs()
+					|| !isType(parameter.getType(), qualifiedNames[index])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean isType(ITypeBinding binding, String qualifiedName) {
+		return binding != null && qualifiedName.equals(binding.getErasure().getQualifiedName());
+	}
+
+	private static boolean isType(Type type, String qualifiedName) {
+		if (type == null) {
+			return false;
+		}
+		ITypeBinding binding= type.resolveBinding();
+		if (binding != null) {
+			return isType(binding, qualifiedName);
+		}
+		String sourceType= type.toString();
+		int lastDot= qualifiedName.lastIndexOf('.');
+		String simpleName= lastDot < 0 ? qualifiedName : qualifiedName.substring(lastDot + 1);
+		return qualifiedName.equals(sourceType) || simpleName.equals(sourceType);
 	}
 }
