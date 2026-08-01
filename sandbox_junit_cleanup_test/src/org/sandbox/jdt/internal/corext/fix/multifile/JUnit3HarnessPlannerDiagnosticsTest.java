@@ -46,7 +46,8 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 	@Test
 	void reportsNamedTestConstruction() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("namedconstruction", true, null); //$NON-NLS-1$
-		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", """ //$NON-NLS-1$
+		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
+				"""
 				package namedconstruction;
 				import junit.framework.TestCase;
 
@@ -58,8 +59,9 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 					public void testInherited() {
 					}
 				}
-				""", false, null);
-		ICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", """ //$NON-NLS-1$
+				""", false, null); //$NON-NLS-1$
+		ICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", //$NON-NLS-1$
+				"""
 				package namedconstruction;
 
 				public class ConcreteTest extends BaseTest {
@@ -67,7 +69,7 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 						super(name);
 					}
 				}
-				""", false, null);
+				""", false, null); //$NON-NLS-1$
 
 		assertReason(plan(base, concrete), "NAMED_JUNIT3_TEST_CONSTRUCTION"); //$NON-NLS-1$
 	}
@@ -75,7 +77,8 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 	@Test
 	void reportsCustomSuiteBuilder() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("suitebuilder", true, null); //$NON-NLS-1$
-		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", """ //$NON-NLS-1$
+		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
+				"""
 				package suitebuilder;
 				import junit.framework.Test;
 				import junit.framework.TestCase;
@@ -89,13 +92,14 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 					public void testInherited() {
 					}
 				}
-				""", false, null);
-		ICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", """ //$NON-NLS-1$
+				""", false, null); //$NON-NLS-1$
+		ICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", //$NON-NLS-1$
+				"""
 				package suitebuilder;
 
 				public class ConcreteTest extends BaseTest {
 				}
-				""", false, null);
+				""", false, null); //$NON-NLS-1$
 
 		assertReason(plan(base, concrete), "CUSTOM_JUNIT3_SUITE_BUILDER"); //$NON-NLS-1$
 	}
