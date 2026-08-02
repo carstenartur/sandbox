@@ -29,14 +29,7 @@ Use ordinary `=>` replacement when the desired result can be expressed directly 
 
 Use `=>!` structured actions when a rewrite requires typed AST operations, import management, or a semantic-plan value that cannot be represented safely as a plain replacement.
 
-Structured actions are a normalized execution form. Their author-facing syntax should avoid repeating information already known from the rule:
-
-- the primary matched node is the default action target;
-- an explicit `target` is needed only for a different bound node;
-- stable parameter names or planned relations are preferred over numeric positions;
-- source and target declarations should eventually compile to structured actions rather than forcing authors to spell out every low-level edit.
-
-A plan-aware rule may not mix text and structured alternatives. Split the behavior into separate rule IDs so coverage and execution order remain reviewable.
+Structured actions are a normalized execution form rather than a reason to duplicate source information. New action syntax should prefer implicit context, stable bindings, and target-code derivation wherever these remain unambiguous. A plan-aware rule may not mix text and structured alternatives; split the behavior into separate rule IDs so coverage and execution order remain reviewable.
 
 ## Where semantic planning is required
 
@@ -59,8 +52,8 @@ Before shipping a migration rule:
 2. Express the desired target code once wherever the DSL can derive the typed AST operations.
 3. Put only non-derivable scope, role, relationship, and strategy information in the semantic plan.
 4. Let `requires-plan` be the sole plan contract.
-5. Omit `target` when an action operates on the primary match.
-6. Prefer bound names and planned ordered relations to positional indices.
+5. Avoid repeating a target, name, type, or position that the pattern or target representation already determines.
+6. Prefer stable bindings and planned ordered relations to positional indices.
 7. Add positive, negative, ambiguity, and stale-plan tests.
 8. For test migrations, compare the relevant JDT JUnit test tree and results where identity or multiplicity can change.
 
