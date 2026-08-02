@@ -19,10 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
-
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -32,7 +29,11 @@ import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 
-/** Tests for {@link HintFileSerializer}. */
+import java.util.List;
+
+/**
+ * Tests for {@link HintFileSerializer}.
+ */
 class HintFileSerializerTest {
 
 	private final HintFileSerializer serializer = new HintFileSerializer();
@@ -68,6 +69,7 @@ class HintFileSerializerTest {
 	void testSerializeWithDefaultSeverityOmitted() {
 		HintFile hintFile = new HintFile();
 		hintFile.setId("test.rule");
+		// INFO is default — should not appear in output
 		hintFile.setSeverity(Severity.INFO);
 
 		String result = serializer.serialize(hintFile);
