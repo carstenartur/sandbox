@@ -113,7 +113,7 @@ public final class HintProgramParser {
 		try {
 			HintPlanRequirement.fromContent(source);
 		} catch (IllegalArgumentException exception) {
-			throw new HintParseException(exception.getMessage(), 0);
+			throw parseFailure(exception);
 		}
 		HintPredicatePreprocessor.Result predicates= HintPredicatePreprocessor.preprocess(source);
 		validatePredicateNames(predicates.predicates());
@@ -140,7 +140,7 @@ public final class HintProgramParser {
 		try {
 			HintBindingPolicy.fromContent(source).ifPresent(parsed::setBindingPolicy);
 		} catch (IllegalArgumentException exception) {
-			throw new HintParseException(exception.getMessage(), 0);
+			throw parseFailure(exception);
 		}
 		if (actionsBySentinel.isEmpty() && kindsByRuleId.isEmpty()) {
 			return parsed;
@@ -207,6 +207,12 @@ public final class HintProgramParser {
 		source.getIncludes().forEach(copy::addInclude);
 		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);
 		return copy;
+	}
+
+	private static HintParseException parseFailure(IllegalArgumentException cause) {
+		HintParseException failure= new HintParseException(cause.getMessage(), 0);
+		failure.initCause(cause);
+		return failure;
 	}
 
 	private static void validatePredicateNames(Iterable<HintPredicateDefinition> predicates)
