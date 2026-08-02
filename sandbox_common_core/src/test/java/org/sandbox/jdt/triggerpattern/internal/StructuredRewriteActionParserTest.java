@@ -34,7 +34,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
 class StructuredRewriteActionParserTest {
 
 	@Test
-	void parsesOrderedPlanAwareActionsAndTypedValueExpressions() throws HintParseException {
+	void parsesOrderedActionsAndTypedValueExpressions() throws HintParseException {
 		String source= """
 				<!id: structured.demo>
 				<!requires-plan: structured/demo>
