@@ -62,8 +62,7 @@ class LoopRefactoringComplexChainTest {
 				import java.util.*;
 				class MyTest {
 					public void process(List<Integer> numbers) {
-						numbers.stream().map(num -> num * 2).map(doubled -> doubled + 10)
-								.filter(plusTen -> (plusTen < 100))
+						numbers.stream().map(num -> num * 2).map(doubled -> doubled + 10).filter(plusTen -> (plusTen < 100))
 								.forEachOrdered(plusTen -> System.out.println(plusTen));
 					}
 				}
