@@ -41,6 +41,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
@@ -127,12 +128,17 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	public boolean performFinish() {
 		String containerPath = filePage.getContainerPath();
 		String fileName = filePage.getFileName();
+		SandboxHintTemplates template = filePage.getSelectedTemplate();
 
 		// Build HintFile model from page 1 metadata
 		HintFile hintFile = new HintFile();
 		hintFile.setId(filePage.getHintId());
 		hintFile.setDescription(filePage.getHintDescription());
 		hintFile.setSeverity(filePage.getSeverityValue());
+		if (template != SandboxHintTemplates.PLAN_AWARE) {
+			hintFile.setBindingPolicy("required".equals(filePage.getBindingPolicyValue()) //$NON-NLS-1$
+					? HintBindingPolicy.REQUIRED : HintBindingPolicy.OPTIONAL);
+		}
 		int minJava = filePage.getMinJavaVersion();
 		if (minJava > 0) {
 			hintFile.setMinJavaVersion(minJava);
@@ -154,7 +160,6 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 
 		// Append rule content from page 2 or template
 		String ruleContent;
-		SandboxHintTemplates template = filePage.getSelectedTemplate();
 		if (template == SandboxHintTemplates.EMPTY) {
 			ruleContent = ""; //$NON-NLS-1$
 		} else if (rulePage.hasCustomContent()) {
