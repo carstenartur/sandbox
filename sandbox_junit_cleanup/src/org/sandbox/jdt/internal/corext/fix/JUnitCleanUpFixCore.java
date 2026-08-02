@@ -54,6 +54,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTestnameJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RunWithJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.SuiteMethodJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedAndTimeoutJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestExpectedJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.TestJUnit3Plugin;
@@ -79,6 +80,7 @@ public enum JUnitCleanUpFixCore {
 	CATEGORY(new CategoryJUnitPlugin()),
 	FIX_METHOD_ORDER(new FixMethodOrderJUnitPlugin()),
 	RUNWITH(new RunWithJUnitPlugin()),
+	SUITEMETHOD(new SuiteMethodJUnitPlugin()),
 	ASSERT(new AssertJUnitPlugin()),
 	ASSERT_OPTIMIZATION(new AssertOptimizationJUnitPlugin()),
 	ASSUME(new AssumeJUnitPlugin()),

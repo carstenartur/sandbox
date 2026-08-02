@@ -77,8 +77,23 @@ public final class JUnitMultiFilePlanner {
 	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName) {
 	}
 
+	/**
+	 * One {@code ExternalResource} fixture type together with the source types it
+	 * inherits its callback contract from, ordered from the fixture towards the
+	 * direct {@code ExternalResource} subclass.
+	 */
+	private record ResourceChain(ResourceType fixture, List<ResourceType> types) {
+		ResourceChain {
+			types= List.copyOf(types);
+		}
+	}
+
 	private record RuleField(String compilationUnitHandle, String fieldBindingKey, String resourceTypeKey,
 			boolean classRule) {
+	}
+
+	private record ResourceScope(Map<String, ResourceChain> chainsByTypeKey,
+			List<MultiFileCandidateDiagnostic> diagnostics) {
 	}
 
 	private record MigrationResult(List<ExternalResourceRuleMigration> migrations,
@@ -242,11 +257,17 @@ public final class JUnitMultiFilePlanner {
 	private static MigrationResult planExternalResources(Map<String, CompilationUnit> rootsByHandle,
 			RefactoringStatus status, IProgressMonitor monitor) {
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		Map<String, ResourceType> resourcesByTypeKey= collectResourceTypes(rootsByHandle, monitor);
+		ResourceScope resourceScope= collectResourceChains(rootsByHandle, monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourcesByTypeKey, monitor);
+		List<RuleField> ruleFields= collectRuleFields(rootsByHandle, resourceScope.chainsByTypeKey(), monitor);
 		MultiFilePlanningBudget.checkCanceled(monitor);
-		return createMigrations(ruleFields, resourcesByTypeKey, status, monitor);
+		MigrationResult result= createMigrations(ruleFields, resourceScope.chainsByTypeKey(), status, monitor);
+		if (resourceScope.diagnostics().isEmpty()) {
+			return result;
+		}
+		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>(resourceScope.diagnostics());
+		diagnostics.addAll(result.diagnostics());
+		return new MigrationResult(result.migrations(), diagnostics);
 	}
 
 	private static List<MultiFileCandidateDiagnostic> diagnoseParameterizedCandidates(
@@ -320,9 +341,17 @@ public final class JUnitMultiFilePlanner {
 		return roots;
 	}
 
-	private static Map<String, ResourceType> collectResourceTypes(
-			Map<String, CompilationUnit> rootsByHandle, IProgressMonitor monitor) {
-		Map<String, ResourceType> result= new LinkedHashMap<>();
+	/**
+	 * Collects every source fixture type whose superclass chain reaches
+	 * {@code org.junit.rules.ExternalResource}. A fixture is only planned when every
+	 * type between the fixture and {@code ExternalResource} is available as source in
+	 * the current scope, because the inherited {@code before()}/{@code after()}
+	 * callbacks have to be renamed together with the fixture.
+	 */
+	private static ResourceScope collectResourceChains(Map<String, CompilationUnit> rootsByHandle,
+			IProgressMonitor monitor) {
+		Map<String, ResourceType> sourceTypes= new LinkedHashMap<>();
+		Map<String, ITypeBinding> bindings= new LinkedHashMap<>();
 		for (Map.Entry<String, CompilationUnit> entry : rootsByHandle.entrySet()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
 			String unitHandle= entry.getKey();
@@ -331,21 +360,64 @@ public final class JUnitMultiFilePlanner {
 				public boolean visit(TypeDeclaration node) {
 					MultiFilePlanningBudget.checkCanceled(monitor);
 					ITypeBinding binding= node.resolveBinding();
-					if (directlyExtendsExternalResource(binding)) {
-						String typeKey= JUnitMigrationPlan.typeKey(binding);
-						if (typeKey != null) {
-							result.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName()));
-						}
+					String typeKey= JUnitMigrationPlan.typeKey(binding);
+					if (typeKey != null) {
+						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName()));
+						bindings.put(typeKey, binding);
 					}
 					return true;
 				}
 			});
 		}
-		return result;
+
+		Map<String, ResourceChain> chains= new LinkedHashMap<>();
+		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>();
+		for (Map.Entry<String, ITypeBinding> entry : bindings.entrySet()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
+			ResourceType fixture= sourceTypes.get(entry.getKey());
+			List<ResourceType> chain= resourceChain(entry.getValue(), sourceTypes);
+			if (chain != null) {
+				chains.put(entry.getKey(), new ResourceChain(fixture, chain));
+			} else if (extendsExternalResource(entry.getValue())) {
+				String message= "ExternalResource fixture " + fixture.typeName() //$NON-NLS-1$
+						+ " inherits its callbacks from a type that is not part of the selected source scope."; //$NON-NLS-1$
+				diagnostics.add(MultiFileCandidateDiagnostic.rejected(
+						"external-resource:" + fixture.typeName(), fixture.compilationUnitHandle(), //$NON-NLS-1$
+						"EXTERNAL_RESOURCE_BASE_OUT_OF_SCOPE", message, //$NON-NLS-1$
+						List.of(fixture.compilationUnitHandle())));
+			}
+		}
+		return new ResourceScope(chains, diagnostics);
+	}
+
+	/**
+	 * Returns the fixture type and all its source superclasses up to the direct
+	 * {@code ExternalResource} subclass, or {@code null} when the chain leaves the
+	 * source scope or never reaches {@code ExternalResource}.
+	 */
+	private static List<ResourceType> resourceChain(ITypeBinding binding, Map<String, ResourceType> sourceTypes) {
+		List<ResourceType> chain= new ArrayList<>();
+		ITypeBinding current= binding;
+		while (current != null) {
+			ResourceType sourceType= sourceTypes.get(JUnitMigrationPlan.typeKey(current));
+			if (sourceType == null) {
+				return null;
+			}
+			chain.add(sourceType);
+			ITypeBinding superclass= current.getSuperclass();
+			if (superclass == null) {
+				return null;
+			}
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {
+				return chain;
+			}
+			current= superclass;
+		}
+		return null;
 	}
 
 	private static List<RuleField> collectRuleFields(Map<String, CompilationUnit> rootsByHandle,
-			Map<String, ResourceType> resourcesByTypeKey, IProgressMonitor monitor) {
+			Map<String, ResourceChain> chainsByTypeKey, IProgressMonitor monitor) {
 		List<RuleField> result= new ArrayList<>();
 		for (Map.Entry<String, CompilationUnit> entry : rootsByHandle.entrySet()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
@@ -364,8 +436,8 @@ public final class JUnitMultiFilePlanner {
 					IVariableBinding fieldBinding= fragment.resolveBinding();
 					ITypeBinding resourceBinding= resourceTypeBinding(fragment, fieldBinding);
 					String resourceTypeKey= JUnitMigrationPlan.typeKey(resourceBinding);
-					ResourceType resource= resourcesByTypeKey.get(resourceTypeKey);
-					if (fieldBinding == null || resource == null) {
+					ResourceChain chain= chainsByTypeKey.get(resourceTypeKey);
+					if (fieldBinding == null || chain == null) {
 						return true;
 					}
 					String fieldKey= fieldBinding.getVariableDeclaration().getKey();
@@ -380,10 +452,17 @@ public final class JUnitMultiFilePlanner {
 	}
 
 	private static MigrationResult createMigrations(List<RuleField> fields,
-			Map<String, ResourceType> resourcesByTypeKey, RefactoringStatus status, IProgressMonitor monitor) {
+			Map<String, ResourceChain> chainsByTypeKey, RefactoringStatus status, IProgressMonitor monitor) {
+		// Every type between the rule field type and ExternalResource takes part in the
+		// same migration, because its inherited callbacks are renamed as well.
 		Map<String, List<RuleField>> fieldsByResourceType= new LinkedHashMap<>();
+		Map<String, ResourceType> resourcesByTypeKey= new LinkedHashMap<>();
 		for (RuleField field : fields) {
-			fieldsByResourceType.computeIfAbsent(field.resourceTypeKey(), ignored -> new ArrayList<>()).add(field);
+			for (ResourceType resource : chainsByTypeKey.get(field.resourceTypeKey()).types()) {
+				resourcesByTypeKey.putIfAbsent(resource.typeBindingKey(), resource);
+				fieldsByResourceType.computeIfAbsent(resource.typeBindingKey(), ignored -> new ArrayList<>())
+						.add(field);
+			}
 		}
 		List<ExternalResourceRuleMigration> migrations= new ArrayList<>();
 		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>();
@@ -447,10 +526,13 @@ public final class JUnitMultiFilePlanner {
 		return fieldBinding == null ? null : fieldBinding.getType();
 	}
 
-	private static boolean directlyExtendsExternalResource(ITypeBinding binding) {
-		if (binding == null || binding.getSuperclass() == null) {
-			return false;
+	private static boolean extendsExternalResource(ITypeBinding binding) {
+		for (ITypeBinding current= binding == null ? null : binding.getSuperclass(); current != null;
+				current= current.getSuperclass()) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {
+				return true;
+			}
 		}
-		return ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(binding.getSuperclass().getErasure().getQualifiedName());
+		return false;
 	}
 }

@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodMigration;
@@ -261,6 +262,12 @@ final class JUnit3HierarchyPlanner {
 		int orderStride= Math.max(1, maxTestsPerType + 1);
 
 		for (SourceType type : hierarchy) {
+			String excludedSuperType= JUnit3MigrationExclusions.excludedSuperType(type.binding());
+			if (excludedSuperType != null) {
+				return Classification.rejected(JUnit3MigrationExclusions.EXCLUDED_BASE_TYPE_REASON,
+						"The hierarchy type " + type.name() + " derives from " + excludedSuperType //$NON-NLS-1$ //$NON-NLS-2$
+								+ ", whose JUnit 3 execution contract must not be migrated to Jupiter."); //$NON-NLS-1$
+			}
 			if (!type.declaration().isPackageMemberTypeDeclaration() || !hasSingleTopLevelType(type)
 					|| hasJUnitAnnotation(type.declaration())) {
 				return Classification.rejected("UNSUPPORTED_JUNIT3_TYPE_SHAPE", //$NON-NLS-1$

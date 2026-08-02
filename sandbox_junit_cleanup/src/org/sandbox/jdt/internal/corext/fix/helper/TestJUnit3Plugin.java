@@ -53,6 +53,7 @@ import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 
@@ -105,7 +106,8 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				|| hasJUnitAnnotation(node) || !(binding.getJavaElement() instanceof IType type)) {
 			return false;
 		}
-		if (hasKnownSubtypes(type) || hasAnyReferences(type) || hasUnsupportedTestCaseUsage(node)) {
+		if (JUnit3MigrationExclusions.isExcluded(binding)
+				|| hasKnownSubtypes(type) || hasAnyReferences(type) || hasUnsupportedTestCaseUsage(node)) {
 			return false;
 		}
 

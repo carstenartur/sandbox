@@ -158,7 +158,13 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			return List.of();
 		}
 
-		List<ICompilationUnit> allowedUnits= JavaProjectCompilationUnits.collect(project, currentScope,
+		List<IJavaProject> coordinatedProjects= coordinatedProjects(project, seeds);
+		if (!JavaProjectCompilationUnits.readOnlyProjects(coordinatedProjects).isEmpty()) {
+			clearScopeDecision(project);
+			rejectedScopes.add(project);
+			return List.of();
+		}
+		List<ICompilationUnit> allowedUnits= JavaProjectCompilationUnits.collect(coordinatedProjects, currentScope,
 				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);
 		List<ICompilationUnit> requiredUnits;
 		if (!seeds.complete()) {
@@ -166,8 +172,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		} else {
 			Set<ICompilationUnit> required= new LinkedHashSet<>(seeds.directCompilationUnits());
 			if (!seeds.elements().isEmpty()) {
-				RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(project,
-						seeds.elements(), currentScope, allowedUnits, monitor);
+				RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(
+						coordinatedProjects, seeds.elements(), currentScope, allowedUnits, monitor);
 				if (!related.complete()) {
 					clearScopeDecision(project);
 					rejectedScopes.add(project);
@@ -178,6 +184,25 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			requiredUnits= new ArrayList<>(required);
 		}
 		return registerRequiredScope(project, currentHandles, requiredUnits);
+	}
+
+	/**
+	 * Returns every project a coordinated JUnit migration may have to modify: the
+	 * cleaned project, the projects declaring the shared fixtures or base classes,
+	 * and all projects that transitively reference them.
+	 */
+	private static List<IJavaProject> coordinatedProjects(IJavaProject project,
+			JUnitScopeCandidateDetector.SearchSeeds seeds) {
+		Set<IJavaProject> declaring= new LinkedHashSet<>();
+		declaring.add(project);
+		for (IJavaElement element : seeds.elements()) {
+			IJavaProject owner= element == null ? null : element.getJavaProject();
+			if (owner != null && owner.exists()) {
+				declaring.add(owner);
+			}
+		}
+		declaring.addAll(JavaProjectCompilationUnits.owningProjects(seeds.directCompilationUnits()));
+		return JavaProjectCompilationUnits.withReferencingProjects(declaring);
 	}
 
 	private static JUnitScopeCandidateDetector.SearchSeeds mergeSeeds(
@@ -243,6 +268,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),
+				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE, JUnitCleanUpFixCore.SUITEMETHOD),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER, JUnitCleanUpFixCore.RULETEMPORARYFOLDER),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME, JUnitCleanUpFixCore.RULETESTNAME),

@@ -55,16 +55,21 @@ public final class RelatedCompilationUnitSearch {
 
 	/** Package-visible deterministic match classifier used by common-layer tests. */
 	static final class MatchAccumulator {
-		private final IJavaProject project;
+		private final Set<String> projectHandles;
 		private final Map<String, ICompilationUnit> allowedByHandle;
 		private final Map<String, ICompilationUnit> resultByHandle= new LinkedHashMap<>();
 		private final Set<String> reasons= new LinkedHashSet<>();
 
 		MatchAccumulator(IJavaProject project, Collection<ICompilationUnit> initialUnits,
 				Collection<ICompilationUnit> allowedUnits) {
-			this.project= project;
+			this(List.of(project), initialUnits, allowedUnits);
+		}
+
+		MatchAccumulator(Collection<IJavaProject> projects, Collection<ICompilationUnit> initialUnits,
+				Collection<ICompilationUnit> allowedUnits) {
+			this.projectHandles= projectHandles(projects);
 			allowedByHandle= byHandle(allowedUnits);
-			addUnits(project, initialUnits, allowedByHandle, resultByHandle, reasons,
+			addUnits(projectHandles, initialUnits, allowedByHandle, resultByHandle, reasons,
 					"The initial cleanup scope contains a source unit outside the permitted root policy."); //$NON-NLS-1$
 		}
 
@@ -74,7 +79,7 @@ public final class RelatedCompilationUnitSearch {
 				reasons.add("A search target is declared outside an editable source compilation unit."); //$NON-NLS-1$
 				return;
 			}
-			addUnit(project, declarationUnit, allowedByHandle, resultByHandle, reasons,
+			addUnit(projectHandles, declarationUnit, allowedByHandle, resultByHandle, reasons,
 					"A search-target declaration is outside the permitted source-root policy."); //$NON-NLS-1$
 		}
 
@@ -92,7 +97,7 @@ public final class RelatedCompilationUnitSearch {
 				reasons.add("A reference exists in a binary or otherwise non-source element."); //$NON-NLS-1$
 				return;
 			}
-			addUnit(project, unit, allowedByHandle, resultByHandle, reasons,
+			addUnit(projectHandles, unit, allowedByHandle, resultByHandle, reasons,
 					"A reference exists outside the permitted project source-root policy."); //$NON-NLS-1$
 		}
 
@@ -124,13 +129,36 @@ public final class RelatedCompilationUnitSearch {
 			Collection<ICompilationUnit> initialUnits,
 			Collection<ICompilationUnit> allowedUnits,
 			IProgressMonitor monitor) throws CoreException {
+		return findReferences(project == null ? List.<IJavaProject>of() : List.of(project), targets, initialUnits,
+				allowedUnits, monitor);
+	}
+
+	/**
+	 * Finds source units containing references to the supplied Java elements across
+	 * several coordinated projects, for example a fixture bundle and the test bundles
+	 * that consume it. References found outside those projects make the result
+	 * incomplete so that a partial cross-bundle migration is never planned.
+	 *
+	 * @param projects coordinated Java projects that may be modified
+	 * @param targets binding-derived fields, methods, or types to search for
+	 * @param initialUnits units explicitly selected or already admitted
+	 * @param allowedUnits complete source-root-policy allow-list across all projects
+	 * @param monitor progress monitor, may be {@code null}
+	 * @return deterministic related-unit closure and completeness status
+	 * @throws CoreException if the JDT search engine fails
+	 */
+	public static Result findReferences(Collection<IJavaProject> projects,
+			Collection<? extends IJavaElement> targets,
+			Collection<ICompilationUnit> initialUnits,
+			Collection<ICompilationUnit> allowedUnits,
+			IProgressMonitor monitor) throws CoreException {
 		checkCanceled(monitor);
-		if (project == null || targets == null || targets.isEmpty()) {
+		if (projects == null || projects.isEmpty() || targets == null || targets.isEmpty()) {
 			return new Result(normalize(initialUnits), false,
 					List.of("No binding-derived search target is available.")); //$NON-NLS-1$
 		}
 
-		MatchAccumulator accumulator= new MatchAccumulator(project, initialUnits, allowedUnits);
+		MatchAccumulator accumulator= new MatchAccumulator(projects, initialUnits, allowedUnits);
 		SearchPattern combinedPattern= null;
 		for (IJavaElement target : targets) {
 			checkCanceled(monitor);
@@ -191,18 +219,18 @@ public final class RelatedCompilationUnitSearch {
 		return List.copyOf(result);
 	}
 
-	private static void addUnits(IJavaProject project, Collection<ICompilationUnit> units,
+	private static void addUnits(Set<String> projectHandles, Collection<ICompilationUnit> units,
 			Map<String, ICompilationUnit> allowedByHandle,
 			Map<String, ICompilationUnit> resultByHandle, Set<String> reasons, String rejectionReason) {
 		if (units == null) {
 			return;
 		}
 		for (ICompilationUnit unit : units) {
-			addUnit(project, unit, allowedByHandle, resultByHandle, reasons, rejectionReason);
+			addUnit(projectHandles, unit, allowedByHandle, resultByHandle, reasons, rejectionReason);
 		}
 	}
 
-	private static void addUnit(IJavaProject project, ICompilationUnit unit,
+	private static void addUnit(Set<String> projectHandles, ICompilationUnit unit,
 			Map<String, ICompilationUnit> allowedByHandle,
 			Map<String, ICompilationUnit> resultByHandle, Set<String> reasons, String rejectionReason) {
 		if (unit == null || !unit.exists()) {
@@ -212,11 +240,25 @@ public final class RelatedCompilationUnitSearch {
 		ICompilationUnit primary= unit.getPrimary();
 		String handle= primary.getHandleIdentifier();
 		ICompilationUnit allowed= allowedByHandle.get(handle);
-		if (!project.equals(primary.getJavaProject()) || allowed == null) {
+		IJavaProject owner= primary.getJavaProject();
+		if (owner == null || !projectHandles.contains(owner.getHandleIdentifier()) || allowed == null) {
 			reasons.add(rejectionReason);
 			return;
 		}
 		resultByHandle.put(handle, allowed);
+	}
+
+	private static Set<String> projectHandles(Collection<IJavaProject> projects) {
+		Set<String> handles= new LinkedHashSet<>();
+		if (projects == null) {
+			return handles;
+		}
+		for (IJavaProject project : projects) {
+			if (project != null && project.exists()) {
+				handles.add(project.getHandleIdentifier());
+			}
+		}
+		return handles;
 	}
 
 	private static ICompilationUnit compilationUnit(IJavaElement element) {
