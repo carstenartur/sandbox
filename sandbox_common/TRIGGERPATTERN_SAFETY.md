@@ -10,7 +10,7 @@ A plan-aware program declares one contract:
 <!requires-plan: junit3-hierarchy>
 ```
 
-That declaration is complete. It identifies the required `SemanticRewritePlan` and also implies fail-closed semantic bindings. A second binding-policy directive would repeat information already determined by the plan dependency and is therefore not part of the language.
+That declaration is complete. It identifies the required `SemanticRewritePlan` and also implies fail-closed semantic bindings. A second binding-policy directive would repeat information already determined by the plan dependency and is therefore unnecessary.
 
 The semantic planner supplies an immutable authorization graph containing:
 
@@ -21,7 +21,17 @@ The semantic planner supplies an immutable authorization graph containing:
 
 The plan-aware execution boundary rejects an empty or mismatched plan. Every produced rewrite must resolve to a current AST node with a stable semantic key authorized by that plan. Execution also fails when planned targets can no longer be identified, the source has changed so that coverage is incomplete, or a rule requests an analysis-dependent replacement that cannot be reproduced safely.
 
-Ordinary hints without `requires-plan` retain the existing compatibility behavior. The current guard API is boolean; a general `MATCH` / `NO_MATCH` / `UNKNOWN` model and actionable unresolved-binding diagnostics remain a separate follow-up. Extra syntax for non-plan binding requirements should only be introduced together with that executable semantics.
+## Binding policy for ordinary hints
+
+Ordinary hints without `requires-plan` retain compatibility behaviour by default. A migration whose correctness depends on resolved overload, owner, type, generic or hierarchy information can opt into the same fail-closed guard semantics explicitly:
+
+```text
+<!binding-policy: required>
+```
+
+`optional` preserves the historical boolean fallback. `required` evaluates guards as `MATCH`, `NO_MATCH` or `UNKNOWN`; an unresolved semantic requirement produces a diagnostic transformation result and no rewrite. An unknown ordered alternative does not fall through to `otherwise`. A proven branch can still decide the expression, for example `UNKNOWN || MATCH` is `MATCH`.
+
+A plan-aware program may omit `binding-policy` because `requires-plan` is already strict. A contradictory `binding-policy: optional` declaration is rejected.
 
 ## Text rewrites versus structured actions
 
@@ -49,12 +59,13 @@ The existing wizard should describe such a transformation as requiring a semanti
 Before shipping a migration rule:
 
 1. Decide whether the transformation is local or plan-aware.
-2. Express the desired target code once wherever the DSL can derive the typed AST operations.
-3. Put only non-derivable scope, role, relationship, and strategy information in the semantic plan.
-4. Let `requires-plan` be the sole plan contract.
-5. Avoid repeating a target, name, type, or position that the pattern or target representation already determines.
-6. Prefer stable bindings and planned ordered relations to positional indices.
-7. Add positive, negative, ambiguity, and stale-plan tests.
-8. For test migrations, compare the relevant JDT JUnit test tree and results where identity or multiplicity can change.
+2. For an ordinary binding-dependent migration, declare `binding-policy: required`.
+3. Express the desired target code once wherever the DSL can derive the typed AST operations.
+4. Put only non-derivable scope, role, relationship, and strategy information in the semantic plan.
+5. Let `requires-plan` be the sole plan contract.
+6. Avoid repeating a target, name, type, or position that the pattern or target representation already determines.
+7. Prefer stable bindings and planned ordered relations to positional indices.
+8. Add positive, negative, ambiguity, unresolved-binding and stale-plan tests.
+9. For test migrations, compare the relevant JDT JUnit test tree and results where identity or multiplicity can change.
 
 The broader implementation plan is tracked in #1367.
