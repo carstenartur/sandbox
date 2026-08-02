@@ -145,10 +145,9 @@ public class MigrationSuiteMethodTest {
 		pack.createCompilationUnit("FooTest.java", //$NON-NLS-1$
 				"""
 				package test;
-				import org.junit.Test;
+				import junit.framework.TestCase;
 
-				public class FooTest {
-					@Test
+				public class FooTest extends TestCase {
 					public void testFoo() {
 					}
 				}
@@ -156,10 +155,9 @@ public class MigrationSuiteMethodTest {
 		pack.createCompilationUnit("BarTest.java", //$NON-NLS-1$
 				"""
 				package test;
-				import org.junit.Test;
+				import junit.framework.TestCase;
 
-				public class BarTest {
-					@Test
+				public class BarTest extends TestCase {
 					public void testBar() {
 					}
 				}
