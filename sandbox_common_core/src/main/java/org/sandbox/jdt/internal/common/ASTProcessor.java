@@ -2767,8 +2767,10 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 		BiPredicate<ASTNode, E> biPredicate= nodeHolder.callee;
 		BiConsumer<ASTNode, E> bcConsumer= nodeHolder.callee_end;
 		HelperVisitor<E, V, T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
+		boolean[] matched= { false };
 		if(bcConsumer!=null) {
 			hv.addEnd(next, (node, holder) -> {
+				matched[0]= true;
 				bcConsumer.accept(node, holder);
 				if (nodeHolder.navigate != null) {
 					process(nodeHolder.navigate.apply(node), i + 1);
@@ -2778,6 +2780,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 			});
 		} else if (nodeHolder.object != null) {
 			hv.add(nodeHolder.object, next, (node, holder) -> {
+				matched[0]= true;
 				boolean test= biPredicate.test(node, holder);
 				if (nodeHolder.navigate != null) {
 					process(nodeHolder.navigate.apply(node), i + 1);
@@ -2788,6 +2791,7 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 			});
 		} else  {
 			hv.add(next, (node, holder) -> {
+				matched[0]= true;
 				boolean test= biPredicate.test(node, holder);
 				if (nodeHolder.navigate != null) {
 					process(nodeHolder.navigate.apply(node), i + 1);
@@ -2798,6 +2802,9 @@ public class ASTProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 			});
 		}
 		hv.build(localnode);
+		if (!matched[0]) {
+			process(localnode, i + 1);
+		}
 	}
 
 }
