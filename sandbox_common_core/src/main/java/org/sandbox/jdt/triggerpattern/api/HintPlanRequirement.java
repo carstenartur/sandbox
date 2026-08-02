@@ -23,6 +23,11 @@ import java.util.regex.Pattern;
  * it before handing the program to the normal hint backend. Duplicate identical
  * declarations are tolerated, while missing values, malformed declarations and
  * conflicting declarations are rejected. Commented declarations are ignored.</p>
+ *
+ * <p>Every plan-aware program must also declare
+ * {@code <!binding-policy: required>}. A semantic plan cannot safely authorize
+ * overload-, owner-, type- or hierarchy-dependent rewrites when the local AST
+ * was parsed without the bindings required to re-identify its targets.</p>
  */
 public final class HintPlanRequirement {
 
@@ -38,7 +43,8 @@ public final class HintPlanRequirement {
 	 *
 	 * @param content complete hint program text
 	 * @return the required plan identifier, or empty for an ordinary hint program
-	 * @throws IllegalArgumentException for blank, malformed or conflicting declarations
+	 * @throws IllegalArgumentException for blank, malformed or conflicting declarations,
+	 *         or when a plan-aware program does not require semantic bindings
 	 */
 	public static Optional<String> fromContent(String content) {
 		if (content == null || content.isBlank()) {
@@ -66,6 +72,16 @@ public final class HintPlanRequirement {
 						"Conflicting requires-plan declarations: " + requirement + " and " + candidate); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 			requirement= candidate;
+		}
+		if (requirement != null) {
+			HintBindingPolicy policy= HintBindingPolicy.fromContent(content).orElseThrow(() ->
+					new IllegalArgumentException(
+							"Plan-aware hint programs must declare <!binding-policy: required>")); //$NON-NLS-1$
+			if (policy != HintBindingPolicy.REQUIRED) {
+				throw new IllegalArgumentException(
+						"Plan-aware hint programs require binding-policy required, not " //$NON-NLS-1$
+								+ policy.name().toLowerCase(java.util.Locale.ROOT));
+			}
 		}
 		return Optional.ofNullable(requirement);
 	}
