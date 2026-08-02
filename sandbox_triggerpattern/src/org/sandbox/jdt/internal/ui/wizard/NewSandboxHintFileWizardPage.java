@@ -163,9 +163,11 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 				public void widgetSelected(SelectionEvent e) {
 					if (((Button) e.widget).getSelection()) {
 						selectedTemplate = (SandboxHintTemplates) ((Button) e.widget).getData();
-						if (selectedTemplate == SandboxHintTemplates.PLAN_AWARE) {
+						boolean planAware = selectedTemplate == SandboxHintTemplates.PLAN_AWARE;
+						if (planAware) {
 							bindingPolicyCombo.select(1);
 						}
+						bindingPolicyCombo.setEnabled(!planAware);
 					}
 				}
 			});
