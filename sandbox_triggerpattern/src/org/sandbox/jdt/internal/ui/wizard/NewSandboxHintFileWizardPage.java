@@ -78,6 +78,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 		ModifyListener modifyListener = e -> dialogChanged();
 
+		// --- Container selection ---
 		Label containerLabel = new Label(container, SWT.NONE);
 		containerLabel.setText("&Container:"); //$NON-NLS-1$
 
@@ -94,14 +95,16 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 			}
 		});
 
+		// --- File name ---
 		Label fileLabel = new Label(container, SWT.NONE);
 		fileLabel.setText("&File name:"); //$NON-NLS-1$
 
 		fileText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		fileText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		fileText.addModifyListener(modifyListener);
-		new Label(container, SWT.NONE);
+		new Label(container, SWT.NONE); // spacer
 
+		// --- Metadata group ---
 		Group metadataGroup = new Group(container, SWT.NONE);
 		metadataGroup.setText("Metadata"); //$NON-NLS-1$
 		metadataGroup.setLayout(new GridLayout(2, false));
@@ -134,6 +137,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		tagsText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		tagsText.setMessage("encoding, modernization"); //$NON-NLS-1$
 
+		// --- Template group ---
 		Group templateGroup = new Group(container, SWT.NONE);
 		templateGroup.setText("Template"); //$NON-NLS-1$
 		templateGroup.setLayout(new GridLayout(1, false));
@@ -157,13 +161,19 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 			});
 		}
 
+		// --- Initialize from selection ---
 		initializeFromSelection();
 
 		dialogChanged();
 		setControl(container);
 	}
 
+	/**
+	 * Pre-fills the container path from the workbench selection and
+	 * always sets a sensible default file name.
+	 */
 	private void initializeFromSelection() {
+		// Always set a default file name
 		fileText.setText("rules" + FILE_EXTENSION); //$NON-NLS-1$
 
 		if (selection == null || selection.isEmpty()) {
@@ -227,28 +237,36 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		setPageComplete(message == null);
 	}
 
+	// --- Public accessors for the wizard ---
+
+	/** Returns the container path entered by the user. */
 	public String getContainerPath() {
 		return containerText.getText();
 	}
 
+	/** Returns the file name entered by the user. */
 	public String getFileName() {
 		return fileText.getText();
 	}
 
+	/** Returns the hint ID entered by the user (may be empty). */
 	public String getHintId() {
 		String text = idText.getText().trim();
 		return text.isEmpty() ? null : text;
 	}
 
+	/** Returns the description entered by the user (may be empty). */
 	public String getHintDescription() {
 		String text = descriptionText.getText().trim();
 		return text.isEmpty() ? null : text;
 	}
 
+	/** Returns the selected severity string. */
 	public String getSeverityValue() {
 		return severityCombo.getText();
 	}
 
+	/** Returns the selected minimum Java version, or 0 if none. */
 	public int getMinJavaVersion() {
 		String text = minJavaCombo.getText().trim();
 		if (text.isEmpty()) {
@@ -261,10 +279,12 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		}
 	}
 
+	/** Returns the raw tags text (comma-separated). */
 	public String getTagsText() {
 		return tagsText.getText().trim();
 	}
 
+	/** Returns the template selected by the user. */
 	public SandboxHintTemplates getSelectedTemplate() {
 		return selectedTemplate;
 	}
