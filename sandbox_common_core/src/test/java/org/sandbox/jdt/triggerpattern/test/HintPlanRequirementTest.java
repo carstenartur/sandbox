@@ -22,7 +22,7 @@ import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 public class HintPlanRequirementTest {
 
 	@Test
-	public void readsCompletePlanContractWithoutRedundantPolicy() {
+	public void readsRequiredPlanContract() {
 		String content= """
 				<!id: planned-rewrite>
 				<!requires-plan: junit3-hierarchy>
