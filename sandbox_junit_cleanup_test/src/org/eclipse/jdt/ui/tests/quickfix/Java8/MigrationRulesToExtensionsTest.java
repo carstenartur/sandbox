@@ -19,11 +19,8 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
@@ -42,22 +39,6 @@ public class MigrationRulesToExtensionsTest {
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
-	}
-
-	@Disabled("Rule migration parameterized test - TemporaryFolder output mismatch, ErrorCollector requires hamcrest not on test classpath")
-	@ParameterizedTest
-	@EnumSource(RuleCases.class)
-	public void migrates_junit4_rules_to_junit5_extensions(RuleCases testCase) throws CoreException {
-		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
-		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", testCase.given, true, null);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { testCase.expected }, null);
 	}
 
 	@Test
