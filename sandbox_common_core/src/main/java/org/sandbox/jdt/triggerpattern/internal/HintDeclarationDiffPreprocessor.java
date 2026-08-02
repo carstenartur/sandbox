@@ -235,7 +235,7 @@ final class HintDeclarationDiffPreprocessor {
 		}
 	}
 
-	private static Map<String, ParameterShape> uniqueParameters(List<ParameterShape> parameters,
+	private static Map<String, ParameterShape> uniqueParameters(Iterable<ParameterShape> parameters,
 			int line) throws HintParseException {
 		Map<String, ParameterShape> result= new LinkedHashMap<>();
 		for (ParameterShape parameter : parameters) {
@@ -323,7 +323,7 @@ final class HintDeclarationDiffPreprocessor {
 					modifiers.add(modifier.getKeyword().toString());
 				}
 			}
-			List<ParameterShape> parameters= new ArrayList<>();
+			List<ParameterShape> parameters= new ArrayList<>(method.parameters().size());
 			for (Object parameterObject : method.parameters()) {
 				SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;
 				String type= parameter.getType().toString();
