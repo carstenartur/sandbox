@@ -34,17 +34,25 @@
 <tr><td><code>;;</code></td><td>Terminate one rule.</td></tr>
 <tr><td><code>&amp;&amp;</code>, <code>||</code>, <code>!</code></td><td>Guard conjunction, disjunction and negation.</td></tr>
 </table>
+<h2>Structured action target convention</h2>
+<p>The primary matched node is the implicit target. Add <code>target=$binding</code> only to operate on another bound node.</p>
 <h2>Standard structured actions</h2>
 <ul>
-<li><code>addAnnotation(target=VALUE, annotation=VALUE [, value=VALUE])</code></li>
-<li><code>removeAnnotation(target=VALUE, annotation=VALUE)</code></li>
-<li><code>addModifier(target=VALUE, modifier=VALUE)</code></li>
-<li><code>removeModifier(target=VALUE, modifier=VALUE)</code></li>
-<li><code>removeSupertype(target=VALUE, type=VALUE)</code></li>
-<li><code>replaceSupertype(target=VALUE, type=VALUE, replacement=VALUE)</code></li>
-<li><code>removeDeclaration(target=VALUE)</code></li>
-<li><code>qualifyInvocation(target=VALUE, owner=VALUE)</code></li>
+<li><code>addAnnotation(annotation=VALUE [, value=VALUE] [, target=VALUE])</code></li>
+<li><code>removeAnnotation(annotation=VALUE [, target=VALUE])</code></li>
+<li><code>addModifier(modifier=VALUE [, target=VALUE])</code></li>
+<li><code>removeModifier(modifier=VALUE [, target=VALUE])</code></li>
+<li><code>removeSupertype(type=VALUE [, target=VALUE])</code></li>
+<li><code>replaceSupertype(type=VALUE, replacement=VALUE [, target=VALUE])</code></li>
+<li><code>removeDeclaration([target=VALUE])</code></li>
+<li><code>qualifyInvocation(owner=VALUE [, target=VALUE])</code></li>
+<li><code>renameDeclaration(name=VALUE [, target=VALUE])</code></li>
+<li><code>replaceFieldType(type=VALUE [, target=VALUE])</code></li>
+<li><code>addParameter(type=VALUE, name=VALUE [, index=VALUE] [, target=VALUE])</code></li>
+<li><code>removeParameter(name=VALUE|index=VALUE [, target=VALUE])</code></li>
+<li><code>replaceParameterType(type=VALUE, name=VALUE|index=VALUE [, target=VALUE])</code></li>
 </ul>
+<p>For parameter selection, <code>name</code> is preferred because it remains stable when other parameters are inserted. <code>index</code> is an explicit positional escape hatch.</p>
 <h2>Important plan guards</h2>
 <p><code>plannedRole</code>, <code>enclosingPlannedRole</code>, <code>plannedValue</code>, <code>enclosingPlannedValue</code>, <code>plannedNodeValue</code>, <code>plannedListContains</code>, <code>plannedRelation</code>, <code>plannedRelationValue</code>, <code>plannedOutgoingRelation</code>, <code>plannedIncomingRelation</code> and <code>plannedRelationCount</code>.</p>
 <h2>Compatibility note</h2>
