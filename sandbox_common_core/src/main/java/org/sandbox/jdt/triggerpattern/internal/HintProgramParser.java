@@ -118,8 +118,9 @@ public final class HintProgramParser {
 		validatePredicateNames(predicates.predicates());
 		HintRuleKindPreprocessor.Result kinds=
 				HintRuleKindPreprocessor.preprocess(predicates.expandedSource());
+		String declarationDiffs= HintDeclarationDiffPreprocessor.preprocess(kinds.parserSource());
 		String normalizedTypeSources= HintTypeDeclarationSourcePreprocessor.preprocess(
-				kinds.parserSource(), kinds.kindsByRuleId());
+				declarationDiffs, kinds.kindsByRuleId());
 		HintStructuredActionPreprocessor.Result actions=
 				HintStructuredActionPreprocessor.preprocess(normalizedTypeSources, catalog);
 		return new PreparedProgram(predicates.predicates(), actions.parserSource(),
