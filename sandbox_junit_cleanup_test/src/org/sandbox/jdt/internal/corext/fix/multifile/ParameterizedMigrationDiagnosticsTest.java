@@ -152,21 +152,58 @@ public class ParameterizedMigrationDiagnosticsTest {
 	}
 
 	@Test
-	public void recognizesExplicitRunWithValueSyntax() throws CoreException {
+	public void reportsUnsupportedExplicitRunWithValueSyntax() throws CoreException {
 		ICompilationUnit unit= compilationUnit("explicitrunner", //$NON-NLS-1$
 				"ExplicitRunnerTest", //$NON-NLS-1$
+				"""
+				import java.util.Arrays;
+				import java.util.List;
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(value = Parameterized.class)
+				public class ExplicitRunnerTest {
+					private final int value;
+
+					public ExplicitRunnerTest(int value) {
+						this.value = value;
+					}
+
+					@Parameters
+					public static List<Object[]> data() {
+						return Arrays.asList(new Object[][] { { 1 } });
+					}
+
+					@Test
+					public void testValue() {
+					}
+				}
+				"""); //$NON-NLS-1$
+
+		assertReason(planClosed(unit),
+				"PARAMETERIZED_RUNNER_SYNTAX_UNSUPPORTED"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void reportsUnsupportedLocalProviderBody() throws CoreException {
+		ICompilationUnit unit= compilationUnit("unsupportedprovider", //$NON-NLS-1$
+				"UnsupportedProviderTest", //$NON-NLS-1$
 				"""
 				import java.util.List;
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
 				import org.junit.runners.Parameterized;
-				import org.junit.runners.Parameterized.Parameter;
 				import org.junit.runners.Parameterized.Parameters;
 
-				@RunWith(value = Parameterized.class)
-				public class ExplicitRunnerTest {
-					@Parameter
-					public int value;
+				@RunWith(Parameterized.class)
+				public class UnsupportedProviderTest {
+					private final int value;
+
+					public UnsupportedProviderTest(int value) {
+						this.value = value;
+					}
 
 					@Parameters
 					public static List<Object[]> data() {
@@ -179,7 +216,8 @@ public class ParameterizedMigrationDiagnosticsTest {
 				}
 				"""); //$NON-NLS-1$
 
-		assertReason(planClosed(unit), "PARAMETERIZED_FIELD_INJECTION"); //$NON-NLS-1$
+		assertReason(planClosed(unit),
+				"PARAMETERIZED_PROVIDER_BODY_UNSUPPORTED"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -188,6 +226,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 		ICompilationUnit unit= compilationUnit("supported", //$NON-NLS-1$
 				"SupportedTest", //$NON-NLS-1$
 				"""
+				import java.util.Arrays;
 				import java.util.List;
 				import org.junit.Test;
 				import org.junit.runner.RunWith;
@@ -204,7 +243,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 
 					@Parameters
 					public static List<Object[]> data() {
-						return List.<Object[]>of(new Object[] { 1 });
+						return Arrays.asList(new Object[][] { { 1 } });
 					}
 
 					@Test
