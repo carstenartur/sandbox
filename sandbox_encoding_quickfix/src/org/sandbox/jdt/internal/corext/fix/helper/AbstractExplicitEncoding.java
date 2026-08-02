@@ -245,9 +245,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			CompilationUnit root = (CompilationUnit) statement.getRoot();
 			int start = root.getExtendedStartPosition(statement);
 			String source = buffer.substring(start, start + root.getExtendedLength(statement));
-			source = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
-			source = Pattern.compile("^[ \\t]*").matcher(source).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
-			source = Pattern.compile("\n[ \\t]*").matcher(source).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			source = normalizeReplacementSource(source);
 			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
 			String replacementSource = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
@@ -271,7 +269,6 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		try {
 			String buffer = cuRewrite.getCu().getBuffer().getContents();
 			CompilationUnit root = (CompilationUnit) statement.getRoot();
-			String delimiter = lineDelimiter(buffer);
 			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
 			String replacementSource = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
@@ -284,9 +281,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 				if (bodyStatement == statement) {
 					int start = root.getExtendedStartPosition(bodyStatement);
 					String source = buffer.substring(start, start + root.getExtendedLength(bodyStatement));
-					source = stripBaseIndent(source, delimiter);
-					source = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
-					source = source.replace(visitedSource, replacementSource);
+					source = normalizeReplacementSource(source).replace(visitedSource, replacementSource);
 					inlinedStatement = rewrite.createStringPlaceholder(source, bodyStatement.getNodeType());
 				} else {
 					inlinedStatement = rewrite.createMoveTarget(bodyStatement);
@@ -307,6 +302,12 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
+	}
+
+	private static String normalizeReplacementSource(String source) {
+		String normalized = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
+		normalized = Pattern.compile("^[ \\t]*").matcher(normalized).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
+		return Pattern.compile("\n[ \\t]*").matcher(normalized).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@SuppressWarnings("unchecked")
@@ -330,7 +331,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 					return false;
 				}
 				if (!UNSUPPORTED_ENCODING_EXCEPTION.equals(node.getIdentifier())
-						|| ASTNodes.getFirstAncestorOrNull(node, ImportDeclaration.class) != null
+						|| hasAncestor(node, ImportDeclaration.class)
 						|| isDescendantOfAny(node, removedCatches)) {
 					return true;
 				}
@@ -341,6 +342,15 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return found[0];
 	}
 
+	private static boolean hasAncestor(ASTNode node, Class<? extends ASTNode> ancestorType) {
+		for (ASTNode current = node.getParent(); current != null; current = current.getParent()) {
+			if (ancestorType.isInstance(current)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static boolean isDescendantOfAny(ASTNode node, Set<CatchClause> ancestors) {
 		for (ASTNode current = node; current != null; current = current.getParent()) {
 			if (ancestors.contains(current)) {
@@ -348,50 +358,6 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			}
 		}
 		return false;
-	}
-
-	private static String stripBaseIndent(String source, String delimiter) {
-		String[] lines = source.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1); //$NON-NLS-1$ //$NON-NLS-2$
-		int first = 0;
-		while (first < lines.length && lines[first].isBlank()) {
-			first++;
-		}
-		int last = lines.length - 1;
-		while (last >= first && lines[last].isBlank()) {
-			last--;
-		}
-		if (first > last) {
-			return ""; //$NON-NLS-1$
-		}
-		String baseIndent = leadingWhitespace(lines[first]);
-		StringBuilder result = new StringBuilder();
-		for (int index = first; index <= last; index++) {
-			if (index > first) {
-				result.append(delimiter);
-			}
-			String line = lines[index];
-			if (!baseIndent.isEmpty() && line.startsWith(baseIndent)) {
-				line = line.substring(baseIndent.length());
-			}
-			result.append(line.isBlank() ? "" : line); //$NON-NLS-1$
-		}
-		return result.toString();
-	}
-
-	private static String leadingWhitespace(String line) {
-		int index = 0;
-		while (index < line.length()) {
-			char character = line.charAt(index);
-			if (character != ' ' && character != '\t') {
-				break;
-			}
-			index++;
-		}
-		return line.substring(0, index);
-	}
-
-	private static String lineDelimiter(String source) {
-		return source.contains("\r\n") ? "\r\n" : "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
