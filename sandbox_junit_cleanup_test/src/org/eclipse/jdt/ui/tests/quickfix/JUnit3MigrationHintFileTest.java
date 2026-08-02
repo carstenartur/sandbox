@@ -36,7 +36,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
-import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -64,8 +63,6 @@ public class JUnit3MigrationHintFileTest {
 		assertEquals("junit3-hierarchy-to-jupiter", hintFile.getId()); //$NON-NLS-1$
 		assertEquals(Severity.WARNING, hintFile.getSeverity());
 		assertTrue(hintFile.getTags().contains("planned")); //$NON-NLS-1$
-		assertEquals(HintBindingPolicy.REQUIRED,
-				HintBindingPolicy.fromContent(content).orElseThrow());
 		assertEquals("junit3-hierarchy", HintPlanRequirement.fromContent(content).orElseThrow()); //$NON-NLS-1$
 	}
 
@@ -160,7 +157,6 @@ public class JUnit3MigrationHintFileTest {
 		SemanticRewritePlan plan= SemanticRewritePlan.builder("junit3-hierarchy") //$NON-NLS-1$
 				.add(NodeKey.type("Lsample/Sample;"), "JUNIT3_HIERARCHY_TYPE").build(); //$NON-NLS-1$ //$NON-NLS-2$
 		String content= """
-				<!binding-policy: required>
 				<!requires-plan: junit3-hierarchy>
 				$x
 				=> $widestType
