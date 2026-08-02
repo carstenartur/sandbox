@@ -45,6 +45,7 @@ class PlanAwareLifecycleAnnotationPredicateTest {
 
 	private static final String HINT= """
 			<!id: lifecycle-demo>
+			<!binding-policy: required>
 			<!requires-plan: lifecycle-demo>
 			<!predicate hasOverrideAnnotation($method):
 			    hasAnnotation($method, Override) || hasAnnotation($method, java.lang.Override)>
