@@ -93,7 +93,8 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 	}
 
 	private MethodDeclaration findMigratableSuiteMethod(TypeDeclaration node, Set<ASTNode> nodesprocessed) {
-		if (nodesprocessed.contains(node) || node.isInterface() || hasJUnitAnnotation(node)
+		if (nodesprocessed.contains(node) || !(node.getParent() instanceof CompilationUnit)
+				|| node.getSuperclassType() != null || node.isInterface() || hasJUnitAnnotation(node)
 				|| isExcludedOrTestCase(node)) {
 			return null;
 		}
