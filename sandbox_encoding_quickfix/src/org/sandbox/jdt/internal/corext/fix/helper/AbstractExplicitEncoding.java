@@ -32,7 +32,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -42,11 +41,11 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -58,284 +57,127 @@ import org.sandbox.jdt.internal.corext.util.ImportUtils;
 import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 
 /**
- * Abstract base class for encoding-related quick fixes. Provides common functionality
- * for finding and rewriting code patterns that use implicit or string-based encoding
- * specifications.
+ * Shared support for cleanups that replace implicit or string-based encodings.
  *
- * <p>Subclasses must implement:
- * <ul>
- *   <li>{@link #find} - to locate code patterns that need to be fixed</li>
- *   <li>{@link #rewrite} - to apply the encoding-related transformation</li>
- *   <li>{@link #getPreview} - to generate preview text for the fix</li>
- * </ul>
- *
- * @param <T> The type of AST node that this encoding handler processes
+ * @param <T> AST node handled by the concrete cleanup
  */
 public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
-	/** Fully qualified name of java.io.UnsupportedEncodingException. */
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
-
-	/** Simple name of UnsupportedEncodingException for matching in exception types. */
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
-
 	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =
 			AbstractExplicitEncoding.class.getName() + ".removedUnsupportedEncodingCatches"; //$NON-NLS-1$
 
-	/**
-	 * Immutable map of standard charset names (e.g., "UTF-8") to their corresponding
-	 * StandardCharsets constant names (e.g., "UTF_8").
-	 * <p>
-	 * This mapping covers the six charsets guaranteed to be available on every Java platform.
-	 * </p>
-	 * @since 1.3
-	 */
 	public static final Map<String, String> ENCODING_MAP = Map.of(
 			"UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16", "UTF_16", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16BE", "UTF_16BE", //$NON-NLS-1$ //$NON-NLS-2$
 			"UTF-16LE", "UTF_16LE", //$NON-NLS-1$ //$NON-NLS-2$
 			"ISO-8859-1", "ISO_8859_1", //$NON-NLS-1$ //$NON-NLS-2$
-			"US-ASCII", "US_ASCII" //$NON-NLS-1$ //$NON-NLS-2$
-	);
+			"US-ASCII", "US_ASCII"); //$NON-NLS-1$ //$NON-NLS-2$
 
-	/**
-	 * Immutable set of supported encoding names that can be converted to StandardCharsets constants.
-	 * @since 1.3
-	 */
 	public static final Set<String> ENCODINGS = ENCODING_MAP.keySet();
 
-	/**
-	 * Maps standard charset names (e.g., "UTF-8") to their corresponding
-	 * StandardCharsets constant names (e.g., "UTF_8").
-	 * @deprecated Use {@link #ENCODING_MAP} instead. This field is maintained for backward
-	 *             compatibility but is immutable and will throw UnsupportedOperationException
-	 *             if modification is attempted.
-	 */
 	@Deprecated
 	static final Map<String, String> encodingmap = ENCODING_MAP;
 
-	/**
-	 * Set of supported encoding names that can be converted to StandardCharsets constants.
-	 * @deprecated Use {@link #ENCODINGS} instead. This field is maintained for backward
-	 *             compatibility but is immutable and will throw UnsupportedOperationException
-	 *             if modification is attempted.
-	 */
 	@Deprecated
 	static final Set<String> encodings = ENCODINGS;
 
-	/**
-	 * Immutable record to hold node data for encoding transformations.
-	 * Replaces the mutable Nodedata class for better thread safety and immutability.
-	 *
-	 * @param replace Whether to replace an existing encoding parameter (true) or appended (false)
-	 * @param visited The AST node that was visited and needs modification
-	 * @param encoding The encoding constant name (e.g., "UTF_8"), or null for default charset
-	 */
 	protected static record NodeData(boolean replace, ASTNode visited, String encoding) {
 	}
 
-	/**
-	 * Thread-safe map to cache charset constant references during aggregation.
-	 * Used to avoid creating duplicate QualifiedName instances.
-	 */
 	private static final Map<String, QualifiedName> CHARSET_CONSTANTS = new ConcurrentHashMap<>();
 
-	/**
-	 * Returns the charset constants map for use in encoding transformations.
-	 *
-	 * @return thread-safe map of charset constants
-	 */
 	protected static Map<String, QualifiedName> getCharsetConstants() {
 		return CHARSET_CONSTANTS;
 	}
 
-	/** Key used for storing encoding information in data holders. */
 	protected static final String KEY_ENCODING = "encoding"; //$NON-NLS-1$
-
-	/** Key used for storing replace flag in data holders. */
 	protected static final String KEY_REPLACE = "replace"; //$NON-NLS-1$
 
-	/**
-	 * @deprecated Use {@link #KEY_ENCODING} instead. This field will be removed in a future version.
-	 */
 	@Deprecated(forRemoval = true)
 	protected static final String ENCODING = KEY_ENCODING;
 
-	/**
-	 * @deprecated Use {@link #KEY_REPLACE} instead. This field will be removed in a future version.
-	 */
 	@Deprecated(forRemoval = true)
 	protected static final String REPLACE = KEY_REPLACE;
 
-	/**
-	 * Finds all occurrences of the encoding pattern that this handler processes
-	 * and adds corresponding rewrite operations.
-	 *
-	 * @param fixcore the fix core instance, must not be null
-	 * @param compilationUnit the compilation unit to search in, must not be null
-	 * @param operations the set to add rewrite operations to, must not be null
-	 * @param nodesprocessed the set of already processed nodes (to avoid duplicates), must not be null
-	 * @param cb the change behavior configuration, must not be null
-	 */
-	public abstract void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb);
+	public abstract void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb);
 
-	/**
-	 * Rewrites the visited AST node to use explicit encoding.
-	 *
-	 * @param useExplicitEncodingFixCore the fix core instance, must not be null
-	 * @param visited the AST node to rewrite, must not be null
-	 * @param cuRewrite the compilation unit rewrite context, must not be null
-	 * @param group the text edit group for grouping changes, must not be null
-	 * @param cb the change behavior configuration, must not be null
-	 * @param data the reference holder containing node-specific data, must not be null
-	 */
-	public abstract void rewrite(UseExplicitEncodingFixCore useExplicitEncodingFixCore, T visited, CompilationUnitRewrite cuRewrite,
-			TextEditGroup group, ChangeBehavior cb, ReferenceHolder<ASTNode, Object> data);
+	public abstract void rewrite(UseExplicitEncodingFixCore useExplicitEncodingFixCore, T visited,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group, ChangeBehavior cb,
+			ReferenceHolder<ASTNode, Object> data);
 
-	/**
-	 * Adds an import to the class. This method should be used for every class reference added to
-	 * the generated code.
-	 *
-	 * @param typeName a fully qualified name of a type, must not be null
-	 * @param cuRewrite CompilationUnitRewrite, must not be null
-	 * @param ast AST, must not be null
-	 * @return simple name of a class if the import was added and fully qualified name if there was
-	 *         a conflict; never null
-	 */
-	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
+	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
+
+	protected static Name addImport(String typeName, CompilationUnitRewrite cuRewrite, AST ast) {
 		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
-	/**
-	 * Checks if a string literal contains a known encoding that can be converted
-	 * to a StandardCharsets constant.
-	 *
-	 * @param literal the string literal to check, may be null
-	 * @return true if the literal contains a known encoding, false otherwise
-	 */
 	protected static boolean isKnownEncoding(StringLiteral literal) {
-		if (literal == null) {
-			return false;
-		}
-		return ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));
+		return literal != null && ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));
 	}
 
-	/**
-	 * Gets the StandardCharsets constant name for a given encoding string literal.
-	 *
-	 * @param literal the string literal containing the encoding name, may be null
-	 * @return the StandardCharsets constant name (e.g., "UTF_8"), or null if the literal
-	 *         is null or contains an unknown encoding
-	 */
 	protected static String getEncodingConstantName(StringLiteral literal) {
-		if (literal == null) {
-			return null;
-		}
-		return ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));
+		return literal == null ? null : ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));
 	}
 
-	/**
-	 * Resolves the encoding value from various AST node types representing a charset argument.
-	 * Handles string literals, variable references, qualified names (e.g., StandardCharsets.UTF_8),
-	 * and field access expressions.
-	 *
-	 * @param encodingArg the AST node representing the charset argument
-	 * @param context the method invocation context for variable resolution
-	 * @return the uppercase encoding string (e.g., "UTF-8"), or null if not determinable
-	 */
 	protected static String getEncodingValue(ASTNode encodingArg, MethodInvocation context) {
 		if (encodingArg instanceof StringLiteral literal) {
 			return literal.getLiteralValue().toUpperCase(Locale.ROOT);
-		} else if (encodingArg instanceof SimpleName simpleName) {
+		}
+		if (encodingArg instanceof SimpleName simpleName) {
 			return findVariableValue(simpleName, context);
-		} else if (encodingArg instanceof QualifiedName qualifiedName) {
+		}
+		if (encodingArg instanceof QualifiedName qualifiedName) {
 			return extractStandardCharsetName(qualifiedName);
-		} else if (encodingArg instanceof FieldAccess fieldAccess) {
+		}
+		if (encodingArg instanceof FieldAccess fieldAccess) {
 			return extractStandardCharsetName(fieldAccess);
 		}
 		return null;
 	}
 
-	/**
-	 * Extracts charset name from QualifiedName like StandardCharsets.UTF_8.
-	 *
-	 * @param qualifiedName the qualified name to extract from
-	 * @return the charset name (e.g., "UTF-8"), or null if not a StandardCharsets reference
-	 */
 	protected static String extractStandardCharsetName(QualifiedName qualifiedName) {
 		String qualifier = qualifiedName.getQualifier().toString();
 		if ("StandardCharsets".equals(qualifier) || qualifier.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
-			String fieldName = qualifiedName.getName().getIdentifier();
-			return fieldName.replace('_', '-');
+			return qualifiedName.getName().getIdentifier().replace('_', '-');
 		}
 		return null;
 	}
 
-	/**
-	 * Extracts charset name from FieldAccess like StandardCharsets.UTF_8.
-	 *
-	 * @param fieldAccess the field access to extract from
-	 * @return the charset name (e.g., "UTF-8"), or null if not a StandardCharsets reference
-	 */
 	protected static String extractStandardCharsetName(FieldAccess fieldAccess) {
 		String expression = fieldAccess.getExpression().toString();
 		if ("StandardCharsets".equals(expression) || expression.endsWith(".StandardCharsets")) { //$NON-NLS-1$ //$NON-NLS-2$
-			String fieldName = fieldAccess.getName().getIdentifier();
-			return fieldName.replace('_', '-');
+			return fieldAccess.getName().getIdentifier().replace('_', '-');
 		}
 		return null;
 	}
 
-	/**
-	 * Finds the enclosing MethodDeclaration or TypeDeclaration for a given AST node.
-	 *
-	 * @param node the starting node for the search, may be null
-	 * @return the enclosing MethodDeclaration or TypeDeclaration, or null if not found
-	 */
 	private static ASTNode findEnclosingMethodOrType(ASTNode node) {
 		if (node == null) {
 			return null;
 		}
-		ASTNode methodDecl = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
-		ASTNode typeDecl = ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);
-
-		if (methodDecl != null) {
-			return methodDecl;
-		}
-		return typeDecl;
+		MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);
+		return method != null ? method : ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);
 	}
 
-	/**
-	 * Extracts the string literal value from a variable declaration fragment if its initializer
-	 * is a string literal.
-	 *
-	 * @param fragment the variable declaration fragment to check, must not be null
-	 * @param variableIdentifier the identifier of the variable to match, must not be null
-	 * @return the uppercase string literal value if found, null otherwise
-	 */
-	private static String extractStringLiteralValue(VariableDeclarationFragment fragment, String variableIdentifier) {
+	private static String extractStringLiteralValue(VariableDeclarationFragment fragment,
+			String variableIdentifier) {
 		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {
 			return null;
 		}
 		Expression initializer = fragment.getInitializer();
-		if (initializer instanceof StringLiteral) {
-			return ((StringLiteral) initializer).getLiteralValue().toUpperCase(Locale.ROOT);
-		}
-		return null;
+		return initializer instanceof StringLiteral literal
+				? literal.getLiteralValue().toUpperCase(Locale.ROOT)
+				: null;
 	}
 
-	/**
-	 * Searches for a variable's string literal value within a list of variable declaration fragments.
-	 *
-	 * @param fragments the list of fragments to search in, must not be null
-	 * @param variableIdentifier the identifier of the variable to find, must not be null
-	 * @return the uppercase string literal value if found, null otherwise
-	 */
 	private static String findValueInFragments(List<?> fragments, String variableIdentifier) {
-		for (Object frag : fragments) {
-			VariableDeclarationFragment fragment = (VariableDeclarationFragment) frag;
-			String value = extractStringLiteralValue(fragment, variableIdentifier);
+		for (Object fragmentObject : fragments) {
+			String value = extractStringLiteralValue((VariableDeclarationFragment) fragmentObject,
+					variableIdentifier);
 			if (value != null) {
 				return value;
 			}
@@ -343,23 +185,14 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return null;
 	}
 
-	/**
-	 * Searches for a variable's string literal value within method body statements.
-	 *
-	 * @param method the method declaration to search in, must not be null
-	 * @param variableIdentifier the identifier of the variable to find, must not be null
-	 * @return the uppercase string literal value if found, null otherwise
-	 */
 	private static String findVariableValueInMethod(MethodDeclaration method, String variableIdentifier) {
 		Block body = method.getBody();
 		if (body == null) {
 			return null;
 		}
-		List<?> statements = body.statements();
-		for (Object stmt : statements) {
-			if (stmt instanceof VariableDeclarationStatement) {
-				VariableDeclarationStatement varDeclStmt = (VariableDeclarationStatement) stmt;
-				String value = findValueInFragments(varDeclStmt.fragments(), variableIdentifier);
+		for (Object statement : body.statements()) {
+			if (statement instanceof VariableDeclarationStatement declaration) {
+				String value = findValueInFragments(declaration.fragments(), variableIdentifier);
 				if (value != null) {
 					return value;
 				}
@@ -368,16 +201,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return null;
 	}
 
-	/**
-	 * Searches for a variable's string literal value within type field declarations.
-	 *
-	 * @param type the type declaration to search in, must not be null
-	 * @param variableIdentifier the identifier of the variable to find, must not be null
-	 * @return the uppercase string literal value if found, null otherwise
-	 */
 	private static String findVariableValueInType(TypeDeclaration type, String variableIdentifier) {
-		FieldDeclaration[] fields = type.getFields();
-		for (FieldDeclaration field : fields) {
+		for (FieldDeclaration field : type.getFields()) {
 			String value = findValueInFragments(field.fragments(), variableIdentifier);
 			if (value != null) {
 				return value;
@@ -386,168 +211,152 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return null;
 	}
 
-	/**
-	 * Finds the value of a variable by searching for its declaration in the enclosing
-	 * method or type. This is used to resolve variable references to their string literal
-	 * initializer values.
-	 *
-	 * @param variable the SimpleName representing the variable reference, may be null
-	 * @param context the AST node providing context for the search, may be null
-	 * @return the uppercase string literal value of the variable's initializer,
-	 *         or null if the variable is null, context is null, or the value cannot be found
-	 */
 	protected static String findVariableValue(SimpleName variable, ASTNode context) {
 		if (variable == null || context == null) {
 			return null;
 		}
-
 		ASTNode enclosing = findEnclosingMethodOrType(context);
-		if (enclosing == null) {
-			return null;
+		if (enclosing instanceof MethodDeclaration method) {
+			return findVariableValueInMethod(method, variable.getIdentifier());
 		}
-
-		String variableIdentifier = variable.getIdentifier();
-		if (enclosing instanceof MethodDeclaration) {
-			return findVariableValueInMethod((MethodDeclaration) enclosing, variableIdentifier);
-		} else if (enclosing instanceof TypeDeclaration) {
-			return findVariableValueInType((TypeDeclaration) enclosing, variableIdentifier);
+		if (enclosing instanceof TypeDeclaration type) {
+			return findVariableValueInType(type, variable.getIdentifier());
 		}
 		return null;
 	}
 
-	/**
-	 * Generates a preview string showing the code before or after the refactoring.
-	 *
-	 * @param afterRefactoring true to show the code after refactoring, false for before
-	 * @param cb the change behavior configuration
-	 * @return the preview string, never null
-	 */
-	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
+	private static final Pattern LAST_NLS_COMMENT = Pattern.compile(
+			"[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)"); //$NON-NLS-1$
 
-	/**
-	 * Pattern matching the LAST NLS comment on a line (the one corresponding
-	 * to the last/highest-numbered string literal). When a string literal is
-	 * replaced by a non-string expression, we must remove the last NLS comment
-	 * (not the first) because string literals are numbered left-to-right.
-	 * Uses a negative lookahead to match only the final NLS comment.
-	 * Adapted from {@code org.eclipse.jdt.internal.corext.dom.ASTNodes}.
-	 */
-	private static final Pattern LAST_NLS_COMMENT = Pattern.compile("[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)"); //$NON-NLS-1$
-
-	/**
-	 * Replaces a string literal argument with a replacement node and removes the
-	 * associated {@code //$NON-NLS-n$} comment.
-	 *
-	 * <p>When the statement is inside a try body that will be unwrapped by
-	 * {@code removeUnsupportedEncodingException}, this method handles both the
-	 * argument replacement AND the try-catch unwrapping in a single text-based
-	 * operation to avoid conflicts between {@code rewrite.replace()} and
-	 * {@code createMoveTarget()}.
-	 *
-	 * <p>When the statement is NOT inside such a try body, this method replaces
-	 * the enclosing statement with a string placeholder that has the text
-	 * substitution and NLS removal already applied.
-	 *
-	 * @param rewrite the AST rewrite
-	 * @param visited the string literal node to replace
-	 * @param replacement the replacement node (e.g., StandardCharsets.UTF_8)
-	 * @param group the text edit group
-	 * @param cuRewrite the compilation unit rewrite
-	 * @return {@code true} if the enclosing try-catch was already unwrapped by
-	 *         this method (caller should skip {@code removeUnsupportedEncodingException}),
-	 *         {@code false} otherwise
-	 */
 	protected static boolean replaceArgumentAndRemoveNLS(ASTRewrite rewrite, ASTNode visited,
 			ASTNode replacement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
-		ASTNode st = ASTNodes.getFirstAncestorOrNull(visited, Statement.class, FieldDeclaration.class);
-		if (st != null && isInsideTryBodyWithOnlyUnsupportedEncodingCatch(st)) {
-			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, st, group, cuRewrite);
+		ASTNode statement = ASTNodes.getFirstAncestorOrNull(visited, Statement.class, FieldDeclaration.class);
+		if (statement != null && isInsideTryBodyWithOnlyUnsupportedEncodingCatch(statement)) {
+			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, statement, group, cuRewrite);
 		}
-		if (st == null) {
+		if (statement == null) {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
 		try {
 			String buffer = cuRewrite.getCu().getBuffer().getContents();
-			CompilationUnit cu = (CompilationUnit) st.getRoot();
-			int origStart = cu.getExtendedStartPosition(st);
-			int origLength = cu.getExtendedLength(st);
-			String original = buffer.substring(origStart, origStart + origLength);
-			original = LAST_NLS_COMMENT.matcher(original).replaceFirst(""); //$NON-NLS-1$
-			original = Pattern.compile("^[ \\t]*").matcher(original).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
-			original = Pattern.compile("\n[ \\t]*").matcher(original).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
-			String visitedString = buffer.substring(visited.getStartPosition(),
+			CompilationUnit root = (CompilationUnit) statement.getRoot();
+			int start = root.getExtendedStartPosition(statement);
+			String source = buffer.substring(start, start + root.getExtendedLength(statement));
+			source = normalizeStatementSource(source, lineDelimiter(buffer));
+			source = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
+			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
-			String replacementString = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
-			String modified = original.replace(visitedString, replacementString);
-			ASTNode placeholder = rewrite.createStringPlaceholder(modified, st.getNodeType());
-			rewrite.replace(st, placeholder, group);
-		} catch (JavaModelException e) {
+			String replacementSource = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
+			ASTNode placeholder = rewrite.createStringPlaceholder(
+					source.replace(visitedSource, replacementSource), statement.getNodeType());
+			rewrite.replace(statement, placeholder, group);
+		} catch (JavaModelException exception) {
 			rewrite.replace(visited, replacement, group);
 		}
 		return false;
 	}
 
-	/**
-	 * Handles the case where a string literal replacement is needed inside a try body
-	 * that will be unwrapped (single catch clause for UnsupportedEncodingException only).
-	 *
-	 * <p>Unchanged statements remain AST move targets so their source formatting and
-	 * attached comments are preserved. Only the statement containing the replaced
-	 * encoding literal is recreated as a placeholder.
-	 *
-	 * @return {@code true} if the try-catch was successfully unwrapped
-	 */
 	private static boolean replaceTryBodyAndUnwrap(ASTRewrite rewrite, ASTNode visited,
 			ASTNode replacement, ASTNode statement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
-		Block block = (Block) statement.getParent();
-		TryStatement tryStatement = (TryStatement) block.getParent();
-		ASTNode tryParent = tryStatement.getParent();
-		if (!(tryParent instanceof Block parentBlock)) {
+		Block tryBody = (Block) statement.getParent();
+		TryStatement tryStatement = (TryStatement) tryBody.getParent();
+		if (!(tryStatement.getParent() instanceof Block)) {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
 		try {
 			String buffer = cuRewrite.getCu().getBuffer().getContents();
-			CompilationUnit cu = (CompilationUnit) statement.getRoot();
-			String visitedString = buffer.substring(visited.getStartPosition(),
+			CompilationUnit root = (CompilationUnit) statement.getRoot();
+			String delimiter = lineDelimiter(buffer);
+			String parentIndent = indentationAt(buffer, tryStatement.getStartPosition());
+			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
-			String replacementString = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
+			String replacementSource = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
+			StringBuilder inlinedSource = new StringBuilder();
 
-			ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-			List<?> tryStatements = block.statements();
-			for (int i = tryStatements.size() - 1; i >= 0; i--) {
-				ASTNode stmt = (ASTNode) tryStatements.get(i);
-				ASTNode inlinedStatement;
-				if (stmt == statement) {
-					int stmtStart = cu.getExtendedStartPosition(stmt);
-					int stmtLength = cu.getExtendedLength(stmt);
-					String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);
-					stmtSource = Pattern.compile("^[ \\t]*").matcher(stmtSource).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
-					stmtSource = Pattern.compile("\n[ \\t]*").matcher(stmtSource).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
-					stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(""); //$NON-NLS-1$
-					stmtSource = stmtSource.replace(visitedString, replacementString);
-					inlinedStatement = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());
-				} else {
-					inlinedStatement = rewrite.createMoveTarget(stmt);
+			for (Object statementObject : tryBody.statements()) {
+				ASTNode bodyStatement = (ASTNode) statementObject;
+				int start = root.getExtendedStartPosition(bodyStatement);
+				String bodySource = buffer.substring(start, start + root.getExtendedLength(bodyStatement));
+				bodySource = normalizeStatementSource(bodySource, delimiter);
+				if (bodyStatement == statement) {
+					bodySource = LAST_NLS_COMMENT.matcher(bodySource).replaceFirst(""); //$NON-NLS-1$
+					bodySource = bodySource.replace(visitedSource, replacementSource);
 				}
-				parentListRewrite.insertAfter(inlinedStatement, tryStatement, group);
+				if (!inlinedSource.isEmpty()) {
+					inlinedSource.append(delimiter).append(parentIndent);
+				}
+				inlinedSource.append(bodySource);
 			}
-			rewrite.remove(tryStatement, group);
+
+			ASTNode placeholder = rewrite.createStringPlaceholder(inlinedSource.toString(), ASTNode.EMPTY_STATEMENT);
+			rewrite.replace(tryStatement, placeholder, group);
 			registerUnwrappedTryForImportRemoval(tryStatement, cuRewrite);
 			return true;
-		} catch (JavaModelException e) {
+		} catch (JavaModelException exception) {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
 	}
 
-	/**
-	 * Registers the removed try/catch while retaining its inlined body. Placeholder
-	 * rewrites do not provide {@link ImportRemover} with a reliable reference balance,
-	 * so the obsolete exception import is removed explicitly only when no type reference
-	 * survives outside any catch clause that has actually been unwrapped in this rewrite.
-	 */
+	private static String normalizeStatementSource(String source, String delimiter) {
+		String[] lines = source.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1); //$NON-NLS-1$ //$NON-NLS-2$
+		int first = 0;
+		while (first < lines.length && lines[first].isBlank()) {
+			first++;
+		}
+		int last = lines.length - 1;
+		while (last >= first && lines[last].isBlank()) {
+			last--;
+		}
+		if (first > last) {
+			return ""; //$NON-NLS-1$
+		}
+		String baseIndent = leadingWhitespace(lines[first]);
+		StringBuilder result = new StringBuilder();
+		for (int index = first; index <= last; index++) {
+			if (index > first) {
+				result.append(delimiter);
+			}
+			String line = lines[index];
+			if (!baseIndent.isEmpty() && line.startsWith(baseIndent)) {
+				line = line.substring(baseIndent.length());
+			}
+			result.append(line.isBlank() ? "" : line); //$NON-NLS-1$
+		}
+		return result.toString();
+	}
+
+	private static String leadingWhitespace(String line) {
+		int index = 0;
+		while (index < line.length()) {
+			char character = line.charAt(index);
+			if (character != ' ' && character != '\t') {
+				break;
+			}
+			index++;
+		}
+		return line.substring(0, index);
+	}
+
+	private static String lineDelimiter(String source) {
+		return source.contains("\r\n") ? "\r\n" : "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	private static String indentationAt(String source, int position) {
+		int lineStart = Math.max(source.lastIndexOf('\n', Math.max(0, position - 1)),
+				source.lastIndexOf('\r', Math.max(0, position - 1))) + 1;
+		String indentation = source.substring(lineStart, position);
+		for (int index = 0; index < indentation.length(); index++) {
+			char character = indentation.charAt(index);
+			if (character != ' ' && character != '\t') {
+				return ""; //$NON-NLS-1$
+			}
+		}
+		return indentation;
+	}
+
 	private static void registerUnwrappedTryForImportRemoval(TryStatement tryStatement,
 			CompilationUnitRewrite cuRewrite) {
 		cuRewrite.getImportRemover().registerRemovedNode(tryStatement);
@@ -577,19 +386,22 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		boolean[] found = { false };
 		root.accept(new ASTVisitor() {
 			@Override
-			public boolean visit(SimpleName node) {
-				if (found[0] || isDescendantOfAny(node, removedCatches)
-						|| ASTNodes.getFirstAncestorOrNull(node, ImportDeclaration.class) != null) {
-					return !found[0];
+			public boolean preVisit2(ASTNode node) {
+				if (found[0]) {
+					return false;
 				}
-				ITypeBinding typeBinding = node.resolveTypeBinding();
-				if (typeBinding != null) {
-					if (JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(typeBinding.getErasure().getQualifiedName())) {
-						found[0] = true;
-					}
-				} else if (UNSUPPORTED_ENCODING_EXCEPTION.equals(node.getIdentifier())) {
-					// Fail closed for incomplete or recovered bindings.
-					found[0] = true;
+				if (!(node instanceof Type type) || isDescendantOfAny(type, removedCatches)) {
+					return true;
+				}
+				ITypeBinding binding = type.resolveBinding();
+				if (binding != null) {
+					found[0] = JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION
+							.equals(binding.getErasure().getQualifiedName());
+				} else {
+					String source = type.toString();
+					found[0] = UNSUPPORTED_ENCODING_EXCEPTION.equals(source)
+							|| JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(source)
+							|| source.endsWith("." + UNSUPPORTED_ENCODING_EXCEPTION); //$NON-NLS-1$
 				}
 				return !found[0];
 			}
@@ -606,26 +418,12 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		return false;
 	}
 
-	/**
-	 * Checks whether the given statement is directly inside the body of a try statement
-	 * that will be fully unwrapped by removeUnsupportedEncodingException.
-	 */
 	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
-		ASTNode parent = statement.getParent();
-		if (!(parent instanceof Block block)) {
-			return false;
-		}
-		ASTNode grandParent = block.getParent();
-		if (!(grandParent instanceof TryStatement tryStatement)) {
-			return false;
-		}
-		if (tryStatement.getBody() != block) {
-			return false;
-		}
-		if (!tryStatement.resources().isEmpty()) {
-			return false;
-		}
-		if (tryStatement.getFinally() != null) {
+		if (!(statement.getParent() instanceof Block block)
+				|| !(block.getParent() instanceof TryStatement tryStatement)
+				|| tryStatement.getBody() != block
+				|| !tryStatement.resources().isEmpty()
+				|| tryStatement.getFinally() != null) {
 			return false;
 		}
 		@SuppressWarnings("unchecked")
@@ -633,34 +431,22 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		if (catchClauses.size() != 1) {
 			return false;
 		}
-		CatchClause catchClause = catchClauses.get(0);
-		org.eclipse.jdt.core.dom.Type exType = catchClause.getException().getType();
-		if (exType instanceof org.eclipse.jdt.core.dom.SimpleType simpleType) {
-			return UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleType.getName().toString());
+		Type exceptionType = catchClauses.get(0).getException().getType();
+		ITypeBinding binding = exceptionType.resolveBinding();
+		if (binding != null) {
+			return JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(binding.getErasure().getQualifiedName());
 		}
-		return false;
+		String source = exceptionType.toString();
+		return UNSUPPORTED_ENCODING_EXCEPTION.equals(source)
+				|| JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(source)
+				|| source.endsWith("." + UNSUPPORTED_ENCODING_EXCEPTION); //$NON-NLS-1$
 	}
 
-	/**
-	 * Removes UnsupportedEncodingException from the enclosing method's throws clause
-	 * or from catch clauses in a try statement. This is called after converting string-based
-	 * encoding to StandardCharsets, since StandardCharsets methods don't throw
-	 * UnsupportedEncodingException.
-	 *
-	 * <p>Delegates to {@link ExceptionCleanupHelper#removeCheckedException} for the
-	 * actual work.
-	 *
-	 * @param visited the AST node that was modified, must not be null
-	 * @param group the text edit group for tracking changes, must not be null
-	 * @param rewrite the AST rewrite context, must not be null
-	 * @param importRemover the import remover for tracking removed nodes, must not be null
-	 */
-	protected void removeUnsupportedEncodingException(final ASTNode visited, TextEditGroup group, ASTRewrite rewrite, ImportRemover importRemover) {
-		ExceptionCleanupHelper.removeCheckedException(
-				visited,
+	protected void removeUnsupportedEncodingException(ASTNode visited, TextEditGroup group,
+			ASTRewrite rewrite, ImportRemover importRemover) {
+		ExceptionCleanupHelper.removeCheckedException(visited,
 				JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION,
 				UNSUPPORTED_ENCODING_EXCEPTION,
 				group, rewrite, importRemover);
 	}
-
 }
