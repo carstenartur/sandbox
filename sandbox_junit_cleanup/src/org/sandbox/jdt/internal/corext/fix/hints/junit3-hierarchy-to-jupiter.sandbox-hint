@@ -6,6 +6,7 @@
 <!severity: warning>
 <!minJavaVersion: 8>
 <!tags: junit, migration, junit3, planned>
+<!binding-policy: required>
 <!requires-plan: junit3-hierarchy>
 <!predicate hasOverrideAnnotation($method):
     hasAnnotation($method, Override) || hasAnnotation($method, java.lang.Override)>
