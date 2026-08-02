@@ -13,7 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.internal;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
@@ -38,6 +40,7 @@ public final class BuiltInGuardRegistration {
 	public static void registerAll(Map<String, GuardFunction> guards) {
 		BuiltInGuards.registerAll(guards);
 		guards.put("instanceof", BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$
+		guards.put("subtypeOf", BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$
 		guards.put("genericTypeIs", BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$
 		guards.put("plannedRole", BuiltInGuardRegistration::evaluatePlannedRole); //$NON-NLS-1$
 		guards.put("enclosingPlannedRole", BuiltInGuardRegistration::evaluateEnclosingPlannedRole); //$NON-NLS-1$
@@ -174,6 +177,8 @@ public final class BuiltInGuardRegistration {
 		}
 		ITypeBinding binding= resolveTypeBinding(node);
 		if (binding == null) {
+			context.markUnknown("instanceof", //$NON-NLS-1$
+					"Cannot resolve the type of " + argument(args, 0)); //$NON-NLS-1$
 			return true;
 		}
 		String expectedType= stripQuotes(argument(args, 1));
@@ -182,6 +187,46 @@ public final class BuiltInGuardRegistration {
 					expectedType.substring(0, expectedType.length() - 2));
 		}
 		return matchesTypeName(binding, expectedType);
+	}
+
+	private static boolean evaluateSubtypeOf(GuardContext context, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		ASTNode node= context.getBinding(argument(args, 0));
+		if (node == null) {
+			return false;
+		}
+		ITypeBinding binding= resolveTypeBinding(node);
+		if (binding == null) {
+			context.markUnknown("subtypeOf", //$NON-NLS-1$
+					"Cannot resolve the type hierarchy of " + argument(args, 0)); //$NON-NLS-1$
+			return true;
+		}
+		return isSubtypeOf(binding, stripQuotes(argument(args, 1)), new HashSet<>());
+	}
+
+	private static boolean isSubtypeOf(ITypeBinding binding, String expectedType, Set<String> visited) {
+		if (binding == null || binding.isRecovered()) {
+			return false;
+		}
+		ITypeBinding declaration= binding.getTypeDeclaration();
+		String key= declaration.getKey();
+		if (key != null && !visited.add(key)) {
+			return false;
+		}
+		if (matchesTypeName(declaration, expectedType)) {
+			return true;
+		}
+		if (isSubtypeOf(declaration.getSuperclass(), expectedType, visited)) {
+			return true;
+		}
+		for (ITypeBinding iface : declaration.getInterfaces()) {
+			if (isSubtypeOf(iface, expectedType, visited)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static boolean evaluateGenericTypeIs(GuardContext context, Object... args) {
@@ -200,6 +245,8 @@ public final class BuiltInGuardRegistration {
 		}
 		ITypeBinding binding= resolveTypeBinding(node);
 		if (binding == null) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Cannot resolve generic type arguments for " + argument(args, 0)); //$NON-NLS-1$
 			return true;
 		}
 		ITypeBinding[] arguments= binding.getTypeArguments();

@@ -81,6 +81,11 @@ public final class HintFileSerializer {
 		if (hintFile.getMinJavaVersion() > 0) {
 			sb.append("<!minJavaVersion: ").append(hintFile.getMinJavaVersion()).append('>').append(LINE_SEP); //$NON-NLS-1$
 		}
+		if (hintFile.getBindingPolicy() != null) {
+			sb.append("<!binding-policy: ") //$NON-NLS-1$
+					.append(hintFile.getBindingPolicy().name().toLowerCase(java.util.Locale.ROOT))
+					.append('>').append(LINE_SEP);
+		}
 		if (!hintFile.getTags().isEmpty()) {
 			StringJoiner joiner = new StringJoiner(", "); //$NON-NLS-1$
 			for (String tag : hintFile.getTags()) {
