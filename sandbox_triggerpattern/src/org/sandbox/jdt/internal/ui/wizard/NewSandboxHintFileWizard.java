@@ -41,7 +41,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
-import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
@@ -101,7 +100,6 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		if (initialCodeSnippet != null && !initialCodeSnippet.isBlank()) {
 			rulePage.setInitialSourcePattern(initialCodeSnippet);
 
-			// Auto-trigger AI only if both configured AND available
 			IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(PLUGIN_ID);
 			boolean autoAi = prefs.getBoolean(LlmPreferencePage.PREF_WIZARD_AUTO_AI, false);
 			if (autoAi && EclipseLlmService.getInstance().isAvailable()) {
@@ -115,12 +113,10 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 
 	@Override
 	public boolean canFinish() {
-		// Allow finish from page 1 when template is EMPTY
 		if (getContainer().getCurrentPage() == filePage) {
 			return filePage.isPageComplete()
 					&& filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY;
 		}
-		// On the rule page, require both pages to be complete
 		return filePage.isPageComplete() && rulePage.isPageComplete();
 	}
 
@@ -129,13 +125,10 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		String containerPath = filePage.getContainerPath();
 		String fileName = filePage.getFileName();
 
-		// Build HintFile model from page 1 metadata
 		HintFile hintFile = new HintFile();
 		hintFile.setId(filePage.getHintId());
 		hintFile.setDescription(filePage.getHintDescription());
 		hintFile.setSeverity(filePage.getSeverityValue());
-		hintFile.setBindingPolicy("required".equals(filePage.getBindingPolicyValue()) //$NON-NLS-1$
-				? HintBindingPolicy.REQUIRED : HintBindingPolicy.OPTIONAL);
 		int minJava = filePage.getMinJavaVersion();
 		if (minJava > 0) {
 			hintFile.setMinJavaVersion(minJava);
@@ -151,11 +144,9 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			}
 		}
 
-		// Serialize metadata
 		HintFileSerializer serializer = new HintFileSerializer();
 		String metadataContent = serializer.serialize(hintFile);
 
-		// Append rule content from page 2 or template
 		String ruleContent;
 		SandboxHintTemplates template = filePage.getSelectedTemplate();
 		if (template == SandboxHintTemplates.EMPTY) {
@@ -180,7 +171,6 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			return false;
 		}
 
-		// Open the newly created file in the editor
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IResource resource = root.findMember(new Path(containerPath));
 		if (resource instanceof IContainer container) {
