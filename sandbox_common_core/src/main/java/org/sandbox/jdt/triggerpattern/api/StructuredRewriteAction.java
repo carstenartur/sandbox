@@ -38,9 +38,18 @@ public record StructuredRewriteAction(String name, Map<String, RewriteActionValu
 		}
 	}
 
-	/** Returns one required argument or fails with an actionable diagnostic. */
+	/**
+	 * Returns one required argument.
+	 *
+	 * <p>The conventional {@code target} argument defaults to the rule's primary
+	 * matched node. Authors only need to specify it when an action operates on a
+	 * different bound node.</p>
+	 */
 	public RewriteActionValue requiredArgument(String argumentName) {
 		RewriteActionValue value= arguments.get(argumentName);
+		if (value == null && "target".equals(argumentName)) { //$NON-NLS-1$
+			return RewriteActionValue.matchedNode();
+		}
 		if (value == null) {
 			throw new IllegalArgumentException("Action " + name + " requires argument " + argumentName); //$NON-NLS-1$ //$NON-NLS-2$
 		}
