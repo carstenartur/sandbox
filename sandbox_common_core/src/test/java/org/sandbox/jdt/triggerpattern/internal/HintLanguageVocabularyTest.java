@@ -54,6 +54,7 @@ class HintLanguageVocabularyTest {
 		for (HintLanguageVocabulary.Action action : HintLanguageVocabulary.actions()) {
 			assertTrue(action.syntax().startsWith("=>! " + action.name() + "(")); //$NON-NLS-1$ //$NON-NLS-2$
 			assertTrue(action.replacement().startsWith(action.name() + "(")); //$NON-NLS-1$
+			assertFalse(action.syntax().contains("([,"), action.syntax()); //$NON-NLS-1$
 			assertFalse(action.description().isBlank());
 		}
 	}
