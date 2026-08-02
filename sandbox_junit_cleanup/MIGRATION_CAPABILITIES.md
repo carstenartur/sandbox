@@ -7,16 +7,15 @@ This matrix describes the executable migration boundary on `main`. It deliberate
 JUnit migration uses three layers:
 
 1. **Semantic planner** — discovers a closed source scope, resolves bindings, classifies execution semantics and emits stable rejection reasons.
-2. **Plan-aware hint program** — performs only planner-authorized local AST rewrites. Every plan-aware program must declare both:
+2. **Plan-aware hint program** — performs only planner-authorized local AST rewrites. One declaration selects the plan and implies fail-closed semantic target resolution:
 
    ```text
-   <!binding-policy: required>
    <!requires-plan: contract-id>
    ```
 
 3. **Runtime oracle** — compares JDT JUnit discovery/execution before and after migration where the migration changes test identity or multiplicity.
 
-A missing binding, binary-only participant, stale plan, incomplete project scope or unsupported execution hook prevents the complete migration unit from being produced.
+A missing binding, binary-only participant, stale plan, incomplete project scope or unsupported execution hook prevents the complete migration unit from being produced. Ordinary non-plan hints retain their current compatibility semantics; general tri-state guard diagnostics remain follow-up work.
 
 ## Capability matrix
 
