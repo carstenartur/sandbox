@@ -37,6 +37,7 @@ class StructuredRewriteActionParserTest {
 	void parsesOrderedActionsAndTypedValueExpressions() throws HintParseException {
 		String source= """
 				<!id: structured.demo>
+				<!binding-policy: required>
 				<!requires-plan: structured/demo>
 				void $name()
 				=>! addAnnotation(target=$name,
@@ -97,6 +98,16 @@ class StructuredRewriteActionParserTest {
 				""");
 		assertEquals("generateAdapter", hintFile.getRules().get(0).alternatives().get(0) //$NON-NLS-1$
 				.structuredActions().get(0).name());
+	}
+
+	@Test
+	void rejectsPlanAwareProgramWithoutRequiredBindingPolicy() {
+		assertThrows(HintParseException.class, () -> new HintProgramParser().parse("""
+				<!requires-plan: unsafe-demo>
+				void $name()
+				=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test")
+				;;
+				"""));
 	}
 
 	@Test
