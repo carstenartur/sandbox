@@ -67,7 +67,6 @@ class PlanAwareStructuredActionHintTest {
 				.build();
 		String hint= """
 				<!id: structured-demo>
-				<!binding-policy: required>
 				<!requires-plan: structured-demo>
 				void $name() :: plannedRole($name, "TEST_METHOD")
 				=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test");
