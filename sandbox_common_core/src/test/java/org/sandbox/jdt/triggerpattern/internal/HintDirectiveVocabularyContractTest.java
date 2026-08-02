@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 
 class HintDirectiveVocabularyContractTest {
@@ -56,6 +57,7 @@ class HintDirectiveVocabularyContractTest {
 		assertEquals("vocabulary-contract", hint.getId()); //$NON-NLS-1$
 		assertEquals("language contract", hint.getDescription()); //$NON-NLS-1$
 		assertEquals(17, hint.getMinJavaVersion());
+		assertEquals(HintBindingPolicy.REQUIRED, hint.getBindingPolicy());
 		assertTrue(hint.getTags().containsAll(Set.of("dsl", "contract"))); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(hint.getIncludes().contains("shared-rules")); //$NON-NLS-1$
 		assertTrue(hint.isCaseInsensitive());
