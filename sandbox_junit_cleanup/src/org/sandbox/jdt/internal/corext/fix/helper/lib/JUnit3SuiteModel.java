@@ -35,7 +35,8 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 /**
- * Fail-closed model of a JUnit 3 {@code public static Test suite()} aggregator.
+ * Fail-closed model of a JUnit 3 {@code public static Test suite()} or
+ * {@code public static TestSuite suite()} aggregator.
  *
  * <p>Only aggregators whose selected classes and their order are provable from
  * the source are modelled. Everything else is reported as a precise rejection so
@@ -98,10 +99,11 @@ public final class JUnit3SuiteModel {
 	}
 
 	/**
-	 * Returns whether the declaration has the JUnit 3 suite-builder signature.
+	 * Returns whether the declaration has a supported JUnit 3 suite-builder signature.
 	 *
 	 * @param method method declaration to inspect
-	 * @return {@code true} for {@code public static Test suite()}
+	 * @return {@code true} for {@code public static Test suite()} or
+	 *         {@code public static TestSuite suite()}
 	 */
 	public static boolean isSuiteBuilder(MethodDeclaration method) {
 		if (method == null || method.isConstructor() || !method.parameters().isEmpty()
@@ -116,13 +118,14 @@ public final class JUnit3SuiteModel {
 	/**
 	 * Models the selected classes of a JUnit 3 suite aggregator.
 	 *
-	 * @param method a {@code public static Test suite()} declaration
+	 * @param method a {@code public static Test suite()} or
+	 *            {@code public static TestSuite suite()} declaration
 	 * @return the ordered selected classes, or a precise rejection
 	 */
 	public static Result analyze(MethodDeclaration method) {
 		if (!isSuiteBuilder(method)) {
 			return Result.rejected("NOT_A_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$
-					"The method does not declare the public static Test suite() contract."); //$NON-NLS-1$
+					"The method does not declare a public static Test or TestSuite suite() contract."); //$NON-NLS-1$
 		}
 		Block body= method.getBody();
 		if (body == null) {
