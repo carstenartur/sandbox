@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 
-import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 
 class HintDirectiveVocabularyContractTest {
@@ -37,7 +36,6 @@ class HintDirectiveVocabularyContractTest {
 				Map.entry("caseInsensitive", "<!caseInsensitive>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("suppressWarnings", "<!suppressWarnings: deprecation>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("treeKind", "<!treeKind: METHOD_DECLARATION>"), //$NON-NLS-1$ //$NON-NLS-2$
-				Map.entry("binding-policy", "<!binding-policy: required>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("requires-plan", "<!requires-plan: semantic-contract>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("foreach", "<!foreach SAMPLE: source -> target>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("map", "<!map SAMPLE: source => target>"), //$NON-NLS-1$ //$NON-NLS-2$
@@ -57,7 +55,6 @@ class HintDirectiveVocabularyContractTest {
 		assertEquals("vocabulary-contract", hint.getId()); //$NON-NLS-1$
 		assertEquals("language contract", hint.getDescription()); //$NON-NLS-1$
 		assertEquals(17, hint.getMinJavaVersion());
-		assertEquals(HintBindingPolicy.REQUIRED, hint.getBindingPolicy());
 		assertTrue(hint.getTags().containsAll(Set.of("dsl", "contract"))); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(hint.getIncludes().contains("shared-rules")); //$NON-NLS-1$
 		assertTrue(hint.isCaseInsensitive());
