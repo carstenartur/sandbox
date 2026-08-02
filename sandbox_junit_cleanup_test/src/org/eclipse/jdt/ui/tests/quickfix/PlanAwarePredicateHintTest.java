@@ -65,7 +65,6 @@ class PlanAwarePredicateHintTest {
 				.add(NodeKey.method(key), "TEST_METHOD").build(); //$NON-NLS-1$
 		String hint= """
 				<!id: predicate-demo>
-				<!binding-policy: required>
 				<!requires-plan: predicate-demo>
 				<!predicate selected($method):
 				    enclosingPlannedRole($method, "TEST_METHOD") && isPublic($method)>
@@ -96,7 +95,6 @@ class PlanAwarePredicateHintTest {
 				.putString(NodeKey.method(key), "test-kind", "JUPITER").build(); //$NON-NLS-1$ //$NON-NLS-2$
 		String hint= """
 				<!id: typed-fact-demo>
-				<!binding-policy: required>
 				<!requires-plan: typed-fact-demo>
 				<!predicate selected($method):
 				    plannedValue($method, "test-kind", "JUPITER") && isPublic($method)>
