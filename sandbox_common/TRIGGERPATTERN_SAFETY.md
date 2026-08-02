@@ -2,55 +2,39 @@
 
 TriggerPattern supports ordinary local hints and planner-authorized coordinated migrations. These modes have different safety requirements and must not be treated as interchangeable.
 
-## Binding policy
+## Semantic-plan contract
 
-A hint program may declare:
-
-```text
-<!binding-policy: optional>
-```
-
-or:
+A plan-aware program declares one contract:
 
 ```text
-<!binding-policy: required>
-```
-
-`optional` is the compatibility mode for ordinary style hints. It permits rules that can still make a conservative decision when Eclipse cannot resolve every semantic binding.
-
-`required` is the migration mode. It states that type, method, field, owner and hierarchy information are part of the transformation contract. A program that also declares `<!requires-plan: ...>` must use `required`; the plan-aware execution boundary rejects missing, malformed, unknown or conflicting policies before parsing or rewriting source.
-
-Commented directives do not affect the policy. Duplicate identical directives are accepted so composed/generated programs remain stable; conflicting directives are rejected.
-
-## Plan-aware programs
-
-A plan-aware program starts with both directives:
-
-```text
-<!binding-policy: required>
 <!requires-plan: junit3-hierarchy>
 ```
 
-The semantic planner supplies an immutable `SemanticRewritePlan` containing:
+That declaration is complete. It identifies the required `SemanticRewritePlan` and also implies fail-closed semantic bindings. A second binding-policy directive would repeat information already determined by the plan dependency and is therefore not part of the language.
+
+The semantic planner supplies an immutable authorization graph containing:
 
 - stable binding-based node keys;
 - authorization roles;
 - typed node facts;
 - ordered directed relations and relation attributes.
 
-The hint program may query only those facts through plan guards and action values. Structured actions resolve exact authorized targets again against the current AST. The execution fails if the plan contract differs, the plan is empty, a target cannot be re-identified, the current source no longer covers the planned targets, or the hint program produces incomplete coverage.
+The plan-aware execution boundary rejects an empty or mismatched plan. Every produced rewrite must resolve to a current AST node with a stable semantic key authorized by that plan. Execution also fails when planned targets can no longer be identified, the source has changed so that coverage is incomplete, or a rule requests an analysis-dependent replacement that cannot be reproduced safely.
+
+Ordinary hints without `requires-plan` retain the existing compatibility behavior. The current guard API is boolean; a general `MATCH` / `NO_MATCH` / `UNKNOWN` model and actionable unresolved-binding diagnostics remain a separate follow-up. Extra syntax for non-plan binding requirements should only be introduced together with that executable semantics.
 
 ## Text rewrites versus structured actions
 
-Use ordinary `=>` replacement for a local expression or statement replacement whose target structure remains the same.
+Use ordinary `=>` replacement when the desired result can be expressed directly as target code for a local expression, statement, or supported declaration shape.
 
-Use `=>!` structured actions for declaration changes such as:
+Use `=>!` structured actions when a rewrite requires typed AST operations, import management, or a semantic-plan value that cannot be represented safely as a plain replacement.
 
-- adding or removing annotations;
-- adding or removing modifiers;
-- removing or replacing supertypes;
-- removing a declaration;
-- qualifying an exact static invocation.
+Structured actions are a normalized execution form. Their author-facing syntax should avoid repeating information already known from the rule:
+
+- the primary matched node is the default action target;
+- an explicit `target` is needed only for a different bound node;
+- stable parameter names or planned relations are preferred over numeric positions;
+- source and target declarations should eventually compile to structured actions rather than forcing authors to spell out every low-level edit.
 
 A plan-aware rule may not mix text and structured alternatives. Split the behavior into separate rule IDs so coverage and execution order remain reviewable.
 
@@ -60,8 +44,8 @@ A local rule is insufficient when correctness depends on any of the following:
 
 - a closed inheritance hierarchy;
 - callers or providers in other compilation units;
-- test multiplicity or execution order;
-- a runner, suite or framework callback contract;
+- test identity, multiplicity, or execution order;
+- a runner, suite, or framework callback contract;
 - edits across projects or bundles;
 - coordinated Java and resource/dependency changes.
 
@@ -71,12 +55,13 @@ The existing wizard should describe such a transformation as requiring a semanti
 
 Before shipping a migration rule:
 
-1. Decide whether it is local or plan-aware.
-2. Require bindings for every migration whose overload or ownership affects meaning.
-3. Add positive, negative and unresolved-binding tests.
-4. Give every rule a stable ID.
-5. Use fully qualified replacement types or typed structured actions for reliable imports.
-6. Prove idempotency and stale-plan rejection.
-7. For test migrations, compare the relevant JDT JUnit test tree and results where identity or multiplicity can change.
+1. Decide whether the transformation is local or plan-aware.
+2. Express the desired target code once wherever the DSL can derive the typed AST operations.
+3. Put only non-derivable scope, role, relationship, and strategy information in the semantic plan.
+4. Let `requires-plan` be the sole plan contract.
+5. Omit `target` when an action operates on the primary match.
+6. Prefer bound names and planned ordered relations to positional indices.
+7. Add positive, negative, ambiguity, and stale-plan tests.
+8. For test migrations, compare the relevant JDT JUnit test tree and results where identity or multiplicity can change.
 
 The broader implementation plan is tracked in #1367.
