@@ -19,23 +19,35 @@ import java.util.Set;
 /** Immutable catalog of schema-validated structured rewrite actions. */
 public final class RewriteActionCatalog {
 
+	private static final Set<String> TARGET= Set.of("target"); //$NON-NLS-1$
+
 	private static final RewriteActionCatalog STANDARD= builder()
-			.register(schema("addAnnotation", Set.of("target", "annotation"), Set.of("value"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-					"Add a marker, single-value or array annotation")) //$NON-NLS-1$
-			.register(schema("removeAnnotation", Set.of("target", "annotation"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					"Remove one validated annotation")) //$NON-NLS-1$
-			.register(schema("addModifier", Set.of("target", "modifier"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			.register(schema("addAnnotation", Set.of("annotation"), Set.of("target", "value"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"Add a marker, single-value or array annotation to the primary match or an explicit target")) //$NON-NLS-1$
+			.register(schema("removeAnnotation", Set.of("annotation"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
+					"Remove one validated annotation from the primary match or an explicit target")) //$NON-NLS-1$
+			.register(schema("addModifier", Set.of("modifier"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
 					"Add one Java declaration modifier")) //$NON-NLS-1$
-			.register(schema("removeModifier", Set.of("target", "modifier"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			.register(schema("removeModifier", Set.of("modifier"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
 					"Remove one Java declaration modifier")) //$NON-NLS-1$
-			.register(schema("removeSupertype", Set.of("target", "type"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			.register(schema("removeSupertype", Set.of("type"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
 					"Remove one binding-validated superclass or interface")) //$NON-NLS-1$
-			.register(schema("replaceSupertype", Set.of("target", "type", "replacement"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			.register(schema("replaceSupertype", Set.of("type", "replacement"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					"Replace one binding-validated superclass or interface")) //$NON-NLS-1$
-			.register(schema("removeDeclaration", Set.of("target"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$
-					"Remove one exact declaration")) //$NON-NLS-1$
-			.register(schema("qualifyInvocation", Set.of("target", "owner"), Set.of(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			.register(schema("removeDeclaration", Set.of(), TARGET, //$NON-NLS-1$
+					"Remove the primary matched declaration or an explicit target")) //$NON-NLS-1$
+			.register(schema("qualifyInvocation", Set.of("owner"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
 					"Qualify one exact static method invocation")) //$NON-NLS-1$
+			.register(schema("renameDeclaration", Set.of("name"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
+					"Rename one exact planned method or field declaration")) //$NON-NLS-1$
+			.register(schema("replaceFieldType", Set.of("type"), TARGET, //$NON-NLS-1$ //$NON-NLS-2$
+					"Replace the type of one single-fragment planned field")) //$NON-NLS-1$
+			.register(schema("addParameter", Set.of("type", "name"), Set.of("target", "index"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"Add one parameter to an exact planned method or constructor")) //$NON-NLS-1$
+			.register(schema("removeParameter", Set.of(), Set.of("target", "name", "index"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					"Remove one parameter selected by stable name or, as an escape hatch, index")) //$NON-NLS-1$
+			.register(schema("replaceParameterType", Set.of("type"), Set.of("target", "name", "index"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+					"Replace one parameter type selected by stable name or index")) //$NON-NLS-1$
 			.build();
 
 	private final Map<String, RewriteActionSchema> schemas;
