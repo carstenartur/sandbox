@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -25,7 +23,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -46,6 +43,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -65,8 +63,6 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
-	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =
-			AbstractExplicitEncoding.class.getName() + ".removedUnsupportedEncodingCatches"; //$NON-NLS-1$
 
 	public static final Map<String, String> ENCODING_MAP = Map.of(
 			"UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
@@ -243,7 +239,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			CompilationUnit root = (CompilationUnit) statement.getRoot();
 			int start = root.getExtendedStartPosition(statement);
 			String source = buffer.substring(start, start + root.getExtendedLength(statement));
-			source = normalizeStatementSource(source, lineDelimiter(buffer));
+			source = stripBaseIndent(source, lineDelimiter(buffer));
 			source = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
 			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
@@ -261,7 +257,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			ASTNode replacement, ASTNode statement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
 		Block tryBody = (Block) statement.getParent();
 		TryStatement tryStatement = (TryStatement) tryBody.getParent();
-		if (!(tryStatement.getParent() instanceof Block)) {
+		if (!(tryStatement.getParent() instanceof Block parentBlock)) {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
@@ -269,30 +265,31 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			String buffer = cuRewrite.getCu().getBuffer().getContents();
 			CompilationUnit root = (CompilationUnit) statement.getRoot();
 			String delimiter = lineDelimiter(buffer);
-			String parentIndent = indentationAt(buffer, tryStatement.getStartPosition());
 			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
 			String replacementSource = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
-			StringBuilder inlinedSource = new StringBuilder();
+			ListRewrite parentStatements = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
+			List<?> bodyStatements = tryBody.statements();
 
-			for (Object statementObject : tryBody.statements()) {
-				ASTNode bodyStatement = (ASTNode) statementObject;
-				int start = root.getExtendedStartPosition(bodyStatement);
-				String bodySource = buffer.substring(start, start + root.getExtendedLength(bodyStatement));
-				bodySource = normalizeStatementSource(bodySource, delimiter);
+			for (int index = bodyStatements.size() - 1; index >= 0; index--) {
+				ASTNode bodyStatement = (ASTNode) bodyStatements.get(index);
+				ASTNode inlinedStatement;
 				if (bodyStatement == statement) {
-					bodySource = LAST_NLS_COMMENT.matcher(bodySource).replaceFirst(""); //$NON-NLS-1$
-					bodySource = bodySource.replace(visitedSource, replacementSource);
+					int start = root.getExtendedStartPosition(bodyStatement);
+					String source = buffer.substring(start, start + root.getExtendedLength(bodyStatement));
+					source = stripBaseIndent(source, delimiter);
+					source = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
+					source = source.replace(visitedSource, replacementSource);
+					inlinedStatement = rewrite.createStringPlaceholder(source, bodyStatement.getNodeType());
+				} else {
+					inlinedStatement = rewrite.createMoveTarget(bodyStatement);
 				}
-				if (!inlinedSource.isEmpty()) {
-					inlinedSource.append(delimiter).append(parentIndent);
-				}
-				inlinedSource.append(bodySource);
+				parentStatements.insertAfter(inlinedStatement, tryStatement, group);
 			}
 
-			ASTNode placeholder = rewrite.createStringPlaceholder(inlinedSource.toString(), ASTNode.EMPTY_STATEMENT);
-			rewrite.replace(tryStatement, placeholder, group);
-			registerUnwrappedTryForImportRemoval(tryStatement, cuRewrite);
+			CatchClause removedCatch = (CatchClause) tryStatement.catchClauses().get(0);
+			cuRewrite.getImportRemover().registerRemovedNode(removedCatch);
+			rewrite.remove(tryStatement, group);
 			return true;
 		} catch (JavaModelException exception) {
 			rewrite.replace(visited, replacement, group);
@@ -300,7 +297,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		}
 	}
 
-	private static String normalizeStatementSource(String source, String delimiter) {
+	private static String stripBaseIndent(String source, String delimiter) {
 		String[] lines = source.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1); //$NON-NLS-1$ //$NON-NLS-2$
 		int first = 0;
 		while (first < lines.length && lines[first].isBlank()) {
@@ -342,80 +339,6 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	private static String lineDelimiter(String source) {
 		return source.contains("\r\n") ? "\r\n" : "\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-	}
-
-	private static String indentationAt(String source, int position) {
-		int lineStart = Math.max(source.lastIndexOf('\n', Math.max(0, position - 1)),
-				source.lastIndexOf('\r', Math.max(0, position - 1))) + 1;
-		String indentation = source.substring(lineStart, position);
-		for (int index = 0; index < indentation.length(); index++) {
-			char character = indentation.charAt(index);
-			if (character != ' ' && character != '\t') {
-				return ""; //$NON-NLS-1$
-			}
-		}
-		return indentation;
-	}
-
-	private static void registerUnwrappedTryForImportRemoval(TryStatement tryStatement,
-			CompilationUnitRewrite cuRewrite) {
-		cuRewrite.getImportRemover().registerRemovedNode(tryStatement);
-		cuRewrite.getImportRemover().registerRetainedNode(tryStatement.getBody());
-		CatchClause removedCatch = (CatchClause) tryStatement.catchClauses().get(0);
-		CompilationUnit root = (CompilationUnit) tryStatement.getRoot();
-		Set<CatchClause> removedCatches = removedUnsupportedEncodingCatches(root);
-		removedCatches.add(removedCatch);
-		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {
-			cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static Set<CatchClause> removedUnsupportedEncodingCatches(CompilationUnit root) {
-		Object stored = root.getProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY);
-		if (stored instanceof Set<?>) {
-			return (Set<CatchClause>) stored;
-		}
-		Set<CatchClause> removedCatches = Collections.newSetFromMap(new IdentityHashMap<>());
-		root.setProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY, removedCatches);
-		return removedCatches;
-	}
-
-	private static boolean hasSurvivingUnsupportedEncodingExceptionReference(CompilationUnit root,
-			Set<CatchClause> removedCatches) {
-		boolean[] found = { false };
-		root.accept(new ASTVisitor() {
-			@Override
-			public boolean preVisit2(ASTNode node) {
-				if (found[0]) {
-					return false;
-				}
-				if (!(node instanceof Type type) || isDescendantOfAny(type, removedCatches)) {
-					return true;
-				}
-				ITypeBinding binding = type.resolveBinding();
-				if (binding != null) {
-					found[0] = JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION
-							.equals(binding.getErasure().getQualifiedName());
-				} else {
-					String source = type.toString();
-					found[0] = UNSUPPORTED_ENCODING_EXCEPTION.equals(source)
-							|| JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(source)
-							|| source.endsWith("." + UNSUPPORTED_ENCODING_EXCEPTION); //$NON-NLS-1$
-				}
-				return !found[0];
-			}
-		});
-		return found[0];
-	}
-
-	private static boolean isDescendantOfAny(ASTNode node, Set<CatchClause> ancestors) {
-		for (ASTNode current = node; current != null; current = current.getParent()) {
-			if (ancestors.contains(current)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
