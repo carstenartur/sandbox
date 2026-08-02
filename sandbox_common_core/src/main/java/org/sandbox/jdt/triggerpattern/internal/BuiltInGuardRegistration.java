@@ -267,24 +267,28 @@ public final class BuiltInGuardRegistration {
 
 	private static ITypeBinding resolveTypeBinding(ASTNode node) {
 		if (node instanceof Expression expression) {
-			return expression.resolveTypeBinding();
+			return usableTypeBinding(expression.resolveTypeBinding());
 		}
 		if (node instanceof Type type) {
-			return type.resolveBinding();
+			return usableTypeBinding(type.resolveBinding());
 		}
 		if (node instanceof SingleVariableDeclaration declaration) {
 			IVariableBinding binding= declaration.resolveBinding();
-			return binding == null ? declaration.getType().resolveBinding() : binding.getType();
+			return usableTypeBinding(binding == null ? declaration.getType().resolveBinding() : binding.getType());
 		}
 		if (node instanceof VariableDeclarationFragment fragment) {
 			IVariableBinding binding= fragment.resolveBinding();
-			return binding == null ? null : binding.getType();
+			return usableTypeBinding(binding == null ? null : binding.getType());
 		}
 		return null;
 	}
 
+	private static ITypeBinding usableTypeBinding(ITypeBinding binding) {
+		return binding == null || binding.isRecovered() ? null : binding;
+	}
+
 	private static boolean matchesTypeName(ITypeBinding binding, String expectedType) {
-		if (binding == null || expectedType == null || expectedType.isBlank()) {
+		if (binding == null || binding.isRecovered() || expectedType == null || expectedType.isBlank()) {
 			return false;
 		}
 		ITypeBinding declaration= binding.getTypeDeclaration();
