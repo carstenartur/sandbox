@@ -33,6 +33,9 @@ public class EncodingImportRetentionTest {
 	protected void setUp() throws Exception {
 		Hashtable<String, String> defaultOptions= TestOptions.getDefaultOptions();
 		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, Integer.toString(120));
+		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_TAB_CHAR, JavaCore.SPACE);
+		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_TAB_SIZE, Integer.toString(4));
+		defaultOptions.put(DefaultCodeFormatterConstants.FORMATTER_INDENTATION_SIZE, Integer.toString(4));
 		JavaCore.setOptions(defaultOptions);
 		TestOptions.initializeCodeGenerationOptions();
 		JavaPlugin.getDefault().getCodeTemplateStore().load();
