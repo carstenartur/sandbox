@@ -71,6 +71,39 @@ public enum SandboxHintTemplates {
 				;;
 				"""; //$NON-NLS-1$
 		}
+	},
+
+	/** A typed AST action sequence for declaration-level changes. */
+	STRUCTURED("Structured AST action rule") { //$NON-NLS-1$
+		@Override
+		public String getRuleContent() {
+			return """
+
+				@id: add-jupiter-test
+				void $method($params$) :: isPublic($method)
+				=>! removeModifier(target=$method, modifier=public);
+				    addAnnotation(target=$method,
+				        annotation="org.junit.jupiter.api.Test")
+				;;
+				"""; //$NON-NLS-1$
+		}
+	},
+
+	/** A fail-closed rule that is inert without a matching semantic plan. */
+	PLAN_AWARE("Plan-aware JUnit migration rule") { //$NON-NLS-1$
+		@Override
+		public String getRuleContent() {
+			return """
+				<!binding-policy: required>
+				<!requires-plan: example-junit-migration>
+
+				@id: planned-jupiter-test
+				void $method($params$) :: plannedRole($method, "TEST_METHOD")
+				=>! addAnnotation(target=$method,
+				        annotation="org.junit.jupiter.api.Test")
+				;;
+				"""; //$NON-NLS-1$
+		}
 	};
 
 	private final String label;
