@@ -44,7 +44,6 @@ public final class HintFile {
 	private String description;
 	private Severity severity;
 	private int minJavaVersion;
-	private HintBindingPolicy bindingPolicy;
 	private List<String> tags;
 	private final List<TransformationRule> rules;
 	private final List<String> includes;
@@ -163,30 +162,6 @@ public final class HintFile {
 	 */
 	public void setMinJavaVersion(int minJavaVersion) {
 		this.minJavaVersion = minJavaVersion;
-	}
-
-	/**
-	 * Returns the explicitly declared semantic binding policy.
-	 *
-	 * <p>A {@code null} value means that the compatibility default applies.
-	 * Plan-aware programs are validated separately and require
-	 * {@link HintBindingPolicy#REQUIRED}.</p>
-	 *
-	 * @return the binding policy, or {@code null} when no directive was declared
-	 * @since 1.6.0
-	 */
-	public HintBindingPolicy getBindingPolicy() {
-		return bindingPolicy;
-	}
-
-	/**
-	 * Sets the semantic binding policy.
-	 *
-	 * @param bindingPolicy the policy, or {@code null} to omit the directive
-	 * @since 1.6.0
-	 */
-	public void setBindingPolicy(HintBindingPolicy bindingPolicy) {
-		this.bindingPolicy = bindingPolicy;
 	}
 	
 	/**
