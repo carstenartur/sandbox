@@ -38,8 +38,8 @@ import org.eclipse.ui.dialogs.ContainerSelectionDialog;
  * First wizard page for the New Sandbox Hint File wizard.
  *
  * <p>Lets the user choose the target container (project/folder), file name,
- * metadata (ID, description, severity, min Java version, tags and binding
- * policy), and a template.</p>
+ * metadata (ID, description, severity, min Java version, tags), and a
+ * template.</p>
  *
  * @since 1.5.0
  */
@@ -53,7 +53,6 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 	private Text descriptionText;
 	private Combo severityCombo;
 	private Combo minJavaCombo;
-	private Combo bindingPolicyCombo;
 	private Text tagsText;
 	private SandboxHintTemplates selectedTemplate = SandboxHintTemplates.SIMPLE;
 
@@ -79,7 +78,6 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 		ModifyListener modifyListener = e -> dialogChanged();
 
-		// --- Container selection ---
 		Label containerLabel = new Label(container, SWT.NONE);
 		containerLabel.setText("&Container:"); //$NON-NLS-1$
 
@@ -96,16 +94,14 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 			}
 		});
 
-		// --- File name ---
 		Label fileLabel = new Label(container, SWT.NONE);
 		fileLabel.setText("&File name:"); //$NON-NLS-1$
 
 		fileText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		fileText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		fileText.addModifyListener(modifyListener);
-		new Label(container, SWT.NONE); // spacer
+		new Label(container, SWT.NONE);
 
-		// --- Metadata group ---
 		Group metadataGroup = new Group(container, SWT.NONE);
 		metadataGroup.setText("Metadata"); //$NON-NLS-1$
 		metadataGroup.setLayout(new GridLayout(2, false));
@@ -133,18 +129,11 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		minJavaCombo.select(0);
 		minJavaCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
-		new Label(metadataGroup, SWT.NONE).setText("&Binding policy:"); //$NON-NLS-1$
-		bindingPolicyCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
-		bindingPolicyCombo.setItems(new String[] { "optional", "required" }); //$NON-NLS-1$ //$NON-NLS-2$
-		bindingPolicyCombo.select(0);
-		bindingPolicyCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-
 		new Label(metadataGroup, SWT.NONE).setText("&Tags:"); //$NON-NLS-1$
 		tagsText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);
 		tagsText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		tagsText.setMessage("encoding, modernization"); //$NON-NLS-1$
 
-		// --- Template group ---
 		Group templateGroup = new Group(container, SWT.NONE);
 		templateGroup.setText("Template"); //$NON-NLS-1$
 		templateGroup.setLayout(new GridLayout(1, false));
@@ -163,29 +152,18 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 				public void widgetSelected(SelectionEvent e) {
 					if (((Button) e.widget).getSelection()) {
 						selectedTemplate = (SandboxHintTemplates) ((Button) e.widget).getData();
-						boolean planAware = selectedTemplate == SandboxHintTemplates.PLAN_AWARE;
-						if (planAware) {
-							bindingPolicyCombo.select(1);
-						}
-						bindingPolicyCombo.setEnabled(!planAware);
 					}
 				}
 			});
 		}
 
-		// --- Initialize from selection ---
 		initializeFromSelection();
 
 		dialogChanged();
 		setControl(container);
 	}
 
-	/**
-	 * Pre-fills the container path from the workbench selection and
-	 * always sets a sensible default file name.
-	 */
 	private void initializeFromSelection() {
-		// Always set a default file name
 		fileText.setText("rules" + FILE_EXTENSION); //$NON-NLS-1$
 
 		if (selection == null || selection.isEmpty()) {
@@ -249,36 +227,28 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		setPageComplete(message == null);
 	}
 
-	// --- Public accessors for the wizard ---
-
-	/** Returns the container path entered by the user. */
 	public String getContainerPath() {
 		return containerText.getText();
 	}
 
-	/** Returns the file name entered by the user. */
 	public String getFileName() {
 		return fileText.getText();
 	}
 
-	/** Returns the hint ID entered by the user (may be empty). */
 	public String getHintId() {
 		String text = idText.getText().trim();
 		return text.isEmpty() ? null : text;
 	}
 
-	/** Returns the description entered by the user (may be empty). */
 	public String getHintDescription() {
 		String text = descriptionText.getText().trim();
 		return text.isEmpty() ? null : text;
 	}
 
-	/** Returns the selected severity string. */
 	public String getSeverityValue() {
 		return severityCombo.getText();
 	}
 
-	/** Returns the selected minimum Java version, or 0 if none. */
 	public int getMinJavaVersion() {
 		String text = minJavaCombo.getText().trim();
 		if (text.isEmpty()) {
@@ -291,17 +261,10 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		}
 	}
 
-	/** Returns the selected binding policy. */
-	public String getBindingPolicyValue() {
-		return bindingPolicyCombo.getText();
-	}
-
-	/** Returns the raw tags text (comma-separated). */
 	public String getTagsText() {
 		return tagsText.getText().trim();
 	}
 
-	/** Returns the template selected by the user. */
 	public SandboxHintTemplates getSelectedTemplate() {
 		return selectedTemplate;
 	}
