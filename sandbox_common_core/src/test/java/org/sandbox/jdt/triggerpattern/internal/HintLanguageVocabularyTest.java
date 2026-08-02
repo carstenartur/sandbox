@@ -29,6 +29,7 @@ class HintLanguageVocabularyTest {
 		assertEquals(HintLanguageVocabulary.directives().size(),
 				HintLanguageVocabulary.directiveNames().size());
 		assertTrue(HintLanguageVocabulary.directiveNames().contains("predicate")); //$NON-NLS-1$
+		assertTrue(HintLanguageVocabulary.directiveNames().contains("binding-policy")); //$NON-NLS-1$
 		assertTrue(HintLanguageVocabulary.directiveNames().contains("requires-plan")); //$NON-NLS-1$
 		assertEquals(HintLanguageVocabulary.operators().size(),
 				HintLanguageVocabulary.operators().stream().distinct().count());
@@ -42,6 +43,7 @@ class HintLanguageVocabularyTest {
 		BuiltInGuardRegistration.registerAll(guards);
 
 		assertEquals(guards.keySet(), HintLanguageVocabulary.builtInGuardNames());
+		assertTrue(guards.containsKey("subtypeOf")); //$NON-NLS-1$
 		for (String name : guards.keySet()) {
 			assertFalse(HintLanguageVocabulary.guardDescription(name).isBlank(), name);
 		}
