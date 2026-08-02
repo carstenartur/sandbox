@@ -36,6 +36,7 @@ class HintDirectiveVocabularyContractTest {
 				Map.entry("caseInsensitive", "<!caseInsensitive>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("suppressWarnings", "<!suppressWarnings: deprecation>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("treeKind", "<!treeKind: METHOD_DECLARATION>"), //$NON-NLS-1$ //$NON-NLS-2$
+				Map.entry("binding-policy", "<!binding-policy: required>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("requires-plan", "<!requires-plan: semantic-contract>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("foreach", "<!foreach SAMPLE: source -> target>"), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("map", "<!map SAMPLE: source => target>"), //$NON-NLS-1$ //$NON-NLS-2$
