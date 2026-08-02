@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -130,6 +131,11 @@ public final class HintProgramParser {
 			Map<String, List<StructuredRewriteAction>> actionsBySentinel,
 			Map<String, PatternKind> kindsByRuleId) throws HintParseException {
 		HintFile parsed= parser.parse(source);
+		try {
+			HintBindingPolicy.fromContent(source).ifPresent(parsed::setBindingPolicy);
+		} catch (IllegalArgumentException exception) {
+			throw new HintParseException(exception.getMessage(), 0);
+		}
 		if (actionsBySentinel.isEmpty() && kindsByRuleId.isEmpty()) {
 			return parsed;
 		}
@@ -187,6 +193,7 @@ public final class HintProgramParser {
 		copy.setDescription(source.getDescription());
 		copy.setSeverity(source.getSeverity());
 		copy.setMinJavaVersion(source.getMinJavaVersion());
+		copy.setBindingPolicy(source.getBindingPolicy());
 		copy.setTags(source.getTags());
 		copy.setCaseInsensitive(source.isCaseInsensitive());
 		copy.setSuppressWarnings(source.getSuppressWarnings());
