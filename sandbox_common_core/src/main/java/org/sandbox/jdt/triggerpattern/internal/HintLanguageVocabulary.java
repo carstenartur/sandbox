@@ -41,7 +41,8 @@ public final class HintLanguageVocabulary {
 			new Directive("caseInsensitive", "<!caseInsensitive>", "Case-insensitive literal matching"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("suppressWarnings", "<!suppressWarnings: key>", "Recognized suppression keys"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("treeKind", "<!treeKind: METHOD_DECLARATION>", "AST kinds considered by the matcher"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			new Directive("requires-plan", "<!requires-plan: contract-id>", "Required semantic-plan contract"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			new Directive("requires-plan", "<!requires-plan: contract-id>",
+					"Required semantic-plan contract; also implies fail-closed semantic bindings"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("foreach", "<!foreach NAME: source -> target>", "Generate rules from key/value pairs"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("map", "<!map NAME: source => target>", "Reusable source/replacement mapping"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("predicate", "<!predicate name($node): guard-expression>", //$NON-NLS-1$ //$NON-NLS-2$

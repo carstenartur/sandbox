@@ -23,6 +23,11 @@ import java.util.regex.Pattern;
  * it before handing the program to the normal hint backend. Duplicate identical
  * declarations are tolerated, while missing values, malformed declarations and
  * conflicting declarations are rejected. Commented declarations are ignored.</p>
+ *
+ * <p>A semantic-plan dependency implicitly requires complete semantic bindings.
+ * No second binding-policy directive is necessary: the plan-aware execution
+ * boundary re-identifies every target by a stable semantic key and fails closed
+ * when that is not possible.</p>
  */
 public final class HintPlanRequirement {
 

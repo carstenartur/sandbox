@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -108,6 +109,11 @@ public final class HintProgramParser {
 
 	private static PreparedProgram prepare(String source, RewriteActionCatalog catalog)
 			throws HintParseException {
+		try {
+			HintPlanRequirement.fromContent(source);
+		} catch (IllegalArgumentException exception) {
+			throw parseFailure(exception);
+		}
 		HintPredicatePreprocessor.Result predicates= HintPredicatePreprocessor.preprocess(source);
 		validatePredicateNames(predicates.predicates());
 		HintRuleKindPreprocessor.Result kinds=
@@ -194,6 +200,12 @@ public final class HintProgramParser {
 		source.getIncludes().forEach(copy::addInclude);
 		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);
 		return copy;
+	}
+
+	private static HintParseException parseFailure(IllegalArgumentException cause) {
+		HintParseException failure= new HintParseException(cause.getMessage(), 0);
+		failure.initCause(cause);
+		return failure;
 	}
 
 	private static void validatePredicateNames(Iterable<HintPredicateDefinition> predicates)
