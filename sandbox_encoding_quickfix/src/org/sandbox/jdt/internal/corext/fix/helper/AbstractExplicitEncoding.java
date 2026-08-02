@@ -33,12 +33,12 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TryStatement;
@@ -326,29 +326,17 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		boolean[] found = { false };
 		root.accept(new ASTVisitor() {
 			@Override
-			public boolean visit(SimpleName node) {
-				if (found[0]) {
+			public boolean visit(SimpleType node) {
+				if (!isDescendantOfAny(node, removedCatches)
+						&& node.getName() instanceof SimpleName simpleName
+						&& UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleName.getIdentifier())) {
+					found[0] = true;
 					return false;
 				}
-				if (!UNSUPPORTED_ENCODING_EXCEPTION.equals(node.getIdentifier())
-						|| hasAncestor(node, ImportDeclaration.class)
-						|| isDescendantOfAny(node, removedCatches)) {
-					return true;
-				}
-				found[0] = true;
-				return false;
+				return !found[0];
 			}
 		});
 		return found[0];
-	}
-
-	private static boolean hasAncestor(ASTNode node, Class<? extends ASTNode> ancestorType) {
-		for (ASTNode current = node.getParent(); current != null; current = current.getParent()) {
-			if (ancestorType.isInstance(current)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static boolean isDescendantOfAny(ASTNode node, Set<CatchClause> ancestors) {
