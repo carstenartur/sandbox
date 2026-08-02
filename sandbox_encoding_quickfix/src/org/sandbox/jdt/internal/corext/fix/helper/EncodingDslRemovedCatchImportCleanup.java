@@ -1,10 +1,8 @@
 /*******************************************************************************
  * Copyright (c) 2026 Carsten Hammer and others.
  *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * This program and the accompanying materials are made available under the
+ * Eclipse Public License 2.0: https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -30,21 +28,10 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
-/**
- * Finalizes import tracking for encoding transformations handled by the DSL.
- *
- * <p>The atomic DSL rewrite replaces the body of a removable encoding
- * {@code try/catch} and removes the surrounding try statement. The statements
- * remain semantically present, but the checked-exception catch clause does not.
- * Registering precisely that catch clause lets JDT's {@code ImportRemover}
- * remove {@code UnsupportedEncodingException} only when no other type use
- * survives in the compilation unit.</p>
- */
+/** Tracks catches removed by atomic encoding DSL rewrites for import cleanup. */
 public final class EncodingDslRemovedCatchImportCleanup extends CompilationUnitRewriteOperation {
-
-	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
-
-	private static final Set<String> KNOWN_ENCODINGS = Set.of(
+	private static final String EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
+	private static final Set<String> ENCODINGS = Set.of(
 			"UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			"US-ASCII", "ISO-8859-1"); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -54,67 +41,80 @@ public final class EncodingDslRemovedCatchImportCleanup extends CompilationUnitR
 		this.removedCatches = removedCatches;
 	}
 
-	/**
-	 * Creates the finalizer for DSL-matched encoding expressions.
-	 *
-	 * @param processedNodes nodes already claimed by the encoding DSL
-	 * @return a finalizer, or {@code null} when no removable catch was matched
-	 */
 	public static CompilationUnitRewriteOperation create(Set<ASTNode> processedNodes) {
-		Set<CatchClause> removedCatches = Collections.newSetFromMap(new IdentityHashMap<>());
-		for (ASTNode processedNode : processedNodes) {
-			if (!containsKnownEncodingLiteral(processedNode)) {
-				continue;
-			}
-			CatchClause removedCatch = findAtomicallyRemovedCatch(processedNode);
-			if (removedCatch != null) {
-				removedCatches.add(removedCatch);
+		Set<CatchClause> catches = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (ASTNode node : processedNodes) {
+			if (containsEncoding(node)) {
+				CatchClause catchClause = removedCatch(node);
+				if (catchClause != null) {
+					catches.add(catchClause);
+				}
 			}
 		}
-		return removedCatches.isEmpty() ? null : new EncodingDslRemovedCatchImportCleanup(removedCatches);
+		if (catches.isEmpty() || hasExternalTypeUse(catches.iterator().next().getRoot(), catches)) {
+			return null;
+		}
+		return new EncodingDslRemovedCatchImportCleanup(catches);
 	}
 
 	@Override
 	public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
-		for (CatchClause removedCatch : removedCatches) {
-			cuRewrite.getImportRemover().registerRemovedNode(removedCatch);
+		for (CatchClause catchClause : removedCatches) {
+			cuRewrite.getImportRemover().registerRemovedNode(catchClause);
 		}
 	}
 
-	private static boolean containsKnownEncodingLiteral(ASTNode node) {
+	private static boolean containsEncoding(ASTNode node) {
 		boolean[] found = { false };
 		node.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(StringLiteral literal) {
-				found[0] = KNOWN_ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));
+				found[0] = ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));
 				return !found[0];
 			}
 		});
 		return found[0];
 	}
 
-	private static CatchClause findAtomicallyRemovedCatch(ASTNode node) {
-		Statement statement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
-		if (statement == null || !(statement.getParent() instanceof Block tryBody)
-				|| !(tryBody.getParent() instanceof TryStatement tryStatement)
-				|| tryStatement.getBody() != tryBody
-				|| !(tryStatement.getParent() instanceof Block)
-				|| !tryStatement.resources().isEmpty()
-				|| tryStatement.getFinally() != null) {
-			return null;
-		}
+	private static boolean hasExternalTypeUse(ASTNode root, Set<CatchClause> catches) {
+		boolean[] found = { false };
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleType type) {
+				if (EXCEPTION.equals(type.getName().toString()) && !inside(type, catches)) {
+					found[0] = true;
+				}
+				return !found[0];
+			}
+		});
+		return found[0];
+	}
 
-		@SuppressWarnings("unchecked")
-		List<CatchClause> catchClauses = tryStatement.catchClauses();
-		if (catchClauses.size() != 1) {
+	private static boolean inside(ASTNode node, Set<CatchClause> catches) {
+		for (ASTNode current = node; current != null; current = current.getParent()) {
+			if (catches.contains(current)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static CatchClause removedCatch(ASTNode node) {
+		Statement statement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);
+		if (statement == null || !(statement.getParent() instanceof Block body)
+				|| !(body.getParent() instanceof TryStatement tryStatement)
+				|| tryStatement.getBody() != body || !(tryStatement.getParent() instanceof Block)
+				|| !tryStatement.resources().isEmpty() || tryStatement.getFinally() != null) {
 			return null;
 		}
-		CatchClause catchClause = catchClauses.get(0);
-		Type exceptionType = catchClause.getException().getType();
-		if (exceptionType instanceof SimpleType simpleType
-				&& UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleType.getName().toString())) {
-			return catchClause;
+		@SuppressWarnings("unchecked")
+		List<CatchClause> catches = tryStatement.catchClauses();
+		if (catches.size() != 1) {
+			return null;
 		}
-		return null;
+		CatchClause catchClause = catches.get(0);
+		Type type = catchClause.getException().getType();
+		return type instanceof SimpleType simpleType && EXCEPTION.equals(simpleType.getName().toString())
+				? catchClause : null;
 	}
 }
