@@ -34,10 +34,9 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
 class StructuredRewriteActionParserTest {
 
 	@Test
-	void parsesOrderedActionsAndTypedValueExpressions() throws HintParseException {
+	void parsesOrderedPlanAwareActionsAndTypedValueExpressions() throws HintParseException {
 		String source= """
 				<!id: structured.demo>
-				<!binding-policy: required>
 				<!requires-plan: structured/demo>
 				void $name()
 				=>! addAnnotation(target=$name,
@@ -98,16 +97,6 @@ class StructuredRewriteActionParserTest {
 				""");
 		assertEquals("generateAdapter", hintFile.getRules().get(0).alternatives().get(0) //$NON-NLS-1$
 				.structuredActions().get(0).name());
-	}
-
-	@Test
-	void rejectsPlanAwareProgramWithoutRequiredBindingPolicy() {
-		assertThrows(HintParseException.class, () -> new HintProgramParser().parse("""
-				<!requires-plan: unsafe-demo>
-				void $name()
-				=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test")
-				;;
-				"""));
 	}
 
 	@Test
