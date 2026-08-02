@@ -23,6 +23,10 @@ import java.util.regex.Matcher;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
+import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression.Evaluation;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression.TruthValue;
+
 /** Batch processor for applying all transformation rules from a {@link HintFile}. */
 public final class BatchTransformationProcessor {
 
@@ -71,16 +75,30 @@ public final class BatchTransformationProcessor {
 		}
 
 		SemanticRewritePlan effectivePlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;
+		boolean strictBindings= hintFile.getBindingPolicy() == HintBindingPolicy.REQUIRED
+				|| !effectivePlan.isEmpty();
 		List<TransformationResult> results= new ArrayList<>();
 		for (Map.Entry<TransformationRule, List<Match>> entry : allMatches.entrySet()) {
 			TransformationRule rule= entry.getKey();
 			for (Match match : entry.getValue()) {
 				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions, effectivePlan);
-				if (rule.sourceGuard() != null && !rule.sourceGuard().evaluate(guardCtx)) {
-					continue;
+				if (rule.sourceGuard() != null) {
+					Evaluation sourceEvaluation= rule.sourceGuard().evaluateDetailed(guardCtx);
+					if (strictBindings && sourceEvaluation.truthValue() == TruthValue.UNKNOWN) {
+						results.add(unknownResult(rule, match, guardCtx, cu));
+						continue;
+					}
+					if (!sourceEvaluation.compatibilityValue()) {
+						continue;
+					}
 				}
 
-				Optional<RewriteAlternative> alternative= rule.findMatchingAlternative(guardCtx);
+				AlternativeSelection selection= selectAlternative(rule, guardCtx, strictBindings);
+				if (selection.unknown()) {
+					results.add(unknownResult(rule, match, guardCtx, cu));
+					continue;
+				}
+				Optional<RewriteAlternative> alternative= selection.alternative();
 				String replacement= alternative.isPresent() && alternative.get().hasTextReplacement()
 						? substituteBindings(alternative.get().replacementPattern(), match)
 						: null;
@@ -88,10 +106,43 @@ public final class BatchTransformationProcessor {
 						.map(RewriteAlternative::structuredActions).orElse(List.of());
 				ImportDirective imports= rule.hasImportDirective() ? rule.getImportDirective() : null;
 				results.add(new TransformationResult(rule, match, replacement, actions, imports,
-						rule.getDescription(), computeLineNumber(cu, match)));
+						rule.getDescription(), computeLineNumber(cu, match), List.of()));
 			}
 		}
 		return results;
+	}
+
+	private static AlternativeSelection selectAlternative(TransformationRule rule,
+			GuardContext context, boolean strictBindings) {
+		for (RewriteAlternative alternative : rule.alternatives()) {
+			if (alternative.isOtherwise()) {
+				return new AlternativeSelection(Optional.of(alternative), false);
+			}
+			if (alternative.condition() == null) {
+				continue;
+			}
+			Evaluation evaluation= alternative.condition().evaluateDetailed(context);
+			if (strictBindings && evaluation.truthValue() == TruthValue.UNKNOWN) {
+				return new AlternativeSelection(Optional.empty(), true);
+			}
+			if (evaluation.compatibilityValue()) {
+				return new AlternativeSelection(Optional.of(alternative), false);
+			}
+		}
+		return new AlternativeSelection(Optional.empty(), false);
+	}
+
+	private static TransformationResult unknownResult(TransformationRule rule, Match match,
+			GuardContext context, CompilationUnit cu) {
+		List<UnknownSemanticRequirement> unknowns= context.getUnknownSemanticRequirements();
+		String ruleName= rule.getRuleId() == null ? rule.sourcePattern().getValue() : rule.getRuleId();
+		String details= unknowns.stream()
+				.map(requirement -> requirement.guardName() + ": " + requirement.detail()) //$NON-NLS-1$
+				.distinct().collect(java.util.stream.Collectors.joining("; ")); //$NON-NLS-1$
+		String description= "Cannot apply binding-required rule " + ruleName //$NON-NLS-1$
+				+ " because semantic information is unresolved: " + details; //$NON-NLS-1$
+		return new TransformationResult(rule, match, null, List.of(), null, description,
+				cu.getLineNumber(match.getOffset()), unknowns);
 	}
 
 	private String substituteBindings(String pattern, Match match) {
@@ -157,20 +208,34 @@ public final class BatchTransformationProcessor {
 		return copy;
 	}
 
+	private record AlternativeSelection(Optional<RewriteAlternative> alternative, boolean unknown) {
+	}
+
 	/** Result of applying one selected rewrite alternative to one match. */
 	public record TransformationResult(TransformationRule rule, Match match, String replacement,
 			List<StructuredRewriteAction> structuredActions, ImportDirective importDirective,
-			String description, int lineNumber) {
+			String description, int lineNumber,
+			List<UnknownSemanticRequirement> unknownSemanticRequirements) {
 
 		public TransformationResult {
 			structuredActions= List.copyOf(structuredActions == null ? List.of() : structuredActions);
 			importDirective= copyImportDirective(importDirective);
+			unknownSemanticRequirements= List.copyOf(
+					unknownSemanticRequirements == null ? List.of() : unknownSemanticRequirements);
 		}
 
 		/** Backward-compatible constructor for text-only transformation results. */
 		public TransformationResult(TransformationRule rule, Match match, String replacement,
 				ImportDirective importDirective, String description, int lineNumber) {
-			this(rule, match, replacement, List.of(), importDirective, description, lineNumber);
+			this(rule, match, replacement, List.of(), importDirective, description, lineNumber, List.of());
+		}
+
+		/** Backward-compatible constructor for text and structured transformation results. */
+		public TransformationResult(TransformationRule rule, Match match, String replacement,
+				List<StructuredRewriteAction> structuredActions, ImportDirective importDirective,
+				String description, int lineNumber) {
+			this(rule, match, replacement, structuredActions, importDirective, description,
+					lineNumber, List.of());
 		}
 
 		public ImportDirective importDirective() {
@@ -191,6 +256,10 @@ public final class BatchTransformationProcessor {
 
 		public boolean hasImportDirective() {
 			return importDirective != null && !importDirective.isEmpty();
+		}
+
+		public boolean isSemanticUnknown() {
+			return !unknownSemanticRequirements.isEmpty();
 		}
 
 		public String matchedText() {
