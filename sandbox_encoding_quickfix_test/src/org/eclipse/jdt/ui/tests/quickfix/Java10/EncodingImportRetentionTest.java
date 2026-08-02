@@ -179,7 +179,7 @@ public class EncodingImportRetentionTest {
 		}, null);
 	}
 
-	private void enableExplicitEncodingCleanup() {
+	private void enableExplicitEncodingCleanup() throws CoreException {
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
