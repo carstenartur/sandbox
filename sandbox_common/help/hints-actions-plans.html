@@ -37,12 +37,11 @@ void $method($params$) :: plannedRole($method, "TEST_METHOD")
 </ul>
 <h2>Semantic plan model</h2>
 <p><code>SemanticRewritePlan</code> is an immutable authorization graph. Stable <code>NodeKey</code> values identify types, methods, constructors, fields and exact call sites. A plan can assign roles, typed facts and directed relation occurrences with typed attributes. Relation order and duplicate occurrences are preserved.</p>
-<h2>Binding contract</h2>
-<p>Ordinary local hints may declare <code>&lt;!binding-policy: optional&gt;</code>, which preserves compatibility when semantic bindings are unavailable. Migrations whose correctness depends on overload, owner, type or hierarchy information must declare <code>&lt;!binding-policy: required&gt;</code>.</p>
-<p>Every program with a <code>requires-plan</code> directive is parsed fail-closed: missing, optional, malformed, unknown or conflicting binding policies are rejected before matching or rewriting.</p>
+<h2>Plan dependency and bindings</h2>
+<p>The declaration <code>&lt;!requires-plan: contract-id&gt;</code> is the complete plan-aware safety contract. It both selects the required semantic plan and implies fail-closed semantic target resolution. No separate binding-policy declaration is needed.</p>
+<p>Ordinary programs without a plan dependency keep the existing compatibility behaviour. A general tri-state guard result and unresolved-binding diagnostics are not part of the current boolean guard API and remain future work.</p>
 <h2>Declaring a plan dependency</h2>
-<pre>&lt;!binding-policy: required&gt;
-&lt;!requires-plan: junit3-hierarchy&gt;
+<pre>&lt;!requires-plan: junit3-hierarchy&gt;
 
 @id: hierarchy.root
 @kind: TYPE_DECLARATION
