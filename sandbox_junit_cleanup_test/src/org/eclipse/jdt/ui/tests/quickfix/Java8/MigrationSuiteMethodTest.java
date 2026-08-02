@@ -141,6 +141,57 @@ public class MigrationSuiteMethodTest {
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
+	@Test
+	public void keepsNestedAggregatorUntouched() throws CoreException {
+		IPackageFragment pack= fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		createTestClasses(pack);
+		ICompilationUnit cu= pack.createCompilationUnit("Outer.java", //$NON-NLS-1$
+				"""
+				package test;
+				import junit.framework.Test;
+				import junit.framework.TestSuite;
+
+				public class Outer {
+					public static class AllTests {
+						public static Test suite() {
+							return new TestSuite(FooTest.class);
+						}
+					}
+				}
+				""", false, null); //$NON-NLS-1$
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
+	@Test
+	public void keepsAggregatorWithExplicitSuperclassUntouched() throws CoreException {
+		IPackageFragment pack= fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
+		createTestClasses(pack);
+		ICompilationUnit cu= pack.createCompilationUnit("AllTests.java", //$NON-NLS-1$
+				"""
+				package test;
+				import junit.framework.Test;
+				import junit.framework.TestSuite;
+
+				class SuiteBase {
+				}
+
+				public class AllTests extends SuiteBase {
+					public static Test suite() {
+						return new TestSuite(FooTest.class);
+					}
+				}
+				""", false, null); //$NON-NLS-1$
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE);
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
+	}
+
 	private static void createTestClasses(IPackageFragment pack) throws CoreException {
 		pack.createCompilationUnit("FooTest.java", //$NON-NLS-1$
 				"""
