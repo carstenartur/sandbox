@@ -24,7 +24,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
-import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -33,9 +32,7 @@ import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 
-/**
- * Tests for {@link HintFileSerializer}.
- */
+/** Tests for {@link HintFileSerializer}. */
 class HintFileSerializerTest {
 
 	private final HintFileSerializer serializer = new HintFileSerializer();
@@ -56,7 +53,6 @@ class HintFileSerializerTest {
 		hintFile.setDescription("A test rule");
 		hintFile.setSeverity(Severity.WARNING);
 		hintFile.setMinJavaVersion(11);
-		hintFile.setBindingPolicy(HintBindingPolicy.REQUIRED);
 		hintFile.setTags(List.of("performance", "modernization"));
 
 		String result = serializer.serialize(hintFile);
@@ -65,32 +61,13 @@ class HintFileSerializerTest {
 		assertTrue(result.contains("<!description: A test rule>"));
 		assertTrue(result.contains("<!severity: warning>"));
 		assertTrue(result.contains("<!minJavaVersion: 11>"));
-		assertTrue(result.contains("<!binding-policy: required>"));
 		assertTrue(result.contains("<!tags: performance, modernization>"));
-	}
-
-	@Test
-	void testSerializeBindingPolicyRoundTripThroughProgramParser() throws HintParseException {
-		HintFile hintFile = new HintFile();
-		hintFile.setBindingPolicy(HintBindingPolicy.OPTIONAL);
-
-		String result = serializer.serialize(hintFile);
-		HintFile reparsed = new HintProgramParser().parseHintFile(result + """
-
-				$x
-				=> $x
-				;;
-				"""); //$NON-NLS-1$
-
-		assertTrue(result.contains("<!binding-policy: optional>"));
-		assertEquals(HintBindingPolicy.OPTIONAL, reparsed.getBindingPolicy());
 	}
 
 	@Test
 	void testSerializeWithDefaultSeverityOmitted() {
 		HintFile hintFile = new HintFile();
 		hintFile.setId("test.rule");
-		// INFO is default — should not appear in output
 		hintFile.setSeverity(Severity.INFO);
 
 		String result = serializer.serialize(hintFile);
