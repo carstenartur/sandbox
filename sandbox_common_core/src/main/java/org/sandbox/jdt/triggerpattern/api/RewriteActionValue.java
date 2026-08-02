@@ -17,18 +17,23 @@ import java.util.Objects;
 /**
  * Immutable value expression used by a {@link StructuredRewriteAction}.
  *
- * <p>Action values remain declarative. They can reference one pattern binding,
- * read a typed semantic-plan fact, or describe Java annotation expressions such
- * as class literals, names and arrays without embedding arbitrary Java code.</p>
+ * <p>Action values remain declarative. They can reference the primary match,
+ * one pattern binding, a typed semantic-plan fact, or Java annotation values
+ * without embedding arbitrary Java code.</p>
  */
 public sealed interface RewriteActionValue permits RewriteActionValue.Literal,
-		RewriteActionValue.Binding, RewriteActionValue.PlanValue,
-		RewriteActionValue.ClassLiteral, RewriteActionValue.Name,
-		RewriteActionValue.ListValue {
+		RewriteActionValue.MatchedNode, RewriteActionValue.Binding,
+		RewriteActionValue.PlanValue, RewriteActionValue.ClassLiteral,
+		RewriteActionValue.Name, RewriteActionValue.ListValue {
 
 	/** Creates a typed literal value. */
 	static Literal literal(SemanticPlanValue value) {
 		return new Literal(value);
+	}
+
+	/** Refers to the rule's primary matched AST node. */
+	static MatchedNode matchedNode() {
+		return MatchedNode.INSTANCE;
 	}
 
 	/** Creates a reference to an exact pattern binding such as {@code $method}. */
@@ -66,6 +71,11 @@ public sealed interface RewriteActionValue permits RewriteActionValue.Literal,
 		public Literal {
 			Objects.requireNonNull(value);
 		}
+	}
+
+	/** Internal value denoting the rule's primary matched node. */
+	record MatchedNode() implements RewriteActionValue {
+		private static final MatchedNode INSTANCE= new MatchedNode();
 	}
 
 	/** Exact pattern-binding reference. */
