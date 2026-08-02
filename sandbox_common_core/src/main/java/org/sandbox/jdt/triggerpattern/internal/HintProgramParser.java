@@ -19,6 +19,7 @@ import java.util.Set;
 
 import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -109,6 +110,11 @@ public final class HintProgramParser {
 
 	private static PreparedProgram prepare(String source, RewriteActionCatalog catalog)
 			throws HintParseException {
+		try {
+			HintPlanRequirement.fromContent(source);
+		} catch (IllegalArgumentException exception) {
+			throw new HintParseException(exception.getMessage(), 0);
+		}
 		HintPredicatePreprocessor.Result predicates= HintPredicatePreprocessor.preprocess(source);
 		validatePredicateNames(predicates.predicates());
 		HintRuleKindPreprocessor.Result kinds=
