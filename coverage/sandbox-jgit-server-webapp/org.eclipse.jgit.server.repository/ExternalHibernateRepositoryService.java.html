@@ -11,9 +11,11 @@
 package org.eclipse.jgit.server.repository;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jgit.lib.Repository;
 
@@ -33,76 +35,98 @@ import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
 public final class ExternalHibernateRepositoryService implements SandboxRepositoryService {
 
 	private final HibernateRepositoryFactory repositoryFactory;
-<span class="fc" id="L36">	private final Map&lt;String, HibernateGitStorage&gt; storages= new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L38">	private final Object lifecycleLock= new Object();</span>
+<span class="fc" id="L39">	private final Map&lt;String, HibernateGitStorage&gt; storages= new LinkedHashMap&lt;&gt;();</span>
+	private boolean closed;
 
 	/** Creates an adapter for the released public repository factory. */
-<span class="fc" id="L39">	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {</span>
-<span class="fc" id="L40">		this.repositoryFactory= Objects.requireNonNull(repositoryFactory, &quot;repositoryFactory&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L41">	}</span>
+<span class="fc" id="L43">	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {</span>
+<span class="fc" id="L44">		this.repositoryFactory= Objects.requireNonNull(repositoryFactory, &quot;repositoryFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L45">	}</span>
 
 	@Override
 	public Repository openOrCreate(String name) throws IOException {
-<span class="fc" id="L45">		return storage(name).repository();</span>
+<span class="fc" id="L49">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L50">			return storageLocked(name).repository();</span>
+		}
 	}
 
 	@Override
 	public SandboxRepositoryInfo info(String name) throws IOException {
-<span class="fc" id="L50">		String normalized= normalize(name);</span>
-<span class="fc" id="L51">		Repository repository= storage(normalized).repository();</span>
-<span class="fc" id="L52">		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+<span class="fc" id="L56">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L57">			String normalized= normalize(name);</span>
+<span class="fc" id="L58">			Repository repository= storageLocked(normalized).repository();</span>
+<span class="fc" id="L59">			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+		}
 	}
 
 	@Override
 	public SandboxRepositoryInfo setDescription(String name, String description) throws IOException {
-<span class="fc" id="L57">		String normalized= normalize(name);</span>
-<span class="fc" id="L58">		Repository repository= storage(normalized).repository();</span>
-<span class="fc" id="L59">		repository.setGitwebDescription(description);</span>
-<span class="fc" id="L60">		return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+<span class="fc" id="L65">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L66">			String normalized= normalize(name);</span>
+<span class="fc" id="L67">			Repository repository= storageLocked(normalized).repository();</span>
+<span class="fc" id="L68">			repository.setGitwebDescription(description);</span>
+<span class="fc" id="L69">			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+		}
 	}
 
 	@Override
 	public boolean isOpen(String name) {
-<span class="fc" id="L65">		return storages.containsKey(normalize(name));</span>
+<span class="fc" id="L75">		synchronized (lifecycleLock) {</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">			return !closed &amp;&amp; storages.containsKey(normalize(name));</span>
+		}
 	}
 
 	@Override
 	public void close() {
-<span class="fc" id="L70">		RuntimeException failure= null;</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (HibernateGitStorage storage : storages.values()) {</span>
-			try {
-<span class="fc" id="L73">				storage.close();</span>
-<span class="fc" id="L74">			} catch (RuntimeException exception) {</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">				if (failure == null) {</span>
-<span class="fc" id="L76">					failure= exception;</span>
-				} else {
-<span class="nc" id="L78">					failure.addSuppressed(exception);</span>
-				}
-<span class="fc" id="L80">			}</span>
-<span class="fc" id="L81">		}</span>
-<span class="fc" id="L82">		storages.clear();</span>
-<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (failure != null) {</span>
-<span class="fc" id="L84">			throw failure;</span>
-		}
-<span class="fc" id="L86">	}</span>
+		List&lt;HibernateGitStorage&gt; storagesToClose;
+<span class="fc" id="L83">		synchronized (lifecycleLock) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (closed) {</span>
+<span class="fc" id="L85">				return;</span>
+			}
+<span class="fc" id="L87">			closed= true;</span>
+<span class="fc" id="L88">			storagesToClose= new ArrayList&lt;&gt;(storages.values());</span>
+<span class="fc" id="L89">			storages.clear();</span>
+<span class="fc" id="L90">		}</span>
 
-	private HibernateGitStorage storage(String name) {
-<span class="fc" id="L89">		String normalized= normalize(name);</span>
-<span class="fc" id="L90">		return storages.computeIfAbsent(normalized,</span>
-<span class="fc" id="L91">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
+<span class="fc" id="L92">		RuntimeException failure= null;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		for (HibernateGitStorage storage : storagesToClose) {</span>
+			try {
+<span class="fc" id="L95">				storage.close();</span>
+<span class="fc" id="L96">			} catch (RuntimeException exception) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">				if (failure == null) {</span>
+<span class="fc" id="L98">					failure= exception;</span>
+				} else {
+<span class="fc" id="L100">					failure.addSuppressed(exception);</span>
+				}
+<span class="fc" id="L102">			}</span>
+<span class="fc" id="L103">		}</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (failure != null) {</span>
+<span class="fc" id="L105">			throw failure;</span>
+		}
+<span class="fc" id="L107">	}</span>
+
+	private HibernateGitStorage storageLocked(String name) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (closed) {</span>
+<span class="fc" id="L111">			throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L113">		String normalized= normalize(name);</span>
+<span class="fc" id="L114">		return storages.computeIfAbsent(normalized,</span>
+<span class="fc" id="L115">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
 	}
 
 	private static String normalize(String name) {
-<span class="fc" id="L95">		String normalized= Objects.requireNonNull(name, &quot;name&quot;).strip(); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (normalized.startsWith(&quot;/&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L97">			normalized= normalized.substring(1);</span>
+<span class="fc" id="L119">		String normalized= Objects.requireNonNull(name, &quot;name&quot;).strip(); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		if (normalized.startsWith(&quot;/&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L121">			normalized= normalized.substring(1);</span>
 		}
-<span class="fc bfc" id="L99" title="All 2 branches covered.">		if (normalized.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L100">			normalized= normalized.substring(0, normalized.length() - 4);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (normalized.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L124">			normalized= normalized.substring(0, normalized.length() - 4);</span>
 		}
-<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
-<span class="nc" id="L103">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
+<span class="nc" id="L127">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L105">		return normalized;</span>
+<span class="fc" id="L129">		return normalized;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

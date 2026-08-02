@@ -12,11 +12,9 @@ package org.sandbox.jdt.internal.corext.fix;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
 
-import org.eclipse.jdt.core.dom.Annotation;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
+import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
@@ -31,46 +29,17 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		cleanupId = &quot;cleanup.junit.parameterized&quot;,
 		description = &quot;Migrate @RunWith(Parameterized.class) to @ParameterizedTest&quot;,
 		displayName = &quot;JUnit 4 @RunWith(Parameterized) → JUnit 5 @ParameterizedTest&quot;)
-<span class="fc" id="L34">final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlugin {</span>
-
-	private static final String PARAMETERS_ANNOTATION= &quot;org.junit.runners.Parameterized.Parameters&quot;; //$NON-NLS-1$
+<span class="fc" id="L32">final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlugin {</span>
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
-<span class="fc" id="L40">		JunitHolder holder= super.createHolder(match);</span>
-<span class="pc bpc" id="L41" title="2 of 4 branches missed.">		if (holder == null || !(holder.getAdditionalInfo() instanceof TypeDeclaration type)) {</span>
-<span class="nc" id="L42">			return holder;</span>
+<span class="fc" id="L36">		JunitHolder holder= super.createHolder(match);</span>
+<span class="pc bpc" id="L37" title="2 of 4 branches missed.">		if (holder == null || !(holder.getAdditionalInfo() instanceof TypeDeclaration type)) {</span>
+<span class="nc" id="L38">			return holder;</span>
 		}
-<span class="fc bfc" id="L44" title="All 2 branches covered.">		return hasSupportedLocalContract(type) ? holder : null;</span>
-	}
-
-	private static boolean hasSupportedLocalContract(TypeDeclaration type) {
-<span class="fc" id="L48">		int providers= 0;</span>
-<span class="fc" id="L49">		int constructors= 0;</span>
-<span class="fc" id="L50">		boolean parameterizedConstructor= false;</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
-<span class="fc" id="L53">				constructors++;</span>
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">				parameterizedConstructor= !method.parameters().isEmpty();</span>
-<span class="fc" id="L55">				continue;</span>
-			}
-<span class="fc bfc" id="L57" title="All 2 branches covered.">			for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L58" title="All 4 branches covered.">				if (modifier instanceof Annotation annotation &amp;&amp; isParametersAnnotation(annotation)) {</span>
-<span class="fc" id="L59">					providers++;</span>
-<span class="fc" id="L60">					break;</span>
-				}
-			}
-		}
-<span class="pc bpc" id="L64" title="1 of 6 branches missed.">		return providers == 1 &amp;&amp; constructors == 1 &amp;&amp; parameterizedConstructor;</span>
-	}
-
-	private static boolean isParametersAnnotation(Annotation annotation) {
-<span class="fc" id="L68">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="fc" id="L70">			return PARAMETERS_ANNOTATION.equals(binding.getQualifiedName());</span>
-		}
-<span class="nc" id="L72">		String name= annotation.getTypeName().getFullyQualifiedName();</span>
-<span class="nc bnc" id="L73" title="All 4 branches missed.">		return &quot;Parameters&quot;.equals(name) || PARAMETERS_ANNOTATION.equals(name); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">		return ParameterizedMigrationEligibility.assess(type).eligible()</span>
+<span class="fc" id="L41">				? holder</span>
+<span class="fc" id="L42">				: null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -67,15 +67,15 @@ final class BuiltInStructuredRewriteActions {
 <span class="fc" id="L67">		String importedName= context.cuRewrite().getImportRewrite().addImport(annotationName);</span>
 		Annotation annotation;
 <span class="fc" id="L69">		RewriteActionValue value= action.arguments().get(&quot;value&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (value == null) {</span>
 <span class="fc" id="L71">			MarkerAnnotation marker= ast.newMarkerAnnotation();</span>
 <span class="fc" id="L72">			marker.setTypeName(ast.newName(importedName));</span>
 <span class="fc" id="L73">			annotation= marker;</span>
 <span class="fc" id="L74">		} else {</span>
-<span class="nc" id="L75">			SingleMemberAnnotation single= ast.newSingleMemberAnnotation();</span>
-<span class="nc" id="L76">			single.setTypeName(ast.newName(importedName));</span>
-<span class="nc" id="L77">			single.setValue(context.createExpression(value));</span>
-<span class="nc" id="L78">			annotation= single;</span>
+<span class="fc" id="L75">			SingleMemberAnnotation single= ast.newSingleMemberAnnotation();</span>
+<span class="fc" id="L76">			single.setTypeName(ast.newName(importedName));</span>
+<span class="fc" id="L77">			single.setValue(context.createExpression(value));</span>
+<span class="fc" id="L78">			annotation= single;</span>
 		}
 <span class="fc" id="L80">		modifiers(context.cuRewrite().getASTRewrite(), declaration, context)</span>
 <span class="fc" id="L81">				.insertFirst(annotation, context.editGroup());</span>
@@ -83,19 +83,19 @@ final class BuiltInStructuredRewriteActions {
 
 	private static void removeAnnotation(StructuredRewriteAction action,
 			StructuredRewriteActionContext context) throws CoreException {
-<span class="nc" id="L86">		BodyDeclaration declaration= declarationTarget(context,</span>
-<span class="nc" id="L87">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L88">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L89">		String expectedSimple= simpleName(expected);</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="nc" id="L92">				String actual= annotationName(annotation);</span>
-<span class="nc bnc" id="L93" title="All 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
-<span class="nc" id="L94">					context.cuRewrite().getASTRewrite().remove(annotation, context.editGroup());</span>
-<span class="nc" id="L95">					context.cuRewrite().getImportRemover().registerRemovedNode(annotation);</span>
-<span class="nc" id="L96">					context.cuRewrite().getImportRemover()</span>
-<span class="nc" id="L97">							.applyRemoves(context.cuRewrite().getImportRewrite());</span>
-<span class="nc" id="L98">					return;</span>
+<span class="fc" id="L86">		BodyDeclaration declaration= declarationTarget(context,</span>
+<span class="fc" id="L87">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L88">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L89">		String expectedSimple= simpleName(expected);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L92">				String actual= annotationName(annotation);</span>
+<span class="pc bpc" id="L93" title="3 of 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
+<span class="fc" id="L94">					context.cuRewrite().getASTRewrite().remove(annotation, context.editGroup());</span>
+<span class="fc" id="L95">					context.cuRewrite().getImportRemover().registerRemovedNode(annotation);</span>
+<span class="fc" id="L96">					context.cuRewrite().getImportRemover()</span>
+<span class="fc" id="L97">							.applyRemoves(context.cuRewrite().getImportRewrite());</span>
+<span class="fc" id="L98">					return;</span>
 				}
 			}
 		}
@@ -134,10 +134,10 @@ final class BuiltInStructuredRewriteActions {
 
 	private static void removeSupertype(StructuredRewriteAction action,
 			StructuredRewriteActionContext context) throws CoreException {
-<span class="nc" id="L137">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L138">		String expected= context.resolveString(action.requiredArgument(&quot;type&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L139">		rewriteSupertype(target, expected, null, context);</span>
-<span class="nc" id="L140">	}</span>
+<span class="fc" id="L137">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L138">		String expected= context.resolveString(action.requiredArgument(&quot;type&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L139">		rewriteSupertype(target, expected, null, context);</span>
+<span class="fc" id="L140">	}</span>
 
 	private static void replaceSupertype(StructuredRewriteAction action,
 			StructuredRewriteActionContext context) throws CoreException {
@@ -230,16 +230,16 @@ final class BuiltInStructuredRewriteActions {
 
 	private static void rewriteSupertype(ASTNode target, String expected, String replacement,
 			StructuredRewriteActionContext context) throws CoreException {
-<span class="nc" id="L233">		ASTNode current= target;</span>
-<span class="nc bnc" id="L234" title="All 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)</span>
-<span class="nc bnc" id="L235" title="All 4 branches missed.">				&amp;&amp; !(current instanceof EnumDeclaration) &amp;&amp; !(current instanceof RecordDeclaration)) {</span>
-<span class="nc" id="L236">			current= current.getParent();</span>
+<span class="fc" id="L233">		ASTNode current= target;</span>
+<span class="pc bpc" id="L234" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">				&amp;&amp; !(current instanceof EnumDeclaration) &amp;&amp; !(current instanceof RecordDeclaration)) {</span>
+<span class="fc" id="L236">			current= current.getParent();</span>
 		}
-<span class="nc bnc" id="L238" title="All 2 branches missed.">		if (current instanceof TypeDeclaration type) {</span>
-<span class="nc" id="L239">			Type superclass= type.getSuperclassType();</span>
-<span class="nc bnc" id="L240" title="All 4 branches missed.">			if (superclass != null &amp;&amp; matchesType(superclass, expected)) {</span>
-<span class="nc" id="L241">				rewriteType(superclass, replacement, context);</span>
-<span class="nc" id="L242">				return;</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		if (current instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L239">			Type superclass= type.getSuperclassType();</span>
+<span class="pc bpc" id="L240" title="2 of 4 branches missed.">			if (superclass != null &amp;&amp; matchesType(superclass, expected)) {</span>
+<span class="fc" id="L241">				rewriteType(superclass, replacement, context);</span>
+<span class="fc" id="L242">				return;</span>
 			}
 <span class="nc bnc" id="L244" title="All 2 branches missed.">			if (rewriteInterface(type.superInterfaceTypes(), expected, replacement, context)) {</span>
 <span class="nc" id="L245">				return;</span>
@@ -269,33 +269,33 @@ final class BuiltInStructuredRewriteActions {
 
 	private static void rewriteType(Type existing, String replacement,
 			StructuredRewriteActionContext context) {
-<span class="nc bnc" id="L272" title="All 2 branches missed.">		if (replacement == null) {</span>
-<span class="nc" id="L273">			context.cuRewrite().getASTRewrite().remove(existing, context.editGroup());</span>
-<span class="nc" id="L274">		} else {</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">		if (replacement == null) {</span>
+<span class="fc" id="L273">			context.cuRewrite().getASTRewrite().remove(existing, context.editGroup());</span>
+<span class="fc" id="L274">		} else {</span>
 <span class="nc" id="L275">			String imported= context.cuRewrite().getImportRewrite().addImport(replacement);</span>
 <span class="nc" id="L276">			Type newType= context.ast().newSimpleType(context.ast().newName(imported));</span>
 <span class="nc" id="L277">			context.cuRewrite().getASTRewrite().replace(existing, newType, context.editGroup());</span>
 		}
-<span class="nc" id="L279">		context.cuRewrite().getImportRemover().registerRemovedNode(existing);</span>
-<span class="nc" id="L280">		context.cuRewrite().getImportRemover().applyRemoves(context.cuRewrite().getImportRewrite());</span>
-<span class="nc" id="L281">	}</span>
+<span class="fc" id="L279">		context.cuRewrite().getImportRemover().registerRemovedNode(existing);</span>
+<span class="fc" id="L280">		context.cuRewrite().getImportRemover().applyRemoves(context.cuRewrite().getImportRewrite());</span>
+<span class="fc" id="L281">	}</span>
 
 	private static boolean matchesType(Type type, String expected) {
-<span class="nc" id="L284">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="nc bnc" id="L285" title="All 2 branches missed.">		if (binding == null) {</span>
+<span class="fc" id="L284">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		if (binding == null) {</span>
 <span class="nc" id="L286">			return false;</span>
 		}
-<span class="nc" id="L288">		ITypeBinding erasure= binding.getErasure();</span>
-<span class="nc bnc" id="L289" title="All 2 branches missed.">		ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
-<span class="nc bnc" id="L290" title="All 4 branches missed.">		return declaration != null &amp;&amp; (expected.equals(declaration.getQualifiedName())</span>
+<span class="fc" id="L288">		ITypeBinding erasure= binding.getErasure();</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
+<span class="pc bpc" id="L290" title="2 of 4 branches missed.">		return declaration != null &amp;&amp; (expected.equals(declaration.getQualifiedName())</span>
 <span class="nc bnc" id="L291" title="All 2 branches missed.">				|| expected.equals(declaration.getName()));</span>
 	}
 
 	private static ListRewrite modifiers(ASTRewrite rewrite, BodyDeclaration declaration,
 			StructuredRewriteActionContext context) throws CoreException {
 		ChildListPropertyDescriptor property;
-<span class="pc bpc" id="L297" title="1 of 2 branches missed.">		if (declaration instanceof TypeDeclaration) {</span>
-<span class="nc" id="L298">			property= TypeDeclaration.MODIFIERS2_PROPERTY;</span>
+<span class="fc bfc" id="L297" title="All 2 branches covered.">		if (declaration instanceof TypeDeclaration) {</span>
+<span class="fc" id="L298">			property= TypeDeclaration.MODIFIERS2_PROPERTY;</span>
 <span class="pc bpc" id="L299" title="1 of 2 branches missed.">		} else if (declaration instanceof EnumDeclaration) {</span>
 <span class="nc" id="L300">			property= EnumDeclaration.MODIFIERS2_PROPERTY;</span>
 <span class="pc bpc" id="L301" title="1 of 2 branches missed.">		} else if (declaration instanceof AnnotationTypeDeclaration) {</span>

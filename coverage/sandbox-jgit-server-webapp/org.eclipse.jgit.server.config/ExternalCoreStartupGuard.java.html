@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalCoreStartupGuard.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.config</a> &gt; <span class="el_source">ExternalCoreStartupGuard.java</span></div><h1>ExternalCoreStartupGuard.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.jgit.server.config;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Statement;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+
+import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations;
+
+/**
+ * Read-only startup gate for the released Core persistence context.
+ *
+ * &lt;p&gt;The external backend is accepted only after a normal Core Flyway history
+ * exists without failed rows and Hibernate is configured for schema validation.
+ * The guard performs no migration and starts no Hibernate services.&lt;/p&gt;
+ */
+final class ExternalCoreStartupGuard {
+
+	private static final String CONNECTION_URL= &quot;hibernate.connection.url&quot;; //$NON-NLS-1$
+	private static final String CONNECTION_USER= &quot;hibernate.connection.username&quot;; //$NON-NLS-1$
+	private static final String CONNECTION_PASSWORD= &quot;hibernate.connection.password&quot;; //$NON-NLS-1$
+	private static final String CONNECTION_DRIVER= &quot;hibernate.connection.driver_class&quot;; //$NON-NLS-1$
+	private static final String DEFAULT_SCHEMA= &quot;hibernate.default_schema&quot;; //$NON-NLS-1$
+	private static final String DDL_AUTO= &quot;hibernate.hbm2ddl.auto&quot;; //$NON-NLS-1$
+
+	private ExternalCoreStartupGuard() {
+	}
+
+	/** Require migration evidence and validate-only Hibernate startup. */
+	static void requireReady(Properties properties) {
+<span class="fc" id="L50">		Objects.requireNonNull(properties, &quot;properties&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L51">		String ddlAuto= properties.getProperty(DDL_AUTO);</span>
+<span class="pc bpc" id="L52" title="1 of 4 branches missed.">		if (ddlAuto == null || !&quot;validate&quot;.equalsIgnoreCase(ddlAuto.strip())) { //$NON-NLS-1$</span>
+<span class="fc" id="L53">			throw new IllegalStateException(</span>
+					&quot;External Core requires hibernate.hbm2ddl.auto=validate; &quot; //$NON-NLS-1$
+							+ &quot;run the matching Flyway adoption or installation first.&quot;); //$NON-NLS-1$
+		}
+		try {
+<span class="fc" id="L58">			inspectHistory(properties);</span>
+<span class="nc" id="L59">		} catch (ClassNotFoundException | SQLException exception) {</span>
+<span class="nc" id="L60">			throw new IllegalStateException(</span>
+					&quot;Could not verify the released Core Flyway history before Hibernate startup.&quot;, //$NON-NLS-1$
+					exception);
+<span class="fc" id="L63">		}</span>
+<span class="fc" id="L64">	}</span>
+
+	static void inspectHistory(Properties properties)
+			throws ClassNotFoundException, SQLException {
+<span class="fc" id="L68">		Objects.requireNonNull(properties, &quot;properties&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		String url= requireProperty(properties, CONNECTION_URL);</span>
+<span class="fc" id="L70">		String driver= properties.getProperty(CONNECTION_DRIVER);</span>
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">		if (driver != null &amp;&amp; !driver.isBlank()) {</span>
+<span class="fc" id="L72">			Class.forName(driver);</span>
+		}
+<span class="fc" id="L74">		String user= properties.getProperty(CONNECTION_USER, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">		String password= properties.getProperty(CONNECTION_PASSWORD, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L76">		try (Connection connection= DriverManager.getConnection(url, user, password)) {</span>
+			try {
+<span class="fc" id="L78">				connection.setReadOnly(true);</span>
+<span class="nc" id="L79">			} catch (SQLFeatureNotSupportedException exception) {</span>
+				// The guard only executes SELECT statements even when a driver cannot
+				// advertise the connection as read-only.
+<span class="fc" id="L82">			}</span>
+<span class="fc" id="L83">			requireSuccessfulHistory(connection,</span>
+<span class="fc" id="L84">					properties.getProperty(DEFAULT_SCHEMA));</span>
+		}
+<span class="fc" id="L86">	}</span>
+
+	static void requireSuccessfulHistory(Connection connection,
+			String preferredSchema) throws SQLException {
+<span class="fc" id="L90">		Objects.requireNonNull(connection, &quot;connection&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L91">		DatabaseMetaData metadata= connection.getMetaData();</span>
+<span class="fc" id="L92">		TableReference history= findHistoryTable(connection, metadata,</span>
+				preferredSchema);
+<span class="fc" id="L94">		ValidatedHistoryQuery query= validatedHistoryQuery(metadata, history,</span>
+<span class="fc" id="L95">				columns(metadata, history));</span>
+<span class="fc" id="L96">		HistoryEvidence evidence= readValidatedHistory(connection, query);</span>
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">		if (!evidence.sawRow() || !evidence.sawVersionedSuccess()) {</span>
+<span class="nc" id="L98">			throw new IllegalStateException(</span>
+					&quot;Core Flyway history contains no successful versioned migration.&quot;); //$NON-NLS-1$
+		}
+<span class="fc" id="L101">	}</span>
+
+	private static ValidatedHistoryQuery validatedHistoryQuery(
+			DatabaseMetaData metadata, TableReference history,
+			Map&lt;String, String&gt; columns) throws SQLException {
+<span class="fc" id="L106">		if (!CoreSchemaMigrations.SCHEMA_HISTORY_TABLE</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">				.equalsIgnoreCase(history.name())) {</span>
+<span class="nc" id="L108">			throw new IllegalStateException(</span>
+					&quot;Refusing to query an unexpected schema-history table: &quot; //$NON-NLS-1$
+<span class="nc" id="L110">							+ history.name());</span>
+		}
+<span class="fc" id="L112">		String installedRank= requiredColumn(columns, &quot;installed_rank&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L113">		String version= requiredColumn(columns, &quot;version&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L114">		String success= requiredColumn(columns, &quot;success&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L115">		return new ValidatedHistoryQuery(</span>
+<span class="fc" id="L116">				&quot;SELECT &quot; + quote(metadata, version) + &quot;, &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L117">						+ quote(metadata, success) + &quot; FROM &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L118">						+ qualifiedName(metadata, history) + &quot; ORDER BY &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L119">						+ quote(metadata, installedRank));</span>
+	}
+
+	/**
+	 * Execute a query produced only by {@link #validatedHistoryQuery}.
+	 *
+	 * &lt;p&gt;The SQL contains no value supplied by a caller. Its table and column
+	 * names are exact allow-listed Flyway identifiers obtained from JDBC metadata;
+	 * the optional schema also comes from metadata, and every identifier is quoted
+	 * with the driver's quote string with embedded quotes doubled.&lt;/p&gt;
+	 */
+	private static HistoryEvidence readValidatedHistory(Connection connection,
+			ValidatedHistoryQuery query) throws SQLException {
+<span class="fc" id="L132">		boolean sawRow= false;</span>
+<span class="fc" id="L133">		boolean sawVersionedSuccess= false;</span>
+<span class="fc" id="L134">		try (Statement statement= connection.createStatement();</span>
+<span class="fc" id="L135">				ResultSet rows= statement.executeQuery(query.sql())) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			while (rows.next()) {</span>
+<span class="fc" id="L137">				sawRow= true;</span>
+<span class="fc" id="L138">				String migrationVersion= rows.getString(1);</span>
+<span class="fc" id="L139">				boolean successful= rows.getBoolean(2);</span>
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">				if (rows.wasNull() || !successful) {</span>
+<span class="fc" id="L141">					throw new IllegalStateException(</span>
+							&quot;Core Flyway history contains an unsuccessful migration row.&quot;); //$NON-NLS-1$
+				}
+<span class="pc bpc" id="L144" title="2 of 4 branches missed.">				if (migrationVersion != null &amp;&amp; !migrationVersion.isBlank()) {</span>
+<span class="fc" id="L145">					sawVersionedSuccess= true;</span>
+				}
+<span class="fc" id="L147">			}</span>
+		}
+<span class="fc" id="L149">		return new HistoryEvidence(sawRow, sawVersionedSuccess);</span>
+	}
+
+	private static TableReference findHistoryTable(Connection connection,
+			DatabaseMetaData metadata, String preferredSchema) throws SQLException {
+<span class="fc" id="L154">		String catalog= connection.getCatalog();</span>
+<span class="fc" id="L155">		String schema= preferredSchema;</span>
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">		if (schema == null || schema.isBlank()) {</span>
+			try {
+<span class="fc" id="L158">				schema= connection.getSchema();</span>
+<span class="nc" id="L159">			} catch (SQLFeatureNotSupportedException exception) {</span>
+<span class="nc" id="L160">				schema= null;</span>
+<span class="fc" id="L161">			}</span>
+		}
+
+<span class="fc" id="L164">		Map&lt;String, TableReference&gt; matches= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">		for (String pattern : tableNamePatterns()) {</span>
+<span class="fc" id="L166">			collectTables(metadata, catalog, schema, pattern, matches);</span>
+<span class="fc" id="L167">		}</span>
+<span class="pc bpc" id="L168" title="2 of 6 branches missed.">		if (matches.isEmpty() &amp;&amp; schema != null &amp;&amp; !schema.isBlank()) {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">			for (String pattern : tableNamePatterns()) {</span>
+<span class="fc" id="L170">				collectTables(metadata, catalog, null, pattern, matches);</span>
+<span class="fc" id="L171">			}</span>
+		}
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (matches.isEmpty()) {</span>
+<span class="fc" id="L174">			throw new IllegalStateException(</span>
+					&quot;Missing Core Flyway history table &quot; //$NON-NLS-1$
+							+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE + '.');
+		}
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (matches.size() &gt; 1) {</span>
+<span class="nc" id="L179">			throw new IllegalStateException(</span>
+					&quot;Core Flyway history table is ambiguous across schemas: &quot; //$NON-NLS-1$
+<span class="nc" id="L181">							+ matches.values());</span>
+		}
+<span class="fc" id="L183">		return matches.values().iterator().next();</span>
+	}
+
+	private static void collectTables(DatabaseMetaData metadata, String catalog,
+			String schema, String pattern,
+			Map&lt;String, TableReference&gt; matches) throws SQLException {
+<span class="fc" id="L189">		try (ResultSet tables= metadata.getTables(catalog, schema, pattern,</span>
+				new String[] { &quot;TABLE&quot; })) { //$NON-NLS-1$
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			while (tables.next()) {</span>
+<span class="fc" id="L192">				String tableName= tables.getString(&quot;TABLE_NAME&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L193">				if (!CoreSchemaMigrations.SCHEMA_HISTORY_TABLE</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">						.equalsIgnoreCase(tableName)) {</span>
+<span class="nc" id="L195">					continue;</span>
+				}
+<span class="fc" id="L197">				TableReference reference= new TableReference(</span>
+<span class="fc" id="L198">						tables.getString(&quot;TABLE_CAT&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L199">						tables.getString(&quot;TABLE_SCHEM&quot;), tableName); //$NON-NLS-1$</span>
+<span class="fc" id="L200">				String key= String.valueOf(reference.schema()).toLowerCase(Locale.ROOT)</span>
+<span class="fc" id="L201">						+ '.' + tableName.toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L202">				matches.putIfAbsent(key, reference);</span>
+<span class="fc" id="L203">			}</span>
+		}
+<span class="fc" id="L205">	}</span>
+
+	private static List&lt;String&gt; tableNamePatterns() {
+<span class="fc" id="L208">		String name= CoreSchemaMigrations.SCHEMA_HISTORY_TABLE;</span>
+<span class="fc" id="L209">		return List.of(name, name.toLowerCase(Locale.ROOT),</span>
+<span class="fc" id="L210">				name.toUpperCase(Locale.ROOT));</span>
+	}
+
+	private static Map&lt;String, String&gt; columns(DatabaseMetaData metadata,
+			TableReference table) throws SQLException {
+<span class="fc" id="L215">		Map&lt;String, String&gt; columns= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L216">		try (ResultSet result= metadata.getColumns(table.catalog(), table.schema(),</span>
+<span class="fc" id="L217">				table.name(), null)) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">			while (result.next()) {</span>
+<span class="fc" id="L219">				String name= result.getString(&quot;COLUMN_NAME&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L220">				columns.putIfAbsent(name.toLowerCase(Locale.ROOT), name);</span>
+<span class="fc" id="L221">			}</span>
+		}
+<span class="fc" id="L223">		return columns;</span>
+	}
+
+	private static String requiredColumn(Map&lt;String, String&gt; columns,
+			String logicalName) {
+<span class="fc" id="L228">		String actualName= columns.get(logicalName.toLowerCase(Locale.ROOT));</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (actualName == null) {</span>
+<span class="nc" id="L230">			throw new IllegalStateException(</span>
+					&quot;Core Flyway history table is missing required column &quot; //$NON-NLS-1$
+							+ logicalName + '.');
+		}
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		if (!logicalName.equalsIgnoreCase(actualName)) {</span>
+<span class="nc" id="L235">			throw new IllegalStateException(</span>
+					&quot;Core Flyway history column has an unexpected identifier: &quot; //$NON-NLS-1$
+							+ actualName);
+		}
+<span class="fc" id="L239">		return actualName;</span>
+	}
+
+	private static String qualifiedName(DatabaseMetaData metadata,
+			TableReference table) throws SQLException {
+<span class="pc bpc" id="L244" title="2 of 4 branches missed.">		if (table.schema() == null || table.schema().isBlank()) {</span>
+<span class="nc" id="L245">			return quote(metadata, table.name());</span>
+		}
+<span class="fc" id="L247">		return quote(metadata, table.schema()) + '.'</span>
+<span class="fc" id="L248">				+ quote(metadata, table.name());</span>
+	}
+
+	private static String quote(DatabaseMetaData metadata, String identifier)
+			throws SQLException {
+<span class="fc" id="L253">		String quote= metadata.getIdentifierQuoteString();</span>
+<span class="pc bpc" id="L254" title="2 of 4 branches missed.">		if (quote == null || quote.isBlank()) {</span>
+<span class="nc" id="L255">			return identifier;</span>
+		}
+<span class="fc" id="L257">		return quote + identifier.replace(quote, quote + quote) + quote;</span>
+	}
+
+	private static String requireProperty(Properties properties, String name) {
+<span class="fc" id="L261">		String value= properties.getProperty(name);</span>
+<span class="pc bpc" id="L262" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L263">			throw new IllegalArgumentException(</span>
+					&quot;Missing required database property: &quot; + name); //$NON-NLS-1$
+		}
+<span class="fc" id="L266">		return value;</span>
+	}
+
+<span class="fc" id="L269">	private record HistoryEvidence(boolean sawRow,</span>
+			boolean sawVersionedSuccess) {
+	}
+
+<span class="fc" id="L273">	private record TableReference(String catalog, String schema, String name) {</span>
+	}
+
+<span class="fc" id="L276">	private record ValidatedHistoryQuery(String sql) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

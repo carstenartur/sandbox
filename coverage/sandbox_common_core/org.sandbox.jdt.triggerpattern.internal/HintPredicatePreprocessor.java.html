@@ -131,11 +131,11 @@ public final class HintPredicatePreprocessor {
 <span class="fc" id="L131">		int lineNumber= 1;</span>
 <span class="fc bfc" id="L132" title="All 2 branches covered.">		while (offset &lt; source.length()) {</span>
 <span class="fc" id="L133">			int lineEnd= source.indexOf('\n', offset);</span>
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">			if (lineEnd &lt; 0) {</span>
-<span class="nc" id="L135">				lineEnd= source.length();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">			if (lineEnd &lt; 0) {</span>
+<span class="fc" id="L135">				lineEnd= source.length();</span>
 			}
 <span class="fc" id="L137">			result.append(expandLine(source.substring(offset, lineEnd), predicates, lineNumber));</span>
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">			if (lineEnd &lt; source.length()) {</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">			if (lineEnd &lt; source.length()) {</span>
 <span class="fc" id="L139">				result.append('\n');</span>
 			}
 <span class="fc" id="L141">			offset= lineEnd + 1;</span>
@@ -147,8 +147,8 @@ public final class HintPredicatePreprocessor {
 	private static String expandLine(String line, ParsedPredicates predicates, int lineNumber)
 			throws HintParseException {
 <span class="fc" id="L149">		int comment= commentStart(line);</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		String code= comment &lt; 0 ? line : line.substring(0, comment);</span>
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		String suffix= comment &lt; 0 ? &quot;&quot; : line.substring(comment); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		String code= comment &lt; 0 ? line : line.substring(0, comment);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		String suffix= comment &lt; 0 ? &quot;&quot; : line.substring(comment); //$NON-NLS-1$</span>
 <span class="fc" id="L152">		StringBuilder result= new StringBuilder(code.length());</span>
 <span class="fc" id="L153">		int cursor= 0;</span>
 <span class="fc bfc" id="L154" title="All 2 branches covered.">		while (cursor &lt; code.length()) {</span>
@@ -222,13 +222,13 @@ public final class HintPredicatePreprocessor {
 
 		private GuardExpression expand(GuardExpression expression, Map&lt;String, String&gt; substitutions,
 				Deque&lt;String&gt; stack, int lineNumber) throws HintParseException {
-<span class="pc bpc" id="L225" title="1 of 4 branches missed.">			return switch (expression) {</span>
+<span class="fc bfc" id="L225" title="All 4 branches covered.">			return switch (expression) {</span>
 <span class="fc" id="L226">				case GuardExpression.And and -&gt; new GuardExpression.And(</span>
 <span class="fc" id="L227">						expand(and.left(), substitutions, stack, lineNumber),</span>
 <span class="fc" id="L228">						expand(and.right(), substitutions, stack, lineNumber));</span>
-<span class="nc" id="L229">				case GuardExpression.Or or -&gt; new GuardExpression.Or(</span>
-<span class="nc" id="L230">						expand(or.left(), substitutions, stack, lineNumber),</span>
-<span class="nc" id="L231">						expand(or.right(), substitutions, stack, lineNumber));</span>
+<span class="fc" id="L229">				case GuardExpression.Or or -&gt; new GuardExpression.Or(</span>
+<span class="fc" id="L230">						expand(or.left(), substitutions, stack, lineNumber),</span>
+<span class="fc" id="L231">						expand(or.right(), substitutions, stack, lineNumber));</span>
 <span class="fc" id="L232">				case GuardExpression.Not not -&gt; new GuardExpression.Not(</span>
 <span class="fc" id="L233">						expand(not.operand(), substitutions, stack, lineNumber));</span>
 <span class="fc" id="L234">				case GuardExpression.FunctionCall call -&gt; expandCall(call, substitutions, stack, lineNumber);</span>
@@ -282,15 +282,15 @@ public final class HintPredicatePreprocessor {
 <span class="fc" id="L282">		}</span>
 
 		private static void collectPlaceholders(GuardExpression expression, Set&lt;String&gt; target) {
-<span class="pc bpc" id="L285" title="1 of 4 branches missed.">			switch (expression) {</span>
+<span class="fc bfc" id="L285" title="All 4 branches covered.">			switch (expression) {</span>
 <span class="fc" id="L286">				case GuardExpression.And and -&gt; {</span>
 <span class="fc" id="L287">					collectPlaceholders(and.left(), target);</span>
 <span class="fc" id="L288">					collectPlaceholders(and.right(), target);</span>
 <span class="fc" id="L289">				}</span>
-<span class="nc" id="L290">				case GuardExpression.Or or -&gt; {</span>
-<span class="nc" id="L291">					collectPlaceholders(or.left(), target);</span>
-<span class="nc" id="L292">					collectPlaceholders(or.right(), target);</span>
-<span class="nc" id="L293">				}</span>
+<span class="fc" id="L290">				case GuardExpression.Or or -&gt; {</span>
+<span class="fc" id="L291">					collectPlaceholders(or.left(), target);</span>
+<span class="fc" id="L292">					collectPlaceholders(or.right(), target);</span>
+<span class="fc" id="L293">				}</span>
 <span class="fc" id="L294">				case GuardExpression.Not not -&gt; collectPlaceholders(not.operand(), target);</span>
 <span class="fc" id="L295">				case GuardExpression.FunctionCall call -&gt; call.args().stream()</span>
 <span class="fc" id="L296">						.filter(argument -&gt; argument.startsWith(&quot;$&quot;)) //$NON-NLS-1$</span>
@@ -300,9 +300,9 @@ public final class HintPredicatePreprocessor {
 	}
 
 	private static String format(GuardExpression expression) {
-<span class="pc bpc" id="L303" title="1 of 4 branches missed.">		return switch (expression) {</span>
+<span class="fc bfc" id="L303" title="All 4 branches covered.">		return switch (expression) {</span>
 <span class="fc" id="L304">			case GuardExpression.And and -&gt; '(' + format(and.left()) + &quot; &amp;&amp; &quot; + format(and.right()) + ')'; //$NON-NLS-1$</span>
-<span class="nc" id="L305">			case GuardExpression.Or or -&gt; '(' + format(or.left()) + &quot; || &quot; + format(or.right()) + ')'; //$NON-NLS-1$</span>
+<span class="fc" id="L305">			case GuardExpression.Or or -&gt; '(' + format(or.left()) + &quot; || &quot; + format(or.right()) + ')'; //$NON-NLS-1$</span>
 <span class="fc" id="L306">			case GuardExpression.Not not -&gt; &quot;!(&quot; + format(not.operand()) + ')'; //$NON-NLS-1$</span>
 <span class="fc" id="L307">			case GuardExpression.FunctionCall call -&gt; call.name() + '(' + String.join(&quot;, &quot;, call.args()) + ')'; //$NON-NLS-1$</span>
 		};

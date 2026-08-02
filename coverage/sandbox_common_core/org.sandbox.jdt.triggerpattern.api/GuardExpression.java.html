@@ -145,7 +145,7 @@ public sealed interface GuardExpression
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-<span class="pc bpc" id="L148" title="2 of 4 branches missed.">			return left.evaluate(ctx) || right.evaluate(ctx);</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">			return left.evaluate(ctx) || right.evaluate(ctx);</span>
 		}
 	}
 	
@@ -167,7 +167,7 @@ public sealed interface GuardExpression
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">			return !operand.evaluate(ctx);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">			return !operand.evaluate(ctx);</span>
 		}
 	}
 }

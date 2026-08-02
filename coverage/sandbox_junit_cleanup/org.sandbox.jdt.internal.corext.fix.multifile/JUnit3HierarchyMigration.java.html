@@ -39,13 +39,22 @@ public record JUnit3HierarchyMigration(String rootTypeName, List&lt;TypeMigratio
 	}
 
 	/**
-	 * One method migration. {@code executionOrder} is the one-based order required
-	 * to reproduce JUnit 3 {@code TestSuite} discovery; lifecycle methods use 0.
+	 * One method migration.
+	 *
+	 * @param methodBindingKey stable method-declaration binding key
+	 * @param kind semantic JUnit method role
+	 * @param executionOrder one-based JUnit 3 discovery order for tests; lifecycle methods use 0
+	 * @param removeOverride whether {@code java.lang.Override} was present when the immutable plan was built
 	 */
-	public record MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder) {
+	public record MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder,
+			boolean removeOverride) {
 		public MethodMigration(String methodBindingKey, MethodKind kind) {
-<span class="fc" id="L47">			this(methodBindingKey, kind, 0);</span>
-<span class="fc" id="L48">		}</span>
+<span class="nc" id="L52">			this(methodBindingKey, kind, 0, false);</span>
+<span class="nc" id="L53">		}</span>
+
+		public MethodMigration(String methodBindingKey, MethodKind kind, int executionOrder) {
+<span class="fc" id="L56">			this(methodBindingKey, kind, executionOrder, false);</span>
+<span class="fc" id="L57">		}</span>
 	}
 
 	/** Exact source invocation authorized for a declarative assertion rewrite. */
@@ -53,15 +62,15 @@ public record JUnit3HierarchyMigration(String rootTypeName, List&lt;TypeMigratio
 			InvocationKind kind) {
 	}
 
-<span class="fc" id="L56">	public enum MethodKind {</span>
-<span class="fc" id="L57">		TEST,</span>
-<span class="fc" id="L58">		BEFORE_EACH,</span>
-<span class="fc" id="L59">		AFTER_EACH</span>
+<span class="fc" id="L65">	public enum MethodKind {</span>
+<span class="fc" id="L66">		TEST,</span>
+<span class="fc" id="L67">		BEFORE_EACH,</span>
+<span class="fc" id="L68">		AFTER_EACH</span>
 	}
 
-<span class="fc" id="L62">	public enum InvocationKind {</span>
-<span class="fc" id="L63">		QUALIFY,</span>
-<span class="fc" id="L64">		MESSAGE_FIRST</span>
+<span class="fc" id="L71">	public enum InvocationKind {</span>
+<span class="fc" id="L72">		QUALIFY,</span>
+<span class="fc" id="L73">		MESSAGE_FIRST</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

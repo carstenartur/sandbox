@@ -100,17 +100,17 @@ public final class StructuredRewriteActionContext {
 
 	/** Resolves a scalar typed value, including one semantic-plan fact reference. */
 	public SemanticPlanValue resolveSemanticValue(RewriteActionValue value) throws CoreException {
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		if (value instanceof RewriteActionValue.Literal literal) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (value instanceof RewriteActionValue.Literal literal) {</span>
 <span class="fc" id="L104">			return literal.value();</span>
 		}
-<span class="nc bnc" id="L106" title="All 2 branches missed.">		if (value instanceof RewriteActionValue.PlanValue reference) {</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">			ASTNode target= reference.placeholder() == null</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (value instanceof RewriteActionValue.PlanValue reference) {</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			ASTNode target= reference.placeholder() == null</span>
 <span class="nc" id="L108">					? result.match().getMatchedNode()</span>
-<span class="nc" id="L109">					: result.match().getBinding(reference.placeholder());</span>
-<span class="nc bnc" id="L110" title="All 2 branches missed.">			if (target == null) {</span>
+<span class="fc" id="L109">					: result.match().getBinding(reference.placeholder());</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">			if (target == null) {</span>
 <span class="nc" id="L111">				throw failure(&quot;Missing plan-value target binding &quot; + reference.placeholder()); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L113">			return plan.value(target, reference.factName()).orElseThrow(() -&gt;</span>
+<span class="fc" id="L113">			return plan.value(target, reference.factName()).orElseThrow(() -&gt;</span>
 <span class="nc" id="L114">					failure(&quot;Missing semantic-plan fact &quot; + reference.factName())); //$NON-NLS-1$</span>
 		}
 <span class="nc bnc" id="L116" title="All 2 branches missed.">		if (value instanceof RewriteActionValue.Binding binding) {</span>
@@ -131,40 +131,40 @@ public final class StructuredRewriteActionContext {
 
 	/** Builds one detached AST expression from a typed action value. */
 	public Expression createExpression(RewriteActionValue value) throws CoreException {
-<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (value instanceof RewriteActionValue.ClassLiteral classLiteral) {</span>
-<span class="nc" id="L135">			String typeName= resolveString(classLiteral.typeName());</span>
-<span class="nc" id="L136">			String imported= cuRewrite.getImportRewrite().addImport(typeName);</span>
-<span class="nc" id="L137">			TypeLiteral literal= ast().newTypeLiteral();</span>
-<span class="nc" id="L138">			literal.setType(ast().newSimpleType(ast().newName(imported)));</span>
-<span class="nc" id="L139">			return literal;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (value instanceof RewriteActionValue.ClassLiteral classLiteral) {</span>
+<span class="fc" id="L135">			String typeName= resolveString(classLiteral.typeName());</span>
+<span class="fc" id="L136">			String imported= cuRewrite.getImportRewrite().addImport(typeName);</span>
+<span class="fc" id="L137">			TypeLiteral literal= ast().newTypeLiteral();</span>
+<span class="fc" id="L138">			literal.setType(ast().newSimpleType(ast().newName(imported)));</span>
+<span class="fc" id="L139">			return literal;</span>
 		}
-<span class="nc bnc" id="L141" title="All 2 branches missed.">		if (value instanceof RewriteActionValue.Name name) {</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (value instanceof RewriteActionValue.Name name) {</span>
 <span class="nc" id="L142">			return ast().newName(resolveString(name.qualifiedName()));</span>
 		}
-<span class="nc bnc" id="L144" title="All 2 branches missed.">		if (value instanceof RewriteActionValue.ListValue list) {</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (value instanceof RewriteActionValue.ListValue list) {</span>
 <span class="nc" id="L145">			ArrayInitializer initializer= ast().newArrayInitializer();</span>
 <span class="nc bnc" id="L146" title="All 2 branches missed.">			for (RewriteActionValue element : list.values()) {</span>
 <span class="nc" id="L147">				initializer.expressions().add(createExpression(element));</span>
 			}
 <span class="nc" id="L149">			return initializer;</span>
 		}
-<span class="nc" id="L151">		return createLiteralExpression(resolveSemanticValue(value));</span>
+<span class="fc" id="L151">		return createLiteralExpression(resolveSemanticValue(value));</span>
 	}
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private Expression createLiteralExpression(SemanticPlanValue value) throws CoreException {
-<span class="nc bnc" id="L156" title="All 2 branches missed.">		if (value instanceof SemanticPlanValue.StringValue string) {</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">		if (value instanceof SemanticPlanValue.StringValue string) {</span>
 <span class="nc" id="L157">			StringLiteral literal= ast().newStringLiteral();</span>
 <span class="nc" id="L158">			literal.setLiteralValue(string.value());</span>
 <span class="nc" id="L159">			return literal;</span>
 		}
-<span class="nc bnc" id="L161" title="All 2 branches missed.">		if (value instanceof SemanticPlanValue.BooleanValue bool) {</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		if (value instanceof SemanticPlanValue.BooleanValue bool) {</span>
 <span class="nc" id="L162">			BooleanLiteral literal= ast().newBooleanLiteral(bool.value());</span>
 <span class="nc" id="L163">			return literal;</span>
 		}
-<span class="nc bnc" id="L165" title="All 2 branches missed.">		if (value instanceof SemanticPlanValue.IntegerValue integer) {</span>
-<span class="nc" id="L166">			NumberLiteral literal= ast().newNumberLiteral(Long.toString(integer.value()));</span>
-<span class="nc" id="L167">			return literal;</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		if (value instanceof SemanticPlanValue.IntegerValue integer) {</span>
+<span class="fc" id="L166">			NumberLiteral literal= ast().newNumberLiteral(Long.toString(integer.value()));</span>
+<span class="fc" id="L167">			return literal;</span>
 		}
 <span class="nc bnc" id="L169" title="All 2 branches missed.">		if (value instanceof SemanticPlanValue.ListValue list) {</span>
 <span class="nc" id="L170">			ArrayInitializer initializer= ast().newArrayInitializer();</span>

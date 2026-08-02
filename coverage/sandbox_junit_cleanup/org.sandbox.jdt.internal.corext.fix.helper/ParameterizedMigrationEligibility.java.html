@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ParameterizedMigrationEligibility.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">ParameterizedMigrationEligibility.java</span></div><h1>ParameterizedMigrationEligibility.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNNERS_PARAMETERIZED;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
+
+import java.util.Objects;
+
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+
+/**
+ * One shared fail-closed contract for the local JUnit 4 Parameterized rewrite
+ * and its project-planning diagnostics.
+ */
+public final class ParameterizedMigrationEligibility {
+
+	private static final String PARAMETER_ANNOTATION=
+			&quot;org.junit.runners.Parameterized.Parameter&quot;; //$NON-NLS-1$
+
+	/** Immutable eligibility decision with a stable diagnostic reason code. */
+	public record Assessment(boolean eligible, String reasonCode,
+			String explanation) {
+
+		/** Validate and normalize an assessment. */
+<span class="fc" id="L44">		public Assessment {</span>
+<span class="fc" id="L45">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L46">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L47">		}</span>
+	}
+
+	private ParameterizedMigrationEligibility() {
+	}
+
+	/**
+	 * Return whether a type declares the JUnit 4 Parameterized runner.
+	 *
+	 * @param type
+	 *            source type
+	 * @return {@code true} when bindings prove
+	 *         {@code @RunWith(Parameterized.class)}
+	 */
+	public static boolean hasParameterizedRunner(TypeDeclaration type) {
+<span class="fc" id="L62">		Objects.requireNonNull(type);</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">			if (!(modifier instanceof Annotation annotation)) {</span>
+				continue;
+			}
+<span class="fc" id="L67">			ITypeBinding annotationBinding= annotation.resolveTypeBinding();</span>
+<span class="fc" id="L68">			Expression value= runnerValue(annotation);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (annotationBinding == null</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">					|| !ORG_JUNIT_RUNWITH.equals(annotationBinding.getQualifiedName())</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">					|| !(value instanceof TypeLiteral literal)) {</span>
+				continue;
+			}
+<span class="fc" id="L74">			ITypeBinding runnerBinding= literal.getType().resolveBinding();</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">			if (runnerBinding != null &amp;&amp; ORG_JUNIT_RUNNERS_PARAMETERIZED</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">					.equals(runnerBinding.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L77">				return true;</span>
+			}
+		}
+<span class="nc" id="L80">		return false;</span>
+	}
+
+	/**
+	 * Assess the exact local source contract understood by the existing rewrite.
+	 *
+	 * @param type
+	 *            Parameterized test type
+	 * @return eligibility or one stable fail-closed reason
+	 */
+	public static Assessment assess(TypeDeclaration type) {
+<span class="fc" id="L91">		Objects.requireNonNull(type);</span>
+<span class="fc" id="L92">		int providers= 0;</span>
+<span class="fc" id="L93">		int constructors= 0;</span>
+<span class="fc" id="L94">		MethodDeclaration constructor= null;</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
+<span class="fc" id="L97">				constructors++;</span>
+<span class="fc" id="L98">				constructor= method;</span>
+<span class="fc" id="L99">				continue;</span>
+			}
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (hasParametersAnnotation(method)) {</span>
+<span class="fc" id="L102">				providers++;</span>
+			}
+		}
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (providers == 0) {</span>
+<span class="fc" id="L106">			return rejected(&quot;PARAMETERIZED_PROVIDER_NOT_LOCAL&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L107">					&quot;No local @Parameters provider is declared; inherited or external providers require a coordinated migration.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (providers &gt; 1) {</span>
+<span class="fc" id="L110">			return rejected(&quot;PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L111">					&quot;More than one local @Parameters provider is declared, so a unique MethodSource cannot be selected safely.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (usesFieldInjection(type)) {</span>
+<span class="fc" id="L114">			return rejected(&quot;PARAMETERIZED_FIELD_INJECTION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L115">					&quot;@Parameterized.Parameter field injection is not represented by the constructor-based local rewrite.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L117" title="All 2 branches covered.">		if (constructors != 1) {</span>
+<span class="fc" id="L118">			return rejected(&quot;PARAMETERIZED_CONSTRUCTOR_NOT_UNIQUE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L119">					&quot;Exactly one explicit constructor is required before constructor parameters can become test-method parameters.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L121" title="2 of 4 branches missed.">		if (constructor == null || constructor.parameters().isEmpty()) {</span>
+<span class="nc" id="L122">			return rejected(&quot;PARAMETERIZED_CONSTRUCTOR_HAS_NO_PARAMETERS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L123">					&quot;The unique constructor has no parameters to propagate to ParameterizedTest methods.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L125">		return new Assessment(true, &quot;PARAMETERIZED_LOCAL_CONTRACT&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L126">				&quot;One local provider and one parameterized constructor form the supported local rewrite contract.&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static Expression runnerValue(Annotation annotation) {
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (annotation instanceof SingleMemberAnnotation single) {</span>
+<span class="fc" id="L131">			return single.getValue();</span>
+		}
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">			for (Object value : normal.values()) {</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				if (value instanceof MemberValuePair pair</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">						&amp;&amp; &quot;value&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L137">					return pair.getValue();</span>
+				}
+			}
+		}
+<span class="nc" id="L141">		return null;</span>
+	}
+
+	private static boolean hasParametersAnnotation(MethodDeclaration method) {
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation</span>
+<span class="fc" id="L147">					&amp;&amp; isAnnotation(annotation,</span>
+<span class="fc" id="L148">							ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS,</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">							&quot;Parameters&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L150">				return true;</span>
+			}
+		}
+<span class="fc" id="L153">		return false;</span>
+	}
+
+	private static boolean usesFieldInjection(TypeDeclaration type) {
+<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (FieldDeclaration field : type.getFields()) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation</span>
+<span class="fc" id="L160">						&amp;&amp; isAnnotation(annotation, PARAMETER_ANNOTATION,</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">								&quot;Parameter&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L162">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L166">		return false;</span>
+	}
+
+	private static boolean isAnnotation(Annotation annotation,
+			String qualifiedName, String simpleName) {
+<span class="fc" id="L171">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L173">			return qualifiedName.equals(binding.getQualifiedName());</span>
+		}
+<span class="nc" id="L175">		String sourceName= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L176" title="All 4 branches missed.">		return simpleName.equals(sourceName) || qualifiedName.equals(sourceName);</span>
+	}
+
+	private static Assessment rejected(String reasonCode,
+			String explanation) {
+<span class="fc" id="L181">		return new Assessment(false, reasonCode, explanation);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

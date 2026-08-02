@@ -32,39 +32,45 @@ public class HibernateRepositoryResolver
 
 	private final HibernateSessionFactoryProvider sessionFactoryProvider;
 	private final SandboxRepositoryService repositories;
+	private final boolean ownsRepositoryService;
 
-	/** Creates a resolver from the application-owned native session factory. */
+	/** Creates a resolver that owns a copied adapter for the native session factory. */
 	public HibernateRepositoryResolver(SessionFactory sessionFactory) {
-<span class="fc" id="L38">		this(null, new CopiedHibernateRepositoryService(sessionFactory));</span>
-<span class="fc" id="L39">	}</span>
+<span class="nc" id="L39">		this(null, new CopiedHibernateRepositoryService(sessionFactory), true);</span>
+<span class="nc" id="L40">	}</span>
 
 	/**
-	 * Creates a resolver using the temporary copied-backend adapter.
+	 * Creates a resolver using and owning the temporary copied-backend adapter.
 	 *
-	 * @deprecated application wiring should pass the native {@link SessionFactory}
+	 * @deprecated application wiring should pass its application-owned
+	 *             {@link SandboxRepositoryService}
 	 */
 	@Deprecated(forRemoval = true)
 	public HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider) {
-<span class="fc" id="L48">		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider));</span>
-<span class="fc" id="L49">	}</span>
+<span class="fc" id="L50">		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider), true);</span>
+<span class="fc" id="L51">	}</span>
 
-	/** Creates a resolver for an application-owned repository service. */
+	/**
+	 * Creates a resolver for an application-owned repository service without
+	 * taking lifecycle ownership.
+	 */
 	public HibernateRepositoryResolver(SandboxRepositoryService repositories) {
-<span class="nc" id="L53">		this(null, repositories);</span>
-<span class="nc" id="L54">	}</span>
+<span class="fc" id="L58">		this(null, repositories, false);</span>
+<span class="fc" id="L59">	}</span>
 
 	private HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider,
-<span class="fc" id="L57">			SandboxRepositoryService repositories) {</span>
-<span class="fc" id="L58">		this.sessionFactoryProvider= sessionFactoryProvider;</span>
-<span class="fc" id="L59">		this.repositories= Objects.requireNonNull(repositories, &quot;repositories&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L60">	}</span>
+<span class="fc" id="L62">			SandboxRepositoryService repositories, boolean ownsRepositoryService) {</span>
+<span class="fc" id="L63">		this.sessionFactoryProvider= sessionFactoryProvider;</span>
+<span class="fc" id="L64">		this.repositories= Objects.requireNonNull(repositories, &quot;repositories&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		this.ownsRepositoryService= ownsRepositoryService;</span>
+<span class="fc" id="L66">	}</span>
 
 	@Override
 	public Repository open(HttpServletRequest request, String name) throws ServiceNotEnabledException {
 		try {
-<span class="fc" id="L65">			return repositories.openOrCreate(name);</span>
-<span class="nc" id="L66">		} catch (IOException | RuntimeException exception) {</span>
-<span class="nc" id="L67">			throw new ServiceNotEnabledException(exception.getMessage());</span>
+<span class="fc" id="L71">			return repositories.openOrCreate(name);</span>
+<span class="nc" id="L72">		} catch (IOException | RuntimeException exception) {</span>
+<span class="nc" id="L73">			throw new ServiceNotEnabledException(exception.getMessage());</span>
 		}
 	}
 
@@ -77,17 +83,17 @@ public class HibernateRepositoryResolver
 	@Deprecated(forRemoval = true)
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public &lt;R extends Repository&gt; R getOrCreateRepository(String name) throws IOException {
-<span class="fc" id="L80">		return (R) repositories.openOrCreate(name);</span>
+<span class="fc" id="L86">		return (R) repositories.openOrCreate(name);</span>
 	}
 
 	/** Returns whether this resolver already owns an open repository handle. */
 	public boolean hasRepository(String name) {
-<span class="fc" id="L85">		return repositories.isOpen(name);</span>
+<span class="fc" id="L91">		return repositories.isOpen(name);</span>
 	}
 
 	/** Returns the application-owned repository service used by REST resources. */
 	public SandboxRepositoryService getRepositoryService() {
-<span class="fc" id="L90">		return repositories;</span>
+<span class="fc" id="L96">		return repositories;</span>
 	}
 
 	/**
@@ -96,15 +102,17 @@ public class HibernateRepositoryResolver
 	 */
 	@Deprecated(forRemoval = true)
 	public HibernateSessionFactoryProvider getSessionFactoryProvider() {
-<span class="nc bnc" id="L99" title="All 2 branches missed.">		if (sessionFactoryProvider == null) {</span>
-<span class="nc" id="L100">			throw new IllegalStateException(&quot;This resolver was created without a legacy session factory provider.&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (sessionFactoryProvider == null) {</span>
+<span class="nc" id="L106">			throw new IllegalStateException(&quot;This resolver was created without a legacy session factory provider.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L102">		return sessionFactoryProvider;</span>
+<span class="nc" id="L108">		return sessionFactoryProvider;</span>
 	}
 
 	@Override
 	public void close() {
-<span class="fc" id="L107">		repositories.close();</span>
-<span class="fc" id="L108">	}</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (ownsRepositoryService) {</span>
+<span class="fc" id="L114">			repositories.close();</span>
+		}
+<span class="fc" id="L116">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

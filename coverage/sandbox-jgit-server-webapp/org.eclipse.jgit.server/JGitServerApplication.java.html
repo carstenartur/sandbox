@@ -83,7 +83,7 @@ import jakarta.servlet.http.HttpServletRequest;
 <span class="fc" id="L83">		persistenceContext= Objects.requireNonNull(context, &quot;context&quot;); //$NON-NLS-1$</span>
 		try {
 <span class="fc" id="L85">			SessionFactory sessionFactory= persistenceContext.sessionFactory();</span>
-<span class="fc" id="L86">			repositoryResolver= new HibernateRepositoryResolver(sessionFactory);</span>
+<span class="fc" id="L86">			repositoryResolver= new HibernateRepositoryResolver(persistenceContext.repositoryService());</span>
 <span class="fc" id="L87">			SandboxRepositoryService repositories= repositoryResolver.getRepositoryService();</span>
 <span class="pc bpc" id="L88" title="3 of 4 branches missed.">			if (defaultRepositories != null &amp;&amp; !defaultRepositories.isBlank()) {</span>
 <span class="nc" id="L89">				RepositoryManagerConfig.initDefaultRepositories(repositories, defaultRepositories);</span>
@@ -161,7 +161,7 @@ import jakarta.servlet.http.HttpServletRequest;
 		}
 <span class="nc" id="L162">	}</span>
 
-	/** Stops the server and closes repository handles before the owned factory. */
+	/** Stops the server and closes the application-owned persistence context. */
 	public void stop() throws Exception {
 <span class="fc" id="L166">		Exception failure= null;</span>
 		try {
@@ -172,8 +172,8 @@ import jakarta.servlet.http.HttpServletRequest;
 <span class="nc" id="L172">			failure= exception;</span>
 <span class="fc" id="L173">		}</span>
 		try {
-<span class="fc bfc" id="L175" title="All 2 branches covered.">			if (repositoryResolver != null) {</span>
-<span class="fc" id="L176">				repositoryResolver.close();</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">			if (persistenceContext != null) {</span>
+<span class="fc" id="L176">				persistenceContext.close();</span>
 			}
 <span class="nc" id="L178">		} catch (RuntimeException exception) {</span>
 <span class="nc bnc" id="L179" title="All 2 branches missed.">			if (failure == null) {</span>
@@ -181,115 +181,104 @@ import jakarta.servlet.http.HttpServletRequest;
 			} else {
 <span class="nc" id="L182">				failure.addSuppressed(exception);</span>
 			}
-<span class="fc" id="L184">		}</span>
-		try {
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">			if (persistenceContext != null) {</span>
-<span class="fc" id="L187">				persistenceContext.close();</span>
-			}
-<span class="nc" id="L189">		} catch (RuntimeException exception) {</span>
-<span class="nc bnc" id="L190" title="All 2 branches missed.">			if (failure == null) {</span>
-<span class="nc" id="L191">				failure= exception;</span>
-			} else {
-<span class="nc" id="L193">				failure.addSuppressed(exception);</span>
-			}
 		} finally {
-<span class="fc" id="L196">			server= null;</span>
-<span class="fc" id="L197">			repositoryResolver= null;</span>
-<span class="fc" id="L198">			persistenceContext= null;</span>
+<span class="fc" id="L185">			server= null;</span>
+<span class="fc" id="L186">			repositoryResolver= null;</span>
+<span class="fc" id="L187">			persistenceContext= null;</span>
 		}
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (failure != null) {</span>
-<span class="nc" id="L201">			throw failure;</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		if (failure != null) {</span>
+<span class="nc" id="L190">			throw failure;</span>
 		}
-<span class="fc" id="L203">	}</span>
+<span class="fc" id="L192">	}</span>
 
 	private void closeAfterFailedStart(Exception failure) {
 		try {
-<span class="fc" id="L207">			stop();</span>
-<span class="nc" id="L208">		} catch (Exception cleanupFailure) {</span>
-<span class="nc" id="L209">			failure.addSuppressed(cleanupFailure);</span>
-<span class="fc" id="L210">		}</span>
-<span class="fc" id="L211">	}</span>
+<span class="fc" id="L196">			stop();</span>
+<span class="nc" id="L197">		} catch (Exception cleanupFailure) {</span>
+<span class="nc" id="L198">			failure.addSuppressed(cleanupFailure);</span>
+<span class="fc" id="L199">		}</span>
+<span class="fc" id="L200">	}</span>
 
 	/** Returns the REST port, or -1 while not started. */
 	public int getRestPort() {
-<span class="fc" id="L215">		return getPort(&quot;rest&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L204">		return getPort(&quot;rest&quot;); //$NON-NLS-1$</span>
 	}
 
 	/** Returns the Git Smart HTTP port, or -1 while not started. */
 	public int getGitPort() {
-<span class="fc" id="L220">		return getPort(&quot;git&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L209">		return getPort(&quot;git&quot;); //$NON-NLS-1$</span>
 	}
 
 	private int getPort(String connectorName) {
-<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (server != null) {</span>
-<span class="pc bpc" id="L225" title="1 of 2 branches missed.">			for (var connector : server.getConnectors()) {</span>
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">				if (connector instanceof ServerConnector serverConnector</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">						&amp;&amp; connectorName.equals(serverConnector.getName())) {</span>
-<span class="fc" id="L228">					return serverConnector.getLocalPort();</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (server != null) {</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">			for (var connector : server.getConnectors()) {</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">				if (connector instanceof ServerConnector serverConnector</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">						&amp;&amp; connectorName.equals(serverConnector.getName())) {</span>
+<span class="fc" id="L217">					return serverConnector.getLocalPort();</span>
 				}
 			}
 		}
-<span class="nc" id="L232">		return -1;</span>
+<span class="nc" id="L221">		return -1;</span>
 	}
 
 	/** Returns the repository resolver used by the running application. */
 	public HibernateRepositoryResolver getRepositoryResolver() {
-<span class="fc" id="L237">		return repositoryResolver;</span>
+<span class="fc" id="L226">		return repositoryResolver;</span>
 	}
 
 	/** Returns the application-owned native Hibernate factory. */
 	public SessionFactory getSessionFactory() {
-<span class="fc bfc" id="L242" title="All 2 branches covered.">		if (persistenceContext == null) {</span>
-<span class="fc" id="L243">			throw new IllegalStateException(&quot;Server persistence context is not started&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">		if (persistenceContext == null) {</span>
+<span class="fc" id="L232">			throw new IllegalStateException(&quot;Server persistence context is not started&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L245">		return persistenceContext.sessionFactory();</span>
+<span class="fc" id="L234">		return persistenceContext.sessionFactory();</span>
 	}
 
 	private static int getIntEnv(String name, int defaultValue) {
-<span class="nc" id="L249">		String value= System.getenv(name);</span>
-<span class="nc bnc" id="L250" title="All 4 branches missed.">		if (value != null &amp;&amp; !value.isEmpty()) {</span>
+<span class="nc" id="L238">		String value= System.getenv(name);</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">		if (value != null &amp;&amp; !value.isEmpty()) {</span>
 			try {
-<span class="nc" id="L252">				return Integer.parseInt(value);</span>
-<span class="nc" id="L253">			} catch (NumberFormatException exception) {</span>
-<span class="nc" id="L254">				LOG.log(Level.WARNING, &quot;Invalid integer for {0}: {1}, using default {2}&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L255">						new Object[] { name, value, Integer.toString(defaultValue) });</span>
+<span class="nc" id="L241">				return Integer.parseInt(value);</span>
+<span class="nc" id="L242">			} catch (NumberFormatException exception) {</span>
+<span class="nc" id="L243">				LOG.log(Level.WARNING, &quot;Invalid integer for {0}: {1}, using default {2}&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L244">						new Object[] { name, value, Integer.toString(defaultValue) });</span>
 			}
 		}
-<span class="nc" id="L258">		return defaultValue;</span>
+<span class="nc" id="L247">		return defaultValue;</span>
 	}
 
 	private static ReceivePackFactory&lt;HttpServletRequest&gt; createReceivePackFactory() {
-<span class="fc" id="L262">		return (request, repository) -&gt; {</span>
-<span class="fc" id="L263">			ReceivePack receivePack= new ReceivePack(repository);</span>
-<span class="fc" id="L264">			long maxCommandBytes= 50L &lt;&lt; 20;</span>
-<span class="fc" id="L265">			String configured= System.getenv(&quot;JGIT_RECEIVE_MAX_COMMAND_BYTES&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L266" title="3 of 4 branches missed.">			if (configured != null &amp;&amp; !configured.isEmpty()) {</span>
+<span class="fc" id="L251">		return (request, repository) -&gt; {</span>
+<span class="fc" id="L252">			ReceivePack receivePack= new ReceivePack(repository);</span>
+<span class="fc" id="L253">			long maxCommandBytes= 50L &lt;&lt; 20;</span>
+<span class="fc" id="L254">			String configured= System.getenv(&quot;JGIT_RECEIVE_MAX_COMMAND_BYTES&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L255" title="3 of 4 branches missed.">			if (configured != null &amp;&amp; !configured.isEmpty()) {</span>
 				try {
-<span class="nc" id="L268">					maxCommandBytes= Long.parseLong(configured);</span>
-<span class="nc" id="L269">				} catch (NumberFormatException exception) {</span>
-<span class="nc" id="L270">					LOG.log(Level.WARNING,</span>
+<span class="nc" id="L257">					maxCommandBytes= Long.parseLong(configured);</span>
+<span class="nc" id="L258">				} catch (NumberFormatException exception) {</span>
+<span class="nc" id="L259">					LOG.log(Level.WARNING,</span>
 							&quot;Invalid JGIT_RECEIVE_MAX_COMMAND_BYTES value: {0}, using default 50 MiB&quot;, //$NON-NLS-1$
 							configured);
-<span class="nc" id="L273">				}</span>
+<span class="nc" id="L262">				}</span>
 			}
-<span class="fc" id="L275">			receivePack.setMaxCommandBytes(maxCommandBytes);</span>
-<span class="fc" id="L276">			return receivePack;</span>
+<span class="fc" id="L264">			receivePack.setMaxCommandBytes(maxCommandBytes);</span>
+<span class="fc" id="L265">			return receivePack;</span>
 		};
 	}
 
 	private static GitServlet createGitServlet(HibernateRepositoryResolver resolver) {
-<span class="fc" id="L281">		GitServlet gitServlet= new GitServlet();</span>
-<span class="fc" id="L282">		gitServlet.setRepositoryResolver(resolver);</span>
-<span class="fc" id="L283">		gitServlet.setReceivePackFactory(createReceivePackFactory());</span>
-<span class="fc" id="L284">		gitServlet.setReceivePackErrorHandler((request, response, receivePack) -&gt; {</span>
+<span class="fc" id="L270">		GitServlet gitServlet= new GitServlet();</span>
+<span class="fc" id="L271">		gitServlet.setRepositoryResolver(resolver);</span>
+<span class="fc" id="L272">		gitServlet.setReceivePackFactory(createReceivePackFactory());</span>
+<span class="fc" id="L273">		gitServlet.setReceivePackErrorHandler((request, response, receivePack) -&gt; {</span>
 			try {
-<span class="fc" id="L286">				receivePack.receive();</span>
-<span class="nc" id="L287">			} catch (Exception exception) {</span>
-<span class="nc" id="L288">				LOG.log(Level.SEVERE, &quot;ReceivePack error for &quot; + request.getRequestURI(), exception); //$NON-NLS-1$</span>
-<span class="nc" id="L289">				throw exception;</span>
-<span class="fc" id="L290">			}</span>
-<span class="fc" id="L291">		});</span>
-<span class="fc" id="L292">		return gitServlet;</span>
+<span class="fc" id="L275">				receivePack.receive();</span>
+<span class="nc" id="L276">			} catch (Exception exception) {</span>
+<span class="nc" id="L277">				LOG.log(Level.SEVERE, &quot;ReceivePack error for &quot; + request.getRequestURI(), exception); //$NON-NLS-1$</span>
+<span class="nc" id="L278">				throw exception;</span>
+<span class="fc" id="L279">			}</span>
+<span class="fc" id="L280">		});</span>
+<span class="fc" id="L281">		return gitServlet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

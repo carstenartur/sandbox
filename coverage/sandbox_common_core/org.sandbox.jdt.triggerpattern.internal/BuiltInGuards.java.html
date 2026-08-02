@@ -486,31 +486,31 @@ public final class BuiltInGuards {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateHasAnnotation(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L489" title="All 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
 <span class="nc" id="L490">			return false;</span>
 		}
-<span class="nc" id="L492">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L493">		String annotationName = args[1].toString();</span>
+<span class="fc" id="L492">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L493">		String annotationName = args[1].toString();</span>
 
-<span class="nc" id="L495">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L496" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="fc" id="L495">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L496" title="1 of 2 branches missed.">		if (node == null) {</span>
 <span class="nc" id="L497">			return false;</span>
 		}
 
 		// Navigate to the enclosing body declaration to check annotations
-<span class="nc" id="L501">		BodyDeclaration bodyDecl = findEnclosingBodyDeclaration(node);</span>
-<span class="nc bnc" id="L502" title="All 2 branches missed.">		if (bodyDecl != null) {</span>
-<span class="nc bnc" id="L503" title="All 2 branches missed.">			for (Object modifier : bodyDecl.modifiers()) {</span>
-<span class="nc bnc" id="L504" title="All 2 branches missed.">				if (modifier instanceof Annotation annotation) {</span>
-<span class="nc" id="L505">					String name = getAnnotationName(annotation);</span>
-<span class="nc bnc" id="L506" title="All 2 branches missed.">					if (annotationName.equals(name)) {</span>
-<span class="nc" id="L507">						return true;</span>
+<span class="fc" id="L501">		BodyDeclaration bodyDecl = findEnclosingBodyDeclaration(node);</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">		if (bodyDecl != null) {</span>
+<span class="fc bfc" id="L503" title="All 2 branches covered.">			for (Object modifier : bodyDecl.modifiers()) {</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L505">					String name = getAnnotationName(annotation);</span>
+<span class="fc bfc" id="L506" title="All 2 branches covered.">					if (annotationName.equals(name)) {</span>
+<span class="fc" id="L507">						return true;</span>
 					}
 				}
-<span class="nc" id="L510">			}</span>
+<span class="fc" id="L510">			}</span>
 		}
 
-<span class="nc" id="L513">		return false;</span>
+<span class="fc" id="L513">		return false;</span>
 	}
 
 	/**
@@ -1253,12 +1253,12 @@ public final class BuiltInGuards {
 	 * Finds the nearest enclosing BodyDeclaration for an AST node.
 	 */
 	private static BodyDeclaration findEnclosingBodyDeclaration(ASTNode node) {
-<span class="nc" id="L1256">		ASTNode current = node;</span>
-<span class="nc bnc" id="L1257" title="All 2 branches missed.">		while (current != null) {</span>
-<span class="nc bnc" id="L1258" title="All 2 branches missed.">			if (current instanceof BodyDeclaration bodyDecl) {</span>
-<span class="nc" id="L1259">				return bodyDecl;</span>
+<span class="fc" id="L1256">		ASTNode current = node;</span>
+<span class="pc bpc" id="L1257" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L1258" title="All 2 branches covered.">			if (current instanceof BodyDeclaration bodyDecl) {</span>
+<span class="fc" id="L1259">				return bodyDecl;</span>
 			}
-<span class="nc" id="L1261">			current = current.getParent();</span>
+<span class="fc" id="L1261">			current = current.getParent();</span>
 		}
 <span class="nc" id="L1263">		return null;</span>
 	}

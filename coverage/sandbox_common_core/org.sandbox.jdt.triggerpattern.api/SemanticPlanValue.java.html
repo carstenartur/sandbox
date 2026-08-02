@@ -77,7 +77,7 @@ public sealed interface SemanticPlanValue permits SemanticPlanValue.StringValue,
 <span class="pc bpc" id="L77" title="1 of 6 branches missed.">		if (value.length() &gt;= 2 &amp;&amp; value.startsWith(&quot;\&quot;&quot;) &amp;&amp; value.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L78">			return string(value.substring(1, value.length() - 1));</span>
 		}
-<span class="pc bpc" id="L80" title="1 of 4 branches missed.">		if (&quot;true&quot;.equalsIgnoreCase(value) || &quot;false&quot;.equalsIgnoreCase(value)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L80" title="All 4 branches covered.">		if (&quot;true&quot;.equalsIgnoreCase(value) || &quot;false&quot;.equalsIgnoreCase(value)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L81">			return bool(Boolean.parseBoolean(value));</span>
 		}
 		try {

@@ -41,19 +41,19 @@ final class StructuredRewriteAnnotationGuard {
 
 	static void validate(StructuredRewriteAction action,
 			StructuredRewriteActionContext context) throws CoreException {
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (!&quot;removeAnnotation&quot;.equals(action.name())) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		if (!&quot;removeAnnotation&quot;.equals(action.name())) { //$NON-NLS-1$</span>
 <span class="fc" id="L45">			return;</span>
 		}
-<span class="nc" id="L47">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (expected.indexOf('.') &lt; 0) {</span>
+<span class="fc" id="L47">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		if (expected.indexOf('.') &lt; 0) {</span>
 <span class="nc" id="L49">			return;</span>
 		}
-<span class="nc" id="L51">		BodyDeclaration declaration= declarationTarget(context, action);</span>
-<span class="nc bnc" id="L52" title="All 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
-<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="nc" id="L54">				AnnotationMatch match= classifyAnnotation(annotation, expected);</span>
-<span class="nc bnc" id="L55" title="All 2 branches missed.">				if (match == AnnotationMatch.EXACT) {</span>
-<span class="nc" id="L56">					return;</span>
+<span class="fc" id="L51">		BodyDeclaration declaration= declarationTarget(context, action);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L54">				AnnotationMatch match= classifyAnnotation(annotation, expected);</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				if (match == AnnotationMatch.EXACT) {</span>
+<span class="fc" id="L56">					return;</span>
 				}
 <span class="nc bnc" id="L58" title="All 2 branches missed.">				if (match == AnnotationMatch.COLLISION) {</span>
 <span class="nc" id="L59">					throw context.failure(&quot;Refusing to remove annotation &quot; + expected //$NON-NLS-1$</span>
@@ -66,25 +66,25 @@ final class StructuredRewriteAnnotationGuard {
 
 	private static BodyDeclaration declarationTarget(StructuredRewriteActionContext context,
 			StructuredRewriteAction action) throws CoreException {
-<span class="nc" id="L69">		ASTNode current= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">		while (current != null) {</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">			if (current instanceof BodyDeclaration declaration) {</span>
-<span class="nc bnc" id="L72" title="All 4 branches missed.">				if (declaration instanceof FieldDeclaration field &amp;&amp; field.fragments().size() != 1) {</span>
+<span class="fc" id="L69">		ASTNode current= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">			if (current instanceof BodyDeclaration declaration) {</span>
+<span class="pc bpc" id="L72" title="3 of 4 branches missed.">				if (declaration instanceof FieldDeclaration field &amp;&amp; field.fragments().size() != 1) {</span>
 <span class="nc" id="L73">					throw context.failure(</span>
 <span class="nc" id="L74">							&quot;Declaration-wide action is ambiguous for a multi-fragment field&quot;); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L76">				return declaration;</span>
+<span class="fc" id="L76">				return declaration;</span>
 			}
-<span class="nc" id="L78">			current= current.getParent();</span>
+<span class="fc" id="L78">			current= current.getParent();</span>
 		}
 <span class="nc" id="L80">		throw context.failure(&quot;Structured action target is not a Java declaration&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static AnnotationMatch classifyAnnotation(Annotation annotation, String expected) {
-<span class="nc" id="L84">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">		String resolvedName= binding == null ? null : binding.getQualifiedName();</span>
-<span class="nc" id="L86">		return classifyAnnotationName(expected, annotation.getTypeName().getFullyQualifiedName(),</span>
-<span class="nc" id="L87">				resolvedName);</span>
+<span class="fc" id="L84">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		String resolvedName= binding == null ? null : binding.getQualifiedName();</span>
+<span class="fc" id="L86">		return classifyAnnotationName(expected, annotation.getTypeName().getFullyQualifiedName(),</span>
+<span class="fc" id="L87">				resolvedName);</span>
 	}
 
 	static AnnotationMatch classifyAnnotationName(String expected, String sourceName,

@@ -42,7 +42,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 <span class="fc" id="L42">			return false;</span>
 		}
 <span class="fc bfc" id="L44" title="All 2 branches covered.">		return matchCommon(pattern, candidate)</span>
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">				&amp;&amp; matchOptionalType(pattern.getSuperclassType(), candidate.getSuperclassType())</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">				&amp;&amp; matchOptionalType(pattern.getSuperclassType(), candidate.getSuperclassType())</span>
 <span class="pc bpc" id="L46" title="1 of 2 branches missed.">				&amp;&amp; matchTypeSubset(pattern.superInterfaceTypes(), candidate.superInterfaceTypes())</span>
 <span class="pc bpc" id="L47" title="1 of 2 branches missed.">				&amp;&amp; matchOptionalList(pattern.typeParameters(), candidate.typeParameters());</span>
 	}
@@ -105,7 +105,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	}
 
 	private boolean matchOptionalType(Type pattern, Type candidate) {
-<span class="pc bpc" id="L108" title="5 of 6 branches missed.">		return pattern == null || candidate != null &amp;&amp; matchType(pattern, candidate);</span>
+<span class="fc bfc" id="L108" title="All 6 branches covered.">		return pattern == null || candidate != null &amp;&amp; matchType(pattern, candidate);</span>
 	}
 
 	private boolean matchTypeSubset(List&lt;?&gt; patternTypes, List&lt;?&gt; candidateTypes) {
@@ -140,7 +140,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	}
 
 	private boolean matchType(Type pattern, Type candidate) {
-<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (pattern instanceof ParameterizedType patternParameterized) {</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (pattern instanceof ParameterizedType patternParameterized) {</span>
 <span class="nc bnc" id="L144" title="All 2 branches missed.">			if (!(candidate instanceof ParameterizedType candidateParameterized)) {</span>
 <span class="nc" id="L145">				return false;</span>
 			}
@@ -148,15 +148,15 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 <span class="nc bnc" id="L148" title="All 2 branches missed.">					&amp;&amp; matchTypeList(patternParameterized.typeArguments(),</span>
 <span class="nc" id="L149">							candidateParameterized.typeArguments());</span>
 		}
-<span class="nc bnc" id="L151" title="All 2 branches missed.">		if (candidate instanceof ParameterizedType candidateParameterized) {</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (candidate instanceof ParameterizedType candidateParameterized) {</span>
 <span class="nc" id="L152">			return matchType(pattern, candidateParameterized.getType());</span>
 		}
-<span class="nc" id="L154">		TypeDeclarationHeaderMatcher structural= speculativeMatcher();</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">		if (pattern.subtreeMatch(structural, candidate)) {</span>
+<span class="fc" id="L154">		TypeDeclarationHeaderMatcher structural= speculativeMatcher();</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (pattern.subtreeMatch(structural, candidate)) {</span>
 <span class="nc" id="L156">			mergeBindings(structural);</span>
 <span class="nc" id="L157">			return true;</span>
 		}
-<span class="nc" id="L159">		return bindingEquivalent(pattern, candidate);</span>
+<span class="fc" id="L159">		return bindingEquivalent(pattern, candidate);</span>
 	}
 
 	private boolean matchTypeList(List&lt;?&gt; patternTypes, List&lt;?&gt; candidateTypes) {
@@ -174,25 +174,25 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 	}
 
 	private static boolean bindingEquivalent(Type pattern, Type candidate) {
-<span class="nc" id="L177">		ITypeBinding binding= candidate.resolveBinding();</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">		if (binding == null) {</span>
+<span class="fc" id="L177">		ITypeBinding binding= candidate.resolveBinding();</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (binding == null) {</span>
 <span class="nc" id="L179">			return false;</span>
 		}
-<span class="nc" id="L181">		ITypeBinding erasure= binding.getErasure();</span>
-<span class="nc bnc" id="L182" title="All 2 branches missed.">		ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
-<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (declaration == null) {</span>
+<span class="fc" id="L181">		ITypeBinding erasure= binding.getErasure();</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		if (declaration == null) {</span>
 <span class="nc" id="L184">			return false;</span>
 		}
-<span class="nc" id="L186">		String expected= removeWhitespace(pattern.toString());</span>
-<span class="nc bnc" id="L187" title="All 2 branches missed.">		return expected.equals(declaration.getQualifiedName())</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">				|| expected.equals(declaration.getName());</span>
+<span class="fc" id="L186">		String expected= removeWhitespace(pattern.toString());</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">		return expected.equals(declaration.getQualifiedName())</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">				|| expected.equals(declaration.getName());</span>
 	}
 
 	private static String removeWhitespace(String value) {
-<span class="nc" id="L192">		StringBuilder result= new StringBuilder(value.length());</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">		value.codePoints().filter(character -&gt; !Character.isWhitespace(character))</span>
-<span class="nc" id="L194">				.forEach(result::appendCodePoint);</span>
-<span class="nc" id="L195">		return result.toString();</span>
+<span class="fc" id="L192">		StringBuilder result= new StringBuilder(value.length());</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		value.codePoints().filter(character -&gt; !Character.isWhitespace(character))</span>
+<span class="fc" id="L194">				.forEach(result::appendCodePoint);</span>
+<span class="fc" id="L195">		return result.toString();</span>
 	}
 
 	private boolean matchOptionalList(List&lt;?&gt; patternNodes, List&lt;?&gt; candidateNodes) {

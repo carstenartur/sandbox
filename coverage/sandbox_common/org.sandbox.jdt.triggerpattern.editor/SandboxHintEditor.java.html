@@ -19,6 +19,7 @@ import org.eclipse.jface.text.source.IVerticalRuler;
 import org.eclipse.jface.text.source.projection.ProjectionSupport;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.TextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
@@ -47,49 +48,53 @@ public class SandboxHintEditor extends TextEditor {
 	 */
 	public static final String EDITOR_ID = &quot;org.sandbox.jdt.triggerpattern.editor.sandboxHint&quot;; //$NON-NLS-1$
 
+	/** Eclipse help context for the Hint DSL programming guide. */
+	public static final String HELP_CONTEXT_ID = &quot;sandbox_common.hintEditor&quot;; //$NON-NLS-1$
+
 	private SandboxHintOutlinePage outlinePage;
 	private ProjectionSupport projectionSupport;
 
-<span class="nc" id="L53">	public SandboxHintEditor() {</span>
-<span class="nc" id="L54">		setSourceViewerConfiguration(new SandboxHintSourceViewerConfiguration(this));</span>
-<span class="nc" id="L55">		setDocumentProvider(new SandboxHintDocumentProvider());</span>
-<span class="nc" id="L56">	}</span>
+<span class="nc" id="L57">	public SandboxHintEditor() {</span>
+<span class="nc" id="L58">		setSourceViewerConfiguration(new SandboxHintSourceViewerConfiguration(this));</span>
+<span class="nc" id="L59">		setDocumentProvider(new SandboxHintDocumentProvider());</span>
+<span class="nc" id="L60">	}</span>
 
 	@Override
 	protected ISourceViewer createSourceViewer(Composite parent,
 			IVerticalRuler ruler, int styles) {
-<span class="nc" id="L61">		ProjectionViewer viewer = new ProjectionViewer(parent, ruler,</span>
-<span class="nc" id="L62">				getOverviewRuler(), isOverviewRulerVisible(), styles);</span>
-<span class="nc" id="L63">		getSourceViewerDecorationSupport(viewer);</span>
-<span class="nc" id="L64">		return viewer;</span>
+<span class="nc" id="L65">		ProjectionViewer viewer = new ProjectionViewer(parent, ruler,</span>
+<span class="nc" id="L66">				getOverviewRuler(), isOverviewRulerVisible(), styles);</span>
+<span class="nc" id="L67">		getSourceViewerDecorationSupport(viewer);</span>
+<span class="nc" id="L68">		return viewer;</span>
 	}
 
 	@Override
 	public void createPartControl(Composite parent) {
-<span class="nc" id="L69">		super.createPartControl(parent);</span>
+<span class="nc" id="L73">		super.createPartControl(parent);</span>
+<span class="nc" id="L74">		ISourceViewer viewer = getSourceViewer();</span>
+<span class="nc" id="L75">		PlatformUI.getWorkbench().getHelpSystem().setHelp(viewer.getTextWidget(), HELP_CONTEXT_ID);</span>
 		// Enable projection (code folding)
-<span class="nc" id="L71">		ISourceViewer viewer = getSourceViewer();</span>
-<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (viewer instanceof ProjectionViewer projectionViewer) {</span>
-<span class="nc" id="L73">			projectionSupport = new ProjectionSupport(projectionViewer,</span>
-<span class="nc" id="L74">					getAnnotationAccess(), getSharedColors());</span>
-<span class="nc" id="L75">			projectionSupport.install();</span>
-<span class="nc" id="L76">			projectionViewer.doOperation(ProjectionViewer.TOGGLE);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (viewer instanceof ProjectionViewer projectionViewer) {</span>
+<span class="nc" id="L78">			projectionSupport = new ProjectionSupport(projectionViewer,</span>
+<span class="nc" id="L79">					getAnnotationAccess(), getSharedColors());</span>
+<span class="nc" id="L80">			projectionSupport.install();</span>
+<span class="nc" id="L81">			projectionViewer.doOperation(ProjectionViewer.TOGGLE);</span>
 
 			// Initial folding computation
-<span class="nc" id="L79">			SandboxHintFoldingProvider.updateFolding(projectionViewer);</span>
+<span class="nc" id="L84">			SandboxHintFoldingProvider.updateFolding(projectionViewer);</span>
 		}
-<span class="nc" id="L81">	}</span>
+<span class="nc" id="L86">	}</span>
 
 	/**
 	 * Updates the code folding annotations.
 	 * Called from the reconciler after document changes.
 	 */
 	public void updateFolding() {
-<span class="nc" id="L88">		ISourceViewer viewer = getSourceViewer();</span>
-<span class="nc bnc" id="L89" title="All 2 branches missed.">		if (viewer instanceof ProjectionViewer projectionViewer) {</span>
-<span class="nc" id="L90">			SandboxHintFoldingProvider.updateFolding(projectionViewer);</span>
+<span class="nc" id="L93">		ISourceViewer viewer = getSourceViewer();</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (viewer instanceof ProjectionViewer projectionViewer) {</span>
+<span class="nc" id="L95">			SandboxHintFoldingProvider.updateFolding(projectionViewer);</span>
 		}
-<span class="nc" id="L92">	}</span>
+<span class="nc" id="L97">	}</span>
 
 	/**
 	 * Updates the outline view content.
@@ -98,34 +103,34 @@ public class SandboxHintEditor extends TextEditor {
 	 * @since 1.5.0
 	 */
 	public void updateOutline() {
-<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (outlinePage != null) {</span>
-<span class="nc" id="L102">			outlinePage.update();</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		if (outlinePage != null) {</span>
+<span class="nc" id="L107">			outlinePage.update();</span>
 		}
-<span class="nc" id="L104">	}</span>
+<span class="nc" id="L109">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	@Override
 	public &lt;T&gt; T getAdapter(Class&lt;T&gt; adapter) {
-<span class="nc bnc" id="L109" title="All 2 branches missed.">		if (IContentOutlinePage.class.equals(adapter)) {</span>
-<span class="nc bnc" id="L110" title="All 2 branches missed.">			if (outlinePage == null) {</span>
-<span class="nc" id="L111">				outlinePage = new SandboxHintOutlinePage(this);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		if (IContentOutlinePage.class.equals(adapter)) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">			if (outlinePage == null) {</span>
+<span class="nc" id="L116">				outlinePage = new SandboxHintOutlinePage(this);</span>
 			}
-<span class="nc" id="L113">			return (T) outlinePage;</span>
+<span class="nc" id="L118">			return (T) outlinePage;</span>
 		}
-<span class="nc bnc" id="L115" title="All 2 branches missed.">		if (IToggleBreakpointsTarget.class.equals(adapter)) {</span>
-<span class="nc" id="L116">			return (T) new SandboxHintBreakpointAdapter();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">		if (IToggleBreakpointsTarget.class.equals(adapter)) {</span>
+<span class="nc" id="L121">			return (T) new SandboxHintBreakpointAdapter();</span>
 		}
-<span class="nc" id="L118">		return super.getAdapter(adapter);</span>
+<span class="nc" id="L123">		return super.getAdapter(adapter);</span>
 	}
 
 	@Override
 	public void dispose() {
-<span class="nc bnc" id="L123" title="All 2 branches missed.">		if (projectionSupport != null) {</span>
-<span class="nc" id="L124">			projectionSupport.dispose();</span>
-<span class="nc" id="L125">			projectionSupport = null;</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (projectionSupport != null) {</span>
+<span class="nc" id="L129">			projectionSupport.dispose();</span>
+<span class="nc" id="L130">			projectionSupport = null;</span>
 		}
-<span class="nc" id="L127">		outlinePage = null;</span>
-<span class="nc" id="L128">		super.dispose();</span>
-<span class="nc" id="L129">	}</span>
+<span class="nc" id="L132">		outlinePage = null;</span>
+<span class="nc" id="L133">		super.dispose();</span>
+<span class="nc" id="L134">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
