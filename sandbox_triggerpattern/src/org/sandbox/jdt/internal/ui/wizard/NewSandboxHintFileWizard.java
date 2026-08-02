@@ -41,6 +41,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
@@ -133,6 +134,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		hintFile.setId(filePage.getHintId());
 		hintFile.setDescription(filePage.getHintDescription());
 		hintFile.setSeverity(filePage.getSeverityValue());
+		hintFile.setBindingPolicy("required".equals(filePage.getBindingPolicyValue()) //$NON-NLS-1$
+				? HintBindingPolicy.REQUIRED : HintBindingPolicy.OPTIONAL);
 		int minJava = filePage.getMinJavaVersion();
 		if (minJava > 0) {
 			hintFile.setMinJavaVersion(minJava);
