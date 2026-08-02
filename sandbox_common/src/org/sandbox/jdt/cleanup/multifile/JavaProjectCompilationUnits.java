@@ -10,15 +10,21 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourceAttributes;
 
 import org.eclipse.core.runtime.IPath;
 
@@ -28,6 +34,7 @@ import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 /** Utility for obtaining stable, policy-aware source compilation-unit scopes. */
@@ -81,6 +88,133 @@ public final class JavaProjectCompilationUnits {
 			collectRootUnits(root, result);
 		}
 		result.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));
+		return List.copyOf(result);
+	}
+
+	/**
+	 * Collects compilation units across several Java projects, for example a fixture
+	 * bundle together with the test bundles that consume it. Projects that cannot be
+	 * edited are reported through {@link #readOnlyProjects(Collection)} and must be
+	 * checked before a coordinated cleanup is planned.
+	 *
+	 * @param projects Java projects contributing to the coordinated scope
+	 * @param currentScope explicitly selected cleanup scope
+	 * @param policy source-root expansion policy
+	 * @return stable list of compilation units allowed by the policy across all projects
+	 * @throws JavaModelException if the Java model cannot be read
+	 */
+	public static List<ICompilationUnit> collect(Collection<IJavaProject> projects,
+			Collection<ICompilationUnit> currentScope, SourceRootPolicy policy) throws JavaModelException {
+		if (projects == null || policy == null) {
+			return List.of();
+		}
+		Set<String> seen= new HashSet<>();
+		List<ICompilationUnit> result= new ArrayList<>();
+		for (IJavaProject project : projects) {
+			for (ICompilationUnit unit : collect(project, currentScope, policy)) {
+				if (seen.add(unit.getHandleIdentifier())) {
+					result.add(unit);
+				}
+			}
+		}
+		result.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));
+		return List.copyOf(result);
+	}
+
+	/**
+	 * Returns the Java projects that own the given compilation units, in stable order.
+	 *
+	 * @param units compilation units, may be {@code null}
+	 * @return owning Java projects
+	 */
+	public static List<IJavaProject> owningProjects(Collection<ICompilationUnit> units) {
+		if (units == null) {
+			return List.of();
+		}
+		Map<String, IJavaProject> projects= new TreeMap<>();
+		for (ICompilationUnit unit : units) {
+			IJavaProject project= unit == null ? null : unit.getJavaProject();
+			if (project != null && project.exists()) {
+				projects.putIfAbsent(project.getHandleIdentifier(), project);
+			}
+		}
+		return List.copyOf(projects.values());
+	}
+
+	/**
+	 * Returns the transitive closure of Java projects that reference the given
+	 * projects, including the given projects themselves. A coordinated cleanup of a
+	 * shared test fixture must include every project that consumes it, otherwise the
+	 * fixture would be migrated while its users keep the old API.
+	 *
+	 * @param projects seed Java projects, may be {@code null}
+	 * @return seed projects and all transitively referencing Java projects
+	 */
+	public static List<IJavaProject> withReferencingProjects(Collection<IJavaProject> projects) {
+		Map<String, IJavaProject> result= new TreeMap<>();
+		if (projects == null) {
+			return List.of();
+		}
+		Deque<IProject> pending= new ArrayDeque<>();
+		for (IJavaProject project : projects) {
+			if (project != null && project.exists()
+					&& result.putIfAbsent(project.getHandleIdentifier(), project) == null) {
+				pending.add(project.getProject());
+			}
+		}
+		while (!pending.isEmpty()) {
+			IProject current= pending.removeFirst();
+			if (current == null || !current.isAccessible()) {
+				continue;
+			}
+			for (IProject referencing : current.getReferencingProjects()) {
+				if (referencing == null || !referencing.isAccessible()) {
+					continue;
+				}
+				IJavaProject javaProject= JavaCore.create(referencing);
+				if (javaProject == null || !javaProject.exists()
+						|| result.putIfAbsent(javaProject.getHandleIdentifier(), javaProject) != null) {
+					continue;
+				}
+				pending.add(referencing);
+			}
+		}
+		return List.copyOf(result.values());
+	}
+
+	/**
+	 * Returns whether a coordinated cleanup may write to the project. Target-platform
+	 * bundles and other read-only or closed projects must abort the migration instead
+	 * of being migrated partially.
+	 *
+	 * @param project Java project, may be {@code null}
+	 * @return {@code true} if the project exists, is open and is writable
+	 */
+	public static boolean isEditable(IJavaProject project) {
+		IProject resource= project == null ? null : project.getProject();
+		if (resource == null || !resource.exists() || !resource.isAccessible()) {
+			return false;
+		}
+		ResourceAttributes attributes= resource.getResourceAttributes();
+		return attributes == null || !attributes.isReadOnly();
+	}
+
+	/**
+	 * Returns the projects that must not be modified by a coordinated cleanup.
+	 *
+	 * @param projects Java projects to inspect, may be {@code null}
+	 * @return read-only or inaccessible projects, in input order
+	 */
+	public static List<IJavaProject> readOnlyProjects(Collection<IJavaProject> projects) {
+		if (projects == null) {
+			return List.of();
+		}
+		List<IJavaProject> result= new ArrayList<>();
+		for (IJavaProject project : projects) {
+			if (!isEditable(project)) {
+				result.add(project);
+			}
+		}
 		return List.copyOf(result);
 	}
 

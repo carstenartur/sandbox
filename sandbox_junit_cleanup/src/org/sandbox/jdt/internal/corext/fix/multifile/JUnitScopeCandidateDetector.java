@@ -120,11 +120,10 @@ public final class JUnitScopeCandidateDetector {
 							return true;
 						}
 						ITypeBinding binding= node.resolveBinding();
-						ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
-						if (superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(
-								superclass.getErasure().getQualifiedName())) {
+						if (binding != null && extendsExternalResource(binding)) {
 							candidateFound[0]= true;
 							complete[0]&= addJavaElement(binding, elements);
+							complete[0]&= addExternalResourceSuperTypes(binding, elements);
 							return false;
 						}
 						if (binding == null && node.getSuperclassType() != null
@@ -165,6 +164,9 @@ public final class JUnitScopeCandidateDetector {
 						}
 						ITypeBinding fieldType= node.getType().resolveBinding();
 						complete[0]&= addJavaElement(fieldType, elements);
+						if (fieldType != null && extendsExternalResource(fieldType)) {
+							complete[0]&= addExternalResourceSuperTypes(fieldType, elements);
+						}
 						return true;
 					}
 
@@ -227,6 +229,32 @@ public final class JUnitScopeCandidateDetector {
 	private static boolean isSyntacticRuleName(String name) {
 		String simple= simpleName(name);
 		return "Rule".equals(simple) || "ClassRule".equals(simple); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	/** Returns whether the superclass chain reaches {@code ExternalResource}. */
+	private static boolean extendsExternalResource(ITypeBinding binding) {
+		for (ITypeBinding current= binding == null ? null : binding.getSuperclass(); current != null;
+				current= current.getSuperclass()) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Seeds every source type between a fixture and {@code ExternalResource}, because
+	 * the inherited callbacks are renamed together with the fixture.
+	 */
+	private static boolean addExternalResourceSuperTypes(ITypeBinding binding, Set<IJavaElement> elements) {
+		boolean complete= true;
+		for (ITypeBinding current= binding.getSuperclass(); current != null; current= current.getSuperclass()) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {
+				return complete;
+			}
+			complete&= addJavaElement(current, elements);
+		}
+		return false;
 	}
 
 	private static String simpleName(String name) {

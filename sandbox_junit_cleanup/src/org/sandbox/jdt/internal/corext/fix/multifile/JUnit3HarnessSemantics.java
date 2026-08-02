@@ -20,6 +20,8 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
+
 /**
  * Stable fail-closed taxonomy for JUnit 3 execution semantics that are not
  * equivalent to ordinary annotation-driven Jupiter tests.
@@ -60,8 +62,14 @@ final class JUnit3HarnessSemantics {
 
 		String name= method.getName().getIdentifier();
 		if ("suite".equals(name) && isSuiteBuilder(method)) { //$NON-NLS-1$
+			JUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);
+			if (model.supported()) {
+				return Optional.of(new Rejection("MODELLED_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$
+						"The hierarchy declares a modellable suite(); migrate the aggregator to @Suite and @SelectClasses before the hierarchy itself.")); //$NON-NLS-1$
+			}
 			return Optional.of(new Rejection("CUSTOM_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$
-					"The hierarchy declares suite(), so test composition, nesting, duplication or ordering must be migrated as an explicit suite model.")); //$NON-NLS-1$
+					"The hierarchy declares suite(), so test composition, nesting, duplication or ordering must be migrated as an explicit suite model (" //$NON-NLS-1$
+							+ model.rejection().reasonCode() + ")." )); //$NON-NLS-1$
 		}
 		if ("runTest".equals(name) && isRunTestHook(method)) { //$NON-NLS-1$
 			return Optional.of(new Rejection("CUSTOM_JUNIT3_TEST_SELECTION", //$NON-NLS-1$
