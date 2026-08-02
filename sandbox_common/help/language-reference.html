@@ -15,8 +15,7 @@
 <tr><td><code>caseInsensitive</code></td><td><code>&lt;!caseInsensitive&gt;</code></td><td>Enable case-insensitive literal matching.</td></tr>
 <tr><td><code>suppressWarnings</code></td><td><code>&lt;!suppressWarnings: key&gt;</code></td><td>Recognized suppression keys.</td></tr>
 <tr><td><code>treeKind</code></td><td><code>&lt;!treeKind: METHOD_DECLARATION&gt;</code></td><td>Restrict indexed AST node kinds.</td></tr>
-<tr><td><code>binding-policy</code></td><td><code>&lt;!binding-policy: optional|required&gt;</code></td><td>Choose compatibility or fail-closed semantic binding behavior; plan-aware programs require <code>required</code>.</td></tr>
-<tr><td><code>requires-plan</code></td><td><code>&lt;!requires-plan: contract-id&gt;</code></td><td>Require a semantic-plan contract.</td></tr>
+<tr><td><code>requires-plan</code></td><td><code>&lt;!requires-plan: contract-id&gt;</code></td><td>Require a semantic-plan contract and fail-closed semantic target resolution.</td></tr>
 <tr><td><code>map</code></td><td><code>&lt;!map N: old =&gt; new&gt;</code></td><td>Reusable source/replacement mapping.</td></tr>
 <tr><td><code>foreach</code></td><td><code>&lt;!foreach N: source -&gt; target&gt;</code></td><td>Generate rules from mapping entries.</td></tr>
 <tr><td><code>predicate</code></td><td><code>&lt;!predicate p($n): guard($n)&gt;</code></td><td>Named parameterized guard expression.</td></tr>
