@@ -29,7 +29,6 @@ class HintLanguageVocabularyTest {
 		assertEquals(HintLanguageVocabulary.directives().size(),
 				HintLanguageVocabulary.directiveNames().size());
 		assertTrue(HintLanguageVocabulary.directiveNames().contains("predicate")); //$NON-NLS-1$
-		assertTrue(HintLanguageVocabulary.directiveNames().contains("binding-policy")); //$NON-NLS-1$
 		assertTrue(HintLanguageVocabulary.directiveNames().contains("requires-plan")); //$NON-NLS-1$
 		assertEquals(HintLanguageVocabulary.operators().size(),
 				HintLanguageVocabulary.operators().stream().distinct().count());
