@@ -94,7 +94,6 @@ public enum SandboxHintTemplates {
 		@Override
 		public String getRuleContent() {
 			return """
-				<!binding-policy: required>
 				<!requires-plan: example-junit-migration>
 
 				@id: planned-jupiter-test
