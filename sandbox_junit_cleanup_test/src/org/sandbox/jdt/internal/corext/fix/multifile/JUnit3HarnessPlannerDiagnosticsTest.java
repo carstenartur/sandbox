@@ -75,7 +75,7 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 	}
 
 	@Test
-	void reportsCustomSuiteBuilder() throws CoreException {
+	void reportsModelledSuiteBuilder() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("suitebuilder", true, null); //$NON-NLS-1$
 		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
 				"""
@@ -101,7 +101,7 @@ class JUnit3HarnessPlannerDiagnosticsTest {
 				}
 				""", false, null); //$NON-NLS-1$
 
-		assertReason(plan(base, concrete), "CUSTOM_JUNIT3_SUITE_BUILDER"); //$NON-NLS-1$
+		assertReason(plan(base, concrete), "MODELLED_JUNIT3_SUITE_BUILDER"); //$NON-NLS-1$
 	}
 
 	private MultiFileCleanUpPlanResult<JUnitMigrationPlan> plan(
