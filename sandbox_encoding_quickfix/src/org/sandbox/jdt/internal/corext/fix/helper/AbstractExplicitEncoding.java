@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -23,6 +25,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -30,6 +33,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
@@ -63,6 +67,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
+	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =
+			AbstractExplicitEncoding.class.getName() + ".removedUnsupportedEncodingCatches"; //$NON-NLS-1$
 
 	public static final Map<String, String> ENCODING_MAP = Map.of(
 			"UTF-8", "UTF_8", //$NON-NLS-1$ //$NON-NLS-2$
@@ -239,8 +245,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			CompilationUnit root = (CompilationUnit) statement.getRoot();
 			int start = root.getExtendedStartPosition(statement);
 			String source = buffer.substring(start, start + root.getExtendedLength(statement));
-			source = stripBaseIndent(source, lineDelimiter(buffer));
 			source = LAST_NLS_COMMENT.matcher(source).replaceFirst(""); //$NON-NLS-1$
+			source = Pattern.compile("^[ \\t]*").matcher(source).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
+			source = Pattern.compile("\n[ \\t]*").matcher(source).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
 			String visitedSource = buffer.substring(visited.getStartPosition(),
 					visited.getStartPosition() + visited.getLength());
 			String replacementSource = replacement.toString().replaceAll(",", ", "); //$NON-NLS-1$ //$NON-NLS-2$
@@ -288,13 +295,59 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			}
 
 			CatchClause removedCatch = (CatchClause) tryStatement.catchClauses().get(0);
+			Set<CatchClause> removedCatches = removedUnsupportedEncodingCatches(root);
+			removedCatches.add(removedCatch);
 			cuRewrite.getImportRemover().registerRemovedNode(removedCatch);
+			if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {
+				cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
+			}
 			rewrite.remove(tryStatement, group);
 			return true;
 		} catch (JavaModelException exception) {
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Set<CatchClause> removedUnsupportedEncodingCatches(CompilationUnit root) {
+		Object stored = root.getProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY);
+		if (stored instanceof Set<?>) {
+			return (Set<CatchClause>) stored;
+		}
+		Set<CatchClause> removedCatches = Collections.newSetFromMap(new IdentityHashMap<>());
+		root.setProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY, removedCatches);
+		return removedCatches;
+	}
+
+	private static boolean hasSurvivingUnsupportedEncodingExceptionReference(CompilationUnit root,
+			Set<CatchClause> removedCatches) {
+		boolean[] found = { false };
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				if (found[0]) {
+					return false;
+				}
+				if (!UNSUPPORTED_ENCODING_EXCEPTION.equals(node.getIdentifier())
+						|| ASTNodes.getFirstAncestorOrNull(node, ImportDeclaration.class) != null
+						|| isDescendantOfAny(node, removedCatches)) {
+					return true;
+				}
+				found[0] = true;
+				return false;
+			}
+		});
+		return found[0];
+	}
+
+	private static boolean isDescendantOfAny(ASTNode node, Set<CatchClause> ancestors) {
+		for (ASTNode current = node; current != null; current = current.getParent()) {
+			if (ancestors.contains(current)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static String stripBaseIndent(String source, String delimiter) {
