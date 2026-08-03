@@ -62,6 +62,28 @@ class AppendOnlyArraySeedDetectorTest {
 	}
 
 	@Test
+	void detectsExplicitFieldAccess() {
+		CompilationUnit compilationUnit= parse("""
+			import java.util.Arrays;
+
+			class Sample {
+				private String[] values = new String[0];
+
+				void append(String value) {
+					this.values = Arrays.copyOf(this.values, this.values.length + 1);
+					this.values[this.values.length - 1] = value;
+				}
+			}
+			""");
+
+		List<ContainerUsageProfile> profiles= detector.findSeeds(compilationUnit);
+
+		assertEquals(1, profiles.size());
+		assertEquals("this.values", profiles.get(0).identity().displayName());
+		assertTrue(profiles.get(0).identity().hasResolvedBinding());
+	}
+
+	@Test
 	void ignoresPrimitiveArrays() {
 		CompilationUnit compilationUnit= parse("""
 			import java.util.Arrays;
@@ -106,6 +128,27 @@ class AppendOnlyArraySeedDetectorTest {
 					String[] other = new String[1];
 					values = Arrays.copyOf(values, values.length + 1);
 					other[other.length - 1] = value;
+				}
+			}
+			""");
+
+		assertTrue(detector.findSeeds(compilationUnit).isEmpty());
+	}
+
+	@Test
+	void ignoresSameNamedCopyMethodFromAnotherType() {
+		CompilationUnit compilationUnit= parse("""
+			class Arrays {
+				static String[] copyOf(String[] source, int length) {
+					return source;
+				}
+			}
+
+			class Sample {
+				void append(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
 				}
 			}
 			""");
