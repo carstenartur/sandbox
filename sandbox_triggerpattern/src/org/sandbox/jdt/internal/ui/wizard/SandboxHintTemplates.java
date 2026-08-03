@@ -81,9 +81,8 @@ public enum SandboxHintTemplates {
 
 				@id: add-jupiter-test
 				void $method($params$) :: isPublic($method)
-				=>! removeModifier(target=$method, modifier=public);
-				    addAnnotation(target=$method,
-				        annotation="org.junit.jupiter.api.Test")
+				=>! removeModifier(modifier=public);
+				    addAnnotation(annotation="org.junit.jupiter.api.Test")
 				;;
 				"""; //$NON-NLS-1$
 		}
@@ -98,8 +97,7 @@ public enum SandboxHintTemplates {
 
 				@id: planned-jupiter-test
 				void $method($params$) :: plannedRole($method, "TEST_METHOD")
-				=>! addAnnotation(target=$method,
-				        annotation="org.junit.jupiter.api.Test")
+				=>! addAnnotation(annotation="org.junit.jupiter.api.Test")
 				;;
 				"""; //$NON-NLS-1$
 		}

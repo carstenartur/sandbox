@@ -57,7 +57,8 @@ class SandboxHintStructuredActionEditorTest {
 		SandboxHintContentAssistProcessor.CompletionEntry addAnnotation= entries.get("addAnnotation"); //$NON-NLS-1$
 		assertTrue(addAnnotation.replacement().startsWith("addAnnotation(")); //$NON-NLS-1$
 		assertTrue(addAnnotation.replacement().contains("annotation=")); //$NON-NLS-1$
-		assertTrue(addAnnotation.replacement().contains("target=")); //$NON-NLS-1$
+		assertFalse(addAnnotation.replacement().contains("target=")); //$NON-NLS-1$
+		assertTrue(addAnnotation.description().contains("target=VALUE")); //$NON-NLS-1$
 		assertFalse(addAnnotation.replacement().contains("?")); //$NON-NLS-1$
 		assertTrue(addAnnotation.cursorPosition() > addAnnotation.replacement().indexOf('='));
 	}

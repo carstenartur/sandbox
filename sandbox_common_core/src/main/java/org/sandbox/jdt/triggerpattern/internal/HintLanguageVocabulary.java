@@ -121,12 +121,20 @@ public final class HintLanguageVocabulary {
 		String documentedRequired= schema.requiredArguments().stream().sorted()
 				.map(name -> name + "=VALUE") //$NON-NLS-1$
 				.collect(java.util.stream.Collectors.joining(", ")); //$NON-NLS-1$
-		String documentedOptional= schema.optionalArguments().stream().sorted()
-				.map(name -> "[, " + name + "=VALUE]") //$NON-NLS-1$ //$NON-NLS-2$
-				.collect(java.util.stream.Collectors.joining());
+		String documentedOptional= optionalSyntax(schema, !documentedRequired.isEmpty());
 		String replacement= schema.name() + "(" + replacementArguments + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 		String syntax= "=>! " + schema.name() + "(" + documentedRequired + documentedOptional + ")"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		return new Action(schema.name(), replacement, syntax, schema.description());
+	}
+
+	private static String optionalSyntax(RewriteActionSchema schema, boolean followsRequired) {
+		List<String> optional= schema.optionalArguments().stream().sorted().toList();
+		StringBuilder result= new StringBuilder();
+		for (int index= 0; index < optional.size(); index++) {
+			String prefix= followsRequired || index > 0 ? ", " : ""; //$NON-NLS-1$ //$NON-NLS-2$
+			result.append('[').append(prefix).append(optional.get(index)).append("=VALUE]"); //$NON-NLS-1$
+		}
+		return result.toString();
 	}
 
 	private static String humanize(String name) {

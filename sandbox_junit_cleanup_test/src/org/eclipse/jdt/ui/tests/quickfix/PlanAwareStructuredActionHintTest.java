@@ -47,7 +47,7 @@ class PlanAwareStructuredActionHintTest {
 	AbstractEclipseJava context= new EclipseJava17();
 
 	@Test
-	void factBackedActionSequenceReachesTheTypedAstOperation() throws CoreException {
+	void implicitPrimaryTargetReachesTheTypedAstOperation() throws CoreException {
 		IPackageFragmentRoot root= context.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 		IPackageFragment pack= root.createPackageFragment("sample", true, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("Sample.java", //$NON-NLS-1$
@@ -69,10 +69,10 @@ class PlanAwareStructuredActionHintTest {
 				<!id: structured-demo>
 				<!requires-plan: structured-demo>
 				void $name() :: plannedRole($name, "TEST_METHOD")
-				=>! addAnnotation(target=$name, annotation="org.junit.jupiter.api.Test");
-				    addAnnotation(target=$name, annotation="org.junit.jupiter.api.Order",
+				=>! addAnnotation(annotation="org.junit.jupiter.api.Test");
+				    addAnnotation(annotation="org.junit.jupiter.api.Order",
 				        value=planValue($name, "order"));
-				    removeModifier(target=$name, modifier=public)
+				    removeModifier(modifier=public)
 				;;
 				""";
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();

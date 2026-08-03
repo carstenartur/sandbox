@@ -29,6 +29,7 @@ public final class StructuredRewriteActionRegistry {
 
 	private StructuredRewriteActionRegistry() {
 		BuiltInStructuredRewriteActions.registerAll(this);
+		SignatureStructuredRewriteActions.registerAll(this);
 	}
 
 	public static StructuredRewriteActionRegistry getInstance() {

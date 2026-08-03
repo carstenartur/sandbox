@@ -34,15 +34,15 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException
 class StructuredRewriteActionParserTest {
 
 	@Test
-	void parsesOrderedActionsAndTypedValueExpressions() throws HintParseException {
+	void parsesImplicitPrimaryTargetAndTypedValueExpressions() throws HintParseException {
 		String source= """
 				<!id: structured.demo>
 				<!requires-plan: structured/demo>
 				void $name()
-				=>! addAnnotation(target=$name,
+				=>! addAnnotation(
 				        annotation="org.junit.jupiter.api.Order",
 				        value=planValue($name, "order"));
-				    addModifier(target=$name, modifier=public)
+				    addModifier(modifier=public)
 				;;
 				""";
 
@@ -55,7 +55,9 @@ class StructuredRewriteActionParserTest {
 		assertEquals(2, alternative.structuredActions().size());
 		StructuredRewriteAction annotation= alternative.structuredActions().get(0);
 		assertEquals("addAnnotation", annotation.name()); //$NON-NLS-1$
-		assertEquals(new RewriteActionValue.Binding("$name"), annotation.arguments().get("target")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(annotation.arguments().containsKey("target")); //$NON-NLS-1$
+		assertInstanceOf(RewriteActionValue.MatchedNode.class,
+				annotation.requiredArgument("target")); //$NON-NLS-1$
 		assertEquals(new RewriteActionValue.Literal(
 				SemanticPlanValue.string("org.junit.jupiter.api.Order")), //$NON-NLS-1$
 				annotation.arguments().get("annotation")); //$NON-NLS-1$
@@ -67,15 +69,18 @@ class StructuredRewriteActionParserTest {
 	}
 
 	@Test
-	void parsesClassLiteralNameAndListExpressions() throws HintParseException {
+	void explicitTargetStillAddressesAnotherBinding() throws HintParseException {
 		HintFile hintFile= new HintProgramParser().parseHintFile("""
 				Object $field;
 				=>! addAnnotation(target=$field, annotation="example.Values",
 				        value=list(classLiteral("example.One"), name("example.Mode.TWO"), 3, true))
 				;;
 				""");
-		RewriteActionValue value= hintFile.getRules().get(0).alternatives().get(0)
-				.structuredActions().get(0).arguments().get("value"); //$NON-NLS-1$
+		StructuredRewriteAction action= hintFile.getRules().get(0).alternatives().get(0)
+				.structuredActions().get(0);
+		assertEquals(new RewriteActionValue.Binding("$field"), //$NON-NLS-1$
+				action.arguments().get("target")); //$NON-NLS-1$
+		RewriteActionValue value= action.arguments().get("value"); //$NON-NLS-1$
 		RewriteActionValue.ListValue list= assertInstanceOf(RewriteActionValue.ListValue.class, value);
 		assertEquals(4, list.values().size());
 		assertInstanceOf(RewriteActionValue.ClassLiteral.class, list.values().get(0));
@@ -85,11 +90,44 @@ class StructuredRewriteActionParserTest {
 	}
 
 	@Test
-	void catalogCanBeExtendedWithoutChangingTheCompatibilityParser() throws HintParseException {
+	void parsesConciseSignatureActionsWithStableParameterNames() throws HintParseException {
+		HintFile hintFile= new HintProgramParser().parseHintFile("""
+				void $method($params$)
+				=>! renameDeclaration(name="parameterized");
+				    addParameter(type="java.lang.String", name="value");
+				    replaceParameterType(name="oldValue", type="java.lang.Integer");
+				    removeParameter(name="obsolete")
+				;;
+				""");
+		List<StructuredRewriteAction> actions= hintFile.getRules().get(0)
+				.alternatives().get(0).structuredActions();
+		assertEquals(List.of("renameDeclaration", "addParameter", //$NON-NLS-1$ //$NON-NLS-2$
+				"replaceParameterType", "removeParameter"), //$NON-NLS-1$ //$NON-NLS-2$
+				actions.stream().map(StructuredRewriteAction::name).toList());
+		assertTrue(actions.stream().noneMatch(action -> action.arguments().containsKey("target"))); //$NON-NLS-1$
+		assertEquals(new RewriteActionValue.Literal(SemanticPlanValue.string("oldValue")), //$NON-NLS-1$
+				actions.get(2).arguments().get("name")); //$NON-NLS-1$
+	}
+
+	@Test
+	void allStandardActionsTreatTargetAsOptionalContext() {
+		for (RewriteActionSchema schema : RewriteActionCatalog.standard().schemas()) {
+			assertFalse(schema.requiredArguments().contains("target"), schema.name()); //$NON-NLS-1$
+			assertTrue(schema.optionalArguments().contains("target"), schema.name()); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	void catalogCanBeExtendedWithAnExplicitRequiredTarget() throws HintParseException {
 		RewriteActionCatalog catalog= RewriteActionCatalog.standard().toBuilder()
 				.register(new RewriteActionSchema("generateAdapter", Set.of("target"), //$NON-NLS-1$ //$NON-NLS-2$
 						Set.of("name"), "Generate one adapter")) //$NON-NLS-1$ //$NON-NLS-2$
 				.build();
+		assertThrows(HintParseException.class, () -> new HintProgramParser(catalog).parseHintFile("""
+				class $type {}
+				=>! generateAdapter(name="Generated")
+				;;
+				"""));
 		HintFile hintFile= new HintProgramParser(catalog).parseHintFile("""
 				class $type {}
 				=>! generateAdapter(target=$type, name="Generated")
@@ -102,11 +140,12 @@ class StructuredRewriteActionParserTest {
 	@Test
 	void rejectsUnknownMissingDuplicateAndMalformedActions() {
 		List<String> invalid= List.of(
-				"void $name()\n=>! unknown(target=$name)\n;;", //$NON-NLS-1$
-				"void $name()\n=>! addAnnotation(target=$name)\n;;", //$NON-NLS-1$
+				"void $name()\n=>! unknown()\n;;", //$NON-NLS-1$
+				"void $name()\n=>! addAnnotation()\n;;", //$NON-NLS-1$
 				"void $name()\n=>! removeDeclaration(target=$name, target=$name)\n;;", //$NON-NLS-1$
-				"void $name()\n=>! addModifier(target=$name, modifier=public);\n;;", //$NON-NLS-1$
-				"void $name()\n=>! addAnnotation(target=$name, annotation=planValue($name))\n;;"); //$NON-NLS-1$
+				"void $name()\n=>! addModifier(modifier=public);\n;;", //$NON-NLS-1$
+				"void $name()\n=>! addParameter(type=\"java.lang.String\")\n;;", //$NON-NLS-1$
+				"void $name()\n=>! addAnnotation(annotation=planValue($name))\n;;"); //$NON-NLS-1$
 
 		for (String source : invalid) {
 			assertThrows(HintParseException.class, () -> new HintProgramParser().parse(source), source);
