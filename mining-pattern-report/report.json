@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 228,
+    "totalMatches": 229,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,9 +33,9 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1071,
-        "matches": 52,
-        "rules": 9
+        "files": 1136,
+        "matches": 53,
+        "rules": 10
       }
     }
   },
@@ -1466,6 +1466,15 @@
     },
     {
       "repository": "sandbox",
+      "hintFile": "collection-performance",
+      "rule": "collection-performance.map-values-size.to-map-size",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/internal/StructuredRewriteActionParserTest.java",
+      "line": 80,
+      "matchedCode": "list.values().size()",
+      "suggestedReplacement": "list.size()"
+    },
+    {
+      "repository": "sandbox",
       "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java",
@@ -1668,7 +1677,7 @@
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
       "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java",
-      "line": 157,
+      "line": 122,
       "matchedCode": "System.arraycopy(defaults,0,result,0,defaults.length)"
     },
     {
@@ -1836,7 +1845,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 198,
+      "line": 225,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
@@ -1852,7 +1861,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
-      "line": 139,
+      "line": 148,
       "matchedCode": "computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())"
     },
     {

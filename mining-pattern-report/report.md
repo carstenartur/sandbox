@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-07-31
+# Refactoring Mining Report — 2026-08-03
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1071 | 52 | 9 |
+| sandbox | 1136 | 53 | 10 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -232,6 +232,9 @@
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java:1157` — `prereqs.clone()`
 
 ### sandbox
+#### Rule: `collection-performance` → `collection-performance.map-values-size.to-map-size`
+- `sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/internal/StructuredRewriteActionParserTest.java:80` — `list.values().size()` → `list.size()`
+
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:152` — `VisitorEnum.stream().forEach(ve -> {   hv.add(ve,(node,holder) -> {     holde...` → `VisitorEnum.forEach(ve -> {   hv.add(ve,(node,holder) -> {     holder.merge(V...`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:188` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey()....`
@@ -277,7 +280,7 @@
 #### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:366` — `System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:396` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
-- `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java:157` — `System.arraycopy(defaults,0,result,0,defaults.length)`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java:122` — `System.arraycopy(defaults,0,result,0,defaults.length)`
 
 #### Rule: `arrays` → `arrays.aslist-stream.to-arrays-stream`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()` → `java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())`
@@ -293,9 +296,9 @@
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:179` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:198` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:225` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
-- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:139` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
+- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:148` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:92` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
