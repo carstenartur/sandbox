@@ -16,6 +16,8 @@
 	<properties>
 		<!-- This is a normal Maven/Java module, not an OSGi bundle. -->
 		<tycho.mode>maven</tycho.mode>
+		<!-- Override on platforms where the Python 3 launcher has another name. -->
+		<python.executable>python3</python.executable>
 	</properties>
 	<build>
 		<plugins>
@@ -44,6 +46,26 @@
 							</arguments>
 							<classpathScope>runtime</classpathScope>
 							<cleanupDaemonThreads>false</cleanupDaemonThreads>
+						</configuration>
+					</execution>
+					<execution>
+						<id>write-publishable-distribution-evidence</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>exec</goal>
+						</goals>
+						<configuration>
+							<executable>${python.executable}</executable>
+							<workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+							<arguments>
+								<argument>${maven.multiModuleProjectDirectory}/.github/scripts/verify_distribution_artifacts.py</argument>
+								<argument>--repository</argument>
+								<argument>${maven.multiModuleProjectDirectory}/sandbox_updatesite/target/repository</argument>
+								<argument>--products</argument>
+								<argument>${maven.multiModuleProjectDirectory}/sandbox_product/target/products</argument>
+								<argument>--output</argument>
+								<argument>${maven.multiModuleProjectDirectory}/target/distribution-verification</argument>
+							</arguments>
 						</configuration>
 					</execution>
 				</executions>
