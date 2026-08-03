@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5b8fd518ae0ea5d330d737c17f0f243c2e9d83b959b3c1fdb0b9e5db85f2ffef",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.HashMap\u003c$K$, $V$\u003e()\n\u003d\u003e\nnew java.util.HashMap\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.List;\n\nclass MyClass {\n    void myMethod() {\n        Map\u003cString, String\u003e map1 \u003d new HashMap\u003cString, String\u003e();\n        HashMap\u003cInteger, List\u003cString\u003e\u003e map2 \u003d new HashMap\u003cInteger, List\u003cString\u003e\u003e();\n    }\n}",
+  "afterExample": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.List;\n\nclass MyClass {\n    void myMethod() {\n        Map\u003cString, String\u003e map1 \u003d new HashMap\u003c\u003e();\n        HashMap\u003cInteger, List\u003cString\u003e\u003e map2 \u003d new HashMap\u003c\u003e();\n    }\n}",
+  "negativeExample": "import java.util.HashMap;\nimport java.util.Map;\n\nclass MyClass {\n    void myMethod() {\n        Map\u003cString, String\u003e map1 \u003d new HashMap\u003c\u003e(); // Already uses diamond\n        Map\u003cString, String\u003e map2 \u003d new HashMap\u003cString, String\u003e() {}; // Anonymous class, diamond not applicable\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "70c80a91dc49fd487fe8c2aedcef0f5f185696e7",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modernization",
+  "summary": "Replace explicit generic type arguments with the diamond operator for HashMap instantiations.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.942074385Z",
+  "ruleFingerprint": "sha256:25ca5ee7b7136eee52ba13aa0902e89868344d5a194615a9adb55fecd9e621a3",
+  "behaviorFingerprint": "sha256:3fac97fc8ed8db084bd016f6d0674eb2a768d54bc732f46e02edb47d5b2ba041",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-08-03T03:18:00.313593872Z",
+    "verifierVersion": "7",
+    "matches": 2,
+    "replacements": 2
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "21c534102dd83677435455283b2131300a7d8895fdba4e6331b9c7785a5ab4b7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($Type) org.eclipse.jdt.internal.corext.dom.ASTNodes.getParent($arg, $Type.class)\n\u003d\u003e\norg.eclipse.jdt.internal.corext.dom.ASTNodes.getParent($arg, $Type.class)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.Statement;\nimport org.eclipse.jdt.core.dom.Block;\nimport org.eclipse.jdt.core.dom.SwitchStatement;\nimport org.eclipse.jdt.core.dom.BodyDeclaration;\n\npublic class TestClass {\n    ASTNode fieldReference;\n    ASTNode[] selectedNodes;\n    ASTNode startNode;\n\n    void exampleMethod() {\n        // Example 1\n        BodyDeclaration enclosingBodyDeclaration \u003d (BodyDeclaration)ASTNodes.getParent(selectedNodes[0], BodyDeclaration.class);\n\n        // Example 2\n        Statement origStmt \u003d (Statement) ASTNodes.getParent(this.fieldReference, Statement.class);\n\n        // Example 3\n        if (startNode !\u003d null) {\n            SwitchStatement block1 \u003d (SwitchStatement)ASTNodes.getParent(startNode, SwitchStatement.class);\n            Block block2 \u003d (Block)ASTNodes.getParent(startNode, Block.class);\n        }\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.Statement;\nimport org.eclipse.jdt.core.dom.Block;\nimport org.eclipse.jdt.core.dom.SwitchStatement;\nimport org.eclipse.jdt.core.dom.BodyDeclaration;\n\npublic class TestClass {\n    ASTNode fieldReference;\n    ASTNode[] selectedNodes;\n    ASTNode startNode;\n\n    void exampleMethod() {\n        // Example 1\n        BodyDeclaration enclosingBodyDeclaration \u003d ASTNodes.getParent(selectedNodes[0], BodyDeclaration.class);\n\n        // Example 2\n        Statement origStmt \u003d ASTNodes.getParent(this.fieldReference, Statement.class);\n\n        // Example 3\n        if (startNode !\u003d null) {\n            SwitchStatement block1 \u003d ASTNodes.getParent(startNode, SwitchStatement.class);\n            Block block2 \u003d ASTNodes.getParent(startNode, Block.class);\n        }\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.Statement;\nimport org.eclipse.jdt.core.dom.ExpressionStatement;\n\npublic class NegativeTestClass {\n    ASTNode node;\n\n    void anotherMethod() {\n        // This cast is not redundant, as getParent returns ASTNode, not a specific type parameter\n        Statement stmt \u003d (Statement) node.getParent();\n        \n        // Different method entirely\n        String str \u003d (String) new Object();\n        \n        // Cast to supertype of return value (if getParent was specific)\n        Object obj \u003d (Object) ASTNodes.getParent(node, Statement.class);\n    }\n}\n",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "9e69783e1ca72878bc55011a13b2680e6a28b02f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Generics Modernization",
+  "summary": "Remove redundant casts from ASTNodes.getParent calls where the return type is inferred by generics.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.925707936Z",
+  "ruleFingerprint": "sha256:916855ff7b3a7dcdd1067cd7b338a17ae4821bedd6b7894682eadd2262c194f3",
+  "behaviorFingerprint": "sha256:b83bb8e4e6123d75ed941c470def9502647434634d3580c7846526632a4caa13",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-08-03T03:18:00.264610726Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

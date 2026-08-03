@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8bef0f616930638c046a9e0c108fbb5fc339c745b621c225305ff5029d33b12c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt.api.migrate.javamodelaccess.automaticmoduledescription\u003e\n\u003c!description: Migrate from provisional JavaModelAccess.getAutomaticModuleDescription to final JavaCore.getAutomaticModuleDescription, introduced for Java 9 module support.\u003e\n\u003c!severity: HINT\u003e\n\norg.eclipse.jdt.core.provisional.JavaModelAccess.getAutomaticModuleDescription($arg$)\n\u003d\u003e\norg.eclipse.jdt.core.JavaCore.getAutomaticModuleDescription($arg$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.provisional.JavaModelAccess; // Provisional API\n\npublic class TestClass {\n    public void method(IJavaElement element) throws Exception {\n        // Provisional API usage\n        JavaModelAccess.getAutomaticModuleDescription(element);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.JavaCore; // Final API\n\npublic class TestClass {\n    public void method(IJavaElement element) throws Exception {\n        // Final API usage\n        JavaCore.getAutomaticModuleDescription(element);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class TestClass {\n    public void method(IJavaElement element) throws Exception {\n        // Already using final API\n        JavaCore.getAutomaticModuleDescription(element);\n\n        // Different method\n        element.getJavaProject();\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "ba4fb3e7aca5a82cfc69fb4c1069c1c2ce570b53",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces JavaModelAccess.getAutomaticModuleDescription with JavaCore.getAutomaticModuleDescription.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.907137269Z",
+  "ruleFingerprint": "sha256:a183c02f9c68bfe38fe20ec498d769e2d2835c8070edc6f025b03859d7e6e66f",
+  "behaviorFingerprint": "sha256:2f724a4f7d2e0f50a38da6cc4e3c6725dad579c0d6651d875c818bae7babd46b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-03T03:18:00.235256393Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

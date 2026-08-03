@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cfc7a1aabc13c0126c788b92c8f02308f47f4f44172b5fa7c1ee65604bcddeb1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "installCodeMinigProviders()\n\u003d\u003e\ninstallCodeMiningProviders()\n;;",
+  "beforeExample": "public class MyEditor {\n    void handlePropertyChangeEvent() {\n        // some code...\n        installCodeMinigProviders(); // Typo here\n        // some other code...\n    }\n    void installCodeMiningProviders() { /* ... */ }\n}\n",
+  "afterExample": "public class MyEditor {\n    void handlePropertyChangeEvent() {\n        // some code...\n        installCodeMiningProviders(); // Corrected\n        // some other code...\n    }\n    void installCodeMiningProviders() { /* ... */ }\n}\n",
+  "negativeExample": "public class MyEditor {\n    void handlePropertyChangeEvent() {\n        // some code...\n        anotherMethodMinigProviders(); // Should not match\n        installCodeMiningProviders(); // Already correct, should not match\n        // some other code...\n    }\n    void installCodeMiningProviders() { /* ... */ }\n    void anotherMethodMinigProviders() { /* ... */ }\n}\n",
+  "targetHintFile": "typos.sandbox-hint",
+  "sourceCommit": "11f111172d18953f3539d2f1f99a28c5041d8fcb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Typo Correction",
+  "summary": "Corrects the typo `installCodeMinigProviders()` to `installCodeMiningProviders()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.948902321Z",
+  "ruleFingerprint": "sha256:a250263b425d9d67504c60b51e6694de660dfd25c9e3a44bd675d166cb7acdf0",
+  "behaviorFingerprint": "sha256:dcb108f560315cc098c1505e92d224ea2b4bba5525ababd880d6457e8c567f1a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyEditor must be defined in its own file",
+    "verifiedAt": "2026-08-03T03:18:00.323875264Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

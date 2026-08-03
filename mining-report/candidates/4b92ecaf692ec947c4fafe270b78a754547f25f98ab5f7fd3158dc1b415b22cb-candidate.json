@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4b92ecaf692ec947c4fafe270b78a754547f25f98ab5f7fd3158dc1b415b22cb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.String[] { \"module\", \"requires\", \"exports\", \"to\", \"provides\", \"with\", \"uses\", \"open\", \"opens\", \"transitive\", \"import\" }\n\u003d\u003e\nnew java.lang.String[] { \"module\", \"requires\", \"exports\", \"to\", \"provides\", \"with\", \"uses\", \"open\", \"opens\", \"transitive\", \"import\", \"static\" }\n;;",
+  "beforeExample": "public class JavaCodeScanner {\n    private static String[] fgJava9ModuleInfoKeywords\u003d { \"module\", \"requires\", \"exports\", \"to\", \"provides\", \"with\", \"uses\", \"open\", \"opens\", \"transitive\", \"import\" };\n    private static String[] otherKeywords \u003d { \"public\", \"class\" };\n}\n",
+  "afterExample": "public class JavaCodeScanner {\n    private static String[] fgJava9ModuleInfoKeywords\u003d { \"module\", \"requires\", \"exports\", \"to\", \"provides\", \"with\", \"uses\", \"open\", \"opens\", \"transitive\", \"import\", \"static\" };\n    private static String[] otherKeywords \u003d { \"public\", \"class\" };\n}\n",
+  "negativeExample": "public class JavaCodeScanner {\n    private static String[] otherKeywords \u003d { \"public\", \"class\" }; // Should not match this array\n    private static String[] fgJava9ModuleInfoKeywords_modified\u003d { \"module\", \"requires\", \"exports\", \"to\", \"provides\", \"with\", \"uses\", \"open\", \"opens\", \"transitive\", \"import\", \"final\" }; // Should not match partially different array\n}\n",
+  "targetHintFile": "keywords.sandbox-hint",
+  "sourceCommit": "38faea31b74b3b99b82eb6cea6e47dd8025e82d3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Array Literal Update",
+  "summary": "Adds the \"static\" keyword to the `fgJava9ModuleInfoKeywords` array literal.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.956986555Z",
+  "ruleFingerprint": "sha256:c7eb6fa969b5111e43cac44df8eef05c565fbb9acd71fa760fb8f6119fb2bbe3",
+  "behaviorFingerprint": "sha256:a5aba04d1bcc6e6898479303786f99c8423ad6405c906be0b8a0890503827afc",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type JavaCodeScanner must be defined in its own file",
+    "verifiedAt": "2026-08-03T03:18:00.333969506Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

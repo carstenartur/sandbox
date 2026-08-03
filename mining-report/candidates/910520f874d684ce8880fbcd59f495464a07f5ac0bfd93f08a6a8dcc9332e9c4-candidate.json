@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "910520f874d684ce8880fbcd59f495464a07f5ac0bfd93f08a6a8dcc9332e9c4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: add.classpath_entry_jrt_system_check*/\n/*!description: Extends a boolean condition (e.g., in an \u0027if\u0027 statement or \u0027Assert.isTrue\u0027 call) that checks if a classpath entry kind is not \u0027CPE_LIBRARY\u0027 or \u0027CPE_VARIABLE\u0027 to also include \u0027CPE_JRT_SYSTEM\u0027. This is relevant for Java 9+ projects that use JRT system libraries.*/\n/*!severity: HINT*/\norg.eclipse.jdt.core.IClasspathEntry $kind !\u003d org.eclipse.jdt.core.IClasspathEntry.CPE_LIBRARY \u0026\u0026 $kind !\u003d org.eclipse.jdt.core.IClasspathEntry.CPE_VARIABLE :: sourceVersionGE(9)\n\u003d\u003e\n$kind !\u003d org.eclipse.jdt.core.IClasspathEntry.CPE_LIBRARY \u0026\u0026 $kind !\u003d org.eclipse.jdt.core.IClasspathEntry.CPE_VARIABLE \u0026\u0026 $kind !\u003d org.eclipse.jdt.core.IClasspathEntry.CPE_JRT_SYSTEM\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\n\npublic class TestClass {\n    public void checkEntry(int entryKind) {\n        if (entryKind !\u003d IClasspathEntry.CPE_LIBRARY \u0026\u0026 entryKind !\u003d IClasspathEntry.CPE_VARIABLE) {\n            System.out.println(\"Invalid entry kind: \" + entryKind);\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\n\npublic class TestClass {\n    public void checkEntry(int entryKind) {\n        if (entryKind !\u003d IClasspathEntry.CPE_LIBRARY \u0026\u0026 entryKind !\u003d IClasspathEntry.CPE_VARIABLE \u0026\u0026 entryKind !\u003d IClasspathEntry.CPE_JRT_SYSTEM) {\n            System.out.println(\"Invalid entry kind: \" + entryKind);\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\n\npublic class NegativeTestClass {\n    public void checkEntry(int entryKind) {\n        // This should not be modified because the pattern doesn\u0027t match\n        if (entryKind !\u003d IClasspathEntry.CPE_SOURCE \u0026\u0026 entryKind !\u003d IClasspathEntry.CPE_CONTAINER) {\n            System.out.println(\"Another invalid entry kind: \" + entryKind);\n        }\n        // This is already correct, should not be re-modified by the rule\n        if (entryKind !\u003d IClasspathEntry.CPE_LIBRARY \u0026\u0026 entryKind !\u003d IClasspathEntry.CPE_VARIABLE \u0026\u0026 entryKind !\u003d IClasspathEntry.CPE_JRT_SYSTEM) {\n             System.out.println(\"Already updated condition: \" + entryKind);\n        }\n    }\n}",
+  "targetHintFile": "modernize-java9.sandbox-hint",
+  "sourceCommit": "39f74bf71be9dba646c24fe71f2505276bdb3f93",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.864888670Z",
+  "ruleFingerprint": "sha256:d88ea899ed3b3620d29f5f81109551415fed70165999e16b74eba673823c7a5f",
+  "behaviorFingerprint": "sha256:d0e8600077ab4b916793fb83b42184f78bfe7ec6542f20143a2e4ff2197d28c8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-08-03T03:18:00.217154766Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

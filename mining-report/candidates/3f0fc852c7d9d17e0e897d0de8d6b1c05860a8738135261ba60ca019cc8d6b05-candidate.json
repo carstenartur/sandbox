@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3f0fc852c7d9d17e0e897d0de8d6b1c05860a8738135261ba60ca019cc8d6b05",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaManipulation.setJavaUIPluginId($arg$)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaManipulation.setPreferenceNodeId($arg$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.JavaManipulation;\n\npublic class TestClass {\n    String getPluginId() {\n        return \"some.plugin.id\";\n    }\n\n    void start() {\n        JavaManipulation.setJavaUIPluginId(getPluginId());\n    }\n}\n\n// Dummy class for JavaManipulation as it\u0027s internal\nclass JavaManipulation {\n    public static void setJavaUIPluginId(String id) {\n        System.out.println(\"Old method called with: \" + id);\n    }\n    public static void setPreferenceNodeId(String id) {\n        System.out.println(\"New method called with: \" + id);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.JavaManipulation;\n\npublic class TestClass {\n    String getPluginId() {\n        return \"some.plugin.id\";\n    }\n\n    void start() {\n        JavaManipulation.setPreferenceNodeId(getPluginId());\n    }\n}\n\n// Dummy class for JavaManipulation as it\u0027s internal\nclass JavaManipulation {\n    public static void setJavaUIPluginId(String id) {\n        System.out.println(\"Old method called with: \" + id);\n    }\n    public static void setPreferenceNodeId(String id) {\n        System.out.println(\"New method called with: \" + id);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.JavaManipulation;\n\npublic class NegativeTestClass {\n    void someOtherMethod() {\n        System.out.println(\"Some other call\");\n    }\n    \n    static class AnotherManipulation {\n        public static void setJavaUIPluginId(String id) {}\n    }\n    void anotherCall() {\n        AnotherManipulation.setJavaUIPluginId(\"id\");\n    }\n}\n\n// Dummy class for JavaManipulation as it\u0027s internal\nclass JavaManipulation {\n    public static void setJavaUIPluginId(String id) {\n        System.out.println(\"Old method called with: \" + id);\n    }\n    public static void setPreferenceNodeId(String id) {\n        System.out.println(\"New method called with: \" + id);\n    }\n}\n",
+  "targetHintFile": "api.sandbox-hint",
+  "sourceCommit": "27c0b5e57387d0df160a523e6315bdde431f2857",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Rename method call from setJavaUIPluginId to setPreferenceNodeId.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.932922748Z",
+  "ruleFingerprint": "sha256:ecc2f31035725101cc63853207eee27ca3ffb24980e0de13c70b9e3bf8f0ef8c",
+  "behaviorFingerprint": "sha256:b490acae171cfc787e04616b02cf42606777216228330eb3ef9007266d29009b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-03T03:18:00.283752796Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
