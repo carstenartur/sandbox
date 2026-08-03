@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 
 import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -152,7 +153,7 @@ public final class HintFileParser {
 		try {
 			return parse(new StringReader(content));
 		} catch (IOException e) {
-			throw new HintParseException("I/O error reading hint file: " + e.getMessage(), 0); //$NON-NLS-1$
+			throw new HintParseException("I/O error reading hint file: " + e.getMessage(), 0, e); //$NON-NLS-1$
 		}
 	}
 	
@@ -262,106 +263,106 @@ public final class HintFileParser {
 			String rawLine = rawLines.get(lineIdx);
 			int lineNumber = lineIdx + 1;
 			int lineStartOffset = lineStartOffsets.get(lineIdx);
-				
-				// Handle <? ?> custom code blocks (continuation)
-				if (inCustomCodeBlock) {
-					if (rawLine.contains("?>")) { //$NON-NLS-1$
-						int endIdx = rawLine.indexOf("?>"); //$NON-NLS-1$
-						customCodeBuilder.append(rawLine, 0, endIdx);
-						int blockEndOffset = lineStartOffset + endIdx + 2;
-						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
-								customCodeBuilder.toString(),
-								customCodeStartLine, lineNumber,
-								customCodeStartOffset, blockEndOffset));
-						LOGGER.log(Level.FINE, "Extracted embedded Java block (multi-line, lines {0}-{1})", //$NON-NLS-1$
-								new Object[] { customCodeStartLine, lineNumber });
-						inCustomCodeBlock = false;
-						customCodeBuilder = null;
-						rawLine = rawLine.substring(endIdx + 2);
-					} else {
-						customCodeBuilder.append(rawLine).append('\n');
-						result.add(""); //$NON-NLS-1$
+			
+			// Handle <? ?> custom code blocks (continuation)
+			if (inCustomCodeBlock) {
+				if (rawLine.contains("?>")) { //$NON-NLS-1$
+					int endIdx = rawLine.indexOf("?>"); //$NON-NLS-1$
+					customCodeBuilder.append(rawLine, 0, endIdx);
+					int blockEndOffset = lineStartOffset + endIdx + 2;
+					hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
+							customCodeBuilder.toString(),
+							customCodeStartLine, lineNumber,
+							customCodeStartOffset, blockEndOffset));
+					LOGGER.log(Level.FINE, "Extracted embedded Java block (multi-line, lines {0}-{1})", //$NON-NLS-1$
+							new Object[] { customCodeStartLine, lineNumber });
+					inCustomCodeBlock = false;
+					customCodeBuilder = null;
+					rawLine = rawLine.substring(endIdx + 2);
+				} else {
+					customCodeBuilder.append(rawLine).append('\n');
+					result.add(""); //$NON-NLS-1$
+					continue;
+				}
+			}
+			
+			// Check for start of <? ?> block(s) on this line
+			int searchFrom = 0;
+			while (!inBlockComment) {
+				int startIdx = rawLine.indexOf("<?", searchFrom); //$NON-NLS-1$
+				if (startIdx < 0) {
+					break;
+				}
+				int endIdx = rawLine.indexOf("?>", startIdx + 2); //$NON-NLS-1$
+				if (endIdx >= 0) {
+					// Single-line <? ?> block
+					String javaSource = rawLine.substring(startIdx + 2, endIdx);
+					// Skip fix function references: <?identifier?> is kept as-is
+					// (a simple Java identifier without whitespace, semicolons, or braces).
+					// These are replacement references like => <?customFix?> and should
+					// NOT be extracted as embedded Java blocks.
+					if (isFixFunctionReference(javaSource)) {
+						// Advance past this ?> and continue scanning for further blocks
+						searchFrom = endIdx + 2;
 						continue;
 					}
+					int blockStartOffset = lineStartOffset + startIdx;
+					int blockEndOffset = lineStartOffset + endIdx + 2;
+					hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
+							javaSource, lineNumber, lineNumber,
+							blockStartOffset, blockEndOffset));
+					LOGGER.log(Level.FINE, "Extracted embedded Java block (single line {0})", lineNumber); //$NON-NLS-1$
+					rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
+					searchFrom = startIdx; // Reset: content at startIdx changed
+					// Continue loop to check for further blocks on the same line
+				} else {
+					// Multi-line <? ?> block
+					customCodeStartLine = lineNumber;
+					customCodeStartOffset = lineStartOffset + startIdx;
+					customCodeBuilder = new StringBuilder();
+					customCodeBuilder.append(rawLine.substring(startIdx + 2)).append('\n');
+					LOGGER.log(Level.FINE, "Start of embedded Java block (multi-line, line {0})", lineNumber); //$NON-NLS-1$
+					inCustomCodeBlock = true;
+					rawLine = rawLine.substring(0, startIdx);
+					break;
 				}
-				
-				// Check for start of <? ?> block(s) on this line
-				int searchFrom = 0;
-				while (!inBlockComment) {
-					int startIdx = rawLine.indexOf("<?", searchFrom); //$NON-NLS-1$
-					if (startIdx < 0) {
-						break;
+			}
+			
+			if (inBlockComment) {
+				int endIdx = rawLine.indexOf("*/"); //$NON-NLS-1$
+				if (endIdx >= 0) {
+					inBlockComment = false;
+					rawLine = rawLine.substring(endIdx + 2);
+				} else {
+					result.add(""); //$NON-NLS-1$
+					continue;
+				}
+			}
+			
+			// Process the line: strip line comments and start of block comments
+			StringBuilder sb = new StringBuilder();
+			int len = rawLine.length();
+			for (int c = 0; c < len; c++) {
+				char ch = rawLine.charAt(c);
+				if (c + 1 < len) {
+					if (ch == '/' && rawLine.charAt(c + 1) == '/') {
+						break; // Line comment
 					}
-					int endIdx = rawLine.indexOf("?>", startIdx + 2); //$NON-NLS-1$
-					if (endIdx >= 0) {
-						// Single-line <? ?> block
-						String javaSource = rawLine.substring(startIdx + 2, endIdx);
-						// Skip fix function references: <?identifier?> is kept as-is
-						// (a simple Java identifier without whitespace, semicolons, or braces).
-						// These are replacement references like => <?customFix?> and should
-						// NOT be extracted as embedded Java blocks.
-						if (isFixFunctionReference(javaSource)) {
-							// Advance past this ?> and continue scanning for further blocks
-							searchFrom = endIdx + 2;
+					if (ch == '/' && rawLine.charAt(c + 1) == '*') {
+						int endIdx = rawLine.indexOf("*/", c + 2); //$NON-NLS-1$
+						if (endIdx >= 0) {
+							c = endIdx + 1;
 							continue;
 						}
-						int blockStartOffset = lineStartOffset + startIdx;
-						int blockEndOffset = lineStartOffset + endIdx + 2;
-						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(
-								javaSource, lineNumber, lineNumber,
-								blockStartOffset, blockEndOffset));
-						LOGGER.log(Level.FINE, "Extracted embedded Java block (single line {0})", lineNumber); //$NON-NLS-1$
-						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);
-						searchFrom = startIdx; // Reset: content at startIdx changed
-						// Continue loop to check for further blocks on the same line
-					} else {
-						// Multi-line <? ?> block
-						customCodeStartLine = lineNumber;
-						customCodeStartOffset = lineStartOffset + startIdx;
-						customCodeBuilder = new StringBuilder();
-						customCodeBuilder.append(rawLine.substring(startIdx + 2)).append('\n');
-						LOGGER.log(Level.FINE, "Start of embedded Java block (multi-line, line {0})", lineNumber); //$NON-NLS-1$
-						inCustomCodeBlock = true;
-						rawLine = rawLine.substring(0, startIdx);
+						inBlockComment = true;
 						break;
 					}
 				}
-				
-				if (inBlockComment) {
-					int endIdx = rawLine.indexOf("*/"); //$NON-NLS-1$
-					if (endIdx >= 0) {
-						inBlockComment = false;
-						rawLine = rawLine.substring(endIdx + 2);
-					} else {
-						result.add(""); //$NON-NLS-1$
-						continue;
-					}
-				}
-				
-				// Process the line: strip line comments and start of block comments
-				StringBuilder sb = new StringBuilder();
-				int len = rawLine.length();
-				for (int c = 0; c < len; c++) {
-					char ch = rawLine.charAt(c);
-					if (c + 1 < len) {
-						if (ch == '/' && rawLine.charAt(c + 1) == '/') {
-							break; // Line comment
-						}
-						if (ch == '/' && rawLine.charAt(c + 1) == '*') {
-							int endIdx = rawLine.indexOf("*/", c + 2); //$NON-NLS-1$
-							if (endIdx >= 0) {
-								c = endIdx + 1;
-								continue;
-							}
-							inBlockComment = true;
-							break;
-						}
-					}
-					sb.append(ch);
-				}
-				
-				result.add(sb.toString());
+				sb.append(ch);
 			}
+			
+			result.add(sb.toString());
+		}
 		
 		return result;
 	}
@@ -423,8 +424,22 @@ public final class HintFileParser {
 				try {
 					hintFile.setMinJavaVersion(Integer.parseInt(value));
 				} catch (NumberFormatException e) {
-					throw new HintParseException("Invalid minJavaVersion: " + value, lineNumber); //$NON-NLS-1$
+					throw new HintParseException("Invalid minJavaVersion: " + value, lineNumber, e); //$NON-NLS-1$
 				}
+				break;
+			case "binding-policy": //$NON-NLS-1$
+				HintBindingPolicy bindingPolicy;
+				try {
+					bindingPolicy= HintBindingPolicy.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
+				} catch (IllegalArgumentException exception) {
+					throw new HintParseException(
+							"Invalid binding-policy: " + value + "; expected optional or required", //$NON-NLS-1$ //$NON-NLS-2$
+							lineNumber, exception);
+				}
+				if (hintFile.getBindingPolicy() != null && hintFile.getBindingPolicy() != bindingPolicy) {
+					throw new HintParseException("Conflicting binding-policy declarations", lineNumber); //$NON-NLS-1$
+				}
+				hintFile.setBindingPolicy(bindingPolicy);
 				break;
 			case "tags": //$NON-NLS-1$
 				hintFile.setTags(Arrays.asList(value.split("\\s*,\\s*"))); //$NON-NLS-1$
@@ -818,7 +833,8 @@ public final class HintFileParser {
 				try {
 					ruleSeverity = Severity.valueOf(severityStr.toUpperCase(java.util.Locale.ROOT));
 				} catch (IllegalArgumentException e) {
-					throw new HintParseException("Invalid per-rule severity: " + severityStr, startIndex + ruleLineIdx + 1); //$NON-NLS-1$
+					throw new HintParseException(
+							"Invalid per-rule severity: " + severityStr, startIndex + ruleLineIdx + 1, e); //$NON-NLS-1$
 				}
 				ruleLineIdx++;
 			} else {
@@ -1207,7 +1223,18 @@ public final class HintFileParser {
 		 * @param lineNumber the line number where the error occurred
 		 */
 		public HintParseException(String message, int lineNumber) {
-			super(message + " (line " + lineNumber + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+			this(message, lineNumber, null);
+		}
+
+		/**
+		 * Creates a new parse exception and preserves the originating failure.
+		 *
+		 * @param message the error message
+		 * @param lineNumber the line number where the error occurred
+		 * @param cause the originating failure, or {@code null}
+		 */
+		public HintParseException(String message, int lineNumber, Throwable cause) {
+			super(message + " (line " + lineNumber + ")", cause); //$NON-NLS-1$ //$NON-NLS-2$
 			this.lineNumber = lineNumber;
 		}
 		

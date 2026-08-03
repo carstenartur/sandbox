@@ -14,19 +14,32 @@
 package org.sandbox.jdt.triggerpattern.api;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
 /** Context for guard evaluation. */
 public final class GuardContext {
+
+	/** One semantic input a guard could not resolve. */
+	public record UnknownSemanticRequirement(String guardName, String detail) {
+		public UnknownSemanticRequirement {
+			guardName= guardName == null || guardName.isBlank() ? "unknown" : guardName.trim(); //$NON-NLS-1$
+			detail= detail == null || detail.isBlank() ? "semantic binding unavailable" : detail.trim(); //$NON-NLS-1$
+		}
+	}
+
 	private final Match match;
 	private final CompilationUnit cu;
 	private final Map<String, String> compilerOptions;
 	private final SemanticRewritePlan semanticPlan;
+	private final Set<UnknownSemanticRequirement> unknownSemanticRequirements= new LinkedHashSet<>();
+	private int unknownSemanticObservationCount;
 
 	private GuardContext(Match match, CompilationUnit cu, Map<String, String> compilerOptions,
 			SemanticRewritePlan semanticPlan) {
@@ -86,5 +99,32 @@ public final class GuardContext {
 
 	public ASTNode getMatchedNode() {
 		return match.getMatchedNode();
+	}
+
+	/** Records one binding-dependent guard input whose meaning is unavailable. */
+	public void markUnknown(String guardName, String detail) {
+		unknownSemanticObservationCount++;
+		unknownSemanticRequirements.add(new UnknownSemanticRequirement(guardName, detail));
+	}
+
+	/**
+	 * Returns how many unresolved semantic observations guards reported.
+	 *
+	 * <p>This count intentionally includes duplicate observations. The diagnostic
+	 * list is deduplicated, but detailed expression evaluation must still notice
+	 * every repeated unresolved function call.</p>
+	 */
+	public int unknownSemanticRequirementCount() {
+		return unknownSemanticObservationCount;
+	}
+
+	/** Returns whether any binding-dependent guard reported unknown semantics. */
+	public boolean hasUnknownSemanticRequirements() {
+		return unknownSemanticObservationCount > 0;
+	}
+
+	/** Returns deduplicated unknown semantic requirements in evaluation order. */
+	public List<UnknownSemanticRequirement> getUnknownSemanticRequirements() {
+		return List.copyOf(unknownSemanticRequirements);
 	}
 }
