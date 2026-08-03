@@ -31,8 +31,6 @@ jobs:
           target_branch=feature/strict-guard-evaluation
 
           git fetch --no-tags origin \
-            refs/heads/main:refs/remotes/origin/main \
-            refs/heads/$target_branch:refs/remotes/origin/$target_branch \
             refs/pull/1369/head:refs/rebuild/pr-1369-head
 
           test "$(git rev-parse origin/main)" = "$merged_main"
