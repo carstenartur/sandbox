@@ -21,6 +21,7 @@ import org.eclipse.jgit.lib.Repository;
 
 import io.github.carstenartur.jgit.storage.hibernate.HibernateGitStorage;
 import io.github.carstenartur.jgit.storage.hibernate.HibernateRepositoryFactory;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryDeletionResult;
 import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
 
 /**
@@ -67,6 +68,25 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 			Repository repository= storageLocked(normalized).repository();
 			repository.setGitwebDescription(description);
 			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());
+		}
+	}
+
+	@Override
+	public SandboxRepositoryDeletionResult delete(String name) {
+		synchronized (lifecycleLock) {
+			if (closed) {
+				throw new IllegalStateException("Repository service is already closed."); //$NON-NLS-1$
+			}
+			String normalized= normalize(name);
+			if (storages.containsKey(normalized)) {
+				throw new IllegalStateException(
+						"Repository is open in this process and cannot be deleted: " + normalized); //$NON-NLS-1$
+			}
+			RepositoryDeletionResult result= Objects.requireNonNull(
+					repositoryFactory.deleteRepository(new RepositoryName(normalized)),
+					"repository deletion result"); //$NON-NLS-1$
+			return new SandboxRepositoryDeletionResult(
+					result.packRows(), result.reflogRows(), result.projectionRows());
 		}
 	}
 
