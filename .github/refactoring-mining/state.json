@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "4420764c33654e7ef2a0e719cdf3b51b82e07e5b",
-      "lastProcessedDate": "2026-08-01T03:15:26.847680246Z",
-      "totalProcessed": 3352,
+      "lastProcessedCommit": "eebb4942dae5ac10038c8e5f2163dafc58e3fc92",
+      "lastProcessedDate": "2026-08-03T03:17:56.560413972Z",
+      "totalProcessed": 3424,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2672,6 +2672,24 @@
           "deferredAt": "2026-08-01T03:11:10.676909016Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "9869ef43d1f4e82d161654a5a04f2afd7db6fef3",
+          "message": "Bug 506239: Move OrganizeImportsOperation to o.e.jdt.core.manipulation.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-03T03:11:21.674611154Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6cd5bd624cf4023ceb02ba3ab8de84a223245eab",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA_18_3\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-03T03:16:40.472409921Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2814,18 +2832,18 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 5,
+        "API Migration": 6,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
-        "Modernization": 4,
+        "Modernization": 5,
         "Defensive Programming": 1,
         "Preference Configuration": 1,
         "Typo Fix": 1,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 15,
+        "API Modernization": 18,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2838,7 +2856,7 @@
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
         "String Literal Refactoring": 1,
-        "Generics Modernization": 1,
+        "Generics Modernization": 2,
         "Configuration Update": 1,
         "Type Mismatch Cleanup": 1,
         "API usage": 1,
@@ -2853,7 +2871,10 @@
         "API Usage": 1,
         "String Comparison": 1,
         "Method Call Update": 1,
-        "Return Value Refactoring": 1
+        "Return Value Refactoring": 1,
+        "UI Label Modernization": 1,
+        "Typo Correction": 1,
+        "Array Literal Update": 1
       },
       "exhaustedCategories": []
     },
@@ -2894,5 +2915,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26011
+  "globalTotalProcessed": 26083
 }
