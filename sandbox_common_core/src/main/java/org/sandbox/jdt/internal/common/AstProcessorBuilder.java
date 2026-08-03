@@ -20,7 +20,9 @@ package org.sandbox.jdt.internal.common;
  * #L%
  */
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -32,18 +34,37 @@ import org.eclipse.jdt.core.dom.*;
  * executing AST processing operations. This class wraps the existing {@link ASTProcessor}
  * and provides typed convenience methods for commonly used AST node types.
  *
- * <p>Example usage:
+ * <h2>Execution modes</h2>
+ *
+ * <h3>Legacy / mixed mode (default)</h3>
+ * <p>Calling {@code onXxx(...).onYyy(...).build(root)} delegates to the underlying
+ * {@link ASTProcessor}, which stores visitors in a {@code LinkedHashMap} keyed by
+ * {@link VisitorEnum}. This means that the same AST node type cannot be registered
+ * twice, and when a stage finds no match it falls through to the next stage.
+ * This mode is preserved for backwards compatibility.</p>
+ *
+ * <h3>Independent visitors</h3>
+ * <p>Use {@link #independent()} to get a builder where every registered visitor
+ * receives the complete root scope independently of any other visitor:</p>
  * <pre>{@code
- * ReferenceHolder<String, Object> holder = new ReferenceHolder<>();
  * AstProcessorBuilder.with(holder)
- *     .onMethodInvocation("myMethod", (node, h) -> {
- *         // node is MethodInvocation, no cast needed
- *         return true;
- *     })
- *     .onAssignment((node, h) -> {
- *         // node is Assignment, no cast needed
- *         return true;
- *     })
+ *     .independent()
+ *     .onTypeDeclaration(this::inspectType)
+ *     .onFieldDeclaration(this::inspectField)
+ *     .build(compilationUnit);
+ * }</pre>
+ *
+ * <h3>Scoped pipelines</h3>
+ * <p>Use {@link #scoped()} to build an explicit ordered pipeline where each stage
+ * operates within the scope produced by the previous stage. A stage that finds no
+ * match ends the pipeline branch silently — the next stage is not run on the
+ * original scope. The same AST node type may appear more than once:</p>
+ * <pre>{@code
+ * AstProcessorBuilder.with(holder)
+ *     .scoped()
+ *     .find(VisitorEnum.MethodInvocation, (mi, h) -> mi instanceof MethodInvocation m && "copyOf".equals(m.getName().getIdentifier()))
+ *     .navigate(node -> ASTNodes.getFirstAncestorOrNull(node, Statement.class))
+ *     .then(VisitorEnum.ArrayAccess, this::isTailWrite)
  *     .build(compilationUnit);
  * }</pre>
  *
@@ -1579,5 +1600,343 @@ public final class AstProcessorBuilder<V, T> {
 	 */
 	public void build(ASTNode node) {
 		processor.build(node);
+	}
+
+	// -------------------------------------------------------------------------
+	// Explicit execution-mode factories
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Returns an {@link IndependentGroupBuilder} that runs every registered visitor
+	 * independently against the full root scope.
+	 *
+	 * <p>No visitor is accidentally scoped beneath a match of another visitor.</p>
+	 *
+	 * @return a new independent-group builder backed by this holder
+	 */
+	public IndependentGroupBuilder<V, T> independent() {
+		return new IndependentGroupBuilder<>(dataHolder, nodesProcessed);
+	}
+
+	/**
+	 * Returns a {@link ScopedPipelineBuilder} that executes visitors as an ordered
+	 * pipeline where each stage is scoped to the match produced by the previous stage.
+	 *
+	 * <p>A stage that finds no match ends the pipeline branch silently.
+	 * The same AST node type may appear more than once in the chain.</p>
+	 *
+	 * @return a new scoped-pipeline builder backed by this holder
+	 */
+	public ScopedPipelineBuilder<V, T> scoped() {
+		return new ScopedPipelineBuilder<>(dataHolder, nodesProcessed);
+	}
+
+	// -------------------------------------------------------------------------
+	// IndependentGroupBuilder
+	// -------------------------------------------------------------------------
+
+	/**
+	 * A builder that runs every registered visitor independently on the full root scope.
+	 *
+	 * <p>This is the explicit, unambiguous alternative to chaining {@code onXxx(...)} calls
+	 * on the top-level {@link AstProcessorBuilder} when the visitors are semantically
+	 * independent (i.e. not scoped to each other's matches).</p>
+	 *
+	 * <h3>Misuse example (using legacy API)</h3>
+	 * <pre>{@code
+	 * // BAD – looks independent but the second visitor is silently scoped to the first:
+	 * AstProcessorBuilder.with(holder)
+	 *     .onTypeDeclaration(this::inspectType)
+	 *     .onFieldDeclaration(this::inspectField)  // actually scoped!
+	 *     .build(cu);
+	 * }</pre>
+	 *
+	 * <h3>Correct usage</h3>
+	 * <pre>{@code
+	 * // GOOD – truly independent:
+	 * AstProcessorBuilder.with(holder)
+	 *     .independent()
+	 *     .onTypeDeclaration(this::inspectType)
+	 *     .onFieldDeclaration(this::inspectField)
+	 *     .build(cu);
+	 * }</pre>
+	 *
+	 * @param <V> the map key type used by the ReferenceHolder
+	 * @param <T> the map value type used by the ReferenceHolder
+	 * @since 1.17
+	 */
+	public static final class IndependentGroupBuilder<V, T> {
+
+		private final ReferenceHolder<V, T> dataHolder;
+		private final Set<ASTNode> nodesProcessed;
+		/** Each element is a fully configured single-visitor processor. */
+		private final List<ASTProcessor<ReferenceHolder<V, T>, V, T>> processors= new ArrayList<>();
+
+		IndependentGroupBuilder(ReferenceHolder<V, T> dataHolder, Set<ASTNode> nodesProcessed) {
+			this.dataHolder= dataHolder;
+			this.nodesProcessed= nodesProcessed;
+		}
+
+		private ASTProcessor<ReferenceHolder<V, T>, V, T> freshProcessor() {
+			ASTProcessor<ReferenceHolder<V, T>, V, T> p= new ASTProcessor<>(dataHolder, nodesProcessed);
+			processors.add(p);
+			return p;
+		}
+
+		/**
+		 * Registers an independent visitor for {@link MethodInvocation} nodes.
+		 *
+		 * @param predicate called for each node; return value controls AST descent
+		 * @return this builder for chaining
+		 */
+		public IndependentGroupBuilder<V, T> onMethodInvocation(
+				BiPredicate<MethodInvocation, ReferenceHolder<V, T>> predicate) {
+			freshProcessor().callMethodInvocationVisitor(
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((MethodInvocation) n, h));
+			return this;
+		}
+
+		/**
+		 * Registers an independent visitor for {@link TypeDeclaration} nodes.
+		 *
+		 * @param predicate called for each node; return value controls AST descent
+		 * @return this builder for chaining
+		 */
+		public IndependentGroupBuilder<V, T> onTypeDeclaration(
+				BiPredicate<TypeDeclaration, ReferenceHolder<V, T>> predicate) {
+			freshProcessor().callTypeDeclarationVisitor(
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((TypeDeclaration) n, h));
+			return this;
+		}
+
+		/**
+		 * Registers an independent visitor for {@link FieldDeclaration} nodes.
+		 *
+		 * @param predicate called for each node; return value controls AST descent
+		 * @return this builder for chaining
+		 */
+		public IndependentGroupBuilder<V, T> onFieldDeclaration(
+				BiPredicate<FieldDeclaration, ReferenceHolder<V, T>> predicate) {
+			freshProcessor().callFieldDeclarationVisitor(
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((FieldDeclaration) n, h));
+			return this;
+		}
+
+		/**
+		 * Registers an independent visitor for {@link MethodDeclaration} nodes.
+		 *
+		 * @param predicate called for each node; return value controls AST descent
+		 * @return this builder for chaining
+		 */
+		public IndependentGroupBuilder<V, T> onMethodDeclaration(
+				BiPredicate<MethodDeclaration, ReferenceHolder<V, T>> predicate) {
+			freshProcessor().callMethodDeclarationVisitor(
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((MethodDeclaration) n, h));
+			return this;
+		}
+
+		/**
+		 * Registers an independent visitor for {@link Assignment} nodes.
+		 *
+		 * @param predicate called for each node; return value controls AST descent
+		 * @return this builder for chaining
+		 */
+		public IndependentGroupBuilder<V, T> onAssignment(
+				BiPredicate<Assignment, ReferenceHolder<V, T>> predicate) {
+			freshProcessor().callAssignmentVisitor(
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((Assignment) n, h));
+			return this;
+		}
+
+		/**
+		 * Registers an independent visitor for {@link ClassInstanceCreation} nodes.
+		 *
+		 * @param predicate called for each node; return value controls AST descent
+		 * @return this builder for chaining
+		 */
+		public IndependentGroupBuilder<V, T> onClassInstanceCreation(
+				BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> predicate) {
+			freshProcessor().callClassInstanceCreationVisitor(predicate);
+			return this;
+		}
+
+		/**
+		 * Builds and executes all registered independent visitors against the given root node.
+		 * Each visitor traverses the entire root scope independently.
+		 *
+		 * @param root the AST node to process
+		 */
+		public void build(ASTNode root) {
+			for (ASTProcessor<ReferenceHolder<V, T>, V, T> p : processors) {
+				p.build(root);
+			}
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// ScopedPipelineBuilder
+	// -------------------------------------------------------------------------
+
+	/**
+	 * A builder for an explicit ordered pipeline where each stage is scoped to the
+	 * AST node (or navigation result) produced by the previous stage's match.
+	 *
+	 * <p>Key behavioral contracts:</p>
+	 * <ul>
+	 *   <li>Stages are executed in registration order.</li>
+	 *   <li>The same {@link VisitorEnum} / AST type may appear more than once.</li>
+	 *   <li>A stage that finds no matching node ends that pipeline branch; the next
+	 *       stage is <em>not</em> run against the original scope.</li>
+	 *   <li>Each match in a stage starts an independent downstream traversal.</li>
+	 * </ul>
+	 *
+	 * <h3>Example</h3>
+	 * <pre>{@code
+	 * AstProcessorBuilder.with(holder)
+	 *     .scoped()
+	 *     .find(VisitorEnum.MethodInvocation, (n, h) -> "copyOf".equals(((MethodInvocation)n).getName().getIdentifier()))
+	 *     .navigate(node -> ASTNodes.getFirstAncestorOrNull(node, Statement.class))
+	 *     .then(VisitorEnum.ArrayAccess, this::isTailWrite)
+	 *     .build(compilationUnit);
+	 * }</pre>
+	 *
+	 * <h3>Misuse example</h3>
+	 * <pre>{@code
+	 * // BAD – navigate() without a preceding find()/then() has no effect:
+	 * builder.scoped().navigate(fn).then(...).build(cu);
+	 * }</pre>
+	 *
+	 * @param <V> the map key type used by the ReferenceHolder
+	 * @param <T> the map value type used by the ReferenceHolder
+	 * @since 1.17
+	 */
+	public static final class ScopedPipelineBuilder<V, T> {
+
+		private final ScopedPipelineProcessor<ReferenceHolder<V, T>, V, T> pipeline;
+
+		ScopedPipelineBuilder(ReferenceHolder<V, T> dataHolder, Set<ASTNode> nodesProcessed) {
+			this.pipeline= new ScopedPipelineProcessor<>(dataHolder, nodesProcessed);
+		}
+
+		/**
+		 * Appends the first (or any subsequent) stage to the pipeline by raw {@link VisitorEnum}.
+		 *
+		 * @param nodeType  the AST node type to match
+		 * @param predicate called for each candidate; return {@code true} to treat it as a match
+		 *                  and advance to the next stage
+		 * @return this builder for chaining
+		 */
+		public ScopedPipelineBuilder<V, T> find(
+				VisitorEnum nodeType,
+				BiPredicate<ASTNode, ReferenceHolder<V, T>> predicate) {
+			pipeline.addStage(nodeType, predicate, null, null);
+			return this;
+		}
+
+		/**
+		 * Appends a subsequent stage to the pipeline (alias for {@link #find}).
+		 *
+		 * <p>Using {@code then} instead of {@code find} for the second and later stages
+		 * communicates intent: this stage runs within the scope of the previous match.</p>
+		 *
+		 * @param nodeType  the AST node type to match
+		 * @param predicate called for each candidate; return {@code true} to treat it as a match
+		 * @return this builder for chaining
+		 */
+		public ScopedPipelineBuilder<V, T> then(
+				VisitorEnum nodeType,
+				BiPredicate<ASTNode, ReferenceHolder<V, T>> predicate) {
+			return find(nodeType, predicate);
+		}
+
+		/**
+		 * Registers a typed stage for {@link MethodInvocation} nodes.
+		 *
+		 * @param predicate called for each candidate node
+		 * @return this builder for chaining
+		 */
+		public ScopedPipelineBuilder<V, T> findMethodInvocation(
+				BiPredicate<MethodInvocation, ReferenceHolder<V, T>> predicate) {
+			pipeline.addStage(VisitorEnum.MethodInvocation,
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((MethodInvocation) n, h),
+					null, null);
+			return this;
+		}
+
+		/**
+		 * Registers a typed stage for {@link Assignment} nodes.
+		 *
+		 * @param predicate called for each candidate node
+		 * @return this builder for chaining
+		 */
+		public ScopedPipelineBuilder<V, T> thenAssignment(
+				BiPredicate<Assignment, ReferenceHolder<V, T>> predicate) {
+			pipeline.addStage(VisitorEnum.Assignment,
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((Assignment) n, h),
+					null, null);
+			return this;
+		}
+
+		/**
+		 * Registers a typed stage for {@link ArrayAccess} nodes.
+		 *
+		 * @param predicate called for each candidate node
+		 * @return this builder for chaining
+		 */
+		public ScopedPipelineBuilder<V, T> thenArrayAccess(
+				BiPredicate<ArrayAccess, ReferenceHolder<V, T>> predicate) {
+			pipeline.addStage(VisitorEnum.ArrayAccess,
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((ArrayAccess) n, h),
+					null, null);
+			return this;
+		}
+
+		/**
+		 * Registers a typed stage for {@link ClassInstanceCreation} nodes.
+		 *
+		 * @param predicate called for each candidate node
+		 * @return this builder for chaining
+		 */
+		public ScopedPipelineBuilder<V, T> thenClassInstanceCreation(
+				BiPredicate<ClassInstanceCreation, ReferenceHolder<V, T>> predicate) {
+			pipeline.addStage(VisitorEnum.ClassInstanceCreation,
+					(BiPredicate<ASTNode, ReferenceHolder<V, T>>) (n, h) -> predicate.test((ClassInstanceCreation) n, h),
+					null, null);
+			return this;
+		}
+
+		/**
+		 * Sets a navigation function on the most recently added stage.
+		 *
+		 * <p>The navigation function maps the matched node of the last added stage to the
+		 * scope in which the next stage will search. Must be called immediately after a
+		 * {@code find}/{@code then} call and before the next one.</p>
+		 *
+		 * <pre>{@code
+		 * builder.scoped()
+		 *     .find(VisitorEnum.MethodDeclaration, myPredicate)
+		 *     .navigate(n -> ((MethodDeclaration) n).getBody())   // scope for next stage
+		 *     .then(VisitorEnum.MethodInvocation, otherPredicate)
+		 *     .build(cu);
+		 * }</pre>
+		 *
+		 * @param navigationFn maps the matched node to the next scope; return {@code null}
+		 *                     to end the pipeline branch for that match
+		 * @return this builder for chaining
+		 * @throws IllegalStateException if no stage has been added yet
+		 */
+		public ScopedPipelineBuilder<V, T> navigate(Function<ASTNode, ASTNode> navigationFn) {
+			pipeline.setNavigateOnLastStage(navigationFn);
+			return this;
+		}
+
+		/**
+		 * Builds and executes the scoped pipeline starting from the given root node.
+		 *
+		 * @param root the AST node from which the first pipeline stage begins traversal
+		 */
+		public void build(ASTNode root) {
+			pipeline.build(root);
+		}
 	}
 }
