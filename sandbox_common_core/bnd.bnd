@@ -4,6 +4,8 @@ Bundle-Name: Sandbox Common Core
 Bundle-Vendor: Carsten Hammer
 
 Export-Package: org.sandbox.jdt.cleanup.multifile.api,\
+ org.sandbox.jdt.container.api,\
+ org.sandbox.jdt.container.analysis,\
  org.sandbox.jdt.internal.common,\
  org.sandbox.jdt.triggerpattern.api,\
  org.sandbox.jdt.triggerpattern.internal,\
