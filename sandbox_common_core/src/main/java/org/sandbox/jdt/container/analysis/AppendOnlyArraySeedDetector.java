@@ -40,7 +40,7 @@ import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
-import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
@@ -149,7 +149,7 @@ public final class AppendOnlyArraySeedDetector {
 				NullContract.UNKNOWN,
 				AliasingContract.UNKNOWN,
 				EscapeLevel.UNKNOWN,
-				ConcurrencyContract.UNKNOWN,
+				ConcurrencyProfile.unknown(),
 				AnalysisCompleteness.LOCAL_SEED,
 				evidence));
 	}
