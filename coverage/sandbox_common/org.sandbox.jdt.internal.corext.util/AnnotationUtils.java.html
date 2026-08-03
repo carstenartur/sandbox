@@ -75,7 +75,7 @@ public final class AnnotationUtils {
 	 * @return true if the declaration has the annotation
 	 */
 	public static boolean isAnnotatedWith(BodyDeclaration declaration, String annotationClass) {
-<span class="fc" id="L78">		return hasAnnotation(declaration.modifiers(), annotationClass);</span>
+<span class="nc" id="L78">		return hasAnnotation(declaration.modifiers(), annotationClass);</span>
 	}
 
 	/**
@@ -90,7 +90,7 @@ public final class AnnotationUtils {
 <span class="fc" id="L90">				.filter(Annotation.class::isInstance)</span>
 <span class="fc" id="L91">				.map(Annotation.class::cast)</span>
 <span class="fc" id="L92">				.map(Annotation::resolveTypeBinding)</span>
-<span class="pc bpc" id="L93" title="1 of 4 branches missed.">				.anyMatch(binding -&gt; binding != null &amp;&amp; annotationClass.equals(binding.getQualifiedName()));</span>
+<span class="pc bpc" id="L93" title="2 of 4 branches missed.">				.anyMatch(binding -&gt; binding != null &amp;&amp; annotationClass.equals(binding.getQualifiedName()));</span>
 	}
 
 	/**

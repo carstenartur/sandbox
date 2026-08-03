@@ -214,12 +214,12 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 				
 				// Try to extract SimpleName from the expression
 <span class="fc" id="L216">				SimpleName sn = ASTNodes.as(firstArg, SimpleName.class);</span>
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">				if (sn != null) {</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">				if (sn != null) {</span>
 <span class="fc" id="L218">					firstArgName = sn.getIdentifier();</span>
 				}
 				
 				// Check if this SubProgressMonitor is associated with a beginTask
-<span class="pc bpc" id="L222" title="2 of 4 branches missed.">				if (!holder.isEmpty() &amp;&amp; firstArgName != null) {</span>
+<span class="pc bpc" id="L222" title="1 of 4 branches missed.">				if (!holder.isEmpty() &amp;&amp; firstArgName != null) {</span>
 <span class="fc" id="L223">					MonitorHolder mh = holder.get(holder.size() - 1);</span>
 <span class="pc bpc" id="L224" title="1 of 2 branches missed.">					if (mh.minvname.equals(firstArgName)) {</span>
 <span class="fc" id="L225">						logDebug(&quot;Found SubProgressMonitor construction at position &quot; + node.getStartPosition() + &quot; for variable '&quot; + firstArgName + &quot;' with beginTask&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>

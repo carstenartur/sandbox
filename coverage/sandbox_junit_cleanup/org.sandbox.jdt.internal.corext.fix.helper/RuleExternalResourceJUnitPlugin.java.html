@@ -86,10 +86,10 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	private static boolean isExternalResourceHierarchy(ITypeBinding binding) {
 <span class="fc" id="L87">		ITypeBinding current= binding.getErasure();</span>
 <span class="pc bpc" id="L88" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getQualifiedName())) {</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getQualifiedName())) {</span>
 <span class="fc" id="L90">				return true;</span>
 			}
-<span class="fc" id="L92">			current= current.getSuperclass();</span>
+<span class="nc" id="L92">			current= current.getSuperclass();</span>
 		}
 <span class="nc" id="L94">		return false;</span>
 	}
@@ -103,9 +103,9 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 <span class="fc" id="L104">		ASTNode node2 = ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);</span>
 
-<span class="fc bfc" id="L106" title="All 2 branches covered.">		if (node2 instanceof TypeDeclaration) {</span>
-<span class="fc" id="L107">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration,</span>
-<span class="fc" id="L108">					fieldStatic, rewriter, ast, group, importRewriter);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (node2 instanceof TypeDeclaration) {</span>
+<span class="nc" id="L107">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration,</span>
+<span class="nc" id="L108">					fieldStatic, rewriter, ast, group, importRewriter);</span>
 <span class="pc bpc" id="L109" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
 <span class="fc" id="L110">			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration,</span>
 <span class="fc" id="L111">					fieldStatic, rewriter, ast, group, importRewriter);</span>

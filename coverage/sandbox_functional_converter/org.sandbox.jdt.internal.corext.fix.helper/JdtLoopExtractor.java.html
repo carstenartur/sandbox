@@ -146,64 +146,65 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
 <span class="nc" id="L146">            return;</span>
         }
 <span class="fc" id="L148">        int varDeclCount = countVariableDeclarations(statements);</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (varDeclCount &gt; 1) {</span>
-<span class="nc" id="L150">            addSimpleForEachTerminal(statements, builder);</span>
-<span class="nc" id="L151">            return;</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">        if (varDeclCount &gt; 1</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                &amp;&amp; !isLinearVariableDeclarationChain(statements, variableName)) {</span>
+<span class="nc" id="L151">            addSimpleForEachTerminal(statements, builder);</span>
+<span class="nc" id="L152">            return;</span>
         }
-<span class="pc bpc" id="L153" title="1 of 4 branches missed.">        if (statements.size() &gt; 1 &amp;&amp; allSideEffects(statements)) {</span>
-<span class="nc" id="L154">            addSimpleForEachTerminal(statements, builder);</span>
-<span class="nc" id="L155">            return;</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">        if (statements.size() &gt; 1 &amp;&amp; allSideEffects(statements)) {</span>
+<span class="nc" id="L155">            addSimpleForEachTerminal(statements, builder);</span>
+<span class="nc" id="L156">            return;</span>
         }
-<span class="fc" id="L157">        analyzeStatements(statements, builder, variableName, compilationUnit, false);</span>
-<span class="fc" id="L158">    }</span>
+<span class="fc" id="L158">        analyzeStatements(statements, builder, variableName, compilationUnit, false);</span>
+<span class="fc" id="L159">    }</span>
 
     private SourceType determineSourceType(Expression iterable) {
-<span class="fc" id="L161">        ITypeBinding binding = iterable.resolveTypeBinding();</span>
-<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (binding != null) {</span>
-<span class="fc bfc" id="L163" title="All 2 branches covered.">            if (binding.isArray()) {</span>
-<span class="fc" id="L164">                return SourceType.ARRAY;</span>
+<span class="fc" id="L162">        ITypeBinding binding = iterable.resolveTypeBinding();</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (binding != null) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (binding.isArray()) {</span>
+<span class="fc" id="L165">                return SourceType.ARRAY;</span>
             }
             // Check for Collection
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (isCollection(binding)) {</span>
-<span class="fc" id="L168">                return SourceType.COLLECTION;</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            if (isCollection(binding)) {</span>
+<span class="fc" id="L169">                return SourceType.COLLECTION;</span>
             }
         }
-<span class="nc" id="L171">        return SourceType.ITERABLE;</span>
+<span class="nc" id="L172">        return SourceType.ITERABLE;</span>
     }
     
     private boolean isCollection(ITypeBinding binding) {
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (binding == null) {</span>
-<span class="nc" id="L176">            return false;</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if (binding == null) {</span>
+<span class="nc" id="L177">            return false;</span>
         }
         
-<span class="fc" id="L179">        ITypeBinding erasure = binding.getErasure();</span>
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (erasure == null) {</span>
-<span class="nc" id="L181">            return false;</span>
+<span class="fc" id="L180">        ITypeBinding erasure = binding.getErasure();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        if (erasure == null) {</span>
+<span class="nc" id="L182">            return false;</span>
         }
         
-<span class="fc" id="L184">        String qualifiedName = erasure.getQualifiedName();</span>
-<span class="fc bfc" id="L185" title="All 2 branches covered.">        if (&quot;java.util.Collection&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L186" title="All 2 branches covered.">                || &quot;java.util.List&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L187" title="All 2 branches covered.">                || &quot;java.util.Set&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">                || &quot;java.util.Queue&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L189" title="1 of 2 branches missed.">                || &quot;java.util.Deque&quot;.equals(qualifiedName)) {</span>
-<span class="fc" id="L190">            return true;</span>
+<span class="fc" id="L185">        String qualifiedName = erasure.getQualifiedName();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (&quot;java.util.Collection&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                || &quot;java.util.List&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                || &quot;java.util.Set&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">                || &quot;java.util.Queue&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">                || &quot;java.util.Deque&quot;.equals(qualifiedName)) {</span>
+<span class="fc" id="L191">            return true;</span>
         }
         
         // Check interfaces
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">        for (ITypeBinding iface : erasure.getInterfaces()) {</span>
-<span class="pc bpc" id="L195" title="1 of 2 branches missed.">            if (isCollection(iface)) {</span>
-<span class="fc" id="L196">                return true;</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        for (ITypeBinding iface : erasure.getInterfaces()) {</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">            if (isCollection(iface)) {</span>
+<span class="fc" id="L197">                return true;</span>
             }
         }
         
         // Check superclass
-<span class="nc" id="L201">        ITypeBinding superclass = erasure.getSuperclass();</span>
-<span class="nc bnc" id="L202" title="All 4 branches missed.">        if (superclass != null &amp;&amp; isCollection(superclass)) {</span>
-<span class="nc" id="L203">            return true;</span>
+<span class="nc" id="L202">        ITypeBinding superclass = erasure.getSuperclass();</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">        if (superclass != null &amp;&amp; isCollection(superclass)) {</span>
+<span class="nc" id="L204">            return true;</span>
         }
         
-<span class="nc" id="L206">        return false;</span>
+<span class="nc" id="L207">        return false;</span>
     }
     
     /**
@@ -216,12 +217,12 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * @see ConcurrentCollectionDetector
      */
     private boolean checkConcurrentCollection(Expression iterable) {
-<span class="fc" id="L219">        ITypeBinding typeBinding = resolveIteratedCollectionType(iterable);</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">        if (typeBinding != null) {</span>
-<span class="fc bfc" id="L221" title="All 2 branches covered.">            return ConcurrentCollectionDetector.isConcurrentCollection(typeBinding)</span>
-<span class="fc bfc" id="L222" title="All 2 branches covered.">                    &amp;&amp; !ConcurrentCollectionDetector.hasSnapshotIteration(typeBinding);</span>
+<span class="fc" id="L220">        ITypeBinding typeBinding = resolveIteratedCollectionType(iterable);</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (typeBinding != null) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            return ConcurrentCollectionDetector.isConcurrentCollection(typeBinding)</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                    &amp;&amp; !ConcurrentCollectionDetector.hasSnapshotIteration(typeBinding);</span>
         }
-<span class="nc" id="L224">        return false;</span>
+<span class="nc" id="L225">        return false;</span>
     }
     
     /**
@@ -229,23 +230,23 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * methods (entrySet, keySet, values) to get the underlying map type.
      */
     private ITypeBinding resolveIteratedCollectionType(Expression iterable) {
-<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (iterable instanceof MethodInvocation methodInvocation) {</span>
-<span class="fc" id="L233">            SimpleName name = methodInvocation.getName();</span>
-<span class="pc bpc" id="L234" title="1 of 2 branches missed.">            if (name != null) {</span>
-<span class="fc" id="L235">                String identifier = name.getIdentifier();</span>
-<span class="fc bfc" id="L236" title="All 6 branches covered.">                if ((&quot;entrySet&quot;.equals(identifier) || &quot;keySet&quot;.equals(identifier) || &quot;values&quot;.equals(identifier)) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">                        &amp;&amp; methodInvocation.arguments().isEmpty()) {</span>
-<span class="fc" id="L238">                    Expression qualifier = methodInvocation.getExpression();</span>
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">                    if (qualifier != null) {</span>
-<span class="fc" id="L240">                        ITypeBinding qualifierBinding = qualifier.resolveTypeBinding();</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">                        if (qualifierBinding != null) {</span>
-<span class="fc" id="L242">                            return qualifierBinding;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        if (iterable instanceof MethodInvocation methodInvocation) {</span>
+<span class="fc" id="L234">            SimpleName name = methodInvocation.getName();</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            if (name != null) {</span>
+<span class="fc" id="L236">                String identifier = name.getIdentifier();</span>
+<span class="fc bfc" id="L237" title="All 6 branches covered.">                if ((&quot;entrySet&quot;.equals(identifier) || &quot;keySet&quot;.equals(identifier) || &quot;values&quot;.equals(identifier)) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">                        &amp;&amp; methodInvocation.arguments().isEmpty()) {</span>
+<span class="fc" id="L239">                    Expression qualifier = methodInvocation.getExpression();</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">                    if (qualifier != null) {</span>
+<span class="fc" id="L241">                        ITypeBinding qualifierBinding = qualifier.resolveTypeBinding();</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">                        if (qualifierBinding != null) {</span>
+<span class="fc" id="L243">                            return qualifierBinding;</span>
                         }
                     }
                 }
             }
         }
-<span class="fc" id="L248">        return iterable.resolveTypeBinding();</span>
+<span class="fc" id="L249">        return iterable.resolveTypeBinding();</span>
     }
     
     /**
@@ -268,84 +269,150 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * loop is left unchanged.&lt;/p&gt;
      */
     private void analyzeAndAddOperations(Statement body, LoopModelBuilder builder, String varName, CompilationUnit compilationUnit) {
-<span class="fc" id="L271">        java.util.List&lt;Statement&gt; statements = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L272">        java.util.List&lt;Statement&gt; statements = new java.util.ArrayList&lt;&gt;();</span>
         
-<span class="fc bfc" id="L273" title="All 2 branches covered.">        if (body instanceof Block block) {</span>
-<span class="fc bfc" id="L274" title="All 2 branches covered.">            for (Object stmt : block.statements()) {</span>
-<span class="fc" id="L275">                statements.add((Statement) stmt);</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (body instanceof Block block) {</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            for (Object stmt : block.statements()) {</span>
+<span class="fc" id="L276">                statements.add((Statement) stmt);</span>
             }
-<span class="fc" id="L277">        } else {</span>
-<span class="fc" id="L278">            statements.add(body);</span>
+<span class="fc" id="L278">        } else {</span>
+<span class="fc" id="L279">            statements.add(body);</span>
         }
         
         // Guard: empty body → no conversion
-<span class="fc bfc" id="L282" title="All 2 branches covered.">        if (statements.isEmpty()) {</span>
-<span class="fc" id="L283">            return; // No terminal → NOT_CONVERTIBLE</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        if (statements.isEmpty()) {</span>
+<span class="fc" id="L284">            return; // No terminal → NOT_CONVERTIBLE</span>
         }
         
         // Guard: reject bodies with throw statements or bare returns (not boolean returns)
-<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (containsUnconvertibleStatements(statements)) {</span>
-<span class="fc" id="L288">            return; // No terminal → NOT_CONVERTIBLE</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        if (containsUnconvertibleStatements(statements)) {</span>
+<span class="fc" id="L289">            return; // No terminal → NOT_CONVERTIBLE</span>
         }
         
-        // Guard: if body has multiple variable declarations, use simple forEach
-        // instead of trying to decompose into map chains (which can be incorrect)
-<span class="fc" id="L293">        int varDeclCount = countVariableDeclarations(statements);</span>
-<span class="fc bfc" id="L294" title="All 2 branches covered.">        if (varDeclCount &gt; 1) {</span>
-            // Convert directly to simple forEach with body as-is
-<span class="fc" id="L296">            addSimpleForEachTerminal(statements, builder);</span>
-<span class="fc" id="L297">            return;</span>
+        // Decompose multiple declarations only when every initializer consumes
+        // the current pipeline value without referring back to an earlier one.
+<span class="fc" id="L294">        int varDeclCount = countVariableDeclarations(statements);</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        if (varDeclCount &gt; 1</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">                &amp;&amp; !isLinearVariableDeclarationChain(statements, varName)) {</span>
+<span class="fc" id="L297">            addSimpleForEachTerminal(statements, builder);</span>
+<span class="fc" id="L298">            return;</span>
         }
         
         // Guard: if body has multiple side-effect statements (e.g., multiple println),
         // use simple forEach instead of trying to chain as map operations
-<span class="fc bfc" id="L302" title="All 4 branches covered.">        if (statements.size() &gt; 1 &amp;&amp; allSideEffects(statements)) {</span>
-<span class="fc" id="L303">            addSimpleForEachTerminal(statements, builder);</span>
-<span class="fc" id="L304">            return;</span>
+<span class="fc bfc" id="L303" title="All 4 branches covered.">        if (statements.size() &gt; 1 &amp;&amp; allSideEffects(statements)) {</span>
+<span class="fc" id="L304">            addSimpleForEachTerminal(statements, builder);</span>
+<span class="fc" id="L305">            return;</span>
         }
         
         // Try to analyze the statements into operations + terminal
-<span class="fc" id="L308">        analyzeStatements(statements, builder, varName, compilationUnit, false);</span>
-<span class="fc" id="L309">    }</span>
+<span class="fc" id="L309">        analyzeStatements(statements, builder, varName, compilationUnit, false);</span>
+<span class="fc" id="L310">    }</span>
     
     /**
      * Checks if all statements are simple side effects (method calls).
      */
     private boolean allSideEffects(java.util.List&lt;Statement&gt; statements) {
-<span class="fc bfc" id="L315" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
-<span class="fc bfc" id="L316" title="All 2 branches covered.">            if (!isSimpleSideEffect(stmt)) {</span>
-<span class="fc" id="L317">                return false;</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            if (!isSimpleSideEffect(stmt)) {</span>
+<span class="fc" id="L318">                return false;</span>
             }
         }
-<span class="fc" id="L320">        return true;</span>
+<span class="fc" id="L321">        return true;</span>
     }
     
     /**
      * Counts the number of variable declaration statements in the list.
      */
     private int countVariableDeclarations(java.util.List&lt;Statement&gt; statements) {
-<span class="fc" id="L327">        int count = 0;</span>
-<span class="fc bfc" id="L328" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
-<span class="fc bfc" id="L329" title="All 2 branches covered.">            if (stmt instanceof VariableDeclarationStatement) {</span>
-<span class="fc" id="L330">                count++;</span>
+<span class="fc" id="L328">        int count = 0;</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">            if (stmt instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L331">                count++;</span>
             }
         }
-<span class="fc" id="L333">        return count;</span>
+<span class="fc" id="L334">        return count;</span>
     }
-    
+
+    /**
+     * Returns whether multiple local declarations form a linear stream map chain.
+     * Each declaration becomes the sole pipeline value available to the next
+     * declaration. References to pipeline values that are no longer in scope
+     * make the decomposition unsafe and retain the original block in one
+     * {@code forEach} lambda instead.
+     */
+    private boolean isLinearVariableDeclarationChain(
+            java.util.List&lt;Statement&gt; statements, String initialVariableName) {
+<span class="fc" id="L346">        java.util.Set&lt;String&gt; unavailableVariables = new java.util.HashSet&lt;&gt;();</span>
+<span class="fc" id="L347">        String currentVariableName = initialVariableName;</span>
+<span class="fc" id="L348">        boolean declarationSequenceEnded = false;</span>
+<span class="fc" id="L349">        int declarationCount = 0;</span>
+
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        for (int index = 0; index &lt; statements.size(); index++) {</span>
+<span class="fc" id="L352">            Statement statement = statements.get(index);</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">            if (!(statement instanceof VariableDeclarationStatement declaration)) {</span>
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">                if (declarationCount &gt; 0) {</span>
+<span class="fc" id="L355">                    declarationSequenceEnded = true;</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">                    if (referencesAnyVariable(statement, unavailableVariables)) {</span>
+<span class="fc" id="L357">                        return false;</span>
+                    }
+                }
+                continue;
+            }
+<span class="pc bpc" id="L362" title="2 of 4 branches missed.">            if (declarationSequenceEnded || index == statements.size() - 1) {</span>
+<span class="nc" id="L363">                return false;</span>
+            }
+
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L367">            java.util.List&lt;VariableDeclarationFragment&gt; fragments = declaration.fragments();</span>
+<span class="pc bpc" id="L368" title="2 of 4 branches missed.">            if (fragments.size() != 1 || fragments.get(0).getInitializer() == null) {</span>
+<span class="nc" id="L369">                return false;</span>
+            }
+<span class="fc" id="L371">            VariableDeclarationFragment fragment = fragments.get(0);</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">            if (referencesAnyVariable(fragment.getInitializer(), unavailableVariables)) {</span>
+<span class="fc" id="L373">                return false;</span>
+            }
+
+<span class="fc" id="L376">            unavailableVariables.add(currentVariableName);</span>
+<span class="fc" id="L377">            currentVariableName = fragment.getName().getIdentifier();</span>
+<span class="fc" id="L378">            declarationCount++;</span>
+        }
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">        return declarationCount &gt; 1;</span>
+    }
+
+    private boolean referencesAnyVariable(ASTNode node,
+            java.util.Set&lt;String&gt; variableNames) {
+<span class="fc" id="L385">        boolean[] found = { false };</span>
+<span class="fc" id="L386">        node.accept(new ASTVisitor() {</span>
+            @Override
+            public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L389" title="All 2 branches covered.">                if (!variableNames.contains(name.getIdentifier())) {</span>
+<span class="fc" id="L390">                    return true;</span>
+                }
+<span class="fc" id="L392">                IBinding binding = name.resolveBinding();</span>
+<span class="pc bpc" id="L393" title="2 of 4 branches missed.">                if (binding == null || binding.getKind() == IBinding.VARIABLE) {</span>
+<span class="fc" id="L394">                    found[0] = true;</span>
+<span class="fc" id="L395">                    return false;</span>
+                }
+<span class="nc" id="L397">                return true;</span>
+            }
+        });
+<span class="fc" id="L400">        return found[0];</span>
+    }
+
     /**
      * Adds a simple forEach terminal with all statements in the body.
      * Used when the body is too complex to decompose into map/filter chains.
      */
     private void addSimpleForEachTerminal(java.util.List&lt;Statement&gt; statements, LoopModelBuilder builder) {
-<span class="fc" id="L341">        java.util.List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L342" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
-<span class="fc" id="L343">            String stmtStr = stmt.toString();</span>
+<span class="fc" id="L408">        java.util.List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
+<span class="fc" id="L410">            String stmtStr = stmt.toString();</span>
             // Don't remove trailing semicolons for block statements
-<span class="fc" id="L345">            bodyStmts.add(stmtStr);</span>
+<span class="fc" id="L412">            bodyStmts.add(stmtStr);</span>
         }
-<span class="fc" id="L347">        builder.forEach(bodyStmts, false);</span>
-<span class="fc" id="L348">    }</span>
+<span class="fc" id="L414">        builder.forEach(bodyStmts, false);</span>
+<span class="fc" id="L415">    }</span>
     
     /**
      * Recursively analyzes a list of statements, building operations and setting the terminal.
@@ -359,144 +426,144 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      */
     private void analyzeStatements(java.util.List&lt;Statement&gt; statements, LoopModelBuilder builder, 
                                     String varName, CompilationUnit compilationUnit, boolean hasOperations) {
-<span class="fc" id="L362">        String currentVarName = varName;</span>
+<span class="fc" id="L429">        String currentVarName = varName;</span>
         
-<span class="pc bpc" id="L364" title="1 of 2 branches missed.">        for (int i = 0; i &lt; statements.size(); i++) {</span>
-<span class="fc" id="L365">            Statement stmt = statements.get(i);</span>
-<span class="fc bfc" id="L366" title="All 2 branches covered.">            boolean isLast = (i == statements.size() - 1);</span>
+<span class="pc bpc" id="L431" title="1 of 2 branches missed.">        for (int i = 0; i &lt; statements.size(); i++) {</span>
+<span class="fc" id="L432">            Statement stmt = statements.get(i);</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">            boolean isLast = (i == statements.size() - 1);</span>
             
             // === IF STATEMENT patterns ===
-<span class="fc bfc" id="L369" title="All 4 branches covered.">            if (stmt instanceof IfStatement ifStmt &amp;&amp; ifStmt.getElseStatement() == null) {</span>
-<span class="fc" id="L370">                Statement thenStmt = ifStmt.getThenStatement();</span>
+<span class="fc bfc" id="L436" title="All 4 branches covered.">            if (stmt instanceof IfStatement ifStmt &amp;&amp; ifStmt.getElseStatement() == null) {</span>
+<span class="fc" id="L437">                Statement thenStmt = ifStmt.getThenStatement();</span>
                 
                 // Pattern: if (cond) continue; → filter(x -&gt; !(cond))
-<span class="fc bfc" id="L373" title="All 2 branches covered.">                if (isContinueStatement(thenStmt)) {</span>
-<span class="fc" id="L374">                    String condition = ifStmt.getExpression().toString();</span>
-<span class="fc" id="L375">                    builder.filter(&quot;!(&quot; + condition + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L376">                    attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L377">                    hasOperations = true;</span>
-<span class="fc" id="L378">                    continue;</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">                if (isContinueStatement(thenStmt)) {</span>
+<span class="fc" id="L441">                    String condition = ifStmt.getExpression().toString();</span>
+<span class="fc" id="L442">                    builder.filter(&quot;!(&quot; + condition + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L443">                    attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L444">                    hasOperations = true;</span>
+<span class="fc" id="L445">                    continue;</span>
                 }
                 
                 // Pattern: if (cond) return true/false; (last stmt) → MatchTerminal
-<span class="fc bfc" id="L382" title="All 4 branches covered.">                if (isLast &amp;&amp; isEarlyReturnIf(ifStmt, statements)) {</span>
-<span class="fc" id="L383">                    addMatchTerminal(ifStmt, builder, currentVarName);</span>
-<span class="fc" id="L384">                    return; // terminal set</span>
+<span class="fc bfc" id="L449" title="All 4 branches covered.">                if (isLast &amp;&amp; isEarlyReturnIf(ifStmt, statements)) {</span>
+<span class="fc" id="L450">                    addMatchTerminal(ifStmt, builder, currentVarName);</span>
+<span class="fc" id="L451">                    return; // terminal set</span>
                 }
                 
                 // Pattern: if (cond) { body } (last stmt) → filter(cond) + body operations
-<span class="fc bfc" id="L388" title="All 2 branches covered.">                if (isLast) {</span>
-<span class="fc" id="L389">                    String condition = ifStmt.getExpression().toString();</span>
-<span class="fc" id="L390">                    builder.filter(&quot;(&quot; + condition + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L391">                    attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L392">                    hasOperations = true;</span>
-<span class="fc" id="L393">                    analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);</span>
-<span class="fc" id="L394">                    return; // terminal set by recursion</span>
+<span class="fc bfc" id="L455" title="All 2 branches covered.">                if (isLast) {</span>
+<span class="fc" id="L456">                    String condition = ifStmt.getExpression().toString();</span>
+<span class="fc" id="L457">                    builder.filter(&quot;(&quot; + condition + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L458">                    attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L459">                    hasOperations = true;</span>
+<span class="fc" id="L460">                    analyzeAndAddOperations(ifStmt.getThenStatement(), builder, currentVarName, compilationUnit);</span>
+<span class="fc" id="L461">                    return; // terminal set by recursion</span>
                 }
                 
                 // Pattern: if (cond) { ... } (NOT last) → side-effect MAP that wraps the if
                 // V1 NON_TERMINAL: wrap intermediate if-statements as map(var -&gt; { if(...){...} return var; })
-<span class="fc" id="L399">                builder.sideEffectMap(stmt.toString(), currentVarName);</span>
-<span class="fc" id="L400">                attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L401">                hasOperations = true;</span>
-<span class="fc" id="L402">                continue;</span>
+<span class="fc" id="L466">                builder.sideEffectMap(stmt.toString(), currentVarName);</span>
+<span class="fc" id="L467">                attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L468">                hasOperations = true;</span>
+<span class="fc" id="L469">                continue;</span>
             }
             
             // === VARIABLE DECLARATION pattern ===
             // Type x = expr; → map(var -&gt; expr) with renamed pipeline variable
-<span class="pc bpc" id="L407" title="1 of 4 branches missed.">            if (stmt instanceof VariableDeclarationStatement varDecl &amp;&amp; !isLast) {</span>
+<span class="pc bpc" id="L474" title="1 of 4 branches missed.">            if (stmt instanceof VariableDeclarationStatement varDecl &amp;&amp; !isLast) {</span>
                 @SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
-<span class="fc" id="L409">                java.util.List&lt;VariableDeclarationFragment&gt; fragments = varDecl.fragments();</span>
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">                if (fragments.size() == 1) {</span>
-<span class="fc" id="L411">                    VariableDeclarationFragment frag = fragments.get(0);</span>
-<span class="fc" id="L412">                    Expression init = frag.getInitializer();</span>
-<span class="pc bpc" id="L413" title="1 of 2 branches missed.">                    if (init != null) {</span>
-<span class="fc" id="L414">                        String newVarName = frag.getName().getIdentifier();</span>
-<span class="fc" id="L415">                        String mapExpr = init.toString();</span>
+<span class="fc" id="L476">                java.util.List&lt;VariableDeclarationFragment&gt; fragments = varDecl.fragments();</span>
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">                if (fragments.size() == 1) {</span>
+<span class="fc" id="L478">                    VariableDeclarationFragment frag = fragments.get(0);</span>
+<span class="fc" id="L479">                    Expression init = frag.getInitializer();</span>
+<span class="pc bpc" id="L480" title="1 of 2 branches missed.">                    if (init != null) {</span>
+<span class="fc" id="L481">                        String newVarName = frag.getName().getIdentifier();</span>
+<span class="fc" id="L482">                        String mapExpr = init.toString();</span>
                         
                         // Check if remaining non-terminal statements need wrapping
                         // (V1 VARIABLE_DECLARATION.shouldWrapRemaining pattern)
-<span class="fc bfc" id="L419" title="All 2 branches covered.">                        if (shouldWrapRemainingInMap(statements, i, newVarName)) {</span>
-<span class="fc" id="L420">                            builder.map(mapExpr, varDecl.getType().toString(), newVarName);</span>
-<span class="fc" id="L421">                            attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L422">                            currentVarName = newVarName;</span>
-<span class="fc" id="L423">                            hasOperations = true;</span>
+<span class="fc bfc" id="L486" title="All 2 branches covered.">                        if (shouldWrapRemainingInMap(statements, i, newVarName)) {</span>
+<span class="fc" id="L487">                            builder.map(mapExpr, varDecl.getType().toString(), newVarName);</span>
+<span class="fc" id="L488">                            attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L489">                            currentVarName = newVarName;</span>
+<span class="fc" id="L490">                            hasOperations = true;</span>
                             // Wrap remaining non-terminal statements as a single side-effect MAP
-<span class="fc" id="L425">                            i = wrapRemainingNonTerminals(statements, i + 1, builder, currentVarName);</span>
+<span class="fc" id="L492">                            i = wrapRemainingNonTerminals(statements, i + 1, builder, currentVarName);</span>
                             // Now i points to the last statement (terminal) — continue loop to process it
-<span class="fc" id="L427">                            continue;</span>
+<span class="fc" id="L494">                            continue;</span>
                         }
                         
-<span class="fc" id="L430">                        builder.map(mapExpr, varDecl.getType().toString(), newVarName);</span>
-<span class="fc" id="L431">                        attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L432">                        currentVarName = newVarName;</span>
-<span class="fc" id="L433">                        hasOperations = true;</span>
-<span class="fc" id="L434">                        continue;</span>
+<span class="fc" id="L497">                        builder.map(mapExpr, varDecl.getType().toString(), newVarName);</span>
+<span class="fc" id="L498">                        attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L499">                        currentVarName = newVarName;</span>
+<span class="fc" id="L500">                        hasOperations = true;</span>
+<span class="fc" id="L501">                        continue;</span>
                     }
                 }
             }
             
             // === ASSIGNMENT MAP pattern ===
             // x = expr; where x is the current pipeline variable → map(x -&gt; expr)
-<span class="fc bfc" id="L441" title="All 4 branches covered.">            if (stmt instanceof ExpressionStatement assignExprStmt &amp;&amp; !isLast) {</span>
-<span class="fc" id="L442">                Expression assignExpr = assignExprStmt.getExpression();</span>
-<span class="fc bfc" id="L443" title="All 2 branches covered.">                if (assignExpr instanceof Assignment assign</span>
-<span class="pc bpc" id="L444" title="1 of 2 branches missed.">                        &amp;&amp; assign.getOperator() == Assignment.Operator.ASSIGN) {</span>
-<span class="fc" id="L445">                    Expression lhs = assign.getLeftHandSide();</span>
-<span class="pc bpc" id="L446" title="1 of 2 branches missed.">                    if (lhs instanceof SimpleName name </span>
-<span class="fc bfc" id="L447" title="All 2 branches covered.">                            &amp;&amp; name.getIdentifier().equals(currentVarName)) {</span>
-<span class="fc" id="L448">                        String mapExpr = assign.getRightHandSide().toString();</span>
-<span class="fc" id="L449">                        builder.map(mapExpr, null, currentVarName);</span>
-<span class="fc" id="L450">                        attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L451">                        hasOperations = true;</span>
-<span class="fc" id="L452">                        continue;</span>
+<span class="fc bfc" id="L508" title="All 4 branches covered.">            if (stmt instanceof ExpressionStatement assignExprStmt &amp;&amp; !isLast) {</span>
+<span class="fc" id="L509">                Expression assignExpr = assignExprStmt.getExpression();</span>
+<span class="fc bfc" id="L510" title="All 2 branches covered.">                if (assignExpr instanceof Assignment assign</span>
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">                        &amp;&amp; assign.getOperator() == Assignment.Operator.ASSIGN) {</span>
+<span class="fc" id="L512">                    Expression lhs = assign.getLeftHandSide();</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">                    if (lhs instanceof SimpleName name </span>
+<span class="fc bfc" id="L514" title="All 2 branches covered.">                            &amp;&amp; name.getIdentifier().equals(currentVarName)) {</span>
+<span class="fc" id="L515">                        String mapExpr = assign.getRightHandSide().toString();</span>
+<span class="fc" id="L516">                        builder.map(mapExpr, null, currentVarName);</span>
+<span class="fc" id="L517">                        attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L518">                        hasOperations = true;</span>
+<span class="fc" id="L519">                        continue;</span>
                     }
                 }
             }
             
             // === TERMINAL patterns (last statement only) ===
-<span class="fc bfc" id="L458" title="All 2 branches covered.">            if (isLast) {</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">            if (isLast) {</span>
                 // Collect: collection.add(expr)
-<span class="fc bfc" id="L460" title="All 2 branches covered.">                if (isCollectPattern(stmt)) {</span>
-<span class="fc" id="L461">                    addCollectTerminal(stmt, builder, currentVarName);</span>
-<span class="fc" id="L462">                    return; // terminal set</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">                if (isCollectPattern(stmt)) {</span>
+<span class="fc" id="L528">                    addCollectTerminal(stmt, builder, currentVarName);</span>
+<span class="fc" id="L529">                    return; // terminal set</span>
                 }
                 
                 // Reduce: += , ++, *=, count = count + 1, etc.
-<span class="fc bfc" id="L466" title="All 2 branches covered.">                if (isReducePattern(stmt)) {</span>
-<span class="fc" id="L467">                    addReduceTerminal(stmt, builder, currentVarName);</span>
-<span class="fc" id="L468">                    return; // terminal set</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">                if (isReducePattern(stmt)) {</span>
+<span class="fc" id="L534">                    addReduceTerminal(stmt, builder, currentVarName);</span>
+<span class="fc" id="L535">                    return; // terminal set</span>
                 }
                 
                 // ForEach: everything else at the end
-<span class="fc" id="L472">                java.util.List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
-<span class="fc" id="L473">                String stmtStr = stmt.toString();</span>
-<span class="pc bpc" id="L474" title="1 of 4 branches missed.">                if (stmtStr.endsWith(&quot;;\n&quot;) || stmtStr.endsWith(&quot;;&quot;)) {</span>
-<span class="fc" id="L475">                    stmtStr = stmtStr.replaceAll(&quot;;\\s*$&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L539">                java.util.List&lt;String&gt; bodyStmts = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L540">                String stmtStr = stmt.toString();</span>
+<span class="pc bpc" id="L541" title="1 of 4 branches missed.">                if (stmtStr.endsWith(&quot;;\n&quot;) || stmtStr.endsWith(&quot;;&quot;)) {</span>
+<span class="fc" id="L542">                    stmtStr = stmtStr.replaceAll(&quot;;\\s*$&quot;, &quot;&quot;).trim(); //$NON-NLS-1$ //$NON-NLS-2$</span>
                 }
-<span class="fc" id="L477">                bodyStmts.add(stmtStr);</span>
-<span class="fc bfc" id="L478" title="All 4 branches covered.">                builder.forEach(bodyStmts, hasOperations || builder.hasOperations());</span>
-<span class="fc" id="L479">                return; // terminal set</span>
+<span class="fc" id="L544">                bodyStmts.add(stmtStr);</span>
+<span class="fc bfc" id="L545" title="All 4 branches covered.">                builder.forEach(bodyStmts, hasOperations || builder.hasOperations());</span>
+<span class="fc" id="L546">                return; // terminal set</span>
             }
             
             // === NON-TERMINAL side-effect pattern ===
             // Intermediate statements that don't match any pattern above are wrapped as 
             // side-effect MAP: map(var -&gt; { stmt; return var; })
             // This is the V1 NON_TERMINAL handler equivalent
-<span class="pc bpc" id="L486" title="1 of 2 branches missed.">            if (isReducePattern(stmt)) {</span>
-<span class="nc" id="L487">                return; // A non-terminal accumulator mutation is not a safe stream operation</span>
+<span class="pc bpc" id="L553" title="1 of 2 branches missed.">            if (isReducePattern(stmt)) {</span>
+<span class="nc" id="L554">                return; // A non-terminal accumulator mutation is not a safe stream operation</span>
             }
-<span class="pc bpc" id="L489" title="1 of 4 branches missed.">            if (isCollectPattern(stmt) || isSimpleSideEffect(stmt)) {</span>
-<span class="fc" id="L490">                builder.sideEffectMap(stmt.toString(), currentVarName);</span>
-<span class="fc" id="L491">                attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
-<span class="fc" id="L492">                hasOperations = true;</span>
-<span class="fc" id="L493">                continue;</span>
+<span class="pc bpc" id="L556" title="1 of 4 branches missed.">            if (isCollectPattern(stmt) || isSimpleSideEffect(stmt)) {</span>
+<span class="fc" id="L557">                builder.sideEffectMap(stmt.toString(), currentVarName);</span>
+<span class="fc" id="L558">                attachComments(builder.getLastOperation(), stmt, compilationUnit);</span>
+<span class="fc" id="L559">                hasOperations = true;</span>
+<span class="fc" id="L560">                continue;</span>
             }
             
             // Unknown intermediate statement → cannot convert
-<span class="fc" id="L497">            return; // No terminal → NOT_CONVERTIBLE</span>
+<span class="fc" id="L564">            return; // No terminal → NOT_CONVERTIBLE</span>
         }
-<span class="nc" id="L499">    }</span>
+<span class="nc" id="L566">    }</span>
     
     /**
      * Checks if remaining non-terminal statements after a variable declaration
@@ -507,30 +574,30 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      */
     private boolean shouldWrapRemainingInMap(java.util.List&lt;Statement&gt; statements, int currentIndex, String newVarName) {
         // Look through remaining non-terminal statements
-<span class="pc bfc" id="L510" title="All 2 branches covered.">        for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
-<span class="fc" id="L511">            Statement stmt = statements.get(j);</span>
+<span class="fc bfc" id="L577" title="All 2 branches covered.">        for (int j = currentIndex + 1; j &lt; statements.size() - 1; j++) {</span>
+<span class="fc" id="L578">            Statement stmt = statements.get(j);</span>
             
             // If there's an intermediate if-statement (not continue, not return), wrap
-<span class="pc bpc" id="L514" title="1 of 4 branches missed.">            if (stmt instanceof IfStatement ifStmt &amp;&amp; ifStmt.getElseStatement() == null) {</span>
-<span class="fc" id="L515">                Statement thenStmt = ifStmt.getThenStatement();</span>
-<span class="pc bpc" id="L516" title="2 of 4 branches missed.">                if (!isContinueStatement(thenStmt) &amp;&amp; !isEarlyReturnIf(ifStmt, statements)) {</span>
-<span class="fc" id="L517">                    return true;</span>
+<span class="pc bpc" id="L581" title="1 of 4 branches missed.">            if (stmt instanceof IfStatement ifStmt &amp;&amp; ifStmt.getElseStatement() == null) {</span>
+<span class="fc" id="L582">                Statement thenStmt = ifStmt.getThenStatement();</span>
+<span class="pc bpc" id="L583" title="2 of 4 branches missed.">                if (!isContinueStatement(thenStmt) &amp;&amp; !isEarlyReturnIf(ifStmt, statements)) {</span>
+<span class="fc" id="L584">                    return true;</span>
                 }
             }
             
             // Don't wrap if the statement is an assignment to the produced variable 
             // (handled by ASSIGNMENT_MAP pattern)
-<span class="pc bpc" id="L523" title="1 of 2 branches missed.">            if (stmt instanceof ExpressionStatement es) {</span>
-<span class="fc" id="L524">                Expression expr = es.getExpression();</span>
-<span class="pc bpc" id="L525" title="1 of 2 branches missed.">                if (expr instanceof Assignment assign </span>
-<span class="pc bpc" id="L526" title="1 of 2 branches missed.">                        &amp;&amp; assign.getOperator() == Assignment.Operator.ASSIGN</span>
-<span class="pc bpc" id="L527" title="1 of 2 branches missed.">                        &amp;&amp; assign.getLeftHandSide() instanceof SimpleName sn</span>
-<span class="pc bpc" id="L528" title="1 of 2 branches missed.">                        &amp;&amp; sn.getIdentifier().equals(newVarName)) {</span>
-<span class="fc" id="L529">                    return false;</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">            if (stmt instanceof ExpressionStatement es) {</span>
+<span class="fc" id="L591">                Expression expr = es.getExpression();</span>
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">                if (expr instanceof Assignment assign </span>
+<span class="pc bpc" id="L593" title="1 of 2 branches missed.">                        &amp;&amp; assign.getOperator() == Assignment.Operator.ASSIGN</span>
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">                        &amp;&amp; assign.getLeftHandSide() instanceof SimpleName sn</span>
+<span class="pc bpc" id="L595" title="1 of 2 branches missed.">                        &amp;&amp; sn.getIdentifier().equals(newVarName)) {</span>
+<span class="fc" id="L596">                    return false;</span>
                 }
             }
         }
-<span class="fc" id="L533">        return false;</span>
+<span class="fc" id="L600">        return false;</span>
     }
     
     /**
@@ -541,42 +608,42 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      */
     private int wrapRemainingNonTerminals(java.util.List&lt;Statement&gt; statements, int startIndex, 
                                            LoopModelBuilder builder, String currentVarName) {
-<span class="fc" id="L544">        int lastIndex = statements.size() - 1;</span>
+<span class="fc" id="L611">        int lastIndex = statements.size() - 1;</span>
         
         // Collect non-terminal statements into a block string
-<span class="fc" id="L547">        StringBuilder blockStr = new StringBuilder();</span>
-<span class="fc bfc" id="L548" title="All 2 branches covered.">        for (int j = startIndex; j &lt; lastIndex; j++) {</span>
-<span class="fc" id="L549">            blockStr.append(statements.get(j).toString());</span>
+<span class="fc" id="L614">        StringBuilder blockStr = new StringBuilder();</span>
+<span class="fc bfc" id="L615" title="All 2 branches covered.">        for (int j = startIndex; j &lt; lastIndex; j++) {</span>
+<span class="fc" id="L616">            blockStr.append(statements.get(j).toString());</span>
         }
         
-<span class="pc bpc" id="L552" title="1 of 2 branches missed.">        if (blockStr.length() &gt; 0) {</span>
-<span class="fc" id="L553">            builder.sideEffectMap(blockStr.toString(), currentVarName);</span>
+<span class="pc bpc" id="L619" title="1 of 2 branches missed.">        if (blockStr.length() &gt; 0) {</span>
+<span class="fc" id="L620">            builder.sideEffectMap(blockStr.toString(), currentVarName);</span>
         }
         
         // Return the index right before the last statement so the loop will process it next
-<span class="fc" id="L557">        return lastIndex - 1;</span>
+<span class="fc" id="L624">        return lastIndex - 1;</span>
     }
     
     /**
      * Checks if the statements contain patterns that are always unconvertible.
      */
     private boolean containsUnconvertibleStatements(java.util.List&lt;Statement&gt; statements) {
-<span class="fc bfc" id="L564" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">        for (Statement stmt : statements) {</span>
             // Bare return (not inside an if-return-boolean pattern) → unconvertible
-<span class="fc bfc" id="L566" title="All 2 branches covered.">            if (stmt instanceof ReturnStatement returnStmt) {</span>
-<span class="fc" id="L567">                Expression expr = returnStmt.getExpression();</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">            if (stmt instanceof ReturnStatement returnStmt) {</span>
+<span class="fc" id="L634">                Expression expr = returnStmt.getExpression();</span>
                 // return; (void) → unconvertible
-<span class="pc bpc" id="L569" title="1 of 2 branches missed.">                if (expr == null) return true;</span>
+<span class="pc bpc" id="L636" title="1 of 2 branches missed.">                if (expr == null) return true;</span>
                 // return someExpr; (not boolean literal) → unconvertible
                 // Note: if-return-boolean inside an IfStatement is handled as a match pattern
-<span class="pc bpc" id="L572" title="1 of 2 branches missed.">                if (!(expr instanceof BooleanLiteral)) return true;</span>
+<span class="pc bpc" id="L639" title="1 of 2 branches missed.">                if (!(expr instanceof BooleanLiteral)) return true;</span>
             }
             // Throw → unconvertible
-<span class="fc bfc" id="L575" title="All 2 branches covered.">            if (stmt instanceof ThrowStatement) {</span>
-<span class="fc" id="L576">                return true;</span>
+<span class="fc bfc" id="L642" title="All 2 branches covered.">            if (stmt instanceof ThrowStatement) {</span>
+<span class="fc" id="L643">                return true;</span>
             }
         }
-<span class="fc" id="L579">        return false;</span>
+<span class="fc" id="L646">        return false;</span>
     }
     
     /**
@@ -584,26 +651,26 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * that can be safely included in a forEach body.
      */
     private boolean isSimpleSideEffect(Statement stmt) {
-<span class="fc bfc" id="L587" title="All 2 branches covered.">        if (stmt instanceof ExpressionStatement exprStmt) {</span>
-<span class="fc" id="L588">            Expression expr = exprStmt.getExpression();</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">        if (stmt instanceof ExpressionStatement exprStmt) {</span>
+<span class="fc" id="L655">            Expression expr = exprStmt.getExpression();</span>
             // Method invocations like System.out.println(x) are simple side effects
-<span class="fc bfc" id="L590" title="All 2 branches covered.">            if (expr instanceof MethodInvocation) {</span>
-<span class="fc" id="L591">                return true;</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">            if (expr instanceof MethodInvocation) {</span>
+<span class="fc" id="L658">                return true;</span>
             }
         }
-<span class="fc" id="L594">        return false;</span>
+<span class="fc" id="L661">        return false;</span>
     }
     
     private boolean isContinueStatement(Statement stmt) {
-<span class="fc bfc" id="L598" title="All 2 branches covered.">        if (stmt instanceof ContinueStatement) {</span>
-<span class="fc" id="L599">            return true;</span>
+<span class="fc bfc" id="L665" title="All 2 branches covered.">        if (stmt instanceof ContinueStatement) {</span>
+<span class="fc" id="L666">            return true;</span>
         }
-<span class="fc bfc" id="L601" title="All 2 branches covered.">        if (stmt instanceof Block block) {</span>
+<span class="fc bfc" id="L668" title="All 2 branches covered.">        if (stmt instanceof Block block) {</span>
             @SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
-<span class="fc" id="L603">            java.util.List&lt;Statement&gt; stmts = block.statements();</span>
-<span class="fc bfc" id="L604" title="All 4 branches covered.">            return stmts.size() == 1 &amp;&amp; stmts.get(0) instanceof ContinueStatement;</span>
+<span class="fc" id="L670">            java.util.List&lt;Statement&gt; stmts = block.statements();</span>
+<span class="fc bfc" id="L671" title="All 4 branches covered.">            return stmts.size() == 1 &amp;&amp; stmts.get(0) instanceof ContinueStatement;</span>
         }
-<span class="fc" id="L606">        return false;</span>
+<span class="fc" id="L673">        return false;</span>
     }
     
     /**
@@ -611,147 +678,147 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * Pattern: if (condition) return true/false; (as last statement)
      */
     private boolean isEarlyReturnIf(IfStatement ifStmt, java.util.List&lt;Statement&gt; statements) {
-<span class="fc" id="L614">        Statement thenStmt = ifStmt.getThenStatement();</span>
-<span class="pc bpc" id="L615" title="1 of 2 branches missed.">        if (thenStmt instanceof ReturnStatement returnStmt) {</span>
-<span class="nc" id="L616">            return returnStmt.getExpression() instanceof BooleanLiteral;</span>
+<span class="fc" id="L681">        Statement thenStmt = ifStmt.getThenStatement();</span>
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">        if (thenStmt instanceof ReturnStatement returnStmt) {</span>
+<span class="nc" id="L683">            return returnStmt.getExpression() instanceof BooleanLiteral;</span>
         }
-<span class="fc bfc" id="L618" title="All 2 branches covered.">        if (thenStmt instanceof Block block) {</span>
+<span class="fc bfc" id="L685" title="All 2 branches covered.">        if (thenStmt instanceof Block block) {</span>
             @SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
-<span class="fc" id="L620">            java.util.List&lt;Statement&gt; stmts = block.statements();</span>
-<span class="fc bfc" id="L621" title="All 4 branches covered.">            if (stmts.size() == 1 &amp;&amp; stmts.get(0) instanceof ReturnStatement returnStmt) {</span>
-<span class="fc" id="L622">                return returnStmt.getExpression() instanceof BooleanLiteral;</span>
+<span class="fc" id="L687">            java.util.List&lt;Statement&gt; stmts = block.statements();</span>
+<span class="fc bfc" id="L688" title="All 4 branches covered.">            if (stmts.size() == 1 &amp;&amp; stmts.get(0) instanceof ReturnStatement returnStmt) {</span>
+<span class="fc" id="L689">                return returnStmt.getExpression() instanceof BooleanLiteral;</span>
             }
         }
-<span class="fc" id="L625">        return false;</span>
+<span class="fc" id="L692">        return false;</span>
     }
     
     private void addMatchTerminal(IfStatement ifStmt, LoopModelBuilder builder, String varName) {
-<span class="fc" id="L629">        String condition = ifStmt.getExpression().toString();</span>
+<span class="fc" id="L696">        String condition = ifStmt.getExpression().toString();</span>
         
         // Determine match type from the return value
-<span class="fc" id="L632">        Statement thenStmt = ifStmt.getThenStatement();</span>
+<span class="fc" id="L699">        Statement thenStmt = ifStmt.getThenStatement();</span>
         ReturnStatement returnStmt;
-<span class="pc bpc" id="L634" title="1 of 2 branches missed.">        if (thenStmt instanceof ReturnStatement rs) {</span>
-<span class="nc" id="L635">            returnStmt = rs;</span>
-<span class="nc" id="L636">        } else {</span>
+<span class="pc bpc" id="L701" title="1 of 2 branches missed.">        if (thenStmt instanceof ReturnStatement rs) {</span>
+<span class="nc" id="L702">            returnStmt = rs;</span>
+<span class="nc" id="L703">        } else {</span>
             @SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
-<span class="fc" id="L638">            java.util.List&lt;Statement&gt; stmts = ((Block) thenStmt).statements();</span>
-<span class="fc" id="L639">            returnStmt = (ReturnStatement) stmts.get(0);</span>
+<span class="fc" id="L705">            java.util.List&lt;Statement&gt; stmts = ((Block) thenStmt).statements();</span>
+<span class="fc" id="L706">            returnStmt = (ReturnStatement) stmts.get(0);</span>
         }
         
-<span class="fc" id="L642">        boolean returnsTrue = ((BooleanLiteral) returnStmt.getExpression()).booleanValue();</span>
+<span class="fc" id="L709">        boolean returnsTrue = ((BooleanLiteral) returnStmt.getExpression()).booleanValue();</span>
         
-<span class="fc bfc" id="L644" title="All 2 branches covered.">        if (returnsTrue) {</span>
+<span class="fc bfc" id="L711" title="All 2 branches covered.">        if (returnsTrue) {</span>
             // if (cond) return true; → anyMatch(cond)
-<span class="fc" id="L646">            builder.anyMatch(condition);</span>
-<span class="fc" id="L647">        } else {</span>
+<span class="fc" id="L713">            builder.anyMatch(condition);</span>
+<span class="fc" id="L714">        } else {</span>
             // if (cond) return false; 
             // Check if the condition is already negated → allMatch with inner condition
-<span class="fc" id="L650">            Expression condExpr = ifStmt.getExpression();</span>
-<span class="fc bfc" id="L651" title="All 2 branches covered.">            if (condExpr instanceof PrefixExpression prefix </span>
-<span class="pc bpc" id="L652" title="1 of 2 branches missed.">                    &amp;&amp; prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
+<span class="fc" id="L717">            Expression condExpr = ifStmt.getExpression();</span>
+<span class="fc bfc" id="L718" title="All 2 branches covered.">            if (condExpr instanceof PrefixExpression prefix </span>
+<span class="pc bpc" id="L719" title="1 of 2 branches missed.">                    &amp;&amp; prefix.getOperator() == PrefixExpression.Operator.NOT) {</span>
                 // if (!innerCond) return false; → allMatch(innerCond)
-<span class="fc" id="L654">                String innerCondition = prefix.getOperand().toString();</span>
-<span class="fc" id="L655">                builder.allMatch(innerCondition);</span>
-<span class="pc bpc" id="L656" title="3 of 4 branches missed.">            } else if (condition.startsWith(&quot;!(&quot;) &amp;&amp; condition.endsWith(&quot;)&quot;)) {</span>
+<span class="fc" id="L721">                String innerCondition = prefix.getOperand().toString();</span>
+<span class="fc" id="L722">                builder.allMatch(innerCondition);</span>
+<span class="pc bpc" id="L723" title="3 of 4 branches missed.">            } else if (condition.startsWith(&quot;!(&quot;) &amp;&amp; condition.endsWith(&quot;)&quot;)) {</span>
                 // if (!(innerCond)) return false; → allMatch(innerCond)
-<span class="nc" id="L658">                String innerCondition = condition.substring(2, condition.length() - 1);</span>
-<span class="nc" id="L659">                builder.allMatch(innerCondition);</span>
-<span class="nc" id="L660">            } else {</span>
+<span class="nc" id="L725">                String innerCondition = condition.substring(2, condition.length() - 1);</span>
+<span class="nc" id="L726">                builder.allMatch(innerCondition);</span>
+<span class="nc" id="L727">            } else {</span>
                 // if (cond) return false; → noneMatch(cond)
-<span class="fc" id="L662">                builder.noneMatch(condition);</span>
+<span class="fc" id="L729">                builder.noneMatch(condition);</span>
             }
         }
-<span class="fc" id="L665">    }</span>
+<span class="fc" id="L732">    }</span>
     
     /**
      * Detects collection.add(expr) patterns.
      */
     private boolean isCollectPattern(Statement stmt) {
-<span class="fc bfc" id="L671" title="All 2 branches covered.">        if (stmt instanceof ExpressionStatement exprStmt) {</span>
-<span class="fc" id="L672">            Expression expr = exprStmt.getExpression();</span>
-<span class="fc bfc" id="L673" title="All 2 branches covered.">            if (expr instanceof MethodInvocation mi) {</span>
-<span class="fc" id="L674">                String methodName = mi.getName().getIdentifier();</span>
-<span class="pc bpc" id="L675" title="1 of 4 branches missed.">                return &quot;add&quot;.equals(methodName) &amp;&amp; mi.arguments().size() == 1; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L738" title="All 2 branches covered.">        if (stmt instanceof ExpressionStatement exprStmt) {</span>
+<span class="fc" id="L739">            Expression expr = exprStmt.getExpression();</span>
+<span class="fc bfc" id="L740" title="All 2 branches covered.">            if (expr instanceof MethodInvocation mi) {</span>
+<span class="fc" id="L741">                String methodName = mi.getName().getIdentifier();</span>
+<span class="pc bpc" id="L742" title="1 of 4 branches missed.">                return &quot;add&quot;.equals(methodName) &amp;&amp; mi.arguments().size() == 1; //$NON-NLS-1$</span>
             }
         }
-<span class="fc" id="L678">        return false;</span>
+<span class="fc" id="L745">        return false;</span>
     }
     
     private void addCollectTerminal(Statement stmt, LoopModelBuilder builder, String varName) {
-<span class="fc" id="L682">        ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L683">        MethodInvocation mi = (MethodInvocation) exprStmt.getExpression();</span>
+<span class="fc" id="L749">        ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L750">        MethodInvocation mi = (MethodInvocation) exprStmt.getExpression();</span>
         
         // Determine collector type from the target collection type
-<span class="fc" id="L686">        Expression target = mi.getExpression();</span>
-<span class="pc bpc" id="L687" title="1 of 2 branches missed.">        ITypeBinding targetType = target != null ? target.resolveTypeBinding() : null;</span>
+<span class="fc" id="L753">        Expression target = mi.getExpression();</span>
+<span class="pc bpc" id="L754" title="1 of 2 branches missed.">        ITypeBinding targetType = target != null ? target.resolveTypeBinding() : null;</span>
         
-<span class="fc" id="L689">        org.sandbox.functional.core.terminal.CollectTerminal.CollectorType collectorType =</span>
-<span class="fc" id="L690">            org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_LIST;</span>
+<span class="fc" id="L756">        org.sandbox.functional.core.terminal.CollectTerminal.CollectorType collectorType =</span>
+<span class="fc" id="L757">            org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_LIST;</span>
         
-<span class="pc bpc" id="L692" title="1 of 2 branches missed.">        if (targetType != null) {</span>
-<span class="pc bpc" id="L693" title="1 of 2 branches missed.">            String typeName = targetType.getErasure() != null ? targetType.getErasure().getQualifiedName() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="fc bfc" id="L694" title="All 2 branches covered.">            if (typeName.contains(&quot;Set&quot;)) {</span>
-<span class="fc" id="L695">                collectorType = org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_SET;</span>
+<span class="pc bpc" id="L759" title="1 of 2 branches missed.">        if (targetType != null) {</span>
+<span class="pc bpc" id="L760" title="1 of 2 branches missed.">            String typeName = targetType.getErasure() != null ? targetType.getErasure().getQualifiedName() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L761" title="All 2 branches covered.">            if (typeName.contains(&quot;Set&quot;)) {</span>
+<span class="fc" id="L762">                collectorType = org.sandbox.functional.core.terminal.CollectTerminal.CollectorType.TO_SET;</span>
             }
         }
         
-<span class="pc bpc" id="L699" title="1 of 2 branches missed.">        String targetVar = target != null ? target.toString() : &quot;result&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L766" title="1 of 2 branches missed.">        String targetVar = target != null ? target.toString() : &quot;result&quot;; //$NON-NLS-1$</span>
         
         // Check if the added expression is not identity (needs a map before collect)
-<span class="fc" id="L702">        Expression addedExpr = (Expression) mi.arguments().get(0);</span>
-<span class="pc bpc" id="L703" title="1 of 4 branches missed.">        if (addedExpr instanceof SimpleName sn &amp;&amp; sn.getIdentifier().equals(varName)) {</span>
+<span class="fc" id="L769">        Expression addedExpr = (Expression) mi.arguments().get(0);</span>
+<span class="pc bpc" id="L770" title="1 of 4 branches missed.">        if (addedExpr instanceof SimpleName sn &amp;&amp; sn.getIdentifier().equals(varName)) {</span>
             // Identity mapping - just collect
-<span class="fc" id="L705">            builder.collect(collectorType, targetVar);</span>
-<span class="fc" id="L706">        } else {</span>
+<span class="fc" id="L772">            builder.collect(collectorType, targetVar);</span>
+<span class="fc" id="L773">        } else {</span>
             // Non-identity: add map before collect, infer type from expression
-<span class="fc" id="L708">            String mapTargetType = null;</span>
-<span class="fc" id="L709">            ITypeBinding exprType = addedExpr.resolveTypeBinding();</span>
-<span class="pc bpc" id="L710" title="1 of 2 branches missed.">            if (exprType != null) {</span>
-<span class="fc" id="L711">                mapTargetType = exprType.getName();</span>
+<span class="fc" id="L775">            String mapTargetType = null;</span>
+<span class="fc" id="L776">            ITypeBinding exprType = addedExpr.resolveTypeBinding();</span>
+<span class="pc bpc" id="L777" title="1 of 2 branches missed.">            if (exprType != null) {</span>
+<span class="fc" id="L778">                mapTargetType = exprType.getName();</span>
             }
-<span class="fc" id="L713">            builder.map(addedExpr.toString(), mapTargetType);</span>
-<span class="fc" id="L714">            builder.collect(collectorType, targetVar);</span>
+<span class="fc" id="L780">            builder.map(addedExpr.toString(), mapTargetType);</span>
+<span class="fc" id="L781">            builder.collect(collectorType, targetVar);</span>
         }
-<span class="fc" id="L716">    }</span>
+<span class="fc" id="L783">    }</span>
     
     /**
      * Detects accumulator patterns like sum += x, count++, count = count + 1,
      * max = Math.max(max, x), etc.
      */
     private boolean isReducePattern(Statement stmt) {
-<span class="fc bfc" id="L723" title="All 2 branches covered.">        if (stmt instanceof ExpressionStatement exprStmt) {</span>
-<span class="fc" id="L724">            Expression expr = exprStmt.getExpression();</span>
+<span class="fc bfc" id="L790" title="All 2 branches covered.">        if (stmt instanceof ExpressionStatement exprStmt) {</span>
+<span class="fc" id="L791">            Expression expr = exprStmt.getExpression();</span>
             // Compound assignment: sum += x, product *= x
-<span class="fc bfc" id="L726" title="All 2 branches covered.">            if (expr instanceof Assignment assign) {</span>
-<span class="pc bpc" id="L727" title="1 of 2 branches missed.">                if (!isLocalAccumulator(assign.getLeftHandSide())) {</span>
-<span class="nc" id="L728">                    return false;</span>
+<span class="fc bfc" id="L793" title="All 2 branches covered.">            if (expr instanceof Assignment assign) {</span>
+<span class="pc bpc" id="L794" title="1 of 2 branches missed.">                if (!isLocalAccumulator(assign.getLeftHandSide())) {</span>
+<span class="nc" id="L795">                    return false;</span>
                 }
-<span class="fc" id="L730">                Assignment.Operator op = assign.getOperator();</span>
-<span class="fc bfc" id="L731" title="All 2 branches covered.">                if (op == Assignment.Operator.PLUS_ASSIGN </span>
-<span class="pc bpc" id="L732" title="1 of 2 branches missed.">                    || op == Assignment.Operator.MINUS_ASSIGN</span>
-<span class="pc bpc" id="L733" title="1 of 2 branches missed.">                    || op == Assignment.Operator.TIMES_ASSIGN) {</span>
-<span class="fc" id="L734">                    return true;</span>
+<span class="fc" id="L797">                Assignment.Operator op = assign.getOperator();</span>
+<span class="fc bfc" id="L798" title="All 2 branches covered.">                if (op == Assignment.Operator.PLUS_ASSIGN </span>
+<span class="pc bpc" id="L799" title="1 of 2 branches missed.">                    || op == Assignment.Operator.MINUS_ASSIGN</span>
+<span class="pc bpc" id="L800" title="1 of 2 branches missed.">                    || op == Assignment.Operator.TIMES_ASSIGN) {</span>
+<span class="fc" id="L801">                    return true;</span>
                 }
                 // Plain assignment with infix accumulator: count = count + 1
-<span class="pc bpc" id="L737" title="2 of 4 branches missed.">                if (op == Assignment.Operator.ASSIGN &amp;&amp; assign.getLeftHandSide() instanceof SimpleName) {</span>
-<span class="fc bfc" id="L738" title="All 2 branches covered.">                    if (isInfixAccumulator(assign)) return true;</span>
-<span class="fc bfc" id="L739" title="All 2 branches covered.">                    if (isMathMaxMinPattern(assign)) return true;</span>
+<span class="pc bpc" id="L804" title="2 of 4 branches missed.">                if (op == Assignment.Operator.ASSIGN &amp;&amp; assign.getLeftHandSide() instanceof SimpleName) {</span>
+<span class="fc bfc" id="L805" title="All 2 branches covered.">                    if (isInfixAccumulator(assign)) return true;</span>
+<span class="fc bfc" id="L806" title="All 2 branches covered.">                    if (isMathMaxMinPattern(assign)) return true;</span>
                 }
             }
             // Postfix: count++, count--
-<span class="fc bfc" id="L743" title="All 2 branches covered.">            if (expr instanceof PostfixExpression postfix) {</span>
-<span class="fc" id="L744">                return isLocalAccumulator(postfix.getOperand());</span>
+<span class="fc bfc" id="L810" title="All 2 branches covered.">            if (expr instanceof PostfixExpression postfix) {</span>
+<span class="fc" id="L811">                return isLocalAccumulator(postfix.getOperand());</span>
             }
             // Prefix: ++count, --count
-<span class="pc bpc" id="L747" title="1 of 2 branches missed.">            if (expr instanceof PrefixExpression prefix) {</span>
-<span class="nc" id="L748">                PrefixExpression.Operator op = prefix.getOperator();</span>
-<span class="nc bnc" id="L749" title="All 2 branches missed.">                return isLocalAccumulator(prefix.getOperand())</span>
-<span class="nc bnc" id="L750" title="All 2 branches missed.">                    &amp;&amp; (op == PrefixExpression.Operator.INCREMENT</span>
-<span class="nc bnc" id="L751" title="All 2 branches missed.">                        || op == PrefixExpression.Operator.DECREMENT);</span>
+<span class="pc bpc" id="L814" title="1 of 2 branches missed.">            if (expr instanceof PrefixExpression prefix) {</span>
+<span class="nc" id="L815">                PrefixExpression.Operator op = prefix.getOperator();</span>
+<span class="nc bnc" id="L816" title="All 2 branches missed.">                return isLocalAccumulator(prefix.getOperand())</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">                    &amp;&amp; (op == PrefixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L818" title="All 2 branches missed.">                        || op == PrefixExpression.Operator.DECREMENT);</span>
             }
         }
-<span class="fc" id="L754">        return false;</span>
+<span class="fc" id="L821">        return false;</span>
     }
     
     /**
@@ -759,125 +826,125 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * count = count + 1, result = result * value, etc.
      */
     private boolean isInfixAccumulator(Assignment assign) {
-<span class="fc" id="L762">        String varName = ((SimpleName) assign.getLeftHandSide()).getIdentifier();</span>
-<span class="fc" id="L763">        Expression rhs = assign.getRightHandSide();</span>
-<span class="fc bfc" id="L764" title="All 2 branches covered.">        if (rhs instanceof InfixExpression infix) {</span>
-<span class="fc" id="L765">            Expression left = infix.getLeftOperand();</span>
-<span class="pc bpc" id="L766" title="2 of 4 branches missed.">            if (left instanceof SimpleName sn &amp;&amp; sn.getIdentifier().equals(varName)) {</span>
-<span class="fc" id="L767">                InfixExpression.Operator op = infix.getOperator();</span>
-<span class="pc bpc" id="L768" title="1 of 2 branches missed.">                return op == InfixExpression.Operator.PLUS</span>
-<span class="nc bnc" id="L769" title="All 2 branches missed.">                    || op == InfixExpression.Operator.MINUS</span>
-<span class="nc bnc" id="L770" title="All 2 branches missed.">                    || op == InfixExpression.Operator.TIMES;</span>
+<span class="fc" id="L829">        String varName = ((SimpleName) assign.getLeftHandSide()).getIdentifier();</span>
+<span class="fc" id="L830">        Expression rhs = assign.getRightHandSide();</span>
+<span class="fc bfc" id="L831" title="All 2 branches covered.">        if (rhs instanceof InfixExpression infix) {</span>
+<span class="fc" id="L832">            Expression left = infix.getLeftOperand();</span>
+<span class="pc bpc" id="L833" title="2 of 4 branches missed.">            if (left instanceof SimpleName sn &amp;&amp; sn.getIdentifier().equals(varName)) {</span>
+<span class="fc" id="L834">                InfixExpression.Operator op = infix.getOperator();</span>
+<span class="pc bpc" id="L835" title="1 of 2 branches missed.">                return op == InfixExpression.Operator.PLUS</span>
+<span class="nc bnc" id="L836" title="All 2 branches missed.">                    || op == InfixExpression.Operator.MINUS</span>
+<span class="nc bnc" id="L837" title="All 2 branches missed.">                    || op == InfixExpression.Operator.TIMES;</span>
             }
         }
-<span class="fc" id="L773">        return false;</span>
+<span class="fc" id="L840">        return false;</span>
     }
     
     private boolean isLocalAccumulator(Expression expression) {
-<span class="fc" id="L777">        IBinding binding = null;</span>
-<span class="pc bpc" id="L778" title="1 of 2 branches missed.">        if (expression instanceof SimpleName name) {</span>
-<span class="fc" id="L779">            binding = name.resolveBinding();</span>
-<span class="pc bnc" id="L780" title="All 2 branches missed.">        } else if (expression instanceof FieldAccess fieldAccess) {</span>
-<span class="nc" id="L781">            binding = fieldAccess.resolveFieldBinding();</span>
-<span class="nc bnc" id="L782" title="All 2 branches missed.">        } else if (expression instanceof QualifiedName qualifiedName) {</span>
-<span class="nc" id="L783">            binding = qualifiedName.resolveBinding();</span>
-<span class="nc bnc" id="L784" title="All 2 branches missed.">        } else if (expression instanceof SuperFieldAccess superFieldAccess) {</span>
-<span class="nc" id="L785">            binding = superFieldAccess.resolveFieldBinding();</span>
+<span class="fc" id="L844">        IBinding binding = null;</span>
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">        if (expression instanceof SimpleName name) {</span>
+<span class="fc" id="L846">            binding = name.resolveBinding();</span>
+<span class="pc bnc" id="L847" title="All 2 branches missed.">        } else if (expression instanceof FieldAccess fieldAccess) {</span>
+<span class="nc" id="L848">            binding = fieldAccess.resolveFieldBinding();</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">        } else if (expression instanceof QualifiedName qualifiedName) {</span>
+<span class="nc" id="L850">            binding = qualifiedName.resolveBinding();</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">        } else if (expression instanceof SuperFieldAccess superFieldAccess) {</span>
+<span class="nc" id="L852">            binding = superFieldAccess.resolveFieldBinding();</span>
         }
-<span class="pc bpc" id="L787" title="1 of 4 branches missed.">        return binding instanceof IVariableBinding variableBinding &amp;&amp; !variableBinding.isField();</span>
+<span class="pc bpc" id="L854" title="1 of 4 branches missed.">        return binding instanceof IVariableBinding variableBinding &amp;&amp; !variableBinding.isField();</span>
     }
 
     private void addReduceTerminal(Statement stmt, LoopModelBuilder builder, String varName) {
-<span class="fc" id="L791">        ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
-<span class="fc" id="L792">        Expression expr = exprStmt.getExpression();</span>
+<span class="fc" id="L858">        ExpressionStatement exprStmt = (ExpressionStatement) stmt;</span>
+<span class="fc" id="L859">        Expression expr = exprStmt.getExpression();</span>
         
-<span class="fc bfc" id="L794" title="All 2 branches covered.">        if (expr instanceof Assignment assign) {</span>
-<span class="fc" id="L795">            Assignment.Operator op = assign.getOperator();</span>
-<span class="fc" id="L796">            String accumVar = assign.getLeftHandSide().toString();</span>
-<span class="fc" id="L797">            String valueExpr = assign.getRightHandSide().toString();</span>
-<span class="fc" id="L798">            String accumType = resolveReducerType(assign.getLeftHandSide());</span>
+<span class="fc bfc" id="L861" title="All 2 branches covered.">        if (expr instanceof Assignment assign) {</span>
+<span class="fc" id="L862">            Assignment.Operator op = assign.getOperator();</span>
+<span class="fc" id="L863">            String accumVar = assign.getLeftHandSide().toString();</span>
+<span class="fc" id="L864">            String valueExpr = assign.getRightHandSide().toString();</span>
+<span class="fc" id="L865">            String accumType = resolveReducerType(assign.getLeftHandSide());</span>
             
-<span class="fc bfc" id="L800" title="All 2 branches covered.">            if (op == Assignment.Operator.PLUS_ASSIGN) {</span>
+<span class="fc bfc" id="L867" title="All 2 branches covered.">            if (op == Assignment.Operator.PLUS_ASSIGN) {</span>
                 // sum += value → .map(var -&gt; value).reduce(sum, Integer/Long/Double::sum)
-<span class="fc bfc" id="L802" title="All 2 branches covered.">                if (!valueExpr.equals(varName)) {</span>
-<span class="fc" id="L803">                    builder.map(valueExpr, null);</span>
+<span class="fc bfc" id="L869" title="All 2 branches covered.">                if (!valueExpr.equals(varName)) {</span>
+<span class="fc" id="L870">                    builder.map(valueExpr, null);</span>
                 }
-<span class="fc" id="L805">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="fc" id="L806">                    accumVar, accumType + &quot;::sum&quot;, null,</span>
-<span class="fc" id="L807">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));</span>
-<span class="pc bpc" id="L808" title="1 of 2 branches missed.">            } else if (op == Assignment.Operator.TIMES_ASSIGN) {</span>
-<span class="nc bnc" id="L809" title="All 2 branches missed.">                if (!valueExpr.equals(varName)) {</span>
-<span class="nc" id="L810">                    builder.map(valueExpr, null);</span>
+<span class="fc" id="L872">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="fc" id="L873">                    accumVar, accumType + &quot;::sum&quot;, null,</span>
+<span class="fc" id="L874">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));</span>
+<span class="pc bpc" id="L875" title="1 of 2 branches missed.">            } else if (op == Assignment.Operator.TIMES_ASSIGN) {</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">                if (!valueExpr.equals(varName)) {</span>
+<span class="nc" id="L877">                    builder.map(valueExpr, null);</span>
                 }
-<span class="nc" id="L812">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="nc" id="L813">                    accumVar, &quot;(a, b) -&gt; a * b&quot;, null,</span>
-<span class="nc" id="L814">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));</span>
-<span class="pc bpc" id="L815" title="1 of 2 branches missed.">            } else if (op == Assignment.Operator.MINUS_ASSIGN) {</span>
-<span class="nc bnc" id="L816" title="All 2 branches missed.">                if (!valueExpr.equals(varName)) {</span>
-<span class="nc" id="L817">                    builder.map(valueExpr, null);</span>
+<span class="nc" id="L879">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="nc" id="L880">                    accumVar, &quot;(a, b) -&gt; a * b&quot;, null,</span>
+<span class="nc" id="L881">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));</span>
+<span class="pc bpc" id="L882" title="1 of 2 branches missed.">            } else if (op == Assignment.Operator.MINUS_ASSIGN) {</span>
+<span class="nc bnc" id="L883" title="All 2 branches missed.">                if (!valueExpr.equals(varName)) {</span>
+<span class="nc" id="L884">                    builder.map(valueExpr, null);</span>
                 }
-<span class="nc" id="L819">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="nc" id="L820">                    accumVar, &quot;(a, b) -&gt; a - b&quot;, null,</span>
-<span class="nc" id="L821">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
-<span class="pc bpc" id="L822" title="1 of 2 branches missed.">            } else if (op == Assignment.Operator.ASSIGN) {</span>
-<span class="fc bfc" id="L823" title="All 2 branches covered.">                if (assign.getRightHandSide() instanceof InfixExpression infix) {</span>
-<span class="fc" id="L824">                    addInfixReduceTerminal(infix, builder, varName, accumVar);</span>
-<span class="pc bpc" id="L825" title="1 of 2 branches missed.">                } else if (isMathMaxMinPattern(assign)) {</span>
-<span class="fc" id="L826">                    addMathMaxMinReduce(assign, builder, accumVar);</span>
+<span class="nc" id="L886">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="nc" id="L887">                    accumVar, &quot;(a, b) -&gt; a - b&quot;, null,</span>
+<span class="nc" id="L888">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
+<span class="pc bpc" id="L889" title="1 of 2 branches missed.">            } else if (op == Assignment.Operator.ASSIGN) {</span>
+<span class="fc bfc" id="L890" title="All 2 branches covered.">                if (assign.getRightHandSide() instanceof InfixExpression infix) {</span>
+<span class="fc" id="L891">                    addInfixReduceTerminal(infix, builder, varName, accumVar);</span>
+<span class="pc bpc" id="L892" title="1 of 2 branches missed.">                } else if (isMathMaxMinPattern(assign)) {</span>
+<span class="fc" id="L893">                    addMathMaxMinReduce(assign, builder, accumVar);</span>
                 }
             }
-<span class="pc bpc" id="L829" title="1 of 2 branches missed.">        } else if (expr instanceof PostfixExpression postfix) {</span>
+<span class="pc bpc" id="L896" title="1 of 2 branches missed.">        } else if (expr instanceof PostfixExpression postfix) {</span>
             // i++ → .map(var -&gt; 1).reduce(i, Integer::sum)
-<span class="fc" id="L831">            String accumVar = postfix.getOperand().toString();</span>
-<span class="fc" id="L832">            String accumType = resolveReducerType(postfix.getOperand());</span>
-<span class="fc bfc" id="L833" title="All 2 branches covered.">            String mapValue = isLongType(accumType) ? &quot;1L&quot; : &quot;1&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L834">            builder.map(mapValue, null);</span>
-<span class="fc" id="L835">            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="fc" id="L836">                accumVar, accumType + &quot;::sum&quot;, null,</span>
-<span class="fc" id="L837">                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));</span>
-<span class="pc bnc" id="L838" title="All 2 branches missed.">        } else if (expr instanceof PrefixExpression prefix) {</span>
-<span class="nc" id="L839">            String accumVar = prefix.getOperand().toString();</span>
-<span class="nc" id="L840">            String accumType = resolveReducerType(prefix.getOperand());</span>
-<span class="nc bnc" id="L841" title="All 2 branches missed.">            String mapValue = isLongType(accumType) ? &quot;1L&quot; : &quot;1&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L842" title="All 2 branches missed.">            if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {</span>
-<span class="nc" id="L843">                builder.map(mapValue, null);</span>
-<span class="nc" id="L844">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="nc" id="L845">                    accumVar, accumType + &quot;::sum&quot;, null,</span>
-<span class="nc" id="L846">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));</span>
-<span class="nc" id="L847">            } else {</span>
-<span class="nc" id="L848">                builder.map(mapValue, null);</span>
-<span class="nc" id="L849">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="nc" id="L850">                    accumVar, &quot;(a, b) -&gt; a - b&quot;, null,</span>
-<span class="nc" id="L851">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
+<span class="fc" id="L898">            String accumVar = postfix.getOperand().toString();</span>
+<span class="fc" id="L899">            String accumType = resolveReducerType(postfix.getOperand());</span>
+<span class="fc bfc" id="L900" title="All 2 branches covered.">            String mapValue = isLongType(accumType) ? &quot;1L&quot; : &quot;1&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L901">            builder.map(mapValue, null);</span>
+<span class="fc" id="L902">            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="fc" id="L903">                accumVar, accumType + &quot;::sum&quot;, null,</span>
+<span class="fc" id="L904">                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));</span>
+<span class="pc bnc" id="L905" title="All 2 branches missed.">        } else if (expr instanceof PrefixExpression prefix) {</span>
+<span class="nc" id="L906">            String accumVar = prefix.getOperand().toString();</span>
+<span class="nc" id="L907">            String accumType = resolveReducerType(prefix.getOperand());</span>
+<span class="nc bnc" id="L908" title="All 2 branches missed.">            String mapValue = isLongType(accumType) ? &quot;1L&quot; : &quot;1&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L909" title="All 2 branches missed.">            if (prefix.getOperator() == PrefixExpression.Operator.INCREMENT) {</span>
+<span class="nc" id="L910">                builder.map(mapValue, null);</span>
+<span class="nc" id="L911">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="nc" id="L912">                    accumVar, accumType + &quot;::sum&quot;, null,</span>
+<span class="nc" id="L913">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.COUNT, accumVar));</span>
+<span class="nc" id="L914">            } else {</span>
+<span class="nc" id="L915">                builder.map(mapValue, null);</span>
+<span class="nc" id="L916">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="nc" id="L917">                    accumVar, &quot;(a, b) -&gt; a - b&quot;, null,</span>
+<span class="nc" id="L918">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
             }
         }
-<span class="fc" id="L854">    }</span>
+<span class="fc" id="L921">    }</span>
     
     /**
      * Resolves the boxed type name for a reducer variable (Integer, Long, Double, etc.)
      * Falls back to &quot;Integer&quot; if type cannot be resolved.
      */
     private String resolveReducerType(Expression operand) {
-<span class="fc" id="L861">        ITypeBinding binding = operand.resolveTypeBinding();</span>
-<span class="pc bpc" id="L862" title="1 of 2 branches missed.">        if (binding != null) {</span>
-<span class="fc bfc" id="L863" title="All 2 branches covered.">            String name = binding.isPrimitive() ? getBoxedTypeName(binding.getName()) : binding.getName();</span>
-<span class="pc bpc" id="L864" title="1 of 2 branches missed.">            if (name != null) return name;</span>
+<span class="fc" id="L928">        ITypeBinding binding = operand.resolveTypeBinding();</span>
+<span class="pc bpc" id="L929" title="1 of 2 branches missed.">        if (binding != null) {</span>
+<span class="fc bfc" id="L930" title="All 2 branches covered.">            String name = binding.isPrimitive() ? getBoxedTypeName(binding.getName()) : binding.getName();</span>
+<span class="pc bpc" id="L931" title="1 of 2 branches missed.">            if (name != null) return name;</span>
         }
-<span class="nc" id="L866">        return &quot;Integer&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L933">        return &quot;Integer&quot;; //$NON-NLS-1$</span>
     }
     
     private String getBoxedTypeName(String primitiveName) {
-<span class="pc bpc" id="L870" title="3 of 5 branches missed.">        return switch (primitiveName) {</span>
-<span class="fc" id="L871">            case &quot;int&quot; -&gt; &quot;Integer&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L872">            case &quot;long&quot; -&gt; &quot;Long&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L873">            case &quot;double&quot; -&gt; &quot;Double&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L874">            case &quot;float&quot; -&gt; &quot;Float&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L875">            default -&gt; &quot;Integer&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L937" title="3 of 5 branches missed.">        return switch (primitiveName) {</span>
+<span class="fc" id="L938">            case &quot;int&quot; -&gt; &quot;Integer&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L939">            case &quot;long&quot; -&gt; &quot;Long&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L940">            case &quot;double&quot; -&gt; &quot;Double&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L941">            case &quot;float&quot; -&gt; &quot;Float&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L942">            default -&gt; &quot;Integer&quot;; //$NON-NLS-1$</span>
         };
     }
     
     private boolean isLongType(String typeName) {
-<span class="pc bpc" id="L880" title="1 of 4 branches missed.">        return &quot;Long&quot;.equals(typeName) || &quot;long&quot;.equals(typeName); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L947" title="1 of 4 branches missed.">        return &quot;Long&quot;.equals(typeName) || &quot;long&quot;.equals(typeName); //$NON-NLS-1$ //$NON-NLS-2$</span>
     }
     
     /**
@@ -885,15 +952,15 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * Pattern: max = Math.max(max, x) or min = Math.min(min, x)
      */
     private boolean isMathMaxMinPattern(Assignment assign) {
-<span class="fc" id="L888">        Expression rhs = assign.getRightHandSide();</span>
-<span class="fc bfc" id="L889" title="All 2 branches covered.">        if (rhs instanceof MethodInvocation mi) {</span>
-<span class="fc" id="L890">            String methodName = mi.getName().getIdentifier();</span>
-<span class="fc" id="L891">            Expression expr = mi.getExpression();</span>
-<span class="pc bpc" id="L892" title="2 of 4 branches missed.">            if (expr instanceof SimpleName sn &amp;&amp; &quot;Math&quot;.equals(sn.getIdentifier())) {</span>
-<span class="pc bpc" id="L893" title="2 of 6 branches missed.">                return (&quot;max&quot;.equals(methodName) || &quot;min&quot;.equals(methodName)) &amp;&amp; mi.arguments().size() == 2; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L955">        Expression rhs = assign.getRightHandSide();</span>
+<span class="fc bfc" id="L956" title="All 2 branches covered.">        if (rhs instanceof MethodInvocation mi) {</span>
+<span class="fc" id="L957">            String methodName = mi.getName().getIdentifier();</span>
+<span class="fc" id="L958">            Expression expr = mi.getExpression();</span>
+<span class="pc bpc" id="L959" title="2 of 4 branches missed.">            if (expr instanceof SimpleName sn &amp;&amp; &quot;Math&quot;.equals(sn.getIdentifier())) {</span>
+<span class="pc bpc" id="L960" title="2 of 6 branches missed.">                return (&quot;max&quot;.equals(methodName) || &quot;min&quot;.equals(methodName)) &amp;&amp; mi.arguments().size() == 2; //$NON-NLS-1$ //$NON-NLS-2$</span>
             }
         }
-<span class="fc" id="L896">        return false;</span>
+<span class="fc" id="L963">        return false;</span>
     }
     
     /**
@@ -901,62 +968,62 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * Pattern: max = Math.max(max, num) → .reduce(max, Math::max)
      */
     private void addMathMaxMinReduce(Assignment assign, LoopModelBuilder builder, String accumVar) {
-<span class="fc" id="L904">        MethodInvocation mi = (MethodInvocation) assign.getRightHandSide();</span>
-<span class="fc" id="L905">        String methodName = mi.getName().getIdentifier();</span>
+<span class="fc" id="L971">        MethodInvocation mi = (MethodInvocation) assign.getRightHandSide();</span>
+<span class="fc" id="L972">        String methodName = mi.getName().getIdentifier();</span>
         
-<span class="fc" id="L907">        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType type = </span>
-<span class="fc bfc" id="L908" title="All 2 branches covered.">            &quot;max&quot;.equals(methodName) ? org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MAX</span>
-<span class="fc" id="L909">                                     : org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MIN;</span>
+<span class="fc" id="L974">        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType type = </span>
+<span class="fc bfc" id="L975" title="All 2 branches covered.">            &quot;max&quot;.equals(methodName) ? org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MAX</span>
+<span class="fc" id="L976">                                     : org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.MIN;</span>
         
-<span class="fc" id="L911">        builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="fc" id="L912">            accumVar, &quot;Math::&quot; + methodName, null, type, accumVar)); //$NON-NLS-1$</span>
-<span class="fc" id="L913">    }</span>
+<span class="fc" id="L978">        builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="fc" id="L979">            accumVar, &quot;Math::&quot; + methodName, null, type, accumVar)); //$NON-NLS-1$</span>
+<span class="fc" id="L980">    }</span>
     
     private void addInfixReduceTerminal(InfixExpression infix, LoopModelBuilder builder, 
                                          String varName, String accumVar) {
-<span class="fc" id="L917">        String rightOperand = infix.getRightOperand().toString();</span>
-<span class="fc" id="L918">        InfixExpression.Operator op = infix.getOperator();</span>
-<span class="fc" id="L919">        String accumType = resolveReducerType(infix.getLeftOperand());</span>
+<span class="fc" id="L984">        String rightOperand = infix.getRightOperand().toString();</span>
+<span class="fc" id="L985">        InfixExpression.Operator op = infix.getOperator();</span>
+<span class="fc" id="L986">        String accumType = resolveReducerType(infix.getLeftOperand());</span>
         
         // Only add a MAP operation if the right operand is NOT the identity (loop variable)
         // e.g., count = count + 1 → .map(item -&gt; 1).reduce(count, Integer::sum)
         // but result = result + item → .reduce(result, (a, b) -&gt; a + b) [no map needed]
-<span class="fc bfc" id="L924" title="All 2 branches covered.">        if (!rightOperand.equals(varName)) {</span>
-<span class="fc" id="L925">            builder.map(rightOperand, null);</span>
+<span class="fc bfc" id="L991" title="All 2 branches covered.">        if (!rightOperand.equals(varName)) {</span>
+<span class="fc" id="L992">            builder.map(rightOperand, null);</span>
         }
         
-<span class="pc bpc" id="L928" title="1 of 2 branches missed.">        if (op == InfixExpression.Operator.PLUS) {</span>
+<span class="pc bpc" id="L995" title="1 of 2 branches missed.">        if (op == InfixExpression.Operator.PLUS) {</span>
             // For String types, check @NotNull annotation to decide between String::concat and lambda
-<span class="fc bfc" id="L930" title="All 2 branches covered.">            if (&quot;String&quot;.equals(accumType)) {</span>
+<span class="fc bfc" id="L997" title="All 2 branches covered.">            if (&quot;String&quot;.equals(accumType)) {</span>
                 // Check if the accumulator variable has @NotNull annotation
-<span class="fc" id="L932">                boolean isNullSafe = org.sandbox.jdt.internal.corext.util.VariableResolver</span>
-<span class="fc" id="L933">                    .hasNotNullAnnotation(infix, accumVar);</span>
-<span class="fc bfc" id="L934" title="All 2 branches covered.">                if (isNullSafe) {</span>
+<span class="fc" id="L999">                boolean isNullSafe = org.sandbox.jdt.internal.corext.util.VariableResolver</span>
+<span class="fc" id="L1000">                    .hasNotNullAnnotation(infix, accumVar);</span>
+<span class="fc bfc" id="L1001" title="All 2 branches covered.">                if (isNullSafe) {</span>
                     // @NotNull present: safe to use String::concat method reference
-<span class="fc" id="L936">                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="fc" id="L937">                        accumVar, &quot;String::concat&quot;, null,</span>
-<span class="fc" id="L938">                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.STRING_CONCAT, accumVar));</span>
-<span class="fc" id="L939">                } else {</span>
+<span class="fc" id="L1003">                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="fc" id="L1004">                        accumVar, &quot;String::concat&quot;, null,</span>
+<span class="fc" id="L1005">                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.STRING_CONCAT, accumVar));</span>
+<span class="fc" id="L1006">                } else {</span>
                     // No @NotNull: use null-safe lambda (a, b) -&gt; a + b
-<span class="fc" id="L941">                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="fc" id="L942">                        accumVar, &quot;(a, b) -&gt; a + b&quot;, null,</span>
-<span class="fc" id="L943">                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
+<span class="fc" id="L1008">                    builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="fc" id="L1009">                        accumVar, &quot;(a, b) -&gt; a + b&quot;, null,</span>
+<span class="fc" id="L1010">                        org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
                 }
-<span class="fc" id="L945">            } else {</span>
-<span class="fc" id="L946">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="fc" id="L947">                    accumVar, accumType + &quot;::sum&quot;, null,</span>
-<span class="fc" id="L948">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));</span>
+<span class="fc" id="L1012">            } else {</span>
+<span class="fc" id="L1013">                builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="fc" id="L1014">                    accumVar, accumType + &quot;::sum&quot;, null,</span>
+<span class="fc" id="L1015">                    org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.SUM, accumVar));</span>
             }
-<span class="pc bnc" id="L950" title="All 2 branches missed.">        } else if (op == InfixExpression.Operator.TIMES) {</span>
-<span class="nc" id="L951">            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="nc" id="L952">                accumVar, &quot;(a, b) -&gt; a * b&quot;, null,</span>
-<span class="nc" id="L953">                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));</span>
-<span class="nc" id="L954">        } else {</span>
-<span class="nc" id="L955">            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
-<span class="nc" id="L956">                accumVar, &quot;(a, b) -&gt; a - b&quot;, null,</span>
-<span class="nc" id="L957">                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
+<span class="pc bnc" id="L1017" title="All 2 branches missed.">        } else if (op == InfixExpression.Operator.TIMES) {</span>
+<span class="nc" id="L1018">            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="nc" id="L1019">                accumVar, &quot;(a, b) -&gt; a * b&quot;, null,</span>
+<span class="nc" id="L1020">                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.PRODUCT, accumVar));</span>
+<span class="nc" id="L1021">        } else {</span>
+<span class="nc" id="L1022">            builder.terminal(new org.sandbox.functional.core.terminal.ReduceTerminal(</span>
+<span class="nc" id="L1023">                accumVar, &quot;(a, b) -&gt; a - b&quot;, null,</span>
+<span class="nc" id="L1024">                org.sandbox.functional.core.terminal.ReduceTerminal.ReduceType.CUSTOM, accumVar));</span>
         }
-<span class="fc" id="L959">    }</span>
+<span class="fc" id="L1026">    }</span>
     
     /**
      * Attaches extracted comments from an AST node to an Operation.
@@ -970,19 +1037,19 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      */
     private void attachComments(org.sandbox.functional.core.operation.Operation operation, 
                                  ASTNode node, CompilationUnit cu) {
-<span class="pc bpc" id="L973" title="2 of 4 branches missed.">        if (operation == null || cu == null) {</span>
-<span class="nc" id="L974">            return;</span>
+<span class="pc bpc" id="L1040" title="2 of 4 branches missed.">        if (operation == null || cu == null) {</span>
+<span class="nc" id="L1041">            return;</span>
         }
-<span class="fc" id="L976">        java.util.List&lt;String&gt; comments = extractComments(node, cu);</span>
-<span class="fc bfc" id="L977" title="All 2 branches covered.">        if (comments.isEmpty()) {</span>
-<span class="fc" id="L978">            return;</span>
+<span class="fc" id="L1043">        java.util.List&lt;String&gt; comments = extractComments(node, cu);</span>
+<span class="fc bfc" id="L1044" title="All 2 branches covered.">        if (comments.isEmpty()) {</span>
+<span class="fc" id="L1045">            return;</span>
         }
-<span class="fc bfc" id="L980" title="All 2 branches covered.">        if (operation instanceof org.sandbox.functional.core.operation.FilterOp filterOp) {</span>
-<span class="fc" id="L981">            filterOp.addComments(comments);</span>
-<span class="pc bpc" id="L982" title="1 of 2 branches missed.">        } else if (operation instanceof org.sandbox.functional.core.operation.MapOp mapOp) {</span>
-<span class="fc" id="L983">            mapOp.addComments(comments);</span>
+<span class="fc bfc" id="L1047" title="All 2 branches covered.">        if (operation instanceof org.sandbox.functional.core.operation.FilterOp filterOp) {</span>
+<span class="fc" id="L1048">            filterOp.addComments(comments);</span>
+<span class="pc bpc" id="L1049" title="1 of 2 branches missed.">        } else if (operation instanceof org.sandbox.functional.core.operation.MapOp mapOp) {</span>
+<span class="fc" id="L1050">            mapOp.addComments(comments);</span>
         }
-<span class="fc" id="L985">    }</span>
+<span class="fc" id="L1052">    }</span>
     
     /**
      * Extracts comments associated with an AST node.
@@ -993,46 +1060,46 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      */
     @SuppressWarnings(&quot;unchecked&quot;) //$NON-NLS-1$
     private java.util.List&lt;String&gt; extractComments(ASTNode node, CompilationUnit cu) {
-<span class="fc" id="L996">        java.util.List&lt;String&gt; comments = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L1063">        java.util.List&lt;String&gt; comments = new java.util.ArrayList&lt;&gt;();</span>
         
-<span class="pc bpc" id="L998" title="2 of 4 branches missed.">        if (cu == null || node == null) {</span>
-<span class="nc" id="L999">            return comments;</span>
+<span class="pc bpc" id="L1065" title="2 of 4 branches missed.">        if (cu == null || node == null) {</span>
+<span class="nc" id="L1066">            return comments;</span>
         }
         
-<span class="fc" id="L1002">        java.util.List&lt;Comment&gt; commentList = cu.getCommentList();</span>
-<span class="pc bpc" id="L1003" title="1 of 4 branches missed.">        if (commentList == null || commentList.isEmpty()) {</span>
-<span class="fc" id="L1004">            return comments;</span>
+<span class="fc" id="L1069">        java.util.List&lt;Comment&gt; commentList = cu.getCommentList();</span>
+<span class="pc bpc" id="L1070" title="1 of 4 branches missed.">        if (commentList == null || commentList.isEmpty()) {</span>
+<span class="fc" id="L1071">            return comments;</span>
         }
         
-<span class="fc" id="L1007">        int nodeStart = node.getStartPosition();</span>
-<span class="fc" id="L1008">        int nodeEnd = nodeStart + node.getLength();</span>
-<span class="fc" id="L1009">        int nodeStartLine = cu.getLineNumber(nodeStart);</span>
-<span class="fc" id="L1010">        int nodeEndLine = cu.getLineNumber(nodeEnd);</span>
+<span class="fc" id="L1074">        int nodeStart = node.getStartPosition();</span>
+<span class="fc" id="L1075">        int nodeEnd = nodeStart + node.getLength();</span>
+<span class="fc" id="L1076">        int nodeStartLine = cu.getLineNumber(nodeStart);</span>
+<span class="fc" id="L1077">        int nodeEndLine = cu.getLineNumber(nodeEnd);</span>
         
-<span class="fc bfc" id="L1012" title="All 2 branches covered.">        for (Comment comment : commentList) {</span>
-<span class="fc" id="L1013">            int commentStart = comment.getStartPosition();</span>
-<span class="fc" id="L1014">            int commentEnd = commentStart + comment.getLength();</span>
-<span class="fc" id="L1015">            int commentStartLine = cu.getLineNumber(commentStart);</span>
-<span class="fc" id="L1016">            int commentEndLine = cu.getLineNumber(commentEnd);</span>
+<span class="fc bfc" id="L1079" title="All 2 branches covered.">        for (Comment comment : commentList) {</span>
+<span class="fc" id="L1080">            int commentStart = comment.getStartPosition();</span>
+<span class="fc" id="L1081">            int commentEnd = commentStart + comment.getLength();</span>
+<span class="fc" id="L1082">            int commentStartLine = cu.getLineNumber(commentStart);</span>
+<span class="fc" id="L1083">            int commentEndLine = cu.getLineNumber(commentEnd);</span>
             
             // Associate comments that are:
             // 1. On the line immediately before the node, OR
             // 2. On the same line as the node (leading: before node start, trailing: after node end), OR
             // 3. Within the node's span (embedded comment)
-<span class="pc bpc" id="L1022" title="1 of 4 branches missed.">            boolean isLeadingComment = commentEndLine == nodeStartLine - 1 || </span>
-<span class="fc bfc" id="L1023" title="All 2 branches covered.">                                       (commentEndLine == nodeStartLine &amp;&amp; commentEnd &lt;= nodeStart);</span>
-<span class="pc bpc" id="L1024" title="1 of 4 branches missed.">            boolean isTrailingComment = commentStartLine == nodeEndLine &amp;&amp; commentStart &gt;= nodeEnd;</span>
-<span class="pc bpc" id="L1025" title="1 of 4 branches missed.">            boolean isEmbeddedComment = commentStart &gt;= nodeStart &amp;&amp; commentEnd &lt;= nodeEnd;</span>
+<span class="pc bpc" id="L1089" title="1 of 4 branches missed.">            boolean isLeadingComment = commentEndLine == nodeStartLine - 1 || </span>
+<span class="fc bfc" id="L1090" title="All 2 branches covered.">                                       (commentEndLine == nodeStartLine &amp;&amp; commentEnd &lt;= nodeStart);</span>
+<span class="pc bpc" id="L1091" title="1 of 4 branches missed.">            boolean isTrailingComment = commentStartLine == nodeEndLine &amp;&amp; commentStart &gt;= nodeEnd;</span>
+<span class="pc bpc" id="L1092" title="1 of 4 branches missed.">            boolean isEmbeddedComment = commentStart &gt;= nodeStart &amp;&amp; commentEnd &lt;= nodeEnd;</span>
             
-<span class="pc bpc" id="L1027" title="1 of 6 branches missed.">            if (isLeadingComment || isTrailingComment || isEmbeddedComment) {</span>
-<span class="fc" id="L1028">                String commentText = extractCommentText(comment, cu);</span>
-<span class="pc bpc" id="L1029" title="2 of 4 branches missed.">                if (commentText != null &amp;&amp; !commentText.isEmpty()) {</span>
-<span class="fc" id="L1030">                    comments.add(commentText);</span>
+<span class="pc bpc" id="L1094" title="1 of 6 branches missed.">            if (isLeadingComment || isTrailingComment || isEmbeddedComment) {</span>
+<span class="fc" id="L1095">                String commentText = extractCommentText(comment, cu);</span>
+<span class="pc bpc" id="L1096" title="2 of 4 branches missed.">                if (commentText != null &amp;&amp; !commentText.isEmpty()) {</span>
+<span class="fc" id="L1097">                    comments.add(commentText);</span>
                 }
             }
         }
         
-<span class="fc" id="L1035">        return comments;</span>
+<span class="fc" id="L1102">        return comments;</span>
     }
     
     /**
@@ -1045,44 +1112,44 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
     private String extractCommentText(Comment comment, CompilationUnit cu) {
         try {
             // Get the original source from the compilation unit's type root
-<span class="fc" id="L1048">            org.eclipse.jdt.core.ICompilationUnit javaElement = </span>
-<span class="fc" id="L1049">                (org.eclipse.jdt.core.ICompilationUnit) cu.getJavaElement();</span>
-<span class="pc bpc" id="L1050" title="1 of 2 branches missed.">            if (javaElement == null) {</span>
-<span class="nc" id="L1051">                return null;</span>
+<span class="fc" id="L1115">            org.eclipse.jdt.core.ICompilationUnit javaElement = </span>
+<span class="fc" id="L1116">                (org.eclipse.jdt.core.ICompilationUnit) cu.getJavaElement();</span>
+<span class="pc bpc" id="L1117" title="1 of 2 branches missed.">            if (javaElement == null) {</span>
+<span class="nc" id="L1118">                return null;</span>
             }
             
-<span class="fc" id="L1054">            String source = javaElement.getSource();</span>
-<span class="pc bpc" id="L1055" title="1 of 2 branches missed.">            if (source == null) {</span>
-<span class="nc" id="L1056">                return null;</span>
+<span class="fc" id="L1121">            String source = javaElement.getSource();</span>
+<span class="pc bpc" id="L1122" title="1 of 2 branches missed.">            if (source == null) {</span>
+<span class="nc" id="L1123">                return null;</span>
             }
             
-<span class="fc" id="L1059">            int start = comment.getStartPosition();</span>
-<span class="fc" id="L1060">            int length = comment.getLength();</span>
+<span class="fc" id="L1126">            int start = comment.getStartPosition();</span>
+<span class="fc" id="L1127">            int length = comment.getLength();</span>
             
-<span class="pc bpc" id="L1062" title="2 of 4 branches missed.">            if (start &lt; 0 || start + length &gt; source.length()) {</span>
-<span class="nc" id="L1063">                return null;</span>
+<span class="pc bpc" id="L1129" title="2 of 4 branches missed.">            if (start &lt; 0 || start + length &gt; source.length()) {</span>
+<span class="nc" id="L1130">                return null;</span>
             }
             
-<span class="fc" id="L1066">            String commentStr = source.substring(start, start + length);</span>
+<span class="fc" id="L1133">            String commentStr = source.substring(start, start + length);</span>
             
             // Remove comment delimiters
-<span class="pc bpc" id="L1069" title="1 of 2 branches missed.">            if (comment.isLineComment()) {</span>
+<span class="pc bpc" id="L1136" title="1 of 2 branches missed.">            if (comment.isLineComment()) {</span>
                 // Remove leading //
-<span class="fc" id="L1071">                commentStr = commentStr.replaceFirst(&quot;^//\\s*&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bnc" id="L1072" title="All 2 branches missed.">            } else if (comment.isBlockComment()) {</span>
+<span class="fc" id="L1138">                commentStr = commentStr.replaceFirst(&quot;^//\\s*&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bnc" id="L1139" title="All 2 branches missed.">            } else if (comment.isBlockComment()) {</span>
                 // Remove /* and */
-<span class="nc" id="L1074">                commentStr = commentStr.replaceFirst(&quot;^/\\*\\s*&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L1075">                commentStr = commentStr.replaceFirst(&quot;\\s*\\*/$&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L1076" title="All 2 branches missed.">            } else if (comment instanceof Javadoc) {</span>
+<span class="nc" id="L1141">                commentStr = commentStr.replaceFirst(&quot;^/\\*\\s*&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1142">                commentStr = commentStr.replaceFirst(&quot;\\s*\\*/$&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L1143" title="All 2 branches missed.">            } else if (comment instanceof Javadoc) {</span>
                 // Remove /** and */
-<span class="nc" id="L1078">                commentStr = commentStr.replaceFirst(&quot;^/\\*\\*\\s*&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L1079">                commentStr = commentStr.replaceFirst(&quot;\\s*\\*/$&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1145">                commentStr = commentStr.replaceFirst(&quot;^/\\*\\*\\s*&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1146">                commentStr = commentStr.replaceFirst(&quot;\\s*\\*/$&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
             }
             
-<span class="fc" id="L1082">            return commentStr.trim();</span>
-<span class="nc" id="L1083">        } catch (Exception e) {</span>
+<span class="fc" id="L1149">            return commentStr.trim();</span>
+<span class="nc" id="L1150">        } catch (Exception e) {</span>
             // If extraction fails, return null
-<span class="nc" id="L1085">            return null;</span>
+<span class="nc" id="L1152">            return null;</span>
         }
     }
     
@@ -1106,113 +1173,113 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
      * Those are handled by analyzeAndAddOperations().&lt;/p&gt;
      */
     private static class LoopBodyAnalyzer extends ASTVisitor {
-<span class="fc" id="L1109">        private boolean hasBreak = false;</span>
-<span class="fc" id="L1110">        private boolean hasLabeledContinue = false;</span>
-<span class="fc" id="L1111">        private boolean hasTryCatch = false;</span>
-<span class="fc" id="L1112">        private boolean hasSynchronized = false;</span>
-<span class="fc" id="L1113">        private boolean hasNestedLoop = false;</span>
-<span class="fc" id="L1114">        private boolean hasVoidReturn = false;</span>
-<span class="fc" id="L1115">        private boolean hasIfElse = false;</span>
-<span class="fc" id="L1116">        private boolean modifiesIteratedCollection = false;</span>
+<span class="fc" id="L1176">        private boolean hasBreak = false;</span>
+<span class="fc" id="L1177">        private boolean hasLabeledContinue = false;</span>
+<span class="fc" id="L1178">        private boolean hasTryCatch = false;</span>
+<span class="fc" id="L1179">        private boolean hasSynchronized = false;</span>
+<span class="fc" id="L1180">        private boolean hasNestedLoop = false;</span>
+<span class="fc" id="L1181">        private boolean hasVoidReturn = false;</span>
+<span class="fc" id="L1182">        private boolean hasIfElse = false;</span>
+<span class="fc" id="L1183">        private boolean modifiesIteratedCollection = false;</span>
         private final Expression iteratedExpression;
 
-<span class="fc" id="L1119">        LoopBodyAnalyzer(Expression iteratedExpression) {</span>
-<span class="fc" id="L1120">            this.iteratedExpression = CollectionModificationDetector.normalizeIteratedExpression(iteratedExpression);</span>
-<span class="fc" id="L1121">        }</span>
+<span class="fc" id="L1186">        LoopBodyAnalyzer(Expression iteratedExpression) {</span>
+<span class="fc" id="L1187">            this.iteratedExpression = CollectionModificationDetector.normalizeIteratedExpression(iteratedExpression);</span>
+<span class="fc" id="L1188">        }</span>
         
         @Override
         public boolean visit(BreakStatement node) {
-<span class="fc" id="L1125">            hasBreak = true;</span>
-<span class="fc" id="L1126">            return false;</span>
+<span class="fc" id="L1192">            hasBreak = true;</span>
+<span class="fc" id="L1193">            return false;</span>
         }
         
         @Override
         public boolean visit(ContinueStatement node) {
             // Only labeled continue is truly unconvertible
             // Unlabeled continue can be converted to a negated filter
-<span class="fc bfc" id="L1133" title="All 2 branches covered.">            if (node.getLabel() != null) {</span>
-<span class="fc" id="L1134">                hasLabeledContinue = true;</span>
+<span class="fc bfc" id="L1200" title="All 2 branches covered.">            if (node.getLabel() != null) {</span>
+<span class="fc" id="L1201">                hasLabeledContinue = true;</span>
             }
-<span class="fc" id="L1136">            return false;</span>
+<span class="fc" id="L1203">            return false;</span>
         }
         
         @Override
         public boolean visit(IfStatement node) {
             // If-else patterns don't map cleanly to stream operations
             // e.g., if (cond) list1.add(x) else list2.add(x)
-<span class="fc bfc" id="L1143" title="All 2 branches covered.">            if (node.getElseStatement() != null) {</span>
-<span class="fc" id="L1144">                hasIfElse = true;</span>
+<span class="fc bfc" id="L1210" title="All 2 branches covered.">            if (node.getElseStatement() != null) {</span>
+<span class="fc" id="L1211">                hasIfElse = true;</span>
             }
-<span class="fc" id="L1146">            return true; // Continue visiting to detect nested patterns</span>
+<span class="fc" id="L1213">            return true; // Continue visiting to detect nested patterns</span>
         }
         
         @Override
         public boolean visit(ReturnStatement node) {
             // Void return exits the enclosing method, not the loop
             // This cannot be converted to stream operations
-<span class="fc bfc" id="L1153" title="All 2 branches covered.">            if (node.getExpression() == null) {</span>
-<span class="fc" id="L1154">                hasVoidReturn = true;</span>
+<span class="fc bfc" id="L1220" title="All 2 branches covered.">            if (node.getExpression() == null) {</span>
+<span class="fc" id="L1221">                hasVoidReturn = true;</span>
             }
             // Note: boolean returns (return true/false) are potentially convertible
             // as match patterns — handled separately in analyzeStatements()
-<span class="fc" id="L1158">            return false;</span>
+<span class="fc" id="L1225">            return false;</span>
         }
         
         @Override
         public boolean visit(TryStatement node) {
             // Try-catch cannot be easily converted to stream operations
             // due to checked exception handling requirements
-<span class="fc" id="L1165">            hasTryCatch = true;</span>
-<span class="fc" id="L1166">            return false;</span>
+<span class="fc" id="L1232">            hasTryCatch = true;</span>
+<span class="fc" id="L1233">            return false;</span>
         }
         
         @Override
         public boolean visit(SynchronizedStatement node) {
             // Synchronized blocks have different semantics in streams
             // (parallelStream vs sequential processing)
-<span class="fc" id="L1173">            hasSynchronized = true;</span>
-<span class="fc" id="L1174">            return false;</span>
+<span class="fc" id="L1240">            hasSynchronized = true;</span>
+<span class="fc" id="L1241">            return false;</span>
         }
         
         @Override
         public boolean visit(ForStatement node) {
             // Traditional for loops inside the body → unconvertible
-<span class="fc" id="L1180">            hasNestedLoop = true;</span>
-<span class="fc" id="L1181">            return false;</span>
+<span class="fc" id="L1247">            hasNestedLoop = true;</span>
+<span class="fc" id="L1248">            return false;</span>
         }
         
         @Override
         public boolean visit(WhileStatement node) {
             // While loops inside the body → unconvertible
-<span class="fc" id="L1187">            hasNestedLoop = true;</span>
-<span class="fc" id="L1188">            return false;</span>
+<span class="fc" id="L1254">            hasNestedLoop = true;</span>
+<span class="fc" id="L1255">            return false;</span>
         }
         
         @Override
         public boolean visit(DoStatement node) {
             // Do-while loops inside the body → unconvertible
-<span class="fc" id="L1194">            hasNestedLoop = true;</span>
-<span class="fc" id="L1195">            return false;</span>
+<span class="fc" id="L1261">            hasNestedLoop = true;</span>
+<span class="fc" id="L1262">            return false;</span>
         }
         
         @Override
         public boolean visit(MethodInvocation node) {
             // Issue #670: Detect structural modifications on the iterated collection
-<span class="pc bpc" id="L1201" title="1 of 2 branches missed.">            if (iteratedExpression != null</span>
-<span class="fc bfc" id="L1202" title="All 2 branches covered.">                    &amp;&amp; CollectionModificationDetector.isModification(node, iteratedExpression)) {</span>
-<span class="fc" id="L1203">                modifiesIteratedCollection = true;</span>
+<span class="pc bpc" id="L1268" title="1 of 2 branches missed.">            if (iteratedExpression != null</span>
+<span class="fc bfc" id="L1269" title="All 2 branches covered.">                    &amp;&amp; CollectionModificationDetector.isModification(node, iteratedExpression)) {</span>
+<span class="fc" id="L1270">                modifiesIteratedCollection = true;</span>
             }
-<span class="fc" id="L1205">            return true;</span>
+<span class="fc" id="L1272">            return true;</span>
         }
         
-<span class="fc" id="L1208">        public boolean hasBreak() { return hasBreak; }</span>
-<span class="fc" id="L1209">        public boolean hasLabeledContinue() { return hasLabeledContinue; }</span>
-<span class="fc" id="L1210">        public boolean hasTryCatch() { return hasTryCatch; }</span>
-<span class="fc" id="L1211">        public boolean hasSynchronized() { return hasSynchronized; }</span>
-<span class="fc" id="L1212">        public boolean hasNestedLoop() { return hasNestedLoop; }</span>
-<span class="fc" id="L1213">        public boolean hasVoidReturn() { return hasVoidReturn; }</span>
-<span class="nc" id="L1214">        public boolean hasIfElse() { return hasIfElse; }</span>
-<span class="fc" id="L1215">        public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }</span>
+<span class="fc" id="L1275">        public boolean hasBreak() { return hasBreak; }</span>
+<span class="fc" id="L1276">        public boolean hasLabeledContinue() { return hasLabeledContinue; }</span>
+<span class="fc" id="L1277">        public boolean hasTryCatch() { return hasTryCatch; }</span>
+<span class="fc" id="L1278">        public boolean hasSynchronized() { return hasSynchronized; }</span>
+<span class="fc" id="L1279">        public boolean hasNestedLoop() { return hasNestedLoop; }</span>
+<span class="fc" id="L1280">        public boolean hasVoidReturn() { return hasVoidReturn; }</span>
+<span class="nc" id="L1281">        public boolean hasIfElse() { return hasIfElse; }</span>
+<span class="fc" id="L1282">        public boolean modifiesIteratedCollection() { return modifiesIteratedCollection; }</span>
         
     }
 }

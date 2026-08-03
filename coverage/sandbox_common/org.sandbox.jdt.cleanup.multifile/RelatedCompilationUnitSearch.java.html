@@ -55,53 +55,58 @@ public final class RelatedCompilationUnitSearch {
 
 	/** Package-visible deterministic match classifier used by common-layer tests. */
 	static final class MatchAccumulator {
-		private final IJavaProject project;
+		private final Set&lt;String&gt; projectHandles;
 		private final Map&lt;String, ICompilationUnit&gt; allowedByHandle;
 <span class="fc" id="L60">		private final Map&lt;String, ICompilationUnit&gt; resultByHandle= new LinkedHashMap&lt;&gt;();</span>
 <span class="fc" id="L61">		private final Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;();</span>
 
-<span class="fc" id="L63">		MatchAccumulator(IJavaProject project, Collection&lt;ICompilationUnit&gt; initialUnits,</span>
+		MatchAccumulator(IJavaProject project, Collection&lt;ICompilationUnit&gt; initialUnits,
 				Collection&lt;ICompilationUnit&gt; allowedUnits) {
-<span class="fc" id="L65">			this.project= project;</span>
-<span class="fc" id="L66">			allowedByHandle= byHandle(allowedUnits);</span>
-<span class="fc" id="L67">			addUnits(project, initialUnits, allowedByHandle, resultByHandle, reasons,</span>
-<span class="fc" id="L68">					&quot;The initial cleanup scope contains a source unit outside the permitted root policy.&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L69">		}</span>
+<span class="fc" id="L65">			this(List.of(project), initialUnits, allowedUnits);</span>
+<span class="fc" id="L66">		}</span>
+
+<span class="fc" id="L68">		MatchAccumulator(Collection&lt;IJavaProject&gt; projects, Collection&lt;ICompilationUnit&gt; initialUnits,</span>
+				Collection&lt;ICompilationUnit&gt; allowedUnits) {
+<span class="fc" id="L70">			this.projectHandles= projectHandles(projects);</span>
+<span class="fc" id="L71">			allowedByHandle= byHandle(allowedUnits);</span>
+<span class="fc" id="L72">			addUnits(projectHandles, initialUnits, allowedByHandle, resultByHandle, reasons,</span>
+<span class="fc" id="L73">					&quot;The initial cleanup scope contains a source unit outside the permitted root policy.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		}</span>
 
 		void addTarget(IJavaElement target) {
-<span class="fc" id="L72">			ICompilationUnit declarationUnit= compilationUnit(target);</span>
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">			if (declarationUnit == null) {</span>
-<span class="nc" id="L74">				reasons.add(&quot;A search target is declared outside an editable source compilation unit.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L75">				return;</span>
+<span class="fc" id="L77">			ICompilationUnit declarationUnit= compilationUnit(target);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">			if (declarationUnit == null) {</span>
+<span class="nc" id="L79">				reasons.add(&quot;A search target is declared outside an editable source compilation unit.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L80">				return;</span>
 			}
-<span class="fc" id="L77">			addUnit(project, declarationUnit, allowedByHandle, resultByHandle, reasons,</span>
-<span class="fc" id="L78">					&quot;A search-target declaration is outside the permitted source-root policy.&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L79">		}</span>
+<span class="fc" id="L82">			addUnit(projectHandles, declarationUnit, allowedByHandle, resultByHandle, reasons,</span>
+<span class="fc" id="L83">					&quot;A search-target declaration is outside the permitted source-root policy.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L84">		}</span>
 
 		void accept(Object element, int accuracy) {
-<span class="fc bfc" id="L82" title="All 2 branches covered.">			if (accuracy != SearchMatch.A_ACCURATE) {</span>
-<span class="fc" id="L83">				reasons.add(&quot;JDT reported an inaccurate reference match.&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L84">				return;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (accuracy != SearchMatch.A_ACCURATE) {</span>
+<span class="fc" id="L88">				reasons.add(&quot;JDT reported an inaccurate reference match.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L89">				return;</span>
 			}
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">			if (!(element instanceof IJavaElement javaElement)) {</span>
-<span class="nc" id="L87">				reasons.add(&quot;A reference match has no Java-model element.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L88">				return;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">			if (!(element instanceof IJavaElement javaElement)) {</span>
+<span class="nc" id="L92">				reasons.add(&quot;A reference match has no Java-model element.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L93">				return;</span>
 			}
-<span class="fc" id="L90">			ICompilationUnit unit= compilationUnit(javaElement);</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (unit == null) {</span>
-<span class="fc" id="L92">				reasons.add(&quot;A reference exists in a binary or otherwise non-source element.&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L93">				return;</span>
+<span class="fc" id="L95">			ICompilationUnit unit= compilationUnit(javaElement);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">			if (unit == null) {</span>
+<span class="fc" id="L97">				reasons.add(&quot;A reference exists in a binary or otherwise non-source element.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">				return;</span>
 			}
-<span class="fc" id="L95">			addUnit(project, unit, allowedByHandle, resultByHandle, reasons,</span>
-<span class="fc" id="L96">					&quot;A reference exists outside the permitted project source-root policy.&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L97">		}</span>
+<span class="fc" id="L100">			addUnit(projectHandles, unit, allowedByHandle, resultByHandle, reasons,</span>
+<span class="fc" id="L101">					&quot;A reference exists outside the permitted project source-root policy.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L102">		}</span>
 
 		void reject(String reason) {
-<span class="nc" id="L100">			reasons.add(reason);</span>
-<span class="nc" id="L101">		}</span>
+<span class="nc" id="L105">			reasons.add(reason);</span>
+<span class="nc" id="L106">		}</span>
 
 		Result finish() {
-<span class="fc" id="L104">			return result(resultByHandle, reasons);</span>
+<span class="fc" id="L109">			return result(resultByHandle, reasons);</span>
 		}
 	}
 
@@ -124,113 +129,150 @@ public final class RelatedCompilationUnitSearch {
 			Collection&lt;ICompilationUnit&gt; initialUnits,
 			Collection&lt;ICompilationUnit&gt; allowedUnits,
 			IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L127">		checkCanceled(monitor);</span>
-<span class="pc bpc" id="L128" title="3 of 6 branches missed.">		if (project == null || targets == null || targets.isEmpty()) {</span>
-<span class="nc" id="L129">			return new Result(normalize(initialUnits), false,</span>
-<span class="nc" id="L130">					List.of(&quot;No binding-derived search target is available.&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		return findReferences(project == null ? List.&lt;IJavaProject&gt;of() : List.of(project), targets, initialUnits,</span>
+<span class="fc" id="L133">				allowedUnits, monitor);</span>
+	}
+
+	/**
+	 * Finds source units containing references to the supplied Java elements across
+	 * several coordinated projects, for example a fixture bundle and the test bundles
+	 * that consume it. References found outside those projects make the result
+	 * incomplete so that a partial cross-bundle migration is never planned.
+	 *
+	 * @param projects coordinated Java projects that may be modified
+	 * @param targets binding-derived fields, methods, or types to search for
+	 * @param initialUnits units explicitly selected or already admitted
+	 * @param allowedUnits complete source-root-policy allow-list across all projects
+	 * @param monitor progress monitor, may be {@code null}
+	 * @return deterministic related-unit closure and completeness status
+	 * @throws CoreException if the JDT search engine fails
+	 */
+	public static Result findReferences(Collection&lt;IJavaProject&gt; projects,
+			Collection&lt;? extends IJavaElement&gt; targets,
+			Collection&lt;ICompilationUnit&gt; initialUnits,
+			Collection&lt;ICompilationUnit&gt; allowedUnits,
+			IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L155">		checkCanceled(monitor);</span>
+<span class="pc bpc" id="L156" title="4 of 8 branches missed.">		if (projects == null || projects.isEmpty() || targets == null || targets.isEmpty()) {</span>
+<span class="nc" id="L157">			return new Result(normalize(initialUnits), false,</span>
+<span class="nc" id="L158">					List.of(&quot;No binding-derived search target is available.&quot;)); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L133">		MatchAccumulator accumulator= new MatchAccumulator(project, initialUnits, allowedUnits);</span>
-<span class="fc" id="L134">		SearchPattern combinedPattern= null;</span>
-<span class="fc bfc" id="L135" title="All 2 branches covered.">		for (IJavaElement target : targets) {</span>
-<span class="fc" id="L136">			checkCanceled(monitor);</span>
-<span class="pc bpc" id="L137" title="2 of 4 branches missed.">			if (target == null || !target.exists()) {</span>
-<span class="nc" id="L138">				accumulator.reject(&quot;A binding-derived search target is missing or no longer exists.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L139">				continue;</span>
+<span class="fc" id="L161">		MatchAccumulator accumulator= new MatchAccumulator(projects, initialUnits, allowedUnits);</span>
+<span class="fc" id="L162">		SearchPattern combinedPattern= null;</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		for (IJavaElement target : targets) {</span>
+<span class="fc" id="L164">			checkCanceled(monitor);</span>
+<span class="pc bpc" id="L165" title="2 of 4 branches missed.">			if (target == null || !target.exists()) {</span>
+<span class="nc" id="L166">				accumulator.reject(&quot;A binding-derived search target is missing or no longer exists.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L167">				continue;</span>
 			}
-<span class="fc" id="L141">			accumulator.addTarget(target);</span>
-<span class="fc" id="L142">			SearchPattern pattern= SearchPattern.createPattern(target, IJavaSearchConstants.REFERENCES);</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">			if (pattern == null) {</span>
-<span class="nc" id="L144">				accumulator.reject(&quot;JDT could not create an exact reference-search pattern.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L145">				continue;</span>
+<span class="fc" id="L169">			accumulator.addTarget(target);</span>
+<span class="fc" id="L170">			SearchPattern pattern= SearchPattern.createPattern(target, IJavaSearchConstants.REFERENCES);</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">			if (pattern == null) {</span>
+<span class="nc" id="L172">				accumulator.reject(&quot;JDT could not create an exact reference-search pattern.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L173">				continue;</span>
 			}
-<span class="fc bfc" id="L147" title="All 2 branches covered.">			combinedPattern= combinedPattern == null</span>
-<span class="fc" id="L148">					? pattern</span>
-<span class="fc" id="L149">					: SearchPattern.createOrPattern(combinedPattern, pattern);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">			combinedPattern= combinedPattern == null</span>
+<span class="fc" id="L176">					? pattern</span>
+<span class="fc" id="L177">					: SearchPattern.createOrPattern(combinedPattern, pattern);</span>
 		}
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (combinedPattern == null) {</span>
-<span class="nc" id="L152">			return accumulator.finish();</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (combinedPattern == null) {</span>
+<span class="nc" id="L180">			return accumulator.finish();</span>
 		}
 
-<span class="fc" id="L155">		SearchRequestor requestor= new SearchRequestor() {</span>
+<span class="fc" id="L183">		SearchRequestor requestor= new SearchRequestor() {</span>
 			@Override
 			public void acceptSearchMatch(SearchMatch match) {
-<span class="fc" id="L158">				accumulator.accept(match.getElement(), match.getAccuracy());</span>
-<span class="fc" id="L159">			}</span>
+<span class="fc" id="L186">				accumulator.accept(match.getElement(), match.getAccuracy());</span>
+<span class="fc" id="L187">			}</span>
 		};
-<span class="fc" id="L161">		new SearchEngine().search(combinedPattern,</span>
-<span class="fc" id="L162">				new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
-<span class="fc" id="L163">				SearchEngine.createWorkspaceScope(), requestor, monitor);</span>
-<span class="fc" id="L164">		checkCanceled(monitor);</span>
-<span class="fc" id="L165">		return accumulator.finish();</span>
+<span class="fc" id="L189">		new SearchEngine().search(combinedPattern,</span>
+<span class="fc" id="L190">				new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
+<span class="fc" id="L191">				SearchEngine.createWorkspaceScope(), requestor, monitor);</span>
+<span class="fc" id="L192">		checkCanceled(monitor);</span>
+<span class="fc" id="L193">		return accumulator.finish();</span>
 	}
 
 	private static Result result(Map&lt;String, ICompilationUnit&gt; resultByHandle, Set&lt;String&gt; reasons) {
-<span class="fc" id="L169">		List&lt;ICompilationUnit&gt; units= new ArrayList&lt;&gt;(resultByHandle.values());</span>
-<span class="fc" id="L170">		units.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
-<span class="fc" id="L171">		return new Result(units, reasons.isEmpty(), List.copyOf(reasons));</span>
+<span class="fc" id="L197">		List&lt;ICompilationUnit&gt; units= new ArrayList&lt;&gt;(resultByHandle.values());</span>
+<span class="fc" id="L198">		units.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
+<span class="fc" id="L199">		return new Result(units, reasons.isEmpty(), List.copyOf(reasons));</span>
 	}
 
 	private static Map&lt;String, ICompilationUnit&gt; byHandle(Collection&lt;ICompilationUnit&gt; units) {
-<span class="fc" id="L175">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">		if (units == null) {</span>
-<span class="nc" id="L177">			return result;</span>
+<span class="fc" id="L203">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (units == null) {</span>
+<span class="nc" id="L205">			return result;</span>
 		}
-<span class="fc bfc" id="L179" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="pc bpc" id="L180" title="2 of 4 branches missed.">			if (unit != null &amp;&amp; unit.exists()) {</span>
-<span class="fc" id="L181">				ICompilationUnit primary= unit.getPrimary();</span>
-<span class="fc" id="L182">				result.put(primary.getHandleIdentifier(), primary);</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="pc bpc" id="L208" title="2 of 4 branches missed.">			if (unit != null &amp;&amp; unit.exists()) {</span>
+<span class="fc" id="L209">				ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc" id="L210">				result.put(primary.getHandleIdentifier(), primary);</span>
 			}
 		}
-<span class="fc" id="L185">		return result;</span>
+<span class="fc" id="L213">		return result;</span>
 	}
 
 	private static List&lt;ICompilationUnit&gt; normalize(Collection&lt;ICompilationUnit&gt; units) {
-<span class="nc" id="L189">		List&lt;ICompilationUnit&gt; result= new ArrayList&lt;&gt;(byHandle(units).values());</span>
-<span class="nc" id="L190">		result.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
-<span class="nc" id="L191">		return List.copyOf(result);</span>
+<span class="nc" id="L217">		List&lt;ICompilationUnit&gt; result= new ArrayList&lt;&gt;(byHandle(units).values());</span>
+<span class="nc" id="L218">		result.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
+<span class="nc" id="L219">		return List.copyOf(result);</span>
 	}
 
-	private static void addUnits(IJavaProject project, Collection&lt;ICompilationUnit&gt; units,
+	private static void addUnits(Set&lt;String&gt; projectHandles, Collection&lt;ICompilationUnit&gt; units,
 			Map&lt;String, ICompilationUnit&gt; allowedByHandle,
 			Map&lt;String, ICompilationUnit&gt; resultByHandle, Set&lt;String&gt; reasons, String rejectionReason) {
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		if (units == null) {</span>
-<span class="nc" id="L198">			return;</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">		if (units == null) {</span>
+<span class="nc" id="L226">			return;</span>
 		}
-<span class="fc bfc" id="L200" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
-<span class="fc" id="L201">			addUnit(project, unit, allowedByHandle, resultByHandle, reasons, rejectionReason);</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L229">			addUnit(projectHandles, unit, allowedByHandle, resultByHandle, reasons, rejectionReason);</span>
 		}
-<span class="fc" id="L203">	}</span>
+<span class="fc" id="L231">	}</span>
 
-	private static void addUnit(IJavaProject project, ICompilationUnit unit,
+	private static void addUnit(Set&lt;String&gt; projectHandles, ICompilationUnit unit,
 			Map&lt;String, ICompilationUnit&gt; allowedByHandle,
 			Map&lt;String, ICompilationUnit&gt; resultByHandle, Set&lt;String&gt; reasons, String rejectionReason) {
-<span class="pc bpc" id="L208" title="2 of 4 branches missed.">		if (unit == null || !unit.exists()) {</span>
-<span class="nc" id="L209">			reasons.add(rejectionReason);</span>
-<span class="nc" id="L210">			return;</span>
+<span class="pc bpc" id="L236" title="2 of 4 branches missed.">		if (unit == null || !unit.exists()) {</span>
+<span class="nc" id="L237">			reasons.add(rejectionReason);</span>
+<span class="nc" id="L238">			return;</span>
 		}
-<span class="fc" id="L212">		ICompilationUnit primary= unit.getPrimary();</span>
-<span class="fc" id="L213">		String handle= primary.getHandleIdentifier();</span>
-<span class="fc" id="L214">		ICompilationUnit allowed= allowedByHandle.get(handle);</span>
-<span class="fc bfc" id="L215" title="All 4 branches covered.">		if (!project.equals(primary.getJavaProject()) || allowed == null) {</span>
-<span class="fc" id="L216">			reasons.add(rejectionReason);</span>
-<span class="fc" id="L217">			return;</span>
+<span class="fc" id="L240">		ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc" id="L241">		String handle= primary.getHandleIdentifier();</span>
+<span class="fc" id="L242">		ICompilationUnit allowed= allowedByHandle.get(handle);</span>
+<span class="fc" id="L243">		IJavaProject owner= primary.getJavaProject();</span>
+<span class="pc bpc" id="L244" title="1 of 6 branches missed.">		if (owner == null || !projectHandles.contains(owner.getHandleIdentifier()) || allowed == null) {</span>
+<span class="fc" id="L245">			reasons.add(rejectionReason);</span>
+<span class="fc" id="L246">			return;</span>
 		}
-<span class="fc" id="L219">		resultByHandle.put(handle, allowed);</span>
-<span class="fc" id="L220">	}</span>
+<span class="fc" id="L248">		resultByHandle.put(handle, allowed);</span>
+<span class="fc" id="L249">	}</span>
+
+	private static Set&lt;String&gt; projectHandles(Collection&lt;IJavaProject&gt; projects) {
+<span class="fc" id="L252">		Set&lt;String&gt; handles= new LinkedHashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">		if (projects == null) {</span>
+<span class="nc" id="L254">			return handles;</span>
+		}
+<span class="fc bfc" id="L256" title="All 2 branches covered.">		for (IJavaProject project : projects) {</span>
+<span class="pc bpc" id="L257" title="2 of 4 branches missed.">			if (project != null &amp;&amp; project.exists()) {</span>
+<span class="fc" id="L258">				handles.add(project.getHandleIdentifier());</span>
+			}
+		}
+<span class="fc" id="L261">		return handles;</span>
+	}
 
 	private static ICompilationUnit compilationUnit(IJavaElement element) {
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		if (element == null) {</span>
-<span class="nc" id="L224">			return null;</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		if (element == null) {</span>
+<span class="nc" id="L266">			return null;</span>
 		}
-<span class="fc" id="L226">		IJavaElement ancestor= element.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">		return ancestor instanceof ICompilationUnit unit ? unit.getPrimary() : null;</span>
+<span class="fc" id="L268">		IJavaElement ancestor= element.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">		return ancestor instanceof ICompilationUnit unit ? unit.getPrimary() : null;</span>
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
-<span class="pc bpc" id="L231" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
-<span class="nc" id="L232">			throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L273" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L274">			throw new OperationCanceledException();</span>
 		}
-<span class="fc" id="L234">	}</span>
+<span class="fc" id="L276">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -20,6 +20,8 @@ import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
+
 /**
  * Stable fail-closed taxonomy for JUnit 3 execution semantics that are not
  * equivalent to ordinary annotation-driven Jupiter tests.
@@ -31,10 +33,10 @@ final class JUnit3HarnessSemantics {
 	private static final String JUNIT_FRAMEWORK_TEST_RESULT= &quot;junit.framework.TestResult&quot;; //$NON-NLS-1$
 
 	record Rejection(String reasonCode, String explanation) {
-<span class="fc" id="L34">		Rejection {</span>
-<span class="fc" id="L35">			reasonCode= Objects.requireNonNull(reasonCode);</span>
-<span class="fc" id="L36">			explanation= Objects.requireNonNull(explanation);</span>
-<span class="fc" id="L37">		}</span>
+<span class="fc" id="L36">		Rejection {</span>
+<span class="fc" id="L37">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L38">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L39">		}</span>
 	}
 
 	private JUnit3HarnessSemantics() {
@@ -48,162 +50,168 @@ final class JUnit3HarnessSemantics {
 	 * @return a precise rejection, or empty for an ordinary test/helper method
 	 */
 	static Optional&lt;Rejection&gt; rejection(MethodDeclaration method) {
-<span class="fc" id="L51">		Objects.requireNonNull(method);</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">		if (method.isConstructor()) {</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">			if (isNamedTestConstructor(method)) {</span>
-<span class="fc" id="L54">				return Optional.of(new Rejection(&quot;NAMED_JUNIT3_TEST_CONSTRUCTION&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L55">						&quot;The hierarchy constructs named JUnit 3 test instances through a String constructor; preserving selected method identity requires an explicit framework migration.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L53">		Objects.requireNonNull(method);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		if (method.isConstructor()) {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">			if (isNamedTestConstructor(method)) {</span>
+<span class="fc" id="L56">				return Optional.of(new Rejection(&quot;NAMED_JUNIT3_TEST_CONSTRUCTION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L57">						&quot;The hierarchy constructs named JUnit 3 test instances through a String constructor; preserving selected method identity requires an explicit framework migration.&quot;)); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L57">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_CONSTRUCTOR&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L58">					&quot;The hierarchy declares an explicit constructor whose instantiation contract is not represented by ordinary Jupiter test discovery.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L59">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_CONSTRUCTOR&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L60">					&quot;The hierarchy declares an explicit constructor whose instantiation contract is not represented by ordinary Jupiter test discovery.&quot;)); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L61">		String name= method.getName().getIdentifier();</span>
-<span class="fc bfc" id="L62" title="All 4 branches covered.">		if (&quot;suite&quot;.equals(name) &amp;&amp; isSuiteBuilder(method)) { //$NON-NLS-1$</span>
-<span class="fc" id="L63">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_SUITE_BUILDER&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L64">					&quot;The hierarchy declares suite(), so test composition, nesting, duplication or ordering must be migrated as an explicit suite model.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		String name= method.getName().getIdentifier();</span>
+<span class="fc bfc" id="L64" title="All 4 branches covered.">		if (&quot;suite&quot;.equals(name) &amp;&amp; isSuiteBuilder(method)) { //$NON-NLS-1$</span>
+<span class="fc" id="L65">			JUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">			if (model.supported()) {</span>
+<span class="fc" id="L67">				return Optional.of(new Rejection(&quot;MODELLED_JUNIT3_SUITE_BUILDER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L68">						&quot;The hierarchy declares a modellable suite(); migrate the aggregator to @Suite and @SelectClasses before the hierarchy itself.&quot;)); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L70">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_SUITE_BUILDER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L71">					&quot;The hierarchy declares suite(), so test composition, nesting, duplication or ordering must be migrated as an explicit suite model (&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L72">							+ model.rejection().reasonCode() + &quot;).&quot; )); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L66" title="1 of 4 branches missed.">		if (&quot;runTest&quot;.equals(name) &amp;&amp; isRunTestHook(method)) { //$NON-NLS-1$</span>
-<span class="fc" id="L67">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_TEST_SELECTION&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L68">					&quot;The hierarchy overrides runTest(), so runtime test selection is not equivalent to method-name discovery.&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">		if (&quot;runTest&quot;.equals(name) &amp;&amp; isRunTestHook(method)) { //$NON-NLS-1$</span>
+<span class="fc" id="L75">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_TEST_SELECTION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L76">					&quot;The hierarchy overrides runTest(), so runtime test selection is not equivalent to method-name discovery.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L70" title="All 4 branches covered.">		if (&quot;runBare&quot;.equals(name) &amp;&amp; isRunBareHook(method)) { //$NON-NLS-1$</span>
-<span class="fc" id="L71">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_LIFECYCLE_WRAPPER&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L72">					&quot;The hierarchy overrides runBare(), so its setup/test/teardown wrapper and exception behavior require an explicit extension or invocation migration.&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L78" title="All 4 branches covered.">		if (&quot;runBare&quot;.equals(name) &amp;&amp; isRunBareHook(method)) { //$NON-NLS-1$</span>
+<span class="fc" id="L79">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_LIFECYCLE_WRAPPER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L80">					&quot;The hierarchy overrides runBare(), so its setup/test/teardown wrapper and exception behavior require an explicit extension or invocation migration.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L74" title="1 of 4 branches missed.">		if ((&quot;createResult&quot;.equals(name) &amp;&amp; isCreateResultHook(method)) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L75" title="1 of 4 branches missed.">				|| (&quot;countTestCases&quot;.equals(name) &amp;&amp; isCountTestCasesHook(method))) { //$NON-NLS-1$</span>
-<span class="fc" id="L76">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_RESULT_MODEL&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L77">					&quot;The hierarchy customizes JUnit 3 result creation or test counting, which has no ordinary Jupiter annotation equivalent.&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">		if ((&quot;createResult&quot;.equals(name) &amp;&amp; isCreateResultHook(method)) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">				|| (&quot;countTestCases&quot;.equals(name) &amp;&amp; isCountTestCasesHook(method))) { //$NON-NLS-1$</span>
+<span class="fc" id="L84">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_RESULT_MODEL&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L85">					&quot;The hierarchy customizes JUnit 3 result creation or test counting, which has no ordinary Jupiter annotation equivalent.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L79" title="All 4 branches covered.">		if ((&quot;getName&quot;.equals(name) &amp;&amp; isGetNameHook(method)) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L80" title="All 4 branches covered.">				|| (&quot;setName&quot;.equals(name) &amp;&amp; isSetNameHook(method))) { //$NON-NLS-1$</span>
-<span class="fc" id="L81">			return Optional.of(new Rejection(&quot;NAMED_JUNIT3_TEST_CONTRACT&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L82">					&quot;The hierarchy customizes the mutable JUnit 3 test name used for selected-method execution and reporting.&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L87" title="All 4 branches covered.">		if ((&quot;getName&quot;.equals(name) &amp;&amp; isGetNameHook(method)) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">				|| (&quot;setName&quot;.equals(name) &amp;&amp; isSetNameHook(method))) { //$NON-NLS-1$</span>
+<span class="fc" id="L89">			return Optional.of(new Rejection(&quot;NAMED_JUNIT3_TEST_CONTRACT&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L90">					&quot;The hierarchy customizes the mutable JUnit 3 test name used for selected-method execution and reporting.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L84" title="All 4 branches covered.">		if (&quot;run&quot;.equals(name) &amp;&amp; isRunHook(method)) { //$NON-NLS-1$</span>
-<span class="fc" id="L85">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_RUNNER_INTEGRATION&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L86">					&quot;The hierarchy overrides run(TestResult), so listener, result or execution delegation semantics require an explicit framework migration.&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L92" title="All 4 branches covered.">		if (&quot;run&quot;.equals(name) &amp;&amp; isRunHook(method)) { //$NON-NLS-1$</span>
+<span class="fc" id="L93">			return Optional.of(new Rejection(&quot;CUSTOM_JUNIT3_RUNNER_INTEGRATION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L94">					&quot;The hierarchy overrides run(TestResult), so listener, result or execution delegation semantics require an explicit framework migration.&quot;)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L88">		return Optional.empty();</span>
+<span class="fc" id="L96">		return Optional.empty();</span>
 	}
 
 	private static boolean isNamedTestConstructor(MethodDeclaration method) {
-<span class="fc" id="L92">		return hasParameters(method, JAVA_LANG_STRING);</span>
+<span class="fc" id="L100">		return hasParameters(method, JAVA_LANG_STRING);</span>
 	}
 
 	private static boolean isSuiteBuilder(MethodDeclaration method) {
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
-<span class="fc bfc" id="L97" title="All 2 branches covered.">				&amp;&amp; Modifier.isStatic(method.getModifiers())</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">				&amp;&amp; hasReturnType(method, JUNIT_FRAMEWORK_TEST)</span>
-<span class="pc bpc" id="L99" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">				&amp;&amp; Modifier.isStatic(method.getModifiers())</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">				&amp;&amp; hasReturnType(method, JUNIT_FRAMEWORK_TEST)</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
 	}
 
 	private static boolean isRunTestHook(MethodDeclaration method) {
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		return isProtectedOrPublic(method)</span>
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		return isProtectedOrPublic(method)</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
 	}
 
 	private static boolean isRunBareHook(MethodDeclaration method) {
-<span class="fc bfc" id="L110" title="All 2 branches covered.">		return Modifier.isPublic(method.getModifiers())</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		return Modifier.isPublic(method.getModifiers())</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
 	}
 
 	private static boolean isCreateResultHook(MethodDeclaration method) {
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		return isProtectedOrPublic(method)</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, JUNIT_FRAMEWORK_TEST_RESULT)</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		return isProtectedOrPublic(method)</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, JUNIT_FRAMEWORK_TEST_RESULT)</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
 	}
 
 	private static boolean isCountTestCasesHook(MethodDeclaration method) {
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;int&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;int&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				&amp;&amp; hasParameters(method);</span>
 	}
 
 	private static boolean isGetNameHook(MethodDeclaration method) {
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L133" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, JAVA_LANG_STRING)</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">				&amp;&amp; hasParameters(method);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, JAVA_LANG_STRING)</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">				&amp;&amp; hasParameters(method);</span>
 	}
 
 	private static boolean isSetNameHook(MethodDeclaration method) {
-<span class="pc bpc" id="L138" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">				&amp;&amp; hasParameters(method, JAVA_LANG_STRING);</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">				&amp;&amp; hasParameters(method, JAVA_LANG_STRING);</span>
 	}
 
 	private static boolean isRunHook(MethodDeclaration method) {
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L148" title="All 2 branches covered.">				&amp;&amp; hasParameters(method, JUNIT_FRAMEWORK_TEST_RESULT);</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		return Modifier.isPublic(method.getModifiers())</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">				&amp;&amp; hasReturnType(method, &quot;void&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">				&amp;&amp; hasParameters(method, JUNIT_FRAMEWORK_TEST_RESULT);</span>
 	}
 
 	private static boolean isProtectedOrPublic(MethodDeclaration method) {
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		return Modifier.isProtected(method.getModifiers())</span>
-<span class="nc bnc" id="L153" title="All 2 branches missed.">				|| Modifier.isPublic(method.getModifiers());</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		return Modifier.isProtected(method.getModifiers())</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">				|| Modifier.isPublic(method.getModifiers());</span>
 	}
 
 	private static boolean hasReturnType(MethodDeclaration method, String qualifiedName) {
-<span class="fc" id="L157">		IMethodBinding binding= method.resolveBinding();</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">		if (binding != null) {</span>
-<span class="fc" id="L159">			return isType(binding.getReturnType(), qualifiedName);</span>
+<span class="fc" id="L165">		IMethodBinding binding= method.resolveBinding();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (binding != null) {</span>
+<span class="fc" id="L167">			return isType(binding.getReturnType(), qualifiedName);</span>
 		}
-<span class="fc" id="L161">		return isType(method.getReturnType2(), qualifiedName);</span>
+<span class="fc" id="L169">		return isType(method.getReturnType2(), qualifiedName);</span>
 	}
 
 	private static boolean hasParameters(MethodDeclaration method, String... qualifiedNames) {
-<span class="fc" id="L165">		IMethodBinding binding= method.resolveBinding();</span>
-<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (binding != null) {</span>
-<span class="fc" id="L167">			ITypeBinding[] parameters= binding.getParameterTypes();</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (parameters.length != qualifiedNames.length) {</span>
-<span class="fc" id="L169">				return false;</span>
+<span class="fc" id="L173">		IMethodBinding binding= method.resolveBinding();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		if (binding != null) {</span>
+<span class="fc" id="L175">			ITypeBinding[] parameters= binding.getParameterTypes();</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">			if (parameters.length != qualifiedNames.length) {</span>
+<span class="fc" id="L177">				return false;</span>
 			}
-<span class="fc bfc" id="L171" title="All 2 branches covered.">			for (int index= 0; index &lt; parameters.length; index++) {</span>
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">				if (!isType(parameters[index], qualifiedNames[index])) {</span>
-<span class="nc" id="L173">					return false;</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">			for (int index= 0; index &lt; parameters.length; index++) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">				if (!isType(parameters[index], qualifiedNames[index])) {</span>
+<span class="nc" id="L181">					return false;</span>
 				}
 			}
-<span class="fc" id="L176">			return true;</span>
+<span class="fc" id="L184">			return true;</span>
 		}
-<span class="fc bfc" id="L178" title="All 2 branches covered.">		if (method.parameters().size() != qualifiedNames.length) {</span>
-<span class="fc" id="L179">			return false;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		if (method.parameters().size() != qualifiedNames.length) {</span>
+<span class="fc" id="L187">			return false;</span>
 		}
-<span class="fc bfc" id="L181" title="All 2 branches covered.">		for (int index= 0; index &lt; qualifiedNames.length; index++) {</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">			if (!(method.parameters().get(index) instanceof SingleVariableDeclaration parameter)</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">					|| parameter.isVarargs()</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">					|| !isType(parameter.getType(), qualifiedNames[index])) {</span>
-<span class="fc" id="L185">				return false;</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">		for (int index= 0; index &lt; qualifiedNames.length; index++) {</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">			if (!(method.parameters().get(index) instanceof SingleVariableDeclaration parameter)</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">					|| parameter.isVarargs()</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">					|| !isType(parameter.getType(), qualifiedNames[index])) {</span>
+<span class="fc" id="L193">				return false;</span>
 			}
 		}
-<span class="fc" id="L188">		return true;</span>
+<span class="fc" id="L196">		return true;</span>
 	}
 
 	private static boolean isType(ITypeBinding binding, String qualifiedName) {
-<span class="pc bpc" id="L192" title="2 of 4 branches missed.">		return binding != null &amp;&amp; qualifiedName.equals(binding.getErasure().getQualifiedName());</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">		return binding != null &amp;&amp; qualifiedName.equals(binding.getErasure().getQualifiedName());</span>
 	}
 
 	private static boolean isType(Type type, String qualifiedName) {
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (type == null) {</span>
-<span class="nc" id="L197">			return false;</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L205">			return false;</span>
 		}
-<span class="fc" id="L199">		ITypeBinding binding= type.resolveBinding();</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="nc" id="L201">			return isType(binding, qualifiedName);</span>
+<span class="fc" id="L207">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="nc" id="L209">			return isType(binding, qualifiedName);</span>
 		}
-<span class="fc" id="L203">		String sourceType= type.toString();</span>
-<span class="fc" id="L204">		int lastDot= qualifiedName.lastIndexOf('.');</span>
-<span class="fc bfc" id="L205" title="All 2 branches covered.">		String simpleName= lastDot &lt; 0 ? qualifiedName : qualifiedName.substring(lastDot + 1);</span>
-<span class="fc bfc" id="L206" title="All 4 branches covered.">		return qualifiedName.equals(sourceType) || simpleName.equals(sourceType);</span>
+<span class="fc" id="L211">		String sourceType= type.toString();</span>
+<span class="fc" id="L212">		int lastDot= qualifiedName.lastIndexOf('.');</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		String simpleName= lastDot &lt; 0 ? qualifiedName : qualifiedName.substring(lastDot + 1);</span>
+<span class="fc bfc" id="L214" title="All 4 branches covered.">		return qualifiedName.equals(sourceType) || simpleName.equals(sourceType);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodMigration;
@@ -54,47 +55,47 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.Ty
 final class JUnit3HierarchyPlanner {
 
 	/** Mirrors JUnit 4's {@code org.junit.internal.MethodSorter.DEFAULT}. */
-<span class="fc" id="L57">	private static final Comparator&lt;MethodDeclaration&gt; JUNIT3_METHOD_ORDER=</span>
-<span class="pc" id="L58">			Comparator.comparingInt((MethodDeclaration method) -&gt; method.getName().getIdentifier().hashCode())</span>
-<span class="pc" id="L59">					.thenComparing(method -&gt; method.getName().getIdentifier())</span>
-<span class="fc" id="L60">					.thenComparing(MethodDeclaration::toString);</span>
+<span class="fc" id="L58">	private static final Comparator&lt;MethodDeclaration&gt; JUNIT3_METHOD_ORDER=</span>
+<span class="pc" id="L59">			Comparator.comparingInt((MethodDeclaration method) -&gt; method.getName().getIdentifier().hashCode())</span>
+<span class="pc" id="L60">					.thenComparing(method -&gt; method.getName().getIdentifier())</span>
+<span class="fc" id="L61">					.thenComparing(MethodDeclaration::toString);</span>
 
 	record Result(List&lt;JUnit3HierarchyMigration&gt; migrations,
 			List&lt;MultiFileCandidateDiagnostic&gt; diagnostics, JUnitTestTypeInventory inventory) {
-<span class="fc" id="L64">		Result {</span>
-<span class="fc" id="L65">			migrations= List.copyOf(migrations);</span>
-<span class="fc" id="L66">			diagnostics= List.copyOf(diagnostics);</span>
-<span class="fc" id="L67">		}</span>
+<span class="fc" id="L65">		Result {</span>
+<span class="fc" id="L66">			migrations= List.copyOf(migrations);</span>
+<span class="fc" id="L67">			diagnostics= List.copyOf(diagnostics);</span>
+<span class="fc" id="L68">		}</span>
 	}
 
 	private record SourceType(String unitHandle, TypeDeclaration declaration,
 			ITypeBinding binding, IType javaType) {
 		String key() {
-<span class="fc" id="L73">			return JUnitMigrationPlan.typeKey(binding);</span>
+<span class="fc" id="L74">			return JUnitMigrationPlan.typeKey(binding);</span>
 		}
 
 		String name() {
-<span class="fc" id="L77">			return binding.getQualifiedName();</span>
+<span class="fc" id="L78">			return binding.getQualifiedName();</span>
 		}
 	}
 
 	private record Classification(boolean supported, String reasonCode, String message,
 			List&lt;TypeMigration&gt; typeMigrations, List&lt;String&gt; baselineHandles) {
 		static Classification rejected(String reasonCode, String message) {
-<span class="fc" id="L84">			return new Classification(false, reasonCode, message, List.of(), List.of());</span>
+<span class="fc" id="L85">			return new Classification(false, reasonCode, message, List.of(), List.of());</span>
 		}
 
 		static Classification supported(List&lt;TypeMigration&gt; migrations, List&lt;String&gt; baselineHandles) {
-<span class="fc" id="L88">			return new Classification(true, &quot;SUPPORTED_HIERARCHY&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L89">					&quot;The complete ordinary JUnit 3 hierarchy can be migrated atomically.&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L90">					migrations, baselineHandles);</span>
+<span class="fc" id="L89">			return new Classification(true, &quot;SUPPORTED_HIERARCHY&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L90">					&quot;The complete ordinary JUnit 3 hierarchy can be migrated atomically.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L91">					migrations, baselineHandles);</span>
 		}
 	}
 
-<span class="fc" id="L94">	private enum OverrideRemoval {</span>
-<span class="fc" id="L95">		REMOVE,</span>
-<span class="fc" id="L96">		KEEP,</span>
-<span class="fc" id="L97">		UNRESOLVED</span>
+<span class="fc" id="L95">	private enum OverrideRemoval {</span>
+<span class="fc" id="L96">		REMOVE,</span>
+<span class="fc" id="L97">		KEEP,</span>
+<span class="fc" id="L98">		UNRESOLVED</span>
 	}
 
 	private JUnit3HierarchyPlanner() {
@@ -103,267 +104,273 @@ final class JUnit3HierarchyPlanner {
 	static Result create(IJavaProject project, ICompilationUnit[] selectedUnits,
 			Map&lt;String, CompilationUnit&gt; rootsByHandle, boolean closedScope,
 			IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L106">		JUnitTestTypeInventory inventory= JUnitTestTypeInventory.capture(project, monitor);</span>
-<span class="fc" id="L107">		Map&lt;String, SourceType&gt; sourceTypes= collectSourceTypes(rootsByHandle);</span>
-<span class="fc" id="L108">		List&lt;SourceType&gt; roots= sourceTypes.values().stream()</span>
-<span class="fc" id="L109">				.filter(JUnit3HierarchyPlanner::directlyExtendsTestCase)</span>
-<span class="fc" id="L110">				.sorted(Comparator.comparing(SourceType::name))</span>
-<span class="fc" id="L111">				.toList();</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (roots.isEmpty()) {</span>
-<span class="fc" id="L113">			return new Result(List.of(), List.of(), inventory);</span>
+<span class="fc" id="L107">		JUnitTestTypeInventory inventory= JUnitTestTypeInventory.capture(project, monitor);</span>
+<span class="fc" id="L108">		Map&lt;String, SourceType&gt; sourceTypes= collectSourceTypes(rootsByHandle);</span>
+<span class="fc" id="L109">		List&lt;SourceType&gt; roots= sourceTypes.values().stream()</span>
+<span class="fc" id="L110">				.filter(JUnit3HierarchyPlanner::directlyExtendsTestCase)</span>
+<span class="fc" id="L111">				.sorted(Comparator.comparing(SourceType::name))</span>
+<span class="fc" id="L112">				.toList();</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (roots.isEmpty()) {</span>
+<span class="fc" id="L114">			return new Result(List.of(), List.of(), inventory);</span>
 		}
 
-<span class="fc" id="L116">		Set&lt;String&gt; selectedHandles= Arrays.stream(selectedUnits)</span>
-<span class="fc" id="L117">				.map(ICompilationUnit::getPrimary)</span>
-<span class="fc" id="L118">				.map(IJavaElement::getHandleIdentifier)</span>
-<span class="fc" id="L119">				.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));</span>
-<span class="fc" id="L120">		List&lt;ICompilationUnit&gt; selectedList= Arrays.asList(selectedUnits);</span>
-<span class="fc" id="L121">		List&lt;JUnit3HierarchyMigration&gt; migrations= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L122">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">		for (SourceType root : roots) {</span>
-<span class="fc" id="L124">			List&lt;SourceType&gt; hierarchy= hierarchy(root, sourceTypes.values());</span>
+<span class="fc" id="L117">		Set&lt;String&gt; selectedHandles= Arrays.stream(selectedUnits)</span>
+<span class="fc" id="L118">				.map(ICompilationUnit::getPrimary)</span>
+<span class="fc" id="L119">				.map(IJavaElement::getHandleIdentifier)</span>
+<span class="fc" id="L120">				.collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));</span>
+<span class="fc" id="L121">		List&lt;ICompilationUnit&gt; selectedList= Arrays.asList(selectedUnits);</span>
+<span class="fc" id="L122">		List&lt;JUnit3HierarchyMigration&gt; migrations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L123">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		for (SourceType root : roots) {</span>
+<span class="fc" id="L125">			List&lt;SourceType&gt; hierarchy= hierarchy(root, sourceTypes.values());</span>
 			// A direct leaf remains the responsibility of the established local,
 			// fail-closed cleanup. Coordinated planning is only needed once JUnit 3
 			// identity or execution order is inherited across source types.
-<span class="fc bfc" id="L128" title="All 2 branches covered.">			if (hierarchy.size() == 1) {</span>
-<span class="fc" id="L129">				continue;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">			if (hierarchy.size() == 1) {</span>
+<span class="fc" id="L130">				continue;</span>
 			}
-<span class="fc" id="L131">			List&lt;String&gt; relatedHandles= hierarchy.stream().map(SourceType::unitHandle).distinct().sorted().toList();</span>
-<span class="fc" id="L132">			String candidateId= &quot;junit3-hierarchy:&quot; + root.name(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L133" title="2 of 4 branches missed.">			if (!closedScope || !containsAllSourceSubtypes(root, selectedHandles)) {</span>
-<span class="nc" id="L134">				String message= &quot;The selected source scope does not contain every source or binary subtype of &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L135">						+ root.name() + &quot;.&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L136">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
-<span class="nc" id="L137">						&quot;INCOMPLETE_JUNIT3_HIERARCHY&quot;, message, relatedHandles)); //$NON-NLS-1$</span>
-<span class="nc" id="L138">				continue;</span>
+<span class="fc" id="L132">			List&lt;String&gt; relatedHandles= hierarchy.stream().map(SourceType::unitHandle).distinct().sorted().toList();</span>
+<span class="fc" id="L133">			String candidateId= &quot;junit3-hierarchy:&quot; + root.name(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">			if (!closedScope || !containsAllSourceSubtypes(root, selectedHandles)) {</span>
+<span class="nc" id="L135">				String message= &quot;The selected source scope does not contain every source or binary subtype of &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L136">						+ root.name() + &quot;.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L137">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
+<span class="nc" id="L138">						&quot;INCOMPLETE_JUNIT3_HIERARCHY&quot;, message, relatedHandles)); //$NON-NLS-1$</span>
+<span class="nc" id="L139">				continue;</span>
 			}
-<span class="fc" id="L140">			RelatedCompilationUnitSearch.Result references= RelatedCompilationUnitSearch.findReferences(project,</span>
-<span class="fc" id="L141">					hierarchy.stream().map(SourceType::javaType).toList(),</span>
-<span class="fc" id="L142">					hierarchy.stream().map(SourceType::javaType).map(IType::getCompilationUnit).toList(),</span>
-<span class="fc" id="L143">					selectedList, monitor);</span>
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">			if (!references.complete()) {</span>
-<span class="nc" id="L145">				String message= &quot;The JUnit 3 hierarchy has unresolved, binary, or out-of-scope references: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L146">						+ String.join(&quot;; &quot;, references.rejectionReasons()); //$NON-NLS-1$</span>
-<span class="nc" id="L147">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
-<span class="nc" id="L148">						&quot;INCOMPLETE_JUNIT3_REFERENCES&quot;, message, relatedHandles)); //$NON-NLS-1$</span>
-<span class="nc" id="L149">				continue;</span>
+<span class="fc" id="L141">			RelatedCompilationUnitSearch.Result references= RelatedCompilationUnitSearch.findReferences(project,</span>
+<span class="fc" id="L142">					hierarchy.stream().map(SourceType::javaType).toList(),</span>
+<span class="fc" id="L143">					hierarchy.stream().map(SourceType::javaType).map(IType::getCompilationUnit).toList(),</span>
+<span class="fc" id="L144">					selectedList, monitor);</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">			if (!references.complete()) {</span>
+<span class="nc" id="L146">				String message= &quot;The JUnit 3 hierarchy has unresolved, binary, or out-of-scope references: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L147">						+ String.join(&quot;; &quot;, references.rejectionReasons()); //$NON-NLS-1$</span>
+<span class="nc" id="L148">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
+<span class="nc" id="L149">						&quot;INCOMPLETE_JUNIT3_REFERENCES&quot;, message, relatedHandles)); //$NON-NLS-1$</span>
+<span class="nc" id="L150">				continue;</span>
 			}
-<span class="fc" id="L151">			Set&lt;String&gt; hierarchyHandles= new HashSet&lt;&gt;(relatedHandles);</span>
-<span class="fc" id="L152">			List&lt;String&gt; externalReferenceHandles= references.compilationUnits().stream()</span>
-<span class="fc" id="L153">					.map(IJavaElement::getHandleIdentifier)</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">					.filter(handle -&gt; !hierarchyHandles.contains(handle))</span>
-<span class="fc" id="L155">					.sorted()</span>
-<span class="fc" id="L156">					.toList();</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">			if (!externalReferenceHandles.isEmpty()) {</span>
-<span class="fc" id="L158">				List&lt;String&gt; allRelated= new ArrayList&lt;&gt;(relatedHandles);</span>
-<span class="fc" id="L159">				allRelated.addAll(externalReferenceHandles);</span>
-<span class="fc" id="L160">				String message= &quot;The hierarchy participates in suite or harness code outside the hierarchy and requires an explicit framework migration.&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L161">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
-<span class="fc" id="L162">						&quot;CUSTOM_JUNIT3_HARNESS&quot;, message, allRelated)); //$NON-NLS-1$</span>
-<span class="fc" id="L163">				continue;</span>
+<span class="fc" id="L152">			Set&lt;String&gt; hierarchyHandles= new HashSet&lt;&gt;(relatedHandles);</span>
+<span class="fc" id="L153">			List&lt;String&gt; externalReferenceHandles= references.compilationUnits().stream()</span>
+<span class="fc" id="L154">					.map(IJavaElement::getHandleIdentifier)</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">					.filter(handle -&gt; !hierarchyHandles.contains(handle))</span>
+<span class="fc" id="L156">					.sorted()</span>
+<span class="fc" id="L157">					.toList();</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			if (!externalReferenceHandles.isEmpty()) {</span>
+<span class="fc" id="L159">				List&lt;String&gt; allRelated= new ArrayList&lt;&gt;(relatedHandles);</span>
+<span class="fc" id="L160">				allRelated.addAll(externalReferenceHandles);</span>
+<span class="fc" id="L161">				String message= &quot;The hierarchy participates in suite or harness code outside the hierarchy and requires an explicit framework migration.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L162">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
+<span class="fc" id="L163">						&quot;CUSTOM_JUNIT3_HARNESS&quot;, message, allRelated)); //$NON-NLS-1$</span>
+<span class="fc" id="L164">				continue;</span>
 			}
 
-<span class="fc" id="L166">			Classification classification= classify(root, hierarchy, inventory);</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (!classification.supported()) {</span>
-<span class="fc" id="L168">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
-<span class="fc" id="L169">						classification.reasonCode(), classification.message(), relatedHandles));</span>
-<span class="fc" id="L170">				continue;</span>
+<span class="fc" id="L167">			Classification classification= classify(root, hierarchy, inventory);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (!classification.supported()) {</span>
+<span class="fc" id="L169">				diagnostics.add(MultiFileCandidateDiagnostic.rejected(candidateId, root.unitHandle(),</span>
+<span class="fc" id="L170">						classification.reasonCode(), classification.message(), relatedHandles));</span>
+<span class="fc" id="L171">				continue;</span>
 			}
-<span class="fc" id="L172">			migrations.add(new JUnit3HierarchyMigration(root.name(), classification.typeMigrations(),</span>
-<span class="fc" id="L173">					classification.baselineHandles()));</span>
-<span class="fc" id="L174">			diagnostics.add(MultiFileCandidateDiagnostic.transformed(candidateId, root.unitHandle(),</span>
-<span class="fc" id="L175">					classification.message(), relatedHandles));</span>
+<span class="fc" id="L173">			migrations.add(new JUnit3HierarchyMigration(root.name(), classification.typeMigrations(),</span>
+<span class="fc" id="L174">					classification.baselineHandles()));</span>
+<span class="fc" id="L175">			diagnostics.add(MultiFileCandidateDiagnostic.transformed(candidateId, root.unitHandle(),</span>
+<span class="fc" id="L176">					classification.message(), relatedHandles));</span>
 		}
-<span class="fc" id="L177">		return new Result(migrations, diagnostics, inventory);</span>
+<span class="fc" id="L178">		return new Result(migrations, diagnostics, inventory);</span>
 	}
 
 	private static Map&lt;String, SourceType&gt; collectSourceTypes(Map&lt;String, CompilationUnit&gt; rootsByHandle) {
-<span class="fc" id="L181">		Map&lt;String, SourceType&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L182" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
-<span class="fc" id="L183">			entry.getValue().accept(new ASTVisitor() {</span>
+<span class="fc" id="L182">		Map&lt;String, SourceType&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : rootsByHandle.entrySet()) {</span>
+<span class="fc" id="L184">			entry.getValue().accept(new ASTVisitor() {</span>
 				@Override
 				public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L186">					ITypeBinding binding= node.resolveBinding();</span>
-<span class="fc" id="L187">					String key= JUnitMigrationPlan.typeKey(binding);</span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">					IJavaElement element= binding == null ? null : binding.getJavaElement();</span>
-<span class="pc bpc" id="L189" title="3 of 6 branches missed.">					if (key != null &amp;&amp; element instanceof IType type &amp;&amp; type.getCompilationUnit() != null) {</span>
-<span class="fc" id="L190">						result.put(key, new SourceType(entry.getKey(), node, binding, type));</span>
+<span class="fc" id="L187">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc" id="L188">					String key= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">					IJavaElement element= binding == null ? null : binding.getJavaElement();</span>
+<span class="pc bpc" id="L190" title="3 of 6 branches missed.">					if (key != null &amp;&amp; element instanceof IType type &amp;&amp; type.getCompilationUnit() != null) {</span>
+<span class="fc" id="L191">						result.put(key, new SourceType(entry.getKey(), node, binding, type));</span>
 					}
-<span class="fc" id="L192">					return true;</span>
+<span class="fc" id="L193">					return true;</span>
 				}
 			});
 		}
-<span class="fc" id="L196">		return result;</span>
+<span class="fc" id="L197">		return result;</span>
 	}
 
 	private static boolean directlyExtendsTestCase(SourceType type) {
-<span class="fc" id="L200">		ITypeBinding superclass= type.binding().getSuperclass();</span>
-<span class="pc bpc" id="L201" title="1 of 4 branches missed.">		return superclass != null &amp;&amp; JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName());</span>
+<span class="fc" id="L201">		ITypeBinding superclass= type.binding().getSuperclass();</span>
+<span class="pc bpc" id="L202" title="1 of 4 branches missed.">		return superclass != null &amp;&amp; JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName());</span>
 	}
 
 	private static List&lt;SourceType&gt; hierarchy(SourceType root, Collection&lt;SourceType&gt; allTypes) {
-<span class="fc" id="L205">		String rootKey= root.key();</span>
-<span class="fc" id="L206">		return allTypes.stream()</span>
-<span class="fc" id="L207">				.filter(candidate -&gt; isSameOrSubtype(candidate.binding(), rootKey))</span>
-<span class="fc" id="L208">				.sorted(Comparator.comparing(SourceType::name))</span>
-<span class="fc" id="L209">				.toList();</span>
+<span class="fc" id="L206">		String rootKey= root.key();</span>
+<span class="fc" id="L207">		return allTypes.stream()</span>
+<span class="fc" id="L208">				.filter(candidate -&gt; isSameOrSubtype(candidate.binding(), rootKey))</span>
+<span class="fc" id="L209">				.sorted(Comparator.comparing(SourceType::name))</span>
+<span class="fc" id="L210">				.toList();</span>
 	}
 
 	private static boolean isSameOrSubtype(ITypeBinding binding, String rootKey) {
-<span class="fc" id="L213">		ITypeBinding current= binding;</span>
-<span class="fc bfc" id="L214" title="All 2 branches covered.">		while (current != null) {</span>
-<span class="fc bfc" id="L215" title="All 2 branches covered.">			if (rootKey.equals(JUnitMigrationPlan.typeKey(current))) {</span>
-<span class="fc" id="L216">				return true;</span>
+<span class="fc" id="L214">		ITypeBinding current= binding;</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">			if (rootKey.equals(JUnitMigrationPlan.typeKey(current))) {</span>
+<span class="fc" id="L217">				return true;</span>
 			}
-<span class="fc" id="L218">			current= current.getSuperclass();</span>
+<span class="fc" id="L219">			current= current.getSuperclass();</span>
 		}
-<span class="fc" id="L220">		return false;</span>
+<span class="fc" id="L221">		return false;</span>
 	}
 
 	private static int hierarchyDepth(SourceType type, String rootKey) {
-<span class="fc" id="L224">		int depth= 0;</span>
-<span class="fc" id="L225">		ITypeBinding current= type.binding();</span>
-<span class="pc bpc" id="L226" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !rootKey.equals(JUnitMigrationPlan.typeKey(current))) {</span>
-<span class="fc" id="L227">			depth++;</span>
-<span class="fc" id="L228">			current= current.getSuperclass();</span>
+<span class="fc" id="L225">		int depth= 0;</span>
+<span class="fc" id="L226">		ITypeBinding current= type.binding();</span>
+<span class="pc bpc" id="L227" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !rootKey.equals(JUnitMigrationPlan.typeKey(current))) {</span>
+<span class="fc" id="L228">			depth++;</span>
+<span class="fc" id="L229">			current= current.getSuperclass();</span>
 		}
-<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		return current == null ? -1 : depth;</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		return current == null ? -1 : depth;</span>
 	}
 
 	private static boolean containsAllSourceSubtypes(SourceType root, Set&lt;String&gt; selectedHandles) {
 		try {
-<span class="fc" id="L235">			ITypeHierarchy hierarchy= root.javaType().newTypeHierarchy(null);</span>
-<span class="fc bfc" id="L236" title="All 2 branches covered.">			for (IType subtype : hierarchy.getAllSubtypes(root.javaType())) {</span>
-<span class="fc" id="L237">				ICompilationUnit unit= subtype.getCompilationUnit();</span>
-<span class="pc bpc" id="L238" title="2 of 4 branches missed.">				if (unit == null || !unit.exists()</span>
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">						|| !selectedHandles.contains(unit.getPrimary().getHandleIdentifier())) {</span>
-<span class="nc" id="L240">					return false;</span>
+<span class="fc" id="L236">			ITypeHierarchy hierarchy= root.javaType().newTypeHierarchy(null);</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">			for (IType subtype : hierarchy.getAllSubtypes(root.javaType())) {</span>
+<span class="fc" id="L238">				ICompilationUnit unit= subtype.getCompilationUnit();</span>
+<span class="pc bpc" id="L239" title="2 of 4 branches missed.">				if (unit == null || !unit.exists()</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">						|| !selectedHandles.contains(unit.getPrimary().getHandleIdentifier())) {</span>
+<span class="nc" id="L241">					return false;</span>
 				}
 			}
-<span class="fc" id="L243">			return true;</span>
-<span class="nc" id="L244">		} catch (JavaModelException e) {</span>
-<span class="nc" id="L245">			return false;</span>
+<span class="fc" id="L244">			return true;</span>
+<span class="nc" id="L245">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L246">			return false;</span>
 		}
 	}
 
 	private static Classification classify(SourceType root, List&lt;SourceType&gt; hierarchy,
 			JUnitTestTypeInventory inventory) {
-<span class="fc" id="L251">		Map&lt;String, String&gt; testOwners= new HashMap&lt;&gt;();</span>
-<span class="fc" id="L252">		Map&lt;String, Integer&gt; lifecycleDeclarations= new HashMap&lt;&gt;();</span>
-<span class="fc" id="L253">		List&lt;TypeMigration&gt; typeMigrations= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L254">		List&lt;String&gt; baselineHandles= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L255">		String rootKey= root.key();</span>
-<span class="fc" id="L256">		int maxDepth= hierarchy.stream().mapToInt(type -&gt; hierarchyDepth(type, rootKey)).max().orElse(0);</span>
-<span class="fc" id="L257">		int maxTestsPerType= hierarchy.stream()</span>
-<span class="fc" id="L258">				.mapToInt(type -&gt; (int) Arrays.stream(type.declaration().getMethods())</span>
-<span class="fc" id="L259">						.filter(JUnit3HierarchyPlanner::isTestPrefixed).count())</span>
-<span class="fc" id="L260">				.max().orElse(0);</span>
-<span class="fc" id="L261">		int orderStride= Math.max(1, maxTestsPerType + 1);</span>
+<span class="fc" id="L252">		Map&lt;String, String&gt; testOwners= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L253">		Map&lt;String, Integer&gt; lifecycleDeclarations= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L254">		List&lt;TypeMigration&gt; typeMigrations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L255">		List&lt;String&gt; baselineHandles= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L256">		String rootKey= root.key();</span>
+<span class="fc" id="L257">		int maxDepth= hierarchy.stream().mapToInt(type -&gt; hierarchyDepth(type, rootKey)).max().orElse(0);</span>
+<span class="fc" id="L258">		int maxTestsPerType= hierarchy.stream()</span>
+<span class="fc" id="L259">				.mapToInt(type -&gt; (int) Arrays.stream(type.declaration().getMethods())</span>
+<span class="fc" id="L260">						.filter(JUnit3HierarchyPlanner::isTestPrefixed).count())</span>
+<span class="fc" id="L261">				.max().orElse(0);</span>
+<span class="fc" id="L262">		int orderStride= Math.max(1, maxTestsPerType + 1);</span>
 
-<span class="fc bfc" id="L263" title="All 2 branches covered.">		for (SourceType type : hierarchy) {</span>
-<span class="pc bpc" id="L264" title="2 of 4 branches missed.">			if (!type.declaration().isPackageMemberTypeDeclaration() || !hasSingleTopLevelType(type)</span>
-<span class="pc bpc" id="L265" title="1 of 2 branches missed.">					|| hasJUnitAnnotation(type.declaration())) {</span>
-<span class="nc" id="L266">				return Classification.rejected(&quot;UNSUPPORTED_JUNIT3_TYPE_SHAPE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L267">						&quot;Each supported hierarchy type must be the only top-level type in its compilation unit and must not already use JUnit annotations.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (SourceType type : hierarchy) {</span>
+<span class="fc" id="L265">			String excludedSuperType= JUnit3MigrationExclusions.excludedSuperType(type.binding());</span>
+<span class="pc bpc" id="L266" title="1 of 2 branches missed.">			if (excludedSuperType != null) {</span>
+<span class="nc" id="L267">				return Classification.rejected(JUnit3MigrationExclusions.EXCLUDED_BASE_TYPE_REASON,</span>
+<span class="nc" id="L268">						&quot;The hierarchy type &quot; + type.name() + &quot; derives from &quot; + excludedSuperType //$NON-NLS-1$ //$NON-NLS-2$</span>
+								+ &quot;, whose JUnit 3 execution contract must not be migrated to Jupiter.&quot;); //$NON-NLS-1$
 			}
-<span class="pc bpc" id="L269" title="1 of 4 branches missed.">			if (!Modifier.isAbstract(type.binding().getModifiers()) &amp;&amp; inventory.contains(type.javaType())) {</span>
-<span class="fc" id="L270">				baselineHandles.add(type.javaType().getHandleIdentifier());</span>
+<span class="pc bpc" id="L271" title="2 of 4 branches missed.">			if (!type.declaration().isPackageMemberTypeDeclaration() || !hasSingleTopLevelType(type)</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">					|| hasJUnitAnnotation(type.declaration())) {</span>
+<span class="nc" id="L273">				return Classification.rejected(&quot;UNSUPPORTED_JUNIT3_TYPE_SHAPE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L274">						&quot;Each supported hierarchy type must be the only top-level type in its compilation unit and must not already use JUnit annotations.&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L272">			int depth= hierarchyDepth(type, rootKey);</span>
-<span class="pc bpc" id="L273" title="1 of 2 branches missed.">			if (depth &lt; 0) {</span>
-<span class="nc" id="L274">				return Classification.rejected(&quot;INCOMPLETE_JUNIT3_HIERARCHY&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L275">						&quot;A planned hierarchy type is no longer connected to its JUnit 3 root.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L276" title="1 of 4 branches missed.">			if (!Modifier.isAbstract(type.binding().getModifiers()) &amp;&amp; inventory.contains(type.javaType())) {</span>
+<span class="fc" id="L277">				baselineHandles.add(type.javaType().getHandleIdentifier());</span>
 			}
-<span class="fc" id="L277">			Map&lt;String, Integer&gt; executionOrders= plannedExecutionOrders(type, maxDepth, depth, orderStride);</span>
-<span class="fc" id="L278">			List&lt;MethodMigration&gt; methods= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L279" title="All 2 branches covered.">			for (MethodDeclaration method : type.declaration().getMethods()) {</span>
-<span class="fc" id="L280">				JUnit3HarnessSemantics.Rejection harnessRejection=</span>
-<span class="fc" id="L281">						JUnit3HarnessSemantics.rejection(method).orElse(null);</span>
-<span class="fc bfc" id="L282" title="All 2 branches covered.">				if (harnessRejection != null) {</span>
-<span class="fc" id="L283">					return Classification.rejected(harnessRejection.reasonCode(),</span>
-<span class="fc" id="L284">							harnessRejection.explanation());</span>
+<span class="fc" id="L279">			int depth= hierarchyDepth(type, rootKey);</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">			if (depth &lt; 0) {</span>
+<span class="nc" id="L281">				return Classification.rejected(&quot;INCOMPLETE_JUNIT3_HIERARCHY&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L282">						&quot;A planned hierarchy type is no longer connected to its JUnit 3 root.&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L284">			Map&lt;String, Integer&gt; executionOrders= plannedExecutionOrders(type, maxDepth, depth, orderStride);</span>
+<span class="fc" id="L285">			List&lt;MethodMigration&gt; methods= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">			for (MethodDeclaration method : type.declaration().getMethods()) {</span>
+<span class="fc" id="L287">				JUnit3HarnessSemantics.Rejection harnessRejection=</span>
+<span class="fc" id="L288">						JUnit3HarnessSemantics.rejection(method).orElse(null);</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">				if (harnessRejection != null) {</span>
+<span class="fc" id="L290">					return Classification.rejected(harnessRejection.reasonCode(),</span>
+<span class="fc" id="L291">							harnessRejection.explanation());</span>
 				}
-<span class="pc bpc" id="L286" title="1 of 2 branches missed.">				if (hasJUnitAnnotation(method)) {</span>
-<span class="nc" id="L287">					return Classification.rejected(&quot;MIXED_JUNIT_GENERATIONS&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L288">							&quot;The hierarchy already mixes annotation-driven and JUnit 3 execution semantics.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">				if (hasJUnitAnnotation(method)) {</span>
+<span class="nc" id="L294">					return Classification.rejected(&quot;MIXED_JUNIT_GENERATIONS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L295">							&quot;The hierarchy already mixes annotation-driven and JUnit 3 execution semantics.&quot;); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L290">				String name= method.getName().getIdentifier();</span>
-<span class="fc" id="L291">				String bindingKey= methodKey(method);</span>
-<span class="fc bfc" id="L292" title="All 2 branches covered.">				if (name.startsWith(&quot;test&quot;)) { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L293" title="2 of 4 branches missed.">					if (!JUnit3SemanticSupport.isExactTestMethod(method) || bindingKey == null) {</span>
-<span class="nc" id="L294">						return Classification.rejected(&quot;INVALID_JUNIT3_TEST_SIGNATURE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L295">								&quot;A test-prefixed method does not satisfy the exact public non-static void test*() contract.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L297">				String name= method.getName().getIdentifier();</span>
+<span class="fc" id="L298">				String bindingKey= methodKey(method);</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">				if (name.startsWith(&quot;test&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L300" title="2 of 4 branches missed.">					if (!JUnit3SemanticSupport.isExactTestMethod(method) || bindingKey == null) {</span>
+<span class="nc" id="L301">						return Classification.rejected(&quot;INVALID_JUNIT3_TEST_SIGNATURE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L302">								&quot;A test-prefixed method does not satisfy the exact public non-static void test*() contract.&quot;); //$NON-NLS-1$</span>
 					}
-<span class="fc" id="L297">					String previousOwner= testOwners.putIfAbsent(name, type.name());</span>
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">					if (previousOwner != null) {</span>
-<span class="nc" id="L299">						return Classification.rejected(&quot;OVERRIDDEN_JUNIT3_TEST&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L300">								&quot;The test method &quot; + name + &quot; is overridden across the hierarchy.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L304">					String previousOwner= testOwners.putIfAbsent(name, type.name());</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">					if (previousOwner != null) {</span>
+<span class="nc" id="L306">						return Classification.rejected(&quot;OVERRIDDEN_JUNIT3_TEST&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L307">								&quot;The test method &quot; + name + &quot; is overridden across the hierarchy.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 					}
-<span class="fc" id="L302">					Integer executionOrder= executionOrders.get(bindingKey);</span>
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">					if (executionOrder == null) {</span>
-<span class="nc" id="L304">						return Classification.rejected(&quot;UNRESOLVED_JUNIT3_TEST_ORDER&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L305">								&quot;The exact JUnit 3 discovery order could not be assigned to &quot; + name + &quot;().&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L309">					Integer executionOrder= executionOrders.get(bindingKey);</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">					if (executionOrder == null) {</span>
+<span class="nc" id="L311">						return Classification.rejected(&quot;UNRESOLVED_JUNIT3_TEST_ORDER&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L312">								&quot;The exact JUnit 3 discovery order could not be assigned to &quot; + name + &quot;().&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 					}
-<span class="fc" id="L307">					methods.add(new MethodMigration(bindingKey, MethodKind.TEST, executionOrder.intValue()));</span>
-<span class="pc bpc" id="L308" title="1 of 4 branches missed.">				} else if (&quot;setUp&quot;.equals(name) || &quot;tearDown&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L309" title="2 of 4 branches missed.">					if (!JUnit3SemanticSupport.isLifecycleMethod(method, name) || bindingKey == null) {</span>
-<span class="nc" id="L310">						return Classification.rejected(&quot;INVALID_JUNIT3_LIFECYCLE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L311">								&quot;A lifecycle method does not satisfy the supported non-static parameterless void contract.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L314">					methods.add(new MethodMigration(bindingKey, MethodKind.TEST, executionOrder.intValue()));</span>
+<span class="pc bpc" id="L315" title="1 of 4 branches missed.">				} else if (&quot;setUp&quot;.equals(name) || &quot;tearDown&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L316" title="2 of 4 branches missed.">					if (!JUnit3SemanticSupport.isLifecycleMethod(method, name) || bindingKey == null) {</span>
+<span class="nc" id="L317">						return Classification.rejected(&quot;INVALID_JUNIT3_LIFECYCLE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L318">								&quot;A lifecycle method does not satisfy the supported non-static parameterless void contract.&quot;); //$NON-NLS-1$</span>
 					}
-<span class="fc" id="L313">					int count= lifecycleDeclarations.merge(name, Integer.valueOf(1), Integer::sum).intValue();</span>
-<span class="fc bfc" id="L314" title="All 2 branches covered.">					if (count &gt; 1) {</span>
-<span class="fc" id="L315">						return Classification.rejected(&quot;JUNIT3_LIFECYCLE_OVERRIDE_CHAIN&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L316">								&quot;Lifecycle override chains require explicit semantic migration.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L320">					int count= lifecycleDeclarations.merge(name, Integer.valueOf(1), Integer::sum).intValue();</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">					if (count &gt; 1) {</span>
+<span class="fc" id="L322">						return Classification.rejected(&quot;JUNIT3_LIFECYCLE_OVERRIDE_CHAIN&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L323">								&quot;Lifecycle override chains require explicit semantic migration.&quot;); //$NON-NLS-1$</span>
 					}
-<span class="fc" id="L318">					OverrideRemoval overrideRemoval= plannedOverrideRemoval(method);</span>
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">					if (overrideRemoval == OverrideRemoval.UNRESOLVED) {</span>
-<span class="nc" id="L320">						return Classification.rejected(&quot;UNRESOLVED_JUNIT3_OVERRIDE_ANNOTATION&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L321">								&quot;The lifecycle method &quot; + name //$NON-NLS-1$</span>
+<span class="fc" id="L325">					OverrideRemoval overrideRemoval= plannedOverrideRemoval(method);</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">					if (overrideRemoval == OverrideRemoval.UNRESOLVED) {</span>
+<span class="nc" id="L327">						return Classification.rejected(&quot;UNRESOLVED_JUNIT3_OVERRIDE_ANNOTATION&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L328">								&quot;The lifecycle method &quot; + name //$NON-NLS-1$</span>
 										+ &quot; has an unresolved simple @Override annotation; exact annotation identity is required.&quot;); //$NON-NLS-1$
 					}
-<span class="fc" id="L324">					methods.add(new MethodMigration(bindingKey,</span>
-<span class="pc bpc" id="L325" title="1 of 2 branches missed.">							&quot;setUp&quot;.equals(name) ? MethodKind.BEFORE_EACH : MethodKind.AFTER_EACH, //$NON-NLS-1$</span>
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">							0, overrideRemoval == OverrideRemoval.REMOVE));</span>
+<span class="fc" id="L331">					methods.add(new MethodMigration(bindingKey,</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">							&quot;setUp&quot;.equals(name) ? MethodKind.BEFORE_EACH : MethodKind.AFTER_EACH, //$NON-NLS-1$</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">							0, overrideRemoval == OverrideRemoval.REMOVE));</span>
 				}
 			}
-<span class="fc" id="L329">			JUnit3AssertionInventory.Result assertions= JUnit3AssertionInventory.analyze(type.declaration());</span>
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">			if (!assertions.supported()) {</span>
-<span class="nc" id="L331">				return Classification.rejected(&quot;CUSTOM_JUNIT3_API_USAGE&quot;, assertions.rejectionReason()); //$NON-NLS-1$</span>
+<span class="fc" id="L336">			JUnit3AssertionInventory.Result assertions= JUnit3AssertionInventory.analyze(type.declaration());</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">			if (!assertions.supported()) {</span>
+<span class="nc" id="L338">				return Classification.rejected(&quot;CUSTOM_JUNIT3_API_USAGE&quot;, assertions.rejectionReason()); //$NON-NLS-1$</span>
 			}
-<span class="fc bfc" id="L333" title="All 2 branches covered.">			typeMigrations.add(new TypeMigration(type.unitHandle(), type.key(), type == root,</span>
-<span class="fc" id="L334">					methods, assertions.invocations()));</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">			typeMigrations.add(new TypeMigration(type.unitHandle(), type.key(), type == root,</span>
+<span class="fc" id="L341">					methods, assertions.invocations()));</span>
 		}
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">		if (baselineHandles.isEmpty()) {</span>
-<span class="nc" id="L337">			return Classification.rejected(&quot;JDT_JUNIT_FINDER_MISMATCH&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L338">					&quot;The configured JDT JUnit finder does not expose a concrete test type from the hierarchy.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">		if (baselineHandles.isEmpty()) {</span>
+<span class="nc" id="L344">			return Classification.rejected(&quot;JDT_JUNIT_FINDER_MISMATCH&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L345">					&quot;The configured JDT JUnit finder does not expose a concrete test type from the hierarchy.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L340">		baselineHandles.sort(String::compareTo);</span>
-<span class="fc" id="L341">		return Classification.supported(typeMigrations, baselineHandles);</span>
+<span class="fc" id="L347">		baselineHandles.sort(String::compareTo);</span>
+<span class="fc" id="L348">		return Classification.supported(typeMigrations, baselineHandles);</span>
 	}
 
 	private static Map&lt;String, Integer&gt; plannedExecutionOrders(SourceType type, int maxDepth, int depth,
 			int stride) {
-<span class="fc" id="L346">		Map&lt;String, Integer&gt; result= new HashMap&lt;&gt;();</span>
-<span class="fc" id="L347">		List&lt;MethodDeclaration&gt; orderedTests= Arrays.stream(type.declaration().getMethods())</span>
-<span class="fc" id="L348">				.filter(JUnit3HierarchyPlanner::isTestPrefixed)</span>
-<span class="fc" id="L349">				.sorted(JUNIT3_METHOD_ORDER)</span>
-<span class="fc" id="L350">				.toList();</span>
-<span class="fc bfc" id="L351" title="All 2 branches covered.">		for (int index= 0; index &lt; orderedTests.size(); index++) {</span>
-<span class="fc" id="L352">			String key= methodKey(orderedTests.get(index));</span>
-<span class="fc" id="L353">			long order= (long) (maxDepth - depth) * stride + index + 1L;</span>
-<span class="pc bpc" id="L354" title="2 of 4 branches missed.">			if (key != null &amp;&amp; order &lt;= Integer.MAX_VALUE) {</span>
-<span class="fc" id="L355">				result.put(key, Integer.valueOf((int) order));</span>
+<span class="fc" id="L353">		Map&lt;String, Integer&gt; result= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L354">		List&lt;MethodDeclaration&gt; orderedTests= Arrays.stream(type.declaration().getMethods())</span>
+<span class="fc" id="L355">				.filter(JUnit3HierarchyPlanner::isTestPrefixed)</span>
+<span class="fc" id="L356">				.sorted(JUNIT3_METHOD_ORDER)</span>
+<span class="fc" id="L357">				.toList();</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">		for (int index= 0; index &lt; orderedTests.size(); index++) {</span>
+<span class="fc" id="L359">			String key= methodKey(orderedTests.get(index));</span>
+<span class="fc" id="L360">			long order= (long) (maxDepth - depth) * stride + index + 1L;</span>
+<span class="pc bpc" id="L361" title="2 of 4 branches missed.">			if (key != null &amp;&amp; order &lt;= Integer.MAX_VALUE) {</span>
+<span class="fc" id="L362">				result.put(key, Integer.valueOf((int) order));</span>
 			}
 		}
-<span class="fc" id="L358">		return result;</span>
+<span class="fc" id="L365">		return result;</span>
 	}
 
 	private static boolean isTestPrefixed(MethodDeclaration method) {
-<span class="fc" id="L362">		return method.getName().getIdentifier().startsWith(&quot;test&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L369">		return method.getName().getIdentifier().startsWith(&quot;test&quot;); //$NON-NLS-1$</span>
 	}
 
 	private static boolean hasSingleTopLevelType(SourceType type) {
-<span class="pc bpc" id="L366" title="2 of 4 branches missed.">		return type.declaration().getRoot() instanceof CompilationUnit root &amp;&amp; root.types().size() == 1;</span>
+<span class="pc bpc" id="L373" title="2 of 4 branches missed.">		return type.declaration().getRoot() instanceof CompilationUnit root &amp;&amp; root.types().size() == 1;</span>
 	}
 
 	/**
@@ -372,45 +379,45 @@ final class JUnit3HierarchyPlanner {
 	 * with a user-defined annotation and therefore rejects the candidate.
 	 */
 	private static OverrideRemoval plannedOverrideRemoval(MethodDeclaration method) {
-<span class="pc bpc" id="L375" title="1 of 2 branches missed.">		for (Object modifier : method.modifiers()) {</span>
-<span class="pc bpc" id="L376" title="1 of 2 branches missed.">			if (!(modifier instanceof Annotation annotation)) {</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">		for (Object modifier : method.modifiers()) {</span>
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">			if (!(modifier instanceof Annotation annotation)) {</span>
 				continue;
 			}
-<span class="fc" id="L379">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="fc" id="L380">			String writtenName= annotation.getTypeName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L381" title="2 of 4 branches missed.">			if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
-<span class="pc bpc" id="L382" title="1 of 2 branches missed.">				if (&quot;java.lang.Override&quot;.equals(binding.getQualifiedName())) { //$NON-NLS-1$</span>
-<span class="fc" id="L383">					return OverrideRemoval.REMOVE;</span>
+<span class="fc" id="L386">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="fc" id="L387">			String writtenName= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L388" title="2 of 4 branches missed.">			if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
+<span class="pc bpc" id="L389" title="1 of 2 branches missed.">				if (&quot;java.lang.Override&quot;.equals(binding.getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L390">					return OverrideRemoval.REMOVE;</span>
 				}
 				continue;
 			}
-<span class="nc bnc" id="L387" title="All 2 branches missed.">			if (&quot;java.lang.Override&quot;.equals(writtenName)) { //$NON-NLS-1$</span>
-<span class="nc" id="L388">				return OverrideRemoval.REMOVE;</span>
+<span class="nc bnc" id="L394" title="All 2 branches missed.">			if (&quot;java.lang.Override&quot;.equals(writtenName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L395">				return OverrideRemoval.REMOVE;</span>
 			}
-<span class="nc bnc" id="L390" title="All 2 branches missed.">			if (&quot;Override&quot;.equals(writtenName)) { //$NON-NLS-1$</span>
-<span class="nc" id="L391">				return OverrideRemoval.UNRESOLVED;</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">			if (&quot;Override&quot;.equals(writtenName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L398">				return OverrideRemoval.UNRESOLVED;</span>
 			}
 		}
-<span class="nc" id="L394">		return OverrideRemoval.KEEP;</span>
+<span class="nc" id="L401">		return OverrideRemoval.KEEP;</span>
 	}
 
 	private static boolean hasJUnitAnnotation(BodyDeclaration declaration) {
-<span class="fc bfc" id="L398" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
-<span class="fc bfc" id="L399" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L400">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L401" title="1 of 2 branches missed.">				String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
-<span class="fc" id="L402">						: binding.getQualifiedName();</span>
-<span class="pc bpc" id="L403" title="2 of 4 branches missed.">				if (name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;junit.framework.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L404">					return true;</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L407">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">				String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
+<span class="fc" id="L409">						: binding.getQualifiedName();</span>
+<span class="pc bpc" id="L410" title="2 of 4 branches missed.">				if (name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;junit.framework.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L411">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L408">		return false;</span>
+<span class="fc" id="L415">		return false;</span>
 	}
 
 	private static String methodKey(MethodDeclaration method) {
-<span class="fc" id="L412">		IMethodBinding binding= method.resolveBinding();</span>
-<span class="pc bpc" id="L413" title="1 of 2 branches missed.">		return binding == null ? null : binding.getMethodDeclaration().getKey();</span>
+<span class="fc" id="L419">		IMethodBinding binding= method.resolveBinding();</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">		return binding == null ? null : binding.getMethodDeclaration().getKey();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

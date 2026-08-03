@@ -17,13 +17,21 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import java.util.Objects;
 
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MemberValuePair;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 
@@ -35,16 +43,18 @@ public final class ParameterizedMigrationEligibility {
 
 	private static final String PARAMETER_ANNOTATION=
 			&quot;org.junit.runners.Parameterized.Parameter&quot;; //$NON-NLS-1$
+	private static final String JAVA_LANG_OBJECT= &quot;java.lang.Object&quot;; //$NON-NLS-1$
+	private static final String JAVA_UTIL_ARRAYS= &quot;java.util.Arrays&quot;; //$NON-NLS-1$
 
 	/** Immutable eligibility decision with a stable diagnostic reason code. */
 	public record Assessment(boolean eligible, String reasonCode,
 			String explanation) {
 
 		/** Validate and normalize an assessment. */
-<span class="fc" id="L44">		public Assessment {</span>
-<span class="fc" id="L45">			reasonCode= Objects.requireNonNull(reasonCode);</span>
-<span class="fc" id="L46">			explanation= Objects.requireNonNull(explanation);</span>
-<span class="fc" id="L47">		}</span>
+<span class="fc" id="L54">		public Assessment {</span>
+<span class="fc" id="L55">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L56">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L57">		}</span>
 	}
 
 	private ParameterizedMigrationEligibility() {
@@ -59,25 +69,7 @@ public final class ParameterizedMigrationEligibility {
 	 *         {@code @RunWith(Parameterized.class)}
 	 */
 	public static boolean hasParameterizedRunner(TypeDeclaration type) {
-<span class="fc" id="L62">		Objects.requireNonNull(type);</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">			if (!(modifier instanceof Annotation annotation)) {</span>
-				continue;
-			}
-<span class="fc" id="L67">			ITypeBinding annotationBinding= annotation.resolveTypeBinding();</span>
-<span class="fc" id="L68">			Expression value= runnerValue(annotation);</span>
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (annotationBinding == null</span>
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">					|| !ORG_JUNIT_RUNWITH.equals(annotationBinding.getQualifiedName())</span>
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">					|| !(value instanceof TypeLiteral literal)) {</span>
-				continue;
-			}
-<span class="fc" id="L74">			ITypeBinding runnerBinding= literal.getType().resolveBinding();</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">			if (runnerBinding != null &amp;&amp; ORG_JUNIT_RUNNERS_PARAMETERIZED</span>
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">					.equals(runnerBinding.getErasure().getQualifiedName())) {</span>
-<span class="fc" id="L77">				return true;</span>
-			}
-		}
-<span class="nc" id="L80">		return false;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		return parameterizedRunnerAnnotation(type) != null;</span>
 	}
 
 	/**
@@ -88,97 +80,178 @@ public final class ParameterizedMigrationEligibility {
 	 * @return eligibility or one stable fail-closed reason
 	 */
 	public static Assessment assess(TypeDeclaration type) {
-<span class="fc" id="L91">		Objects.requireNonNull(type);</span>
-<span class="fc" id="L92">		int providers= 0;</span>
-<span class="fc" id="L93">		int constructors= 0;</span>
-<span class="fc" id="L94">		MethodDeclaration constructor= null;</span>
-<span class="fc bfc" id="L95" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
-<span class="fc" id="L97">				constructors++;</span>
-<span class="fc" id="L98">				constructor= method;</span>
-<span class="fc" id="L99">				continue;</span>
+<span class="fc" id="L83">		Objects.requireNonNull(type);</span>
+<span class="fc" id="L84">		int providers= 0;</span>
+<span class="fc" id="L85">		int constructors= 0;</span>
+<span class="fc" id="L86">		MethodDeclaration provider= null;</span>
+<span class="fc" id="L87">		MethodDeclaration constructor= null;</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">			if (method.isConstructor()) {</span>
+<span class="fc" id="L90">				constructors++;</span>
+<span class="fc" id="L91">				constructor= method;</span>
+<span class="fc" id="L92">				continue;</span>
 			}
-<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (hasParametersAnnotation(method)) {</span>
-<span class="fc" id="L102">				providers++;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			if (hasParametersAnnotation(method)) {</span>
+<span class="fc" id="L95">				providers++;</span>
+<span class="fc" id="L96">				provider= method;</span>
 			}
 		}
-<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (providers == 0) {</span>
-<span class="fc" id="L106">			return rejected(&quot;PARAMETERIZED_PROVIDER_NOT_LOCAL&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L107">					&quot;No local @Parameters provider is declared; inherited or external providers require a coordinated migration.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">		if (providers == 0) {</span>
+<span class="fc" id="L100">			return rejected(&quot;PARAMETERIZED_PROVIDER_NOT_LOCAL&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L101">					&quot;No local @Parameters provider is declared; inherited or external providers require a coordinated migration.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (providers &gt; 1) {</span>
-<span class="fc" id="L110">			return rejected(&quot;PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L111">					&quot;More than one local @Parameters provider is declared, so a unique MethodSource cannot be selected safely.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		if (providers &gt; 1) {</span>
+<span class="fc" id="L104">			return rejected(&quot;PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L105">					&quot;More than one local @Parameters provider is declared, so a unique MethodSource cannot be selected safely.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (usesFieldInjection(type)) {</span>
-<span class="fc" id="L114">			return rejected(&quot;PARAMETERIZED_FIELD_INJECTION&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L115">					&quot;@Parameterized.Parameter field injection is not represented by the constructor-based local rewrite.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (usesFieldInjection(type)) {</span>
+<span class="fc" id="L108">			return rejected(&quot;PARAMETERIZED_FIELD_INJECTION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L109">					&quot;@Parameterized.Parameter field injection is not represented by the constructor-based local rewrite.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L117" title="All 2 branches covered.">		if (constructors != 1) {</span>
-<span class="fc" id="L118">			return rejected(&quot;PARAMETERIZED_CONSTRUCTOR_NOT_UNIQUE&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L119">					&quot;Exactly one explicit constructor is required before constructor parameters can become test-method parameters.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (!(parameterizedRunnerAnnotation(type) instanceof SingleMemberAnnotation)) {</span>
+<span class="fc" id="L112">			return rejected(&quot;PARAMETERIZED_RUNNER_SYNTAX_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L113">					&quot;The local rewrite currently supports only @RunWith(Parameterized.class), not the explicit value = syntax.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L121" title="2 of 4 branches missed.">		if (constructor == null || constructor.parameters().isEmpty()) {</span>
-<span class="nc" id="L122">			return rejected(&quot;PARAMETERIZED_CONSTRUCTOR_HAS_NO_PARAMETERS&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L123">					&quot;The unique constructor has no parameters to propagate to ParameterizedTest methods.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		if (provider == null || !hasSupportedProviderShape(provider)) {</span>
+<span class="fc" id="L116">			return rejected(&quot;PARAMETERIZED_PROVIDER_BODY_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L117">					&quot;The local @Parameters provider is not the supported static Arrays.asList(new Object[][] { ... }) form and cannot be rewritten safely.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L125">		return new Assessment(true, &quot;PARAMETERIZED_LOCAL_CONTRACT&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L126">				&quot;One local provider and one parameterized constructor form the supported local rewrite contract.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">		if (constructors != 1) {</span>
+<span class="fc" id="L120">			return rejected(&quot;PARAMETERIZED_CONSTRUCTOR_NOT_UNIQUE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L121">					&quot;Exactly one explicit constructor is required before constructor parameters can become test-method parameters.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L123" title="2 of 4 branches missed.">		if (constructor == null || constructor.parameters().isEmpty()) {</span>
+<span class="nc" id="L124">			return rejected(&quot;PARAMETERIZED_CONSTRUCTOR_HAS_NO_PARAMETERS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L125">					&quot;The unique constructor has no parameters to propagate to ParameterizedTest methods.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L127">		return new Assessment(true, &quot;PARAMETERIZED_LOCAL_CONTRACT&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L128">				&quot;One local provider with a supported body and one parameterized constructor form the supported local rewrite contract.&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static Annotation parameterizedRunnerAnnotation(TypeDeclaration type) {
+<span class="fc" id="L132">		Objects.requireNonNull(type);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">			if (!(modifier instanceof Annotation annotation)) {</span>
+				continue;
+			}
+<span class="fc" id="L137">			ITypeBinding annotationBinding= annotation.resolveTypeBinding();</span>
+<span class="fc" id="L138">			Expression value= runnerValue(annotation);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">			if (annotationBinding == null</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">					|| !ORG_JUNIT_RUNWITH.equals(annotationBinding.getQualifiedName())</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">					|| !(value instanceof TypeLiteral literal)) {</span>
+				continue;
+			}
+<span class="fc" id="L144">			ITypeBinding runnerBinding= literal.getType().resolveBinding();</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">			if (runnerBinding != null &amp;&amp; ORG_JUNIT_RUNNERS_PARAMETERIZED</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">					.equals(runnerBinding.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L147">				return annotation;</span>
+			}
+		}
+<span class="nc" id="L150">		return null;</span>
+	}
+
+	private static boolean hasSupportedProviderShape(MethodDeclaration provider) {
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">		if (!Modifier.isStatic(provider.getModifiers())</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">				|| !provider.parameters().isEmpty()</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">				|| !provider.typeParameters().isEmpty()</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">				|| !provider.thrownExceptionTypes().isEmpty()</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">				|| provider.getBody() == null</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">				|| provider.getBody().statements().size() != 1) {</span>
+<span class="nc" id="L160">			return false;</span>
+		}
+<span class="fc" id="L162">		Statement statement= (Statement) provider.getBody().statements().get(0);</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		if (!(statement instanceof ReturnStatement returnStatement)</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				|| !(returnStatement.getExpression() instanceof MethodInvocation invocation)</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">				|| !&quot;asList&quot;.equals(invocation.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">				|| invocation.arguments().size() != 1) {</span>
+<span class="fc" id="L167">			return false;</span>
+		}
+<span class="fc" id="L169">		IMethodBinding methodBinding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		ITypeBinding declaringType= methodBinding == null</span>
+<span class="pc" id="L171">				? null : methodBinding.getDeclaringClass();</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (declaringType == null || !JAVA_UTIL_ARRAYS.equals(</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">				declaringType.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L174">			return false;</span>
+		}
+<span class="fc" id="L176">		Expression argument= (Expression) invocation.arguments().get(0);</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">		if (!(argument instanceof ArrayCreation arrayCreation)</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">				|| arrayCreation.getInitializer() == null</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">				|| arrayCreation.getInitializer().expressions().isEmpty()) {</span>
+<span class="nc" id="L180">			return false;</span>
+		}
+<span class="fc" id="L182">		ArrayType arrayType= arrayCreation.getType();</span>
+<span class="fc" id="L183">		ITypeBinding elementType= arrayType.getElementType().resolveBinding();</span>
+<span class="pc bpc" id="L184" title="2 of 4 branches missed.">		if (arrayType.getDimensions() != 2 || elementType == null</span>
+<span class="fc" id="L185">				|| !JAVA_LANG_OBJECT.equals(</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">						elementType.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L187">			return false;</span>
+		}
+<span class="fc bfc" id="L189" title="All 2 branches covered.">		for (Object row : arrayCreation.getInitializer().expressions()) {</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">			if (row instanceof ArrayInitializer) {</span>
+<span class="fc" id="L191">				continue;</span>
+			}
+<span class="nc bnc" id="L193" title="All 2 branches missed.">			if (row instanceof ArrayCreation nested</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">					&amp;&amp; nested.getInitializer() != null) {</span>
+<span class="nc" id="L195">				continue;</span>
+			}
+<span class="nc" id="L197">			return false;</span>
+		}
+<span class="fc" id="L199">		return true;</span>
 	}
 
 	private static Expression runnerValue(Annotation annotation) {
-<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (annotation instanceof SingleMemberAnnotation single) {</span>
-<span class="fc" id="L131">			return single.getValue();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		if (annotation instanceof SingleMemberAnnotation single) {</span>
+<span class="fc" id="L204">			return single.getValue();</span>
 		}
-<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">			for (Object value : normal.values()) {</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				if (value instanceof MemberValuePair pair</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">						&amp;&amp; &quot;value&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
-<span class="fc" id="L137">					return pair.getValue();</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">			for (Object value : normal.values()) {</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">				if (value instanceof MemberValuePair pair</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">						&amp;&amp; &quot;value&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L210">					return pair.getValue();</span>
 				}
 			}
 		}
-<span class="nc" id="L141">		return null;</span>
+<span class="nc" id="L214">		return null;</span>
 	}
 
 	private static boolean hasParametersAnnotation(MethodDeclaration method) {
-<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation</span>
-<span class="fc" id="L147">					&amp;&amp; isAnnotation(annotation,</span>
-<span class="fc" id="L148">							ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS,</span>
-<span class="fc bfc" id="L149" title="All 2 branches covered.">							&quot;Parameters&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L150">				return true;</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation</span>
+<span class="fc" id="L220">					&amp;&amp; isAnnotation(annotation,</span>
+<span class="fc" id="L221">							ORG_JUNIT_RUNNERS_PARAMETERIZED_PARAMETERS,</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">							&quot;Parameters&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L223">				return true;</span>
 			}
 		}
-<span class="fc" id="L153">		return false;</span>
+<span class="fc" id="L226">		return false;</span>
 	}
 
 	private static boolean usesFieldInjection(TypeDeclaration type) {
-<span class="fc bfc" id="L157" title="All 2 branches covered.">		for (FieldDeclaration field : type.getFields()) {</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (Object modifier : field.modifiers()) {</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation</span>
-<span class="fc" id="L160">						&amp;&amp; isAnnotation(annotation, PARAMETER_ANNOTATION,</span>
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">								&quot;Parameter&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L162">					return true;</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">		for (FieldDeclaration field : type.getFields()) {</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">			for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation</span>
+<span class="fc" id="L233">						&amp;&amp; isAnnotation(annotation, PARAMETER_ANNOTATION,</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">								&quot;Parameter&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L235">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L166">		return false;</span>
+<span class="fc" id="L239">		return false;</span>
 	}
 
 	private static boolean isAnnotation(Annotation annotation,
 			String qualifiedName, String simpleName) {
-<span class="fc" id="L171">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="fc" id="L173">			return qualifiedName.equals(binding.getQualifiedName());</span>
+<span class="fc" id="L244">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L246">			return qualifiedName.equals(binding.getQualifiedName());</span>
 		}
-<span class="nc" id="L175">		String sourceName= annotation.getTypeName().getFullyQualifiedName();</span>
-<span class="nc bnc" id="L176" title="All 4 branches missed.">		return simpleName.equals(sourceName) || qualifiedName.equals(sourceName);</span>
+<span class="nc" id="L248">		String sourceName= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">		return simpleName.equals(sourceName) || qualifiedName.equals(sourceName);</span>
 	}
 
 	private static Assessment rejected(String reasonCode,
 			String explanation) {
-<span class="fc" id="L181">		return new Assessment(false, reasonCode, explanation);</span>
+<span class="fc" id="L254">		return new Assessment(false, reasonCode, explanation);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

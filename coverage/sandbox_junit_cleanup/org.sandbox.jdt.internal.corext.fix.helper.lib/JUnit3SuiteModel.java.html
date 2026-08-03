@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3SuiteModel.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit3SuiteModel.java</span></div><h1>JUnit3SuiteModel.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+/**
+ * Fail-closed model of a JUnit 3 {@code public static Test suite()} or
+ * {@code public static TestSuite suite()} aggregator.
+ *
+ * &lt;p&gt;Only aggregators whose selected classes and their order are provable from
+ * the source are modelled. Everything else is reported as a precise rejection so
+ * that the migration can leave the aggregator untouched instead of guessing.
+ *
+ * &lt;p&gt;Supported shapes:
+ * &lt;pre&gt;
+ * public static Test suite() { return new TestSuite(A.class, B.class); }
+ *
+ * public static Test suite() {
+ *     TestSuite suite= new TestSuite(&quot;name&quot;);
+ *     suite.addTestSuite(A.class);
+ *     suite.addTest(new TestSuite(B.class));
+ *     suite.addTest(C.suite());
+ *     return suite;
+ * }
+ * &lt;/pre&gt;
+ */
+public final class JUnit3SuiteModel {
+
+	/** Fully qualified name of the JUnit 3 suite type. */
+	public static final String JUNIT3_TEST_SUITE= &quot;junit.framework.TestSuite&quot;; //$NON-NLS-1$
+
+	/** Fully qualified name of the JUnit 3 test interface. */
+	public static final String JUNIT3_TEST= &quot;junit.framework.Test&quot;; //$NON-NLS-1$
+
+	/** Precise, stable reason why an aggregator cannot be modelled. */
+	public record Rejection(String reasonCode, String explanation) {
+<span class="fc" id="L68">		public Rejection {</span>
+<span class="fc" id="L69">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L70">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L71">		}</span>
+	}
+
+	/**
+	 * Analysis outcome of one {@code suite()} declaration.
+	 *
+	 * @param selectedTypes source-visible names of the selected test classes, in declaration order
+	 * @param rejection the rejection when the aggregator is not modelled, otherwise {@code null}
+	 */
+	public record Result(List&lt;String&gt; selectedTypes, Rejection rejection) {
+<span class="fc" id="L81">		public Result {</span>
+<span class="fc" id="L82">			selectedTypes= List.copyOf(selectedTypes);</span>
+<span class="fc" id="L83">		}</span>
+
+		public boolean supported() {
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			return rejection == null;</span>
+		}
+
+		static Result rejected(String reasonCode, String explanation) {
+<span class="fc" id="L90">			return new Result(List.of(), new Rejection(reasonCode, explanation));</span>
+		}
+
+		static Result supported(List&lt;String&gt; selectedTypes) {
+<span class="fc" id="L94">			return new Result(selectedTypes, null);</span>
+		}
+	}
+
+	private JUnit3SuiteModel() {
+	}
+
+	/**
+	 * Returns whether the declaration has a supported JUnit 3 suite-builder signature.
+	 *
+	 * @param method method declaration to inspect
+	 * @return {@code true} for {@code public static Test suite()} or
+	 *         {@code public static TestSuite suite()}
+	 */
+	public static boolean isSuiteBuilder(MethodDeclaration method) {
+<span class="pc bpc" id="L109" title="2 of 6 branches missed.">		if (method == null || method.isConstructor() || !method.parameters().isEmpty()</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">				|| !Modifier.isPublic(method.getModifiers()) || !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				|| !&quot;suite&quot;.equals(method.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L112">			return false;</span>
+		}
+<span class="fc" id="L114">		Type returnType= method.getReturnType2();</span>
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		return returnType != null &amp;&amp; isJUnit3Type(returnType, JUNIT3_TEST, JUNIT3_TEST_SUITE);</span>
+	}
+
+	/**
+	 * Models the selected classes of a JUnit 3 suite aggregator.
+	 *
+	 * @param method a {@code public static Test suite()} or
+	 *            {@code public static TestSuite suite()} declaration
+	 * @return the ordered selected classes, or a precise rejection
+	 */
+	public static Result analyze(MethodDeclaration method) {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (!isSuiteBuilder(method)) {</span>
+<span class="fc" id="L127">			return Result.rejected(&quot;NOT_A_JUNIT3_SUITE_BUILDER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L128">					&quot;The method does not declare a public static Test or TestSuite suite() contract.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L130">		Block body= method.getBody();</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L132">			return Result.rejected(&quot;UNRESOLVED_JUNIT3_SUITE_BODY&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L133">					&quot;The suite() declaration has no source body to model.&quot;); //$NON-NLS-1$</span>
+		}
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L136">		List&lt;Statement&gt; statements= body.statements();</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">		if (statements.size() == 1 &amp;&amp; statements.get(0) instanceof ReturnStatement singleReturn) {</span>
+<span class="fc" id="L138">			return analyzeDirectReturn(singleReturn);</span>
+		}
+<span class="fc" id="L140">		return analyzeAccumulatingSuite(statements);</span>
+	}
+
+	private static Result analyzeDirectReturn(ReturnStatement statement) {
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		if (!(statement.getExpression() instanceof ClassInstanceCreation creation)</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">				|| !isTestSuiteCreation(creation)) {</span>
+<span class="fc" id="L146">			return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L147">					&quot;The suite() result is not a directly constructed junit.framework.TestSuite.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L149">		List&lt;String&gt; selected= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L150">		Result rejection= collectCreationArguments(creation, selected);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (rejection != null) {</span>
+<span class="nc" id="L152">			return rejection;</span>
+		}
+<span class="fc" id="L154">		return finish(selected);</span>
+	}
+
+	private static Result analyzeAccumulatingSuite(List&lt;Statement&gt; statements) {
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		if (statements.size() &lt; 2) {</span>
+<span class="nc" id="L159">			return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L160">					&quot;The suite() body does not declare and return one local junit.framework.TestSuite.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		if (!(statements.get(0) instanceof VariableDeclarationStatement declaration)</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				|| !isJUnit3Type(declaration.getType(), JUNIT3_TEST_SUITE)) {</span>
+<span class="nc" id="L165">			return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L166">					&quot;The suite() body does not start with a single local junit.framework.TestSuite declaration.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L168">		VariableDeclarationFragment fragment= (VariableDeclarationFragment) declaration.fragments().get(0);</span>
+<span class="fc" id="L169">		String suiteName= fragment.getName().getIdentifier();</span>
+<span class="fc" id="L170">		List&lt;String&gt; selected= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		if (fragment.getInitializer() instanceof ClassInstanceCreation creation</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">				&amp;&amp; isTestSuiteCreation(creation)) {</span>
+<span class="fc" id="L173">			Result rejection= collectCreationArguments(creation, selected);</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			if (rejection != null) {</span>
+<span class="nc" id="L175">				return rejection;</span>
+			}
+		} else {
+<span class="nc" id="L178">			return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L179">					&quot;The local suite variable is not initialized with a directly constructed TestSuite.&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		for (Statement statement : statements.subList(1, statements.size() - 1)) {</span>
+<span class="fc" id="L183">			Result rejection= collectAddition(statement, suiteName, selected);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">			if (rejection != null) {</span>
+<span class="fc" id="L185">				return rejection;</span>
+			}
+		}
+
+<span class="fc" id="L189">		Statement last= statements.get(statements.size() - 1);</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		if (!(last instanceof ReturnStatement returnStatement)</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">				|| !(returnStatement.getExpression() instanceof SimpleName returned)</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">				|| !suiteName.equals(returned.getIdentifier())) {</span>
+<span class="fc" id="L193">			return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L194">					&quot;The suite() body does not return the declared local suite variable.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L196">		return finish(selected);</span>
+	}
+
+	private static Result collectAddition(Statement statement, String suiteName, List&lt;String&gt; selected) {
+<span class="fc bfc" id="L200" title="All 2 branches covered.">		if (!(statement instanceof ExpressionStatement expressionStatement)</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				|| !(expressionStatement.getExpression() instanceof MethodInvocation invocation)) {</span>
+<span class="fc" id="L202">			return Result.rejected(&quot;ORDER_DEPENDENT_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L203">					&quot;The suite() body contains statements other than suite additions, so its composition is not provable.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (!(invocation.getExpression() instanceof SimpleName receiver)</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">				|| !suiteName.equals(receiver.getIdentifier())) {</span>
+<span class="nc" id="L207">			return Result.rejected(&quot;ORDER_DEPENDENT_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L208">					&quot;A suite() statement does not add to the declared local suite variable.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L210">		String invoked= invocation.getName().getIdentifier();</span>
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L212">		List&lt;Expression&gt; arguments= invocation.arguments();</span>
+<span class="pc bpc" id="L213" title="1 of 4 branches missed.">		if (&quot;addTestSuite&quot;.equals(invoked) &amp;&amp; arguments.size() == 1) { //$NON-NLS-1$</span>
+<span class="fc" id="L214">			return addTypeLiteral(arguments.get(0), selected);</span>
+		}
+<span class="pc bpc" id="L216" title="1 of 4 branches missed.">		if (&quot;addTest&quot;.equals(invoked) &amp;&amp; arguments.size() == 1) { //$NON-NLS-1$</span>
+<span class="fc" id="L217">			return addTestArgument(arguments.get(0), selected);</span>
+		}
+<span class="fc" id="L219">		return Result.rejected(&quot;CUSTOM_JUNIT3_SUITE_COMPOSITION&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L220">				&quot;The suite() body calls &quot; + invoked + &quot;(), which has no provable @SelectClasses equivalent.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static Result addTestArgument(Expression argument, List&lt;String&gt; selected) {
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		if (argument instanceof ClassInstanceCreation creation) {</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">			if (!isTestSuiteCreation(creation)) {</span>
+<span class="fc" id="L226">				return Result.rejected(&quot;CUSTOM_JUNIT3_SUITE_DECORATOR&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L227">						&quot;The suite() body wraps tests in a decorator, whose setup must be migrated to an explicit extension first.&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L229">			return collectCreationArguments(creation, selected);</span>
+		}
+<span class="pc bpc" id="L231" title="2 of 4 branches missed.">		if (argument instanceof MethodInvocation nested &amp;&amp; &quot;suite&quot;.equals(nested.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L232" title="2 of 4 branches missed.">				&amp;&amp; nested.arguments().isEmpty() &amp;&amp; nested.getExpression() instanceof Name qualifier) {</span>
+			// A nested aggregator stays selectable by class; the platform resolves it
+			// through its own @Suite or through the vintage engine.
+<span class="fc" id="L235">			selected.add(qualifier.getFullyQualifiedName());</span>
+<span class="fc" id="L236">			return null;</span>
+		}
+<span class="nc" id="L238">		return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L239">				&quot;The suite() body adds a test whose identity is not provable from the source.&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static Result collectCreationArguments(ClassInstanceCreation creation, List&lt;String&gt; selected) {
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L244">		List&lt;Expression&gt; arguments= creation.arguments();</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		if (creation.getAnonymousClassDeclaration() != null) {</span>
+<span class="nc" id="L246">			return Result.rejected(&quot;CUSTOM_JUNIT3_SUITE_DECORATOR&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L247">					&quot;The suite() body creates an anonymous TestSuite subclass with custom behavior.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L249" title="All 2 branches covered.">		for (Expression argument : arguments) {</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">			if (argument instanceof StringLiteral) {</span>
+				// The suite display name has no @SelectClasses equivalent and is dropped.
+<span class="fc" id="L252">				continue;</span>
+			}
+<span class="fc" id="L254">			Result rejection= addTypeLiteral(argument, selected);</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			if (rejection != null) {</span>
+<span class="nc" id="L256">				return rejection;</span>
+			}
+		}
+<span class="fc" id="L259">		return null;</span>
+	}
+
+	private static Result addTypeLiteral(Expression argument, List&lt;String&gt; selected) {
+<span class="fc bfc" id="L263" title="All 2 branches covered.">		if (!(argument instanceof TypeLiteral literal)) {</span>
+<span class="fc" id="L264">			return Result.rejected(&quot;DYNAMIC_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L265">					&quot;The suite() body selects tests through a value that is not a class literal.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L267">		selected.add(literal.getType().toString());</span>
+<span class="fc" id="L268">		return null;</span>
+	}
+
+	private static Result finish(List&lt;String&gt; selected) {
+<span class="fc bfc" id="L272" title="All 2 branches covered.">		if (selected.isEmpty()) {</span>
+<span class="fc" id="L273">			return Result.rejected(&quot;EMPTY_JUNIT3_SUITE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L274">					&quot;The suite() body does not select any test class.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L276">		Set&lt;String&gt; unique= new LinkedHashSet&lt;&gt;(selected);</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">		if (unique.size() != selected.size()) {</span>
+<span class="fc" id="L278">			return Result.rejected(&quot;DUPLICATED_JUNIT3_SUITE_ENTRY&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L279">					&quot;The suite() body selects the same test class more than once, which @SelectClasses cannot reproduce.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L281">		return Result.supported(selected);</span>
+	}
+
+	private static boolean isTestSuiteCreation(ClassInstanceCreation creation) {
+<span class="fc" id="L285">		return isJUnit3Type(creation.getType(), JUNIT3_TEST_SUITE);</span>
+	}
+
+	private static boolean isJUnit3Type(Type type, String... qualifiedNames) {
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L290">			return false;</span>
+		}
+<span class="fc" id="L292">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L293" title="1 of 4 branches missed.">		if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
+<span class="fc" id="L294">			String name= binding.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">			for (String candidate : qualifiedNames) {</span>
+<span class="pc bpc" id="L296" title="1 of 2 branches missed.">				if (candidate.equals(name)) {</span>
+<span class="fc" id="L297">					return true;</span>
+				}
+			}
+<span class="nc" id="L300">			return false;</span>
+		}
+<span class="fc" id="L302">		String written= type.toString();</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">		for (String candidate : qualifiedNames) {</span>
+<span class="fc bfc" id="L304" title="All 4 branches covered.">			if (candidate.equals(written) || simpleName(candidate).equals(written)) {</span>
+<span class="fc" id="L305">				return true;</span>
+			}
+		}
+<span class="fc" id="L308">		return false;</span>
+	}
+
+	private static String simpleName(String qualifiedName) {
+<span class="fc" id="L312">		int separator= qualifiedName.lastIndexOf('.');</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

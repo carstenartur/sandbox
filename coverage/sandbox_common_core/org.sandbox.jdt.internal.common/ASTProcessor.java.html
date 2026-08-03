@@ -2767,38 +2767,45 @@ public class ASTProcessor&lt;E extends HelperVisitorProvider&lt;V, T, E&gt;, V, 
 <span class="fc" id="L2767">		BiPredicate&lt;ASTNode, E&gt; biPredicate= nodeHolder.callee;</span>
 <span class="fc" id="L2768">		BiConsumer&lt;ASTNode, E&gt; bcConsumer= nodeHolder.callee_end;</span>
 <span class="fc" id="L2769">		HelperVisitor&lt;E, V, T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="pc bpc" id="L2770" title="1 of 2 branches missed.">		if(bcConsumer!=null) {</span>
-<span class="nc" id="L2771">			hv.addEnd(next, (node, holder) -&gt; {</span>
-<span class="nc" id="L2772">				bcConsumer.accept(node, holder);</span>
-<span class="nc bnc" id="L2773" title="All 2 branches missed.">				if (nodeHolder.navigate != null) {</span>
-<span class="nc" id="L2774">					process(nodeHolder.navigate.apply(node), i + 1);</span>
+<span class="fc" id="L2770">		boolean[] matched= { false };</span>
+<span class="pc bpc" id="L2771" title="1 of 2 branches missed.">		if(bcConsumer!=null) {</span>
+<span class="nc" id="L2772">			hv.addEnd(next, (node, holder) -&gt; {</span>
+<span class="nc" id="L2773">				matched[0]= true;</span>
+<span class="nc" id="L2774">				bcConsumer.accept(node, holder);</span>
+<span class="nc bnc" id="L2775" title="All 2 branches missed.">				if (nodeHolder.navigate != null) {</span>
+<span class="nc" id="L2776">					process(nodeHolder.navigate.apply(node), i + 1);</span>
 				} else {
-<span class="nc" id="L2776">					process(node, i + 1);</span>
+<span class="nc" id="L2778">					process(node, i + 1);</span>
 				}
-<span class="nc" id="L2778">			});</span>
-<span class="fc bfc" id="L2779" title="All 2 branches covered.">		} else if (nodeHolder.object != null) {</span>
-<span class="fc" id="L2780">			hv.add(nodeHolder.object, next, (node, holder) -&gt; {</span>
-<span class="fc" id="L2781">				boolean test= biPredicate.test(node, holder);</span>
-<span class="fc bfc" id="L2782" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
-<span class="fc" id="L2783">					process(nodeHolder.navigate.apply(node), i + 1);</span>
+<span class="nc" id="L2780">			});</span>
+<span class="fc bfc" id="L2781" title="All 2 branches covered.">		} else if (nodeHolder.object != null) {</span>
+<span class="fc" id="L2782">			hv.add(nodeHolder.object, next, (node, holder) -&gt; {</span>
+<span class="fc" id="L2783">				matched[0]= true;</span>
+<span class="fc" id="L2784">				boolean test= biPredicate.test(node, holder);</span>
+<span class="fc bfc" id="L2785" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
+<span class="fc" id="L2786">					process(nodeHolder.navigate.apply(node), i + 1);</span>
 				} else {
-<span class="fc" id="L2785">					process(node, i + 1);</span>
+<span class="fc" id="L2788">					process(node, i + 1);</span>
 				}
-<span class="fc" id="L2787">				return test;</span>
+<span class="fc" id="L2790">				return test;</span>
 			});
 		} else  {
-<span class="fc" id="L2790">			hv.add(next, (node, holder) -&gt; {</span>
-<span class="fc" id="L2791">				boolean test= biPredicate.test(node, holder);</span>
-<span class="fc bfc" id="L2792" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
-<span class="fc" id="L2793">					process(nodeHolder.navigate.apply(node), i + 1);</span>
+<span class="fc" id="L2793">			hv.add(next, (node, holder) -&gt; {</span>
+<span class="fc" id="L2794">				matched[0]= true;</span>
+<span class="fc" id="L2795">				boolean test= biPredicate.test(node, holder);</span>
+<span class="fc bfc" id="L2796" title="All 2 branches covered.">				if (nodeHolder.navigate != null) {</span>
+<span class="fc" id="L2797">					process(nodeHolder.navigate.apply(node), i + 1);</span>
 				} else {
-<span class="fc" id="L2795">					process(node, i + 1);</span>
+<span class="fc" id="L2799">					process(node, i + 1);</span>
 				}
-<span class="fc" id="L2797">				return test;</span>
+<span class="fc" id="L2801">				return test;</span>
 			});
 		}
-<span class="fc" id="L2800">		hv.build(localnode);</span>
-<span class="fc" id="L2801">	}</span>
+<span class="fc" id="L2804">		hv.build(localnode);</span>
+<span class="fc bfc" id="L2805" title="All 2 branches covered.">		if (!matched[0]) {</span>
+<span class="fc" id="L2806">			process(localnode, i + 1);</span>
+		}
+<span class="fc" id="L2808">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

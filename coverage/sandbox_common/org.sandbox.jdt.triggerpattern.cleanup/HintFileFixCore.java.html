@@ -976,7 +976,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
 					// Remove leading whitespace
 <span class="fc" id="L977">					stmtSource = Pattern.compile(&quot;^[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L978">					stmtSource = Pattern.compile(&quot;\n[ \\t]*&quot;).matcher(stmtSource).replaceAll(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L979" title="1 of 2 branches missed.">					if (stmt == st) {</span>
+<span class="fc bfc" id="L979" title="All 2 branches covered.">					if (stmt == st) {</span>
 						// Remove last NLS comment and apply the replacement
 <span class="fc" id="L981">						stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(&quot;&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L982">						stmtSource = stmtSource.replace(matchedSource, shortenedReplacement);</span>

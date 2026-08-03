@@ -45,33 +45,33 @@ public final class DocumentHelper {
 	 * @return the document associated with the compilation unit
 	 */
 	public static IDocument getDocumentForCompilationUnit(CompilationUnit compilationUnit) {
-<span class="pc bpc" id="L48" title="2 of 4 branches missed.">		if (compilationUnit == null || compilationUnit.getJavaElement() == null) {</span>
+<span class="nc bnc" id="L48" title="All 4 branches missed.">		if (compilationUnit == null || compilationUnit.getJavaElement() == null) {</span>
 <span class="nc" id="L49">			throw new IllegalArgumentException(&quot;Invalid CompilationUnit or missing JavaElement.&quot;);</span>
 		}
 
-<span class="fc" id="L52">		ICompilationUnit icu = (ICompilationUnit) compilationUnit.getJavaElement();</span>
-<span class="fc" id="L53">		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();</span>
+<span class="nc" id="L52">		ICompilationUnit icu = (ICompilationUnit) compilationUnit.getJavaElement();</span>
+<span class="nc" id="L53">		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();</span>
 
 		try {
 			// Connect to the file corresponding to the CompilationUnit
-<span class="fc" id="L57">			bufferManager.connect(icu.getPath(), LocationKind.IFILE, null);</span>
+<span class="nc" id="L57">			bufferManager.connect(icu.getPath(), LocationKind.IFILE, null);</span>
 
 			// Get the associated TextFileBuffer
-<span class="fc" id="L60">			ITextFileBuffer textFileBuffer = bufferManager.getTextFileBuffer(icu.getPath(), LocationKind.IFILE);</span>
+<span class="nc" id="L60">			ITextFileBuffer textFileBuffer = bufferManager.getTextFileBuffer(icu.getPath(), LocationKind.IFILE);</span>
 
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">			if (textFileBuffer == null) {</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			if (textFileBuffer == null) {</span>
 <span class="nc" id="L63">				throw new RuntimeException(&quot;No text file buffer found for the provided compilation unit.&quot;);</span>
 			}
 
 			// Return the document
-<span class="fc" id="L67">			return textFileBuffer.getDocument();</span>
+<span class="nc" id="L67">			return textFileBuffer.getDocument();</span>
 <span class="nc" id="L68">		} catch (CoreException e) {</span>
 <span class="nc" id="L69">			throw new RuntimeException(&quot;Failed to connect to text file buffer: &quot; + e.getMessage(), e);</span>
 		} finally {
 			try {
 				// Disconnect from the buffer
-<span class="fc" id="L73">				bufferManager.disconnect(icu.getPath(), LocationKind.IFILE, null);</span>
-<span class="pc" id="L74">			} catch (CoreException e) {</span>
+<span class="nc" id="L73">				bufferManager.disconnect(icu.getPath(), LocationKind.IFILE, null);</span>
+<span class="nc" id="L74">			} catch (CoreException e) {</span>
 				// Disconnection failed, wrap and re-throw
 <span class="nc" id="L76">				throw new RuntimeException(&quot;Failed to disconnect from text file buffer: &quot; + e.getMessage(), e);</span>
 			}
@@ -89,20 +89,20 @@ public final class DocumentHelper {
 	public static CompilationUnitChange createChangeForRewrite(CompilationUnit compilationUnit, ASTRewrite rewrite) {
 		try {
 			// Access the IDocument of the CompilationUnit
-<span class="fc" id="L92">			IDocument document = getDocumentForCompilationUnit(compilationUnit);</span>
+<span class="nc" id="L92">			IDocument document = getDocumentForCompilationUnit(compilationUnit);</span>
 
 			// Describe changes (but don't apply them)
-<span class="fc" id="L95">			TextEdit edits = rewrite.rewriteAST(document, null);</span>
+<span class="nc" id="L95">			TextEdit edits = rewrite.rewriteAST(document, null);</span>
 
 			// Create a TextChange object
-<span class="fc" id="L98">			CompilationUnitChange change = new CompilationUnitChange(&quot;JUnit Migration&quot;,</span>
-<span class="fc" id="L99">					(ICompilationUnit) compilationUnit.getJavaElement());</span>
-<span class="fc" id="L100">			change.setEdit(edits);</span>
+<span class="nc" id="L98">			CompilationUnitChange change = new CompilationUnitChange(&quot;JUnit Migration&quot;,</span>
+<span class="nc" id="L99">					(ICompilationUnit) compilationUnit.getJavaElement());</span>
+<span class="nc" id="L100">			change.setEdit(edits);</span>
 
 			// Optional: Add comments or markers
-<span class="fc" id="L103">			change.addTextEditGroup(new TextEditGroup(&quot;Migrate JUnit&quot;, edits));</span>
+<span class="nc" id="L103">			change.addTextEditGroup(new TextEditGroup(&quot;Migrate JUnit&quot;, edits));</span>
 
-<span class="fc" id="L105">			return change;</span>
+<span class="nc" id="L105">			return change;</span>
 
 <span class="nc" id="L107">		} catch (IllegalArgumentException e) {</span>
 <span class="nc" id="L108">			throw new RuntimeException(&quot;Invalid argument in change for rewrite: &quot; + e.getMessage(), e);</span>

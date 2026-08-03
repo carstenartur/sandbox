@@ -71,13 +71,45 @@ package org.sandbox.jdt.internal.ui.wizard;
 				;;
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
+	},
+
+<span class="nc" id="L76">	/** A typed AST action sequence for declaration-level changes. */</span>
+<span class="nc" id="L77">	STRUCTURED(&quot;Structured AST action rule&quot;) { //$NON-NLS-1$</span>
+		@Override
+		public String getRuleContent() {
+<span class="nc" id="L80">			return &quot;&quot;&quot;</span>
+
+				@id: add-jupiter-test
+				void $method($params$) :: isPublic($method)
+				=&gt;! removeModifier(target=$method, modifier=public);
+				    addAnnotation(target=$method,
+				        annotation=&quot;org.junit.jupiter.api.Test&quot;)
+				;;
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
+	},
+
+<span class="nc" id="L92">	/** A fail-closed rule that is inert without a matching semantic plan. */</span>
+<span class="nc" id="L93">	PLAN_AWARE(&quot;Plan-aware JUnit migration rule&quot;) { //$NON-NLS-1$</span>
+		@Override
+		public String getRuleContent() {
+<span class="nc" id="L96">			return &quot;&quot;&quot;</span>
+				&lt;!requires-plan: example-junit-migration&gt;
+
+				@id: planned-jupiter-test
+				void $method($params$) :: plannedRole($method, &quot;TEST_METHOD&quot;)
+				=&gt;! addAnnotation(target=$method,
+				        annotation=&quot;org.junit.jupiter.api.Test&quot;)
+				;;
+				&quot;&quot;&quot;; //$NON-NLS-1$
+		}
 	};
 
 	private final String label;
 
-<span class="nc" id="L78">	SandboxHintTemplates(String label) {</span>
-<span class="nc" id="L79">		this.label = label;</span>
-<span class="nc" id="L80">	}</span>
+<span class="nc" id="L110">	SandboxHintTemplates(String label) {</span>
+<span class="nc" id="L111">		this.label = label;</span>
+<span class="nc" id="L112">	}</span>
 
 	/**
 	 * Returns the human-readable label shown in the wizard radio group.
@@ -85,7 +117,7 @@ package org.sandbox.jdt.internal.ui.wizard;
 	 * @return the label
 	 */
 	public String getLabel() {
-<span class="nc" id="L88">		return label;</span>
+<span class="nc" id="L120">		return label;</span>
 	}
 
 	/**

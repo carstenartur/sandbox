@@ -53,6 +53,7 @@ import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 
@@ -61,259 +62,260 @@ import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
  * Jupiter. Hierarchy-driven or custom JUnit 3 execution models are deliberately
  * rejected until they can be migrated by a coordinated project-wide planner.
  */
-<span class="fc" id="L64">public class TestJUnit3Plugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
+<span class="fc" id="L65">public class TestJUnit3Plugin extends AbstractTool&lt;ReferenceHolder&lt;Integer, JunitHolder&gt;&gt; {</span>
 
 	private static final String JUNIT3_TEST_CASE= &quot;junit.framework.TestCase&quot;; //$NON-NLS-1$
 	private static final String JUNIT3_ASSERT= &quot;junit.framework.Assert&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L69">	private static final Set&lt;String&gt; KNOWN_JUNIT3_ASSERTION_METHODS= Set.of(</span>
-<span class="fc" id="L70">			&quot;assertEquals&quot;, &quot;assertArrayEquals&quot;, &quot;assertTrue&quot;, &quot;assertFalse&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="fc" id="L71">			&quot;assertNull&quot;, &quot;assertNotNull&quot;, &quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;fail&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+<span class="fc" id="L70">	private static final Set&lt;String&gt; KNOWN_JUNIT3_ASSERTION_METHODS= Set.of(</span>
+<span class="fc" id="L71">			&quot;assertEquals&quot;, &quot;assertArrayEquals&quot;, &quot;assertTrue&quot;, &quot;assertFalse&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L72">			&quot;assertNull&quot;, &quot;assertNotNull&quot;, &quot;assertSame&quot;, &quot;assertNotSame&quot;, &quot;fail&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
 
-<span class="fc" id="L73">	private static final Set&lt;String&gt; CUSTOM_EXECUTION_METHODS= Set.of(</span>
-<span class="fc" id="L74">			&quot;suite&quot;, &quot;runTest&quot;, &quot;runBare&quot;, &quot;createResult&quot;, &quot;countTestCases&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
-<span class="fc" id="L75">			&quot;getName&quot;, &quot;setName&quot;, &quot;run&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L74">	private static final Set&lt;String&gt; CUSTOM_EXECUTION_METHODS= Set.of(</span>
+<span class="fc" id="L75">			&quot;suite&quot;, &quot;runTest&quot;, &quot;runBare&quot;, &quot;createResult&quot;, &quot;countTestCases&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$</span>
+<span class="fc" id="L76">			&quot;getName&quot;, &quot;setName&quot;, &quot;run&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L80">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
-<span class="fc" id="L81">		HelperVisitorFactory.callTypeDeclarationVisitor(JUNIT3_TEST_CASE, compilationUnit, dataHolder, nodesprocessed,</span>
-<span class="fc" id="L82">				(visited, holder) -&gt; processFoundNode(fixcore, operations, visited, holder, nodesprocessed));</span>
-<span class="fc" id="L83">	}</span>
+<span class="fc" id="L81">		ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder= ReferenceHolder.createIndexed();</span>
+<span class="fc" id="L82">		HelperVisitorFactory.callTypeDeclarationVisitor(JUNIT3_TEST_CASE, compilationUnit, dataHolder, nodesprocessed,</span>
+<span class="fc" id="L83">				(visited, holder) -&gt; processFoundNode(fixcore, operations, visited, holder, nodesprocessed));</span>
+<span class="fc" id="L84">	}</span>
 
 	private boolean processFoundNode(JUnitCleanUpFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, TypeDeclaration node,
 			ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc bfc" id="L88" title="All 4 branches covered.">		if (nodesprocessed.contains(node) || !isSafeStandaloneCandidate(node)) {</span>
-<span class="fc" id="L89">			return false;</span>
+<span class="fc bfc" id="L89" title="All 4 branches covered.">		if (nodesprocessed.contains(node) || !isSafeStandaloneCandidate(node)) {</span>
+<span class="fc" id="L90">			return false;</span>
 		}
-<span class="fc" id="L91">		nodesprocessed.add(node);</span>
-<span class="fc" id="L92">		JunitHolder holder= new JunitHolder();</span>
-<span class="fc" id="L93">		holder.setMinv(node);</span>
-<span class="fc" id="L94">		dataHolder.put(dataHolder.size(), holder);</span>
-<span class="fc" id="L95">		operations.add(fixcore.rewrite(dataHolder));</span>
-<span class="fc" id="L96">		return false;</span>
+<span class="fc" id="L92">		nodesprocessed.add(node);</span>
+<span class="fc" id="L93">		JunitHolder holder= new JunitHolder();</span>
+<span class="fc" id="L94">		holder.setMinv(node);</span>
+<span class="fc" id="L95">		dataHolder.put(dataHolder.size(), holder);</span>
+<span class="fc" id="L96">		operations.add(fixcore.rewrite(dataHolder));</span>
+<span class="fc" id="L97">		return false;</span>
 	}
 
 	private boolean isSafeStandaloneCandidate(TypeDeclaration node) {
-<span class="fc" id="L100">		ITypeBinding binding= node.resolveBinding();</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
-<span class="pc bpc" id="L102" title="3 of 6 branches missed.">		if (binding == null || superclass == null || !node.isPackageMemberTypeDeclaration()</span>
-<span class="pc bpc" id="L103" title="1 of 4 branches missed.">				|| !Modifier.isPublic(node.getModifiers()) || Modifier.isAbstract(node.getModifiers())</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">				|| !JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName())</span>
-<span class="pc bpc" id="L105" title="2 of 4 branches missed.">				|| hasJUnitAnnotation(node) || !(binding.getJavaElement() instanceof IType type)) {</span>
-<span class="fc" id="L106">			return false;</span>
+<span class="fc" id="L101">		ITypeBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
+<span class="pc bpc" id="L103" title="3 of 6 branches missed.">		if (binding == null || superclass == null || !node.isPackageMemberTypeDeclaration()</span>
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">				|| !Modifier.isPublic(node.getModifiers()) || Modifier.isAbstract(node.getModifiers())</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">				|| !JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L106" title="2 of 4 branches missed.">				|| hasJUnitAnnotation(node) || !(binding.getJavaElement() instanceof IType type)) {</span>
+<span class="fc" id="L107">			return false;</span>
 		}
-<span class="pc bpc" id="L108" title="2 of 6 branches missed.">		if (hasKnownSubtypes(type) || hasAnyReferences(type) || hasUnsupportedTestCaseUsage(node)) {</span>
-<span class="fc" id="L109">			return false;</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (JUnit3MigrationExclusions.isExcluded(binding)</span>
+<span class="pc bpc" id="L110" title="2 of 6 branches missed.">				|| hasKnownSubtypes(type) || hasAnyReferences(type) || hasUnsupportedTestCaseUsage(node)) {</span>
+<span class="fc" id="L111">			return false;</span>
 		}
 
-<span class="fc" id="L112">		boolean testFound= false;</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
-<span class="pc bpc" id="L114" title="2 of 4 branches missed.">			if (method.isConstructor() || hasJUnitAnnotation(method)) {</span>
-<span class="nc" id="L115">				return false;</span>
+<span class="fc" id="L114">		boolean testFound= false;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">			if (method.isConstructor() || hasJUnitAnnotation(method)) {</span>
+<span class="nc" id="L117">				return false;</span>
 			}
-<span class="fc" id="L117">			String name= method.getName().getIdentifier();</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">			if (CUSTOM_EXECUTION_METHODS.contains(name)) {</span>
-<span class="fc" id="L119">				return false;</span>
+<span class="fc" id="L119">			String name= method.getName().getIdentifier();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">			if (CUSTOM_EXECUTION_METHODS.contains(name)) {</span>
+<span class="fc" id="L121">				return false;</span>
 			}
-<span class="fc bfc" id="L121" title="All 2 branches covered.">			if (name.startsWith(&quot;test&quot;)) { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">				if (!isTestMethod(method)) {</span>
-<span class="nc" id="L123">					return false;</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (name.startsWith(&quot;test&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				if (!isTestMethod(method)) {</span>
+<span class="nc" id="L125">					return false;</span>
 				}
-<span class="fc" id="L125">				testFound= true;</span>
-<span class="fc bfc" id="L126" title="All 4 branches covered.">			} else if ((&quot;setUp&quot;.equals(name) || &quot;tearDown&quot;.equals(name)) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">					&amp;&amp; !isLifecycleMethod(method, name)) {</span>
-<span class="nc" id="L128">				return false;</span>
+<span class="fc" id="L127">				testFound= true;</span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">			} else if ((&quot;setUp&quot;.equals(name) || &quot;tearDown&quot;.equals(name)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">					&amp;&amp; !isLifecycleMethod(method, name)) {</span>
+<span class="nc" id="L130">				return false;</span>
 			}
 		}
-<span class="fc" id="L131">		return testFound;</span>
+<span class="fc" id="L133">		return testFound;</span>
 	}
 
 	private boolean hasKnownSubtypes(IType type) {
 		try {
-<span class="fc" id="L136">			ITypeHierarchy hierarchy= type.newTypeHierarchy(null);</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">			return hierarchy.getAllSubtypes(type).length != 0;</span>
-<span class="nc" id="L138">		} catch (JavaModelException e) {</span>
-<span class="nc" id="L139">			return true;</span>
+<span class="fc" id="L138">			ITypeHierarchy hierarchy= type.newTypeHierarchy(null);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">			return hierarchy.getAllSubtypes(type).length != 0;</span>
+<span class="nc" id="L140">		} catch (JavaModelException e) {</span>
+<span class="nc" id="L141">			return true;</span>
 		}
 	}
 
 	private boolean hasAnyReferences(IType type) {
-<span class="fc" id="L144">		SearchPattern pattern= SearchPattern.createPattern(type, IJavaSearchConstants.REFERENCES);</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		if (pattern == null) {</span>
-<span class="nc" id="L146">			return true;</span>
+<span class="fc" id="L146">		SearchPattern pattern= SearchPattern.createPattern(type, IJavaSearchConstants.REFERENCES);</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (pattern == null) {</span>
+<span class="nc" id="L148">			return true;</span>
 		}
-<span class="fc" id="L148">		boolean[] referenced= { false };</span>
+<span class="fc" id="L150">		boolean[] referenced= { false };</span>
 		try {
-<span class="fc" id="L150">			new SearchEngine().search(pattern,</span>
-<span class="fc" id="L151">					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
-<span class="fc" id="L152">					SearchEngine.createWorkspaceScope(), new SearchRequestor() {</span>
+<span class="fc" id="L152">			new SearchEngine().search(pattern,</span>
+<span class="fc" id="L153">					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
+<span class="fc" id="L154">					SearchEngine.createWorkspaceScope(), new SearchRequestor() {</span>
 						@Override
 						public void acceptSearchMatch(SearchMatch match) {
-<span class="nc" id="L155">							referenced[0]= true;</span>
-<span class="nc" id="L156">						}</span>
-<span class="fc" id="L157">					}, null);</span>
-<span class="pc" id="L158">		} catch (CoreException e) {</span>
-<span class="nc" id="L159">			return true;</span>
+<span class="nc" id="L157">							referenced[0]= true;</span>
+<span class="nc" id="L158">						}</span>
+<span class="fc" id="L159">					}, null);</span>
+<span class="pc" id="L160">		} catch (CoreException e) {</span>
+<span class="nc" id="L161">			return true;</span>
 		}
-<span class="fc" id="L161">		return referenced[0];</span>
+<span class="fc" id="L163">		return referenced[0];</span>
 	}
 
 	private boolean hasUnsupportedTestCaseUsage(TypeDeclaration node) {
-<span class="fc" id="L165">		boolean[] unsupported= { false };</span>
-<span class="fc" id="L166">		node.accept(new ASTVisitor() {</span>
+<span class="fc" id="L167">		boolean[] unsupported= { false };</span>
+<span class="fc" id="L168">		node.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SuperMethodInvocation invocation) {
-<span class="nc" id="L169">				unsupported[0]= true;</span>
-<span class="nc" id="L170">				return false;</span>
+<span class="nc" id="L171">				unsupported[0]= true;</span>
+<span class="nc" id="L172">				return false;</span>
 			}
 
 			@Override
 			public boolean visit(MethodInvocation invocation) {
-<span class="fc" id="L175">				String name= invocation.getName().getIdentifier();</span>
-<span class="fc" id="L176">				IMethodBinding methodBinding= invocation.resolveMethodBinding();</span>
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">				if (methodBinding == null) {</span>
-<span class="nc" id="L178">					unsupported[0]|= CUSTOM_EXECUTION_METHODS.contains(name);</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">					return !unsupported[0];</span>
+<span class="fc" id="L177">				String name= invocation.getName().getIdentifier();</span>
+<span class="fc" id="L178">				IMethodBinding methodBinding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">				if (methodBinding == null) {</span>
+<span class="nc" id="L180">					unsupported[0]|= CUSTOM_EXECUTION_METHODS.contains(name);</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">					return !unsupported[0];</span>
 				}
-<span class="fc" id="L181">				ITypeBinding declaringClass= methodBinding.getDeclaringClass();</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				String declaringName= declaringClass == null ? &quot;&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L183">						: declaringClass.getErasure().getQualifiedName();</span>
-<span class="pc bpc" id="L184" title="3 of 4 branches missed.">				if ((JUNIT3_TEST_CASE.equals(declaringName) || JUNIT3_ASSERT.equals(declaringName))</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">						&amp;&amp; !KNOWN_JUNIT3_ASSERTION_METHODS.contains(name)) {</span>
-<span class="nc" id="L186">					unsupported[0]= true;</span>
+<span class="fc" id="L183">				ITypeBinding declaringClass= methodBinding.getDeclaringClass();</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">				String declaringName= declaringClass == null ? &quot;&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L185">						: declaringClass.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L186" title="3 of 4 branches missed.">				if ((JUNIT3_TEST_CASE.equals(declaringName) || JUNIT3_ASSERT.equals(declaringName))</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">						&amp;&amp; !KNOWN_JUNIT3_ASSERTION_METHODS.contains(name)) {</span>
+<span class="nc" id="L188">					unsupported[0]= true;</span>
 				}
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">				return !unsupported[0];</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">				return !unsupported[0];</span>
 			}
 		});
-<span class="fc" id="L191">		return unsupported[0];</span>
+<span class="fc" id="L193">		return unsupported[0];</span>
 	}
 
 	private boolean hasJUnitAnnotation(BodyDeclaration declaration) {
-<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
-<span class="fc bfc" id="L196" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L197">				ITypeBinding annotationBinding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">				String name= annotationBinding == null</span>
-<span class="nc" id="L199">						? annotation.getTypeName().getFullyQualifiedName()</span>
-<span class="fc" id="L200">						: annotationBinding.getQualifiedName();</span>
-<span class="pc bpc" id="L201" title="2 of 4 branches missed.">				if (name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;junit.framework.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L202">					return true;</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L199">				ITypeBinding annotationBinding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				String name= annotationBinding == null</span>
+<span class="nc" id="L201">						? annotation.getTypeName().getFullyQualifiedName()</span>
+<span class="fc" id="L202">						: annotationBinding.getQualifiedName();</span>
+<span class="pc bpc" id="L203" title="2 of 4 branches missed.">				if (name.startsWith(&quot;org.junit.&quot;) || name.startsWith(&quot;junit.framework.&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L204">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L206">		return false;</span>
+<span class="fc" id="L208">		return false;</span>
 	}
 
 	private boolean isTestMethod(MethodDeclaration method) {
-<span class="pc bpc" id="L210" title="1 of 4 branches missed.">		return !method.isConstructor() &amp;&amp; method.getName().getIdentifier().startsWith(&quot;test&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L211" title="2 of 4 branches missed.">				&amp;&amp; Modifier.isPublic(method.getModifiers()) &amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
-<span class="pc bpc" id="L212" title="2 of 4 branches missed.">				&amp;&amp; method.parameters().isEmpty() &amp;&amp; isVoidReturnType(method);</span>
+<span class="pc bpc" id="L212" title="1 of 4 branches missed.">		return !method.isConstructor() &amp;&amp; method.getName().getIdentifier().startsWith(&quot;test&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L213" title="2 of 4 branches missed.">				&amp;&amp; Modifier.isPublic(method.getModifiers()) &amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L214" title="2 of 4 branches missed.">				&amp;&amp; method.parameters().isEmpty() &amp;&amp; isVoidReturnType(method);</span>
 	}
 
 	private boolean isLifecycleMethod(MethodDeclaration method, String expectedName) {
-<span class="fc bfc" id="L216" title="All 2 branches covered.">		return expectedName.equals(method.getName().getIdentifier())</span>
-<span class="pc bpc" id="L217" title="2 of 4 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers()) &amp;&amp; !Modifier.isPrivate(method.getModifiers())</span>
-<span class="pc bpc" id="L218" title="2 of 4 branches missed.">				&amp;&amp; method.parameters().isEmpty() &amp;&amp; isVoidReturnType(method);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">		return expectedName.equals(method.getName().getIdentifier())</span>
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">				&amp;&amp; !Modifier.isStatic(method.getModifiers()) &amp;&amp; !Modifier.isPrivate(method.getModifiers())</span>
+<span class="pc bpc" id="L220" title="2 of 4 branches missed.">				&amp;&amp; method.parameters().isEmpty() &amp;&amp; isVoidReturnType(method);</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L224">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
-<span class="fc" id="L225">		Type superclass= node.getSuperclassType();</span>
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		if (superclass != null) {</span>
-<span class="fc" id="L227">			rewriter.remove(superclass, group);</span>
-<span class="fc" id="L228">			importRewriter.removeImport(JUNIT3_TEST_CASE);</span>
+<span class="fc" id="L226">		TypeDeclaration node= junitHolder.getTypeDeclaration();</span>
+<span class="fc" id="L227">		Type superclass= node.getSuperclassType();</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (superclass != null) {</span>
+<span class="fc" id="L229">			rewriter.remove(superclass, group);</span>
+<span class="fc" id="L230">			importRewriter.removeImport(JUNIT3_TEST_CASE);</span>
 		}
 
-<span class="fc bfc" id="L231" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
-<span class="fc bfc" id="L232" title="All 2 branches covered.">			if (isLifecycleMethod(method, &quot;setUp&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L233">				convertToAnnotation(method, &quot;BeforeEach&quot;, importRewriter, rewriter, ast, group); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L234" title="All 2 branches covered.">			} else if (isLifecycleMethod(method, &quot;tearDown&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L235">				convertToAnnotation(method, &quot;AfterEach&quot;, importRewriter, rewriter, ast, group); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L236" title="All 2 branches covered.">			} else if (isTestMethod(method)) {</span>
-<span class="fc" id="L237">				addAnnotationToMethod(method, &quot;Test&quot;, importRewriter, rewriter, ast, group); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">			if (isLifecycleMethod(method, &quot;setUp&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L235">				convertToAnnotation(method, &quot;BeforeEach&quot;, importRewriter, rewriter, ast, group); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">			} else if (isLifecycleMethod(method, &quot;tearDown&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L237">				convertToAnnotation(method, &quot;AfterEach&quot;, importRewriter, rewriter, ast, group); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">			} else if (isTestMethod(method)) {</span>
+<span class="fc" id="L239">				addAnnotationToMethod(method, &quot;Test&quot;, importRewriter, rewriter, ast, group); //$NON-NLS-1$</span>
 			}
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">			if (method.getBody() != null) {</span>
-<span class="fc" id="L240">				rewriteAssertions(method, rewriter, ast, group, importRewriter);</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">			if (method.getBody() != null) {</span>
+<span class="fc" id="L242">				rewriteAssertions(method, rewriter, ast, group, importRewriter);</span>
 			}
 		}
-<span class="fc" id="L243">	}</span>
+<span class="fc" id="L245">	}</span>
 
 	private void rewriteAssertions(MethodDeclaration method, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter) {
-<span class="fc" id="L247">		ReferenceHolder&lt;String, Object&gt; holder= ReferenceHolder.create();</span>
-<span class="fc" id="L248">		AstProcessorBuilder.with(holder)</span>
-<span class="fc" id="L249">				.onMethodInvocation((node, ignored) -&gt; {</span>
-<span class="fc" id="L250">					boolean junitAssertion= false;</span>
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">					if (node.resolveMethodBinding() != null) {</span>
-<span class="fc" id="L252">						String owner= node.resolveMethodBinding().getDeclaringClass().getQualifiedName();</span>
-<span class="pc bpc" id="L253" title="2 of 4 branches missed.">						junitAssertion= JUNIT3_ASSERT.equals(owner) || JUNIT3_TEST_CASE.equals(owner);</span>
-<span class="pc bnc" id="L254" title="All 2 branches missed.">					} else if (node.getExpression() == null) {</span>
-<span class="nc" id="L255">						junitAssertion= KNOWN_JUNIT3_ASSERTION_METHODS.contains(node.getName().getIdentifier());</span>
+<span class="fc" id="L249">		ReferenceHolder&lt;String, Object&gt; holder= ReferenceHolder.create();</span>
+<span class="fc" id="L250">		AstProcessorBuilder.with(holder)</span>
+<span class="fc" id="L251">				.onMethodInvocation((node, ignored) -&gt; {</span>
+<span class="fc" id="L252">					boolean junitAssertion= false;</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">					if (node.resolveMethodBinding() != null) {</span>
+<span class="fc" id="L254">						String owner= node.resolveMethodBinding().getDeclaringClass().getQualifiedName();</span>
+<span class="pc bpc" id="L255" title="2 of 4 branches missed.">						junitAssertion= JUNIT3_ASSERT.equals(owner) || JUNIT3_TEST_CASE.equals(owner);</span>
+<span class="pc bnc" id="L256" title="All 2 branches missed.">					} else if (node.getExpression() == null) {</span>
+<span class="nc" id="L257">						junitAssertion= KNOWN_JUNIT3_ASSERTION_METHODS.contains(node.getName().getIdentifier());</span>
 					}
-<span class="pc bpc" id="L257" title="1 of 2 branches missed.">					if (junitAssertion) {</span>
-<span class="fc" id="L258">						reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
-<span class="pc bpc" id="L259" title="1 of 2 branches missed.">						if (node.getExpression() != null) {</span>
-<span class="nc" id="L260">							rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, &quot;Assertions&quot;, group); //$NON-NLS-1$</span>
-<span class="nc" id="L261">						} else {</span>
-<span class="fc" id="L262">							rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY,</span>
-<span class="fc" id="L263">									ast.newSimpleName(&quot;Assertions&quot;), group); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">					if (junitAssertion) {</span>
+<span class="fc" id="L260">						reorderParameters(node, rewriter, group, ONEPARAM_ASSERTIONS, TWOPARAM_ASSERTIONS);</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">						if (node.getExpression() != null) {</span>
+<span class="nc" id="L262">							rewriter.set(node.getExpression(), SimpleName.IDENTIFIER_PROPERTY, &quot;Assertions&quot;, group); //$NON-NLS-1$</span>
+<span class="nc" id="L263">						} else {</span>
+<span class="fc" id="L264">							rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY,</span>
+<span class="fc" id="L265">									ast.newSimpleName(&quot;Assertions&quot;), group); //$NON-NLS-1$</span>
 						}
-<span class="fc" id="L265">						addImportForAssertion(node.getName().getIdentifier(), importRewriter);</span>
+<span class="fc" id="L267">						addImportForAssertion(node.getName().getIdentifier(), importRewriter);</span>
 					}
-<span class="fc" id="L267">					return true;</span>
+<span class="fc" id="L269">					return true;</span>
 				})
-<span class="fc" id="L269">				.build(method);</span>
-<span class="fc" id="L270">	}</span>
+<span class="fc" id="L271">				.build(method);</span>
+<span class="fc" id="L272">	}</span>
 
 	private void addImportForAssertion(String assertionMethod, ImportRewrite importRewriter) {
-<span class="pc bpc" id="L273" title="1 of 2 branches missed.">		if (KNOWN_JUNIT3_ASSERTION_METHODS.contains(assertionMethod)) {</span>
-<span class="fc" id="L274">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (KNOWN_JUNIT3_ASSERTION_METHODS.contains(assertionMethod)) {</span>
+<span class="fc" id="L276">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSERTIONS);</span>
 		}
-<span class="fc" id="L276">	}</span>
+<span class="fc" id="L278">	}</span>
 
 	private boolean isVoidReturnType(MethodDeclaration method) {
-<span class="fc" id="L279">		Type returnType= method.getReturnType2();</span>
-<span class="pc bpc" id="L280" title="2 of 4 branches missed.">		return returnType != null &amp;&amp; returnType.isPrimitiveType()</span>
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">				&amp;&amp; PrimitiveType.VOID.equals(((org.eclipse.jdt.core.dom.PrimitiveType) returnType).getPrimitiveTypeCode());</span>
+<span class="fc" id="L281">		Type returnType= method.getReturnType2();</span>
+<span class="pc bpc" id="L282" title="2 of 4 branches missed.">		return returnType != null &amp;&amp; returnType.isPrimitiveType()</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">				&amp;&amp; PrimitiveType.VOID.equals(((org.eclipse.jdt.core.dom.PrimitiveType) returnType).getPrimitiveTypeCode());</span>
 	}
 
 	private void convertToAnnotation(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
-<span class="fc" id="L286">		removeOverrideAnnotation(method, rewrite, group);</span>
-<span class="fc" id="L287">		addAnnotationToMethod(method, annotation, importRewrite, rewrite, ast, group);</span>
-<span class="fc" id="L288">	}</span>
+<span class="fc" id="L288">		removeOverrideAnnotation(method, rewrite, group);</span>
+<span class="fc" id="L289">		addAnnotationToMethod(method, annotation, importRewrite, rewrite, ast, group);</span>
+<span class="fc" id="L290">	}</span>
 
 	private void removeOverrideAnnotation(MethodDeclaration method, ASTRewrite rewrite, TextEditGroup group) {
-<span class="fc bfc" id="L291" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
-<span class="fc bfc" id="L292" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation</span>
-<span class="pc bpc" id="L293" title="1 of 2 branches missed.">					&amp;&amp; &quot;Override&quot;.equals(annotation.getTypeName().getFullyQualifiedName())) { //$NON-NLS-1$</span>
-<span class="fc" id="L294">				rewrite.remove(annotation, group);</span>
-<span class="fc" id="L295">				return;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">		for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">					&amp;&amp; &quot;Override&quot;.equals(annotation.getTypeName().getFullyQualifiedName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L296">				rewrite.remove(annotation, group);</span>
+<span class="fc" id="L297">				return;</span>
 			}
 		}
-<span class="fc" id="L298">	}</span>
+<span class="fc" id="L300">	}</span>
 
 	private void addAnnotationToMethod(MethodDeclaration method, String annotation, ImportRewrite importRewrite,
 			ASTRewrite rewrite, AST ast, TextEditGroup group) {
-<span class="fc" id="L302">		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L303">		MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, annotation);</span>
-<span class="fc" id="L304">		modifiers.insertFirst(newMarkerAnnotation, group);</span>
-<span class="fc" id="L305">		importRewrite.addImport(&quot;org.junit.jupiter.api.&quot; + annotation); //$NON-NLS-1$</span>
-<span class="fc" id="L306">	}</span>
+<span class="fc" id="L304">		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L305">		MarkerAnnotation newMarkerAnnotation= AnnotationUtils.createMarkerAnnotation(ast, annotation);</span>
+<span class="fc" id="L306">		modifiers.insertFirst(newMarkerAnnotation, group);</span>
+<span class="fc" id="L307">		importRewrite.addImport(&quot;org.junit.jupiter.api.&quot; + annotation); //$NON-NLS-1$</span>
+<span class="fc" id="L308">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L310" title="All 2 branches missed.">		return afterRefactoring ? &quot;import org.junit.jupiter.api.Test;\n&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L311">				: &quot;import junit.framework.TestCase;\n&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">		return afterRefactoring ? &quot;import org.junit.jupiter.api.Test;\n&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L313">				: &quot;import junit.framework.TestCase;\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L316">		return &quot;TestCase&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L318">		return &quot;TestCase&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
 import org.sandbox.jdt.triggerpattern.api.HintPredicateDefinition;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -37,27 +38,27 @@ public final class HintProgramParser {
 	public record ParsedProgram(List&lt;HintPredicateDefinition&gt; predicates, String expandedSource,
 			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel,
 			Map&lt;String, PatternKind&gt; kindsByRuleId) {
-<span class="fc" id="L40">		public ParsedProgram {</span>
-<span class="fc" id="L41">			predicates= List.copyOf(predicates);</span>
-<span class="fc" id="L42">			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionCopy= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L43">			actionsBySentinel.forEach((sentinel, actions) -&gt;</span>
-<span class="fc" id="L44">					actionCopy.put(sentinel, List.copyOf(actions)));</span>
-<span class="fc" id="L45">			actionsBySentinel= Map.copyOf(actionCopy);</span>
-<span class="fc" id="L46">			kindsByRuleId= Map.copyOf(kindsByRuleId);</span>
-<span class="fc" id="L47">		}</span>
+<span class="fc" id="L41">		public ParsedProgram {</span>
+<span class="fc" id="L42">			predicates= List.copyOf(predicates);</span>
+<span class="fc" id="L43">			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionCopy= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L44">			actionsBySentinel.forEach((sentinel, actions) -&gt;</span>
+<span class="fc" id="L45">					actionCopy.put(sentinel, List.copyOf(actions)));</span>
+<span class="fc" id="L46">			actionsBySentinel= Map.copyOf(actionCopy);</span>
+<span class="fc" id="L47">			kindsByRuleId= Map.copyOf(kindsByRuleId);</span>
+<span class="fc" id="L48">		}</span>
 
 		/** Backward-compatible constructor for programs without explicit rule kinds. */
 		public ParsedProgram(List&lt;HintPredicateDefinition&gt; predicates, String expandedSource,
 				Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel) {
-<span class="nc" id="L52">			this(predicates, expandedSource, actionsBySentinel, Map.of());</span>
-<span class="nc" id="L53">		}</span>
+<span class="nc" id="L53">			this(predicates, expandedSource, actionsBySentinel, Map.of());</span>
+<span class="nc" id="L54">		}</span>
 
 		/** Returns a fresh validated rule model with high-level features restored. */
 		public HintFile hintFile() {
 			try {
-<span class="fc" id="L58">				return parseComposed(expandedSource, actionsBySentinel, kindsByRuleId);</span>
-<span class="nc" id="L59">			} catch (HintParseException exception) {</span>
-<span class="nc" id="L60">				throw new IllegalStateException(&quot;Validated expanded hint source can no longer be parsed&quot;, exception); //$NON-NLS-1$</span>
+<span class="fc" id="L59">				return parseComposed(expandedSource, actionsBySentinel, kindsByRuleId);</span>
+<span class="nc" id="L60">			} catch (HintParseException exception) {</span>
+<span class="nc" id="L61">				throw new IllegalStateException(&quot;Validated expanded hint source can no longer be parsed&quot;, exception); //$NON-NLS-1$</span>
 			}
 		}
 	}
@@ -65,145 +66,156 @@ public final class HintProgramParser {
 	private record PreparedProgram(List&lt;HintPredicateDefinition&gt; predicates, String expandedSource,
 			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel,
 			Map&lt;String, PatternKind&gt; kindsByRuleId) {
-<span class="fc" id="L68">		PreparedProgram {</span>
-<span class="fc" id="L69">			predicates= List.copyOf(predicates);</span>
-<span class="fc" id="L70">			actionsBySentinel= Map.copyOf(actionsBySentinel);</span>
-<span class="fc" id="L71">			kindsByRuleId= Map.copyOf(kindsByRuleId);</span>
-<span class="fc" id="L72">		}</span>
+<span class="fc" id="L69">		PreparedProgram {</span>
+<span class="fc" id="L70">			predicates= List.copyOf(predicates);</span>
+<span class="fc" id="L71">			actionsBySentinel= Map.copyOf(actionsBySentinel);</span>
+<span class="fc" id="L72">			kindsByRuleId= Map.copyOf(kindsByRuleId);</span>
+<span class="fc" id="L73">		}</span>
 	}
 
 	private final HintFileParser ruleParser;
 	private final RewriteActionCatalog actionCatalog;
 
 	public HintProgramParser() {
-<span class="fc" id="L79">		this(new HintFileParser(), RewriteActionCatalog.standard());</span>
-<span class="fc" id="L80">	}</span>
+<span class="fc" id="L80">		this(new HintFileParser(), RewriteActionCatalog.standard());</span>
+<span class="fc" id="L81">	}</span>
 
 	public HintProgramParser(RewriteActionCatalog actionCatalog) {
-<span class="fc" id="L83">		this(new HintFileParser(), actionCatalog);</span>
-<span class="fc" id="L84">	}</span>
+<span class="fc" id="L84">		this(new HintFileParser(), actionCatalog);</span>
+<span class="fc" id="L85">	}</span>
 
 	HintProgramParser(HintFileParser ruleParser) {
-<span class="nc" id="L87">		this(ruleParser, RewriteActionCatalog.standard());</span>
-<span class="nc" id="L88">	}</span>
+<span class="nc" id="L88">		this(ruleParser, RewriteActionCatalog.standard());</span>
+<span class="nc" id="L89">	}</span>
 
-<span class="fc" id="L90">	HintProgramParser(HintFileParser ruleParser, RewriteActionCatalog actionCatalog) {</span>
-<span class="fc" id="L91">		this.ruleParser= ruleParser;</span>
-<span class="fc" id="L92">		this.actionCatalog= actionCatalog;</span>
-<span class="fc" id="L93">	}</span>
+<span class="fc" id="L91">	HintProgramParser(HintFileParser ruleParser, RewriteActionCatalog actionCatalog) {</span>
+<span class="fc" id="L92">		this.ruleParser= ruleParser;</span>
+<span class="fc" id="L93">		this.actionCatalog= actionCatalog;</span>
+<span class="fc" id="L94">	}</span>
 
 	public ParsedProgram parse(String source) throws HintParseException {
-<span class="fc" id="L96">		PreparedProgram prepared= prepare(source, actionCatalog);</span>
-<span class="fc" id="L97">		parseComposed(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel(),</span>
-<span class="fc" id="L98">				prepared.kindsByRuleId());</span>
-<span class="fc" id="L99">		return new ParsedProgram(prepared.predicates(), prepared.expandedSource(),</span>
-<span class="fc" id="L100">				prepared.actionsBySentinel(), prepared.kindsByRuleId());</span>
+<span class="fc" id="L97">		PreparedProgram prepared= prepare(source, actionCatalog);</span>
+<span class="fc" id="L98">		parseComposed(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel(),</span>
+<span class="fc" id="L99">				prepared.kindsByRuleId());</span>
+<span class="fc" id="L100">		return new ParsedProgram(prepared.predicates(), prepared.expandedSource(),</span>
+<span class="fc" id="L101">				prepared.actionsBySentinel(), prepared.kindsByRuleId());</span>
 	}
 
 	public HintFile parseHintFile(String source) throws HintParseException {
-<span class="fc" id="L104">		PreparedProgram prepared= prepare(source, actionCatalog);</span>
-<span class="fc" id="L105">		return parseComposed(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel(),</span>
-<span class="fc" id="L106">				prepared.kindsByRuleId());</span>
+<span class="fc" id="L105">		PreparedProgram prepared= prepare(source, actionCatalog);</span>
+<span class="fc" id="L106">		return parseComposed(ruleParser, prepared.expandedSource(), prepared.actionsBySentinel(),</span>
+<span class="fc" id="L107">				prepared.kindsByRuleId());</span>
 	}
 
 	private static PreparedProgram prepare(String source, RewriteActionCatalog catalog)
 			throws HintParseException {
-<span class="fc" id="L111">		HintPredicatePreprocessor.Result predicates= HintPredicatePreprocessor.preprocess(source);</span>
-<span class="fc" id="L112">		validatePredicateNames(predicates.predicates());</span>
-<span class="fc" id="L113">		HintRuleKindPreprocessor.Result kinds=</span>
-<span class="fc" id="L114">				HintRuleKindPreprocessor.preprocess(predicates.expandedSource());</span>
-<span class="fc" id="L115">		String normalizedTypeSources= HintTypeDeclarationSourcePreprocessor.preprocess(</span>
-<span class="fc" id="L116">				kinds.parserSource(), kinds.kindsByRuleId());</span>
-<span class="fc" id="L117">		HintStructuredActionPreprocessor.Result actions=</span>
-<span class="fc" id="L118">				HintStructuredActionPreprocessor.preprocess(normalizedTypeSources, catalog);</span>
-<span class="fc" id="L119">		return new PreparedProgram(predicates.predicates(), actions.parserSource(),</span>
-<span class="fc" id="L120">				actions.actionsBySentinel(), kinds.kindsByRuleId());</span>
+		try {
+<span class="fc" id="L113">			HintPlanRequirement.fromContent(source);</span>
+<span class="nc" id="L114">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L115">			throw parseFailure(exception);</span>
+<span class="fc" id="L116">		}</span>
+<span class="fc" id="L117">		HintPredicatePreprocessor.Result predicates= HintPredicatePreprocessor.preprocess(source);</span>
+<span class="fc" id="L118">		validatePredicateNames(predicates.predicates());</span>
+<span class="fc" id="L119">		HintRuleKindPreprocessor.Result kinds=</span>
+<span class="fc" id="L120">				HintRuleKindPreprocessor.preprocess(predicates.expandedSource());</span>
+<span class="fc" id="L121">		String normalizedTypeSources= HintTypeDeclarationSourcePreprocessor.preprocess(</span>
+<span class="fc" id="L122">				kinds.parserSource(), kinds.kindsByRuleId());</span>
+<span class="fc" id="L123">		HintStructuredActionPreprocessor.Result actions=</span>
+<span class="fc" id="L124">				HintStructuredActionPreprocessor.preprocess(normalizedTypeSources, catalog);</span>
+<span class="fc" id="L125">		return new PreparedProgram(predicates.predicates(), actions.parserSource(),</span>
+<span class="fc" id="L126">				actions.actionsBySentinel(), kinds.kindsByRuleId());</span>
 	}
 
 	private static HintFile parseComposed(String source,
 			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel,
 			Map&lt;String, PatternKind&gt; kindsByRuleId) throws HintParseException {
-<span class="fc" id="L126">		return parseComposed(new HintFileParser(), source, actionsBySentinel, kindsByRuleId);</span>
+<span class="fc" id="L132">		return parseComposed(new HintFileParser(), source, actionsBySentinel, kindsByRuleId);</span>
 	}
 
 	private static HintFile parseComposed(HintFileParser parser, String source,
 			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel,
 			Map&lt;String, PatternKind&gt; kindsByRuleId) throws HintParseException {
-<span class="fc" id="L132">		HintFile parsed= parser.parse(source);</span>
-<span class="fc bfc" id="L133" title="All 4 branches covered.">		if (actionsBySentinel.isEmpty() &amp;&amp; kindsByRuleId.isEmpty()) {</span>
-<span class="fc" id="L134">			return parsed;</span>
+<span class="fc" id="L138">		HintFile parsed= parser.parse(source);</span>
+<span class="fc bfc" id="L139" title="All 4 branches covered.">		if (actionsBySentinel.isEmpty() &amp;&amp; kindsByRuleId.isEmpty()) {</span>
+<span class="fc" id="L140">			return parsed;</span>
 		}
-<span class="fc" id="L136">		HintFile result= copyMetadata(parsed);</span>
-<span class="fc" id="L137">		Set&lt;String&gt; appliedKinds= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">		for (TransformationRule rule : parsed.getRules()) {</span>
-<span class="fc" id="L139">			List&lt;RewriteAlternative&gt; alternatives= restoreActions(rule, actionsBySentinel);</span>
-<span class="fc" id="L140">			Pattern sourcePattern= rule.sourcePattern();</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">			PatternKind explicitKind= rule.getRuleId() == null ? null : kindsByRuleId.get(rule.getRuleId());</span>
-<span class="fc bfc" id="L142" title="All 2 branches covered.">			if (explicitKind != null) {</span>
-<span class="fc" id="L143">				appliedKinds.add(rule.getRuleId());</span>
-<span class="fc" id="L144">				sourcePattern= withKind(sourcePattern, explicitKind, rule.getRuleId());</span>
+<span class="fc" id="L142">		HintFile result= copyMetadata(parsed);</span>
+<span class="fc" id="L143">		Set&lt;String&gt; appliedKinds= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		for (TransformationRule rule : parsed.getRules()) {</span>
+<span class="fc" id="L145">			List&lt;RewriteAlternative&gt; alternatives= restoreActions(rule, actionsBySentinel);</span>
+<span class="fc" id="L146">			Pattern sourcePattern= rule.sourcePattern();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">			PatternKind explicitKind= rule.getRuleId() == null ? null : kindsByRuleId.get(rule.getRuleId());</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">			if (explicitKind != null) {</span>
+<span class="fc" id="L149">				appliedKinds.add(rule.getRuleId());</span>
+<span class="fc" id="L150">				sourcePattern= withKind(sourcePattern, explicitKind, rule.getRuleId());</span>
 			}
-<span class="fc" id="L146">			result.addRule(new TransformationRule(rule.getRuleId(), rule.getDescription(),</span>
-<span class="fc" id="L147">					sourcePattern, rule.sourceGuard(), alternatives,</span>
-<span class="fc" id="L148">					rule.getImportDirective(), rule.getSeverity()));</span>
-<span class="fc" id="L149">		}</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (!appliedKinds.equals(kindsByRuleId.keySet())) {</span>
-<span class="nc" id="L151">			Set&lt;String&gt; missing= new LinkedHashSet&lt;&gt;(kindsByRuleId.keySet());</span>
-<span class="nc" id="L152">			missing.removeAll(appliedKinds);</span>
-<span class="nc" id="L153">			throw new HintParseException(&quot;Explicit pattern kinds reference missing rule ids &quot; + missing, 0); //$NON-NLS-1$</span>
+<span class="fc" id="L152">			result.addRule(new TransformationRule(rule.getRuleId(), rule.getDescription(),</span>
+<span class="fc" id="L153">					sourcePattern, rule.sourceGuard(), alternatives,</span>
+<span class="fc" id="L154">					rule.getImportDirective(), rule.getSeverity()));</span>
+<span class="fc" id="L155">		}</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">		if (!appliedKinds.equals(kindsByRuleId.keySet())) {</span>
+<span class="nc" id="L157">			Set&lt;String&gt; missing= new LinkedHashSet&lt;&gt;(kindsByRuleId.keySet());</span>
+<span class="nc" id="L158">			missing.removeAll(appliedKinds);</span>
+<span class="nc" id="L159">			throw new HintParseException(&quot;Explicit pattern kinds reference missing rule ids &quot; + missing, 0); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L155">		return result;</span>
+<span class="fc" id="L161">		return result;</span>
 	}
 
 	private static List&lt;RewriteAlternative&gt; restoreActions(TransformationRule rule,
 			Map&lt;String, List&lt;StructuredRewriteAction&gt;&gt; actionsBySentinel) {
-<span class="fc" id="L160">		List&lt;RewriteAlternative&gt; alternatives= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L161" title="All 2 branches covered.">		for (RewriteAlternative alternative : rule.alternatives()) {</span>
-<span class="fc" id="L162">			List&lt;StructuredRewriteAction&gt; actions=</span>
-<span class="fc" id="L163">					actionsBySentinel.get(alternative.replacementPattern());</span>
-<span class="fc bfc" id="L164" title="All 2 branches covered.">			if (actions == null) {</span>
-<span class="fc" id="L165">				alternatives.add(alternative);</span>
+<span class="fc" id="L166">		List&lt;RewriteAlternative&gt; alternatives= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		for (RewriteAlternative alternative : rule.alternatives()) {</span>
+<span class="fc" id="L168">			List&lt;StructuredRewriteAction&gt; actions=</span>
+<span class="fc" id="L169">					actionsBySentinel.get(alternative.replacementPattern());</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">			if (actions == null) {</span>
+<span class="fc" id="L171">				alternatives.add(alternative);</span>
 			} else {
-<span class="fc" id="L167">				alternatives.add(RewriteAlternative.structured(actions, alternative.condition()));</span>
+<span class="fc" id="L173">				alternatives.add(RewriteAlternative.structured(actions, alternative.condition()));</span>
 			}
-<span class="fc" id="L169">		}</span>
-<span class="fc" id="L170">		return alternatives;</span>
+<span class="fc" id="L175">		}</span>
+<span class="fc" id="L176">		return alternatives;</span>
 	}
 
 	private static Pattern withKind(Pattern source, PatternKind kind, String ruleId)
 			throws HintParseException {
-<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		if (kind == PatternKind.TYPE_DECLARATION</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">				&amp;&amp; new TypeDeclarationPatternParser().parse(source.getValue()) == null) {</span>
-<span class="fc" id="L177">			throw new HintParseException(&quot;Rule &quot; + ruleId //$NON-NLS-1$</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (kind == PatternKind.TYPE_DECLARATION</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">				&amp;&amp; new TypeDeclarationPatternParser().parse(source.getValue()) == null) {</span>
+<span class="fc" id="L183">			throw new HintParseException(&quot;Rule &quot; + ruleId //$NON-NLS-1$</span>
 					+ &quot; must contain one syntactically valid type header with an empty body&quot;, 0); //$NON-NLS-1$
 		}
-<span class="fc" id="L180">		return new Pattern(source.getValue(), kind, source.getId(), source.getDisplayName(),</span>
-<span class="fc" id="L181">				source.getQualifiedType(), source.getOverridesType(), source.getConstraints());</span>
+<span class="fc" id="L186">		return new Pattern(source.getValue(), kind, source.getId(), source.getDisplayName(),</span>
+<span class="fc" id="L187">				source.getQualifiedType(), source.getOverridesType(), source.getConstraints());</span>
 	}
 
 	private static HintFile copyMetadata(HintFile source) {
-<span class="fc" id="L185">		HintFile copy= new HintFile();</span>
-<span class="fc" id="L186">		copy.setId(source.getId());</span>
-<span class="fc" id="L187">		copy.setDescription(source.getDescription());</span>
-<span class="fc" id="L188">		copy.setSeverity(source.getSeverity());</span>
-<span class="fc" id="L189">		copy.setMinJavaVersion(source.getMinJavaVersion());</span>
-<span class="fc" id="L190">		copy.setTags(source.getTags());</span>
-<span class="fc" id="L191">		copy.setCaseInsensitive(source.isCaseInsensitive());</span>
-<span class="fc" id="L192">		copy.setSuppressWarnings(source.getSuppressWarnings());</span>
-<span class="fc" id="L193">		copy.setTreeKindNodeTypes(source.getTreeKindNodeTypes());</span>
-<span class="fc" id="L194">		source.getIncludes().forEach(copy::addInclude);</span>
-<span class="fc" id="L195">		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);</span>
-<span class="fc" id="L196">		return copy;</span>
+<span class="fc" id="L191">		HintFile copy= new HintFile();</span>
+<span class="fc" id="L192">		copy.setId(source.getId());</span>
+<span class="fc" id="L193">		copy.setDescription(source.getDescription());</span>
+<span class="fc" id="L194">		copy.setSeverity(source.getSeverity());</span>
+<span class="fc" id="L195">		copy.setMinJavaVersion(source.getMinJavaVersion());</span>
+<span class="fc" id="L196">		copy.setTags(source.getTags());</span>
+<span class="fc" id="L197">		copy.setCaseInsensitive(source.isCaseInsensitive());</span>
+<span class="fc" id="L198">		copy.setSuppressWarnings(source.getSuppressWarnings());</span>
+<span class="fc" id="L199">		copy.setTreeKindNodeTypes(source.getTreeKindNodeTypes());</span>
+<span class="fc" id="L200">		source.getIncludes().forEach(copy::addInclude);</span>
+<span class="fc" id="L201">		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);</span>
+<span class="fc" id="L202">		return copy;</span>
+	}
+
+	private static HintParseException parseFailure(IllegalArgumentException cause) {
+<span class="nc" id="L206">		HintParseException failure= new HintParseException(cause.getMessage(), 0);</span>
+<span class="nc" id="L207">		failure.initCause(cause);</span>
+<span class="nc" id="L208">		return failure;</span>
 	}
 
 	private static void validatePredicateNames(Iterable&lt;HintPredicateDefinition&gt; predicates)
 			throws HintParseException {
-<span class="fc bfc" id="L201" title="All 2 branches covered.">		for (HintPredicateDefinition predicate : predicates) {</span>
-<span class="fc bfc" id="L202" title="All 2 branches covered.">			if (HintLanguageVocabulary.builtInGuardNames().contains(predicate.name())) {</span>
-<span class="fc" id="L203">				throw new HintParseException(&quot;Predicate name shadows built-in guard &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L204">						+ predicate.name(), predicate.lineNumber());</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">		for (HintPredicateDefinition predicate : predicates) {</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (HintLanguageVocabulary.builtInGuardNames().contains(predicate.name())) {</span>
+<span class="fc" id="L215">				throw new HintParseException(&quot;Predicate name shadows built-in guard &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L216">						+ predicate.name(), predicate.lineNumber());</span>
 			}
-<span class="fc" id="L206">		}</span>
-<span class="fc" id="L207">	}</span>
+<span class="fc" id="L218">		}</span>
+<span class="fc" id="L219">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3MigrationExclusions.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit3MigrationExclusions.java</span></div><h1>JUnit3MigrationExclusions.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ITypeBinding;
+
+/**
+ * Base types whose JUnit 3 execution contract must not be migrated to Jupiter.
+ *
+ * &lt;p&gt;Some frameworks derive from {@code junit.framework.TestCase} only to reuse
+ * the JUnit 3 runner while adding an execution contract that has no Jupiter
+ * equivalent. {@code org.eclipse.test.performance.PerformanceTestCase} is the
+ * dominant example in the Eclipse code base: it measures and asserts performance
+ * through the JUnit 3 lifecycle and is executed by a dedicated harness.
+ *
+ * &lt;p&gt;The default list can be extended or replaced through the system property
+ * {@value #EXCLUDED_SUPERTYPES_PROPERTY} using a comma-separated list of fully
+ * qualified type names. A leading {@code +} keeps the built-in defaults and adds
+ * the configured names; without it the configured names replace the defaults.
+ */
+public final class JUnit3MigrationExclusions {
+
+	/** System property that configures additional or replacing excluded base types. */
+	public static final String EXCLUDED_SUPERTYPES_PROPERTY= &quot;sandbox.junit.migration.excludedSuperTypes&quot;; //$NON-NLS-1$
+
+	/** Stable reason code reported when an excluded base type blocks a migration. */
+	public static final String EXCLUDED_BASE_TYPE_REASON= &quot;EXCLUDED_JUNIT3_BASE_TYPE&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L41">	private static final Set&lt;String&gt; DEFAULT_EXCLUDED_SUPERTYPES= Set.of(</span>
+<span class="fc" id="L42">			&quot;org.eclipse.test.performance.PerformanceTestCase&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L43">			&quot;junit.extensions.TestSetup&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L44">			&quot;junit.extensions.TestDecorator&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L45">			&quot;junit.framework.TestSuite&quot;); //$NON-NLS-1$</span>
+
+	private JUnit3MigrationExclusions() {
+	}
+
+	/**
+	 * Returns the configured excluded base types.
+	 *
+	 * @return fully qualified names of base types that block a JUnit 3 migration
+	 */
+	public static Set&lt;String&gt; excludedSuperTypes() {
+<span class="fc" id="L56">		String configured= System.getProperty(EXCLUDED_SUPERTYPES_PROPERTY);</span>
+<span class="pc bpc" id="L57" title="1 of 4 branches missed.">		if (configured == null || configured.isBlank()) {</span>
+<span class="fc" id="L58">			return DEFAULT_EXCLUDED_SUPERTYPES;</span>
+		}
+<span class="fc" id="L60">		boolean additive= configured.startsWith(&quot;+&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		String names= additive ? configured.substring(1) : configured;</span>
+<span class="fc" id="L62">		Set&lt;String&gt; result= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		if (additive) {</span>
+<span class="fc" id="L64">			result.addAll(DEFAULT_EXCLUDED_SUPERTYPES);</span>
+		}
+<span class="fc" id="L66">		Arrays.stream(names.split(&quot;,&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L67">				.map(String::trim)</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">				.filter(name -&gt; !name.isEmpty())</span>
+<span class="fc" id="L69">				.forEach(result::add);</span>
+<span class="fc" id="L70">		return Set.copyOf(result);</span>
+	}
+
+	/**
+	 * Returns whether the type itself or any of its superclasses is excluded.
+	 *
+	 * @param binding type binding to inspect, may be {@code null}
+	 * @return {@code true} if the type must not be migrated
+	 */
+	public static boolean isExcluded(ITypeBinding binding) {
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		return excludedSuperType(binding) != null;</span>
+	}
+
+	/**
+	 * Returns the first excluded type found in the superclass chain.
+	 *
+	 * @param binding type binding to inspect, may be {@code null}
+	 * @return the excluded fully qualified type name, or {@code null} if none applies
+	 */
+	public static String excludedSuperType(ITypeBinding binding) {
+<span class="fc" id="L90">		Set&lt;String&gt; excluded= excludedSuperTypes();</span>
+<span class="fc" id="L91">		ITypeBinding current= binding;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc" id="L93">			ITypeBinding erasure= current.getErasure();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			String name= erasure == null ? null : erasure.getQualifiedName();</span>
+<span class="pc bpc" id="L95" title="2 of 4 branches missed.">			if (name != null &amp;&amp; excluded.contains(name)) {</span>
+<span class="nc" id="L96">				return name;</span>
+			}
+<span class="fc" id="L98">			current= current.getSuperclass();</span>
+		}
+<span class="fc" id="L100">		return null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

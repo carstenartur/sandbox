@@ -85,9 +85,9 @@ public final class LifecycleMethodAdapter {
 
 <span class="fc" id="L86">		processMethod(method, rewriteToUse, ast, group, importRewriteToUse, oldMethodName, newMethodName);</span>
 
-<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (rewriteToUse != globalRewrite) {</span>
-<span class="fc" id="L89">			DocumentHelper.createChangeForRewrite(</span>
-<span class="fc" id="L90">					org.sandbox.jdt.internal.corext.util.ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (rewriteToUse != globalRewrite) {</span>
+<span class="nc" id="L89">			DocumentHelper.createChangeForRewrite(</span>
+<span class="nc" id="L90">					org.sandbox.jdt.internal.corext.util.ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);</span>
 		}
 <span class="fc" id="L92">	}</span>
 
@@ -318,13 +318,13 @@ public final class LifecycleMethodAdapter {
 	}
 
 	private static ASTRewrite getASTRewrite(ASTNode node, AST globalAST, ASTRewrite globalRewrite) {
-<span class="fc bfc" id="L321" title="All 2 branches covered.">		return (node.getAST() == globalAST) ? globalRewrite : ASTRewrite.create(node.getAST());</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">		return (node.getAST() == globalAST) ? globalRewrite : ASTRewrite.create(node.getAST());</span>
 	}
 
 	private static ImportRewrite getImportRewrite(ASTNode node, AST globalAST, ImportRewrite globalImportRewrite) {
 <span class="fc" id="L325">		org.eclipse.jdt.core.dom.CompilationUnit compilationUnit = org.sandbox.jdt.internal.corext.util.ASTNavigationUtils</span>
 <span class="fc" id="L326">				.findCompilationUnit(node);</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">		return (node.getAST() == globalAST) ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		return (node.getAST() == globalAST) ? globalImportRewrite : ImportRewrite.create(compilationUnit, true);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

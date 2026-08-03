@@ -83,10 +83,10 @@ public final class ASTNavigationUtils {
 	 */
 	public static TypeDeclaration findTypeDeclaration(IJavaProject javaProject, String fullyQualifiedTypeName) {
 		try {
-<span class="fc" id="L86">			IType type = javaProject.findType(fullyQualifiedTypeName);</span>
-<span class="pc bpc" id="L87" title="2 of 4 branches missed.">			if (type != null &amp;&amp; type.exists()) {</span>
-<span class="fc" id="L88">				CompilationUnit unit = parseCompilationUnit(type.getCompilationUnit());</span>
-<span class="fc" id="L89">				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);</span>
+<span class="nc" id="L86">			IType type = javaProject.findType(fullyQualifiedTypeName);</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">			if (type != null &amp;&amp; type.exists()) {</span>
+<span class="nc" id="L88">				CompilationUnit unit = parseCompilationUnit(type.getCompilationUnit());</span>
+<span class="nc" id="L89">				return findTypeDeclarationInCompilationUnit(unit, fullyQualifiedTypeName);</span>
 			}
 <span class="nc" id="L91">		} catch (JavaModelException e) {</span>
 <span class="nc" id="L92">			throw new RuntimeException(&quot;Failed to find type declaration for: &quot; + fullyQualifiedTypeName, e); //$NON-NLS-1$</span>
@@ -102,11 +102,11 @@ public final class ASTNavigationUtils {
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
 	public static TypeDeclaration findTypeDeclarationInCompilationUnit(CompilationUnit unit, String fullyQualifiedTypeName) {
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		for (Object obj : unit.types()) {</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">			if (obj instanceof TypeDeclaration typeDecl) {</span>
-<span class="fc" id="L107">				TypeDeclaration result = findTypeDeclarationInType(typeDecl, fullyQualifiedTypeName);</span>
-<span class="pc bpc" id="L108" title="1 of 2 branches missed.">				if (result != null) {</span>
-<span class="fc" id="L109">					return result;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		for (Object obj : unit.types()) {</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (obj instanceof TypeDeclaration typeDecl) {</span>
+<span class="nc" id="L107">				TypeDeclaration result = findTypeDeclarationInType(typeDecl, fullyQualifiedTypeName);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">				if (result != null) {</span>
+<span class="nc" id="L109">					return result;</span>
 				}
 			}
 		}
@@ -121,16 +121,16 @@ public final class ASTNavigationUtils {
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
 	public static TypeDeclaration findTypeDeclarationInCompilationUnit(ITypeBinding typeBinding, CompilationUnit cu) {
-<span class="fc" id="L124">		final TypeDeclaration[] result = { null };</span>
+<span class="nc" id="L124">		final TypeDeclaration[] result = { null };</span>
 
-<span class="fc" id="L126">		cu.accept(new ASTVisitor() {</span>
+<span class="nc" id="L126">		cu.accept(new ASTVisitor() {</span>
 			private boolean checkAndMatchBinding(AbstractTypeDeclaration node, ITypeBinding typeBinding) {
-<span class="fc" id="L128">				ITypeBinding binding = node.resolveBinding();</span>
-<span class="pc bpc" id="L129" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ASTNodes.areBindingsEqual(binding, typeBinding)) {</span>
+<span class="nc" id="L128">				ITypeBinding binding = node.resolveBinding();</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">				if (binding != null &amp;&amp; ASTNodes.areBindingsEqual(binding, typeBinding)) {</span>
 <span class="nc" id="L130">					result[0] = (TypeDeclaration) node;</span>
 <span class="nc" id="L131">					return false;</span>
 				}
-<span class="fc" id="L133">				return true;</span>
+<span class="nc" id="L133">				return true;</span>
 			}
 
 			@Override
@@ -145,11 +145,11 @@ public final class ASTNavigationUtils {
 
 			@Override
 			public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L148">				return checkAndMatchBinding(node, typeBinding);</span>
+<span class="nc" id="L148">				return checkAndMatchBinding(node, typeBinding);</span>
 			}
 		});
 
-<span class="fc" id="L152">		return result[0];</span>
+<span class="nc" id="L152">		return result[0];</span>
 	}
 
 	/**
@@ -159,8 +159,8 @@ public final class ASTNavigationUtils {
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
 	public static TypeDeclaration findTypeDeclarationInProject(ITypeBinding typeBinding) {
-<span class="fc" id="L162">		IType type = (IType) typeBinding.getJavaElement();</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getFullyQualifiedName()) : null;</span>
+<span class="nc" id="L162">		IType type = (IType) typeBinding.getJavaElement();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">		return type != null ? findTypeDeclaration(type.getJavaProject(), type.getFullyQualifiedName()) : null;</span>
 	}
 
 	/**
@@ -171,8 +171,8 @@ public final class ASTNavigationUtils {
 	 * @return the TypeDeclaration if found, or null otherwise
 	 */
 	public static TypeDeclaration findTypeDeclarationInType(TypeDeclaration typeDecl, String qualifiedTypeName) {
-<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {</span>
-<span class="fc" id="L175">			return typeDecl;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">		if (getQualifiedName(typeDecl).equals(qualifiedTypeName)) {</span>
+<span class="nc" id="L175">			return typeDecl;</span>
 		}
 
 <span class="nc bnc" id="L178" title="All 2 branches missed.">		for (TypeDeclaration nestedType : typeDecl.getTypes()) {</span>
@@ -193,11 +193,11 @@ public final class ASTNavigationUtils {
 	 * @return the type declaration if found, or null otherwise
 	 */
 	public static ASTNode findTypeDeclarationForBinding(ITypeBinding typeBinding, CompilationUnit cu) {
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (typeBinding == null)</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">		if (typeBinding == null)</span>
 <span class="nc" id="L197">			return null;</span>
 
-<span class="fc" id="L199">		TypeDeclaration typeDecl = findTypeDeclarationInCompilationUnit(typeBinding, cu);</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		return typeDecl != null ? typeDecl : findTypeDeclarationInProject(typeBinding);</span>
+<span class="nc" id="L199">		TypeDeclaration typeDecl = findTypeDeclarationInCompilationUnit(typeBinding, cu);</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">		return typeDecl != null ? typeDecl : findTypeDeclarationInProject(typeBinding);</span>
 	}
 
 	/**
@@ -207,23 +207,23 @@ public final class ASTNavigationUtils {
 	 * @return the fully qualified name including package and nested class separators
 	 */
 	public static String getQualifiedName(TypeDeclaration typeDecl) {
-<span class="fc" id="L210">		StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());</span>
-<span class="fc" id="L211">		ASTNode parent = typeDecl.getParent();</span>
+<span class="nc" id="L210">		StringBuilder qualifiedName = new StringBuilder(typeDecl.getName().getIdentifier());</span>
+<span class="nc" id="L211">		ASTNode parent = typeDecl.getParent();</span>
 
 		// Process nested classes
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		while (parent instanceof TypeDeclaration parentType) {</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">		while (parent instanceof TypeDeclaration parentType) {</span>
 <span class="nc" id="L215">			qualifiedName.insert(0, parentType.getName().getIdentifier() + &quot;$&quot;); // $ for nested classes //$NON-NLS-1$</span>
 <span class="nc" id="L216">			parent = parentType.getParent();</span>
 		}
 
 		// Add package name
-<span class="fc" id="L220">		CompilationUnit compilationUnit = ASTNodes.getTypedAncestor(typeDecl, CompilationUnit.class);</span>
-<span class="pc bpc" id="L221" title="2 of 4 branches missed.">		if (compilationUnit != null &amp;&amp; compilationUnit.getPackage() != null) {</span>
-<span class="fc" id="L222">			String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();</span>
-<span class="fc" id="L223">			qualifiedName.insert(0, packageName + &quot;.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L220">		CompilationUnit compilationUnit = ASTNodes.getTypedAncestor(typeDecl, CompilationUnit.class);</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">		if (compilationUnit != null &amp;&amp; compilationUnit.getPackage() != null) {</span>
+<span class="nc" id="L222">			String packageName = compilationUnit.getPackage().getName().getFullyQualifiedName();</span>
+<span class="nc" id="L223">			qualifiedName.insert(0, packageName + &quot;.&quot;); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L226">		return qualifiedName.toString();</span>
+<span class="nc" id="L226">		return qualifiedName.toString();</span>
 	}
 
 	/**
@@ -233,11 +233,11 @@ public final class ASTNavigationUtils {
 	 * @return the parsed CompilationUnit
 	 */
 	public static CompilationUnit parseCompilationUnit(org.eclipse.jdt.core.ICompilationUnit iCompilationUnit) {
-<span class="fc" id="L236">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="fc" id="L237">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L238">		parser.setSource(iCompilationUnit);</span>
-<span class="fc" id="L239">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L240">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="nc" id="L236">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L237">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L238">		parser.setSource(iCompilationUnit);</span>
+<span class="nc" id="L239">		parser.setResolveBindings(true);</span>
+<span class="nc" id="L240">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	/**
