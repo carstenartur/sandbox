@@ -30,11 +30,15 @@ jobs:
           old_strict_guard_head=8b596864ece82e4be77e496f3094d655f1706b0d
           target_branch=feature/strict-guard-evaluation
 
-          git fetch --no-tags origin main "$target_branch"
+          git fetch --no-tags origin \
+            refs/heads/main:refs/remotes/origin/main \
+            refs/heads/$target_branch:refs/remotes/origin/$target_branch \
+            refs/pull/1369/head:refs/rebuild/pr-1369-head
 
           test "$(git rev-parse origin/main)" = "$merged_main"
-          git diff --quiet "$declaration_diff_head" "$merged_main"
+          test "$(git rev-parse refs/rebuild/pr-1369-head)" = "$declaration_diff_head"
           test "$(git rev-parse origin/$target_branch)" = "$old_strict_guard_head"
+          git diff --quiet "$declaration_diff_head" "$merged_main"
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
