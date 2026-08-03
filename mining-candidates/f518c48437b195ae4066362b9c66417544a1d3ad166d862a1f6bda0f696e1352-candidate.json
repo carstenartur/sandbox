@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f518c48437b195ae4066362b9c66417544a1d3ad166d862a1f6bda0f696e1352",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "createButton($parent, org.eclipse.jface.dialogs.IDialogConstants.OK_ID, org.eclipse.jface.dialogs.IDialogConstants.OK_LABEL, $defaultButton)\n\u003d\u003e\ncreateButton($parent, org.eclipse.jface.dialogs.IDialogConstants.OK_ID, org.eclipse.jdt.internal.ui.JavaUIMessages.GenerateHashCodeEqualsDialog_generate, $defaultButton)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.dialogs;\n\nimport org.eclipse.jface.dialogs.IDialogConstants;\nimport org.eclipse.swt.widgets.Composite;\n\n// Dummy class for compilation context\nclass JavaUIMessages {\n    public static String GenerateHashCodeEqualsDialog_generate \u003d \"Generate\";\n}\n\npublic class GenerateHashCodeEqualsDialog {\n    protected void createButton(Composite parent, int id, String label, boolean defaultButton) { /* dummy */ }\n\n    protected void createButtonsForButtonBar(Composite parent) {\n        createButton(parent, IDialogConstants.OK_ID, IDialogConstants.OK_LABEL, true);\n        createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.dialogs;\n\nimport org.eclipse.jface.dialogs.IDialogConstants;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.jdt.internal.ui.JavaUIMessages;\n\n// Dummy class for compilation context\nclass JavaUIMessages {\n    public static String GenerateHashCodeEqualsDialog_generate \u003d \"Generate\";\n}\n\npublic class GenerateHashCodeEqualsDialog {\n    protected void createButton(Composite parent, int id, String label, boolean defaultButton) { /* dummy */ }\n\n    protected void createButtonsForButtonBar(Composite parent) {\n        createButton(parent, IDialogConstants.OK_ID, JavaUIMessages.GenerateHashCodeEqualsDialog_generate, true);\n        createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.dialogs;\n\nimport org.eclipse.jface.dialogs.IDialogConstants;\nimport org.eclipse.swt.widgets.Composite;\n\n// Dummy class for compilation context\nclass JavaUIMessages {\n    public static String GenerateHashCodeEqualsDialog_generate \u003d \"Generate\";\n}\n\npublic class SomeOtherDialog {\n    protected void createButton(Composite parent, int id, String label, boolean defaultButton) { /* dummy */ }\n\n    // This should not match (different ID, different label)\n    protected void createButtonsForButtonBar(Composite parent) {\n        createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);\n    }\n\n    // This should not match (OK_LABEL is not the third argument for OK_ID)\n    public void someMethod(Composite parent) {\n        String label \u003d IDialogConstants.OK_LABEL;\n        createButton(parent, IDialogConstants.YES_ID, label, true);\n    }\n\n    // This should not match (different ID, but uses OK_LABEL)\n    public void anotherMethod(Composite parent) {\n        createButton(parent, IDialogConstants.YES_ID, IDialogConstants.OK_LABEL, true);\n    }\n}",
+  "targetHintFile": "ui-messages.sandbox-hint",
+  "sourceCommit": "9c1afeb2f95c7154850108198e74626fe33b71f5",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "UI Label Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.893359118Z",
+  "ruleFingerprint": "sha256:a268cf67464646a0f4fddd1621c44f5b49080317a0bab33a43025128a6568102",
+  "behaviorFingerprint": "sha256:3d13bf5af87c2a3a0e0d2c9156f1c0ff9eb24ce19232d62040ca03516f75563d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.dialogs cannot be resolved",
+    "verifiedAt": "2026-08-03T03:18:00.229625447Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

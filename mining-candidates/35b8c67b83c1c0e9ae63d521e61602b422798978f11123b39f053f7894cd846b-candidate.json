@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "35b8c67b83c1c0e9ae63d521e61602b422798978f11123b39f053f7894cd846b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: replace-deprecated-keysequence-array*/\n/*!description: Replace deprecated org.eclipse.ui.keys.KeySequence[] with org.eclipse.jface.bindings.TriggerSequence[].*/\n/*!severity: WARNING*/\n\norg.eclipse.ui.keys.KeySequence[]\n\u003d\u003e\norg.eclipse.jface.bindings.TriggerSequence[]\n;;",
+  "beforeExample": "package org.eclipse.test;\n\nimport org.eclipse.ui.commands.ICommand;\nimport org.eclipse.ui.keys.KeySequence; // Deprecated type\n\npublic class ExampleClass {\n    // Field declaration\n    private KeySequence[] fieldSequences;\n\n    // Method return type\n    public KeySequence[] getSequences() {\n        return fieldSequences;\n    }\n\n    public void processSequences() {\n        // Local variable declaration\n        KeySequence[] localSequences \u003d getSequences();\n        System.out.println(localSequences.length);\n    }\n}",
+  "afterExample": "package org.eclipse.test;\n\nimport org.eclipse.ui.commands.ICommand;\nimport org.eclipse.jface.bindings.TriggerSequence; // Replacement type\n\npublic class ExampleClass {\n    // Field declaration\n    private TriggerSequence[] fieldSequences;\n\n    // Method return type\n    public TriggerSequence[] getSequences() {\n        return fieldSequences;\n    }\n\n    public void processSequences() {\n        // Local variable declaration\n        TriggerSequence[] localSequences \u003d getSequences();\n        System.out.println(localSequences.length);\n    }\n}",
+  "negativeExample": "package org.eclipse.test;\n\nimport org.eclipse.ui.keys.KeySequence; // Deprecated non-array type\n\npublic class NegativeExample {\n    private KeySequence singleSequence; // Should not match, it\u0027s not an array\n    public KeySequence getSingleSequence() { // Should not match\n        return singleSequence;\n    }\n    public void test() {\n        KeySequence localSingleSequence \u003d getSingleSequence(); // Should not match\n        System.out.println(localSingleSequence);\n    }\n}",
+  "targetHintFile": "eclipse-ui-deprecations.sandbox-hint",
+  "sourceCommit": "5cb4e8fd43d5acac813115b77f0a14d9cdb83f2f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces usages of the deprecated `org.eclipse.ui.keys.KeySequence[]` array type with the modern `org.eclipse.jface.bindings.TriggerSequence[]`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-03T03:17:57.916303093Z",
+  "ruleFingerprint": "sha256:5b4f4012aa16b1a0d6dd9afeea03ca71467281afed19b7ec4c57e87394fa5ee4",
+  "behaviorFingerprint": "sha256:9240ef5da09befb62c5160743d4e756e08ece07841ef09afa8a5e075c93563ff",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-08-03T03:18:00.247501481Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
