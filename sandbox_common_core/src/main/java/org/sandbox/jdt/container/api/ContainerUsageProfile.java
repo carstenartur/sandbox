@@ -30,7 +30,7 @@ import java.util.Objects;
  * @param nullContract observed null behaviour
  * @param aliasingContract observed aliasing behaviour
  * @param escapeLevel widest known escape boundary
- * @param concurrencyContract observed concurrency behaviour
+ * @param concurrency observed concurrency and publication behaviour
  * @param completeness completeness of the semantic proof
  * @param evidence source-backed observations supporting the profile
  */
@@ -45,7 +45,7 @@ public record ContainerUsageProfile(
 		NullContract nullContract,
 		AliasingContract aliasingContract,
 		EscapeLevel escapeLevel,
-		ConcurrencyContract concurrencyContract,
+		ConcurrencyProfile concurrency,
 		AnalysisCompleteness completeness,
 		List<UsageEvidence> evidence) {
 
@@ -60,7 +60,7 @@ public record ContainerUsageProfile(
 		Objects.requireNonNull(nullContract, "nullContract"); //$NON-NLS-1$
 		Objects.requireNonNull(aliasingContract, "aliasingContract"); //$NON-NLS-1$
 		Objects.requireNonNull(escapeLevel, "escapeLevel"); //$NON-NLS-1$
-		Objects.requireNonNull(concurrencyContract, "concurrencyContract"); //$NON-NLS-1$
+		Objects.requireNonNull(concurrency, "concurrency"); //$NON-NLS-1$
 		Objects.requireNonNull(completeness, "completeness"); //$NON-NLS-1$
 		evidence= List.copyOf(Objects.requireNonNull(evidence, "evidence")); //$NON-NLS-1$
 	}
@@ -119,6 +119,33 @@ public record ContainerUsageProfile(
 		}
 	}
 
+	/** Structured concurrency facts; unknown values are preferable to guessed guarantees. */
+	public record ConcurrencyProfile(
+			ThreadExposure exposure,
+			SynchronizationKind synchronization,
+			IterationSemantics iteration,
+			AtomicityRequirement atomicity,
+			WorkloadShape workload) {
+
+		public ConcurrencyProfile {
+			Objects.requireNonNull(exposure, "exposure"); //$NON-NLS-1$
+			Objects.requireNonNull(synchronization, "synchronization"); //$NON-NLS-1$
+			Objects.requireNonNull(iteration, "iteration"); //$NON-NLS-1$
+			Objects.requireNonNull(atomicity, "atomicity"); //$NON-NLS-1$
+			Objects.requireNonNull(workload, "workload"); //$NON-NLS-1$
+		}
+
+		/** Returns a profile that makes no concurrency claim. */
+		public static ConcurrencyProfile unknown() {
+			return new ConcurrencyProfile(
+					ThreadExposure.UNKNOWN,
+					SynchronizationKind.UNKNOWN,
+					IterationSemantics.UNKNOWN,
+					AtomicityRequirement.UNKNOWN,
+					WorkloadShape.UNKNOWN);
+		}
+	}
+
 	public enum ElementDomain {
 		REFERENCE,
 		PRIMITIVE,
@@ -172,13 +199,51 @@ public record ContainerUsageProfile(
 		UNKNOWN
 	}
 
-	public enum ConcurrencyContract {
+	public enum ThreadExposure {
 		THREAD_CONFINED,
-		LOCK_PROTECTED,
+		PUBLISHED,
+		CALLBACK_SHARED,
+		WORKER_SHARED,
+		UNKNOWN
+	}
+
+	public enum SynchronizationKind {
+		NONE,
+		INTRINSIC_LOCK,
+		EXPLICIT_LOCK,
+		SYNCHRONIZED_WRAPPER,
+		VOLATILE_SNAPSHOT,
+		ATOMIC_REFERENCE,
+		CONCURRENT_COLLECTION,
+		UNKNOWN
+	}
+
+	public enum IterationSemantics {
+		LIVE,
+		EXTERNALLY_LOCKED,
+		WEAKLY_CONSISTENT,
+		IMMUTABLE_SNAPSHOT,
 		COPY_ON_WRITE,
-		CONCURRENT_MEMBERSHIP,
+		UNKNOWN
+	}
+
+	public enum AtomicityRequirement {
+		INDIVIDUAL_OPERATIONS,
+		CHECK_THEN_ACT,
+		COMPOUND_UPDATE,
+		DRAIN,
+		REPLACE_ALL,
+		TRANSACTION,
+		UNKNOWN
+	}
+
+	public enum WorkloadShape {
+		READ_MOSTLY,
+		WRITE_MOSTLY,
+		BALANCED,
+		REGISTRATION_HEAVY,
+		NOTIFICATION_HEAVY,
 		PRODUCER_CONSUMER,
-		ATOMIC_DRAIN,
 		UNKNOWN
 	}
 
