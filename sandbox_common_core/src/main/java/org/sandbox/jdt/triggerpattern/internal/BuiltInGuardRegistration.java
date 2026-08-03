@@ -33,6 +33,12 @@ import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 /** Canonical registration entry point for built-in guard functions. */
 public final class BuiltInGuardRegistration {
 
+	enum HierarchyMatch {
+		MATCH,
+		NO_MATCH,
+		UNKNOWN
+	}
+
 	private BuiltInGuardRegistration() {
 	}
 
@@ -203,30 +209,48 @@ public final class BuiltInGuardRegistration {
 					"Cannot resolve the type hierarchy of " + argument(args, 0)); //$NON-NLS-1$
 			return true;
 		}
-		return isSubtypeOf(binding, stripQuotes(argument(args, 1)), new HashSet<>());
+		HierarchyMatch match= subtypeMatch(binding, stripQuotes(argument(args, 1)), new HashSet<>());
+		if (match == HierarchyMatch.UNKNOWN) {
+			context.markUnknown("subtypeOf", //$NON-NLS-1$
+					"Cannot resolve the complete type hierarchy of " + argument(args, 0)); //$NON-NLS-1$
+			return true;
+		}
+		return match == HierarchyMatch.MATCH;
 	}
 
-	private static boolean isSubtypeOf(ITypeBinding binding, String expectedType, Set<String> visited) {
-		if (binding == null || binding.isRecovered()) {
-			return false;
+	static HierarchyMatch subtypeMatch(ITypeBinding binding, String expectedType, Set<String> visited) {
+		if (binding == null) {
+			return HierarchyMatch.NO_MATCH;
+		}
+		if (binding.isRecovered()) {
+			return HierarchyMatch.UNKNOWN;
 		}
 		ITypeBinding declaration= binding.getTypeDeclaration();
+		if (declaration == null || declaration.isRecovered()) {
+			return HierarchyMatch.UNKNOWN;
+		}
 		String key= declaration.getKey();
-		if (key != null && !visited.add(key)) {
-			return false;
+		String identity= key == null || key.isBlank() ? declaration.getQualifiedName() : key;
+		if (identity != null && !identity.isBlank() && !visited.add(identity)) {
+			return HierarchyMatch.NO_MATCH;
 		}
 		if (matchesTypeName(declaration, expectedType)) {
-			return true;
+			return HierarchyMatch.MATCH;
 		}
-		if (isSubtypeOf(declaration.getSuperclass(), expectedType, visited)) {
-			return true;
+		boolean unknown= false;
+		HierarchyMatch superclassMatch= subtypeMatch(declaration.getSuperclass(), expectedType, visited);
+		if (superclassMatch == HierarchyMatch.MATCH) {
+			return HierarchyMatch.MATCH;
 		}
+		unknown= superclassMatch == HierarchyMatch.UNKNOWN;
 		for (ITypeBinding iface : declaration.getInterfaces()) {
-			if (isSubtypeOf(iface, expectedType, visited)) {
-				return true;
+			HierarchyMatch interfaceMatch= subtypeMatch(iface, expectedType, visited);
+			if (interfaceMatch == HierarchyMatch.MATCH) {
+				return HierarchyMatch.MATCH;
 			}
+			unknown|= interfaceMatch == HierarchyMatch.UNKNOWN;
 		}
-		return false;
+		return unknown ? HierarchyMatch.UNKNOWN : HierarchyMatch.NO_MATCH;
 	}
 
 	private static boolean evaluateGenericTypeIs(GuardContext context, Object... args) {
@@ -249,9 +273,24 @@ public final class BuiltInGuardRegistration {
 					"Cannot resolve generic type arguments for " + argument(args, 0)); //$NON-NLS-1$
 			return true;
 		}
+		if (index < 0) {
+			return false;
+		}
+		if (binding.isRawType()) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Generic type arguments are erased for " + argument(args, 0)); //$NON-NLS-1$
+			return true;
+		}
 		ITypeBinding[] arguments= binding.getTypeArguments();
-		return index >= 0 && index < arguments.length
-				&& matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));
+		if (index >= arguments.length) {
+			return false;
+		}
+		if (arguments[index] == null || arguments[index].isRecovered()) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Cannot resolve generic type argument " + index + " for " + argument(args, 0)); //$NON-NLS-1$ //$NON-NLS-2$
+			return true;
+		}
+		return matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));
 	}
 
 	private static SemanticPlanValue literal(Object[] args, int index) {

@@ -135,9 +135,9 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		hintFile.setId(filePage.getHintId());
 		hintFile.setDescription(filePage.getHintDescription());
 		hintFile.setSeverity(filePage.getSeverityValue());
-		if (template != SandboxHintTemplates.PLAN_AWARE) {
-			hintFile.setBindingPolicy("required".equals(filePage.getBindingPolicyValue()) //$NON-NLS-1$
-					? HintBindingPolicy.REQUIRED : HintBindingPolicy.OPTIONAL);
+		if (template != SandboxHintTemplates.PLAN_AWARE
+				&& "required".equals(filePage.getBindingPolicyValue())) { //$NON-NLS-1$
+			hintFile.setBindingPolicy(HintBindingPolicy.REQUIRED);
 		}
 		int minJava = filePage.getMinJavaVersion();
 		if (minJava > 0) {

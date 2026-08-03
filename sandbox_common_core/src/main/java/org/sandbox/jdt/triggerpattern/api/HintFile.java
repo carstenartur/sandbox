@@ -169,8 +169,8 @@ public final class HintFile {
 	 * Returns the explicitly declared semantic binding policy.
 	 *
 	 * <p>A {@code null} value means that the compatibility default applies.
-	 * Plan-aware programs are validated separately and require
-	 * {@link HintBindingPolicy#REQUIRED}.</p>
+	 * Plan-aware programs derive strictness from their semantic plan contract and
+	 * normally leave this property unset.</p>
 	 *
 	 * @return the binding policy, or {@code null} when no directive was declared
 	 * @since 1.6.0
