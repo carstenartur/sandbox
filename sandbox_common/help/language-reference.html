@@ -15,7 +15,8 @@
 <tr><td><code>caseInsensitive</code></td><td><code>&lt;!caseInsensitive&gt;</code></td><td>Enable case-insensitive literal matching.</td></tr>
 <tr><td><code>suppressWarnings</code></td><td><code>&lt;!suppressWarnings: key&gt;</code></td><td>Recognized suppression keys.</td></tr>
 <tr><td><code>treeKind</code></td><td><code>&lt;!treeKind: METHOD_DECLARATION&gt;</code></td><td>Restrict indexed AST node kinds.</td></tr>
-<tr><td><code>requires-plan</code></td><td><code>&lt;!requires-plan: contract-id&gt;</code></td><td>Require a semantic-plan contract and fail-closed semantic target resolution.</td></tr>
+<tr><td><code>binding-policy</code></td><td><code>&lt;!binding-policy: required&gt;</code></td><td>Make an ordinary binding-dependent hint fail closed when semantic information is unresolved. The default is optional compatibility.</td></tr>
+<tr><td><code>requires-plan</code></td><td><code>&lt;!requires-plan: contract-id&gt;</code></td><td>Require a semantic-plan contract and fail-closed semantic target resolution; no separate binding policy is needed.</td></tr>
 <tr><td><code>map</code></td><td><code>&lt;!map N: old =&gt; new&gt;</code></td><td>Reusable source/replacement mapping.</td></tr>
 <tr><td><code>foreach</code></td><td><code>&lt;!foreach N: source -&gt; target&gt;</code></td><td>Generate rules from mapping entries.</td></tr>
 <tr><td><code>predicate</code></td><td><code>&lt;!predicate p($n): guard($n)&gt;</code></td><td>Named parameterized guard expression.</td></tr>
@@ -34,6 +35,9 @@
 <tr><td><code>;;</code></td><td>Terminate one rule.</td></tr>
 <tr><td><code>&amp;&amp;</code>, <code>||</code>, <code>!</code></td><td>Guard conjunction, disjunction and negation.</td></tr>
 </table>
+<h2>Binding-dependent guards</h2>
+<p>Guards such as <code>instanceof</code>, <code>genericTypeIs</code> and <code>subtypeOf</code> can report an unknown result when JDT cannot resolve the required binding. With <code>binding-policy: optional</code> or no explicit policy, the historical boolean compatibility value is used. With <code>binding-policy: required</code>, or whenever a semantic plan is installed, unknown means no rewrite and an actionable diagnostic.</p>
+<p>Three-valued composition follows the information available: <code>UNKNOWN || MATCH</code> is <code>MATCH</code>, <code>UNKNOWN &amp;&amp; NO_MATCH</code> is <code>NO_MATCH</code>, and negating <code>UNKNOWN</code> remains <code>UNKNOWN</code>.</p>
 <h2>Structured action target convention</h2>
 <p>The primary matched node is the implicit target. Add <code>target=$binding</code> only to operate on another bound node.</p>
 <h2>Standard structured actions</h2>
