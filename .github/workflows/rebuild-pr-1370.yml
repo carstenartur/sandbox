@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - rebuild/pr-1370-after-1369
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
