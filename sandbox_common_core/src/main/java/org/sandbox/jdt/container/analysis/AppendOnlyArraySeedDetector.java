@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
-import static org.sandbox.jdt.container.analysis.ContainerAstFacts.assignment;
 import static org.sandbox.jdt.container.analysis.ContainerAstFacts.expressionStatement;
 import static org.sandbox.jdt.container.analysis.ContainerAstFacts.isArrayLength;
 import static org.sandbox.jdt.container.analysis.ContainerAstFacts.isOne;
@@ -20,8 +19,9 @@ import static org.sandbox.jdt.container.analysis.ContainerAstFacts.unwrap;
 import static org.sandbox.jdt.container.analysis.ContainerAstFacts.variableBinding;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,11 +31,12 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
@@ -50,12 +51,16 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
-import org.sandbox.jdt.internal.common.AstProcessorBuilder;
+import org.sandbox.jdt.internal.common.ASTProcessor;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
  * Finds local seeds where a reference array is grown by one element and the new tail
  * slot is assigned immediately afterwards.
+ *
+ * <p>The implementation uses the scoped {@link ASTProcessor} chain deliberately:
+ * after a matching {@link Arrays#copyOf(Object[], int)} invocation, the next stage
+ * searches only the immediately following statement for the corresponding tail write.</p>
  *
  * <p>This detector deliberately stops at {@link AnalysisCompleteness#LOCAL_SEED}.
  * It does not claim that all array uses are append-only, that aliases do not escape or
@@ -63,6 +68,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
  * usage and multi-file planning stages.</p>
  */
 public final class AppendOnlyArraySeedDetector {
+
+	private static final int CURRENT_GROWTH= 0;
 
 	/**
 	 * Finds deterministic, source-ordered append-only array seeds.
@@ -72,44 +79,46 @@ public final class AppendOnlyArraySeedDetector {
 	 */
 	public List<ContainerUsageProfile> findSeeds(CompilationUnit compilationUnit) {
 		Objects.requireNonNull(compilationUnit, "compilationUnit"); //$NON-NLS-1$
-		ReferenceHolder<Integer, ContainerUsageProfile> profiles= ReferenceHolder.createIndexed();
 
-		AstProcessorBuilder.with(profiles)
-				.onAssignment((candidate, holder) -> {
-					detectSeed(candidate).ifPresent(profile ->
-						holder.put(profile.identity().sourceStart(), profile));
-					return true;
-				})
+		List<ContainerUsageProfile> profiles= new ArrayList<>();
+		ReferenceHolder<Integer, GrowthSeed> state= ReferenceHolder.createIndexed();
+		ASTProcessor<ReferenceHolder<Integer, GrowthSeed>, Integer, GrowthSeed> processor=
+				new ASTProcessor<>(state, new HashSet<>());
+
+		processor
+				.callMethodInvocationVisitor(Arrays.class, "copyOf", //$NON-NLS-1$
+						AppendOnlyArraySeedDetector::rememberGrowth,
+						AppendOnlyArraySeedDetector::followingStatementScope)
+				.callArrayAccessVisitor((node, holder) ->
+						collectTailWrite((ArrayAccess) node, holder, profiles))
 				.build(compilationUnit);
 
-		return profiles.entrySet().stream()
-				.sorted(Map.Entry.comparingByKey())
-				.map(Map.Entry::getValue)
-				.toList();
+		return List.copyOf(profiles);
 	}
 
-	private Optional<ContainerUsageProfile> detectSeed(Assignment growthAssignment) {
-		if (growthAssignment.getOperator() != Assignment.Operator.ASSIGN) {
+	private static boolean rememberGrowth(MethodInvocation copyOf,
+			ReferenceHolder<Integer, GrowthSeed> state) {
+		state.remove(CURRENT_GROWTH);
+		growthSeed(copyOf).ifPresent(seed -> state.put(CURRENT_GROWTH, seed));
+		return false;
+	}
+
+	private static Optional<GrowthSeed> growthSeed(MethodInvocation copyOf) {
+		if (copyOf.arguments().size() != 2) {
+			return Optional.empty();
+		}
+
+		Assignment growthAssignment= enclosingAssignment(copyOf);
+		if (growthAssignment == null
+				|| growthAssignment.getOperator() != Assignment.Operator.ASSIGN
+				|| unwrap(growthAssignment.getRightHandSide()) != copyOf) {
 			return Optional.empty();
 		}
 
 		Expression array= unwrap(growthAssignment.getLeftHandSide());
-		MethodInvocation copyOf= methodInvocation(growthAssignment.getRightHandSide());
-		if (copyOf == null || !isArraysCopyOf(copyOf) || copyOf.arguments().size() != 2) {
-			return Optional.empty();
-		}
-
 		Expression sourceArray= (Expression) copyOf.arguments().get(0);
 		Expression requestedLength= (Expression) copyOf.arguments().get(1);
 		if (!sameVariable(array, sourceArray) || !isLengthPlusOne(requestedLength, array)) {
-			return Optional.empty();
-		}
-
-		ExpressionStatement growthStatement= expressionStatement(growthAssignment);
-		Assignment appendAssignment= growthStatement == null
-				? null
-				: assignment(nextStatement(growthStatement));
-		if (!isTailWrite(appendAssignment, array)) {
 			return Optional.empty();
 		}
 
@@ -121,27 +130,61 @@ public final class AppendOnlyArraySeedDetector {
 			return Optional.empty();
 		}
 
+		return Optional.of(new GrowthSeed(array, growthAssignment, binding, elementDomain));
+	}
+
+	private static ASTNode followingStatementScope(ASTNode node) {
+		MethodInvocation copyOf= (MethodInvocation) node;
+		Assignment assignment= enclosingAssignment(copyOf);
+		ExpressionStatement statement= assignment == null ? null : expressionStatement(assignment);
+		Statement next= statement == null ? null : nextStatement(statement);
+		return next != null ? next : copyOf;
+	}
+
+	private static boolean collectTailWrite(ArrayAccess arrayAccess,
+			ReferenceHolder<Integer, GrowthSeed> state,
+			List<ContainerUsageProfile> profiles) {
+		GrowthSeed seed= state.get(CURRENT_GROWTH);
+		if (seed == null) {
+			return true;
+		}
+
+		Assignment appendAssignment= enclosingAssignment(arrayAccess);
+		if (appendAssignment == null
+				|| unwrap(appendAssignment.getLeftHandSide()) != arrayAccess
+				|| !sameVariable(seed.array(), arrayAccess.getArray())
+				|| !isLengthMinusOne(arrayAccess.getIndex(), seed.array())) {
+			return true;
+		}
+
+		profiles.add(createProfile(seed, appendAssignment));
+		state.remove(CURRENT_GROWTH);
+		return false;
+	}
+
+	private static ContainerUsageProfile createProfile(GrowthSeed seed, Assignment appendAssignment) {
 		List<UsageEvidence> evidence= new ArrayList<>();
 		evidence.add(evidence(Kind.ARRAY_GROWTH,
-				"Array capacity is increased by one element", growthAssignment)); //$NON-NLS-1$
+				"Array capacity is increased by one element", seed.growthAssignment())); //$NON-NLS-1$
 		evidence.add(evidence(Kind.APPEND_WRITE,
 				"The immediately following write targets the new tail slot", appendAssignment)); //$NON-NLS-1$
-		if (elementDomain == ElementDomain.REFERENCE || elementDomain == ElementDomain.ENUM) {
+		if (seed.elementDomain() == ElementDomain.REFERENCE
+				|| seed.elementDomain() == ElementDomain.ENUM) {
 			evidence.add(evidence(Kind.REFERENCE_COMPONENT,
-					"The resolved array component is a reference type", array)); //$NON-NLS-1$
+					"The resolved array component is a reference type", seed.array())); //$NON-NLS-1$
 		} else {
 			evidence.add(evidence(Kind.UNRESOLVED_BINDING,
-					"The array component type still requires binding validation", array)); //$NON-NLS-1$
+					"The array component type still requires binding validation", seed.array())); //$NON-NLS-1$
 		}
 
 		ContainerIdentity identity= new ContainerIdentity(
-				binding.map(value -> value.getVariableDeclaration().getKey()).orElse(""), //$NON-NLS-1$
-				array.toString(), array.getStartPosition(), array.getLength());
+				seed.binding().map(value -> value.getVariableDeclaration().getKey()).orElse(""), //$NON-NLS-1$
+				seed.array().toString(), seed.array().getStartPosition(), seed.array().getLength());
 
-		return Optional.of(new ContainerUsageProfile(
+		return new ContainerUsageProfile(
 				identity,
 				ContainerShape.ARRAY,
-				elementDomain,
+				seed.elementDomain(),
 				ContainerUsageProfile.AccessProfile.appendOnlyArraySeed(),
 				OrderRequirement.UNKNOWN,
 				UniquenessRequirement.UNKNOWN,
@@ -151,7 +194,15 @@ public final class AppendOnlyArraySeedDetector {
 				EscapeLevel.UNKNOWN,
 				ConcurrencyProfile.unknown(),
 				AnalysisCompleteness.LOCAL_SEED,
-				evidence));
+				evidence);
+	}
+
+	private static Assignment enclosingAssignment(ASTNode node) {
+		ASTNode current= node;
+		while (current.getParent() instanceof ParenthesizedExpression) {
+			current= current.getParent();
+		}
+		return current.getParent() instanceof Assignment assignment ? assignment : null;
 	}
 
 	private static UsageEvidence evidence(Kind kind, String summary, ASTNode node) {
@@ -159,10 +210,7 @@ public final class AppendOnlyArraySeedDetector {
 	}
 
 	private static ElementDomain elementDomain(ITypeBinding arrayType) {
-		if (arrayType == null) {
-			return ElementDomain.UNKNOWN;
-		}
-		if (!arrayType.isArray()) {
+		if (arrayType == null || !arrayType.isArray()) {
 			return ElementDomain.UNKNOWN;
 		}
 		ITypeBinding componentType= arrayType.getComponentType();
@@ -173,41 +221,6 @@ public final class AppendOnlyArraySeedDetector {
 			return ElementDomain.PRIMITIVE;
 		}
 		return componentType.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;
-	}
-
-	private static boolean isTailWrite(Assignment appendAssignment, Expression array) {
-		if (appendAssignment == null || appendAssignment.getOperator() != Assignment.Operator.ASSIGN) {
-			return false;
-		}
-		Expression leftHandSide= unwrap(appendAssignment.getLeftHandSide());
-		if (!(leftHandSide instanceof ArrayAccess arrayAccess)) {
-			return false;
-		}
-		return sameVariable(array, arrayAccess.getArray())
-				&& isLengthMinusOne(arrayAccess.getIndex(), array);
-	}
-
-	private static MethodInvocation methodInvocation(Expression expression) {
-		Expression unwrapped= unwrap(expression);
-		return unwrapped instanceof MethodInvocation invocation ? invocation : null;
-	}
-
-	private static boolean isArraysCopyOf(MethodInvocation invocation) {
-		if (!"copyOf".equals(invocation.getName().getIdentifier())) { //$NON-NLS-1$
-			return false;
-		}
-
-		IMethodBinding binding= invocation.resolveMethodBinding();
-		if (binding != null && binding.getDeclaringClass() != null) {
-			return "java.util.Arrays".equals(binding.getDeclaringClass().getErasure().getQualifiedName()); //$NON-NLS-1$
-		}
-
-		Expression expression= invocation.getExpression();
-		if (expression == null) {
-			return false;
-		}
-		String owner= expression.toString();
-		return "Arrays".equals(owner) || "java.util.Arrays".equals(owner); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static boolean isLengthPlusOne(Expression expression, Expression array) {
@@ -229,5 +242,19 @@ public final class AppendOnlyArraySeedDetector {
 			return false;
 		}
 		return isArrayLength(infix.getLeftOperand(), array) && isOne(infix.getRightOperand());
+	}
+
+	private record GrowthSeed(
+			Expression array,
+			Assignment growthAssignment,
+			Optional<IVariableBinding> binding,
+			ElementDomain elementDomain) {
+
+		private GrowthSeed {
+			Objects.requireNonNull(array, "array"); //$NON-NLS-1$
+			Objects.requireNonNull(growthAssignment, "growthAssignment"); //$NON-NLS-1$
+			Objects.requireNonNull(binding, "binding"); //$NON-NLS-1$
+			Objects.requireNonNull(elementDomain, "elementDomain"); //$NON-NLS-1$
+		}
 	}
 }
