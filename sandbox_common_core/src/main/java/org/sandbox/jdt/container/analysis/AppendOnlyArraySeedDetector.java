@@ -19,8 +19,6 @@ import static org.sandbox.jdt.container.analysis.ContainerAstFacts.unwrap;
 import static org.sandbox.jdt.container.analysis.ContainerAstFacts.variableBinding;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,6 +29,7 @@ import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
@@ -51,16 +50,16 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
-import org.sandbox.jdt.internal.common.ASTProcessor;
+import org.sandbox.jdt.internal.common.AstProcessing;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 /**
  * Finds local seeds where a reference array is grown by one element and the new tail
  * slot is assigned immediately afterwards.
  *
- * <p>The implementation uses the scoped {@link ASTProcessor} chain deliberately:
- * after a matching {@link Arrays#copyOf(Object[], int)} invocation, the next stage
- * searches only the immediately following statement for the corresponding tail write.</p>
+ * <p>The implementation uses an explicit scoped AST pipeline: after a semantically
+ * matching {@code java.util.Arrays.copyOf(...)} invocation, the next stage searches
+ * only the immediately following statement for the corresponding tail write.</p>
  *
  * <p>This detector deliberately stops at {@link AnalysisCompleteness#LOCAL_SEED}.
  * It does not claim that all array uses are append-only, that aliases do not escape or
@@ -82,29 +81,23 @@ public final class AppendOnlyArraySeedDetector {
 
 		List<ContainerUsageProfile> profiles= new ArrayList<>();
 		ReferenceHolder<Integer, GrowthSeed> state= ReferenceHolder.createIndexed();
-		ASTProcessor<ReferenceHolder<Integer, GrowthSeed>, Integer, GrowthSeed> processor=
-				new ASTProcessor<>(state, new HashSet<>());
 
-		processor
-				.callMethodInvocationVisitor(Arrays.class, "copyOf", //$NON-NLS-1$
-						AppendOnlyArraySeedDetector::rememberGrowth,
+		AstProcessing.scoped(state)
+				.find(MethodInvocation.class,
+						(copyOf, holder) -> growthSeed(copyOf).isPresent(),
+						(copyOf, holder) -> holder.put(
+								CURRENT_GROWTH, growthSeed(copyOf).orElseThrow()),
 						AppendOnlyArraySeedDetector::followingStatementScope)
-				.callArrayAccessVisitor((node, holder) ->
-						collectTailWrite((ArrayAccess) node, holder, profiles))
+				.then(ArrayAccess.class,
+						AppendOnlyArraySeedDetector::isTailWrite,
+						(arrayAccess, holder) -> collectTailWrite(arrayAccess, holder, profiles))
 				.build(compilationUnit);
 
 		return List.copyOf(profiles);
 	}
 
-	private static boolean rememberGrowth(MethodInvocation copyOf,
-			ReferenceHolder<Integer, GrowthSeed> state) {
-		state.remove(CURRENT_GROWTH);
-		growthSeed(copyOf).ifPresent(seed -> state.put(CURRENT_GROWTH, seed));
-		return false;
-	}
-
 	private static Optional<GrowthSeed> growthSeed(MethodInvocation copyOf) {
-		if (copyOf.arguments().size() != 2) {
+		if (!isArraysCopyOf(copyOf) || copyOf.arguments().size() != 2) {
 			return Optional.empty();
 		}
 
@@ -133,33 +126,47 @@ public final class AppendOnlyArraySeedDetector {
 		return Optional.of(new GrowthSeed(array, growthAssignment, binding, elementDomain));
 	}
 
-	private static ASTNode followingStatementScope(ASTNode node) {
-		MethodInvocation copyOf= (MethodInvocation) node;
-		Assignment assignment= enclosingAssignment(copyOf);
-		ExpressionStatement statement= assignment == null ? null : expressionStatement(assignment);
-		Statement next= statement == null ? null : nextStatement(statement);
-		return next != null ? next : copyOf;
+	private static boolean isArraysCopyOf(MethodInvocation invocation) {
+		if (!"copyOf".equals(invocation.getName().getIdentifier())) { //$NON-NLS-1$
+			return false;
+		}
+		IMethodBinding binding= invocation.resolveMethodBinding();
+		if (binding != null && binding.getDeclaringClass() != null) {
+			return "java.util.Arrays".equals( //$NON-NLS-1$
+					binding.getDeclaringClass().getErasure().getQualifiedName());
+		}
+		Expression owner= invocation.getExpression();
+		return owner != null && ("Arrays".equals(owner.toString()) //$NON-NLS-1$
+				|| "java.util.Arrays".equals(owner.toString())); //$NON-NLS-1$
 	}
 
-	private static boolean collectTailWrite(ArrayAccess arrayAccess,
-			ReferenceHolder<Integer, GrowthSeed> state,
-			List<ContainerUsageProfile> profiles) {
+	private static ASTNode followingStatementScope(MethodInvocation copyOf) {
+		Assignment assignment= enclosingAssignment(copyOf);
+		ExpressionStatement statement= assignment == null ? null : expressionStatement(assignment);
+		return statement == null ? null : nextStatement(statement);
+	}
+
+	private static boolean isTailWrite(ArrayAccess arrayAccess,
+			ReferenceHolder<Integer, GrowthSeed> state) {
 		GrowthSeed seed= state.get(CURRENT_GROWTH);
 		if (seed == null) {
-			return true;
+			return false;
 		}
-
 		Assignment appendAssignment= enclosingAssignment(arrayAccess);
-		if (appendAssignment == null
-				|| unwrap(appendAssignment.getLeftHandSide()) != arrayAccess
-				|| !sameVariable(seed.array(), arrayAccess.getArray())
-				|| !isLengthMinusOne(arrayAccess.getIndex(), seed.array())) {
-			return true;
-		}
+		return appendAssignment != null
+				&& unwrap(appendAssignment.getLeftHandSide()) == arrayAccess
+				&& sameVariable(seed.array(), arrayAccess.getArray())
+				&& isLengthMinusOne(arrayAccess.getIndex(), seed.array());
+	}
 
-		profiles.add(createProfile(seed, appendAssignment));
-		state.remove(CURRENT_GROWTH);
-		return false;
+	private static void collectTailWrite(ArrayAccess arrayAccess,
+			ReferenceHolder<Integer, GrowthSeed> state,
+			List<ContainerUsageProfile> profiles) {
+		GrowthSeed seed= state.remove(CURRENT_GROWTH);
+		Assignment appendAssignment= enclosingAssignment(arrayAccess);
+		if (seed != null && appendAssignment != null) {
+			profiles.add(createProfile(seed, appendAssignment));
+		}
 	}
 
 	private static ContainerUsageProfile createProfile(GrowthSeed seed, Assignment appendAssignment) {
