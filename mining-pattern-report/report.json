@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1136,
+        "files": 1140,
         "matches": 53,
         "rules": 10
       }
@@ -1469,7 +1469,7 @@
       "hintFile": "collection-performance",
       "rule": "collection-performance.map-values-size.to-map-size",
       "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/internal/StructuredRewriteActionParserTest.java",
-      "line": 80,
+      "line": 85,
       "matchedCode": "list.values().size()",
       "suggestedReplacement": "list.size()"
     },
