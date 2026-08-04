@@ -101,7 +101,7 @@ import org.sandbox.jdt.triggerpattern.internal.HintPredicatePreprocessor;
 <span class="fc" id="L101">			return HintLanguageVocabulary.actions().stream().map(action -&gt; {</span>
 <span class="fc" id="L102">				String replacement= action.replacement();</span>
 <span class="fc" id="L103">				int cursor= replacement.indexOf('=');</span>
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">				cursor= cursor &lt; 0 ? replacement.length() : cursor + 1;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">				cursor= cursor &lt; 0 ? replacement.length() : cursor + 1;</span>
 <span class="fc" id="L105">				return new CompletionEntry(action.name(), replacement, cursor,</span>
 <span class="fc" id="L106">						action.description() + &quot; — &quot; + action.syntax()); //$NON-NLS-1$</span>
 <span class="fc" id="L107">			}).toList();</span>

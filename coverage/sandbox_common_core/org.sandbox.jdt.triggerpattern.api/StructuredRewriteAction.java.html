@@ -38,29 +38,38 @@ public record StructuredRewriteAction(String name, Map&lt;String, RewriteActionV
 		}
 <span class="fc" id="L39">	}</span>
 
-	/** Returns one required argument or fails with an actionable diagnostic. */
+	/**
+	 * Returns one required argument.
+	 *
+	 * &lt;p&gt;The conventional {@code target} argument defaults to the rule's primary
+	 * matched node. Authors only need to specify it when an action operates on a
+	 * different bound node.&lt;/p&gt;
+	 */
 	public RewriteActionValue requiredArgument(String argumentName) {
-<span class="fc" id="L43">		RewriteActionValue value= arguments.get(argumentName);</span>
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (value == null) {</span>
-<span class="nc" id="L45">			throw new IllegalArgumentException(&quot;Action &quot; + name + &quot; requires argument &quot; + argumentName); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L49">		RewriteActionValue value= arguments.get(argumentName);</span>
+<span class="pc bpc" id="L50" title="1 of 4 branches missed.">		if (value == null &amp;&amp; &quot;target&quot;.equals(argumentName)) { //$NON-NLS-1$</span>
+<span class="fc" id="L51">			return RewriteActionValue.matchedNode();</span>
 		}
-<span class="fc" id="L47">		return value;</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">		if (value == null) {</span>
+<span class="nc" id="L54">			throw new IllegalArgumentException(&quot;Action &quot; + name + &quot; requires argument &quot; + argumentName); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L56">		return value;</span>
 	}
 
 	private static String requireIdentifier(String value, String label) {
-<span class="pc bpc" id="L51" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
-<span class="nc" id="L52">			throw new IllegalArgumentException(label + &quot; must not be blank&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L60" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L61">			throw new IllegalArgumentException(label + &quot; must not be blank&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L54">		String identifier= value.trim();</span>
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(identifier.charAt(0))) {</span>
-<span class="nc" id="L56">			throw new IllegalArgumentException(label + &quot; is not an identifier: &quot; + identifier); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		String identifier= value.trim();</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(identifier.charAt(0))) {</span>
+<span class="nc" id="L65">			throw new IllegalArgumentException(label + &quot; is not an identifier: &quot; + identifier); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L58" title="All 2 branches covered.">		for (int index= 1; index &lt; identifier.length(); index++) {</span>
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(identifier.charAt(index))) {</span>
-<span class="nc" id="L60">				throw new IllegalArgumentException(label + &quot; is not an identifier: &quot; + identifier); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (int index= 1; index &lt; identifier.length(); index++) {</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(identifier.charAt(index))) {</span>
+<span class="nc" id="L69">				throw new IllegalArgumentException(label + &quot; is not an identifier: &quot; + identifier); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc" id="L63">		return identifier;</span>
+<span class="fc" id="L72">		return identifier;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

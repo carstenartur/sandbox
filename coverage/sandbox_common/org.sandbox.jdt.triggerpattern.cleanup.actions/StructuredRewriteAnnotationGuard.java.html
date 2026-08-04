@@ -68,14 +68,14 @@ final class StructuredRewriteAnnotationGuard {
 			StructuredRewriteAction action) throws CoreException {
 <span class="fc" id="L69">		ASTNode current= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
 <span class="pc bpc" id="L70" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">			if (current instanceof BodyDeclaration declaration) {</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			if (current instanceof BodyDeclaration declaration) {</span>
 <span class="pc bpc" id="L72" title="3 of 4 branches missed.">				if (declaration instanceof FieldDeclaration field &amp;&amp; field.fragments().size() != 1) {</span>
 <span class="nc" id="L73">					throw context.failure(</span>
 <span class="nc" id="L74">							&quot;Declaration-wide action is ambiguous for a multi-fragment field&quot;); //$NON-NLS-1$</span>
 				}
 <span class="fc" id="L76">				return declaration;</span>
 			}
-<span class="fc" id="L78">			current= current.getParent();</span>
+<span class="nc" id="L78">			current= current.getParent();</span>
 		}
 <span class="nc" id="L80">		throw context.failure(&quot;Structured action target is not a Java declaration&quot;); //$NON-NLS-1$</span>
 	}

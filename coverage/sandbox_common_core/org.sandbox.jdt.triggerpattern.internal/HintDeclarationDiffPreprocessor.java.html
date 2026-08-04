@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintDeclarationDiffPreprocessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">HintDeclarationDiffPreprocessor.java</span></div><h1>HintDeclarationDiffPreprocessor.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+
+import org.sandbox.jdt.triggerpattern.api.HintPlanRequirement;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
+import org.sandbox.jdt.triggerpattern.api.PatternKind;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/**
+ * Lowers unambiguous plan-aware method declaration diffs to structured actions.
+ *
+ * &lt;p&gt;This is deliberately a small compiler, not a general Java text rewriter.
+ * It accepts one-line method headers without annotations, bodies, varargs,
+ * generic parameters or changed throws/return contracts. The supported surface
+ * covers method renames, modifier changes, retained-parameter type changes,
+ * parameter removals and append-only parameter additions. Anything ambiguous
+ * fails with a source diagnostic rather than silently becoming a text rewrite.&lt;/p&gt;
+ */
+final class HintDeclarationDiffPreprocessor {
+
+	private HintDeclarationDiffPreprocessor() {
+	}
+
+	static String preprocess(String source) throws HintParseException {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">		String normalized= source == null ? &quot;&quot; : source.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		if (HintPlanRequirement.fromContent(normalized).isEmpty()) {</span>
+<span class="fc" id="L49">			return normalized;</span>
+		}
+<span class="fc" id="L51">		String[] lines= normalized.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="fc" id="L52">		List&lt;String&gt; output= new ArrayList&lt;&gt;(lines.length);</span>
+<span class="fc" id="L53">		boolean inBlockComment= false;</span>
+<span class="fc" id="L54">		boolean inEmbeddedJava= false;</span>
+<span class="fc" id="L55">		int ruleStart= 0;</span>
+
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (int lineIndex= 0; lineIndex &lt; lines.length; lineIndex++) {</span>
+<span class="fc" id="L58">			String line= lines[lineIndex];</span>
+<span class="fc" id="L59">			String trimmed= line.stripLeading();</span>
+<span class="fc" id="L60">			boolean visible= true;</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">			if (inEmbeddedJava) {</span>
+<span class="nc" id="L62">				visible= false;</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L64">					inEmbeddedJava= false;</span>
+				}
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">			} else if (inBlockComment) {</span>
+<span class="nc" id="L67">				visible= false;</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L69">					inBlockComment= false;</span>
+				}
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			} else if (trimmed.startsWith(&quot;&lt;?&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L72">				visible= false;</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">				inEmbeddedJava= !trimmed.contains(&quot;?&gt;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">			} else if (trimmed.startsWith(&quot;/*&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L75">				visible= false;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">				inBlockComment= !trimmed.contains(&quot;*/&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			} else if (trimmed.startsWith(&quot;//&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L78">				visible= false;</span>
+			}
+
+<span class="fc bfc" id="L81" title="All 6 branches covered.">			if (visible &amp;&amp; trimmed.startsWith(&quot;=&gt;&quot;) &amp;&amp; !trimmed.startsWith(&quot;=&gt;!&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L82">				int sourceIndex= previousSourceLine(output, ruleStart);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">				if (sourceIndex &gt;= 0) {</span>
+<span class="fc" id="L84">					ActionAndGuard sourceSplit= splitGuard(output.get(sourceIndex).stripLeading());</span>
+<span class="fc" id="L85">					ActionAndGuard targetSplit= splitGuard(trimmed.substring(2).trim());</span>
+<span class="fc" id="L86">					Compilation compilation= compile(sourceSplit.actionText(), targetSplit.actionText(),</span>
+							sourceIndex + 1, lineIndex + 1);
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">					if (compilation != null &amp;&amp; !compilation.actions().isEmpty()) {</span>
+<span class="fc" id="L89">						String indentation= line.substring(0, line.length() - trimmed.length());</span>
+<span class="fc" id="L90">						appendActions(output, indentation, compilation.actions(), targetSplit.guardText());</span>
+<span class="fc" id="L91">						continue;</span>
+					}
+				}
+			}
+
+<span class="fc" id="L96">			output.add(line);</span>
+<span class="fc bfc" id="L97" title="All 4 branches covered.">			if (visible &amp;&amp; &quot;;;&quot;.equals(trimmed)) { //$NON-NLS-1$</span>
+<span class="fc" id="L98">				ruleStart= output.size();</span>
+			}
+		}
+<span class="fc" id="L101">		return String.join(&quot;\n&quot;, output); //$NON-NLS-1$</span>
+	}
+
+	private static int previousSourceLine(List&lt;String&gt; output, int ruleStart) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		for (int index= output.size() - 1; index &gt;= ruleStart; index--) {</span>
+<span class="fc" id="L106">			String candidate= output.get(index).stripLeading();</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">			if (candidate.isBlank() || candidate.startsWith(&quot;@&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">					|| candidate.startsWith(&quot;//&quot;) || candidate.startsWith(&quot;/*&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">					|| candidate.startsWith(&quot;\&quot;&quot;) || candidate.startsWith(&quot;&lt;!&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L110">				continue;</span>
+			}
+<span class="fc" id="L112">			return index;</span>
+		}
+<span class="nc" id="L114">		return -1;</span>
+	}
+
+	private static void appendActions(List&lt;String&gt; output, String indentation,
+			List&lt;String&gt; actions, String guard) {
+<span class="fc bfc" id="L119" title="All 2 branches covered.">		for (int index= 0; index &lt; actions.size(); index++) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">			String prefix= index == 0 ? &quot;=&gt;! &quot; : &quot;    &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">			String suffix= index + 1 &lt; actions.size() ? &quot;;&quot; : &quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">			if (index + 1 == actions.size() &amp;&amp; guard != null) {</span>
+<span class="nc" id="L123">				suffix+= &quot; :: &quot; + guard.trim(); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L125">			output.add(indentation + prefix + actions.get(index) + suffix);</span>
+		}
+<span class="fc" id="L127">	}</span>
+
+	private static Compilation compile(String sourceText, String targetText,
+			int sourceLine, int targetLine) throws HintParseException {
+<span class="fc" id="L131">		MethodShape source= MethodShape.parse(sourceText);</span>
+<span class="fc" id="L132">		MethodShape target= MethodShape.parse(targetText);</span>
+<span class="fc bfc" id="L133" title="All 4 branches covered.">		if (source == null || target == null) {</span>
+<span class="fc" id="L134">			return null;</span>
+		}
+<span class="pc bpc" id="L136" title="1 of 4 branches missed.">		if (source.hasAnnotations() || target.hasAnnotations()) {</span>
+<span class="fc" id="L137">			return null;</span>
+		}
+<span class="pc bpc" id="L139" title="2 of 4 branches missed.">		if (source.constructor() || target.constructor()) {</span>
+<span class="nc" id="L140">			return null;</span>
+		}
+<span class="fc bfc" id="L142" title="All 2 branches covered.">		if (!source.returnType().equals(target.returnType())) {</span>
+<span class="fc" id="L143">			throw new HintParseException(</span>
+					&quot;Method declaration diff cannot change the return type yet; use a dedicated typed action&quot;, //$NON-NLS-1$
+					targetLine);
+		}
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (!source.typeParameters().equals(target.typeParameters())</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				|| !source.thrownTypes().equals(target.thrownTypes())) {</span>
+<span class="nc" id="L149">			throw new HintParseException(</span>
+					&quot;Method declaration diff cannot change type parameters or thrown exceptions&quot;, targetLine); //$NON-NLS-1$
+		}
+<span class="fc bfc" id="L152" title="All 2 branches covered.">		if (source.parameters().stream().anyMatch(ParameterShape::varargs)</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">				|| target.parameters().stream().anyMatch(ParameterShape::varargs)) {</span>
+<span class="fc" id="L154">			return null;</span>
+		}
+
+<span class="fc" id="L157">		List&lt;String&gt; actions= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L158">		compileName(source, target, actions, targetLine);</span>
+<span class="fc" id="L159">		compileModifiers(source, target, actions);</span>
+<span class="fc" id="L160">		compileParameters(source, target, actions, sourceLine, targetLine);</span>
+<span class="fc" id="L161">		return new Compilation(actions);</span>
+	}
+
+	private static void compileName(MethodShape source, MethodShape target,
+			List&lt;String&gt; actions, int targetLine) throws HintParseException {
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (source.name().equals(target.name())) {</span>
+<span class="fc" id="L167">			return;</span>
+		}
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (target.name().startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L170">			throw new HintParseException(</span>
+					&quot;A changed method name must be a concrete target identifier&quot;, targetLine); //$NON-NLS-1$
+		}
+<span class="fc" id="L173">		actions.add(&quot;renameDeclaration(name=&quot; + quote(target.name()) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L174">	}</span>
+
+	private static void compileModifiers(MethodShape source, MethodShape target,
+			List&lt;String&gt; actions) {
+<span class="fc bfc" id="L178" title="All 2 branches covered.">		for (String modifier : source.modifiers()) {</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (!target.modifiers().contains(modifier)) {</span>
+<span class="fc" id="L180">				actions.add(&quot;removeModifier(modifier=&quot; + modifier + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="fc" id="L182">		}</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		for (String modifier : target.modifiers()) {</span>
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">			if (!source.modifiers().contains(modifier)) {</span>
+<span class="fc" id="L185">				actions.add(&quot;addModifier(modifier=&quot; + modifier + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="fc" id="L187">		}</span>
+<span class="fc" id="L188">	}</span>
+
+	private static void compileParameters(MethodShape source, MethodShape target,
+			List&lt;String&gt; actions, int sourceLine, int targetLine) throws HintParseException {
+<span class="fc" id="L192">		Map&lt;String, ParameterShape&gt; sourceByName= uniqueParameters(source.parameters(), sourceLine);</span>
+<span class="fc" id="L193">		Map&lt;String, ParameterShape&gt; targetByName= uniqueParameters(target.parameters(), targetLine);</span>
+
+<span class="fc" id="L195">		List&lt;String&gt; retainedInSource= source.parameters().stream().map(ParameterShape::name)</span>
+<span class="fc" id="L196">				.filter(targetByName::containsKey).toList();</span>
+<span class="fc" id="L197">		List&lt;String&gt; retainedInTarget= target.parameters().stream().map(ParameterShape::name)</span>
+<span class="fc" id="L198">				.filter(sourceByName::containsKey).toList();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (!retainedInSource.equals(retainedInTarget)) {</span>
+<span class="fc" id="L200">			throw new HintParseException(</span>
+					&quot;Method declaration diff cannot reorder retained parameters; bind them in their original order&quot;, //$NON-NLS-1$
+					targetLine);
+		}
+
+<span class="fc" id="L205">		boolean seenAdded= false;</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">		for (ParameterShape parameter : target.parameters()) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">			if (!sourceByName.containsKey(parameter.name())) {</span>
+<span class="fc" id="L208">				seenAdded= true;</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">				if (parameter.name().startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L210">					throw new HintParseException(</span>
+							&quot;New parameters need a concrete target name&quot;, targetLine); //$NON-NLS-1$
+				}
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">			} else if (seenAdded) {</span>
+<span class="nc" id="L214">				throw new HintParseException(</span>
+						&quot;New parameters are currently append-only in declaration diffs&quot;, targetLine); //$NON-NLS-1$
+			}
+<span class="fc" id="L217">		}</span>
+
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		for (ParameterShape sourceParameter : source.parameters()) {</span>
+<span class="fc" id="L220">			ParameterShape targetParameter= targetByName.get(sourceParameter.name());</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">			if (targetParameter == null) {</span>
+<span class="fc" id="L222">				actions.add(&quot;removeParameter(name=&quot; + selector(sourceParameter.name()) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">			} else if (!sourceParameter.type().equals(targetParameter.type())) {</span>
+<span class="fc" id="L224">				ensureSupportedType(targetParameter.type(), targetLine);</span>
+<span class="fc" id="L225">				actions.add(&quot;replaceParameterType(name=&quot; + selector(sourceParameter.name()) //$NON-NLS-1$</span>
+<span class="fc" id="L226">						+ &quot;, type=&quot; + quote(targetParameter.type()) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="fc" id="L228">		}</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		for (ParameterShape targetParameter : target.parameters()) {</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">			if (!sourceByName.containsKey(targetParameter.name())) {</span>
+<span class="fc" id="L231">				ensureSupportedType(targetParameter.type(), targetLine);</span>
+<span class="fc" id="L232">				actions.add(&quot;addParameter(type=&quot; + quote(targetParameter.type()) //$NON-NLS-1$</span>
+<span class="fc" id="L233">						+ &quot;, name=&quot; + quote(targetParameter.name()) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="fc" id="L235">		}</span>
+<span class="fc" id="L236">	}</span>
+
+	private static Map&lt;String, ParameterShape&gt; uniqueParameters(Iterable&lt;ParameterShape&gt; parameters,
+			int line) throws HintParseException {
+<span class="fc" id="L240">		Map&lt;String, ParameterShape&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">		for (ParameterShape parameter : parameters) {</span>
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">			if (result.putIfAbsent(parameter.name(), parameter) != null) {</span>
+<span class="nc" id="L243">				throw new HintParseException(&quot;Method declaration contains duplicate parameter name &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L244">						+ parameter.name(), line);</span>
+			}
+<span class="fc" id="L246">		}</span>
+<span class="fc" id="L247">		return result;</span>
+	}
+
+	private static void ensureSupportedType(String type, int line) throws HintParseException {
+<span class="pc bpc" id="L251" title="3 of 6 branches missed.">		if (type.indexOf('&lt;') &gt;= 0 || type.indexOf('&gt;') &gt;= 0 || type.indexOf('?') &gt;= 0</span>
+<span class="pc bpc" id="L252" title="2 of 4 branches missed.">				|| type.endsWith(&quot;...&quot;) || type.contains(&quot;$&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L253">			throw new HintParseException(</span>
+					&quot;Declaration diff target type requires a dedicated typed representation: &quot; + type, line); //$NON-NLS-1$
+		}
+<span class="fc" id="L256">	}</span>
+
+	private static String selector(String name) {
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">		return name.startsWith(&quot;$&quot;) ? name : quote(name); //$NON-NLS-1$</span>
+	}
+
+	private static String quote(String value) {
+<span class="fc" id="L263">		return '&quot;' + value.replace(&quot;\\&quot;, &quot;\\\\&quot;).replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;) + '&quot;'; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+	}
+
+	private static ActionAndGuard splitGuard(String text) {
+<span class="fc" id="L267">		int depth= 0;</span>
+<span class="fc" id="L268">		boolean inQuote= false;</span>
+<span class="fc" id="L269">		boolean escaped= false;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		for (int index= 0; index &lt; text.length() - 1; index++) {</span>
+<span class="fc" id="L271">			char current= text.charAt(index);</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">			if (inQuote) {</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">				if (escaped) {</span>
+<span class="nc" id="L274">					escaped= false;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">				} else if (current == '\\') {</span>
+<span class="nc" id="L276">					escaped= true;</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">				} else if (current == '&quot;') {</span>
+<span class="nc" id="L278">					inQuote= false;</span>
+				}
+				continue;
+			}
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">			if (current == '&quot;') {</span>
+<span class="nc" id="L283">				inQuote= true;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">			} else if (current == '(') {</span>
+<span class="fc" id="L285">				depth++;</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">			} else if (current == ')') {</span>
+<span class="fc" id="L287">				depth--;</span>
+<span class="pc bpc" id="L288" title="1 of 6 branches missed.">			} else if (depth == 0 &amp;&amp; current == ':' &amp;&amp; text.charAt(index + 1) == ':') {</span>
+<span class="fc" id="L289">				return new ActionAndGuard(text.substring(0, index), text.substring(index + 2));</span>
+			}
+		}
+<span class="fc" id="L292">		return new ActionAndGuard(text, null);</span>
+	}
+
+<span class="fc" id="L295">	private record ActionAndGuard(String actionText, String guardText) {</span>
+	}
+
+	private record Compilation(List&lt;String&gt; actions) {
+<span class="fc" id="L299">		Compilation {</span>
+<span class="fc" id="L300">			actions= List.copyOf(actions);</span>
+<span class="fc" id="L301">		}</span>
+	}
+
+<span class="fc" id="L304">	private record ParameterShape(String name, String type, boolean varargs) {</span>
+	}
+
+<span class="fc" id="L307">	private record MethodShape(String name, String returnType, List&lt;ParameterShape&gt; parameters,</span>
+			Set&lt;String&gt; modifiers, List&lt;String&gt; typeParameters, List&lt;String&gt; thrownTypes,
+			boolean hasAnnotations, boolean constructor) {
+
+		static MethodShape parse(String text) {
+<span class="pc bpc" id="L312" title="4 of 8 branches missed.">			if (text == null || text.isBlank() || text.contains(&quot;{&quot;) || text.contains(&quot;}&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L313">				return null;</span>
+			}
+<span class="fc" id="L315">			ASTNode parsed= new PatternParser().parse(Pattern.of(text.trim(), PatternKind.METHOD_DECLARATION));</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">			if (!(parsed instanceof MethodDeclaration method)) {</span>
+<span class="fc" id="L317">				return null;</span>
+			}
+<span class="fc" id="L319">			boolean annotations= method.modifiers().stream().anyMatch(Annotation.class::isInstance);</span>
+<span class="fc" id="L320">			Set&lt;String&gt; modifiers= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">			for (Object modifierObject : method.modifiers()) {</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">				if (modifierObject instanceof Modifier modifier) {</span>
+<span class="fc" id="L323">					modifiers.add(modifier.getKeyword().toString());</span>
+				}
+<span class="fc" id="L325">			}</span>
+<span class="fc" id="L326">			List&lt;ParameterShape&gt; parameters= new ArrayList&lt;&gt;(method.parameters().size());</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">			for (Object parameterObject : method.parameters()) {</span>
+<span class="fc" id="L328">				SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;</span>
+<span class="fc" id="L329">				String type= parameter.getType().toString();</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">				for (int dimension= 0; dimension &lt; parameter.getExtraDimensions(); dimension++) {</span>
+<span class="nc" id="L331">					type+= &quot;[]&quot;; //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L333">				parameters.add(new ParameterShape(parameter.getName().getIdentifier(), type,</span>
+<span class="fc" id="L334">						parameter.isVarargs()));</span>
+<span class="fc" id="L335">			}</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">			String returnType= method.getReturnType2() == null ? &quot;&quot; : method.getReturnType2().toString(); //$NON-NLS-1$</span>
+<span class="fc" id="L337">			return new MethodShape(method.getName().getIdentifier(), returnType, parameters,</span>
+<span class="fc" id="L338">					Set.copyOf(modifiers), method.typeParameters().stream().map(Object::toString).toList(),</span>
+<span class="fc" id="L339">					method.thrownExceptionTypes().stream().map(Object::toString).toList(),</span>
+<span class="fc" id="L340">					annotations, method.isConstructor());</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

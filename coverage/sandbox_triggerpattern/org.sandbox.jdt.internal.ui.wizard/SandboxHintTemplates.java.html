@@ -81,25 +81,23 @@ package org.sandbox.jdt.internal.ui.wizard;
 
 				@id: add-jupiter-test
 				void $method($params$) :: isPublic($method)
-				=&gt;! removeModifier(target=$method, modifier=public);
-				    addAnnotation(target=$method,
-				        annotation=&quot;org.junit.jupiter.api.Test&quot;)
+				=&gt;! removeModifier(modifier=public);
+				    addAnnotation(annotation=&quot;org.junit.jupiter.api.Test&quot;)
 				;;
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
 	},
 
-<span class="nc" id="L92">	/** A fail-closed rule that is inert without a matching semantic plan. */</span>
-<span class="nc" id="L93">	PLAN_AWARE(&quot;Plan-aware JUnit migration rule&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L91">	/** A fail-closed rule that is inert without a matching semantic plan. */</span>
+<span class="nc" id="L92">	PLAN_AWARE(&quot;Plan-aware JUnit migration rule&quot;) { //$NON-NLS-1$</span>
 		@Override
 		public String getRuleContent() {
-<span class="nc" id="L96">			return &quot;&quot;&quot;</span>
+<span class="nc" id="L95">			return &quot;&quot;&quot;</span>
 				&lt;!requires-plan: example-junit-migration&gt;
 
 				@id: planned-jupiter-test
 				void $method($params$) :: plannedRole($method, &quot;TEST_METHOD&quot;)
-				=&gt;! addAnnotation(target=$method,
-				        annotation=&quot;org.junit.jupiter.api.Test&quot;)
+				=&gt;! addAnnotation(annotation=&quot;org.junit.jupiter.api.Test&quot;)
 				;;
 				&quot;&quot;&quot;; //$NON-NLS-1$
 		}
@@ -107,9 +105,9 @@ package org.sandbox.jdt.internal.ui.wizard;
 
 	private final String label;
 
-<span class="nc" id="L110">	SandboxHintTemplates(String label) {</span>
-<span class="nc" id="L111">		this.label = label;</span>
-<span class="nc" id="L112">	}</span>
+<span class="nc" id="L108">	SandboxHintTemplates(String label) {</span>
+<span class="nc" id="L109">		this.label = label;</span>
+<span class="nc" id="L110">	}</span>
 
 	/**
 	 * Returns the human-readable label shown in the wizard radio group.
@@ -117,7 +115,7 @@ package org.sandbox.jdt.internal.ui.wizard;
 	 * @return the label
 	 */
 	public String getLabel() {
-<span class="nc" id="L120">		return label;</span>
+<span class="nc" id="L118">		return label;</span>
 	}
 
 	/**

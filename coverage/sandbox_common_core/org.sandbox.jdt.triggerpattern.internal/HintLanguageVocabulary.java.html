@@ -121,21 +121,29 @@ public final class HintLanguageVocabulary {
 <span class="fc" id="L121">		String documentedRequired= schema.requiredArguments().stream().sorted()</span>
 <span class="fc" id="L122">				.map(name -&gt; name + &quot;=VALUE&quot;) //$NON-NLS-1$</span>
 <span class="fc" id="L123">				.collect(java.util.stream.Collectors.joining(&quot;, &quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L124">		String documentedOptional= schema.optionalArguments().stream().sorted()</span>
-<span class="fc" id="L125">				.map(name -&gt; &quot;[, &quot; + name + &quot;=VALUE]&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L126">				.collect(java.util.stream.Collectors.joining());</span>
-<span class="fc" id="L127">		String replacement= schema.name() + &quot;(&quot; + replacementArguments + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L128">		String syntax= &quot;=&gt;! &quot; + schema.name() + &quot;(&quot; + documentedRequired + documentedOptional + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L129">		return new Action(schema.name(), replacement, syntax, schema.description());</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		String documentedOptional= optionalSyntax(schema, !documentedRequired.isEmpty());</span>
+<span class="fc" id="L125">		String replacement= schema.name() + &quot;(&quot; + replacementArguments + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L126">		String syntax= &quot;=&gt;! &quot; + schema.name() + &quot;(&quot; + documentedRequired + documentedOptional + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L127">		return new Action(schema.name(), replacement, syntax, schema.description());</span>
+	}
+
+	private static String optionalSyntax(RewriteActionSchema schema, boolean followsRequired) {
+<span class="fc" id="L131">		List&lt;String&gt; optional= schema.optionalArguments().stream().sorted().toList();</span>
+<span class="fc" id="L132">		StringBuilder result= new StringBuilder();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		for (int index= 0; index &lt; optional.size(); index++) {</span>
+<span class="fc bfc" id="L134" title="All 4 branches covered.">			String prefix= followsRequired || index &gt; 0 ? &quot;, &quot; : &quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L135">			result.append('[').append(prefix).append(optional.get(index)).append(&quot;=VALUE]&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L137">		return result.toString();</span>
 	}
 
 	private static String humanize(String name) {
-<span class="pc bpc" id="L133" title="2 of 4 branches missed.">		if (name == null || name.isBlank()) {</span>
-<span class="nc" id="L134">			return &quot;Registered guard or local predicate&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">		if (name == null || name.isBlank()) {</span>
+<span class="nc" id="L142">			return &quot;Registered guard or local predicate&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L136">		String words= name.replaceAll(&quot;([a-z0-9])([A-Z])&quot;, &quot;$1 $2&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L137">				.replace('_', ' ').toLowerCase(Locale.ROOT);</span>
-<span class="fc" id="L138">		return Character.toUpperCase(words.charAt(0)) + words.substring(1);</span>
+<span class="fc" id="L144">		String words= name.replaceAll(&quot;([a-z0-9])([A-Z])&quot;, &quot;$1 $2&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L145">				.replace('_', ' ').toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L146">		return Character.toUpperCase(words.charAt(0)) + words.substring(1);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

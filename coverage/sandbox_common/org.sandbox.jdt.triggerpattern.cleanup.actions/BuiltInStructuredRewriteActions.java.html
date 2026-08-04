@@ -186,14 +186,14 @@ final class BuiltInStructuredRewriteActions {
 			RewriteActionValue value) throws CoreException {
 <span class="fc" id="L187">		ASTNode current= context.resolveAuthorizedNode(value);</span>
 <span class="pc bpc" id="L188" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L189" title="All 2 branches covered.">			if (current instanceof BodyDeclaration declaration) {</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">			if (current instanceof BodyDeclaration declaration) {</span>
 <span class="pc bpc" id="L190" title="3 of 4 branches missed.">				if (declaration instanceof FieldDeclaration field &amp;&amp; field.fragments().size() != 1) {</span>
 <span class="nc" id="L191">					throw context.failure(</span>
 <span class="nc" id="L192">							&quot;Declaration-wide action is ambiguous for a multi-fragment field&quot;); //$NON-NLS-1$</span>
 				}
 <span class="fc" id="L194">				return declaration;</span>
 			}
-<span class="fc" id="L196">			current= current.getParent();</span>
+<span class="nc" id="L196">			current= current.getParent();</span>
 		}
 <span class="nc" id="L198">		throw context.failure(&quot;Structured action target is not a Java declaration&quot;); //$NON-NLS-1$</span>
 	}
@@ -231,9 +231,9 @@ final class BuiltInStructuredRewriteActions {
 	private static void rewriteSupertype(ASTNode target, String expected, String replacement,
 			StructuredRewriteActionContext context) throws CoreException {
 <span class="fc" id="L233">		ASTNode current= target;</span>
-<span class="pc bpc" id="L234" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)</span>
-<span class="pc bpc" id="L235" title="2 of 4 branches missed.">				&amp;&amp; !(current instanceof EnumDeclaration) &amp;&amp; !(current instanceof RecordDeclaration)) {</span>
-<span class="fc" id="L236">			current= current.getParent();</span>
+<span class="pc bpc" id="L234" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)</span>
+<span class="nc bnc" id="L235" title="All 4 branches missed.">				&amp;&amp; !(current instanceof EnumDeclaration) &amp;&amp; !(current instanceof RecordDeclaration)) {</span>
+<span class="nc" id="L236">			current= current.getParent();</span>
 		}
 <span class="pc bpc" id="L238" title="1 of 2 branches missed.">		if (current instanceof TypeDeclaration type) {</span>
 <span class="fc" id="L239">			Type superclass= type.getSuperclassType();</span>

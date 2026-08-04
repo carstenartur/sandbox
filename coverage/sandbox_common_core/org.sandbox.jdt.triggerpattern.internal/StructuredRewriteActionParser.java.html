@@ -75,7 +75,7 @@ final class StructuredRewriteActionParser {
 <span class="fc" id="L75">		expect('(');</span>
 <span class="fc" id="L76">		skipWhitespace();</span>
 <span class="fc" id="L77">		Map&lt;String, RewriteActionValue&gt; arguments= new LinkedHashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (!peek(')')) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (!peek(')')) {</span>
 			while (true) {
 <span class="fc" id="L80">				String argumentName= parseIdentifier(&quot;action argument&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L81">				skipWhitespace();</span>

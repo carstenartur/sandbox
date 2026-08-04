@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SignatureStructuredRewriteActions.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup.actions</a> &gt; <span class="el_source">SignatureStructuredRewriteActions.java</span></div><h1>SignatureStructuredRewriteActions.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup.actions;
+
+import javax.lang.model.SourceVersion;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.sandbox.jdt.triggerpattern.api.RewriteActionValue;
+import org.sandbox.jdt.triggerpattern.api.StructuredRewriteAction;
+
+/** Typed declaration-signature actions used by coordinated migrations. */
+final class SignatureStructuredRewriteActions {
+
+	private SignatureStructuredRewriteActions() {
+	}
+
+	static void registerAll(StructuredRewriteActionRegistry registry) {
+<span class="fc" id="L37">		registry.register(&quot;renameDeclaration&quot;, SignatureStructuredRewriteActions::renameDeclaration); //$NON-NLS-1$</span>
+<span class="fc" id="L38">		registry.register(&quot;replaceFieldType&quot;, SignatureStructuredRewriteActions::replaceFieldType); //$NON-NLS-1$</span>
+<span class="fc" id="L39">		registry.register(&quot;addParameter&quot;, SignatureStructuredRewriteActions::addParameter); //$NON-NLS-1$</span>
+<span class="fc" id="L40">		registry.register(&quot;removeParameter&quot;, SignatureStructuredRewriteActions::removeParameter); //$NON-NLS-1$</span>
+<span class="fc" id="L41">		registry.register(&quot;replaceParameterType&quot;, SignatureStructuredRewriteActions::replaceParameterType); //$NON-NLS-1$</span>
+<span class="fc" id="L42">	}</span>
+
+	private static void renameDeclaration(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L46">		ASTNode target= context.resolveAuthorizedNode(action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L47">		String replacement= validIdentifier(</span>
+<span class="nc" id="L48">				context.resolveString(action.requiredArgument(&quot;name&quot;)), context); //$NON-NLS-1$</span>
+<span class="nc" id="L49">		SimpleName name= declarationName(target, context);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">		if (name.getIdentifier().equals(replacement)) {</span>
+<span class="nc" id="L51">			throw context.failure(&quot;renameDeclaration target already has name &quot; + replacement); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L53">		context.cuRewrite().getASTRewrite().replace(name,</span>
+<span class="nc" id="L54">				context.ast().newSimpleName(replacement), context.editGroup());</span>
+<span class="nc" id="L55">	}</span>
+
+	private static void replaceFieldType(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L59">		FieldDeclaration field= fieldTarget(context, action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">		if (field.fragments().size() != 1) {</span>
+<span class="nc" id="L61">			throw context.failure(&quot;replaceFieldType requires a single-fragment field declaration&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L63">		Type replacement= context.createType(</span>
+<span class="nc" id="L64">				context.resolveString(action.requiredArgument(&quot;type&quot;))); //$NON-NLS-1$</span>
+<span class="nc" id="L65">		replaceType(field.getType(), replacement, context);</span>
+<span class="nc" id="L66">	}</span>
+
+	private static void addParameter(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L70">		MethodDeclaration method= methodTarget(context, action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L71">		String name= validIdentifier(context.resolveString(action.requiredArgument(&quot;name&quot;)), context); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (findParameter(method, name) != null) {</span>
+<span class="nc" id="L73">			throw context.failure(&quot;addParameter would duplicate parameter &quot; + name); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		int index= action.arguments().containsKey(&quot;index&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L76">				? context.resolveInteger(action.arguments().get(&quot;index&quot;)) : method.parameters().size(); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L77" title="All 4 branches missed.">		if (index &lt; 0 || index &gt; method.parameters().size()) {</span>
+<span class="nc" id="L78">			throw context.failure(&quot;addParameter index &quot; + index + &quot; is outside 0..&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L79">					+ method.parameters().size());</span>
+		}
+<span class="nc" id="L81">		SingleVariableDeclaration parameter= context.ast().newSingleVariableDeclaration();</span>
+<span class="nc" id="L82">		parameter.setName(context.ast().newSimpleName(name));</span>
+<span class="nc" id="L83">		parameter.setType(context.createType(</span>
+<span class="nc" id="L84">				context.resolveString(action.requiredArgument(&quot;type&quot;)))); //$NON-NLS-1$</span>
+<span class="nc" id="L85">		parameters(context, method).insertAt(parameter, index, context.editGroup());</span>
+<span class="nc" id="L86">	}</span>
+
+	private static void removeParameter(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L90">		MethodDeclaration method= methodTarget(context, action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L91">		SingleVariableDeclaration parameter= selectedParameter(action, method, context);</span>
+<span class="nc" id="L92">		parameters(context, method).remove(parameter, context.editGroup());</span>
+<span class="nc" id="L93">		context.cuRewrite().getImportRemover().registerRemovedNode(parameter);</span>
+<span class="nc" id="L94">		context.cuRewrite().getImportRemover().applyRemoves(context.cuRewrite().getImportRewrite());</span>
+<span class="nc" id="L95">	}</span>
+
+	private static void replaceParameterType(StructuredRewriteAction action,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L99">		MethodDeclaration method= methodTarget(context, action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L100">		SingleVariableDeclaration parameter= selectedParameter(action, method, context);</span>
+<span class="nc" id="L101">		Type replacement= context.createType(</span>
+<span class="nc" id="L102">				context.resolveString(action.requiredArgument(&quot;type&quot;))); //$NON-NLS-1$</span>
+<span class="nc" id="L103">		replaceType(parameter.getType(), replacement, context);</span>
+<span class="nc" id="L104">	}</span>
+
+	private static SingleVariableDeclaration selectedParameter(StructuredRewriteAction action,
+			MethodDeclaration method, StructuredRewriteActionContext context) throws CoreException {
+<span class="nc" id="L108">		boolean hasName= action.arguments().containsKey(&quot;name&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L109">		boolean hasIndex= action.arguments().containsKey(&quot;index&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (hasName == hasIndex) {</span>
+<span class="nc" id="L111">			throw context.failure(action.name()</span>
+					+ &quot; requires exactly one parameter selector: name or index&quot;); //$NON-NLS-1$
+		}
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		if (hasName) {</span>
+<span class="nc" id="L115">			String name= context.resolveString(action.arguments().get(&quot;name&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L116">			SingleVariableDeclaration parameter= findParameter(method, name);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">			if (parameter == null) {</span>
+<span class="nc" id="L118">				throw context.failure(action.name() + &quot; cannot find parameter named &quot; + name); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L120">			return parameter;</span>
+		}
+<span class="nc" id="L122">		int index= context.resolveInteger(action.arguments().get(&quot;index&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">		if (index &lt; 0 || index &gt;= method.parameters().size()) {</span>
+<span class="nc" id="L124">			throw context.failure(action.name() + &quot; index &quot; + index + &quot; is outside 0..&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L125">					+ Math.max(-1, method.parameters().size() - 1));</span>
+		}
+<span class="nc" id="L127">		return (SingleVariableDeclaration) method.parameters().get(index);</span>
+	}
+
+	private static SingleVariableDeclaration findParameter(MethodDeclaration method, String name) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		for (Object parameterObject : method.parameters()) {</span>
+<span class="nc" id="L132">			SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">			if (name.equals(parameter.getName().getIdentifier())) {</span>
+<span class="nc" id="L134">				return parameter;</span>
+			}
+		}
+<span class="nc" id="L137">		return null;</span>
+	}
+
+	private static SimpleName declarationName(ASTNode target,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc bnc" id="L142" title="All 2 branches missed.">		if (target instanceof MethodDeclaration method) {</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">			if (method.isConstructor()) {</span>
+<span class="nc" id="L144">				throw context.failure(&quot;renameDeclaration does not rename constructors or their declaring types&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L146">			return method.getName();</span>
+		}
+<span class="nc bnc" id="L148" title="All 4 branches missed.">		if (target instanceof FieldDeclaration field &amp;&amp; field.fragments().size() == 1) {</span>
+<span class="nc" id="L149">			return ((VariableDeclarationFragment) field.fragments().get(0)).getName();</span>
+		}
+<span class="nc bnc" id="L151" title="All 2 branches missed.">		if (target instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">				&amp;&amp; fragment.getParent() instanceof FieldDeclaration) {</span>
+<span class="nc" id="L153">			return fragment.getName();</span>
+		}
+<span class="nc bnc" id="L155" title="All 4 branches missed.">		if (target instanceof SimpleName simple &amp;&amp; simple.getParent() instanceof MethodDeclaration method</span>
+<span class="nc bnc" id="L156" title="All 4 branches missed.">				&amp;&amp; method.getName() == simple &amp;&amp; !method.isConstructor()) {</span>
+<span class="nc" id="L157">			return simple;</span>
+		}
+<span class="nc bnc" id="L159" title="All 2 branches missed.">		if (target instanceof SimpleName simple</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">				&amp;&amp; simple.getParent() instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L161" title="All 4 branches missed.">				&amp;&amp; fragment.getName() == simple &amp;&amp; fragment.getParent() instanceof FieldDeclaration) {</span>
+<span class="nc" id="L162">			return simple;</span>
+		}
+<span class="nc" id="L164">		throw context.failure(&quot;renameDeclaration requires an exact planned method or single field declaration&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static MethodDeclaration methodTarget(StructuredRewriteActionContext context,
+			RewriteActionValue value) throws CoreException {
+<span class="nc" id="L169">		ASTNode target= context.resolveAuthorizedNode(value);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		if (target instanceof MethodDeclaration method) {</span>
+<span class="nc" id="L171">			return method;</span>
+		}
+<span class="nc bnc" id="L173" title="All 4 branches missed.">		if (target instanceof SimpleName name &amp;&amp; name.getParent() instanceof MethodDeclaration method</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">				&amp;&amp; method.getName() == name) {</span>
+<span class="nc" id="L175">			return method;</span>
+		}
+<span class="nc" id="L177">		throw context.failure(&quot;Structured signature action target is not an exact method declaration&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static FieldDeclaration fieldTarget(StructuredRewriteActionContext context,
+			RewriteActionValue value) throws CoreException {
+<span class="nc" id="L182">		ASTNode target= context.resolveAuthorizedNode(value);</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		if (target instanceof FieldDeclaration field) {</span>
+<span class="nc" id="L184">			return field;</span>
+		}
+<span class="nc bnc" id="L186" title="All 2 branches missed.">		if (target instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">				&amp;&amp; fragment.getParent() instanceof FieldDeclaration field) {</span>
+<span class="nc" id="L188">			return field;</span>
+		}
+<span class="nc bnc" id="L190" title="All 4 branches missed.">		if (target instanceof SimpleName name &amp;&amp; name.getParent() instanceof VariableDeclarationFragment fragment</span>
+<span class="nc bnc" id="L191" title="All 4 branches missed.">				&amp;&amp; fragment.getName() == name &amp;&amp; fragment.getParent() instanceof FieldDeclaration field) {</span>
+<span class="nc" id="L192">			return field;</span>
+		}
+<span class="nc" id="L194">		throw context.failure(&quot;Structured field action target is not an exact field declaration&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static ListRewrite parameters(StructuredRewriteActionContext context,
+			MethodDeclaration method) {
+<span class="nc" id="L199">		return context.cuRewrite().getASTRewrite()</span>
+<span class="nc" id="L200">				.getListRewrite(method, MethodDeclaration.PARAMETERS_PROPERTY);</span>
+	}
+
+	private static void replaceType(Type existing, Type replacement,
+			StructuredRewriteActionContext context) {
+<span class="nc" id="L205">		ASTRewrite rewrite= context.cuRewrite().getASTRewrite();</span>
+<span class="nc" id="L206">		rewrite.replace(existing, replacement, context.editGroup());</span>
+<span class="nc" id="L207">		context.cuRewrite().getImportRemover().registerRemovedNode(existing);</span>
+<span class="nc" id="L208">		context.cuRewrite().getImportRemover().applyRemoves(context.cuRewrite().getImportRewrite());</span>
+<span class="nc" id="L209">	}</span>
+
+	private static String validIdentifier(String candidate,
+			StructuredRewriteActionContext context) throws CoreException {
+<span class="nc bnc" id="L213" title="All 4 branches missed.">		if (!SourceVersion.isIdentifier(candidate) || SourceVersion.isKeyword(candidate)) {</span>
+<span class="nc" id="L214">			throw context.failure(&quot;Structured action name is not a Java identifier: &quot; + candidate); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L216">		return candidate;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
