@@ -183,11 +183,17 @@ public final class ContainerLocalRewritePlanner {
 				profile.identity().sourceLength()));
 		boolean verifyEncounterIterations=
 				profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;
+		List<UsageEvidence> structuralAppendEvidence= profile.evidence().stream()
+				.filter(evidence -> evidence.kind() == Kind.ARRAY_GROWTH
+						|| evidence.kind() == Kind.APPEND_WRITE)
+				.toList();
 		for (UsageEvidence evidence : profile.evidence()) {
 			EditKind kind= switch (evidence.kind()) {
 				case ARRAY_GROWTH -> EditKind.REMOVE_ARRAY_GROWTH;
 				case APPEND_WRITE -> EditKind.REPLACE_TAIL_WRITE_WITH_ADD;
-				case ARRAY_LENGTH_READ -> EditKind.REPLACE_LENGTH_WITH_SIZE;
+				case ARRAY_LENGTH_READ -> isInsideAny(evidence, structuralAppendEvidence)
+						? null
+						: EditKind.REPLACE_LENGTH_WITH_SIZE;
 				case ENCOUNTER_ITERATION -> verifyEncounterIterations
 						? EditKind.VERIFY_ENCOUNTER_ITERATION
 						: null;
@@ -201,6 +207,18 @@ public final class ContainerLocalRewritePlanner {
 				.comparingInt(LocalEdit::sourceStart)
 				.thenComparing(edit -> edit.kind().ordinal()));
 		return List.copyOf(result);
+	}
+
+	private static boolean isInsideAny(
+			UsageEvidence evidence,
+			List<UsageEvidence> containers) {
+		long start= evidence.sourceStart();
+		long end= start + evidence.sourceLength();
+		return containers.stream().anyMatch(container -> {
+			long containerStart= container.sourceStart();
+			long containerEnd= containerStart + container.sourceLength();
+			return start >= containerStart && end <= containerEnd;
+		});
 	}
 
 	private static PlanningDiagnostic diagnostic(
