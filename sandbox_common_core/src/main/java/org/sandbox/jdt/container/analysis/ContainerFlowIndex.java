@@ -28,12 +28,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.sandbox.jdt.internal.common.AstProcessing;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 
-/**
- * Deterministic binding and reference index for one compilation unit.
- *
- * <p>The index is intentionally scoped to one parser result. AST nodes never leave
- * the current analysis pass; only the resulting flow graph is retained.</p>
- */
+/** Deterministic binding and reference index for one compilation unit. */
 final class ContainerFlowIndex {
 
 	private final Map<String, BindingInfo> bindings;
@@ -56,16 +51,17 @@ final class ContainerFlowIndex {
 		Map<String, BindingInfo> bindings= new LinkedHashMap<>();
 		Map<String, List<SimpleName>> references= new LinkedHashMap<>();
 		Map<String, MethodInfo> methods= new LinkedHashMap<>();
+		Map<String, Integer> parameterIndices= new LinkedHashMap<>();
 		IJavaElement javaElement= compilationUnit.getJavaElement();
 		String unitHandle= javaElement == null ? "" : javaElement.getHandleIdentifier(); //$NON-NLS-1$
 
 		AstProcessing.independent(ReferenceHolder.<String, Object>create())
 				.on(MethodDeclaration.class, (method, holder) -> {
-					indexMethod(method, methods);
+					indexMethod(method, methods, parameterIndices);
 					return true;
 				})
 				.on(SimpleName.class, (name, holder) -> {
-					indexVariable(name, bindings, references, unitHandle);
+					indexVariable(name, bindings, references, parameterIndices, unitHandle);
 					return true;
 				})
 				.build(compilationUnit);
@@ -91,17 +87,23 @@ final class ContainerFlowIndex {
 
 	private static void indexMethod(
 			MethodDeclaration method,
-			Map<String, MethodInfo> methods) {
+			Map<String, MethodInfo> methods,
+			Map<String, Integer> parameterIndices) {
 		IMethodBinding binding= method.resolveBinding();
 		if (binding == null) {
 			return;
 		}
 		List<String> parameterBindingKeys= new ArrayList<>();
-		for (Object parameterObject : method.parameters()) {
-			SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;
+		for (int index= 0; index < method.parameters().size(); index++) {
+			SingleVariableDeclaration parameter=
+					(SingleVariableDeclaration) method.parameters().get(index);
 			IVariableBinding parameterBinding= parameter.resolveBinding();
-			parameterBindingKeys.add(parameterBinding == null
-					? "" : parameterBinding.getVariableDeclaration().getKey()); //$NON-NLS-1$
+			String parameterKey= parameterBinding == null
+					? "" : parameterBinding.getVariableDeclaration().getKey(); //$NON-NLS-1$
+			parameterBindingKeys.add(parameterKey);
+			if (parameterKey != null && !parameterKey.isBlank()) {
+				parameterIndices.put(parameterKey, Integer.valueOf(index));
+			}
 		}
 		methods.put(
 				binding.getMethodDeclaration().getKey(),
@@ -112,6 +114,7 @@ final class ContainerFlowIndex {
 			SimpleName name,
 			Map<String, BindingInfo> bindings,
 			Map<String, List<SimpleName>> references,
+			Map<String, Integer> parameterIndices,
 			String unitHandle) {
 		IBinding resolved= name.resolveBinding();
 		if (!(resolved instanceof IVariableBinding variable)) {
@@ -123,9 +126,10 @@ final class ContainerFlowIndex {
 			return;
 		}
 
+		int signatureIndex= parameterIndices.getOrDefault(bindingKey, Integer.valueOf(-1)).intValue();
 		BindingInfo info= bindings.computeIfAbsent(
 				bindingKey,
-				ignored -> new BindingInfo(declaration, unitHandle));
+				ignored -> new BindingInfo(declaration, unitHandle, signatureIndex));
 		if (isDeclarationName(name)) {
 			info.recordDeclaration(name);
 		}
@@ -155,11 +159,16 @@ final class ContainerFlowIndex {
 
 		private final IVariableBinding binding;
 		private final String compilationUnitHandle;
+		private final int signatureIndex;
 		private SimpleName declarationName;
 
-		BindingInfo(IVariableBinding binding, String compilationUnitHandle) {
+		BindingInfo(
+				IVariableBinding binding,
+				String compilationUnitHandle,
+				int signatureIndex) {
 			this.binding= binding.getVariableDeclaration();
 			this.compilationUnitHandle= compilationUnitHandle;
+			this.signatureIndex= signatureIndex;
 		}
 
 		void recordDeclaration(SimpleName name) {
@@ -176,6 +185,10 @@ final class ContainerFlowIndex {
 
 		String compilationUnitHandle() {
 			return compilationUnitHandle;
+		}
+
+		int signatureIndex() {
+			return signatureIndex;
 		}
 	}
 
