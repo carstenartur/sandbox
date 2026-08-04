@@ -34,12 +34,7 @@ import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 
-/**
- * Mutable graph assembly used only during one flow-analysis pass.
- *
- * <p>All public results are converted to immutable, AST-free records by
- * {@link #toGraph()}.</p>
- */
+/** Mutable graph assembly used only during one flow-analysis pass. */
 final class ContainerFlowGraphAccumulator {
 
 	private final ContainerUsageProfile profile;
@@ -71,6 +66,7 @@ final class ContainerFlowGraphAccumulator {
 				binding.getKey(),
 				ownerKey(binding),
 				info.compilationUnitHandle(),
+				info.signatureIndex(),
 				true,
 				start,
 				length));
@@ -88,6 +84,7 @@ final class ContainerFlowGraphAccumulator {
 				"", //$NON-NLS-1$
 				methodKey,
 				unitHandle,
+				-1,
 				true,
 				anchor.getStartPosition(),
 				anchor.getLength()));
@@ -108,6 +105,7 @@ final class ContainerFlowGraphAccumulator {
 				"", //$NON-NLS-1$
 				methodKey,
 				"", //$NON-NLS-1$
+				parameterIndex,
 				false,
 				anchor.getStartPosition(),
 				anchor.getLength()));
@@ -179,6 +177,7 @@ final class ContainerFlowGraphAccumulator {
 				profile.identity().bindingKey(),
 				"", //$NON-NLS-1$
 				compilationUnitHandle,
+				-1,
 				false,
 				profile.identity().sourceStart(),
 				profile.identity().sourceLength()));
