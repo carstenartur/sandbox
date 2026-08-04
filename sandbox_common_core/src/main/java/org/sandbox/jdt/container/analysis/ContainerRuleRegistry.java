@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,7 @@ public final class ContainerRuleRegistry {
 				RuleOwnership.NOVEL,
 				"", //$NON-NLS-1$
 				"The rule changes representation and may propagate through fields, signatures and callers.")); //$NON-NLS-1$
-		return Map.copyOf(rules);
+		return Collections.unmodifiableMap(new LinkedHashMap<>(rules));
 	}
 
 	private static void register(
