@@ -31,7 +31,6 @@ import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
 import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.BridgeFeasibility;
-import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus as SignaturePlanningStatus;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PositionKind;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAtomicityGroup;
 
@@ -134,7 +133,7 @@ public final class ContainerBridgePolicyPlanner {
 					PositionKind.PARAMETER,
 					BridgeDecision.POLICY_REQUIRED,
 					requirements,
-					"The old and new parameter signatures can coexist, but a deprecated overload is not semantically safe until every listed property has an explicit proof or policy." ); //$NON-NLS-1$
+					"The old and new parameter signatures can coexist, but a deprecated overload is not semantically safe until every listed property has an explicit proof or policy."); //$NON-NLS-1$
 		}
 
 		diagnostics.add(new BridgePolicyDiagnostic(
@@ -153,7 +152,7 @@ public final class ContainerBridgePolicyPlanner {
 					bridgeProperty,
 					RequirementStatus.PROOF_REQUIRED,
 					Preservation.UNKNOWN,
-					"No contract assessment is available for this property; the bridge must remain disabled until the behavior is proven." ); //$NON-NLS-1$
+					"No contract assessment is available for this property; the bridge must remain disabled until the behavior is proven."); //$NON-NLS-1$
 		}
 		RequirementStatus status= switch (assessment.preservation()) {
 			case PRESERVED -> RequirementStatus.CONFIRMED;
