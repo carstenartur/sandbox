@@ -136,6 +136,10 @@ public final class LocalArrayUsageAnalyzer {
 			classifyMethodInvocation(reference, invocation, accumulator);
 		} else if (parent instanceof Assignment assignment) {
 			classifyAssignment(reference, assignment, accumulator);
+		} else if (parent instanceof VariableDeclarationFragment fragment
+				&& fragment.getInitializer() == reference) {
+			accumulator.reject(Kind.UNSAFE_ESCAPE,
+					"Array value is assigned to another local variable", reference); //$NON-NLS-1$
 		} else if (parent instanceof ReturnStatement) {
 			accumulator.reject(Kind.UNSAFE_ESCAPE,
 					"Array value escapes through a return statement", reference); //$NON-NLS-1$
@@ -338,6 +342,7 @@ public final class LocalArrayUsageAnalyzer {
 		private boolean parameter;
 		private boolean indexedRead;
 		private boolean indexedWrite;
+		private boolean positionalWrite;
 		private boolean append;
 		private boolean encounterIteration;
 		private boolean rejected;
@@ -373,6 +378,7 @@ public final class LocalArrayUsageAnalyzer {
 
 		void indexedWrite(ASTNode node) {
 			indexedWrite= true;
+			positionalWrite= true;
 			evidence.add(LocalArrayUsageAnalyzer.evidence(Kind.INDEXED_WRITE,
 					"Existing array position is written by index", node)); //$NON-NLS-1$
 		}
@@ -406,7 +412,7 @@ public final class LocalArrayUsageAnalyzer {
 						seed.identity().sourceStart(), seed.identity().sourceLength()));
 			}
 
-			OrderRequirement order= indexedRead || indexedWrite
+			OrderRequirement order= indexedRead || positionalWrite
 					? OrderRequirement.POSITIONAL
 					: encounterIteration ? OrderRequirement.ENCOUNTER : seed.orderRequirement();
 			EscapeLevel escape= field
