@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -30,9 +31,10 @@ import org.eclipse.jdt.core.dom.ASTNode;
  * are never retried independently against an earlier scope.</p>
  *
  * <p>Matcher, handler, navigation and child traversal are separate concerns. The
- * matcher decides whether the semantic chain advances. The handler records facts.
- * Navigation chooses the next search scope. {@link TraversalDecision} controls only
- * whether the current visitor descends below the matched node.</p>
+ * matcher decides whether the semantic chain advances and may inspect facts stored by
+ * preceding stages. The handler records facts. Navigation chooses the next search
+ * scope. {@link TraversalDecision} controls only whether the current visitor descends
+ * below the matched node.</p>
  *
  * @param <V> reference-holder key type
  * @param <T> reference-holder value type
@@ -53,19 +55,20 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		this.holder= holder;
 	}
 
-	/**
-	 * Registers the first stage of the scoped pipeline.
-	 *
-	 * @param <N> AST node type
-	 * @param nodeType node class to search
-	 * @param matcher semantic match predicate
-	 * @param handler processing callback
-	 * @param nextScope navigation to the scope for the next stage
-	 * @return this builder
-	 */
+	/** Registers the first state-independent stage of the scoped pipeline. */
 	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> find(
 			Class<N> nodeType,
 			Predicate<? super N> matcher,
+			BiConsumer<? super N, ReferenceHolder<V, T>> handler,
+			Function<? super N, ? extends ASTNode> nextScope) {
+		Objects.requireNonNull(matcher, "matcher"); //$NON-NLS-1$
+		return find(nodeType, (node, state) -> matcher.test(node), handler, nextScope);
+	}
+
+	/** Registers the first state-aware stage of the scoped pipeline. */
+	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> find(
+			Class<N> nodeType,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
 			BiConsumer<? super N, ReferenceHolder<V, T>> handler,
 			Function<? super N, ? extends ASTNode> nextScope) {
 		if (!stages.isEmpty()) {
@@ -74,7 +77,7 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		return addStage(nodeType, matcher, consumerHandler(handler), nextScope);
 	}
 
-	/** Registers the first stage without navigation beyond the matched node. */
+	/** Registers the first state-independent stage without additional navigation. */
 	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> find(
 			Class<N> nodeType,
 			Predicate<? super N> matcher,
@@ -82,20 +85,38 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		return find(nodeType, matcher, handler, Function.identity());
 	}
 
-	/**
-	 * Registers a dependent stage searched only in the scope selected by the preceding
-	 * successful stage.
-	 */
+	/** Registers the first state-aware stage without additional navigation. */
+	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> find(
+			Class<N> nodeType,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
+			BiConsumer<? super N, ReferenceHolder<V, T>> handler) {
+		return find(nodeType, matcher, handler, Function.identity());
+	}
+
+	/** Registers a state-independent dependent stage. */
 	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> then(
 			Class<N> nodeType,
 			Predicate<? super N> matcher,
+			BiConsumer<? super N, ReferenceHolder<V, T>> handler,
+			Function<? super N, ? extends ASTNode> nextScope) {
+		Objects.requireNonNull(matcher, "matcher"); //$NON-NLS-1$
+		return then(nodeType, (node, state) -> matcher.test(node), handler, nextScope);
+	}
+
+	/**
+	 * Registers a state-aware dependent stage searched only in the scope selected by
+	 * the preceding successful stage.
+	 */
+	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> then(
+			Class<N> nodeType,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
 			BiConsumer<? super N, ReferenceHolder<V, T>> handler,
 			Function<? super N, ? extends ASTNode> nextScope) {
 		requireFirstStage();
 		return addStage(nodeType, matcher, consumerHandler(handler), nextScope);
 	}
 
-	/** Registers a dependent terminal stage. */
+	/** Registers a state-independent dependent terminal stage. */
 	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> then(
 			Class<N> nodeType,
 			Predicate<? super N> matcher,
@@ -103,12 +124,28 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		return then(nodeType, matcher, handler, Function.identity());
 	}
 
-	/**
-	 * Registers the first stage with explicit child-traversal control.
-	 */
+	/** Registers a state-aware dependent terminal stage. */
+	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> then(
+			Class<N> nodeType,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
+			BiConsumer<? super N, ReferenceHolder<V, T>> handler) {
+		return then(nodeType, matcher, handler, Function.identity());
+	}
+
+	/** Registers the first state-independent stage with child-traversal control. */
 	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> findWithTraversal(
 			Class<N> nodeType,
 			Predicate<? super N> matcher,
+			BiFunction<? super N, ReferenceHolder<V, T>, TraversalDecision> handler,
+			Function<? super N, ? extends ASTNode> nextScope) {
+		Objects.requireNonNull(matcher, "matcher"); //$NON-NLS-1$
+		return findWithTraversal(nodeType, (node, state) -> matcher.test(node), handler, nextScope);
+	}
+
+	/** Registers the first state-aware stage with child-traversal control. */
+	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> findWithTraversal(
+			Class<N> nodeType,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
 			BiFunction<? super N, ReferenceHolder<V, T>, TraversalDecision> handler,
 			Function<? super N, ? extends ASTNode> nextScope) {
 		if (!stages.isEmpty()) {
@@ -117,10 +154,20 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		return addStage(nodeType, matcher, handler, nextScope);
 	}
 
-	/** Registers a dependent stage with explicit child-traversal control. */
+	/** Registers a state-independent dependent stage with traversal control. */
 	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> thenWithTraversal(
 			Class<N> nodeType,
 			Predicate<? super N> matcher,
+			BiFunction<? super N, ReferenceHolder<V, T>, TraversalDecision> handler,
+			Function<? super N, ? extends ASTNode> nextScope) {
+		Objects.requireNonNull(matcher, "matcher"); //$NON-NLS-1$
+		return thenWithTraversal(nodeType, (node, state) -> matcher.test(node), handler, nextScope);
+	}
+
+	/** Registers a state-aware dependent stage with traversal control. */
+	public <N extends ASTNode> ScopedAstProcessorBuilder<V, T> thenWithTraversal(
+			Class<N> nodeType,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
 			BiFunction<? super N, ReferenceHolder<V, T>, TraversalDecision> handler,
 			Function<? super N, ? extends ASTNode> nextScope) {
 		requireFirstStage();
@@ -151,7 +198,7 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor=
 				new HelperVisitor<>(new HashSet<>(excludedNodes), holder);
 		visitor.add(stage.visitorType(), (node, data) -> {
-			if (!stage.nodeType().isInstance(node) || !stage.matcher().test(node)) {
+			if (!stage.nodeType().isInstance(node) || !stage.matcher().test(node, data)) {
 				return true;
 			}
 
@@ -169,7 +216,7 @@ public final class ScopedAstProcessorBuilder<V, T> {
 
 	private <N extends ASTNode> ScopedAstProcessorBuilder<V, T> addStage(
 			Class<N> nodeType,
-			Predicate<? super N> matcher,
+			BiPredicate<? super N, ReferenceHolder<V, T>> matcher,
 			BiFunction<? super N, ReferenceHolder<V, T>, TraversalDecision> handler,
 			Function<? super N, ? extends ASTNode> nextScope) {
 		Objects.requireNonNull(nodeType, "nodeType"); //$NON-NLS-1$
@@ -180,7 +227,7 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		stages.add(new Stage<>(
 				nodeType,
 				visitorType,
-				node -> matcher.test(nodeType.cast(node)),
+				(node, state) -> matcher.test(nodeType.cast(node), state),
 				(node, data) -> Objects.requireNonNull(
 						handler.apply(nodeType.cast(node), data), "traversalDecision"), //$NON-NLS-1$
 				node -> nextScope.apply(nodeType.cast(node))));
@@ -206,7 +253,7 @@ public final class ScopedAstProcessorBuilder<V, T> {
 	private record Stage<V, T>(
 			Class<? extends ASTNode> nodeType,
 			VisitorEnum visitorType,
-			Predicate<ASTNode> matcher,
+			BiPredicate<ASTNode, ReferenceHolder<V, T>> matcher,
 			BiFunction<ASTNode, ReferenceHolder<V, T>, TraversalDecision> handler,
 			Function<ASTNode, ? extends ASTNode> nextScope) {
 	}
