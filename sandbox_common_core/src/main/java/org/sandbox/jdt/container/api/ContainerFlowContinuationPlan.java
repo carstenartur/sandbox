@@ -47,7 +47,6 @@ public record ContainerFlowContinuationPlan(
 			EdgeKind transferKind,
 			String compilationUnitHandle,
 			String exactTargetHandle,
-			int signatureIndex,
 			ContainerUsageProfile profile) {
 
 		public ContinuationRoot {
@@ -57,10 +56,6 @@ public record ContainerFlowContinuationPlan(
 			compilationUnitHandle= requiredText(
 					compilationUnitHandle, "compilationUnitHandle"); //$NON-NLS-1$
 			exactTargetHandle= requiredText(exactTargetHandle, "exactTargetHandle"); //$NON-NLS-1$
-			if (signatureIndex < -1) {
-				throw new IllegalArgumentException(
-						"signatureIndex must be -1 or a parameter index"); //$NON-NLS-1$
-			}
 			Objects.requireNonNull(profile, "profile"); //$NON-NLS-1$
 			if (!profile.identity().hasResolvedBinding()) {
 				throw new IllegalArgumentException(
@@ -79,7 +74,6 @@ public record ContainerFlowContinuationPlan(
 		/** Stable deterministic key used for result de-duplication. */
 		public String stableKey() {
 			return boundaryNodeId + '|' + kind + '|' + relationship + '|'
-					+ exactTargetHandle + '|' + signatureIndex + '|'
 					+ compilationUnitHandle + '|' + profile.identity().bindingKey();
 		}
 	}
