@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
@@ -32,6 +34,8 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
@@ -46,9 +50,15 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.MutationLifecycle;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 import org.sandbox.jdt.internal.common.AstProcessing;
@@ -118,8 +128,14 @@ public final class LocalArrayUsageAnalyzer {
 			return;
 		}
 
-		accumulator.observeBinding(variable.getVariableDeclaration());
+		IVariableBinding declaration= variable.getVariableDeclaration();
+		accumulator.observeBinding(declaration);
 		if (isDeclarationName(name)) {
+			return;
+		}
+		if (crossesExecutableBoundary(name, declaration)) {
+			accumulator.reject(Kind.CAPTURED_USAGE,
+					"Array value is captured by a lambda, nested type, or different method body", name); //$NON-NLS-1$
 			return;
 		}
 
@@ -157,6 +173,37 @@ public final class LocalArrayUsageAnalyzer {
 			accumulator.reject(Kind.UNCLASSIFIED_USAGE,
 					"Array use is not yet classified by local container analysis", reference); //$NON-NLS-1$
 		}
+	}
+
+	private static boolean crossesExecutableBoundary(
+			ASTNode reference,
+			IVariableBinding declaration) {
+		IMethodBinding declaringMethod= declaration.getDeclaringMethod();
+		if (declaringMethod == null || declaration.isField()) {
+			return false;
+		}
+		String declaringKey= methodKey(declaringMethod);
+		ASTNode current= reference.getParent();
+		while (current != null) {
+			if (current instanceof LambdaExpression
+					|| current instanceof AnonymousClassDeclaration
+					|| current instanceof AbstractTypeDeclaration) {
+				return true;
+			}
+			if (current instanceof MethodDeclaration method) {
+				IMethodBinding currentBinding= method.resolveBinding();
+				return currentBinding == null
+						|| !declaringKey.equals(methodKey(currentBinding));
+			}
+			current= current.getParent();
+		}
+		return true;
+	}
+
+	private static String methodKey(IMethodBinding method) {
+		IMethodBinding declaration= method.getMethodDeclaration();
+		String key= declaration.getKey();
+		return key == null ? "" : key; //$NON-NLS-1$
 	}
 
 	private static void classifyArrayAccess(
@@ -421,6 +468,14 @@ public final class LocalArrayUsageAnalyzer {
 			AliasingContract aliasing= rejected
 					? AliasingContract.UNKNOWN
 					: AliasingContract.NO_OBSERVED_ALIAS;
+			ConcurrencyProfile concurrency= !rejected && escape == EscapeLevel.LOCAL
+					? new ConcurrencyProfile(
+							ThreadExposure.THREAD_CONFINED,
+							SynchronizationKind.NONE,
+							IterationSemantics.LIVE,
+							AtomicityRequirement.INDIVIDUAL_OPERATIONS,
+							WorkloadShape.UNKNOWN)
+					: seed.concurrency();
 
 			return new ContainerUsageProfile(
 					seed.identity(),
@@ -440,7 +495,7 @@ public final class LocalArrayUsageAnalyzer {
 					seed.nullContract(),
 					aliasing,
 					escape,
-					seed.concurrency(),
+					concurrency,
 					completeness,
 					evidence);
 		}

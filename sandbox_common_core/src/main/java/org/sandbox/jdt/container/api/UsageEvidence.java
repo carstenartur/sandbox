@@ -51,6 +51,7 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		LOCAL_USAGE_COMPLETE,
 		FLOW_CONTINUATION_ROOT,
 		UNSUPPORTED_CONTINUATION,
+		CAPTURED_USAGE,
 		UNSAFE_ESCAPE,
 		ARRAY_IDENTITY,
 		UNCLASSIFIED_USAGE,
