@@ -135,6 +135,8 @@ public record ContainerBridgePolicyPlan(
 
 	public enum DiagnosticKind {
 		SIGNATURE_PLAN_REJECTED,
+		TARGET_CONTRACT_MISMATCH,
+		AMBIGUOUS_CONTRACT_ASSESSMENT,
 		UNSUPPORTED_BRIDGE_CLASSIFICATION
 	}
 
@@ -146,6 +148,7 @@ public record ContainerBridgePolicyPlan(
 						"Duplicate bridge policy group: " + group.signatureGroupId()); //$NON-NLS-1$
 			}
 		}
+	}
 
 	private static void validateUniqueProperties(List<SemanticRequirement> requirements) {
 		Set<BridgeProperty> properties= new HashSet<>();
