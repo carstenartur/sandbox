@@ -73,13 +73,19 @@ public record ContainerFlowGraph(
 		}
 	}
 
-	/** One declaration, signature position or external boundary in the value flow. */
+	/**
+	 * One declaration, signature position or external boundary in the value flow.
+	 *
+	 * @param signatureIndex zero-based parameter index, or {@code -1} when the node
+	 *                       is not a parameter position
+	 */
 	public record FlowNode(
 			String stableId,
 			NodeKind kind,
 			String bindingKey,
 			String ownerKey,
 			String compilationUnitHandle,
+			int signatureIndex,
 			boolean sourceResolved,
 			int sourceStart,
 			int sourceLength) {
@@ -90,7 +96,15 @@ public record ContainerFlowGraph(
 			bindingKey= optionalText(bindingKey);
 			ownerKey= optionalText(ownerKey);
 			compilationUnitHandle= optionalText(compilationUnitHandle);
+			if (signatureIndex < -1) {
+				throw new IllegalArgumentException("signatureIndex must be -1 or a parameter index"); //$NON-NLS-1$
+			}
 			validateRange(sourceStart, sourceLength);
+		}
+
+		/** Returns whether this node represents one concrete parameter position. */
+		public boolean isParameterPosition() {
+			return signatureIndex >= 0;
 		}
 	}
 
