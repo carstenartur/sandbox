@@ -39,11 +39,19 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		}
 	}
 
-	/** Semantic categories understood by the initial container analysis. */
+	/** Semantic categories understood by container analysis and reporting. */
 	public enum Kind {
 		ARRAY_GROWTH,
 		APPEND_WRITE,
 		REFERENCE_COMPONENT,
+		ARRAY_LENGTH_READ,
+		INDEXED_READ,
+		INDEXED_WRITE,
+		ENCOUNTER_ITERATION,
+		LOCAL_USAGE_COMPLETE,
+		UNSAFE_ESCAPE,
+		ARRAY_IDENTITY,
+		UNCLASSIFIED_USAGE,
 		UNRESOLVED_BINDING,
 		REJECTION_BOUNDARY
 	}
