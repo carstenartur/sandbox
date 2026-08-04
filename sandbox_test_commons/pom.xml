@@ -10,8 +10,34 @@
 	</parent>
 	<artifactId>sandbox_test_commons</artifactId>
 	<name>Sandbox test commons</name>
-	<packaging>eclipse-plugin</packaging>
+	<packaging>eclipse-test-plugin</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_common</artifactId>
+		</dependency>
+	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
+		<testSourceDirectory>${project.basedir}/integration-src</testSourceDirectory>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<useJDK>BREE</useJDK>
+					<useUIHarness>true</useUIHarness>
+					<dependencies>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<groupId>org.sandbox</groupId>
+							<artifactId>sandbox_common</artifactId>
+							<version>0.0.0</version>
+						</dependency>
+					</dependencies>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
 </project>

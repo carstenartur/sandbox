@@ -16,7 +16,8 @@ Import-Package: org.junit.jupiter.api,
  org.junit.jupiter.api.parallel,
  org.junit.jupiter.params
 Bundle-ActivationPolicy: lazy
-Require-Bundle: org.eclipse.jdt.ui,
+Require-Bundle: sandbox_common,
+ org.eclipse.jdt.ui,
  org.eclipse.jdt.core,
  org.eclipse.osgi,
  org.eclipse.core.resources,
