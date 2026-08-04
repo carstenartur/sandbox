@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
-import static org.sandbox.jdt.container.analysis.ContainerAstFacts.unwrap;
 import static org.sandbox.jdt.container.analysis.ContainerAstFacts.variableBinding;
 
 import java.util.ArrayList;
@@ -34,6 +33,7 @@ import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
@@ -51,6 +51,7 @@ import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.ContinuationR
 import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.DiagnosticKind;
 import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.Relationship;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
@@ -76,10 +77,10 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
  * Finds exact, binding-resolved flow roots in compilation units admitted by workspace
  * scope expansion.
  *
- * <p>The detector deliberately supports only transparent value transfers. Direct
- * variable/field arguments and returns are followed. Chained calls, array-specific
- * operations on a call result and method references remain explicit rejection
- * diagnostics until a dedicated semantic rule proves them safe.</p>
+ * <p>Only transparent transfers are followed: exact fields and parameters, variables
+ * passed as arguments, variables returned by a method, and variables directly
+ * initialized or assigned from a method result. More complex expressions remain
+ * explicit diagnostics until a dedicated semantic rule can prove them safe.</p>
  */
 public final class ContainerFlowContinuationDetector {
 
@@ -97,9 +98,9 @@ public final class ContainerFlowContinuationDetector {
 			ResolvedContainerFlowSearchPlan resolvedPlan) {
 		Objects.requireNonNull(compilationUnit, "compilationUnit"); //$NON-NLS-1$
 		Objects.requireNonNull(resolvedPlan, "resolvedPlan"); //$NON-NLS-1$
-		String unitHandle= requiredText(compilationUnitHandle, "compilationUnitHandle"); //$NON-NLS-1$
 		TargetIndex targets= TargetIndex.create(resolvedPlan);
-		Accumulator result= new Accumulator(unitHandle);
+		Accumulator result= new Accumulator(requiredText(
+				compilationUnitHandle, "compilationUnitHandle")); //$NON-NLS-1$
 
 		AstProcessing.independent(ReferenceHolder.<String, Object>create())
 				.on(SimpleName.class, (name, holder) -> {
@@ -111,59 +112,39 @@ public final class ContainerFlowContinuationDetector {
 					return true;
 				})
 				.on(MethodInvocation.class, (invocation, holder) -> {
-					inspectInvocation(
-							invocation,
-							invocation.resolveMethodBinding(),
-							invocation.arguments(),
-							targets,
-							result);
+					inspectExpressionCall(invocation, invocation.resolveMethodBinding(),
+							invocation.arguments(), targets, result);
 					return true;
 				})
 				.on(ClassInstanceCreation.class, (creation, holder) -> {
-					inspectInvocation(
-							creation,
-							creation.resolveConstructorBinding(),
-							creation.arguments(),
-							targets,
-							result);
+					inspectExpressionCall(creation, creation.resolveConstructorBinding(),
+							creation.arguments(), targets, result);
 					return true;
 				})
 				.on(ConstructorInvocation.class, (invocation, holder) -> {
-					inspectStatementInvocation(
-							invocation,
-							invocation.resolveConstructorBinding(),
-							invocation.arguments(),
-							targets,
-							result);
+					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),
+							invocation.arguments(), targets, result);
 					return true;
 				})
 				.on(SuperConstructorInvocation.class, (invocation, holder) -> {
-					inspectStatementInvocation(
-							invocation,
-							invocation.resolveConstructorBinding(),
-							invocation.arguments(),
-							targets,
-							result);
+					inspectStatementCall(invocation, invocation.resolveConstructorBinding(),
+							invocation.arguments(), targets, result);
 					return true;
 				})
 				.on(ExpressionMethodReference.class, (reference, holder) -> {
-					inspectMethodReference(
-							reference, reference.resolveMethodBinding(), targets, result);
+					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
 					return true;
 				})
 				.on(TypeMethodReference.class, (reference, holder) -> {
-					inspectMethodReference(
-							reference, reference.resolveMethodBinding(), targets, result);
+					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
 					return true;
 				})
 				.on(SuperMethodReference.class, (reference, holder) -> {
-					inspectMethodReference(
-							reference, reference.resolveMethodBinding(), targets, result);
+					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
 					return true;
 				})
 				.on(CreationReference.class, (reference, holder) -> {
-					inspectMethodReference(
-							reference, reference.resolveMethodBinding(), targets, result);
+					inspectMethodReference(reference, reference.resolveMethodBinding(), targets, result);
 					return true;
 				})
 				.build(compilationUnit);
@@ -175,23 +156,18 @@ public final class ContainerFlowContinuationDetector {
 			SimpleName name,
 			TargetIndex targets,
 			Accumulator result) {
-		if (!(name.resolveBinding() instanceof IVariableBinding binding)
-				|| !binding.getVariableDeclaration().isField()) {
+		if (!(name.resolveBinding() instanceof IVariableBinding binding)) {
 			return;
 		}
-		String handle= javaElementHandle(binding.getVariableDeclaration().getJavaElement());
-		if (handle.isBlank()) {
+		IVariableBinding declaration= binding.getVariableDeclaration();
+		if (!declaration.isField()) {
 			return;
 		}
+		String handle= javaElementHandle(declaration.getJavaElement());
 		for (ResolvedSearchTarget target : targets.fields(handle)) {
-			result.addRoot(
-					target,
-					ContinuationKind.FIELD,
-					Relationship.SAME_NODE,
-					null,
-					binding.getVariableDeclaration(),
-					name,
-					"Continue container flow from the exact field binding.")); //$NON-NLS-1$
+			result.addRoot(target, ContinuationKind.FIELD, Relationship.SAME_NODE, null,
+					declaration, name,
+					"Continue container flow from the exact field binding."); //$NON-NLS-1$
 		}
 	}
 
@@ -199,14 +175,9 @@ public final class ContainerFlowContinuationDetector {
 			MethodDeclaration method,
 			TargetIndex targets,
 			Accumulator result) {
-		IMethodBinding binding= method.resolveBinding();
-		String handle= javaElementHandle(binding);
-		if (handle.isBlank()) {
-			return;
-		}
+		String handle= javaElementHandle(method.resolveBinding());
 		for (ResolvedSearchTarget target : targets.methods(handle)) {
-			if (target.searchKind()
-					== org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind.METHOD_CALLERS) {
+			if (target.searchKind() == SearchKind.METHOD_CALLERS) {
 				continue;
 			}
 			if (target.signatureIndex() >= 0) {
@@ -223,31 +194,20 @@ public final class ContainerFlowContinuationDetector {
 			Accumulator result) {
 		int index= target.signatureIndex();
 		if (index < 0 || index >= method.parameters().size()) {
-			result.addDiagnostic(
-					DiagnosticKind.INVALID_SIGNATURE_INDEX,
-					target,
-					method,
-					"The resolved method does not contain the requested parameter index " //$NON-NLS-1$
-							+ index + '.');
+			result.addDiagnostic(DiagnosticKind.INVALID_SIGNATURE_INDEX, target, method,
+					"The resolved method does not contain parameter index " + index + '.'); //$NON-NLS-1$
 			return;
 		}
 		SingleVariableDeclaration parameter=
 				(SingleVariableDeclaration) method.parameters().get(index);
-		IVariableBinding parameterBinding= parameter.resolveBinding();
-		if (parameterBinding == null) {
-			result.addDiagnostic(
-					DiagnosticKind.UNRESOLVED_BINDING,
-					target,
-					parameter,
+		IVariableBinding binding= parameter.resolveBinding();
+		if (binding == null) {
+			result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, parameter,
 					"The requested method parameter binding could not be resolved."); //$NON-NLS-1$
 			return;
 		}
-		result.addRoot(
-				target,
-				ContinuationKind.PARAMETER_DECLARATION,
-				Relationship.SAME_NODE,
-				null,
-				parameterBinding.getVariableDeclaration(),
+		result.addRoot(target, ContinuationKind.PARAMETER_DECLARATION,
+				Relationship.SAME_NODE, null, binding.getVariableDeclaration(),
 				parameter.getName(),
 				"Continue container flow from the exact method parameter position."); //$NON-NLS-1$
 	}
@@ -261,46 +221,52 @@ public final class ContainerFlowContinuationDetector {
 		}
 		AstProcessing.independent(ReferenceHolder.<String, Object>create())
 				.on(ReturnStatement.class, (statement, holder) -> {
+					if (!belongsToMethod(statement, method)) {
+						return false;
+					}
 					Expression expression= statement.getExpression();
 					if (expression == null) {
-						return true;
+						return false;
 					}
 					Optional<IVariableBinding> returned= variableBinding(expression);
 					if (returned.isEmpty()) {
-						result.addDiagnostic(
-								DiagnosticKind.UNSUPPORTED_RETURN_EXPRESSION,
-								target,
-								expression,
+						result.addDiagnostic(DiagnosticKind.UNSUPPORTED_RETURN_EXPRESSION,
+								target, expression,
 								"The method returns a non-variable expression that requires " //$NON-NLS-1$
 										+ "a dedicated semantic migration rule."); //$NON-NLS-1$
-						return true;
+						return false;
 					}
-					result.addRoot(
-							target,
-							ContinuationKind.RETURN_EXPRESSION,
-							Relationship.ROOT_TO_BOUNDARY,
-							EdgeKind.RETURN_TO_METHOD,
-							returned.get().getVariableDeclaration(),
-							expression,
+					result.addRoot(target, ContinuationKind.RETURN_EXPRESSION,
+							Relationship.ROOT_TO_BOUNDARY, EdgeKind.RETURN_TO_METHOD,
+							returned.get().getVariableDeclaration(), expression,
 							"Continue container flow from a variable returned by the method."); //$NON-NLS-1$
-					return true;
+					return false;
 				})
 				.build(method.getBody());
 	}
 
-	private static void inspectInvocation(
+	private static boolean belongsToMethod(ReturnStatement statement, MethodDeclaration method) {
+		ASTNode current= statement.getParent();
+		while (current != null) {
+			if (current instanceof LambdaExpression) {
+				return false;
+			}
+			if (current instanceof MethodDeclaration declaration) {
+				return declaration == method;
+			}
+			current= current.getParent();
+		}
+		return false;
+	}
+
+	private static void inspectExpressionCall(
 			Expression invocation,
 			IMethodBinding binding,
 			List<?> arguments,
 			TargetIndex targets,
 			Accumulator result) {
-		String handle= javaElementHandle(binding);
-		if (handle.isBlank()) {
-			return;
-		}
-		for (ResolvedSearchTarget target : targets.methods(handle)) {
-			if (target.searchKind()
-					!= org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind.METHOD_CALLERS) {
+		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {
+			if (target.searchKind() != SearchKind.METHOD_CALLERS) {
 				continue;
 			}
 			if (target.signatureIndex() >= 0) {
@@ -311,19 +277,14 @@ public final class ContainerFlowContinuationDetector {
 		}
 	}
 
-	private static void inspectStatementInvocation(
+	private static void inspectStatementCall(
 			ASTNode invocation,
 			IMethodBinding binding,
 			List<?> arguments,
 			TargetIndex targets,
 			Accumulator result) {
-		String handle= javaElementHandle(binding);
-		if (handle.isBlank()) {
-			return;
-		}
-		for (ResolvedSearchTarget target : targets.methods(handle)) {
-			if (target.searchKind()
-					== org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind.METHOD_CALLERS
+		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {
+			if (target.searchKind() == SearchKind.METHOD_CALLERS
 					&& target.signatureIndex() >= 0) {
 				inspectArguments(invocation, binding, arguments, target, result);
 			}
@@ -337,44 +298,31 @@ public final class ContainerFlowContinuationDetector {
 			ResolvedSearchTarget target,
 			Accumulator result) {
 		if (binding == null) {
-			result.addDiagnostic(
-					DiagnosticKind.UNRESOLVED_BINDING,
-					target,
-					invocation,
+			result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, invocation,
 					"The call binding could not be resolved."); //$NON-NLS-1$
 			return;
 		}
-		boolean matchedPosition= false;
+		boolean matched= false;
 		for (int argumentIndex= 0; argumentIndex < arguments.size(); argumentIndex++) {
 			if (parameterIndex(binding, argumentIndex) != target.signatureIndex()) {
 				continue;
 			}
-			matchedPosition= true;
+			matched= true;
 			Expression argument= (Expression) arguments.get(argumentIndex);
 			Optional<IVariableBinding> variable= variableBinding(argument);
 			if (variable.isEmpty()) {
-				result.addDiagnostic(
-						DiagnosticKind.UNSUPPORTED_ARGUMENT,
-						target,
-						argument,
+				result.addDiagnostic(DiagnosticKind.UNSUPPORTED_ARGUMENT, target, argument,
 						"The call passes a non-variable argument that requires a " //$NON-NLS-1$
 								+ "dedicated semantic migration rule."); //$NON-NLS-1$
 				continue;
 			}
-			result.addRoot(
-					target,
-					ContinuationKind.CALL_ARGUMENT,
-					Relationship.ROOT_TO_BOUNDARY,
-					EdgeKind.ARGUMENT_TO_PARAMETER,
-					variable.get().getVariableDeclaration(),
-					argument,
+			result.addRoot(target, ContinuationKind.CALL_ARGUMENT,
+					Relationship.ROOT_TO_BOUNDARY, EdgeKind.ARGUMENT_TO_PARAMETER,
+					variable.get().getVariableDeclaration(), argument,
 					"Continue container flow from the variable passed to the parameter."); //$NON-NLS-1$
 		}
-		if (!matchedPosition) {
-			result.addDiagnostic(
-					DiagnosticKind.INVALID_SIGNATURE_INDEX,
-					target,
-					invocation,
+		if (!matched) {
+			result.addDiagnostic(DiagnosticKind.INVALID_SIGNATURE_INDEX, target, invocation,
 					"The call contains no argument for parameter index " //$NON-NLS-1$
 							+ target.signatureIndex() + '.');
 		}
@@ -390,20 +338,13 @@ public final class ContainerFlowContinuationDetector {
 				&& fragment.getInitializer() == complete) {
 			IVariableBinding binding= fragment.resolveBinding();
 			if (binding == null) {
-				result.addDiagnostic(
-						DiagnosticKind.UNRESOLVED_BINDING,
-						target,
-						fragment,
+				result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, fragment,
 						"The variable receiving the method result could not be resolved."); //$NON-NLS-1$
 				return;
 			}
-			result.addRoot(
-					target,
-					ContinuationKind.RETURN_CONSUMER,
-					Relationship.BOUNDARY_TO_ROOT,
-					EdgeKind.INITIALIZER,
-					binding.getVariableDeclaration(),
-					fragment.getName(),
+			result.addRoot(target, ContinuationKind.RETURN_CONSUMER,
+					Relationship.BOUNDARY_TO_ROOT, EdgeKind.INITIALIZER,
+					binding.getVariableDeclaration(), fragment.getName(),
 					"Continue container flow from the variable initialized by the result."); //$NON-NLS-1$
 			return;
 		}
@@ -412,31 +353,20 @@ public final class ContainerFlowContinuationDetector {
 				&& assignment.getRightHandSide() == complete) {
 			Optional<IVariableBinding> binding= variableBinding(assignment.getLeftHandSide());
 			if (binding.isEmpty()) {
-				result.addDiagnostic(
-						DiagnosticKind.UNRESOLVED_BINDING,
-						target,
-						assignment,
-						"The assignment target receiving the method result could not be resolved."); //$NON-NLS-1$
+				result.addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, assignment,
+						"The assignment target receiving the result could not be resolved."); //$NON-NLS-1$
 				return;
 			}
-			result.addRoot(
-					target,
-					ContinuationKind.RETURN_CONSUMER,
-					Relationship.BOUNDARY_TO_ROOT,
-					EdgeKind.ASSIGNMENT,
-					binding.get().getVariableDeclaration(),
-					assignment.getLeftHandSide(),
+			result.addRoot(target, ContinuationKind.RETURN_CONSUMER,
+					Relationship.BOUNDARY_TO_ROOT, EdgeKind.ASSIGNMENT,
+					binding.get().getVariableDeclaration(), assignment.getLeftHandSide(),
 					"Continue container flow from the variable assigned the method result."); //$NON-NLS-1$
 			return;
 		}
 		if (parent instanceof ExpressionStatement) {
-			// The return value is intentionally ignored; no value-flow root is needed.
 			return;
 		}
-		result.addDiagnostic(
-				DiagnosticKind.UNSUPPORTED_RETURN_CONSUMER,
-				target,
-				complete,
+		result.addDiagnostic(DiagnosticKind.UNSUPPORTED_RETURN_CONSUMER, target, complete,
 				"The method result is consumed by an unsupported expression shape."); //$NON-NLS-1$
 	}
 
@@ -445,15 +375,8 @@ public final class ContainerFlowContinuationDetector {
 			IMethodBinding binding,
 			TargetIndex targets,
 			Accumulator result) {
-		String handle= javaElementHandle(binding);
-		if (handle.isBlank()) {
-			return;
-		}
-		for (ResolvedSearchTarget target : targets.methods(handle)) {
-			result.addDiagnostic(
-					DiagnosticKind.METHOD_REFERENCE,
-					target,
-					reference,
+		for (ResolvedSearchTarget target : targets.methods(javaElementHandle(binding))) {
+			result.addDiagnostic(DiagnosticKind.METHOD_REFERENCE, target, reference,
 					"A method reference participates in the migrated signature and " //$NON-NLS-1$
 							+ "requires dedicated target-type analysis."); //$NON-NLS-1$
 		}
@@ -520,8 +443,8 @@ public final class ContainerFlowContinuationDetector {
 			for (ResolvedSearchTarget target : plan.targets()) {
 				Map<String, List<ResolvedSearchTarget>> selected=
 						target.targetKind() == TargetKind.FIELD ? fields : methods;
-				selected.computeIfAbsent(
-						target.javaElementHandle(), ignored -> new ArrayList<>()).add(target);
+				selected.computeIfAbsent(target.javaElementHandle(), ignored -> new ArrayList<>())
+						.add(target);
 			}
 			return new TargetIndex(immutableLists(fields), immutableLists(methods));
 		}
@@ -546,7 +469,8 @@ public final class ContainerFlowContinuationDetector {
 
 		private final String compilationUnitHandle;
 		private final Map<String, ContinuationRoot> rootsByKey= new LinkedHashMap<>();
-		private final Map<String, ContinuationDiagnostic> diagnosticsByKey= new LinkedHashMap<>();
+		private final Map<String, ContinuationDiagnostic> diagnosticsByKey=
+				new LinkedHashMap<>();
 
 		Accumulator(String compilationUnitHandle) {
 			this.compilationUnitHandle= compilationUnitHandle;
@@ -563,32 +487,21 @@ public final class ContainerFlowContinuationDetector {
 			IVariableBinding declaration= binding.getVariableDeclaration();
 			ITypeBinding type= declaration.getType();
 			if (type == null || !type.isArray()) {
-				addDiagnostic(
-						DiagnosticKind.NON_ARRAY_VALUE,
-						target,
-						anchor,
+				addDiagnostic(DiagnosticKind.NON_ARRAY_VALUE, target, anchor,
 						"The resolved continuation value is not an array."); //$NON-NLS-1$
 				return;
 			}
 			String bindingKey= declaration.getKey();
 			if (bindingKey == null || bindingKey.isBlank()) {
-				addDiagnostic(
-						DiagnosticKind.UNRESOLVED_BINDING,
-						target,
-						anchor,
+				addDiagnostic(DiagnosticKind.UNRESOLVED_BINDING, target, anchor,
 						"The continuation variable has no stable binding key."); //$NON-NLS-1$
 				return;
 			}
 
-			ContainerUsageProfile profile= profile(declaration, anchor, summary);
 			ContinuationRoot root= new ContinuationRoot(
-					target.sourceNodeId(),
-					kind,
-					relationship,
-					transferKind,
-					compilationUnitHandle,
-					target.javaElementHandle(),
-					profile);
+					target.sourceNodeId(), kind, relationship, transferKind,
+					compilationUnitHandle, target.javaElementHandle(),
+					profile(declaration, anchor, summary));
 			rootsByKey.putIfAbsent(root.stableKey(), root);
 		}
 
@@ -598,12 +511,8 @@ public final class ContainerFlowContinuationDetector {
 				ASTNode node,
 				String message) {
 			ContinuationDiagnostic diagnostic= new ContinuationDiagnostic(
-					kind,
-					compilationUnitHandle,
-					target.javaElementHandle(),
-					message,
-					node.getStartPosition(),
-					node.getLength());
+					kind, compilationUnitHandle, target.javaElementHandle(), message,
+					node.getStartPosition(), node.getLength());
 			String key= kind + "|" + target.stableKey() + '|' + node.getStartPosition(); //$NON-NLS-1$
 			diagnosticsByKey.putIfAbsent(key, diagnostic);
 		}
@@ -634,23 +543,9 @@ public final class ContainerFlowContinuationDetector {
 			EscapeLevel escape= binding.isField()
 					? EscapeLevel.FIELD
 					: binding.isParameter() ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;
-			List<UsageEvidence> evidence= List.of(
-					new UsageEvidence(
-							Kind.FLOW_CONTINUATION_ROOT,
-							summary,
-							anchor.getStartPosition(),
-							anchor.getLength()),
-					new UsageEvidence(
-							Kind.REFERENCE_COMPONENT,
-							"The continuation root has an array component type.", //$NON-NLS-1$
-							anchor.getStartPosition(),
-							anchor.getLength()));
 			return new ContainerUsageProfile(
-					new ContainerIdentity(
-							binding.getKey(),
-							binding.getName(),
-							anchor.getStartPosition(),
-							anchor.getLength()),
+					new ContainerIdentity(binding.getKey(), binding.getName(),
+							anchor.getStartPosition(), anchor.getLength()),
 					ContainerShape.ARRAY,
 					domain,
 					new AccessProfile(false, false, false, false, false, false, false),
@@ -662,7 +557,8 @@ public final class ContainerFlowContinuationDetector {
 					escape,
 					ConcurrencyProfile.unknown(),
 					AnalysisCompleteness.LOCAL_SEED,
-					evidence);
+					List.of(new UsageEvidence(Kind.FLOW_CONTINUATION_ROOT, summary,
+							anchor.getStartPosition(), anchor.getLength())));
 		}
 	}
 }
