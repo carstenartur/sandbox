@@ -15,9 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -201,14 +198,17 @@ class LocalContainerFlowGraphBuilderTest {
 					String[] values = new String[0];
 					values = Arrays.copyOf(values, values.length + 1);
 					values[values.length - 1] = value;
+					String[] alias = values;
+					System.out.println(alias.length);
 				}
 			}
 			""");
 
+		assertFalse(graph.edges().isEmpty());
 		assertThrows(UnsupportedOperationException.class,
 				() -> graph.nodes().add(graph.nodes().get(0)));
 		assertThrows(UnsupportedOperationException.class,
-				() -> graph.edges().addAll(new ArrayList<>()));
+				() -> graph.edges().remove(0));
 		assertTrue(graph.node(graph.rootNodeId()).isPresent());
 	}
 
