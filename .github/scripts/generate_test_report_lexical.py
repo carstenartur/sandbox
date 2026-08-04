@@ -118,6 +118,30 @@ def annotation_parenthesis_delta(line: str) -> int:
 class TestScanner(LegacyTestScanner):
     """Legacy report generator with a lexical Java-code view for discovery."""
 
+    TEST_SOURCE_ROOTS = ("src", "integration-src")
+
+    def find_test_modules(self) -> list[Path]:
+        """Find conventional test modules and modules with integration sources."""
+        return sorted(
+            item
+            for item in self.repo_root.iterdir()
+            if item.is_dir()
+            and (
+                item.name.endswith("_test")
+                or (item / "integration-src").is_dir()
+            )
+        )
+
+    def scan_module(self, module_path: Path) -> None:
+        """Scan all supported Java test source roots in one module."""
+        plugin_name = module_path.name
+        for source_root_name in self.TEST_SOURCE_ROOTS:
+            source_root = module_path / source_root_name
+            if not source_root.is_dir():
+                continue
+            for java_file in source_root.rglob("*.java"):
+                self.scan_java_file(java_file, plugin_name)
+
     def scan_java_file(self, file_path: Path, plugin_name: str):
         try:
             content = file_path.read_text(encoding="utf-8")
