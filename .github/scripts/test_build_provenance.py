@@ -25,6 +25,9 @@ def load_module(name: str, filename: str):
 
 manifest_module = load_module("generate_build_manifest", "generate_build_manifest.py")
 workflow_module = load_module("collect_commit_workflows", "collect_commit_workflows.py")
+merge_module = load_module(
+    "merge_distribution_verification", "merge_distribution_verification.py"
+)
 
 
 class BuildManifestTest(unittest.TestCase):
@@ -130,6 +133,58 @@ class BuildManifestTest(unittest.TestCase):
             self.assertEqual(2, first["file_count"])
 
 
+class DistributionEvidenceMergeTest(unittest.TestCase):
+
+    @staticmethod
+    def feature_evidence() -> dict[str, object]:
+        return {
+            "id": "sandbox_common_feature",
+            "iu": "sandbox_common_feature.feature.group",
+            "version": "1.3.2.20260805",
+            "artifactSize": 1234,
+            "artifactSha256": "a" * 64,
+        }
+
+    def test_merges_exact_artifact_evidence_without_losing_runtime_results(self):
+        runtime = {
+            "schemaVersion": 2,
+            "result": "PASS",
+            "publishedFeatureCount": 1,
+            "productRoot": "/tmp/product",
+        }
+        artifacts = {
+            "publishedFeatureIds": ["sandbox_common_feature"],
+            "publishedFeatureIUs": ["sandbox_common_feature.feature.group"],
+            "targetRepositories": ["https://download.eclipse.org/releases/2026-06/"],
+            "repository": {
+                "metadataUnits": 42,
+                "publishedFeatures": [self.feature_evidence()],
+            },
+        }
+
+        merged = merge_module.merge_evidence(runtime, artifacts)
+
+        self.assertEqual(3, merged["schemaVersion"])
+        self.assertEqual("PASS", merged["result"])
+        self.assertEqual("/tmp/product", merged["productRoot"])
+        self.assertEqual(
+            [self.feature_evidence()], merged["repository"]["publishedFeatures"]
+        )
+        self.assertEqual(
+            ["sandbox_common_feature.feature.group"],
+            merged["publishedFeatureIUs"],
+        )
+
+    def test_rejects_disagreeing_feature_counts(self):
+        runtime = {"schemaVersion": 2, "publishedFeatureCount": 2}
+        artifacts = {
+            "repository": {"publishedFeatures": [self.feature_evidence()]}
+        }
+
+        with self.assertRaisesRegex(ValueError, "published feature count"):
+            merge_module.merge_evidence(runtime, artifacts)
+
+
 class WorkflowSelectionTest(unittest.TestCase):
 
     @staticmethod
@@ -148,6 +203,18 @@ class WorkflowSelectionTest(unittest.TestCase):
             }
             for index, name in enumerate(workflow_module.EXPECTED_WORKFLOWS)
         ]
+
+    def test_expected_workflow_names_match_current_validation_contract(self):
+        self.assertEqual(
+            (
+                "Java CI with Maven",
+                "Core Module Build",
+                "CodeQL",
+                "Codacy Security Scan",
+                "Test Source Inventory",
+            ),
+            workflow_module.EXPECTED_WORKFLOWS,
+        )
 
     def test_selects_latest_push_run_for_exact_commit(self):
         commit = "abc123"
