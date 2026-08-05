@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e16690eff3cfb51edc369a4ebc9e8656681ad59794c6318016d4fe3d60bfd302",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.preferences.MembersOrderPreferenceCache.CONSTRUCTORS_INDEX\n\u003d\u003e\norg.eclipse.jdt.internal.core.manipulation.MembersOrderPreferenceCacheCommon.CONSTRUCTORS_INDEX\n;;",
+  "beforeExample": "package test;\n\n// Mock classes to represent the original and new constant locations.\n// In a real project, these would be in their respective FQNs.\nclass MembersOrderPreferenceCache {\n    public static final int CONSTRUCTORS_INDEX \u003d 1;\n    public static final int METHOD_INDEX \u003d 2;\n}\n\nclass TestComparator {\n    public int getMemberCategory(int kind) {\n        return kind;\n    }\n\n    public int compareConstructors() {\n        // Original usage of the constant\n        return getMemberCategory(test.MembersOrderPreferenceCache.CONSTRUCTORS_INDEX);\n    }\n}\n",
+  "afterExample": "package test;\n\n// Mock classes to represent the original and new constant locations.\n// In a real project, these would be in their respective FQNs.\nclass MembersOrderPreferenceCache {\n    public static final int CONSTRUCTORS_INDEX \u003d 1;\n    public static final int METHOD_INDEX \u003d 2;\n}\n\nclass MembersOrderPreferenceCacheCommon {\n    public static final int CONSTRUCTORS_INDEX \u003d 1; // Assuming value remains the same after refactoring\n    public static final int METHOD_INDEX \u003d 2;\n}\n\nclass TestComparator {\n    public int getMemberCategory(int kind) {\n        return kind;\n    }\n\n    public int compareConstructors() {\n        // After applying the rule, refers to the common class\n        return getMemberCategory(test.MembersOrderPreferenceCacheCommon.CONSTRUCTORS_INDEX);\n    }\n}\n",
+  "negativeExample": "package test;\n\nclass MembersOrderPreferenceCache {\n    public static final int CONSTRUCTORS_INDEX \u003d 1;\n    public static final int METHOD_INDEX \u003d 2;\n}\n\nclass AnotherMembersClass {\n    public static final int CONSTRUCTORS_INDEX \u003d 99; // A constant in a different class\n}\n\nclass TestOtherUsages {\n    public int getOtherConstant() {\n        // This should not be matched as it\u0027s a different class constant\n        return test.AnotherMembersClass.CONSTRUCTORS_INDEX;\n    }\n\n    public int getDifferentMember() {\n        // This should not be matched as it\u0027s a different constant from the same old class\n        return test.MembersOrderPreferenceCache.METHOD_INDEX;\n    }\n}\n",
+  "targetHintFile": "eclipse-jdt-constants.sandbox-hint",
+  "sourceCommit": "07f9e8c40160cc052f168b26d9a6e13af777a07b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replace `MembersOrderPreferenceCache.CONSTRUCTORS_INDEX` with `MembersOrderPreferenceCacheCommon.CONSTRUCTORS_INDEX`",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-05T03:15:56.158265012Z",
+  "ruleFingerprint": "sha256:5e0e4634ec1b1fe3873127588ba98a45875680451aca7120b9be40e6d22425de",
+  "behaviorFingerprint": "sha256:111f7c632b2a931328a4579907c5a055bee2aeef7a9068c4dbcd9504261263d2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-08-05T03:15:58.743995290Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

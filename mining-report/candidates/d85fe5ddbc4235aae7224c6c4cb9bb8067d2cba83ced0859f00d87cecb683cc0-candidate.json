@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d85fe5ddbc4235aae7224c6c4cb9bb8067d2cba83ced0859f00d87cecb683cc0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "public static final java.lang.String $var \u003d \"org.eclipse.jdt.ui.propertyPages.CompliancePreferencePage\";\n\u003d\u003e\npublic static final java.lang.String $var \u003d org.eclipse.jdt.ui.JavaUI.ID_COMPILER_COMPLIANCE_PROPERTY_PAGE;\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.ui.JavaUI;\n\npublic class CompliancePreferencePage {\n    public static final String PREF_ID\u003d \"org.eclipse.jdt.ui.preferences.CompliancePreferencePage\"; //$NON-NLS-1$\n    public static final String PROP_ID\u003d \"org.eclipse.jdt.ui.propertyPages.CompliancePreferencePage\"; //$NON-NLS-1$\n    public static final String OTHER_ID \u003d \"some.other.id\";\n\n    // Dummy method to ensure JavaUI is considered present for context\n    public void dummyMethod() {\n        String id \u003d JavaUI.ID_COMPILER_COMPLIANCE_PROPERTY_PAGE;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.ui.JavaUI;\n\npublic class CompliancePreferencePage {\n    public static final String PREF_ID\u003d \"org.eclipse.jdt.ui.preferences.CompliancePreferencePage\"; //$NON-NLS-1$\n    public static final String PROP_ID\u003d org.eclipse.jdt.ui.JavaUI.ID_COMPILER_COMPLIANCE_PROPERTY_PAGE; //$NON-NLS-1$\n    public static final String OTHER_ID \u003d \"some.other.id\";\n\n    // Dummy method to ensure JavaUI is considered present for context\n    public void dummyMethod() {\n        String id \u003d JavaUI.ID_COMPILER_COMPLIANCE_PROPERTY_PAGE;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.ui.JavaUI;\n\npublic class SomeOtherPage {\n    public static final String PROP_ID \u003d \"org.eclipse.jdt.ui.propertyPages.SomeOtherValue\";\n    public static final String PREF_ID\u003d \"org.eclipse.jdt.ui.preferences.CompliancePreferencePage\"; // Matches $var, but not the string literal\n    public static final String STATIC_FIELD \u003d \"org.eclipse.jdt.ui.propertyPages.CompliancePreferencePage\"; // Not named PROP_ID\n}",
+  "targetHintFile": "constants.sandbox-hint",
+  "sourceCommit": "f66341494f9ee9161089ed33aee419db81eb3538",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Extraction",
+  "summary": "Replaces a magic string literal with the new JavaUI.ID_COMPILER_COMPLIANCE_PROPERTY_PAGE constant.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-05T03:15:56.149946646Z",
+  "ruleFingerprint": "sha256:adf58ea5f1b2b9407dbe62c692f026bd654a5dc672e4a8448ca14016931f976f",
+  "behaviorFingerprint": "sha256:add66c199f1ce7abf395467ecf6cb01566e11ccb9276f44a131997a62fb6a913",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.ui cannot be resolved",
+    "verifiedAt": "2026-08-05T03:15:58.721522753Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
