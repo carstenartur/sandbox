@@ -27,6 +27,7 @@ import org.sandbox.jdt.container.api.ContainerShape;
 public final class ContainerRuleRegistry {
 
 	public static final String ARRAY_APPEND_SEQUENCE= "semantic.array.append.sequence"; //$NON-NLS-1$
+	public static final String UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.set"; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= "existing.collection.copy-constructor"; //$NON-NLS-1$
 	public static final String ARRAY_FILL= "existing.array.fill"; //$NON-NLS-1$
@@ -48,9 +49,14 @@ public final class ContainerRuleRegistry {
 		return List.copyOf(RULES.values());
 	}
 
-	/** Returns the descriptor for the first implemented semantic migration family. */
+	/** Returns the descriptor for append-array to sequence migration. */
 	public static ContainerRuleDescriptor arrayAppendSequence() {
 		return RULES.get(ARRAY_APPEND_SEQUENCE);
+	}
+
+	/** Returns the descriptor for manually unique sequence to ordered-set migration. */
+	public static ContainerRuleDescriptor uniqueSequenceSet() {
+		return RULES.get(UNIQUE_SEQUENCE_SET);
 	}
 
 	private static Map<String, ContainerRuleDescriptor> createRules() {
@@ -83,6 +89,14 @@ public final class ContainerRuleRegistry {
 				RuleOwnership.DUPLICATE,
 				"Eclipse Change Type and Sandbox Use General Type", //$NON-NLS-1$
 				"Changing only the declared supertype is already covered by type-generalization tools.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				UNIQUE_SEQUENCE_SET,
+				ContainerShape.LIST,
+				ContainerShape.SET,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"The rule changes duplicate semantics in the declared contract " //$NON-NLS-1$
+						+ "and may require coordinated signature migration.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,
