@@ -31,6 +31,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
 import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
 /** Infers the first manually-unique sequence to ordered-set contract. */
 public final class UniqueSequenceContractInferrer {
@@ -62,7 +63,7 @@ public final class UniqueSequenceContractInferrer {
 								"LinkedHashSet preserves the observed encounter order."), //$NON-NLS-1$
 						assessment(
 								ContractProperty.UNIQUENESS,
-								"Every insertion is guarded by a membership test for the same stable value."), //$NON-NLS-1$
+								"Every insertion suppresses duplicates and the element type has stable equality and hash semantics."), //$NON-NLS-1$
 						assessment(
 								ContractProperty.MUTABILITY,
 								"The target remains mutable during the same local use phase."), //$NON-NLS-1$
@@ -92,7 +93,13 @@ public final class UniqueSequenceContractInferrer {
 				&& profile.uniquenessRequirement() == UniquenessRequirement.REQUIRED
 				&& profile.escapeLevel() == EscapeLevel.LOCAL
 				&& profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS
-				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;
+				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED
+				&& hasEvidence(profile, Kind.DUPLICATE_SUPPRESSION)
+				&& hasEvidence(profile, Kind.HASH_STABLE_COMPONENT);
+	}
+
+	private static boolean hasEvidence(ContainerUsageProfile profile, Kind kind) {
+		return profile.evidence().stream().anyMatch(evidence -> evidence.kind() == kind);
 	}
 
 	private static ContractAssessment assessment(
