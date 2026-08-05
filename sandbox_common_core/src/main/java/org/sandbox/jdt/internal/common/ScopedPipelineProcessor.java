@@ -43,6 +43,8 @@ import org.eclipse.jdt.core.dom.ASTNode;
  *       The next stage is <em>not</em> run against the original scope.</li>
  *   <li>When a stage finds one or more matching nodes, the next stage runs once per match,
  *       scoped to the node (or to the result of the optional navigation function).</li>
+ *   <li>A matcher's result never controls AST descent. Non-matching candidate nodes are
+ *       still traversed so nested matches remain discoverable.</li>
  * </ul>
  *
  * <p>This class is used internally by
@@ -56,11 +58,11 @@ import org.eclipse.jdt.core.dom.ASTNode;
 public class ScopedPipelineProcessor<E extends HelperVisitorProvider<V, T, E>, V, T> {
 
 	/**
-	 * Immutable description of one stage in the pipeline.
+	 * Description of one stage in the pipeline.
 	 */
 	static final class PipelineStage<E> {
 		final VisitorEnum nodeType;
-		final BiPredicate<ASTNode, E> predicate;
+		final BiPredicate<ASTNode, E> matcher;
 		final VisitorConfigData configData; // may be null
 		/**
 		 * Optional function that maps the matched node to the scope for the next stage.
@@ -69,11 +71,11 @@ public class ScopedPipelineProcessor<E extends HelperVisitorProvider<V, T, E>, V
 		Function<ASTNode, ASTNode> navigate;
 
 		PipelineStage(VisitorEnum nodeType,
-				BiPredicate<ASTNode, E> predicate,
+				BiPredicate<ASTNode, E> matcher,
 				VisitorConfigData configData,
 				Function<ASTNode, ASTNode> navigate) {
 			this.nodeType= nodeType;
-			this.predicate= predicate;
+			this.matcher= matcher;
 			this.configData= configData;
 			this.navigate= navigate;
 		}
@@ -98,17 +100,17 @@ public class ScopedPipelineProcessor<E extends HelperVisitorProvider<V, T, E>, V
 	 * Appends a new stage to the pipeline.
 	 *
 	 * @param nodeType   the AST node type this stage matches
-	 * @param predicate  called for each candidate node; return {@code true} to signal a match
+	 * @param matcher    called for each candidate node; return {@code true} to signal a match
 	 * @param configData additional filter configuration (may be {@code null})
 	 * @param navigate   maps a matched node to the scope for the next stage (may be {@code null})
 	 * @return this processor for chaining
 	 */
 	public ScopedPipelineProcessor<E, V, T> addStage(
 			VisitorEnum nodeType,
-			BiPredicate<ASTNode, E> predicate,
+			BiPredicate<ASTNode, E> matcher,
 			VisitorConfigData configData,
 			Function<ASTNode, ASTNode> navigate) {
-		stages.add(new PipelineStage<>(nodeType, predicate, configData, navigate));
+		stages.add(new PipelineStage<>(nodeType, matcher, configData, navigate));
 		return this;
 	}
 
@@ -145,26 +147,23 @@ public class ScopedPipelineProcessor<E extends HelperVisitorProvider<V, T, E>, V
 			return;
 		}
 		PipelineStage<E> stage= stages.get(i);
-		HelperVisitor<E, V, T> hv= new HelperVisitor<>(nodesprocessed, dataholder);
-		boolean[] anyMatch= { false };
+		HelperVisitor<E, V, T> helperVisitor= new HelperVisitor<>(nodesprocessed, dataholder);
 
-		BiPredicate<ASTNode, E> wrappedPredicate= (node, holder) -> {
-			boolean matched= stage.predicate.test(node, holder);
-			if (matched) {
-				anyMatch[0]= true;
-				ASTNode nextScope= (stage.navigate != null) ? stage.navigate.apply(node) : node;
+		BiPredicate<ASTNode, E> visitorCallback= (node, holder) -> {
+			if (stage.matcher.test(node, holder)) {
+				ASTNode nextScope= stage.navigate != null ? stage.navigate.apply(node) : node;
 				processStage(nextScope, i + 1);
 			}
-			return matched;
+			// Matcher and traversal semantics are deliberately independent. Returning the
+			// match result here would prune nested candidates below every non-match.
+			return true;
 		};
 		if (stage.configData != null) {
-			hv.add(stage.configData, stage.nodeType, wrappedPredicate);
+			helperVisitor.add(stage.configData, stage.nodeType, visitorCallback);
 		} else {
-			hv.add(stage.nodeType, wrappedPredicate);
+			helperVisitor.add(stage.nodeType, visitorCallback);
 		}
 
-		hv.build(scope);
-		// No fallthrough: if anyMatch[0] == false we simply return without running stage i+1.
-		// This is the key behavioral difference from ASTProcessor.process().
+		helperVisitor.build(scope);
 	}
 }
