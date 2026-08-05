@@ -46,7 +46,7 @@ public final class UniqueSequenceLocalRewritePlanner {
 	private static final String LINKED_HASH_SET_TYPE= "java.util.LinkedHashSet"; //$NON-NLS-1$
 
 	private static final Set<Kind> SUPPORTED_EVIDENCE= EnumSet.of(
-			Kind.APPEND_WRITE,
+			Kind.DUPLICATE_SUPPRESSION,
 			Kind.REFERENCE_COMPONENT,
 			Kind.ENCOUNTER_ITERATION,
 			Kind.LOCAL_USAGE_COMPLETE);
@@ -132,7 +132,7 @@ public final class UniqueSequenceLocalRewritePlanner {
 	private static void validateEvidence(
 			ContainerUsageProfile profile,
 			List<PlanningDiagnostic> diagnostics) {
-		if (count(profile, Kind.APPEND_WRITE) == 0) {
+		if (count(profile, Kind.DUPLICATE_SUPPRESSION) == 0) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.MISSING_DUPLICATE_GUARD,
 					"The profile does not contain a proven contains-before-add insertion.")); //$NON-NLS-1$
@@ -165,7 +165,7 @@ public final class UniqueSequenceLocalRewritePlanner {
 				profile.identity().sourceLength()));
 		for (UsageEvidence evidence : profile.evidence()) {
 			EditKind kind= switch (evidence.kind()) {
-				case APPEND_WRITE -> EditKind.REPLACE_DUPLICATE_GUARD;
+				case DUPLICATE_SUPPRESSION -> EditKind.REPLACE_DUPLICATE_GUARD;
 				case ENCOUNTER_ITERATION -> EditKind.VERIFY_ENCOUNTER_ITERATION;
 				default -> null;
 			};
