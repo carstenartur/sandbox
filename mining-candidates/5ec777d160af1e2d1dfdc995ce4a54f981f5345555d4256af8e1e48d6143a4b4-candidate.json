@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5ec777d160af1e2d1dfdc995ce4a54f981f5345555d4256af8e1e48d6143a4b4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-java11-javacore-version\u003e\n\u003c!description: Adds JavaCore.VERSION_11 to array initializers containing compliance versions, typically when updating compiler preferences to support newer Java versions.\u003e\n\u003c!severity: HINT\u003e\nnew java.lang.String[] { $args$, org.eclipse.jdt.core.JavaCore.VERSION_10 }\n\u003d\u003e\nnew java.lang.String[] { $args$, org.eclipse.jdt.core.JavaCore.VERSION_10, org.eclipse.jdt.core.JavaCore.VERSION_11 }\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class ComplianceConfig {\n    private static final String VERSION_1_3 \u003d JavaCore.VERSION_1_3;\n    private static final String VERSION_1_4 \u003d JavaCore.VERSION_1_4;\n    private static final String VERSION_1_5 \u003d JavaCore.VERSION_1_5;\n    private static final String VERSION_1_6 \u003d JavaCore.VERSION_1_6;\n    private static final String VERSION_1_7 \u003d JavaCore.VERSION_1_7;\n    private static final String VERSION_1_8 \u003d JavaCore.VERSION_1_8;\n    private static final String VERSION_9 \u003d JavaCore.VERSION_9;\n    private static final String VERSION_10 \u003d JavaCore.VERSION_10;\n\n    public void configure() {\n        // Example 1: `complianceVersions` array\n        final String[] complianceVersions \u003d new String[] { VERSION_1_3, VERSION_1_4, VERSION_1_5, VERSION_1_6, VERSION_1_7, VERSION_1_8, VERSION_9, VERSION_10 };\n        // Example 2: `targetVersions` array\n        String[] targetVersions \u003d new String[] { JavaCore.VERSION_1_1, JavaCore.VERSION_1_2, JavaCore.VERSION_1_3, JavaCore.VERSION_1_4, JavaCore.VERSION_1_5, JavaCore.VERSION_1_6, JavaCore.VERSION_1_7, JavaCore.VERSION_1_8, JavaCore.VERSION_9, JavaCore.VERSION_10 };\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class ComplianceConfig {\n    private static final String VERSION_1_3 \u003d JavaCore.VERSION_1_3;\n    private static final String VERSION_1_4 \u003d JavaCore.VERSION_1_4;\n    private static final String VERSION_1_5 \u003d JavaCore.VERSION_1_5;\n    private static final String VERSION_1_6 \u003d JavaCore.VERSION_1_6;\n    private static final String VERSION_1_7 \u003d JavaCore.VERSION_1_7;\n    private static final String VERSION_1_8 \u003d JavaCore.VERSION_1_8;\n    private static final String VERSION_9 \u003d JavaCore.VERSION_9;\n    private static final String VERSION_10 \u003d JavaCore.VERSION_10;\n    private static final String VERSION_11 \u003d JavaCore.VERSION_11; // Assumed to be declared elsewhere or added by other means\n\n    public void configure() {\n        // Example 1: `complianceVersions` array\n        final String[] complianceVersions \u003d new String[] { VERSION_1_3, VERSION_1_4, VERSION_1_5, VERSION_1_6, VERSION_1_7, VERSION_1_8, VERSION_9, VERSION_10, VERSION_11 };\n        // Example 2: `targetVersions` array\n        String[] targetVersions \u003d new String[] { JavaCore.VERSION_1_1, JavaCore.VERSION_1_2, JavaCore.VERSION_1_3, JavaCore.VERSION_1_4, JavaCore.VERSION_1_5, JavaCore.VERSION_1_6, JavaCore.VERSION_1_7, JavaCore.VERSION_1_8, JavaCore.VERSION_9, JavaCore.VERSION_10, JavaCore.VERSION_11 };\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.JavaCore;\n\npublic class ComplianceConfig {\n    private static final String VERSION_1_3 \u003d JavaCore.VERSION_1_3;\n    private static final String VERSION_1_4 \u003d JavaCore.VERSION_1_4;\n    private static final String VERSION_1_5 \u003d JavaCore.VERSION_1_5;\n    private static final String VERSION_1_6 \u003d JavaCore.VERSION_1_6;\n    private static final String VERSION_1_7 \u003d JavaCore.VERSION_1_7;\n    private static final String VERSION_1_8 \u003d JavaCore.VERSION_1_8;\n    private static final String VERSION_9 \u003d JavaCore.VERSION_9;\n    private static final String VERSION_10 \u003d JavaCore.VERSION_10;\n    private static final String VERSION_11 \u003d JavaCore.VERSION_11;\n\n    public void configure() {\n        // This array already includes VERSION_11, so it should not match.\n        final String[] complianceVersions \u003d new String[] { VERSION_1_3, VERSION_1_4, VERSION_1_5, VERSION_1_6, VERSION_1_7, VERSION_1_8, VERSION_9, VERSION_10, VERSION_11 };\n        // This array ends with a different version, so it should not match.\n        String[] differentArray \u003d new String[] { JavaCore.VERSION_1_8, JavaCore.VERSION_9, JavaCore.VERSION_12 };\n    }\n}",
+  "targetHintFile": "java-version-updates.sandbox-hint",
+  "sourceCommit": "d2f4b43142d6e367a8828cbc105d4feda088dbb3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Add JavaCore.VERSION_11 to string array literals that end with JavaCore.VERSION_10.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-05T03:15:56.130797078Z",
+  "ruleFingerprint": "sha256:1b063a7e10a88f8eb9356c027aab4988c74acce9e419bebbbaa2ee239de93d2b",
+  "behaviorFingerprint": "sha256:ce9db9efd91ce085d005a4a22ddf6823a3b1156630698857d69df17bb280ebac",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-05T03:15:58.690656549Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

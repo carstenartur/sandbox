@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "281ea603e0b5779a662f24f78713f99a6b0c129a0f28c1ccf5ec6a3a4ad13434",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getPossibleTypeKinds($node, $is50OrHigher)\n\u003d\u003e\nASTResolving.getPossibleTypeKinds($node, $is50OrHigher)\n;;",
+  "beforeExample": "package org.example;\n\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.internal.ui.JavaModelUtil;\n\npublic class MyClass {\n    public int evauateTypeKind(ASTNode node, IJavaProject project) {\n        // Original code using FQN\n        int kind\u003d org.eclipse.jdt.internal.ui.text.correction.ASTResolving.getPossibleTypeKinds(node, JavaModelUtil.is50OrHigher(project));\n        return kind;\n    }\n}\n\n// Dummy ASTResolving class for compilation\npackage org.eclipse.jdt.internal.ui.text.correction;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class ASTResolving {\n    public static int getPossibleTypeKinds(ASTNode node, boolean is50OrHigher) { return 0; }\n    public static int someOtherMethod(ASTNode node) { return 1; }\n}\n\n// Dummy JavaModelUtil for compilation\npackage org.eclipse.jdt.internal.ui;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class JavaModelUtil {\n    public static boolean is50OrHigher(IJavaProject project) { return false; }\n}",
+  "afterExample": "package org.example;\n\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.internal.ui.JavaModelUtil;\nimport org.eclipse.jdt.internal.ui.text.correction.ASTResolving; // Import added by cleanup\n\npublic class MyClass {\n    public int evauateTypeKind(ASTNode node, IJavaProject project) {\n        // Simplified code after cleanup\n        int kind\u003d ASTResolving.getPossibleTypeKinds(node, JavaModelUtil.is50OrHigher(project));\n        return kind;\n    }\n}\n\n// Dummy ASTResolving class for compilation\npackage org.eclipse.jdt.internal.ui.text.correction;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class ASTResolving {\n    public static int getPossibleTypeKinds(ASTNode node, boolean is50OrHigher) { return 0; }\n    public static int someOtherMethod(ASTNode node) { return 1; }\n}\n\n// Dummy JavaModelUtil for compilation\npackage org.eclipse.jdt.internal.ui;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class JavaModelUtil {\n    public static boolean is50OrHigher(IJavaProject project) { return false; }\n}",
+  "negativeExample": "package org.example;\n\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.internal.ui.JavaModelUtil;\n\npublic class MyClass {\n    public int otherMethod(ASTNode node, IJavaProject project) {\n        // A different static method call from the same class, should not match\n        return org.eclipse.jdt.internal.ui.text.correction.ASTResolving.someOtherMethod(node);\n    }\n}\n\n// Dummy ASTResolving class for compilation\npackage org.eclipse.jdt.internal.ui.text.correction;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class ASTResolving {\n    public static int getPossibleTypeKinds(ASTNode node, boolean is50OrHigher) { return 0; }\n    public static int someOtherMethod(ASTNode node) { return 1; }\n}\n\n// Dummy JavaModelUtil for compilation\npackage org.eclipse.jdt.internal.ui;\nimport org.eclipse.jdt.core.IJavaProject;\npublic class JavaModelUtil {\n    public static boolean is50OrHigher(IJavaProject project) { return false; }\n}",
+  "targetHintFile": "simplification.sandbox-hint",
+  "sourceCommit": "977526e15b9356d294d9c8b67a1b562ffd36794e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Simplification",
+  "summary": "Replaces a fully qualified static method call with a simple name call, relying on automatic import management.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-05T03:15:56.117320093Z",
+  "ruleFingerprint": "sha256:281b3f38390b669108e9c89ab7193f2fbfd0d1e530529d372522d67cd43ae214",
+  "behaviorFingerprint": "sha256:66c2f44dde47d788524cc774b9fde9e695fc1194d9adaca479ca21593d96d435",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-08-05T03:15:58.680247545Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

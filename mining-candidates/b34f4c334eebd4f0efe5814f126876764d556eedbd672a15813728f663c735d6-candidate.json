@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b34f4c334eebd4f0efe5814f126876764d556eedbd672a15813728f663c735d6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!map HOVER_COLOR_KEYS: \"org.eclipse.ui.workbench.HOVER_FOREGROUND\" \u003d\u003e \"org.eclipse.jface.preference.JFacePreferences.INFORMATION_FOREGROUND_COLOR\", \"org.eclipse.ui.workbench.HOVER_BACKGROUND\" \u003d\u003e \"org.eclipse.jface.preference.JFacePreferences.INFORMATION_BACKGROUND_COLOR\"\u003e \n\n$registry.get(\"#{HOVER_COLOR_KEYS}\") :: instanceof($registry, \"org.eclipse.jface.resource.ColorRegistry\")\n\u003d\u003e $registry.get(#{HOVER_COLOR_KEYS_VALUE})\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.resource.ColorRegistry;\nimport org.eclipse.jface.resource.JFaceResources;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Control;\n\npublic class TestClass {\n    public void method(Control parent) {\n        ColorRegistry colorRegistry \u003d JFaceResources.getColorRegistry();\n        Color foreground \u003d colorRegistry.get(\"org.eclipse.ui.workbench.HOVER_FOREGROUND\");\n        if (foreground \u003d\u003d null) {\n            foreground \u003d parent.getForeground();\n        }\n        Color background \u003d colorRegistry.get(\"org.eclipse.ui.workbench.HOVER_BACKGROUND\");\n        if (background \u003d\u003d null) {\n            background \u003d parent.getBackground();\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.preference.JFacePreferences;\nimport org.eclipse.jface.resource.ColorRegistry;\nimport org.eclipse.jface.resource.JFaceResources;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Control;\n\npublic class TestClass {\n    public void method(Control parent) {\n        ColorRegistry colorRegistry \u003d JFaceResources.getColorRegistry();\n        Color foreground \u003d colorRegistry.get(JFacePreferences.INFORMATION_FOREGROUND_COLOR);\n        if (foreground \u003d\u003d null) {\n            foreground \u003d parent.getForeground();\n        }\n        Color background \u003d colorRegistry.get(JFacePreferences.INFORMATION_BACKGROUND_COLOR);\n        if (background \u003d\u003d null) {\n            background \u003d parent.getBackground();\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.preference.JFacePreferences;\nimport org.eclipse.jface.resource.ColorRegistry;\nimport org.eclipse.jface.resource.JFaceResources;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Control;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class TestClass {\n    public void method(Control parent) {\n        // Not a ColorRegistry, should not match\n        Map\u003cString, Color\u003e colorMap \u003d new HashMap\u003c\u003e();\n        Color someColor \u003d colorMap.get(\"org.eclipse.ui.workbench.HOVER_FOREGROUND\"); \n\n        // Different string literal key, should not match\n        ColorRegistry colorRegistry \u003d JFaceResources.getColorRegistry();\n        Color otherColor \u003d colorRegistry.get(\"some.other.key\"); \n\n        // Already clean, should not match\n        Color goodForeground \u003d colorRegistry.get(JFacePreferences.INFORMATION_FOREGROUND_COLOR);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "90a8e6638fa8e2302d64362c29df955c302b73e4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Deprecation/Modernization",
+  "summary": "Replaces deprecated string literals for HOVER_* color keys used with ColorRegistry.get() with their modern JFacePreferences.INFORMATION_*_COLOR constant equivalents, addressing a deprecation warning.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-05T03:15:56.090133241Z",
+  "ruleFingerprint": "sha256:f16c1a810ea65d9e31be1e7e9799776b4b8662981d17ee0820cc5bb5d8f2ec95",
+  "behaviorFingerprint": "sha256:2b8c497aaaf9618c443684ee7d4605517801e5bc886bac04c112d8a919bfc0f8",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
+    "verifiedAt": "2026-08-05T03:15:58.655175924Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
