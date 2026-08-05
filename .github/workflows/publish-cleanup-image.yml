@@ -100,19 +100,27 @@ jobs:
             ;;
         esac
         
-        # The product extracts with rootFolder="client", so we have client/ subdirectory
-        if [ ! -d "$TEMP_EXTRACT/client" ]; then
-          echo "Error: Expected client/ directory not found in extracted product"
+        # The archive may unpack the installation either at its top level or
+        # below a single root folder (for example when rootFolder is configured).
+        PRODUCT_ROOT="$TEMP_EXTRACT"
+        if [ ! -d "$PRODUCT_ROOT/plugins" ]; then
+          PRODUCT_ROOT=$(find "$TEMP_EXTRACT" -mindepth 2 -maxdepth 2 -type d -name plugins | head -1)
+          PRODUCT_ROOT="${PRODUCT_ROOT%/plugins}"
+        fi
+
+        if [ -z "$PRODUCT_ROOT" ] || [ ! -d "$PRODUCT_ROOT/plugins" ] || [ ! -d "$PRODUCT_ROOT/configuration" ]; then
+          echo "Error: No Eclipse installation with plugins/ and configuration/ found in extracted product"
           ls -la "$TEMP_EXTRACT"
           exit 1
         fi
+        echo "Found product root: $PRODUCT_ROOT"
         
         # Copy plugins and configuration to dist/
-        cp -r "$TEMP_EXTRACT/client/plugins" "$DOCKER_CONTEXT/dist/"
-        cp -r "$TEMP_EXTRACT/client/configuration" "$DOCKER_CONTEXT/dist/"
+        cp -r "$PRODUCT_ROOT/plugins" "$DOCKER_CONTEXT/dist/"
+        cp -r "$PRODUCT_ROOT/configuration" "$DOCKER_CONTEXT/dist/"
         
         # Find the Equinox launcher JAR
-        LAUNCHER_JAR=$(find "$TEMP_EXTRACT/client/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
+        LAUNCHER_JAR=$(find "$PRODUCT_ROOT/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
         if [ -z "$LAUNCHER_JAR" ]; then
           echo "Error: Equinox launcher JAR not found"
           exit 1

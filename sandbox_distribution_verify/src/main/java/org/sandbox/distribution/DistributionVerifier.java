@@ -299,13 +299,17 @@ public final class DistributionVerifier {
         }
         require(filesChecked > 0, "No p2 bundle or feature artifacts were checked");
 
+        List<ArtifactEvidence> publishedEvidence = new ArrayList<>();
         for (String feature : publishedFeatures) {
             String version = units.get(feature + ".feature.group");
-            require(featureArtifacts.containsKey(feature + ":" + version),
+            ArtifactEvidence artifact = featureArtifacts.get(feature + ":" + version);
+            require(artifact != null,
                     "Feature artifact missing for exact IU version: " + feature + "/" + version);
+            publishedEvidence.add(artifact);
         }
 
-        return new RepositoryEvidence(units.size(), keys.size(), filesChecked, checksumsChecked);
+        return new RepositoryEvidence(
+                units.size(), keys.size(), filesChecked, checksumsChecked, List.copyOf(publishedEvidence));
     }
 
     private ProductEvidence verifyProduct(List<String> publishedFeatures) throws Exception {
@@ -543,7 +547,7 @@ public final class DistributionVerifier {
             Model model, RepositoryEvidence repository, ProductEvidence product) throws IOException {
         String json = """
                 {
-                  "schemaVersion": 2,
+                  "schemaVersion": 3,
                   "result": "PASS",
                   "platform": "%s",
                   "eclipseRelease": "%s",
@@ -556,7 +560,14 @@ public final class DistributionVerifier {
                   "p2ChecksumsChecked": %d,
                   "productPluginCount": %d,
                   "productSingletonBundleCount": %d,
-                  "productRoot": "%s"
+                  "productRoot": "%s",
+                  "repository": {
+                    "metadataUnits": %d,
+                    "artifactKeys": %d,
+                    "artifactFilesChecked": %d,
+                    "checksumsChecked": %d,
+                    "publishedFeatures": [%s]
+                  }
                 }
                 """.formatted(
                 jsonEscape(platform.toString()),
@@ -570,7 +581,12 @@ public final class DistributionVerifier {
                 repository.checksumsChecked(),
                 product.pluginCount(),
                 product.singletonBundleCount(),
-                jsonEscape(product.root().toString()));
+                jsonEscape(product.root().toString()),
+                repository.metadataUnits(),
+                repository.artifactKeys(),
+                repository.artifactFilesChecked(),
+                repository.checksumsChecked(),
+                publishedFeatureJson(repository.publishedFeatures()));
         Files.writeString(evidence.resolve("verification.json"), json);
 
         String markdown = """
@@ -930,6 +946,25 @@ public final class DistributionVerifier {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
+    private static String publishedFeatureJson(List<ArtifactEvidence> features) {
+        return features.stream()
+                .map(feature -> """
+                        
+                              {
+                                "id": "%s",
+                                "iu": "%s",
+                                "version": "%s",
+                                "artifactSize": %d,
+                                "artifactSha256": "%s"
+                              }""".formatted(
+                        jsonEscape(feature.id()),
+                        jsonEscape(feature.id() + ".feature.group"),
+                        jsonEscape(feature.version()),
+                        feature.size(),
+                        jsonEscape(feature.sha256().toLowerCase(Locale.ROOT))))
+                .collect(Collectors.joining(",")) + (features.isEmpty() ? "" : "\n    ");
+    }
+
     private record Model(
             String eclipseRelease,
             String orbitRelease,
@@ -942,7 +977,8 @@ public final class DistributionVerifier {
             int metadataUnits,
             int artifactKeys,
             int artifactFilesChecked,
-            int checksumsChecked) {
+            int checksumsChecked,
+            List<ArtifactEvidence> publishedFeatures) {
     }
 
     private record ArtifactEvidence(

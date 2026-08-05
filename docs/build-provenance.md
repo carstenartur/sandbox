@@ -6,7 +6,7 @@ Every published snapshot and every validated commit on `main` must be traceable 
 
 Sandbox therefore publishes two complementary manifests:
 
-1. **Commit provenance** records the exact post-merge Java CI, Core Module Build, CodeQL, Codacy Security Scan and Test Report runs for one `main` commit.
+1. **Commit provenance** records the exact post-merge Java CI, Core Module Build, CodeQL, Codacy Security Scan and Test Source Inventory runs for one `main` commit.
 2. **Snapshot provenance** records the exact commit checked out by the product/update-site build, the Java CI run that authorized publication, and SHA-256 digests of the generated Tycho product tree and p2 repository.
 
 ## Published locations
@@ -28,7 +28,7 @@ The workflow checks out `github.event.workflow_run.head_sha`, not the moving def
 - Core Module Build;
 - CodeQL;
 - Codacy Security Scan;
-- Test Report.
+- Test Source Inventory.
 
 A failed, cancelled, skipped, neutral, missing or indefinitely incomplete required workflow prevents provenance publication. `Core Module Build` consequently runs for every `main` push, while retaining path filtering for pull requests.
 

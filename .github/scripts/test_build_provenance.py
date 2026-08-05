@@ -149,6 +149,18 @@ class WorkflowSelectionTest(unittest.TestCase):
             for index, name in enumerate(workflow_module.EXPECTED_WORKFLOWS)
         ]
 
+    def test_expected_workflow_names_match_current_validation_contract(self):
+        self.assertEqual(
+            (
+                "Java CI with Maven",
+                "Core Module Build",
+                "CodeQL",
+                "Codacy Security Scan",
+                "Test Source Inventory",
+            ),
+            workflow_module.EXPECTED_WORKFLOWS,
+        )
+
     def test_selects_latest_push_run_for_exact_commit(self):
         commit = "abc123"
         runs = self.successful_runs(commit)
