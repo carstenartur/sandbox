@@ -94,11 +94,9 @@ public final class UniqueSequenceLocalRewriteFix {
 			rewrite.replace(resolved.initializer(), creation, group);
 
 			for (GuardedAdd guard : resolved.guards()) {
-				ExpressionStatement addStatement=
-						(ExpressionStatement) guard.add().getParent();
 				rewrite.replace(
 						guard.statement(),
-						rewrite.createMoveTarget(addStatement),
+						rewrite.createMoveTarget(addStatement(guard)),
 						group);
 			}
 		}
@@ -107,5 +105,17 @@ public final class UniqueSequenceLocalRewriteFix {
 		public String getAdditionalInfo() {
 			return DESCRIPTION;
 		}
+	}
+
+	private static ExpressionStatement addStatement(GuardedAdd guard) {
+		ASTNode current= guard.add();
+		while (current != null && current != guard.statement()) {
+			if (current instanceof ExpressionStatement statement) {
+				return statement;
+			}
+			current= current.getParent();
+		}
+		throw new IllegalStateException(
+				"Guarded add is not contained in an expression statement"); //$NON-NLS-1$
 	}
 }
