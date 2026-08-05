@@ -87,6 +87,9 @@ class UniqueSequenceLocalRewritePlannerTest {
 								Kind.REFERENCE_COMPONENT,
 								"reference element", 10, 6), //$NON-NLS-1$
 						new UsageEvidence(
+								Kind.HASH_STABLE_COMPONENT,
+								"stable equality and hash", 10, 6), //$NON-NLS-1$
+						new UsageEvidence(
 								Kind.DUPLICATE_SUPPRESSION,
 								"guarded insertion", 30, 40), //$NON-NLS-1$
 						new UsageEvidence(
