@@ -87,7 +87,7 @@ class UniqueSequenceLocalRewritePlannerTest {
 								Kind.REFERENCE_COMPONENT,
 								"reference element", 10, 6), //$NON-NLS-1$
 						new UsageEvidence(
-								Kind.APPEND_WRITE,
+								Kind.DUPLICATE_SUPPRESSION,
 								"guarded insertion", 30, 40), //$NON-NLS-1$
 						new UsageEvidence(
 								Kind.ENCOUNTER_ITERATION,
