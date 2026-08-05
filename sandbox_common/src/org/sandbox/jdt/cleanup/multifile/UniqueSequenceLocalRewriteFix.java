@@ -19,7 +19,6 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
-import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -95,10 +94,12 @@ public final class UniqueSequenceLocalRewriteFix {
 			rewrite.replace(resolved.initializer(), creation, group);
 
 			for (GuardedAdd guard : resolved.guards()) {
-				MethodInvocation add= (MethodInvocation) ASTNode.copySubtree(
-						ast, guard.add());
-				ExpressionStatement replacement= ast.newExpressionStatement(add);
-				rewrite.replace(guard.statement(), replacement, group);
+				ExpressionStatement addStatement=
+						(ExpressionStatement) guard.add().getParent();
+				rewrite.replace(
+						guard.statement(),
+						rewrite.createMoveTarget(addStatement),
+						group);
 			}
 		}
 
