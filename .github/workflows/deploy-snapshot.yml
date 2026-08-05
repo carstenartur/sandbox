@@ -67,6 +67,16 @@ jobs:
           -Dtycho.localArtifacts=ignore
           clean verify
 
+      - name: Merge exact distribution artifact evidence
+        run: |
+          bash .github/scripts/verify_linux_distribution.sh \
+            target/distribution-artifact-verification
+          python3 .github/scripts/merge_distribution_verification.py \
+            --runtime-json target/distribution-verification/verification.json \
+            --artifact-json target/distribution-artifact-verification/verification.json
+          python3 -m json.tool \
+            target/distribution-verification/verification.json > /dev/null
+
       - name: Generate snapshot build manifest
         run: |
           python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
