@@ -35,8 +35,10 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
-import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSearchTarget;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.TargetKind;
 
 /**
  * Resolves an AST-free container flow search plan to the source compilation units
@@ -52,11 +54,13 @@ public final class ContainerFlowScopeSearch {
 	/** Stable result of one flow-scope expansion attempt. */
 	public record Result(
 			List<ICompilationUnit> compilationUnits,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
 			boolean complete,
 			List<String> rejectionReasons) {
 
 		public Result {
 			compilationUnits= List.copyOf(compilationUnits);
+			Objects.requireNonNull(resolvedPlan, "resolvedPlan"); //$NON-NLS-1$
 			rejectionReasons= List.copyOf(rejectionReasons);
 		}
 	}
@@ -140,14 +144,23 @@ public final class ContainerFlowScopeSearch {
 		if (plan.isEmpty()) {
 			RelatedCompilationUnitSearch.Result validated= validateCurrentScope(
 					project, currentScope, allowedUnits);
-			return result(validated, List.of());
+			return result(
+					validated,
+					ResolvedContainerFlowSearchPlan.empty(),
+					List.of());
 		}
 
 		Map<String, IJavaElement> targetsByHandle= new LinkedHashMap<>();
+		Map<String, ResolvedSearchTarget> resolvedByKey= new LinkedHashMap<>();
 		Set<String> rejectionReasons= new LinkedHashSet<>();
 		for (SearchSeed seed : plan.seeds()) {
 			checkCanceled(monitor);
-			resolveSeed(seed, targetsByHandle, rejectionReasons, monitor);
+			resolveSeed(
+					seed,
+					targetsByHandle,
+					resolvedByKey,
+					rejectionReasons,
+					monitor);
 		}
 
 		RelatedCompilationUnitSearch.Result searched;
@@ -161,12 +174,17 @@ public final class ContainerFlowScopeSearch {
 					allowedUnits,
 					monitor);
 		}
-		return result(searched, rejectionReasons);
+		return result(
+				searched,
+				new ResolvedContainerFlowSearchPlan(
+						new ArrayList<>(resolvedByKey.values())),
+				rejectionReasons);
 	}
 
 	private void resolveSeed(
 			SearchSeed seed,
 			Map<String, IJavaElement> targetsByHandle,
+			Map<String, ResolvedSearchTarget> resolvedByKey,
 			Set<String> rejectionReasons,
 			IProgressMonitor monitor) {
 		if (!seed.hasJavaElementHandle()) {
@@ -183,11 +201,17 @@ public final class ContainerFlowScopeSearch {
 		}
 
 		switch (seed.kind()) {
-			case FIELD_REFERENCES -> addField(seed, element, targetsByHandle, rejectionReasons);
-			case METHOD_DECLARATION, METHOD_CALLERS ->
-					addMethod(seed, element, targetsByHandle, rejectionReasons);
+			case FIELD_REFERENCES -> addField(
+					seed, element, targetsByHandle, resolvedByKey, rejectionReasons);
+			case METHOD_DECLARATION, METHOD_CALLERS -> addMethod(
+					seed, element, targetsByHandle, resolvedByKey, rejectionReasons);
 			case METHOD_OVERRIDE_FAMILY -> addMethodFamily(
-					seed, element, targetsByHandle, rejectionReasons, monitor);
+					seed,
+					element,
+					targetsByHandle,
+					resolvedByKey,
+					rejectionReasons,
+					monitor);
 		}
 	}
 
@@ -195,6 +219,7 @@ public final class ContainerFlowScopeSearch {
 			SearchSeed seed,
 			IJavaElement element,
 			Map<String, IJavaElement> targetsByHandle,
+			Map<String, ResolvedSearchTarget> resolvedByKey,
 			Set<String> rejectionReasons) {
 		if (!(element instanceof IField field)) {
 			rejectionReasons.add("A field-reference seed does not resolve to an IField: " //$NON-NLS-1$
@@ -202,12 +227,14 @@ public final class ContainerFlowScopeSearch {
 			return;
 		}
 		addTarget(field, targetsByHandle);
+		addResolved(seed, TargetKind.FIELD, field, resolvedByKey);
 	}
 
 	private static void addMethod(
 			SearchSeed seed,
 			IJavaElement element,
 			Map<String, IJavaElement> targetsByHandle,
+			Map<String, ResolvedSearchTarget> resolvedByKey,
 			Set<String> rejectionReasons) {
 		if (!(element instanceof IMethod method)) {
 			rejectionReasons.add("A method search seed does not resolve to an IMethod: " //$NON-NLS-1$
@@ -215,12 +242,14 @@ public final class ContainerFlowScopeSearch {
 			return;
 		}
 		addTarget(method, targetsByHandle);
+		addResolved(seed, TargetKind.METHOD, method, resolvedByKey);
 	}
 
 	private void addMethodFamily(
 			SearchSeed seed,
 			IJavaElement element,
 			Map<String, IJavaElement> targetsByHandle,
+			Map<String, ResolvedSearchTarget> resolvedByKey,
 			Set<String> rejectionReasons,
 			IProgressMonitor monitor) {
 		if (!(element instanceof IMethod method)) {
@@ -232,10 +261,35 @@ public final class ContainerFlowScopeSearch {
 		MethodFamily family= methodFamilyResolver.resolve(method, monitor);
 		for (IMethod member : family.methods()) {
 			addTarget(member, targetsByHandle);
+			addResolved(seed, TargetKind.METHOD, member, resolvedByKey);
 		}
 		if (!family.complete()) {
 			rejectionReasons.addAll(family.rejectionReasons());
 		}
+	}
+
+	private static void addResolved(
+			SearchSeed seed,
+			TargetKind targetKind,
+			IJavaElement element,
+			Map<String, ResolvedSearchTarget> resolvedByKey) {
+		if (element == null || !element.exists()) {
+			return;
+		}
+		String handle= element.getHandleIdentifier();
+		if (handle == null || handle.isBlank()) {
+			return;
+		}
+		ResolvedSearchTarget target= new ResolvedSearchTarget(
+				seed.sourceNodeId(),
+				seed.kind(),
+				targetKind,
+				seed.bindingKey(),
+				seed.ownerKey(),
+				handle,
+				seed.signatureIndex(),
+				seed.reason());
+		resolvedByKey.putIfAbsent(target.stableKey(), target);
 	}
 
 	private static void addTarget(
@@ -310,11 +364,13 @@ public final class ContainerFlowScopeSearch {
 
 	private static Result result(
 			RelatedCompilationUnitSearch.Result searchResult,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
 			Collection<String> additionalReasons) {
 		Set<String> reasons= new LinkedHashSet<>(searchResult.rejectionReasons());
 		reasons.addAll(additionalReasons);
 		return new Result(
 				searchResult.compilationUnits(),
+				resolvedPlan,
 				searchResult.complete() && reasons.isEmpty(),
 				new ArrayList<>(reasons));
 	}
