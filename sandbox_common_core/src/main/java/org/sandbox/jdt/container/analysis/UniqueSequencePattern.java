@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.NumberLiteral;
@@ -90,7 +91,7 @@ public final class UniqueSequencePattern {
 			ASTNode node,
 			String bindingKey) {
 		ASTNode current= Objects.requireNonNull(node, "node"); //$NON-NLS-1$
-		while (current != null && !(current instanceof org.eclipse.jdt.core.dom.MethodDeclaration)) {
+		while (current != null && !(current instanceof MethodDeclaration)) {
 			if (current instanceof IfStatement statement) {
 				Optional<GuardedAdd> match= match(statement, bindingKey);
 				if (match.isPresent()) {
@@ -142,7 +143,7 @@ public final class UniqueSequencePattern {
 		if (left instanceof SimpleName leftName && right instanceof SimpleName rightName) {
 			return variableBinding(leftName)
 					.flatMap(leftBinding -> variableBinding(rightName)
-							.map(rightBinding -> sameDeclaration(leftBinding, rightBinding)))
+							.map(rightBinding -> sameLocalValue(leftBinding, rightBinding)))
 					.orElse(false);
 		}
 		if (left instanceof StringLiteral leftLiteral && right instanceof StringLiteral rightLiteral) {
@@ -162,11 +163,16 @@ public final class UniqueSequencePattern {
 		return left instanceof NullLiteral && right instanceof NullLiteral;
 	}
 
-	private static boolean sameDeclaration(
+	private static boolean sameLocalValue(
 			IVariableBinding first,
 			IVariableBinding second) {
-		String firstKey= first.getVariableDeclaration().getKey();
-		String secondKey= second.getVariableDeclaration().getKey();
+		IVariableBinding firstDeclaration= first.getVariableDeclaration();
+		IVariableBinding secondDeclaration= second.getVariableDeclaration();
+		if (firstDeclaration.isField() || secondDeclaration.isField()) {
+			return false;
+		}
+		String firstKey= firstDeclaration.getKey();
+		String secondKey= secondDeclaration.getKey();
 		return firstKey != null && firstKey.equals(secondKey);
 	}
 
