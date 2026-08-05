@@ -49,8 +49,34 @@ class UniqueSequencePatternSafetyIntegrationTest {
 			}
 			""");
 
-		var profile= new LocalUniqueSequenceAnalyzer().analyze(parse(unit)).get(0);
+		assertRejected(unit);
+	}
 
+	@Test
+	void rejectsElementTypesWithUnprovenHashStability() throws Exception {
+		ICompilationUnit unit= createUnit("""
+			package test;
+			import java.util.ArrayList;
+			import java.util.List;
+			class Sample {
+				static final class MutableValue {
+					int state;
+					@Override public int hashCode() { return state; }
+				}
+				void collect(MutableValue value) {
+					List<MutableValue> values = new ArrayList<>();
+					if (!values.contains(value)) {
+						values.add(value);
+					}
+				}
+			}
+			""");
+
+		assertRejected(unit);
+	}
+
+	private void assertRejected(ICompilationUnit unit) {
+		var profile= new LocalUniqueSequenceAnalyzer().analyze(parse(unit)).get(0);
 		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());
 	}
 
