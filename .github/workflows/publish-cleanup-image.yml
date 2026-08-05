@@ -66,27 +66,29 @@ jobs:
     - name: Extract product and prepare Docker context
       run: |
         set -e
-        
+
         # Find the Linux product archive (Tycho produces multiple OS-specific archives)
         PRODUCT_DIR="${GITHUB_WORKSPACE}/sandbox_product/target/products"
         PRODUCT_ARCHIVE=$(find "$PRODUCT_DIR" -maxdepth 1 -type f -name "*linux*.tar.gz" | head -1)
-        
+
         if [ -z "$PRODUCT_ARCHIVE" ]; then
           echo "Error: No Linux product archive (*linux*.tar.gz) found in $PRODUCT_DIR"
           ls -la "$PRODUCT_DIR"
           exit 1
         fi
-        
+
         echo "Found product archive: $PRODUCT_ARCHIVE"
-        
+
         # Create Docker build context directory
         DOCKER_CONTEXT="${GITHUB_WORKSPACE}/docker-context"
+        rm -rf "$DOCKER_CONTEXT"
         mkdir -p "$DOCKER_CONTEXT/dist"
-        
-        # Extract product to temporary location
+
+        # Extract product to a clean temporary location
         TEMP_EXTRACT="/tmp/product-extract"
+        rm -rf "$TEMP_EXTRACT"
         mkdir -p "$TEMP_EXTRACT"
-        
+
         case "$PRODUCT_ARCHIVE" in
           *.zip)
             unzip -q "$PRODUCT_ARCHIVE" -d "$TEMP_EXTRACT"
@@ -99,26 +101,34 @@ jobs:
             exit 1
             ;;
         esac
-        
-        # The product extracts with rootFolder="client", so we have client/ subdirectory
-        if [ ! -d "$TEMP_EXTRACT/client" ]; then
-          echo "Error: Expected client/ directory not found in extracted product"
-          ls -la "$TEMP_EXTRACT"
+
+        # Tycho archives may contain a configured root folder or extract directly.
+        if [ -d "$TEMP_EXTRACT/client/plugins" ] && \
+           [ -d "$TEMP_EXTRACT/client/configuration" ]; then
+          PRODUCT_ROOT="$TEMP_EXTRACT/client"
+        elif [ -d "$TEMP_EXTRACT/plugins" ] && \
+             [ -d "$TEMP_EXTRACT/configuration" ]; then
+          PRODUCT_ROOT="$TEMP_EXTRACT"
+        else
+          echo "Error: Could not locate plugins/ and configuration/ in extracted product"
+          find "$TEMP_EXTRACT" -maxdepth 2 -type d -print
           exit 1
         fi
-        
+
+        echo "Using product root: $PRODUCT_ROOT"
+
         # Copy plugins and configuration to dist/
-        cp -r "$TEMP_EXTRACT/client/plugins" "$DOCKER_CONTEXT/dist/"
-        cp -r "$TEMP_EXTRACT/client/configuration" "$DOCKER_CONTEXT/dist/"
-        
+        cp -r "$PRODUCT_ROOT/plugins" "$DOCKER_CONTEXT/dist/"
+        cp -r "$PRODUCT_ROOT/configuration" "$DOCKER_CONTEXT/dist/"
+
         # Find the Equinox launcher JAR
-        LAUNCHER_JAR=$(find "$TEMP_EXTRACT/client/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
+        LAUNCHER_JAR=$(find "$PRODUCT_ROOT/plugins" -name "org.eclipse.equinox.launcher_*.jar" | head -1)
         if [ -z "$LAUNCHER_JAR" ]; then
           echo "Error: Equinox launcher JAR not found"
           exit 1
         fi
         echo "Found launcher JAR: $LAUNCHER_JAR"
-        
+
         # Create bin directory and launcher script
         mkdir -p "$DOCKER_CONTEXT/dist/bin"
         {
@@ -139,12 +149,12 @@ jobs:
           echo '    "$@"'
         } > "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
         chmod +x "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
-        
+
         # Copy Dockerfile and entrypoint
         cp "$GITHUB_WORKSPACE/sandbox_cleanup_docker/Dockerfile" "$DOCKER_CONTEXT/"
         cp "$GITHUB_WORKSPACE/sandbox_cleanup_docker/entrypoint.sh" "$DOCKER_CONTEXT/"
         chmod +x "$DOCKER_CONTEXT/entrypoint.sh"
-        
+
         echo "Docker context prepared successfully"
         echo "Context structure:"
         find "$DOCKER_CONTEXT" -type f | head -20
