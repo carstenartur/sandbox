@@ -13,5 +13,16 @@
 	<packaging>eclipse-plugin</packaging>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+				<configuration>
+					<!-- This bundle provides shared test infrastructure and intentionally
+					     contains no executable tests of its own. -->
+					<failIfNoTests>false</failIfNoTests>
+				</configuration>
+			</plugin>
+		</plugins>
 	</build>
 </project>
