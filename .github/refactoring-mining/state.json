@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "eebb4942dae5ac10038c8e5f2163dafc58e3fc92",
-      "lastProcessedDate": "2026-08-03T03:17:56.560413972Z",
-      "totalProcessed": 3424,
+      "lastProcessedCommit": "e6b154d2aef77874f398ea3f9a4477b6e6ddb0ca",
+      "lastProcessedDate": "2026-08-05T03:15:54.704843748Z",
+      "totalProcessed": 3508,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2690,6 +2690,42 @@
           "deferredAt": "2026-08-03T03:16:40.472409921Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "5243b919fea1867f213cb10e2ef6b647b63c7d66",
+          "message": "Bug 533231 - [formatter] Preferences highlight should not disappear when focus moves to preview",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-05T03:09:54.910634414Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bc96c2b5f37f8782f1f9af989fae9d4e095748ef",
+          "message": "Revert \"Bug 533231 - [formatter] Preferences highlight should not disappear when focus moves to preview\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-05T03:11:05.566118661Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a4b5388e39ed0426f7420607e4ce67a839f68425",
+          "message": "Bug 533231 - [formatter] Preferences highlight should not disappear when focus moves to preview",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-05T03:11:05.574919735Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7ab1b91315f18feefea9684880c661d0e9ee7269",
+          "message": "Bug 534284 - Refactor LinkedProposalPositionGroup to core.manipulation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-05T03:14:06.732525824Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2702,7 +2738,7 @@
       "categoryHitCounts": {
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
-        "Code Simplification": 10,
+        "Code Simplification": 11,
         "Performance": 27,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
@@ -2832,7 +2868,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 6,
+        "API Migration": 7,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -2843,7 +2879,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 18,
+        "API Modernization": 19,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2874,7 +2910,9 @@
         "Return Value Refactoring": 1,
         "UI Label Modernization": 1,
         "Typo Correction": 1,
-        "Array Literal Update": 1
+        "Array Literal Update": 1,
+        "Deprecation/Modernization": 1,
+        "Constant Extraction": 2
       },
       "exhaustedCategories": []
     },
@@ -2915,5 +2953,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26083
+  "globalTotalProcessed": 26167
 }
