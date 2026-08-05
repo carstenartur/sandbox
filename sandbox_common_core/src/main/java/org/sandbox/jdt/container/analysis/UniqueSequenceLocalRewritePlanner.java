@@ -48,6 +48,7 @@ public final class UniqueSequenceLocalRewritePlanner {
 	private static final Set<Kind> SUPPORTED_EVIDENCE= EnumSet.of(
 			Kind.DUPLICATE_SUPPRESSION,
 			Kind.REFERENCE_COMPONENT,
+			Kind.HASH_STABLE_COMPONENT,
 			Kind.ENCOUNTER_ITERATION,
 			Kind.LOCAL_USAGE_COMPLETE);
 
@@ -136,6 +137,11 @@ public final class UniqueSequenceLocalRewritePlanner {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.MISSING_DUPLICATE_GUARD,
 					"The profile does not contain a proven contains-before-add insertion.")); //$NON-NLS-1$
+		}
+		if (count(profile, Kind.HASH_STABLE_COMPONENT) == 0) {
+			diagnostics.add(diagnostic(
+					DiagnosticKind.UNSUPPORTED_SOURCE,
+					"The profile does not prove stable equality and hash semantics.")); //$NON-NLS-1$
 		}
 		for (UsageEvidence evidence : profile.evidence()) {
 			if (!SUPPORTED_EVIDENCE.contains(evidence.kind())) {
