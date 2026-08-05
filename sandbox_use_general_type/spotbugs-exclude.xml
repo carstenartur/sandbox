@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+	<!-- JavadocLocations is imported implementation code. The upstream class
+	     intentionally retains this compatibility constant. -->
+	<Match>
+		<Class name="org.eclipse.jdt.internal.corext.javadoc.JavadocLocations"/>
+		<Field name="ARCHIVE_HTML_JAR"/>
+		<Bug pattern="URF_UNREAD_FIELD"/>
+	</Match>
+</FindBugsFilter>
