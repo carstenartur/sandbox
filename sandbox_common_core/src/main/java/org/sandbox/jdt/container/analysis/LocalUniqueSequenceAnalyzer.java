@@ -59,34 +59,28 @@ import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
 /**
- * Proves the first local manually-unique sequence contract.
- *
- * <p>The supported source is deliberately narrow: one method-local {@code ArrayList}
- * created empty, insertions expressed only as
- * {@code if (!values.contains(value)) values.add(value)}, optional
- * {@code size()}/{@code isEmpty()} queries, and enhanced-for iteration. Any alias,
- * escape, capture, positional operation or other method is retained as rejection
- * evidence.</p>
+ * Proves a narrow local manually-unique sequence contract. Only an empty local
+ * {@code ArrayList}, contains-before-add, size/isEmpty and enhanced-for are accepted.
  */
 public final class LocalUniqueSequenceAnalyzer {
 
 	private static final String ARRAY_LIST= "java.util.ArrayList"; //$NON-NLS-1$
 	private static final String LIST= "java.util.List"; //$NON-NLS-1$
 
-	/** Returns source-ordered complete or rejected profiles for recognized local seeds. */
-	public List<ContainerUsageProfile> analyze(CompilationUnit compilationUnit) {
-		Objects.requireNonNull(compilationUnit, "compilationUnit"); //$NON-NLS-1$
-		List<ContainerUsageProfile> profiles= new ArrayList<>();
-		compilationUnit.accept(new ASTVisitor() {
+	/** Returns source-ordered complete or rejected profiles. */
+	public List<ContainerUsageProfile> analyze(CompilationUnit unit) {
+		Objects.requireNonNull(unit, "unit"); //$NON-NLS-1$
+		List<ContainerUsageProfile> result= new ArrayList<>();
+		unit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(VariableDeclarationFragment fragment) {
 				candidate(fragment).map(LocalUniqueSequenceAnalyzer::analyzeCandidate)
-						.ifPresent(profiles::add);
+						.ifPresent(result::add);
 				return true;
 			}
 		});
-		profiles.sort(Comparator.comparingInt(profile -> profile.identity().sourceStart()));
-		return List.copyOf(profiles);
+		result.sort(Comparator.comparingInt(profile -> profile.identity().sourceStart()));
+		return List.copyOf(result);
 	}
 
 	private static Optional<Candidate> candidate(VariableDeclarationFragment fragment) {
@@ -96,15 +90,12 @@ public final class LocalUniqueSequenceAnalyzer {
 				|| declaration.fragments().size() != 1
 				|| !(fragment.getInitializer() instanceof ClassInstanceCreation creation)
 				|| !isEmptyArrayList(creation)
-				|| !isSupportedDeclaredType(declaration.getType().resolveBinding())) {
+				|| !isListType(declaration.getType().resolveBinding())) {
 			return Optional.empty();
 		}
 		MethodDeclaration method= enclosingMethod(fragment);
-		if (method == null || method.getBody() == null) {
-			return Optional.empty();
-		}
 		String key= binding.getVariableDeclaration().getKey();
-		if (key == null || key.isBlank()) {
+		if (method == null || method.getBody() == null || key == null || key.isBlank()) {
 			return Optional.empty();
 		}
 		return Optional.of(new Candidate(
@@ -112,63 +103,54 @@ public final class LocalUniqueSequenceAnalyzer {
 	}
 
 	private static ContainerUsageProfile analyzeCandidate(Candidate candidate) {
-		Accumulator accumulator= new Accumulator(candidate);
+		Observations observations= new Observations(candidate);
 		candidate.method().getBody().accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName name) {
-				classify(name, candidate, accumulator);
+				if (hasBinding(name.resolveBinding(), candidate.bindingKey())) {
+					classify(name, candidate, observations);
+				}
 				return true;
 			}
 		});
-		return accumulator.toProfile();
+		return observations.profile();
 	}
 
 	private static void classify(
 			SimpleName name,
 			Candidate candidate,
-			Accumulator accumulator) {
-		IBinding resolved= name.resolveBinding();
-		if (!(resolved instanceof IVariableBinding variable)
-				|| !candidate.bindingKey().equals(variable.getVariableDeclaration().getKey())) {
-			return;
-		}
-		accumulator.bindingSeen= true;
+			Observations observations) {
+		observations.bindingSeen= true;
 		if (candidate.fragment().getName() == name) {
 			return;
 		}
 		if (crossesExecutableBoundary(name, candidate.binding())) {
-			accumulator.reject(
-					Kind.CAPTURED_USAGE,
-					"Collection value is captured by a lambda, nested type, or different method body", //$NON-NLS-1$
-					name);
+			observations.reject(Kind.CAPTURED_USAGE,
+					"Collection value is captured across an executable boundary", name); //$NON-NLS-1$
 			return;
 		}
 
 		ASTNode parent= name.getParent();
 		if (parent instanceof MethodInvocation invocation
 				&& invocation.getExpression() == name) {
-			classifyInvocation(invocation, candidate, accumulator);
+			classifyInvocation(invocation, candidate.bindingKey(), observations);
 		} else if (parent instanceof EnhancedForStatement enhanced
 				&& enhanced.getExpression() == name) {
-			accumulator.iteration(name);
+			observations.iteration(name);
 		} else {
-			accumulator.reject(
-					Kind.UNSAFE_ESCAPE,
-					"Collection use escapes or observes unsupported list semantics", //$NON-NLS-1$
-					name);
+			observations.reject(Kind.UNSAFE_ESCAPE,
+					"Collection use escapes or observes unsupported list semantics", name); //$NON-NLS-1$
 		}
 	}
 
 	private static void classifyInvocation(
 			MethodInvocation invocation,
-			Candidate candidate,
-			Accumulator accumulator) {
-		Optional<GuardedAdd> guardedAdd=
-				UniqueSequencePattern.enclosing(invocation, candidate.bindingKey());
-		if (guardedAdd.isPresent()
-				&& (guardedAdd.get().contains() == invocation
-						|| guardedAdd.get().add() == invocation)) {
-			accumulator.guard(guardedAdd.get());
+			String bindingKey,
+			Observations observations) {
+		Optional<GuardedAdd> guard= UniqueSequencePattern.enclosing(invocation, bindingKey);
+		if (guard.isPresent()
+				&& (guard.get().contains() == invocation || guard.get().add() == invocation)) {
+			observations.guard(guard.get());
 			return;
 		}
 		String method= invocation.getName().getIdentifier();
@@ -176,21 +158,19 @@ public final class LocalUniqueSequenceAnalyzer {
 				&& invocation.arguments().isEmpty()) {
 			return;
 		}
-		accumulator.reject(
-				Kind.UNCLASSIFIED_USAGE,
-				"Only guarded insertion, size/isEmpty queries, and enhanced-for iteration are supported", //$NON-NLS-1$
+		observations.reject(Kind.UNCLASSIFIED_USAGE,
+				"Only guarded insertion, size/isEmpty and enhanced-for are supported", //$NON-NLS-1$
 				invocation);
 	}
 
 	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
 		ITypeBinding type= creation.resolveTypeBinding();
-		return type != null
-				&& ARRAY_LIST.equals(type.getErasure().getQualifiedName())
+		return type != null && ARRAY_LIST.equals(type.getErasure().getQualifiedName())
 				&& creation.arguments().isEmpty()
 				&& creation.getAnonymousClassDeclaration() == null;
 	}
 
-	private static boolean isSupportedDeclaredType(ITypeBinding type) {
+	private static boolean isListType(ITypeBinding type) {
 		if (type == null) {
 			return false;
 		}
@@ -199,12 +179,10 @@ public final class LocalUniqueSequenceAnalyzer {
 	}
 
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
-		ASTNode current= node.getParent();
-		while (current != null) {
+		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {
 			if (current instanceof MethodDeclaration method) {
 				return method;
 			}
-			current= current.getParent();
 		}
 		return null;
 	}
@@ -216,20 +194,18 @@ public final class LocalUniqueSequenceAnalyzer {
 		if (declaringMethod == null) {
 			return true;
 		}
-		String declaringKey= methodKey(declaringMethod);
-		ASTNode current= reference.getParent();
-		while (current != null) {
+		String expectedKey= methodKey(declaringMethod);
+		for (ASTNode current= reference.getParent(); current != null;
+				current= current.getParent()) {
 			if (current instanceof LambdaExpression
 					|| current instanceof AnonymousClassDeclaration
 					|| current instanceof AbstractTypeDeclaration) {
 				return true;
 			}
 			if (current instanceof MethodDeclaration method) {
-				IMethodBinding currentBinding= method.resolveBinding();
-				return currentBinding == null
-						|| !declaringKey.equals(methodKey(currentBinding));
+				IMethodBinding actual= method.resolveBinding();
+				return actual == null || !expectedKey.equals(methodKey(actual));
 			}
-			current= current.getParent();
 		}
 		return true;
 	}
@@ -239,13 +215,18 @@ public final class LocalUniqueSequenceAnalyzer {
 		return key == null ? "" : key; //$NON-NLS-1$
 	}
 
+	private static boolean hasBinding(IBinding binding, String key) {
+		return binding instanceof IVariableBinding variable
+				&& key.equals(variable.getVariableDeclaration().getKey());
+	}
+
 	private static ElementDomain elementDomain(VariableDeclarationStatement declaration) {
 		ITypeBinding type= declaration.getType().resolveBinding();
 		if (type == null || type.getTypeArguments().length != 1) {
 			return ElementDomain.UNKNOWN;
 		}
-		ITypeBinding element= type.getTypeArguments()[0];
-		return element.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;
+		return type.getTypeArguments()[0].isEnum()
+				? ElementDomain.ENUM : ElementDomain.REFERENCE;
 	}
 
 	private record Candidate(
@@ -256,7 +237,7 @@ public final class LocalUniqueSequenceAnalyzer {
 			String bindingKey) {
 	}
 
-	private static final class Accumulator {
+	private static final class Observations {
 		private final Candidate candidate;
 		private final List<UsageEvidence> evidence= new ArrayList<>();
 		private final Set<org.eclipse.jdt.core.dom.IfStatement> guards=
@@ -264,88 +245,75 @@ public final class LocalUniqueSequenceAnalyzer {
 		private boolean rejected;
 		private boolean bindingSeen;
 
-		Accumulator(Candidate candidate) {
+		Observations(Candidate candidate) {
 			this.candidate= candidate;
-			evidence.add(evidence(
-					Kind.REFERENCE_COMPONENT,
+			add(Kind.REFERENCE_COMPONENT,
 					"The local sequence has a reference element type", //$NON-NLS-1$
-					candidate.declaration()));
+					candidate.declaration());
 		}
 
-		void guard(GuardedAdd guardedAdd) {
-			if (guards.add(guardedAdd.statement())) {
-				evidence.add(evidence(
-						Kind.APPEND_WRITE,
+		void guard(GuardedAdd guard) {
+			if (guards.add(guard.statement())) {
+				add(Kind.DUPLICATE_SUPPRESSION,
 						"Membership is tested before the same stable value is inserted", //$NON-NLS-1$
-						guardedAdd.statement()));
+						guard.statement());
 			}
 		}
 
 		void iteration(ASTNode node) {
-			evidence.add(evidence(
-					Kind.ENCOUNTER_ITERATION,
-					"The collection is traversed in encounter order", //$NON-NLS-1$
-					node));
+			add(Kind.ENCOUNTER_ITERATION,
+					"The collection is traversed in encounter order", node); //$NON-NLS-1$
 		}
 
 		void reject(Kind kind, String summary, ASTNode node) {
 			rejected= true;
-			evidence.add(evidence(kind, summary, node));
+			add(kind, summary, node);
 		}
 
-		ContainerUsageProfile toProfile() {
+		ContainerUsageProfile profile() {
 			boolean complete= bindingSeen && !guards.isEmpty() && !rejected;
 			if (complete) {
-				evidence.add(evidence(
-						Kind.LOCAL_USAGE_COMPLETE,
+				add(Kind.LOCAL_USAGE_COMPLETE,
 						"Every use of the local collection binding was classified", //$NON-NLS-1$
-						candidate.fragment()));
+						candidate.fragment());
 			} else if (guards.isEmpty()) {
-				reject(
-						Kind.REJECTION_BOUNDARY,
+				reject(Kind.REJECTION_BOUNDARY,
 						"No complete contains-before-add insertion was found", //$NON-NLS-1$
 						candidate.fragment());
 			}
-			evidence.sort(Comparator
-					.comparingInt(UsageEvidence::sourceStart)
+			evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart)
 					.thenComparing(item -> item.kind().ordinal()));
-
-			ConcurrencyProfile concurrency= complete
-					? new ConcurrencyProfile(
-							ThreadExposure.THREAD_CONFINED,
-							SynchronizationKind.NONE,
-							IterationSemantics.LIVE,
-							AtomicityRequirement.INDIVIDUAL_OPERATIONS,
-							WorkloadShape.BALANCED)
-					: ConcurrencyProfile.unknown();
 			return new ContainerUsageProfile(
-					new ContainerIdentity(
-							candidate.bindingKey(),
-							candidate.fragment().getName().getIdentifier(),
-							candidate.fragment().getStartPosition(),
-							candidate.fragment().getLength()),
-					ContainerShape.LIST,
+					identity(candidate), ContainerShape.LIST,
 					elementDomain(candidate.declaration()),
 					new AccessProfile(false, false, true, false, false, true, false),
-					OrderRequirement.ENCOUNTER,
-					UniquenessRequirement.REQUIRED,
-					MutationLifecycle.CONTINUOUSLY_MUTABLE,
-					NullContract.UNKNOWN,
+					OrderRequirement.ENCOUNTER, UniquenessRequirement.REQUIRED,
+					MutationLifecycle.CONTINUOUSLY_MUTABLE, NullContract.UNKNOWN,
 					complete ? AliasingContract.NO_OBSERVED_ALIAS : AliasingContract.UNKNOWN,
-					EscapeLevel.LOCAL,
-					concurrency,
-					complete
-							? AnalysisCompleteness.LOCAL_USAGE_COMPLETE
+					EscapeLevel.LOCAL, concurrency(complete),
+					complete ? AnalysisCompleteness.LOCAL_USAGE_COMPLETE
 							: AnalysisCompleteness.REJECTED,
 					evidence);
 		}
+
+		private void add(Kind kind, String summary, ASTNode node) {
+			evidence.add(new UsageEvidence(
+					kind, summary, node.getStartPosition(), node.getLength()));
+		}
 	}
 
-	private static UsageEvidence evidence(
-			Kind kind,
-			String summary,
-			ASTNode node) {
-		return new UsageEvidence(
-				kind, summary, node.getStartPosition(), node.getLength());
+	private static ContainerIdentity identity(Candidate candidate) {
+		return new ContainerIdentity(
+				candidate.bindingKey(), candidate.fragment().getName().getIdentifier(),
+				candidate.fragment().getStartPosition(), candidate.fragment().getLength());
+	}
+
+	private static ConcurrencyProfile concurrency(boolean complete) {
+		return complete
+				? new ConcurrencyProfile(
+						ThreadExposure.THREAD_CONFINED, SynchronizationKind.NONE,
+						IterationSemantics.LIVE, AtomicityRequirement.INDIVIDUAL_OPERATIONS,
+						WorkloadShape.BALANCED)
+				: ConcurrencyProfile.unknown();
 	}
 }
