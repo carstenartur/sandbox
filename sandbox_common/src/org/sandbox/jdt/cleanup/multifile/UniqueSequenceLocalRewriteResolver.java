@@ -33,11 +33,16 @@ import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 import org.sandbox.jdt.container.analysis.UniqueSequencePattern;
 import org.sandbox.jdt.container.analysis.UniqueSequencePattern.GuardedAdd;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
 import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.EditKind;
 
@@ -47,6 +52,9 @@ final class UniqueSequenceLocalRewriteResolver {
 	private static final String PLUGIN_ID= "sandbox_common"; //$NON-NLS-1$
 	private static final String ARRAY_LIST= "java.util.ArrayList"; //$NON-NLS-1$
 	private static final String LIST= "java.util.List"; //$NON-NLS-1$
+	private static final String STRING= "java.lang.String"; //$NON-NLS-1$
+	private static final String SET= "java.util.Set"; //$NON-NLS-1$
+	private static final String LINKED_HASH_SET= "java.util.LinkedHashSet"; //$NON-NLS-1$
 
 	private UniqueSequenceLocalRewriteResolver() {
 	}
@@ -61,6 +69,9 @@ final class UniqueSequenceLocalRewriteResolver {
 		if (!plan.compilationUnitHandle().equals(unit.getHandleIdentifier())) {
 			throw stale(unit, "compilation-unit handle changed"); //$NON-NLS-1$
 		}
+		if (!isExpectedTarget(plan)) {
+			throw stale(unit, "target strategy changed"); //$NON-NLS-1$
+		}
 
 		CollectedAst collected= collect(root, plan.bindingKey());
 		VariableDeclarationFragment fragment= collected.declaration();
@@ -70,9 +81,11 @@ final class UniqueSequenceLocalRewriteResolver {
 				|| !(declaration.getType() instanceof ParameterizedType declarationType)
 				|| declarationType.typeArguments().size() != 1
 				|| !isSupportedSourceType(declaration.getType().resolveBinding())
+				|| !hasStableHash(declarationType)
 				|| !(fragment.getInitializer() instanceof ClassInstanceCreation initializer)
 				|| !isEmptyArrayList(initializer)) {
-			throw stale(unit, "local list declaration or empty ArrayList initializer changed"); //$NON-NLS-1$
+			throw stale(unit,
+					"local list declaration, element contract, or empty ArrayList initializer changed"); //$NON-NLS-1$
 		}
 
 		List<GuardedAdd> guards= collected.guards().stream()
@@ -123,6 +136,16 @@ final class UniqueSequenceLocalRewriteResolver {
 				guards);
 	}
 
+	private static boolean isExpectedTarget(UniqueSequenceLocalRewritePlan plan) {
+		return SET.equals(plan.targetInterfaceType())
+				&& LINKED_HASH_SET.equals(plan.targetImplementationType())
+				&& plan.targetContract().shape() == ContainerShape.SET
+				&& plan.targetContract().mutability() == Mutability.MUTABLE
+				&& plan.targetContract().orderRequirement() == OrderRequirement.ENCOUNTER
+				&& plan.targetContract().uniquenessRequirement()
+						== UniquenessRequirement.REQUIRED;
+	}
+
 	private static CollectedAst collect(
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			String bindingKey) {
@@ -160,6 +183,14 @@ final class UniqueSequenceLocalRewriteResolver {
 		}
 		String name= type.getErasure().getQualifiedName();
 		return LIST.equals(name) || ARRAY_LIST.equals(name);
+	}
+
+	private static boolean hasStableHash(ParameterizedType declarationType) {
+		Type elementType= (Type) declarationType.typeArguments().get(0);
+		ITypeBinding binding= elementType.resolveBinding();
+		return binding != null
+				&& (binding.isEnum()
+						|| STRING.equals(binding.getErasure().getQualifiedName()));
 	}
 
 	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
