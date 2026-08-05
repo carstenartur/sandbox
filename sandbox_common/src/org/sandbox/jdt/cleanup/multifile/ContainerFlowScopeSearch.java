@@ -138,7 +138,10 @@ public final class ContainerFlowScopeSearch {
 			Collection<ICompilationUnit> currentScope,
 			Collection<ICompilationUnit> allowedUnits,
 			IProgressMonitor monitor) throws CoreException {
+		Objects.requireNonNull(project, "project"); //$NON-NLS-1$
 		Objects.requireNonNull(plan, "plan"); //$NON-NLS-1$
+		Objects.requireNonNull(currentScope, "currentScope"); //$NON-NLS-1$
+		Objects.requireNonNull(allowedUnits, "allowedUnits"); //$NON-NLS-1$
 		checkCanceled(monitor);
 
 		if (plan.isEmpty()) {
