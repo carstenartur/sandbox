@@ -38,7 +38,9 @@ public class SandboxRepositoryServiceBoundaryTest {
 	@Test
 	public void exposesPublicJGitRepositoryContract() throws Exception {
 		Method open= SandboxRepositoryService.class.getMethod("openOrCreate", String.class); //$NON-NLS-1$
+		Method delete= SandboxRepositoryService.class.getMethod("delete", String.class); //$NON-NLS-1$
 		assertEquals(Repository.class, open.getReturnType());
+		assertEquals(SandboxRepositoryDeletionResult.class, delete.getReturnType());
 		assertNotNull(RepositoryResource.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SessionFactory.class));

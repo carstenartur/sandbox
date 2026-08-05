@@ -74,14 +74,20 @@ public class JGitStorageMigrationMatrixTest {
 	}
 
 	@Test
-	public void repositoryDeletionRemainsExplicitlyUnwired() throws IOException {
+	public void repositoryDeletionPolicyIsVerifiedButNotPubliclyExposed() throws IOException {
 		JsonObject deletion= capability(matrix(), "repository-delete"); //$NON-NLS-1$
+		String entrypoints= deletion.getAsJsonArray("currentEntrypoints").toString(); //$NON-NLS-1$
 
-		assertTrue(deletion.getAsJsonArray("currentEntrypoints").isEmpty()); //$NON-NLS-1$
-		assertEquals("core-api-available-adapter-policy-required", //$NON-NLS-1$
+		assertTrue(entrypoints.contains("SandboxRepositoryService.delete")); //$NON-NLS-1$
+		assertTrue(entrypoints.contains("ExternalHibernateRepositoryService.delete")); //$NON-NLS-1$
+		assertEquals("core-adapter-delete-policy-verified-runtime-cutover-pending", //$NON-NLS-1$
 				deletion.get("migrationStatus").getAsString()); //$NON-NLS-1$
+		assertTrue(deletion.get("currentBackend").getAsString() //$NON-NLS-1$
+				.contains("REST deletion remain disabled")); //$NON-NLS-1$
 		assertTrue(deletion.getAsJsonArray("requiredEvidence").toString() //$NON-NLS-1$
-				.contains("atomically evicts and closes")); //$NON-NLS-1$
+				.contains("Search deletion participant")); //$NON-NLS-1$
+		assertTrue(deletion.getAsJsonArray("verifiedEvidence").toString() //$NON-NLS-1$
+				.contains("rejectsDeletionWhileTheAdapterOwnsAnOpenHandle")); //$NON-NLS-1$
 	}
 
 	private static JsonObject capability(JsonObject matrix, String id) {

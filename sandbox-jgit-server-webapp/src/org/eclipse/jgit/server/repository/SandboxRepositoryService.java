@@ -26,6 +26,16 @@ public interface SandboxRepositoryService extends AutoCloseable {
 	/** Normalizes the identity and updates metadata without exposing a backend-specific repository. */
 	SandboxRepositoryInfo setDescription(String name, String description) throws IOException;
 
+	/**
+	 * Deletes a closed logical repository when the selected backend supports coordinated deletion.
+	 *
+	 * <p>The released Core adapter overrides this operation. The copied transition backend deliberately
+	 * keeps deletion disabled until normal startup has completed the Core cut-over.</p>
+	 */
+	default SandboxRepositoryDeletionResult delete(String name) throws IOException {
+		throw new UnsupportedOperationException("Repository deletion requires the released Core backend."); //$NON-NLS-1$
+	}
+
 	/** Returns whether this process already owns an open handle for the normalized identity. */
 	boolean isOpen(String name);
 
