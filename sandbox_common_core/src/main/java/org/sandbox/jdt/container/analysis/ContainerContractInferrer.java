@@ -27,7 +27,6 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
-import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.TargetContainerContract;
@@ -46,15 +45,12 @@ public final class ContainerContractInferrer {
 			return Optional.empty();
 		}
 
-		NullContract targetNullContract= profile.nullContract() == NullContract.UNKNOWN
-				? NullContract.ALLOWED
-				: profile.nullContract();
 		TargetContainerContract target= new TargetContainerContract(
 				ContainerShape.LIST,
 				profile.orderRequirement(),
 				profile.uniquenessRequirement(),
 				Mutability.MUTABLE,
-				targetNullContract,
+				profile.nullContract(),
 				"Use a dynamically growing mutable sequence instead of repeatedly copying an array."); //$NON-NLS-1$
 
 		List<ContractAssessment> assessments= new ArrayList<>();
@@ -70,7 +66,7 @@ public final class ContainerContractInferrer {
 		assessments.add(new ContractAssessment(
 				ContractProperty.NULLS,
 				Preservation.PRESERVED,
-				"Reference arrays and the proposed ArrayList representation both permit null elements; existing validation remains unchanged.")); //$NON-NLS-1$
+				"Reference arrays and ArrayList have the same null capability; an unknown application-level null policy remains unknown.")); //$NON-NLS-1$
 		assessments.add(aliasingAssessment(profile));
 		assessments.add(concurrencyAssessment(profile));
 		assessments.add(signatureAssessment(profile));
