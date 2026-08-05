@@ -132,6 +132,35 @@ public class SampleTest {
         self.assertTrue(tests[0].is_disabled)
         self.assertFalse(tests[1].is_disabled)
 
+    def test_scans_integration_sources_in_non_suffix_module(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            java_file = (
+                root
+                / "sandbox_test_commons"
+                / "integration-src"
+                / "demo"
+                / "IntegrationTest.java"
+            )
+            java_file.parent.mkdir(parents=True)
+            java_file.write_text(
+                '''package demo;
+public class IntegrationTest {
+    @Test
+    void integrationTest() {}
+}
+''',
+                encoding="utf-8",
+            )
+
+            scanner = TestScanner(root)
+            scanner.scan_all()
+
+            self.assertEqual(1, len(scanner.tests))
+            self.assertEqual("sandbox_test_commons", scanner.tests[0].plugin)
+            self.assertEqual("integrationTest", scanner.tests[0].method_name)
+            self.assertIn("integration-src", scanner.tests[0].file_path)
+
 
 if __name__ == "__main__":
     unittest.main()
