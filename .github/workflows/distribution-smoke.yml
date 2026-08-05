@@ -14,6 +14,7 @@ on:
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
       - '.github/scripts/smoke_test_distribution.sh'
+      - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
   push:
     branches: [ main ]
@@ -28,6 +29,7 @@ on:
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
       - '.github/scripts/smoke_test_distribution.sh'
+      - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
   schedule:
     - cron: '30 3 * * 1'
@@ -76,6 +78,8 @@ jobs:
           cp /tmp/sandbox-distribution-maven.log \
             target/distribution-verification/maven.log
           exit "$status"
+      - name: Validate distribution evidence contract
+        run: python3 .github/scripts/validate_distribution_evidence.py
       - name: Publish verification summary
         if: always() && hashFiles('target/distribution-verification/verification.md') != ''
         run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"

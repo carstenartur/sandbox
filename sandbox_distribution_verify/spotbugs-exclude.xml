@@ -10,9 +10,14 @@
   <Match>
     <!-- Evidence files are deliberately written with LF on every platform so
          JSON/Markdown artifacts are byte-stable. Platform-specific %n would be
-         incorrect for this reproducibility evidence. -->
+         incorrect for this reproducibility evidence. The nested feature JSON is
+         formatted inside a compiler-generated lambda method, so match that method
+         name explicitly as well as the enclosing writer. -->
     <Class name="org.sandbox.distribution.DistributionVerifier"/>
-    <Method name="writeEvidence"/>
+    <Or>
+      <Method name="writeEvidence"/>
+      <Method name="~lambda\$publishedFeatureJson\$\d+"/>
+    </Or>
     <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
   </Match>
 </FindBugsFilter>

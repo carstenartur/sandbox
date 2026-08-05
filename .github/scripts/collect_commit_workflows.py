@@ -18,7 +18,7 @@ EXPECTED_WORKFLOWS = (
     "Core Module Build",
     "CodeQL",
     "Codacy Security Scan",
-    "Test Report",
+    "Test Source Inventory",
 )
 
 
