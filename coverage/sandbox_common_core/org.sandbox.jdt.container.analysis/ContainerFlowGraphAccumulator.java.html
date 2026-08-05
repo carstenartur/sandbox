@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowGraphAccumulator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ContainerFlowGraphAccumulator.java</span></div><h1>ContainerFlowGraphAccumulator.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.sandbox.jdt.container.analysis.ContainerFlowIndex.BindingInfo;
+import org.sandbox.jdt.container.api.ContainerFlowGraph;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.DiagnosticKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowDiagnostic;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowEdge;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+
+/** Mutable graph assembly used only during one flow-analysis pass. */
+final class ContainerFlowGraphAccumulator {
+
+	private final ContainerUsageProfile profile;
+	private final String compilationUnitHandle;
+<span class="fc" id="L43">	private final Map&lt;String, FlowNode&gt; nodes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L44">	private final List&lt;FlowEdge&gt; edges= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">	private final Set&lt;String&gt; edgeKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L46">	private final List&lt;FlowDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L47">	private final Set&lt;String&gt; diagnosticKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L48">	private ClosureStatus closureStatus= ClosureStatus.LOCAL_CLOSED;</span>
+	private String rootNodeId;
+
+	ContainerFlowGraphAccumulator(
+			ContainerUsageProfile profile,
+<span class="fc" id="L53">			String compilationUnitHandle) {</span>
+<span class="fc" id="L54">		this.profile= profile;</span>
+<span class="fc" id="L55">		this.compilationUnitHandle= compilationUnitHandle;</span>
+<span class="fc" id="L56">	}</span>
+
+	FlowNode ensureVariableNode(BindingInfo info) {
+<span class="fc" id="L59">		IVariableBinding binding= info.binding();</span>
+<span class="fc" id="L60">		String stableId= variableNodeId(binding.getKey());</span>
+<span class="fc" id="L61">		SimpleName anchor= info.anchor();</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">		int start= anchor == null ? profile.identity().sourceStart() : anchor.getStartPosition();</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		int length= anchor == null ? profile.identity().sourceLength() : anchor.getLength();</span>
+<span class="fc" id="L64">		FlowNode node= nodes.computeIfAbsent(stableId, ignored -&gt; new FlowNode(</span>
+				stableId,
+<span class="fc" id="L66">				nodeKind(binding),</span>
+<span class="fc" id="L67">				binding.getKey(),</span>
+<span class="fc" id="L68">				ownerKey(binding),</span>
+<span class="fc" id="L69">				info.compilationUnitHandle(),</span>
+<span class="fc" id="L70">				javaElementHandle(binding),</span>
+<span class="fc" id="L71">				info.signatureIndex(),</span>
+				true,
+				start,
+				length));
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">		if (rootNodeId == null &amp;&amp; binding.getKey().equals(profile.identity().bindingKey())) {</span>
+<span class="fc" id="L76">			rootNodeId= stableId;</span>
+		}
+<span class="fc" id="L78">		return node;</span>
+	}
+
+	FlowNode ensureReturnNode(
+			String methodKey,
+			String methodElementHandle,
+			String unitHandle,
+			ASTNode anchor) {
+<span class="fc" id="L86">		String stableId= &quot;return:&quot; + methodKey; //$NON-NLS-1$</span>
+<span class="fc" id="L87">		return nodes.computeIfAbsent(stableId, ignored -&gt; new FlowNode(</span>
+				stableId,
+				NodeKind.RETURN_POSITION,
+				&quot;&quot;, //$NON-NLS-1$
+				methodKey,
+				unitHandle,
+				methodElementHandle,
+				-1,
+				true,
+<span class="fc" id="L96">				anchor.getStartPosition(),</span>
+<span class="fc" id="L97">				anchor.getLength()));</span>
+	}
+
+	FlowNode ensureReturnNode(String methodKey, String unitHandle, ASTNode anchor) {
+<span class="fc" id="L101">		return ensureReturnNode(methodKey, &quot;&quot;, unitHandle, anchor); //$NON-NLS-1$</span>
+	}
+
+	void addParameterBoundary(
+			FlowNode sourceNode,
+			IMethodBinding method,
+			int parameterIndex,
+			ASTNode anchor) {
+<span class="fc" id="L109">		ITypeBinding declaringClass= method.getDeclaringClass();</span>
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">		boolean sourceType= declaringClass != null &amp;&amp; declaringClass.isFromSource();</span>
+<span class="fc" id="L111">		String methodKey= methodKey(method);</span>
+<span class="fc" id="L112">		String stableId= &quot;parameter:&quot; + methodKey + ':' + parameterIndex; //$NON-NLS-1$</span>
+<span class="fc" id="L113">		FlowNode target= nodes.computeIfAbsent(stableId, ignored -&gt; new FlowNode(</span>
+				stableId,
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">				sourceType ? NodeKind.PARAMETER : NodeKind.EXTERNAL_PARAMETER,</span>
+				&quot;&quot;, //$NON-NLS-1$
+				methodKey,
+				&quot;&quot;, //$NON-NLS-1$
+<span class="fc" id="L119">				javaElementHandle(method),</span>
+				parameterIndex,
+				false,
+<span class="fc" id="L122">				anchor.getStartPosition(),</span>
+<span class="fc" id="L123">				anchor.getLength()));</span>
+<span class="fc" id="L124">		addEdge(sourceNode, target, EdgeKind.ARGUMENT_TO_PARAMETER, anchor);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (sourceType) {</span>
+<span class="nc" id="L126">			requireScopeExpansion(</span>
+					&quot;Parameter declaration is in another source scope&quot;, anchor); //$NON-NLS-1$
+		} else {
+<span class="fc" id="L129">			raise(ClosureStatus.EXTERNAL_BOUNDARY);</span>
+<span class="fc" id="L130">			addDiagnostic(</span>
+					DiagnosticKind.EXTERNAL_OR_BINARY_TARGET,
+					&quot;Container value reaches an external or binary method parameter&quot;, anchor); //$NON-NLS-1$
+		}
+<span class="fc" id="L134">	}</span>
+
+	void addEdge(FlowNode source, FlowNode target, EdgeKind kind, ASTNode anchor) {
+<span class="fc" id="L137">		String edgeKey= source.stableId() + '|' + target.stableId() + '|'</span>
+<span class="fc" id="L138">				+ kind + '|' + anchor.getStartPosition();</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (edgeKeys.add(edgeKey)) {</span>
+<span class="fc" id="L140">			edges.add(new FlowEdge(</span>
+<span class="fc" id="L141">					source.stableId(),</span>
+<span class="fc" id="L142">					target.stableId(),</span>
+					kind,
+<span class="fc" id="L144">					anchor.getStartPosition(),</span>
+<span class="fc" id="L145">					anchor.getLength()));</span>
+		}
+<span class="fc" id="L147">	}</span>
+
+	void classifySignatureExposure(BindingInfo info) {
+<span class="fc" id="L150">		IVariableBinding binding= info.binding();</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		if (binding.isParameter()) {</span>
+<span class="fc" id="L152">			requireScopeExpansion(</span>
+<span class="fc" id="L153">					&quot;Method parameter requires caller and override discovery&quot;, info.anchor()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L154" title="3 of 4 branches missed.">		} else if (binding.isField() &amp;&amp; !Modifier.isPrivate(binding.getModifiers())) {</span>
+<span class="nc" id="L155">			requireScopeExpansion(</span>
+<span class="nc" id="L156">					&quot;Non-private field requires project-wide reference discovery&quot;, info.anchor()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L158">	}</span>
+
+	void requireScopeExpansion(String message, ASTNode anchor) {
+<span class="fc" id="L161">		raise(ClosureStatus.REQUIRES_SCOPE_EXPANSION);</span>
+<span class="fc" id="L162">		addDiagnostic(DiagnosticKind.SCOPE_EXPANSION_REQUIRED, message, anchor);</span>
+<span class="fc" id="L163">	}</span>
+
+	void unresolvedBinding(String bindingKey, int start, int length) {
+<span class="fc" id="L166">		raise(ClosureStatus.REJECTED);</span>
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">		String suffix= bindingKey == null || bindingKey.isBlank()</span>
+<span class="pc" id="L168">				? &quot;&quot; : &quot;: &quot; + bindingKey; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L169">		addDiagnostic(</span>
+				DiagnosticKind.UNRESOLVED_BINDING,
+				&quot;A required flow binding could not be resolved&quot; + suffix, //$NON-NLS-1$
+				start,
+				length);
+<span class="fc" id="L174">	}</span>
+
+	void unclassifiedFlow(ASTNode anchor) {
+<span class="nc" id="L177">		raise(ClosureStatus.REJECTED);</span>
+<span class="nc" id="L178">		addDiagnostic(</span>
+				DiagnosticKind.UNCLASSIFIED_FLOW,
+				&quot;Container flow reaches an unsupported expression shape&quot;, anchor); //$NON-NLS-1$
+<span class="nc" id="L181">	}</span>
+
+	void addUnresolvedRoot() {
+<span class="fc" id="L184">		String stableId= &quot;unknown:&quot; + profile.identity().stableId(); //$NON-NLS-1$</span>
+<span class="fc" id="L185">		rootNodeId= stableId;</span>
+<span class="fc" id="L186">		nodes.put(stableId, new FlowNode(</span>
+				stableId,
+				NodeKind.UNKNOWN_BOUNDARY,
+<span class="fc" id="L189">				profile.identity().bindingKey(),</span>
+				&quot;&quot;, //$NON-NLS-1$
+				compilationUnitHandle,
+				&quot;&quot;, //$NON-NLS-1$
+				-1,
+				false,
+<span class="fc" id="L195">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L196">				profile.identity().sourceLength()));</span>
+<span class="fc" id="L197">		unresolvedBinding(</span>
+<span class="fc" id="L198">				profile.identity().bindingKey(),</span>
+<span class="fc" id="L199">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L200">				profile.identity().sourceLength());</span>
+<span class="fc" id="L201">	}</span>
+
+	ContainerFlowGraph toGraph() {
+<span class="fc" id="L204">		return new ContainerFlowGraph(</span>
+				rootNodeId,
+<span class="fc" id="L206">				List.copyOf(nodes.values()),</span>
+				edges,
+				closureStatus,
+				diagnostics);
+	}
+
+	private void addDiagnostic(DiagnosticKind kind, String message, ASTNode anchor) {
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (anchor == null) {</span>
+<span class="nc" id="L214">			addDiagnostic(</span>
+					kind,
+					message,
+<span class="nc" id="L217">					profile.identity().sourceStart(),</span>
+<span class="nc" id="L218">					profile.identity().sourceLength());</span>
+		} else {
+<span class="fc" id="L220">			addDiagnostic(kind, message, anchor.getStartPosition(), anchor.getLength());</span>
+		}
+<span class="fc" id="L222">	}</span>
+
+	private void addDiagnostic(
+			DiagnosticKind kind,
+			String message,
+			int start,
+			int length) {
+<span class="fc" id="L229">		String key= kind + &quot;|&quot; + message + '|' + start; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		if (diagnosticKeys.add(key)) {</span>
+<span class="fc" id="L231">			diagnostics.add(new FlowDiagnostic(kind, message, start, length));</span>
+		}
+<span class="fc" id="L233">	}</span>
+
+	private void raise(ClosureStatus candidate) {
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		if (rank(candidate) &gt; rank(closureStatus)) {</span>
+<span class="fc" id="L237">			closureStatus= candidate;</span>
+		}
+<span class="fc" id="L239">	}</span>
+
+	private static NodeKind nodeKind(IVariableBinding binding) {
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (binding.isField()) {</span>
+<span class="nc" id="L243">			return NodeKind.FIELD;</span>
+		}
+<span class="fc bfc" id="L245" title="All 2 branches covered.">		if (binding.isParameter()) {</span>
+<span class="fc" id="L246">			return NodeKind.PARAMETER;</span>
+		}
+<span class="fc" id="L248">		return NodeKind.LOCAL_VARIABLE;</span>
+	}
+
+	private static String ownerKey(IVariableBinding binding) {
+<span class="fc" id="L252">		IMethodBinding declaringMethod= binding.getDeclaringMethod();</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">		if (declaringMethod != null) {</span>
+<span class="fc" id="L254">			return methodKey(declaringMethod);</span>
+		}
+<span class="nc" id="L256">		ITypeBinding declaringClass= binding.getDeclaringClass();</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		return declaringClass == null ? &quot;&quot; : declaringClass.getTypeDeclaration().getKey(); //$NON-NLS-1$</span>
+	}
+
+	private static String methodKey(IMethodBinding method) {
+<span class="fc" id="L261">		String key= method.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L262" title="2 of 4 branches missed.">		if (key != null &amp;&amp; !key.isBlank()) {</span>
+<span class="fc" id="L263">			return key;</span>
+		}
+<span class="nc" id="L265">		ITypeBinding owner= method.getDeclaringClass();</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">		String ownerName= owner == null ? &quot;&quot; : owner.getErasure().getQualifiedName(); //$NON-NLS-1$</span>
+<span class="nc" id="L267">		return ownerName + '#' + method.getName() + '/' + method.getParameterTypes().length;</span>
+	}
+
+	private static String javaElementHandle(IVariableBinding binding) {
+<span class="pc bpc" id="L271" title="1 of 4 branches missed.">		if (binding.isParameter() &amp;&amp; binding.getDeclaringMethod() != null) {</span>
+<span class="fc" id="L272">			return javaElementHandle(binding.getDeclaringMethod());</span>
+		}
+<span class="fc" id="L274">		return javaElementHandle(binding.getJavaElement());</span>
+	}
+
+	private static String javaElementHandle(IMethodBinding binding) {
+<span class="fc" id="L278">		return javaElementHandle(binding.getMethodDeclaration().getJavaElement());</span>
+	}
+
+	private static String javaElementHandle(IJavaElement element) {
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">		return element == null ? &quot;&quot; : element.getHandleIdentifier(); //$NON-NLS-1$</span>
+	}
+
+	private static String variableNodeId(String bindingKey) {
+<span class="fc" id="L286">		return &quot;variable:&quot; + bindingKey; //$NON-NLS-1$</span>
+	}
+
+	private static int rank(ClosureStatus status) {
+<span class="fc bfc" id="L290" title="All 4 branches covered.">		return switch (status) {</span>
+<span class="fc" id="L291">			case LOCAL_CLOSED -&gt; 0;</span>
+<span class="fc" id="L292">			case REQUIRES_SCOPE_EXPANSION -&gt; 1;</span>
+<span class="fc" id="L293">			case EXTERNAL_BOUNDARY -&gt; 2;</span>
+<span class="fc" id="L294">			case REJECTED -&gt; 3;</span>
+		};
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

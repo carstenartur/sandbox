@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerRecommendation.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">ContainerRecommendation.java</span></div><h1>ContainerRecommendation.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Explainable, immutable recommendation produced before rewrite planning.
+ *
+ * @param sourceProfile analyzed current contract
+ * @param targetContract proposed semantic target
+ * @param rule rule ownership and overlap information
+ * @param confidence confidence supported by the current analysis scope
+ * @param automationLevel permitted execution level
+ * @param assessments preservation assessment by contract property
+ */
+public record ContainerRecommendation(
+		ContainerUsageProfile sourceProfile,
+		TargetContainerContract targetContract,
+		ContainerRuleDescriptor rule,
+		Confidence confidence,
+		AutomationLevel automationLevel,
+		List&lt;ContractAssessment&gt; assessments) {
+
+<span class="fc" id="L34">	public ContainerRecommendation {</span>
+<span class="fc" id="L35">		Objects.requireNonNull(sourceProfile, &quot;sourceProfile&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L36">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L37">		Objects.requireNonNull(rule, &quot;rule&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L38">		Objects.requireNonNull(confidence, &quot;confidence&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L39">		Objects.requireNonNull(automationLevel, &quot;automationLevel&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L40">		assessments= List.copyOf(Objects.requireNonNull(assessments, &quot;assessments&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">		if (!rule.mayRecommend()) {</span>
+<span class="nc" id="L42">			throw new IllegalArgumentException(&quot;Duplicate rules cannot own recommendations&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L44">	}</span>
+
+	/** Returns whether source rewriting is currently permitted. */
+	public boolean isExecutable() {
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		return automationLevel != AutomationLevel.REPORT_ONLY;</span>
+	}
+
+	/** One preservation statement for a semantic property. */
+	public record ContractAssessment(
+			ContractProperty property,
+			Preservation preservation,
+			String explanation) {
+
+<span class="fc" id="L57">		public ContractAssessment {</span>
+<span class="fc" id="L58">			Objects.requireNonNull(property, &quot;property&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L59">			Objects.requireNonNull(preservation, &quot;preservation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L60">			explanation= Objects.requireNonNull(explanation, &quot;explanation&quot;).strip(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">			if (explanation.isEmpty()) {</span>
+<span class="nc" id="L62">				throw new IllegalArgumentException(&quot;explanation must not be empty&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L64">		}</span>
+	}
+
+<span class="fc" id="L67">	public enum Confidence {</span>
+<span class="fc" id="L68">		LOW,</span>
+<span class="fc" id="L69">		MEDIUM,</span>
+<span class="fc" id="L70">		HIGH</span>
+	}
+
+<span class="fc" id="L73">	public enum AutomationLevel {</span>
+<span class="fc" id="L74">		REPORT_ONLY,</span>
+<span class="fc" id="L75">		INTERACTIVE,</span>
+<span class="fc" id="L76">		AUTOMATIC</span>
+	}
+
+<span class="fc" id="L79">	public enum ContractProperty {</span>
+<span class="fc" id="L80">		ORDER,</span>
+<span class="fc" id="L81">		UNIQUENESS,</span>
+<span class="fc" id="L82">		MUTABILITY,</span>
+<span class="fc" id="L83">		NULLS,</span>
+<span class="fc" id="L84">		ALIASING,</span>
+<span class="fc" id="L85">		SIGNATURES,</span>
+<span class="fc" id="L86">		CONCURRENCY</span>
+	}
+
+<span class="fc" id="L89">	public enum Preservation {</span>
+<span class="fc" id="L90">		PRESERVED,</span>
+<span class="fc" id="L91">		REQUIRES_PROOF,</span>
+<span class="fc" id="L92">		CHANGED,</span>
+<span class="fc" id="L93">		UNKNOWN</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

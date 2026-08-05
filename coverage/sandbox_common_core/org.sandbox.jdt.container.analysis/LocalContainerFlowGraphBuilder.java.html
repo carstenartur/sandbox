@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LocalContainerFlowGraphBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">LocalContainerFlowGraphBuilder.java</span></div><h1>LocalContainerFlowGraphBuilder.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import static org.sandbox.jdt.container.analysis.ContainerAstFacts.variableBinding;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.container.analysis.ContainerFlowIndex.BindingInfo;
+import org.sandbox.jdt.container.analysis.ContainerFlowIndex.MethodInfo;
+import org.sandbox.jdt.container.api.ContainerFlowGraph;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+
+/**
+ * Discovers value-flow edges reachable from one container binding inside a compilation
+ * unit.
+ *
+ * &lt;p&gt;The builder follows local variable aliases to a fixed point. Signature edges are
+ * represented even when their declarations are outside the current compilation unit;
+ * the closure status and diagnostics then instruct the multi-file planner to expand
+ * scope or stop at an external boundary.&lt;/p&gt;
+ *
+ * &lt;p&gt;Index construction and graph accumulation are separate package-private
+ * components so this class remains focused on flow rules.&lt;/p&gt;
+ */
+<span class="fc" id="L62">public final class LocalContainerFlowGraphBuilder {</span>
+
+	/** Builds a local flow graph for the supplied candidate profile. */
+	public ContainerFlowGraph build(
+			CompilationUnit compilationUnit,
+			ContainerUsageProfile profile) {
+<span class="fc" id="L68">		Objects.requireNonNull(compilationUnit, &quot;compilationUnit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		Objects.requireNonNull(profile, &quot;profile&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L71">		ContainerFlowIndex index= ContainerFlowIndex.create(compilationUnit);</span>
+<span class="fc" id="L72">		ContainerFlowGraphAccumulator graph=</span>
+<span class="fc" id="L73">				new ContainerFlowGraphAccumulator(profile, index.compilationUnitHandle());</span>
+<span class="fc" id="L74">		String rootBindingKey= profile.identity().bindingKey();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (rootBindingKey.isBlank()) {</span>
+<span class="fc" id="L76">			graph.addUnresolvedRoot();</span>
+<span class="fc" id="L77">			return graph.toGraph();</span>
+		}
+
+<span class="fc" id="L80">		BindingInfo root= index.bindings().get(rootBindingKey);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">		if (root == null) {</span>
+<span class="nc" id="L82">			graph.addUnresolvedRoot();</span>
+<span class="nc" id="L83">			return graph.toGraph();</span>
+		}
+
+<span class="fc" id="L86">		Deque&lt;String&gt; pendingBindings= new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L87">		Set&lt;String&gt; visitedBindings= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L88">		pendingBindings.add(rootBindingKey);</span>
+<span class="fc" id="L89">		graph.ensureVariableNode(root);</span>
+
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		while (!pendingBindings.isEmpty()) {</span>
+<span class="fc" id="L92">			String bindingKey= pendingBindings.removeFirst();</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">			if (!visitedBindings.add(bindingKey)) {</span>
+<span class="nc" id="L94">				continue;</span>
+			}
+<span class="fc" id="L96">			BindingInfo source= index.bindings().get(bindingKey);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (source == null) {</span>
+<span class="nc" id="L98">				graph.unresolvedBinding(</span>
+						bindingKey,
+<span class="nc" id="L100">						profile.identity().sourceStart(),</span>
+<span class="nc" id="L101">						profile.identity().sourceLength());</span>
+<span class="nc" id="L102">				continue;</span>
+			}
+
+<span class="fc" id="L105">			FlowNode sourceNode= graph.ensureVariableNode(source);</span>
+<span class="fc" id="L106">			graph.classifySignatureExposure(source);</span>
+			for (SimpleName referenceName :
+<span class="fc bfc" id="L108" title="All 2 branches covered.">					index.references().getOrDefault(bindingKey, List.of())) {</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">				if (isDeclarationName(referenceName)) {</span>
+<span class="fc" id="L110">					continue;</span>
+				}
+<span class="fc" id="L112">				Expression reference= completeReferenceExpression(referenceName, bindingKey);</span>
+<span class="fc" id="L113">				classifyReference(reference, sourceNode, index, graph, pendingBindings);</span>
+<span class="fc" id="L114">			}</span>
+<span class="fc" id="L115">		}</span>
+
+<span class="fc" id="L117">		return graph.toGraph();</span>
+	}
+
+	private static void classifyReference(
+			Expression reference,
+			FlowNode sourceNode,
+			ContainerFlowIndex index,
+			ContainerFlowGraphAccumulator graph,
+			Deque&lt;String&gt; pendingBindings) {
+<span class="fc" id="L126">		ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (parent instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == reference) {</span>
+<span class="fc" id="L129">			connectVariable(</span>
+					sourceNode,
+<span class="fc" id="L131">					fragment.resolveBinding(),</span>
+					EdgeKind.INITIALIZER,
+					reference,
+					index,
+					graph,
+					pendingBindings);
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		} else if (parent instanceof Assignment assignment</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">				&amp;&amp; assignment.getRightHandSide() == reference) {</span>
+<span class="nc" id="L139">			connectExpression(</span>
+					sourceNode,
+<span class="nc" id="L141">					assignment.getLeftHandSide(),</span>
+					EdgeKind.ASSIGNMENT,
+					reference,
+					index,
+					graph,
+					pendingBindings);
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		} else if (parent instanceof MethodInvocation invocation</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().contains(reference)) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">			if (!isRepresentationInternalCopy(invocation, reference)) {</span>
+<span class="fc" id="L150">				connectArguments(</span>
+						sourceNode,
+<span class="fc" id="L152">						invocation.resolveMethodBinding(),</span>
+<span class="fc" id="L153">						invocation.arguments(),</span>
+						reference,
+						index,
+						graph,
+						pendingBindings);
+			}
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		} else if (parent instanceof ClassInstanceCreation creation</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">				&amp;&amp; creation.arguments().contains(reference)) {</span>
+<span class="nc" id="L161">			connectArguments(</span>
+					sourceNode,
+<span class="nc" id="L163">					creation.resolveConstructorBinding(),</span>
+<span class="nc" id="L164">					creation.arguments(),</span>
+					reference,
+					index,
+					graph,
+					pendingBindings);
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		} else if (parent instanceof ReturnStatement) {</span>
+<span class="fc" id="L170">			connectReturn(sourceNode, reference, index, graph);</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		} else if (!isInternalNonFlowUse(reference, parent)) {</span>
+<span class="nc" id="L172">			graph.unclassifiedFlow(reference);</span>
+		}
+<span class="fc" id="L174">	}</span>
+
+	private static void connectExpression(
+			FlowNode sourceNode,
+			Expression targetExpression,
+			EdgeKind edgeKind,
+			ASTNode evidence,
+			ContainerFlowIndex index,
+			ContainerFlowGraphAccumulator graph,
+			Deque&lt;String&gt; pendingBindings) {
+<span class="nc" id="L184">		Optional&lt;IVariableBinding&gt; target= variableBinding(targetExpression);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">		if (target.isPresent()) {</span>
+<span class="nc" id="L186">			connectVariable(</span>
+					sourceNode,
+<span class="nc" id="L188">					target.get(),</span>
+					edgeKind,
+					evidence,
+					index,
+					graph,
+					pendingBindings);
+		} else {
+<span class="nc" id="L195">			graph.unclassifiedFlow(evidence);</span>
+		}
+<span class="nc" id="L197">	}</span>
+
+	private static void connectVariable(
+			FlowNode sourceNode,
+			IVariableBinding targetBinding,
+			EdgeKind edgeKind,
+			ASTNode evidence,
+			ContainerFlowIndex index,
+			ContainerFlowGraphAccumulator graph,
+			Deque&lt;String&gt; pendingBindings) {
+<span class="pc bpc" id="L207" title="2 of 4 branches missed.">		if (targetBinding == null || targetBinding.getVariableDeclaration().getKey() == null) {</span>
+<span class="nc" id="L208">			graph.unresolvedBinding(</span>
+<span class="nc" id="L209">					&quot;&quot;, evidence.getStartPosition(), evidence.getLength()); //$NON-NLS-1$</span>
+<span class="nc" id="L210">			return;</span>
+		}
+<span class="fc" id="L212">		String targetKey= targetBinding.getVariableDeclaration().getKey();</span>
+<span class="fc" id="L213">		BindingInfo target= index.bindings().get(targetKey);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (target == null) {</span>
+<span class="nc" id="L215">			graph.unresolvedBinding(</span>
+<span class="nc" id="L216">					targetKey, evidence.getStartPosition(), evidence.getLength());</span>
+<span class="nc" id="L217">			return;</span>
+		}
+<span class="fc" id="L219">		FlowNode targetNode= graph.ensureVariableNode(target);</span>
+<span class="fc" id="L220">		graph.addEdge(sourceNode, targetNode, edgeKind, evidence);</span>
+<span class="fc" id="L221">		pendingBindings.addLast(targetKey);</span>
+<span class="fc" id="L222">	}</span>
+
+	private static void connectArguments(
+			FlowNode sourceNode,
+			IMethodBinding invokedMethod,
+			List&lt;?&gt; arguments,
+			Expression reference,
+			ContainerFlowIndex index,
+			ContainerFlowGraphAccumulator graph,
+			Deque&lt;String&gt; pendingBindings) {
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">		if (invokedMethod == null) {</span>
+<span class="nc" id="L233">			graph.unresolvedBinding(</span>
+<span class="nc" id="L234">					&quot;&quot;, reference.getStartPosition(), reference.getLength()); //$NON-NLS-1$</span>
+<span class="nc" id="L235">			return;</span>
+		}
+<span class="fc" id="L237">		IMethodBinding declaration= invokedMethod.getMethodDeclaration();</span>
+<span class="fc" id="L238">		String methodKey= declaration.getKey();</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		for (int argumentIndex= 0; argumentIndex &lt; arguments.size(); argumentIndex++) {</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">			if (arguments.get(argumentIndex) != reference) {</span>
+<span class="nc" id="L241">				continue;</span>
+			}
+<span class="fc" id="L243">			int parameterIndex= parameterIndex(declaration, argumentIndex);</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">			MethodInfo localMethod= methodKey == null ? null : index.methods().get(methodKey);</span>
+<span class="pc bpc" id="L245" title="1 of 4 branches missed.">			if (localMethod != null &amp;&amp; parameterIndex &lt; localMethod.parameterBindingKeys().size()) {</span>
+<span class="fc" id="L246">				String parameterKey= localMethod.parameterBindingKeys().get(parameterIndex);</span>
+<span class="fc" id="L247">				BindingInfo parameter= index.bindings().get(parameterKey);</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				if (parameter != null) {</span>
+<span class="fc" id="L249">					FlowNode parameterNode= graph.ensureVariableNode(parameter);</span>
+<span class="fc" id="L250">					graph.addEdge(</span>
+							sourceNode,
+							parameterNode,
+							EdgeKind.ARGUMENT_TO_PARAMETER,
+							reference);
+<span class="fc" id="L255">					graph.requireScopeExpansion(</span>
+							&quot;Method parameter signature participates in the container flow&quot;, //$NON-NLS-1$
+							reference);
+<span class="fc" id="L258">					pendingBindings.addLast(parameterKey);</span>
+<span class="fc" id="L259">					continue;</span>
+				}
+			}
+<span class="fc" id="L262">			graph.addParameterBoundary(</span>
+					sourceNode,
+					declaration,
+					parameterIndex,
+					reference);
+		}
+<span class="fc" id="L268">	}</span>
+
+	private static int parameterIndex(IMethodBinding method, int argumentIndex) {
+<span class="fc" id="L271">		int parameterCount= method.getParameterTypes().length;</span>
+<span class="pc bpc" id="L272" title="5 of 6 branches missed.">		if (method.isVarargs() &amp;&amp; parameterCount &gt; 0 &amp;&amp; argumentIndex &gt;= parameterCount - 1) {</span>
+<span class="nc" id="L273">			return parameterCount - 1;</span>
+		}
+<span class="fc" id="L275">		return argumentIndex;</span>
+	}
+
+	private static void connectReturn(
+			FlowNode sourceNode,
+			Expression reference,
+			ContainerFlowIndex index,
+			ContainerFlowGraphAccumulator graph) {
+<span class="fc" id="L283">		MethodDeclaration method= ancestor(reference, MethodDeclaration.class);</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">		IMethodBinding methodBinding= method == null ? null : method.resolveBinding();</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		if (methodBinding == null) {</span>
+<span class="nc" id="L286">			graph.unresolvedBinding(</span>
+<span class="nc" id="L287">					&quot;&quot;, reference.getStartPosition(), reference.getLength()); //$NON-NLS-1$</span>
+<span class="nc" id="L288">			return;</span>
+		}
+<span class="fc" id="L290">		String methodKey= methodBinding.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L291" title="2 of 4 branches missed.">		if (methodKey == null || methodKey.isBlank()) {</span>
+<span class="nc" id="L292">			graph.unresolvedBinding(</span>
+<span class="nc" id="L293">					&quot;&quot;, reference.getStartPosition(), reference.getLength()); //$NON-NLS-1$</span>
+<span class="nc" id="L294">			return;</span>
+		}
+<span class="fc" id="L296">		FlowNode returnNode= graph.ensureReturnNode(</span>
+				methodKey,
+<span class="fc" id="L298">				index.compilationUnitHandle(),</span>
+				reference);
+<span class="fc" id="L300">		graph.addEdge(sourceNode, returnNode, EdgeKind.RETURN_TO_METHOD, reference);</span>
+<span class="fc" id="L301">		graph.requireScopeExpansion(</span>
+				&quot;Method return type and all call sites participate in the container flow&quot;, //$NON-NLS-1$
+				reference);
+<span class="fc" id="L304">	}</span>
+
+	private static boolean isRepresentationInternalCopy(
+			MethodInvocation invocation,
+			Expression reference) {
+<span class="fc bfc" id="L309" title="All 2 branches covered.">		if (!&quot;copyOf&quot;.equals(invocation.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">				|| invocation.arguments().isEmpty()</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">				|| invocation.arguments().get(0) != reference) {</span>
+<span class="fc" id="L312">			return false;</span>
+		}
+<span class="fc" id="L314">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		return binding != null</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">				&amp;&amp; binding.getDeclaringClass() != null</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">				&amp;&amp; &quot;java.util.Arrays&quot;.equals( //$NON-NLS-1$</span>
+<span class="fc" id="L318">						binding.getDeclaringClass().getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean isInternalNonFlowUse(Expression reference, ASTNode parent) {
+<span class="pc bpc" id="L322" title="1 of 4 branches missed.">		return parent instanceof ArrayAccess access &amp;&amp; access.getArray() == reference</span>
+<span class="fc" id="L323">				|| parent instanceof QualifiedName qualified</span>
+<span class="pc bpc" id="L324" title="1 of 2 branches missed.">						&amp;&amp; qualified.getQualifier() == reference</span>
+<span class="pc bpc" id="L325" title="2 of 4 branches missed.">						&amp;&amp; &quot;length&quot;.equals(qualified.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="nc" id="L326">				|| parent instanceof FieldAccess fieldAccess</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">						&amp;&amp; fieldAccess.getExpression() == reference</span>
+<span class="pc bpc" id="L328" title="3 of 4 branches missed.">						&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="nc" id="L329">				|| parent instanceof EnhancedForStatement enhancedFor</span>
+<span class="pc bpc" id="L330" title="3 of 4 branches missed.">						&amp;&amp; enhancedFor.getExpression() == reference</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">				|| parent instanceof Assignment assignment</span>
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">						&amp;&amp; assignment.getLeftHandSide() == reference;</span>
+	}
+
+	private static boolean isDeclarationName(SimpleName name) {
+<span class="fc" id="L336">		ASTNode parent= name.getParent();</span>
+<span class="fc bfc" id="L337" title="All 4 branches covered.">		return parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getName() == name</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">				|| parent instanceof SingleVariableDeclaration declaration</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">						&amp;&amp; declaration.getName() == name;</span>
+	}
+
+	private static Expression completeReferenceExpression(SimpleName name, String bindingKey) {
+<span class="fc" id="L343">		Expression reference= name;</span>
+<span class="fc" id="L344">		ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">				&amp;&amp; qualified.getName() == reference</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(qualified.resolveBinding(), bindingKey)) {</span>
+<span class="nc" id="L348">			reference= qualified;</span>
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">		} else if (parent instanceof FieldAccess fieldAccess</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">				&amp;&amp; fieldAccess.getName() == reference</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(fieldAccess.resolveFieldBinding(), bindingKey)) {</span>
+<span class="nc" id="L352">			reference= fieldAccess;</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">		} else if (parent instanceof SuperFieldAccess superFieldAccess</span>
+<span class="nc bnc" id="L354" title="All 2 branches missed.">				&amp;&amp; superFieldAccess.getName() == reference</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">				&amp;&amp; hasBindingKey(superFieldAccess.resolveFieldBinding(), bindingKey)) {</span>
+<span class="nc" id="L356">			reference= superFieldAccess;</span>
+		}
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">		while (reference.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L359">			reference= parenthesized;</span>
+		}
+<span class="fc" id="L361">		return reference;</span>
+	}
+
+	private static boolean hasBindingKey(IBinding binding, String bindingKey) {
+<span class="nc" id="L365">		return binding instanceof IVariableBinding variable</span>
+<span class="nc bnc" id="L366" title="All 4 branches missed.">				&amp;&amp; bindingKey.equals(variable.getVariableDeclaration().getKey());</span>
+	}
+
+	private static &lt;N extends ASTNode&gt; N ancestor(ASTNode node, Class&lt;N&gt; type) {
+<span class="fc" id="L370">		ASTNode current= node.getParent();</span>
+<span class="pc bpc" id="L371" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !type.isInstance(current)) {</span>
+<span class="fc" id="L372">			current= current.getParent();</span>
+		}
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">		return type.isInstance(current) ? type.cast(current) : null;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

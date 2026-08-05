@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowGraph.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">ContainerFlowGraph.java</span></div><h1>ContainerFlowGraph.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Stable, AST-free value-flow graph used to plan project-wide container migrations.
+ *
+ * @param rootNodeId stable identifier of the candidate root
+ * @param nodes graph nodes in deterministic discovery order
+ * @param edges graph edges in deterministic discovery order
+ * @param closureStatus current closure classification
+ * @param diagnostics source-backed boundary and rejection explanations
+ */
+public record ContainerFlowGraph(
+		String rootNodeId,
+		List&lt;FlowNode&gt; nodes,
+		List&lt;FlowEdge&gt; edges,
+		ClosureStatus closureStatus,
+		List&lt;FlowDiagnostic&gt; diagnostics) {
+
+<span class="fc" id="L35">	public ContainerFlowGraph {</span>
+<span class="fc" id="L36">		rootNodeId= requiredText(rootNodeId, &quot;rootNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L37">		nodes= List.copyOf(Objects.requireNonNull(nodes, &quot;nodes&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L38">		edges= List.copyOf(Objects.requireNonNull(edges, &quot;edges&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L39">		Objects.requireNonNull(closureStatus, &quot;closureStatus&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L40">		diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L41">		validateGraph(rootNodeId, nodes, edges);</span>
+<span class="fc" id="L42">	}</span>
+
+	/** Returns one node by stable identifier. */
+	public Optional&lt;FlowNode&gt; node(String stableId) {
+<span class="fc" id="L46">		return nodes.stream().filter(candidate -&gt; candidate.stableId().equals(stableId)).findFirst();</span>
+	}
+
+	/** Returns outgoing edges in deterministic discovery order. */
+	public List&lt;FlowEdge&gt; outgoing(String stableId) {
+<span class="fc" id="L51">		return edges.stream().filter(edge -&gt; edge.sourceNodeId().equals(stableId)).toList();</span>
+	}
+
+	private static void validateGraph(
+			String rootNodeId,
+			List&lt;FlowNode&gt; nodes,
+			List&lt;FlowEdge&gt; edges) {
+<span class="fc" id="L58">		Set&lt;String&gt; identifiers= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		for (FlowNode node : nodes) {</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">			if (!identifiers.add(node.stableId())) {</span>
+<span class="nc" id="L61">				throw new IllegalArgumentException(&quot;Duplicate flow node id: &quot; + node.stableId()); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L63">		}</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		if (!identifiers.contains(rootNodeId)) {</span>
+<span class="nc" id="L65">			throw new IllegalArgumentException(&quot;Flow root is not present in node list&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (FlowEdge edge : edges) {</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			if (!identifiers.contains(edge.sourceNodeId())</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">					|| !identifiers.contains(edge.targetNodeId())) {</span>
+<span class="nc" id="L70">				throw new IllegalArgumentException(</span>
+						&quot;Flow edge references an unknown node: &quot; + edge); //$NON-NLS-1$
+			}
+<span class="fc" id="L73">		}</span>
+<span class="fc" id="L74">	}</span>
+
+	/**
+	 * One declaration, signature position or external boundary in the value flow.
+	 *
+	 * @param javaElementHandle stable Java-model handle for later workspace searches
+	 * @param signatureIndex zero-based parameter index, or {@code -1} when the node
+	 *                       is not a parameter position
+	 */
+	public record FlowNode(
+			String stableId,
+			NodeKind kind,
+			String bindingKey,
+			String ownerKey,
+			String compilationUnitHandle,
+			String javaElementHandle,
+			int signatureIndex,
+			boolean sourceResolved,
+			int sourceStart,
+			int sourceLength) {
+
+<span class="fc" id="L95">		public FlowNode {</span>
+<span class="fc" id="L96">			stableId= requiredText(stableId, &quot;stableId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">			bindingKey= optionalText(bindingKey);</span>
+<span class="fc" id="L99">			ownerKey= optionalText(ownerKey);</span>
+<span class="fc" id="L100">			compilationUnitHandle= optionalText(compilationUnitHandle);</span>
+<span class="fc" id="L101">			javaElementHandle= optionalText(javaElementHandle);</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">			if (signatureIndex &lt; -1) {</span>
+<span class="nc" id="L103">				throw new IllegalArgumentException(&quot;signatureIndex must be -1 or a parameter index&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L105">			validateRange(sourceStart, sourceLength);</span>
+<span class="fc" id="L106">		}</span>
+
+		/** Returns whether this node represents one concrete parameter position. */
+		public boolean isParameterPosition() {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">			return signatureIndex &gt;= 0;</span>
+		}
+
+		/** Returns whether the node can be resolved after the parser pass. */
+		public boolean hasJavaElementHandle() {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">			return !javaElementHandle.isEmpty();</span>
+		}
+	}
+
+	/** One directed transfer of the represented container value. */
+	public record FlowEdge(
+			String sourceNodeId,
+			String targetNodeId,
+			EdgeKind kind,
+			int sourceStart,
+			int sourceLength) {
+
+<span class="fc" id="L127">		public FlowEdge {</span>
+<span class="fc" id="L128">			sourceNodeId= requiredText(sourceNodeId, &quot;sourceNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L129">			targetNodeId= requiredText(targetNodeId, &quot;targetNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L130">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L131">			validateRange(sourceStart, sourceLength);</span>
+<span class="fc" id="L132">		}</span>
+	}
+
+	/** One explanation why the currently analyzed scope is or is not closed. */
+	public record FlowDiagnostic(
+			DiagnosticKind kind,
+			String message,
+			int sourceStart,
+			int sourceLength) {
+
+<span class="fc" id="L142">		public FlowDiagnostic {</span>
+<span class="fc" id="L143">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L144">			message= requiredText(message, &quot;message&quot;);</span>
+<span class="fc" id="L145">			validateRange(sourceStart, sourceLength);</span>
+<span class="fc" id="L146">		}</span>
+	}
+
+<span class="fc" id="L149">	public enum NodeKind {</span>
+<span class="fc" id="L150">		LOCAL_VARIABLE,</span>
+<span class="fc" id="L151">		FIELD,</span>
+<span class="fc" id="L152">		PARAMETER,</span>
+<span class="fc" id="L153">		RETURN_POSITION,</span>
+<span class="fc" id="L154">		EXTERNAL_PARAMETER,</span>
+<span class="fc" id="L155">		UNKNOWN_BOUNDARY</span>
+	}
+
+<span class="fc" id="L158">	public enum EdgeKind {</span>
+<span class="fc" id="L159">		ASSIGNMENT,</span>
+<span class="fc" id="L160">		INITIALIZER,</span>
+<span class="fc" id="L161">		ARGUMENT_TO_PARAMETER,</span>
+<span class="fc" id="L162">		RETURN_TO_METHOD</span>
+	}
+
+<span class="fc" id="L165">	public enum ClosureStatus {</span>
+<span class="fc" id="L166">		LOCAL_CLOSED,</span>
+<span class="fc" id="L167">		REQUIRES_SCOPE_EXPANSION,</span>
+<span class="fc" id="L168">		EXTERNAL_BOUNDARY,</span>
+<span class="fc" id="L169">		REJECTED</span>
+	}
+
+<span class="fc" id="L172">	public enum DiagnosticKind {</span>
+<span class="fc" id="L173">		SCOPE_EXPANSION_REQUIRED,</span>
+<span class="fc" id="L174">		EXTERNAL_OR_BINARY_TARGET,</span>
+<span class="fc" id="L175">		UNRESOLVED_BINDING,</span>
+<span class="fc" id="L176">		UNCLASSIFIED_FLOW</span>
+	}
+
+	private static String requiredText(String value, String fieldName) {
+<span class="fc" id="L180">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L182">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L184">		return text;</span>
+	}
+
+	private static String optionalText(String value) {
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value.strip(); //$NON-NLS-1$</span>
+	}
+
+	private static void validateRange(int sourceStart, int sourceLength) {
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">		if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
+<span class="nc" id="L193">			throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L195">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

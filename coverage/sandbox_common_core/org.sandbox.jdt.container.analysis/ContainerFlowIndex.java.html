@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ContainerFlowIndex.java</span></div><h1>ContainerFlowIndex.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.sandbox.jdt.internal.common.AstProcessing;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+
+/** Deterministic binding and reference index for one compilation unit. */
+final class ContainerFlowIndex {
+
+	private final Map&lt;String, BindingInfo&gt; bindings;
+	private final Map&lt;String, List&lt;SimpleName&gt;&gt; references;
+	private final Map&lt;String, MethodInfo&gt; methods;
+	private final String compilationUnitHandle;
+
+	private ContainerFlowIndex(
+			Map&lt;String, BindingInfo&gt; bindings,
+			Map&lt;String, List&lt;SimpleName&gt;&gt; references,
+			Map&lt;String, MethodInfo&gt; methods,
+<span class="fc" id="L43">			String compilationUnitHandle) {</span>
+<span class="fc" id="L44">		this.bindings= immutableLinkedMap(bindings);</span>
+<span class="fc" id="L45">		this.references= immutableReferenceMap(references);</span>
+<span class="fc" id="L46">		this.methods= immutableLinkedMap(methods);</span>
+<span class="fc" id="L47">		this.compilationUnitHandle= compilationUnitHandle;</span>
+<span class="fc" id="L48">	}</span>
+
+	static ContainerFlowIndex create(CompilationUnit compilationUnit) {
+<span class="fc" id="L51">		Map&lt;String, BindingInfo&gt; bindings= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L52">		Map&lt;String, List&lt;SimpleName&gt;&gt; references= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L53">		Map&lt;String, MethodInfo&gt; methods= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L54">		Map&lt;String, Integer&gt; parameterIndices= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L55">		IJavaElement javaElement= compilationUnit.getJavaElement();</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">		String unitHandle= javaElement == null ? &quot;&quot; : javaElement.getHandleIdentifier(); //$NON-NLS-1$</span>
+
+<span class="fc" id="L58">		AstProcessing.independent(ReferenceHolder.&lt;String, Object&gt;create())</span>
+<span class="fc" id="L59">				.on(MethodDeclaration.class, (method, holder) -&gt; {</span>
+<span class="fc" id="L60">					indexMethod(method, methods, parameterIndices);</span>
+<span class="fc" id="L61">					return true;</span>
+				})
+<span class="fc" id="L63">				.on(SimpleName.class, (name, holder) -&gt; {</span>
+<span class="fc" id="L64">					indexVariable(name, bindings, references, parameterIndices, unitHandle);</span>
+<span class="fc" id="L65">					return true;</span>
+				})
+<span class="fc" id="L67">				.build(compilationUnit);</span>
+
+<span class="fc" id="L69">		return new ContainerFlowIndex(bindings, references, methods, unitHandle);</span>
+	}
+
+	Map&lt;String, BindingInfo&gt; bindings() {
+<span class="fc" id="L73">		return bindings;</span>
+	}
+
+	Map&lt;String, List&lt;SimpleName&gt;&gt; references() {
+<span class="fc" id="L77">		return references;</span>
+	}
+
+	Map&lt;String, MethodInfo&gt; methods() {
+<span class="fc" id="L81">		return methods;</span>
+	}
+
+	String compilationUnitHandle() {
+<span class="fc" id="L85">		return compilationUnitHandle;</span>
+	}
+
+	private static void indexMethod(
+			MethodDeclaration method,
+			Map&lt;String, MethodInfo&gt; methods,
+			Map&lt;String, Integer&gt; parameterIndices) {
+<span class="fc" id="L92">		IMethodBinding binding= method.resolveBinding();</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L94">			return;</span>
+		}
+<span class="fc" id="L96">		List&lt;String&gt; parameterBindingKeys= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (int index= 0; index &lt; method.parameters().size(); index++) {</span>
+<span class="fc" id="L98">			SingleVariableDeclaration parameter=</span>
+<span class="fc" id="L99">					(SingleVariableDeclaration) method.parameters().get(index);</span>
+<span class="fc" id="L100">			IVariableBinding parameterBinding= parameter.resolveBinding();</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">			String parameterKey= parameterBinding == null</span>
+<span class="pc" id="L102">					? &quot;&quot; : parameterBinding.getVariableDeclaration().getKey(); //$NON-NLS-1$</span>
+<span class="fc" id="L103">			parameterBindingKeys.add(parameterKey);</span>
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">			if (parameterKey != null &amp;&amp; !parameterKey.isBlank()) {</span>
+<span class="fc" id="L105">				parameterIndices.put(parameterKey, Integer.valueOf(index));</span>
+			}
+		}
+<span class="fc" id="L108">		methods.put(</span>
+<span class="fc" id="L109">				binding.getMethodDeclaration().getKey(),</span>
+				new MethodInfo(parameterBindingKeys));
+<span class="fc" id="L111">	}</span>
+
+	private static void indexVariable(
+			SimpleName name,
+			Map&lt;String, BindingInfo&gt; bindings,
+			Map&lt;String, List&lt;SimpleName&gt;&gt; references,
+			Map&lt;String, Integer&gt; parameterIndices,
+			String unitHandle) {
+<span class="fc" id="L119">		IBinding resolved= name.resolveBinding();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">		if (!(resolved instanceof IVariableBinding variable)) {</span>
+<span class="fc" id="L121">			return;</span>
+		}
+<span class="fc" id="L123">		IVariableBinding declaration= variable.getVariableDeclaration();</span>
+<span class="fc" id="L124">		String bindingKey= declaration.getKey();</span>
+<span class="pc bpc" id="L125" title="2 of 4 branches missed.">		if (bindingKey == null || bindingKey.isBlank()) {</span>
+<span class="nc" id="L126">			return;</span>
+		}
+
+<span class="fc" id="L129">		int signatureIndex= parameterIndices.getOrDefault(bindingKey, Integer.valueOf(-1)).intValue();</span>
+<span class="fc" id="L130">		BindingInfo info= bindings.computeIfAbsent(</span>
+				bindingKey,
+<span class="fc" id="L132">				ignored -&gt; new BindingInfo(declaration, unitHandle, signatureIndex));</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		if (isDeclarationName(name)) {</span>
+<span class="fc" id="L134">			info.recordDeclaration(name);</span>
+		}
+<span class="fc" id="L136">		references.computeIfAbsent(bindingKey, ignored -&gt; new ArrayList&lt;&gt;()).add(name);</span>
+<span class="fc" id="L137">	}</span>
+
+	private static boolean isDeclarationName(SimpleName name) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		return name.getParent() instanceof VariableDeclarationFragment fragment</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">				&amp;&amp; fragment.getName() == name</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">				|| name.getParent() instanceof SingleVariableDeclaration declaration</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">						&amp;&amp; declaration.getName() == name;</span>
+	}
+
+	private static &lt;K, V&gt; Map&lt;K, V&gt; immutableLinkedMap(Map&lt;K, V&gt; source) {
+<span class="fc" id="L147">		return Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(source));</span>
+	}
+
+	private static Map&lt;String, List&lt;SimpleName&gt;&gt; immutableReferenceMap(
+			Map&lt;String, List&lt;SimpleName&gt;&gt; source) {
+<span class="fc" id="L152">		Map&lt;String, List&lt;SimpleName&gt;&gt; copy= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L153">		source.forEach((key, value) -&gt; copy.put(key, List.copyOf(value)));</span>
+<span class="fc" id="L154">		return Collections.unmodifiableMap(copy);</span>
+	}
+
+	/** Binding metadata used while the parser result is alive. */
+	static final class BindingInfo {
+
+		private final IVariableBinding binding;
+		private final String compilationUnitHandle;
+		private final int signatureIndex;
+		private SimpleName declarationName;
+
+		BindingInfo(
+				IVariableBinding binding,
+				String compilationUnitHandle,
+<span class="fc" id="L168">				int signatureIndex) {</span>
+<span class="fc" id="L169">			this.binding= binding.getVariableDeclaration();</span>
+<span class="fc" id="L170">			this.compilationUnitHandle= compilationUnitHandle;</span>
+<span class="fc" id="L171">			this.signatureIndex= signatureIndex;</span>
+<span class="fc" id="L172">		}</span>
+
+		void recordDeclaration(SimpleName name) {
+<span class="fc" id="L175">			declarationName= name;</span>
+<span class="fc" id="L176">		}</span>
+
+		IVariableBinding binding() {
+<span class="fc" id="L179">			return binding;</span>
+		}
+
+		SimpleName anchor() {
+<span class="fc" id="L183">			return declarationName;</span>
+		}
+
+		String compilationUnitHandle() {
+<span class="fc" id="L187">			return compilationUnitHandle;</span>
+		}
+
+		int signatureIndex() {
+<span class="fc" id="L191">			return signatureIndex;</span>
+		}
+	}
+
+	/** Parameter binding keys for one local method declaration. */
+	static record MethodInfo(List&lt;String&gt; parameterBindingKeys) {
+
+<span class="fc" id="L198">		MethodInfo {</span>
+<span class="fc" id="L199">			parameterBindingKeys= List.copyOf(parameterBindingKeys);</span>
+<span class="fc" id="L200">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

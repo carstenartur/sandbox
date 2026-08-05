@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerUsageProfile.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">ContainerUsageProfile.java</span></div><h1>ContainerUsageProfile.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Immutable semantic description of how one connected container value is used.
+ *
+ * &lt;p&gt;A profile is an analysis result, not yet a rewrite decision. In particular,
+ * {@link AnalysisCompleteness#LOCAL_SEED} means that a useful local motif was found
+ * but project-wide data flow, escape and compatibility checks are still outstanding.&lt;/p&gt;
+ *
+ * @param identity stable identity and source anchor of the candidate
+ * @param currentShape current structural representation
+ * @param elementDomain known element-domain category
+ * @param access observed access operations
+ * @param orderRequirement ordering required by observed code
+ * @param uniquenessRequirement uniqueness required by observed code
+ * @param mutationLifecycle observed mutation lifecycle
+ * @param nullContract observed null behaviour
+ * @param aliasingContract observed aliasing behaviour
+ * @param escapeLevel widest known escape boundary
+ * @param concurrency observed concurrency and publication behaviour
+ * @param completeness completeness of the semantic proof
+ * @param evidence source-backed observations supporting the profile
+ */
+public record ContainerUsageProfile(
+		ContainerIdentity identity,
+		ContainerShape currentShape,
+		ElementDomain elementDomain,
+		AccessProfile access,
+		OrderRequirement orderRequirement,
+		UniquenessRequirement uniquenessRequirement,
+		MutationLifecycle mutationLifecycle,
+		NullContract nullContract,
+		AliasingContract aliasingContract,
+		EscapeLevel escapeLevel,
+		ConcurrencyProfile concurrency,
+		AnalysisCompleteness completeness,
+		List&lt;UsageEvidence&gt; evidence) {
+
+<span class="fc" id="L52">	public ContainerUsageProfile {</span>
+<span class="fc" id="L53">		Objects.requireNonNull(identity, &quot;identity&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		Objects.requireNonNull(currentShape, &quot;currentShape&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		Objects.requireNonNull(elementDomain, &quot;elementDomain&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		Objects.requireNonNull(access, &quot;access&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L57">		Objects.requireNonNull(orderRequirement, &quot;orderRequirement&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L58">		Objects.requireNonNull(uniquenessRequirement, &quot;uniquenessRequirement&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L59">		Objects.requireNonNull(mutationLifecycle, &quot;mutationLifecycle&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L60">		Objects.requireNonNull(nullContract, &quot;nullContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		Objects.requireNonNull(aliasingContract, &quot;aliasingContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		Objects.requireNonNull(escapeLevel, &quot;escapeLevel&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		Objects.requireNonNull(concurrency, &quot;concurrency&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		Objects.requireNonNull(completeness, &quot;completeness&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		evidence= List.copyOf(Objects.requireNonNull(evidence, &quot;evidence&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L66">	}</span>
+
+	/** Returns whether a later planner may treat this profile as a complete flow proof. */
+	public boolean isFlowComplete() {
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		return completeness == AnalysisCompleteness.FLOW_COMPLETE;</span>
+	}
+
+	/** Stable identity of the represented value, independent of retained AST nodes. */
+	public record ContainerIdentity(String bindingKey, String displayName, int sourceStart, int sourceLength) {
+
+<span class="fc" id="L76">		public ContainerIdentity {</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			bindingKey= bindingKey == null ? &quot;&quot; : bindingKey; //$NON-NLS-1$</span>
+<span class="fc" id="L78">			displayName= Objects.requireNonNull(displayName, &quot;displayName&quot;).strip(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">			if (displayName.isEmpty()) {</span>
+<span class="nc" id="L80">				throw new IllegalArgumentException(&quot;displayName must not be empty&quot;); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			if (sourceStart &lt; 0) {</span>
+<span class="nc" id="L83">				throw new IllegalArgumentException(&quot;sourceStart must not be negative&quot;); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">			if (sourceLength &lt; 0) {</span>
+<span class="nc" id="L86">				throw new IllegalArgumentException(&quot;sourceLength must not be negative&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L88">		}</span>
+
+		/** Returns whether binding resolution supplied a stable key. */
+		public boolean hasResolvedBinding() {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">			return !bindingKey.isBlank();</span>
+		}
+
+		/** Returns a deterministic identifier suitable for reports and maps. */
+		public String stableId() {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			return hasResolvedBinding() ? bindingKey : displayName + '@' + sourceStart;</span>
+		}
+	}
+
+	/** Operations observed on the represented value. */
+<span class="fc" id="L102">	public record AccessProfile(</span>
+			boolean indexedRead,
+			boolean indexedWrite,
+			boolean append,
+			boolean positionalInsert,
+			boolean positionalRemove,
+			boolean membershipQuery,
+			boolean keyLookup) {
+
+		/** Initial access facts for a syntactically recognised append-only array seed. */
+		public static AccessProfile appendOnlyArraySeed() {
+<span class="fc" id="L113">			return new AccessProfile(false, true, true, false, false, false, false);</span>
+		}
+
+		/** Returns whether position is already part of the observed contract. */
+		public boolean hasPositionalSemantics() {
+<span class="nc bnc" id="L118" title="All 6 branches missed.">			return indexedRead || positionalInsert || positionalRemove;</span>
+		}
+	}
+
+	/** Structured concurrency facts; unknown values are preferable to guessed guarantees. */
+	public record ConcurrencyProfile(
+			ThreadExposure exposure,
+			SynchronizationKind synchronization,
+			IterationSemantics iteration,
+			AtomicityRequirement atomicity,
+			WorkloadShape workload) {
+
+<span class="fc" id="L130">		public ConcurrencyProfile {</span>
+<span class="fc" id="L131">			Objects.requireNonNull(exposure, &quot;exposure&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L132">			Objects.requireNonNull(synchronization, &quot;synchronization&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L133">			Objects.requireNonNull(iteration, &quot;iteration&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L134">			Objects.requireNonNull(atomicity, &quot;atomicity&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L135">			Objects.requireNonNull(workload, &quot;workload&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L136">		}</span>
+
+		/** Returns a profile that makes no concurrency claim. */
+		public static ConcurrencyProfile unknown() {
+<span class="fc" id="L140">			return new ConcurrencyProfile(</span>
+					ThreadExposure.UNKNOWN,
+					SynchronizationKind.UNKNOWN,
+					IterationSemantics.UNKNOWN,
+					AtomicityRequirement.UNKNOWN,
+					WorkloadShape.UNKNOWN);
+		}
+	}
+
+<span class="fc" id="L149">	public enum ElementDomain {</span>
+<span class="fc" id="L150">		REFERENCE,</span>
+<span class="fc" id="L151">		PRIMITIVE,</span>
+<span class="fc" id="L152">		ENUM,</span>
+<span class="fc" id="L153">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L156">	public enum OrderRequirement {</span>
+<span class="fc" id="L157">		NONE,</span>
+<span class="fc" id="L158">		ENCOUNTER,</span>
+<span class="fc" id="L159">		SORTED,</span>
+<span class="fc" id="L160">		POSITIONAL,</span>
+<span class="fc" id="L161">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L164">	public enum UniquenessRequirement {</span>
+<span class="fc" id="L165">		REQUIRED,</span>
+<span class="fc" id="L166">		DUPLICATES_ALLOWED,</span>
+<span class="fc" id="L167">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L170">	public enum MutationLifecycle {</span>
+<span class="fc" id="L171">		FIXED,</span>
+<span class="fc" id="L172">		BUILD_THEN_FREEZE,</span>
+<span class="fc" id="L173">		CONTINUOUSLY_MUTABLE,</span>
+<span class="fc" id="L174">		SNAPSHOT_PUBLISHED,</span>
+<span class="fc" id="L175">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L178">	public enum NullContract {</span>
+<span class="fc" id="L179">		ALLOWED,</span>
+<span class="fc" id="L180">		REJECTED,</span>
+<span class="fc" id="L181">		NOT_APPLICABLE,</span>
+<span class="fc" id="L182">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L185">	public enum AliasingContract {</span>
+<span class="fc" id="L186">		SHARED_MUTATION,</span>
+<span class="fc" id="L187">		DEFENSIVE_COPY,</span>
+<span class="fc" id="L188">		IDENTITY_OBSERVED,</span>
+<span class="fc" id="L189">		NO_OBSERVED_ALIAS,</span>
+<span class="fc" id="L190">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L193">	public enum EscapeLevel {</span>
+<span class="fc" id="L194">		LOCAL,</span>
+<span class="fc" id="L195">		FIELD,</span>
+<span class="fc" id="L196">		METHOD_BOUNDARY,</span>
+<span class="fc" id="L197">		OVERRIDE_FAMILY,</span>
+<span class="fc" id="L198">		EXTERNAL_OR_BINARY,</span>
+<span class="fc" id="L199">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L202">	public enum ThreadExposure {</span>
+<span class="fc" id="L203">		THREAD_CONFINED,</span>
+<span class="fc" id="L204">		PUBLISHED,</span>
+<span class="fc" id="L205">		CALLBACK_SHARED,</span>
+<span class="fc" id="L206">		WORKER_SHARED,</span>
+<span class="fc" id="L207">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L210">	public enum SynchronizationKind {</span>
+<span class="fc" id="L211">		NONE,</span>
+<span class="fc" id="L212">		INTRINSIC_LOCK,</span>
+<span class="fc" id="L213">		EXPLICIT_LOCK,</span>
+<span class="fc" id="L214">		SYNCHRONIZED_WRAPPER,</span>
+<span class="fc" id="L215">		VOLATILE_SNAPSHOT,</span>
+<span class="fc" id="L216">		ATOMIC_REFERENCE,</span>
+<span class="fc" id="L217">		CONCURRENT_COLLECTION,</span>
+<span class="fc" id="L218">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L221">	public enum IterationSemantics {</span>
+<span class="fc" id="L222">		LIVE,</span>
+<span class="fc" id="L223">		EXTERNALLY_LOCKED,</span>
+<span class="fc" id="L224">		WEAKLY_CONSISTENT,</span>
+<span class="fc" id="L225">		IMMUTABLE_SNAPSHOT,</span>
+<span class="fc" id="L226">		COPY_ON_WRITE,</span>
+<span class="fc" id="L227">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L230">	public enum AtomicityRequirement {</span>
+<span class="fc" id="L231">		INDIVIDUAL_OPERATIONS,</span>
+<span class="fc" id="L232">		CHECK_THEN_ACT,</span>
+<span class="fc" id="L233">		COMPOUND_UPDATE,</span>
+<span class="fc" id="L234">		DRAIN,</span>
+<span class="fc" id="L235">		REPLACE_ALL,</span>
+<span class="fc" id="L236">		TRANSACTION,</span>
+<span class="fc" id="L237">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L240">	public enum WorkloadShape {</span>
+<span class="fc" id="L241">		READ_MOSTLY,</span>
+<span class="fc" id="L242">		WRITE_MOSTLY,</span>
+<span class="fc" id="L243">		BALANCED,</span>
+<span class="fc" id="L244">		REGISTRATION_HEAVY,</span>
+<span class="fc" id="L245">		NOTIFICATION_HEAVY,</span>
+<span class="fc" id="L246">		PRODUCER_CONSUMER,</span>
+<span class="fc" id="L247">		UNKNOWN</span>
+	}
+
+<span class="fc" id="L250">	public enum AnalysisCompleteness {</span>
+<span class="fc" id="L251">		LOCAL_SEED,</span>
+<span class="fc" id="L252">		LOCAL_USAGE_COMPLETE,</span>
+<span class="fc" id="L253">		FLOW_COMPLETE,</span>
+<span class="fc" id="L254">		REJECTED</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AstProcessing.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.common</a> &gt; <span class="el_source">AstProcessing.java</span></div><h1>AstProcessing.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.common;
+
+import java.util.Objects;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+
+/**
+ * Entry point for AST processing whose execution model is explicit at the call site.
+ *
+ * &lt;p&gt;{@link #scoped(ReferenceHolder)} creates a semantic pipeline in which every
+ * stage searches only the scope selected by the preceding stage. In contrast,
+ * {@link #independent(ReferenceHolder)} registers visitors that each inspect the
+ * complete root passed to {@code build(...)}.&lt;/p&gt;
+ */
+public final class AstProcessing {
+
+	private AstProcessing() {
+		// Static factory.
+	}
+
+	/** Creates an ordered, scoped semantic processing pipeline. */
+	public static &lt;V, T&gt; ScopedAstProcessorBuilder&lt;V, T&gt; scoped(ReferenceHolder&lt;V, T&gt; holder) {
+<span class="fc" id="L33">		return new ScopedAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
+	}
+
+	/** Creates a group of visitors that each inspect the complete configured root. */
+	public static &lt;V, T&gt; IndependentAstProcessorBuilder&lt;V, T&gt; independent(ReferenceHolder&lt;V, T&gt; holder) {
+<span class="fc" id="L38">		return new IndependentAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
+	}
+
+	static VisitorEnum visitorType(Class&lt;? extends ASTNode&gt; nodeType) {
+<span class="fc" id="L42">		Objects.requireNonNull(nodeType, &quot;nodeType&quot;); //$NON-NLS-1$</span>
+		try {
+<span class="fc" id="L44">			return VisitorEnum.valueOf(nodeType.getSimpleName());</span>
+<span class="nc" id="L45">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L46">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L47">					&quot;No HelperVisitor dispatch is available for &quot; + nodeType.getName(), exception); //$NON-NLS-1$</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowSearchPlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">ContainerFlowSearchPlan.java</span></div><h1>ContainerFlowSearchPlan.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Stable search requests derived from a container flow graph.
+ *
+ * &lt;p&gt;This model does not execute JDT searches. The Eclipse-dependent multi-file layer
+ * resolves these seeds to source compilation units and repeats planning to a fixed
+ * point.&lt;/p&gt;
+ *
+ * @param seeds deterministic, duplicate-free search requests
+ */
+public record ContainerFlowSearchPlan(List&lt;SearchSeed&gt; seeds) {
+
+<span class="fc" id="L27">	public ContainerFlowSearchPlan {</span>
+<span class="fc" id="L28">		seeds= List.copyOf(Objects.requireNonNull(seeds, &quot;seeds&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L29">	}</span>
+
+	/** Returns whether no further source-scope search is requested. */
+	public boolean isEmpty() {
+<span class="fc" id="L33">		return seeds.isEmpty();</span>
+	}
+
+	/** One JDT-search intention independent of Eclipse UI classes. */
+	public record SearchSeed(
+			String sourceNodeId,
+			SearchKind kind,
+			String bindingKey,
+			String ownerKey,
+			String javaElementHandle,
+			int signatureIndex,
+			String reason) {
+
+<span class="fc" id="L46">		public SearchSeed {</span>
+<span class="fc" id="L47">			sourceNodeId= requiredText(sourceNodeId, &quot;sourceNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L48">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L49">			bindingKey= optionalText(bindingKey);</span>
+<span class="fc" id="L50">			ownerKey= optionalText(ownerKey);</span>
+<span class="fc" id="L51">			javaElementHandle= optionalText(javaElementHandle);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">			if (signatureIndex &lt; -1) {</span>
+<span class="nc" id="L53">				throw new IllegalArgumentException(&quot;signatureIndex must be -1 or a parameter index&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L55">			reason= requiredText(reason, &quot;reason&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L56" title="3 of 4 branches missed.">			if (kind == SearchKind.FIELD_REFERENCES &amp;&amp; bindingKey.isEmpty()) {</span>
+<span class="nc" id="L57">				throw new IllegalArgumentException(&quot;Field reference search requires a binding key&quot;); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L59" title="2 of 4 branches missed.">			if (kind != SearchKind.FIELD_REFERENCES &amp;&amp; ownerKey.isEmpty()) {</span>
+<span class="nc" id="L60">				throw new IllegalArgumentException(&quot;Method search requires an owner key&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L62">		}</span>
+
+		/** Stable key for deterministic de-duplication. */
+		public String stableKey() {
+<span class="fc" id="L66">			return kind + &quot;|&quot; + bindingKey + '|' + ownerKey + '|'</span>
+					+ javaElementHandle + '|' + signatureIndex; //$NON-NLS-1$
+		}
+
+		/** Returns whether the workspace layer can resolve the exact Java element. */
+		public boolean hasJavaElementHandle() {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">			return !javaElementHandle.isEmpty();</span>
+		}
+	}
+
+<span class="fc" id="L76">	public enum SearchKind {</span>
+<span class="fc" id="L77">		FIELD_REFERENCES,</span>
+<span class="fc" id="L78">		METHOD_DECLARATION,</span>
+<span class="fc" id="L79">		METHOD_CALLERS,</span>
+<span class="fc" id="L80">		METHOD_OVERRIDE_FAMILY</span>
+	}
+
+	private static String requiredText(String value, String fieldName) {
+<span class="fc" id="L84">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L86">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L88">		return text;</span>
+	}
+
+	private static String optionalText(String value) {
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value.strip(); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
