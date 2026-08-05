@@ -40,7 +40,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  */
 public final class HintFileSerializer {
 	
-	private static final String LINE_SEP = "\n"; //$NON-NLS-1$
+	private static final char LINE_SEP = '\n';
 	
 	/**
 	 * Cached reverse map from AST node type constant to field name.
@@ -80,6 +80,11 @@ public final class HintFileSerializer {
 		}
 		if (hintFile.getMinJavaVersion() > 0) {
 			sb.append("<!minJavaVersion: ").append(hintFile.getMinJavaVersion()).append('>').append(LINE_SEP); //$NON-NLS-1$
+		}
+		if (hintFile.getBindingPolicy() != null) {
+			sb.append("<!binding-policy: ") //$NON-NLS-1$
+					.append(hintFile.getBindingPolicy().name().toLowerCase(java.util.Locale.ROOT))
+					.append('>').append(LINE_SEP);
 		}
 		if (!hintFile.getTags().isEmpty()) {
 			StringJoiner joiner = new StringJoiner(", "); //$NON-NLS-1$

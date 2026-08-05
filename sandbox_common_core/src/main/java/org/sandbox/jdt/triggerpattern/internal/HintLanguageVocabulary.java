@@ -41,6 +41,8 @@ public final class HintLanguageVocabulary {
 			new Directive("caseInsensitive", "<!caseInsensitive>", "Case-insensitive literal matching"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("suppressWarnings", "<!suppressWarnings: key>", "Recognized suppression keys"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("treeKind", "<!treeKind: METHOD_DECLARATION>", "AST kinds considered by the matcher"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			new Directive("binding-policy", "<!binding-policy: optional|required>", //$NON-NLS-1$ //$NON-NLS-2$
+					"Compatibility or fail-closed handling of unresolved bindings in ordinary hints"), //$NON-NLS-1$
 			new Directive("requires-plan", "<!requires-plan: contract-id>",
 					"Required semantic-plan contract; also implies fail-closed semantic bindings"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			new Directive("foreach", "<!foreach NAME: source -> target>", "Generate rules from key/value pairs"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -71,6 +73,7 @@ public final class HintLanguageVocabulary {
 			Map.entry("hasNoSideEffect", "Expression is side-effect free"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("sourceVersionBetween", "Source version is within the supplied range"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("genericTypeIs", "Generic type argument at an index matches a type"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("subtypeOf", "Bound node has the supplied type in its resolved supertype hierarchy"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("otherwise", "Always true catch-all alternative")); //$NON-NLS-1$ //$NON-NLS-2$
 
 	private static final Set<String> BUILT_IN_GUARD_NAMES= loadBuiltInGuardNames();

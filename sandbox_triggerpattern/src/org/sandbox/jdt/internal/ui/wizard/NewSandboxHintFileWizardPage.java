@@ -38,8 +38,8 @@ import org.eclipse.ui.dialogs.ContainerSelectionDialog;
  * First wizard page for the New Sandbox Hint File wizard.
  *
  * <p>Lets the user choose the target container (project/folder), file name,
- * metadata (ID, description, severity, min Java version, tags), and a
- * template.</p>
+ * metadata (ID, description, severity, min Java version, tags and binding
+ * policy), and a template.</p>
  *
  * @since 1.5.0
  */
@@ -53,6 +53,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 	private Text descriptionText;
 	private Combo severityCombo;
 	private Combo minJavaCombo;
+	private Combo bindingPolicyCombo;
 	private Text tagsText;
 	private SandboxHintTemplates selectedTemplate = SandboxHintTemplates.SIMPLE;
 
@@ -132,6 +133,12 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		minJavaCombo.select(0);
 		minJavaCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
+		new Label(metadataGroup, SWT.NONE).setText("&Binding policy:"); //$NON-NLS-1$
+		bindingPolicyCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+		bindingPolicyCombo.setItems(new String[] { "optional", "required" }); //$NON-NLS-1$ //$NON-NLS-2$
+		bindingPolicyCombo.select(0);
+		bindingPolicyCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+
 		new Label(metadataGroup, SWT.NONE).setText("&Tags:"); //$NON-NLS-1$
 		tagsText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);
 		tagsText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
@@ -156,6 +163,11 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 				public void widgetSelected(SelectionEvent e) {
 					if (((Button) e.widget).getSelection()) {
 						selectedTemplate = (SandboxHintTemplates) ((Button) e.widget).getData();
+						boolean planAware = selectedTemplate == SandboxHintTemplates.PLAN_AWARE;
+						if (planAware) {
+							bindingPolicyCombo.select(1);
+						}
+						bindingPolicyCombo.setEnabled(!planAware);
 					}
 				}
 			});
@@ -277,6 +289,11 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		} catch (NumberFormatException e) {
 			return 0;
 		}
+	}
+
+	/** Returns the selected binding policy. */
+	public String getBindingPolicyValue() {
+		return bindingPolicyCombo.getText();
 	}
 
 	/** Returns the raw tags text (comma-separated). */
