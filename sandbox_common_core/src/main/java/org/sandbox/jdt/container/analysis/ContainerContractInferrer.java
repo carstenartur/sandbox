@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.analysis;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,29 +23,25 @@ import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
 import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
-import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
-import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 
-/**
- * Produces explainable semantic target contracts without creating source edits.
- */
+/** Infers explainable, report-only target contracts from complete local profiles. */
 public final class ContainerContractInferrer {
 
 	/**
-	 * Infers the first supported target contract.
-	 *
-	 * <p>Local completeness is sufficient for reporting, but deliberately insufficient
-	 * for interactive or automatic execution. Project-wide flow, aliases, signatures
-	 * and concurrency still require the planner described by the multi-file roadmap.</p>
+	 * Infers the first semantic migration family: dynamically appended reference arrays
+	 * to mutable sequence contracts.
 	 */
 	public Optional<ContainerRecommendation> infer(ContainerUsageProfile profile) {
 		Objects.requireNonNull(profile, "profile"); //$NON-NLS-1$
-		if (!isAppendArraySequence(profile)) {
+		if (!eligible(profile)) {
 			return Optional.empty();
 		}
 
@@ -54,84 +51,109 @@ public final class ContainerContractInferrer {
 				profile.uniquenessRequirement(),
 				Mutability.MUTABLE,
 				profile.nullContract(),
-				rationale(profile));
+				"Use a dynamically growing mutable sequence instead of repeatedly copying an array."); //$NON-NLS-1$
 
+		List<ContractAssessment> assessments= new ArrayList<>();
+		assessments.add(orderAssessment(profile));
+		assessments.add(new ContractAssessment(
+				ContractProperty.UNIQUENESS,
+				Preservation.PRESERVED,
+				"An array and a list both retain duplicate elements; any existing uniqueness guard remains in the surrounding code.")); //$NON-NLS-1$
+		assessments.add(new ContractAssessment(
+				ContractProperty.MUTABILITY,
+				Preservation.PRESERVED,
+				"The proposed list remains mutable during the same local construction and use phase.")); //$NON-NLS-1$
+		assessments.add(new ContractAssessment(
+				ContractProperty.NULLS,
+				Preservation.PRESERVED,
+				"Reference arrays and ArrayList have the same null capability; an unknown application-level null policy remains unknown.")); //$NON-NLS-1$
+		assessments.add(aliasingAssessment(profile));
+		assessments.add(concurrencyAssessment(profile));
+		assessments.add(signatureAssessment(profile));
+
+		Confidence confidence= strictlyLocalProof(profile)
+				? Confidence.HIGH
+				: Confidence.MEDIUM;
 		return Optional.of(new ContainerRecommendation(
 				profile,
 				target,
 				ContainerRuleRegistry.arrayAppendSequence(),
-				Confidence.MEDIUM,
+				confidence,
 				AutomationLevel.REPORT_ONLY,
-				assessments(profile)));
+				assessments));
 	}
 
-	private static boolean isAppendArraySequence(ContainerUsageProfile profile) {
-		return profile.currentShape() == ContainerShape.ARRAY
-				&& profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE
-				&& profile.access().append()
-				&& profile.elementDomain() != ElementDomain.PRIMITIVE;
+	private static boolean eligible(ContainerUsageProfile profile) {
+		if (profile.completeness() != AnalysisCompleteness.LOCAL_USAGE_COMPLETE
+				|| profile.currentShape() != ContainerShape.ARRAY
+				|| profile.elementDomain() != ElementDomain.REFERENCE
+						&& profile.elementDomain() != ElementDomain.ENUM
+				|| !profile.access().append()
+				|| profile.access().positionalInsert()
+				|| profile.access().positionalRemove()) {
+			return false;
+		}
+		return profile.orderRequirement() == OrderRequirement.ENCOUNTER
+				|| profile.orderRequirement() == OrderRequirement.POSITIONAL;
 	}
 
-	private static String rationale(ContainerUsageProfile profile) {
-		return switch (profile.orderRequirement()) {
-			case POSITIONAL ->
-				"The growing reference array is used as a mutable positional sequence."; //$NON-NLS-1$
-			case ENCOUNTER ->
-				"The growing reference array is traversed as an ordered mutable sequence."; //$NON-NLS-1$
-			case SORTED ->
-				"The growing reference array carries a sorted sequence contract that a later planner must preserve."; //$NON-NLS-1$
-			case NONE ->
-				"The growing reference array is used as a mutable sequence without an observed order requirement."; //$NON-NLS-1$
-			case UNKNOWN ->
-				"The growing reference array behaves as a mutable sequence, while project-wide order remains unresolved."; //$NON-NLS-1$
-		};
+	private static ContractAssessment orderAssessment(ContainerUsageProfile profile) {
+		if (profile.orderRequirement() == OrderRequirement.POSITIONAL) {
+			return new ContractAssessment(
+					ContractProperty.ORDER,
+					Preservation.PRESERVED,
+					"A list retains the observed positional and encounter-order contract."); //$NON-NLS-1$
+		}
+		return new ContractAssessment(
+				ContractProperty.ORDER,
+				Preservation.PRESERVED,
+				"A list preserves the observed encounter order of appended elements."); //$NON-NLS-1$
 	}
 
-	private static List<ContractAssessment> assessments(ContainerUsageProfile profile) {
-		return List.of(
-				assessment(
-						ContractProperty.ORDER,
-						profile.orderRequirement() == OrderRequirement.UNKNOWN
-								? Preservation.REQUIRES_PROOF : Preservation.PRESERVED,
-						profile.orderRequirement() == OrderRequirement.UNKNOWN
-								? "A list preserves sequence order, but the required project-wide order is not known yet." //$NON-NLS-1$
-								: "A list can preserve the observed array order contract."), //$NON-NLS-1$
-				assessment(
-						ContractProperty.UNIQUENESS,
-						profile.uniquenessRequirement() == UniquenessRequirement.DUPLICATES_ALLOWED
-								? Preservation.PRESERVED : Preservation.REQUIRES_PROOF,
-						profile.uniquenessRequirement() == UniquenessRequirement.DUPLICATES_ALLOWED
-								? "Arrays and lists both allow duplicate elements." //$NON-NLS-1$
-								: "Any external or manually enforced uniqueness rule still needs a flow proof."), //$NON-NLS-1$
-				assessment(
-						ContractProperty.MUTABILITY,
-						Preservation.PRESERVED,
-						"A mutable list can preserve the observed build and update operations."), //$NON-NLS-1$
-				assessment(
-						ContractProperty.NULLS,
-						profile.nullContract() == NullContract.UNKNOWN
-								? Preservation.REQUIRES_PROOF : Preservation.PRESERVED,
-						profile.nullContract() == NullContract.UNKNOWN
-								? "Null insertion and observation have not yet been classified." //$NON-NLS-1$
-								: "The later implementation must select matching null behavior."), //$NON-NLS-1$
-				assessment(
-						ContractProperty.ALIASING,
-						Preservation.REQUIRES_PROOF,
-						"Local analysis found no alias, but fields, callers and returned values are not closed yet."), //$NON-NLS-1$
-				assessment(
-						ContractProperty.SIGNATURES,
-						Preservation.REQUIRES_PROOF,
-						"Parameters, returns, overrides and callers require a project-wide signature plan."), //$NON-NLS-1$
-				assessment(
-						ContractProperty.CONCURRENCY,
-						Preservation.REQUIRES_PROOF,
-						"Thread exposure and compound operations require the concurrency-specific analysis.")); //$NON-NLS-1$
+	private static ContractAssessment aliasingAssessment(ContainerUsageProfile profile) {
+		if (profile.escapeLevel() == EscapeLevel.LOCAL
+				&& profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS) {
+			return new ContractAssessment(
+					ContractProperty.ALIASING,
+					Preservation.PRESERVED,
+					"Every local use was classified and no alias, identity observation, or external publication was found."); //$NON-NLS-1$
+		}
+		return new ContractAssessment(
+				ContractProperty.ALIASING,
+				Preservation.REQUIRES_PROOF,
+				"Project-wide flow must prove that replacing the array object does not change observable alias or identity behavior."); //$NON-NLS-1$
 	}
 
-	private static ContractAssessment assessment(
-			ContractProperty property,
-			Preservation preservation,
-			String explanation) {
-		return new ContractAssessment(property, preservation, explanation);
+	private static ContractAssessment concurrencyAssessment(ContainerUsageProfile profile) {
+		if (profile.escapeLevel() == EscapeLevel.LOCAL
+				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED) {
+			return new ContractAssessment(
+					ContractProperty.CONCURRENCY,
+					Preservation.PRESERVED,
+					"All uses stay in the declaring method body and no lambda, nested type, method boundary, or publication path captures the value."); //$NON-NLS-1$
+		}
+		return new ContractAssessment(
+				ContractProperty.CONCURRENCY,
+				Preservation.REQUIRES_PROOF,
+				"Thread exposure, synchronization and publication semantics must be closed before selecting a concrete collection implementation."); //$NON-NLS-1$
+	}
+
+	private static ContractAssessment signatureAssessment(ContainerUsageProfile profile) {
+		if (profile.escapeLevel() == EscapeLevel.LOCAL) {
+			return new ContractAssessment(
+					ContractProperty.SIGNATURES,
+					Preservation.PRESERVED,
+					"The represented value is a local variable and no method, constructor, field, or override signature changes are required."); //$NON-NLS-1$
+		}
+		return new ContractAssessment(
+				ContractProperty.SIGNATURES,
+				Preservation.REQUIRES_PROOF,
+				"Fields, parameters, return values, callers and override families must be migrated atomically before execution."); //$NON-NLS-1$
+	}
+
+	private static boolean strictlyLocalProof(ContainerUsageProfile profile) {
+		return profile.escapeLevel() == EscapeLevel.LOCAL
+				&& profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS
+				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;
 	}
 }

@@ -39,7 +39,7 @@ class ContainerContractInferrerTest {
 	private final ContainerContractInferrer inferrer= new ContainerContractInferrer();
 
 	@Test
-	void infersReportOnlyListContractForEncounterSequence() {
+	void infersHighConfidenceReportOnlyListContractForClosedEncounterSequence() {
 		ContainerRecommendation recommendation= infer("""
 			import java.util.Arrays;
 			class Sample {
@@ -57,13 +57,13 @@ class ContainerContractInferrerTest {
 		assertEquals(ContainerShape.LIST, recommendation.targetContract().shape());
 		assertEquals(OrderRequirement.ENCOUNTER,
 				recommendation.targetContract().orderRequirement());
-		assertEquals(Confidence.MEDIUM, recommendation.confidence());
+		assertEquals(Confidence.HIGH, recommendation.confidence());
 		assertEquals(AutomationLevel.REPORT_ONLY, recommendation.automationLevel());
 		assertEquals(RuleOwnership.NOVEL, recommendation.rule().ownership());
 		assertFalse(recommendation.isExecutable());
 		assertEquals(Preservation.PRESERVED,
 				preservation(recommendation, ContractProperty.ORDER));
-		assertEquals(Preservation.REQUIRES_PROOF,
+		assertEquals(Preservation.PRESERVED,
 				preservation(recommendation, ContractProperty.SIGNATURES));
 	}
 
@@ -83,7 +83,8 @@ class ContainerContractInferrerTest {
 
 		assertEquals(OrderRequirement.POSITIONAL,
 				recommendation.targetContract().orderRequirement());
-		assertTrue(recommendation.targetContract().rationale().contains("positional")); //$NON-NLS-1$
+		assertEquals(Preservation.PRESERVED,
+				preservation(recommendation, ContractProperty.ORDER));
 	}
 
 	@Test
