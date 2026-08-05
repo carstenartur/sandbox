@@ -66,6 +66,7 @@ public final class LocalUniqueSequenceAnalyzer {
 
 	private static final String ARRAY_LIST= "java.util.ArrayList"; //$NON-NLS-1$
 	private static final String LIST= "java.util.List"; //$NON-NLS-1$
+	private static final String STRING= "java.lang.String"; //$NON-NLS-1$
 
 	/** Returns source-ordered complete or rejected profiles. */
 	public List<ContainerUsageProfile> analyze(CompilationUnit unit) {
@@ -89,8 +90,11 @@ public final class LocalUniqueSequenceAnalyzer {
 				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)
 				|| declaration.fragments().size() != 1
 				|| !(fragment.getInitializer() instanceof ClassInstanceCreation creation)
-				|| !isEmptyArrayList(creation)
-				|| !isListType(declaration.getType().resolveBinding())) {
+				|| !isEmptyArrayList(creation)) {
+			return Optional.empty();
+		}
+		ITypeBinding declaredType= declaration.getType().resolveBinding();
+		if (!isListType(declaredType)) {
 			return Optional.empty();
 		}
 		MethodDeclaration method= enclosingMethod(fragment);
@@ -99,7 +103,8 @@ public final class LocalUniqueSequenceAnalyzer {
 			return Optional.empty();
 		}
 		return Optional.of(new Candidate(
-				fragment, declaration, method, binding.getVariableDeclaration(), key));
+				fragment, declaration, method, binding.getVariableDeclaration(), key,
+				elementType(declaredType)));
 	}
 
 	private static ContainerUsageProfile analyzeCandidate(Candidate candidate) {
@@ -178,6 +183,17 @@ public final class LocalUniqueSequenceAnalyzer {
 		return LIST.equals(name) || ARRAY_LIST.equals(name);
 	}
 
+	private static ITypeBinding elementType(ITypeBinding listType) {
+		return listType != null && listType.getTypeArguments().length == 1
+				? listType.getTypeArguments()[0] : null;
+	}
+
+	private static boolean hasStableHash(ITypeBinding elementType) {
+		return elementType != null
+				&& (elementType.isEnum()
+						|| STRING.equals(elementType.getErasure().getQualifiedName()));
+	}
+
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
 		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {
 			if (current instanceof MethodDeclaration method) {
@@ -220,13 +236,11 @@ public final class LocalUniqueSequenceAnalyzer {
 				&& key.equals(variable.getVariableDeclaration().getKey());
 	}
 
-	private static ElementDomain elementDomain(VariableDeclarationStatement declaration) {
-		ITypeBinding type= declaration.getType().resolveBinding();
-		if (type == null || type.getTypeArguments().length != 1) {
+	private static ElementDomain elementDomain(ITypeBinding elementType) {
+		if (elementType == null) {
 			return ElementDomain.UNKNOWN;
 		}
-		return type.getTypeArguments()[0].isEnum()
-				? ElementDomain.ENUM : ElementDomain.REFERENCE;
+		return elementType.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;
 	}
 
 	private record Candidate(
@@ -234,7 +248,8 @@ public final class LocalUniqueSequenceAnalyzer {
 			VariableDeclarationStatement declaration,
 			MethodDeclaration method,
 			IVariableBinding binding,
-			String bindingKey) {
+			String bindingKey,
+			ITypeBinding elementType) {
 	}
 
 	private static final class Observations {
@@ -250,6 +265,15 @@ public final class LocalUniqueSequenceAnalyzer {
 			add(Kind.REFERENCE_COMPONENT,
 					"The local sequence has a reference element type", //$NON-NLS-1$
 					candidate.declaration());
+			if (hasStableHash(candidate.elementType())) {
+				add(Kind.HASH_STABLE_COMPONENT,
+						"The element type has stable equality and hash semantics", //$NON-NLS-1$
+						candidate.declaration());
+			} else {
+				reject(Kind.REJECTION_BOUNDARY,
+						"Automatic set migration requires a proven hash-stable element type", //$NON-NLS-1$
+						candidate.declaration());
+			}
 		}
 
 		void guard(GuardedAdd guard) {
@@ -285,7 +309,7 @@ public final class LocalUniqueSequenceAnalyzer {
 					.thenComparing(item -> item.kind().ordinal()));
 			return new ContainerUsageProfile(
 					identity(candidate), ContainerShape.LIST,
-					elementDomain(candidate.declaration()),
+					elementDomain(candidate.elementType()),
 					new AccessProfile(false, false, true, false, false, true, false),
 					OrderRequirement.ENCOUNTER, UniquenessRequirement.REQUIRED,
 					MutationLifecycle.CONTINUOUSLY_MUTABLE, NullContract.UNKNOWN,
