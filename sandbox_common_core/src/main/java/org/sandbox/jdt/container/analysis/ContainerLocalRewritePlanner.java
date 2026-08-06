@@ -94,7 +94,7 @@ public final class ContainerLocalRewritePlanner {
 			return PlanningResult.rejected(diagnostics);
 		}
 
-		return PlanningResult.ready(new ContainerLocalRewritePlan(
+		return PlanningResult.accepted(new ContainerLocalRewritePlan(
 				variable.compilationUnitHandle(),
 				variable.bindingKey(),
 				LIST_TYPE,
