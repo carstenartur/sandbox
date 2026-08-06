@@ -32,6 +32,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
@@ -137,7 +138,7 @@ public final class ClosedFlowArrayUsageRefiner {
 				localProfile.currentShape(),
 				localProfile.elementDomain(),
 				localProfile.access(),
-				localProfile.orderRequirement(),
+				mergedOrder(localProfile, parameterProfiles),
 				localProfile.uniquenessRequirement(),
 				localProfile.mutationLifecycle(),
 				localProfile.nullContract(),
@@ -196,6 +197,28 @@ public final class ClosedFlowArrayUsageRefiner {
 						REJECTION_EVIDENCE.contains(evidence.kind()));
 	}
 
+	private static OrderRequirement mergedOrder(
+			ContainerUsageProfile localProfile,
+			List<ContainerUsageProfile> parameterProfiles) {
+		List<OrderRequirement> requirements= new ArrayList<>(parameterProfiles.size() + 1);
+		requirements.add(localProfile.orderRequirement());
+		parameterProfiles.stream()
+				.map(ContainerUsageProfile::orderRequirement)
+				.forEach(requirements::add);
+		if (requirements.contains(OrderRequirement.POSITIONAL)) {
+			return OrderRequirement.POSITIONAL;
+		}
+		if (requirements.contains(OrderRequirement.SORTED)) {
+			return OrderRequirement.SORTED;
+		}
+		if (requirements.contains(OrderRequirement.ENCOUNTER)) {
+			return OrderRequirement.ENCOUNTER;
+		}
+		return requirements.stream().allMatch(
+				requirement -> requirement == OrderRequirement.NONE)
+						? OrderRequirement.NONE : OrderRequirement.UNKNOWN;
+	}
+
 	private static ContainerUsageProfile rejected(
 			ContainerUsageProfile source,
 			List<UsageEvidence> evidence,
@@ -247,6 +270,5 @@ public final class ClosedFlowArrayUsageRefiner {
 			if (start < 0 || length < 0) {
 				throw new IllegalArgumentException("Source range must not be negative"); //$NON-NLS-1$
 			}
-		}
 	}
 }
