@@ -141,10 +141,7 @@ public final class UniqueSequencePattern {
 		Expression left= unwrap(first);
 		Expression right= unwrap(second);
 		if (left instanceof SimpleName leftName && right instanceof SimpleName rightName) {
-			return variableBinding(leftName)
-					.flatMap(leftBinding -> variableBinding(rightName)
-							.map(rightBinding -> sameLocalValue(leftBinding, rightBinding)))
-					.orElse(false);
+			return sameStableLocalValue(leftName, rightName);
 		}
 		if (left instanceof StringLiteral leftLiteral && right instanceof StringLiteral rightLiteral) {
 			return leftLiteral.getLiteralValue().equals(rightLiteral.getLiteralValue());
@@ -161,6 +158,15 @@ public final class UniqueSequencePattern {
 			return leftLiteral.booleanValue() == rightLiteral.booleanValue();
 		}
 		return left instanceof NullLiteral && right instanceof NullLiteral;
+	}
+
+	private static boolean sameStableLocalValue(
+			SimpleName first,
+			SimpleName second) {
+		IVariableBinding firstBinding= variableBinding(first).orElse(null);
+		IVariableBinding secondBinding= variableBinding(second).orElse(null);
+		return firstBinding != null && secondBinding != null
+				&& sameLocalValue(firstBinding, secondBinding);
 	}
 
 	private static boolean sameLocalValue(
