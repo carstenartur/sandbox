@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "issue": 1303,
   "baselineCommit": "714bec5cf26e1554520ef063850865ec931a6624",
-  "lastVerifiedCommit": "0804ae99532cbb9bfa551fbb6870c053c1938e5d",
+  "lastVerifiedCommit": "4e49ee687a1ae158c50c09e03d30010986f19e29",
   "purpose": "Machine-readable baseline and evidence ledger for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
     "selectedVersion": "0.1.18",
-    "selectionState": "selected; Core 0.1.18 adapter lifecycle and restart verified on H2"
+    "selectionState": "selected; Core 0.1.18 adapter lifecycle, restart and deletion policy verified on H2"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -112,21 +112,29 @@
     {
       "id": "repository-delete",
       "currentOwner": "sandbox-jgit-server-webapp",
-      "currentEntrypoints": [],
-      "currentBackend": "No application deletion boundary is currently exposed; Sandbox-owned open handles are cached until service shutdown",
+      "currentEntrypoints": [
+        "org.eclipse.jgit.server.repository.SandboxRepositoryService.delete",
+        "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService.delete"
+      ],
+      "currentBackend": "Sandbox deletion boundary defaults fail closed; the released Core adapter serializes deletion against local opens and maps Core results without exposing Core DTOs. Copied normal startup remains in place, and REST deletion remains disabled.",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory.deleteRepository"
       ],
-      "migrationStatus": "core-api-available-adapter-policy-required",
+      "migrationStatus": "core-adapter-delete-policy-verified-runtime-cutover-pending",
       "requiredEvidence": [
-        "delete rejected while a coordinated handle is open",
-        "Sandbox adapter either reports in-use or atomically evicts and closes its owned handle before deletion",
-        "repeated deletion is idempotent",
+        "normal startup uses the released Core adapter before deletion is exposed",
+        "REST or administrative deletion remains disabled until authorization and runtime cut-over are complete",
         "Search deletion participant removes projections"
       ],
       "verifiedEvidence": [
-        "Core 0.1.18 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles"
+        "ExternalHibernateRepositoryDeletionTest.normalizesAndMapsCoreDeletionResultsWithoutLeakingCoreTypes",
+        "ExternalHibernateRepositoryDeletionTest.rejectsDeletionWhileTheAdapterOwnsAnOpenHandle",
+        "ExternalHibernateRepositoryDeletionTest.deletionCannotOvertakeAnInFlightOpen",
+        "ExternalHibernateRepositoryDeletionTest.repeatedDeletionIsIdempotent",
+        "SandboxRepositoryServiceBoundaryTest exposes only SandboxRepositoryDeletionResult",
+        "Core 0.1.18 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles",
+        "Deletion policy evidence commit 4e49ee687a1ae158c50c09e03d30010986f19e29"
       ]
     },
     {
@@ -313,14 +321,18 @@
       "classification": "sandbox-adapter-retained"
     },
     {
+      "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/SandboxRepositoryDeletionResult.java",
+      "classification": "sandbox-deletion-dto-retained"
+    },
+    {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/CopiedHibernateRepositoryService.java",
       "classification": "temporary-copied-adapter",
       "replacement": "ExternalHibernateRepositoryService"
     },
     {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/ExternalHibernateRepositoryService.java",
-      "classification": "released-core-adapter-lifecycle-verified",
-      "evidence": "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d"
+      "classification": "released-core-adapter-lifecycle-and-delete-policy-verified",
+      "evidence": "Deletion policy evidence commit 4e49ee687a1ae158c50c09e03d30010986f19e29"
     },
     {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/config/ExternalServerPersistenceContext.java",
