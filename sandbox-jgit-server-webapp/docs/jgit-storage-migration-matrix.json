@@ -7,8 +7,8 @@
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": "0.1.15",
-    "selectionState": "selected; Core adapter lifecycle and restart verified on H2"
+    "selectedVersion": "0.1.18",
+    "selectionState": "selected; Core 0.1.18 adapter lifecycle and restart verified on H2"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -27,7 +27,7 @@
         "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
         "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.1.15 for guarded external startup",
+      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.1.18 for guarded external startup",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
@@ -126,7 +126,7 @@
         "Search deletion participant removes projections"
       ],
       "verifiedEvidence": [
-        "Core 0.1.15 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles"
+        "Core 0.1.18 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles"
       ]
     },
     {

@@ -51,6 +51,7 @@ public class ExternalServerPersistenceContextTest {
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitPackChunkEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitPackEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitReflogEntity", //$NON-NLS-1$
+					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLifecycleEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLockEntity", //$NON-NLS-1$
 					"org.eclipse.jgit.storage.hibernate.entity.FilePathHistory", //$NON-NLS-1$
 					"org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex", //$NON-NLS-1$
