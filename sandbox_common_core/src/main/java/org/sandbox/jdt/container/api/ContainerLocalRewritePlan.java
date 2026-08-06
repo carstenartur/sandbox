@@ -72,7 +72,7 @@ public record ContainerLocalRewritePlan(
 			}
 		}
 
-		public static PlanningResult ready(ContainerLocalRewritePlan plan) {
+		public static PlanningResult accepted(ContainerLocalRewritePlan plan) {
 			return new PlanningResult(Optional.of(plan), List.of());
 		}
 
