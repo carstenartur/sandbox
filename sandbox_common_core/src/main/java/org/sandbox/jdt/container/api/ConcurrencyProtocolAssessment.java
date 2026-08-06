@@ -56,12 +56,15 @@ public sealed interface ConcurrencyProtocolAssessment
 			Objects.requireNonNull(strategy, "strategy"); //$NON-NLS-1$
 			Objects.requireNonNull(confidence, "confidence"); //$NON-NLS-1$
 			explanations= copyExplanations(explanations);
-			if (protocol.completeness() == AnalysisCompleteness.LOCAL_SEED
-					|| protocol.completeness() == AnalysisCompleteness.REJECTED
-					|| protocol.hasUnresolvedBoundary()) {
+			if (!hasCompleteUsageProof(protocol)) {
 				throw new IllegalArgumentException(
 						"A migration recommendation requires complete local usage without unresolved boundaries"); //$NON-NLS-1$
 			}
+		}
+
+		@Override
+		public List<String> explanations() {
+			return List.copyOf(explanations);
 		}
 	}
 
@@ -74,12 +77,18 @@ public sealed interface ConcurrencyProtocolAssessment
 			Objects.requireNonNull(protocol, "protocol"); //$NON-NLS-1$
 			explanations= copyExplanations(explanations);
 			SynchronizationKind synchronization= protocol.summary().synchronization();
-			if (synchronization == SynchronizationKind.NONE
+			if (!hasCompleteUsageProof(protocol)
+					|| synchronization == SynchronizationKind.NONE
 					|| synchronization == SynchronizationKind.UNKNOWN
 					|| !protocol.hasSingleProtectingLock()) {
 				throw new IllegalArgumentException(
-						"Retaining existing locking requires one proven protecting lock"); //$NON-NLS-1$
+						"Retaining existing locking requires complete usage proof and one protecting lock"); //$NON-NLS-1$
 			}
+		}
+
+		@Override
+		public List<String> explanations() {
+			return List.copyOf(explanations);
 		}
 	}
 
@@ -98,6 +107,11 @@ public sealed interface ConcurrencyProtocolAssessment
 						"Rejected analysis must use the Rejected outcome"); //$NON-NLS-1$
 			}
 		}
+
+		@Override
+		public List<String> explanations() {
+			return List.copyOf(explanations);
+		}
 	}
 
 	/** Analysis result for unresolved, binary, stale or otherwise unsupported protocols. */
@@ -113,11 +127,22 @@ public sealed interface ConcurrencyProtocolAssessment
 						"Rejected outcome requires a rejected protocol"); //$NON-NLS-1$
 			}
 		}
+
+		@Override
+		public List<String> explanations() {
+			return List.copyOf(explanations);
+		}
+	}
+
+	private static boolean hasCompleteUsageProof(ConcurrencyProtocol protocol) {
+		AnalysisCompleteness completeness= protocol.completeness();
+		return (completeness == AnalysisCompleteness.LOCAL_USAGE_COMPLETE
+				|| completeness == AnalysisCompleteness.FLOW_COMPLETE)
+				&& !protocol.hasUnresolvedBoundary();
 	}
 
 	private static List<String> copyExplanations(List<String> source) {
-		List<String> result= List.copyOf(Objects.requireNonNull(source, "explanations")) //$NON-NLS-1$
-				.stream()
+		List<String> result= Objects.requireNonNull(source, "explanations").stream() //$NON-NLS-1$
 				.map(item -> Objects.requireNonNull(item, "explanation").strip()) //$NON-NLS-1$
 				.toList();
 		if (result.isEmpty() || result.stream().anyMatch(String::isEmpty)) {
