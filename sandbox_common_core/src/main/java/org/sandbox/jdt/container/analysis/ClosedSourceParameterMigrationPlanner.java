@@ -11,6 +11,7 @@
 package org.sandbox.jdt.container.analysis;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -190,7 +191,7 @@ public final class ClosedSourceParameterMigrationPlanner {
 	}
 
 	private static ContainerUsageProfile profile(
-			List<ContainerUsageProfile> profiles,
+			Collection<ContainerUsageProfile> profiles,
 			String bindingKey) {
 		List<ContainerUsageProfile> matches= profiles.stream()
 				.filter(profile -> profile.identity().bindingKey().equals(bindingKey))
