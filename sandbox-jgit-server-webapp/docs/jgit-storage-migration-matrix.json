@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "issue": 1303,
   "baselineCommit": "714bec5cf26e1554520ef063850865ec931a6624",
-  "lastVerifiedCommit": "4e49ee687a1ae158c50c09e03d30010986f19e29",
+  "lastVerifiedCommit": "970fcb81fe46aaa8c535fa29dc962c901f52b640",
   "purpose": "Machine-readable baseline and evidence ledger for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
   "releasePolicy": {
     "required": "non-SNAPSHOT",
@@ -132,9 +132,9 @@
         "ExternalHibernateRepositoryDeletionTest.rejectsDeletionWhileTheAdapterOwnsAnOpenHandle",
         "ExternalHibernateRepositoryDeletionTest.deletionCannotOvertakeAnInFlightOpen",
         "ExternalHibernateRepositoryDeletionTest.repeatedDeletionIsIdempotent",
-        "SandboxRepositoryServiceBoundaryTest exposes only SandboxRepositoryDeletionResult",
+        "SandboxRepositoryServiceBoundaryTest.exposesPublicJGitRepositoryContract",
         "Core 0.1.18 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles",
-        "Deletion policy evidence commit 4e49ee687a1ae158c50c09e03d30010986f19e29"
+        "Deletion policy evidence commit 970fcb81fe46aaa8c535fa29dc962c901f52b640"
       ]
     },
     {
@@ -332,7 +332,7 @@
     {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/repository/ExternalHibernateRepositoryService.java",
       "classification": "released-core-adapter-lifecycle-and-delete-policy-verified",
-      "evidence": "Deletion policy evidence commit 4e49ee687a1ae158c50c09e03d30010986f19e29"
+      "evidence": "Deletion policy evidence commit 970fcb81fe46aaa8c535fa29dc962c901f52b640"
     },
     {
       "path": "sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/config/ExternalServerPersistenceContext.java",
