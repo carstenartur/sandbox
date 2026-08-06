@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dbf39e06a94df9dec6e966a3860f9975dbac2e0273bf70bb8931e611266596ff",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.api.template.persistence.migrate\u003e\n\u003c!description: Migrate from deprecated org.eclipse.jface.text.templates.persistence types to org.eclipse.text.templates.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: deprecated, api-migration, eclipse\u003e\n\n\u003c!map DeprecatedTemplateTypes: \"org.eclipse.jface.text.templates.persistence.TemplatePersistenceData\" \u003d\u003e \"org.eclipse.text.templates.TemplatePersistenceData\", \"org.eclipse.jface.text.templates.persistence.TemplateReaderWriter\" \u003d\u003e \"org.eclipse.text.templates.TemplateReaderWriter\"\u003e\n\n#{DeprecatedTemplateTypes}\n\u003d\u003e #{DeprecatedTemplateTypes_VALUE}\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.templates.persistence.TemplatePersistenceData;\nimport org.eclipse.jface.text.templates.persistence.TemplateReaderWriter;\n\npublic class MyClass {\n    public void foo() {\n        TemplatePersistenceData data \u003d null;\n        TemplateReaderWriter readerWriter \u003d null;\n        System.out.println(data);\n        System.out.println(readerWriter);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.text.templates.TemplatePersistenceData;\nimport org.eclipse.text.templates.TemplateReaderWriter;\n\npublic class MyClass {\n    public void foo() {\n        org.eclipse.text.templates.TemplatePersistenceData data \u003d null;\n        org.eclipse.text.templates.TemplateReaderWriter readerWriter \u003d null;\n        System.out.println(data);\n        System.out.println(readerWriter);\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.List;\nimport org.eclipse.text.templates.Template;\n\npublic class AnotherClass {\n    public void bar() {\n        List\u003cString\u003e list \u003d null;\n        Template t \u003d null;\n        System.out.println(list);\n        System.out.println(t);\n    }\n}",
+  "targetHintFile": "eclipse-api-migration.sandbox-hint",
+  "sourceCommit": "eb8877fd66d57a90d981a9616409ffdd496d4856",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces usages of deprecated TemplatePersistenceData and TemplateReaderWriter types from org.eclipse.jface.text.templates.persistence with their equivalents from org.eclipse.text.templates.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-06T03:14:25.804559266Z",
+  "ruleFingerprint": "sha256:9301da95e93ca2b79f845225c7c83e9f41fe31838985afc6aa7be524350477c3",
+  "behaviorFingerprint": "sha256:f08ba9cdaa8b0234e66a01009b93f6a75d1174dbfeb626521e7fcc1d01a40161",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-06T03:14:28.337540848Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
