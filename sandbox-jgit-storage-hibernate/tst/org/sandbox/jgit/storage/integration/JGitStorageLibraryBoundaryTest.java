@@ -38,12 +38,12 @@ class JGitStorageLibraryBoundaryTest {
 		List<Class<?>> entities= JGitStorageLibraryBoundary.coreEntities();
 
 		assertEquals(List.of(
-				"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLifecycleEntity", //$NON-NLS-1$
-				"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLockEntity", //$NON-NLS-1$
-				"io.github.carstenartur.jgit.storage.hibernate.entity.GitPackEntity", //$NON-NLS-1$
 				"io.github.carstenartur.jgit.storage.hibernate.entity.GitPackChunkEntity", //$NON-NLS-1$
-				"io.github.carstenartur.jgit.storage.hibernate.entity.GitReflogEntity"), //$NON-NLS-1$
-				entities.stream().map(Class::getName).toList());
+				"io.github.carstenartur.jgit.storage.hibernate.entity.GitPackEntity", //$NON-NLS-1$
+				"io.github.carstenartur.jgit.storage.hibernate.entity.GitReflogEntity", //$NON-NLS-1$
+				"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLifecycleEntity", //$NON-NLS-1$
+				"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLockEntity"), //$NON-NLS-1$
+				entities.stream().map(Class::getName).sorted().toList());
 		assertTrue(entities.stream().allMatch(type ->
 				type.getPackageName().startsWith("io.github.carstenartur.jgit.storage.hibernate"))); //$NON-NLS-1$
 	}
