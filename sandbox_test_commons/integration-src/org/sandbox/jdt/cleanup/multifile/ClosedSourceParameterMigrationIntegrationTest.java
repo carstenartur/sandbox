@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
@@ -90,7 +91,7 @@ class ClosedSourceParameterMigrationIntegrationTest {
 				"Migrate caller and parameter container contract"); //$NON-NLS-1$
 		change.add(callerFix.createChange(null));
 		change.add(receiverFix.createChange(null));
-		Change undo= change.perform(null);
+		Change undo= change.perform(new NullProgressMonitor());
 		assertNotNull(undo);
 
 		String migratedCaller= caller.getSource();
@@ -104,7 +105,7 @@ class ClosedSourceParameterMigrationIntegrationTest {
 		assertTrue(migratedReceiver.contains("values.size()")); //$NON-NLS-1$
 		assertFalse(migratedReceiver.contains("String[] values")); //$NON-NLS-1$
 
-		undo.perform(null);
+		undo.perform(new NullProgressMonitor());
 
 		assertTrue(caller.getSource().contains("String[] values = new String[0]")); //$NON-NLS-1$
 		assertTrue(receiver.getSource().contains("void consume(String[] values)")); //$NON-NLS-1$
