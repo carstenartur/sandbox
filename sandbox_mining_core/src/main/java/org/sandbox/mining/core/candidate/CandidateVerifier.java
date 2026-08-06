@@ -189,6 +189,7 @@ public final class CandidateVerifier {
 
 	private static String validateCandidateContainer(HintFile hintFile) {
 		if (hintFile.getId() != null || hintFile.getDescription() != null
+				|| hintFile.getBindingPolicy() != null
 				|| hintFile.getMinJavaVersion() > 0 || !hintFile.getTags().isEmpty()
 				|| !hintFile.getIncludes().isEmpty() || !hintFile.getEmbeddedJavaBlocks().isEmpty()
 				|| hintFile.isCaseInsensitive() || !hintFile.getSuppressWarnings().isEmpty()

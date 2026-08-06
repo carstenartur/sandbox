@@ -13,7 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.internal;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
@@ -31,6 +33,12 @@ import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
 /** Canonical registration entry point for built-in guard functions. */
 public final class BuiltInGuardRegistration {
 
+	enum HierarchyMatch {
+		MATCH,
+		NO_MATCH,
+		UNKNOWN
+	}
+
 	private BuiltInGuardRegistration() {
 	}
 
@@ -38,6 +46,7 @@ public final class BuiltInGuardRegistration {
 	public static void registerAll(Map<String, GuardFunction> guards) {
 		BuiltInGuards.registerAll(guards);
 		guards.put("instanceof", BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$
+		guards.put("subtypeOf", BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$
 		guards.put("genericTypeIs", BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$
 		guards.put("plannedRole", BuiltInGuardRegistration::evaluatePlannedRole); //$NON-NLS-1$
 		guards.put("enclosingPlannedRole", BuiltInGuardRegistration::evaluateEnclosingPlannedRole); //$NON-NLS-1$
@@ -174,7 +183,13 @@ public final class BuiltInGuardRegistration {
 		}
 		ITypeBinding binding= resolveTypeBinding(node);
 		if (binding == null) {
+			context.markUnknown("instanceof", //$NON-NLS-1$
+					"Cannot resolve the type of " + argument(args, 0)); //$NON-NLS-1$
 			return true;
+		}
+		if (binding.isRecovered()) {
+			context.markUnknown("instanceof", //$NON-NLS-1$
+					"The recovered type of " + argument(args, 0) + " is incomplete"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		String expectedType= stripQuotes(argument(args, 1));
 		if (expectedType.endsWith("[]") && expectedType.length() > 2) { //$NON-NLS-1$
@@ -182,6 +197,64 @@ public final class BuiltInGuardRegistration {
 					expectedType.substring(0, expectedType.length() - 2));
 		}
 		return matchesTypeName(binding, expectedType);
+	}
+
+	private static boolean evaluateSubtypeOf(GuardContext context, Object... args) {
+		if (args.length < 2) {
+			return false;
+		}
+		ASTNode node= context.getBinding(argument(args, 0));
+		if (node == null) {
+			return false;
+		}
+		ITypeBinding binding= resolveTypeBinding(node);
+		if (binding == null) {
+			context.markUnknown("subtypeOf", //$NON-NLS-1$
+					"Cannot resolve the type hierarchy of " + argument(args, 0)); //$NON-NLS-1$
+			return true;
+		}
+		HierarchyMatch match= subtypeMatch(binding, stripQuotes(argument(args, 1)), new HashSet<>());
+		if (match == HierarchyMatch.UNKNOWN) {
+			context.markUnknown("subtypeOf", //$NON-NLS-1$
+					"Cannot resolve the complete type hierarchy of " + argument(args, 0)); //$NON-NLS-1$
+			return true;
+		}
+		return match == HierarchyMatch.MATCH;
+	}
+
+	static HierarchyMatch subtypeMatch(ITypeBinding binding, String expectedType, Set<String> visited) {
+		if (binding == null) {
+			return HierarchyMatch.NO_MATCH;
+		}
+		if (binding.isRecovered()) {
+			return HierarchyMatch.UNKNOWN;
+		}
+		ITypeBinding declaration= binding.getTypeDeclaration();
+		if (declaration == null || declaration.isRecovered()) {
+			return HierarchyMatch.UNKNOWN;
+		}
+		String key= declaration.getKey();
+		String identity= key == null || key.isBlank() ? declaration.getQualifiedName() : key;
+		if (identity != null && !identity.isBlank() && !visited.add(identity)) {
+			return HierarchyMatch.NO_MATCH;
+		}
+		if (matchesTypeName(declaration, expectedType)) {
+			return HierarchyMatch.MATCH;
+		}
+		boolean unknown= false;
+		HierarchyMatch superclassMatch= subtypeMatch(declaration.getSuperclass(), expectedType, visited);
+		if (superclassMatch == HierarchyMatch.MATCH) {
+			return HierarchyMatch.MATCH;
+		}
+		unknown= superclassMatch == HierarchyMatch.UNKNOWN;
+		for (ITypeBinding iface : declaration.getInterfaces()) {
+			HierarchyMatch interfaceMatch= subtypeMatch(iface, expectedType, visited);
+			if (interfaceMatch == HierarchyMatch.MATCH) {
+				return HierarchyMatch.MATCH;
+			}
+			unknown|= interfaceMatch == HierarchyMatch.UNKNOWN;
+		}
+		return unknown ? HierarchyMatch.UNKNOWN : HierarchyMatch.NO_MATCH;
 	}
 
 	private static boolean evaluateGenericTypeIs(GuardContext context, Object... args) {
@@ -200,11 +273,36 @@ public final class BuiltInGuardRegistration {
 		}
 		ITypeBinding binding= resolveTypeBinding(node);
 		if (binding == null) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Cannot resolve generic type arguments for " + argument(args, 0)); //$NON-NLS-1$
 			return true;
 		}
+		if (binding.isRecovered()) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"The recovered generic type of " + argument(args, 0) + " is incomplete"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		if (index < 0) {
+			return false;
+		}
+		if (binding.isRawType()) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Generic type arguments are erased for " + argument(args, 0)); //$NON-NLS-1$
+			return false;
+		}
 		ITypeBinding[] arguments= binding.getTypeArguments();
-		return index >= 0 && index < arguments.length
-				&& matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));
+		if (index >= arguments.length) {
+			return false;
+		}
+		if (arguments[index] == null) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Cannot resolve generic type argument " + index + " for " + argument(args, 0)); //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		if (arguments[index].isRecovered()) {
+			context.markUnknown("genericTypeIs", //$NON-NLS-1$
+					"Generic type argument " + index + " for " + argument(args, 0) + " is recovered"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+		return matchesTypeName(arguments[index], stripQuotes(argument(args, 2)));
 	}
 
 	private static SemanticPlanValue literal(Object[] args, int index) {
@@ -241,6 +339,9 @@ public final class BuiltInGuardRegistration {
 			return false;
 		}
 		ITypeBinding declaration= binding.getTypeDeclaration();
+		if (declaration == null) {
+			return false;
+		}
 		String qualifiedName= declaration.getQualifiedName();
 		return expectedType.equals(qualifiedName) || expectedType.equals(declaration.getName());
 	}

@@ -159,6 +159,7 @@ public final class PlanAwareHintFileFixCore {
 		copy.setDescription(source.getDescription());
 		copy.setSeverity(source.getSeverity());
 		copy.setMinJavaVersion(source.getMinJavaVersion());
+		copy.setBindingPolicy(source.getBindingPolicy());
 		copy.setTags(source.getTags());
 		copy.setCaseInsensitive(source.isCaseInsensitive());
 		copy.setSuppressWarnings(source.getSuppressWarnings());

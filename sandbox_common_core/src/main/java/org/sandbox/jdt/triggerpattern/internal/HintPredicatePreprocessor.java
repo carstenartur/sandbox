@@ -405,8 +405,6 @@ public final class HintPredicatePreprocessor {
 	}
 
 	private static HintParseException parseFailure(String message, int line, Throwable cause) {
-		HintParseException failure= new HintParseException(message, line);
-		failure.initCause(cause);
-		return failure;
+		return new HintParseException(message, line, cause);
 	}
 }
