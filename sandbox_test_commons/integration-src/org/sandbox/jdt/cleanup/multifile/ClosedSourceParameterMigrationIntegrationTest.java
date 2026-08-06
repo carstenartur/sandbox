@@ -46,6 +46,7 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.LocalEdit;
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
@@ -132,7 +133,12 @@ class ClosedSourceParameterMigrationIntegrationTest {
 						new LocalEdit(
 								EditKind.VERIFY_ARGUMENT_TRANSFER,
 								callerFacts.argumentStart(),
-								callerFacts.argumentLength())));
+								callerFacts.argumentLength())),
+				List.of(new ArgumentTransfer(
+						parameterFacts.methodHandle(),
+						0,
+						callerFacts.argumentStart(),
+						callerFacts.argumentLength())));
 		List<ParameterEdit> parameterEdits= new ArrayList<>();
 		parameterEdits.add(new ParameterEdit(
 				ContainerParameterRewritePlan.EditKind.CHANGE_PARAMETER_DECLARATION,
