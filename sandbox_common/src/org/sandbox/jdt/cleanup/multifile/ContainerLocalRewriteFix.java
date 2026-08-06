@@ -68,6 +68,7 @@ public final class ContainerLocalRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerLocalRewritePlan plan) throws CoreException {
+		ContainerLocalArgumentTransferVerifier.verify(unit, root, plan);
 		ContainerLocalRewritePlanVerifier.verifyEncounterIterations(unit, root, plan);
 		return ContainerLocalRewriteResolver.resolve(unit, root, plan);
 	}
