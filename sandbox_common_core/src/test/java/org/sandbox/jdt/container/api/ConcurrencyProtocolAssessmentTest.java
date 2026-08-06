@@ -69,8 +69,7 @@ class ConcurrencyProtocolAssessmentTest {
 	@Test
 	void rejectsLockedEvidenceWithoutStableLockIdentity() {
 		assertThrows(IllegalArgumentException.class,
-				() -> new Evidence(EvidenceKind.CHECK_THEN_ACT, "", //$NON-NLS-1$
-						"contains followed by add", 10, 5)); //$NON-NLS-1$
+				ConcurrencyProtocolAssessmentTest::createLockedEvidenceWithoutIdentity);
 	}
 
 	@Test
@@ -81,13 +80,28 @@ class ConcurrencyProtocolAssessmentTest {
 				List.of(
 						locked(EvidenceKind.LOCKED_ITERATION, "listeners", 20), //$NON-NLS-1$
 						locked(EvidenceKind.COMPOUND_UPDATE, "listeners", 40))); //$NON-NLS-1$
+		List<String> explanations= new ArrayList<>();
+		explanations.add("The same monitor protects iteration and compound updates."); //$NON-NLS-1$
 
-		RetainExistingLocking result= new RetainExistingLocking(protocol,
-				List.of("The same monitor protects iteration and compound updates.")); //$NON-NLS-1$
+		RetainExistingLocking result= new RetainExistingLocking(protocol, explanations);
+		explanations.clear();
 
 		assertFalse(result.permitsSourceRewrite());
 		assertEquals(protocol, result.protocol());
 		assertEquals(1, result.explanations().size());
+		assertThrows(UnsupportedOperationException.class,
+				() -> result.explanations().add("mutable")); //$NON-NLS-1$
+	}
+
+	@Test
+	void retainingExistingLockingRequiresCompleteUsageProof() {
+		ConcurrencyProtocol seedOnly= protocol(
+				SynchronizationKind.INTRINSIC_LOCK,
+				AnalysisCompleteness.LOCAL_SEED,
+				List.of(locked(EvidenceKind.LOCKED_READ, "listeners", 20))); //$NON-NLS-1$
+
+		assertThrows(IllegalArgumentException.class,
+				() -> createRetainExistingLocking(seedOnly));
 	}
 
 	@Test
@@ -97,13 +111,7 @@ class ConcurrencyProtocolAssessmentTest {
 				AnalysisCompleteness.LOCAL_USAGE_COMPLETE,
 				List.of(new Evidence(EvidenceKind.SNAPSHOT_PUBLICATION, "", //$NON-NLS-1$
 						"Readers observe an immutable volatile snapshot.", 20, 10))); //$NON-NLS-1$
-		TargetContainerContract target= new TargetContainerContract(
-				ContainerShape.CONCURRENT_CONTAINER,
-				OrderRequirement.ENCOUNTER,
-				UniquenessRequirement.DUPLICATES_ALLOWED,
-				Mutability.MUTABLE,
-				NullContract.REJECTED,
-				"Copy-on-write snapshot semantics match the observed reader contract."); //$NON-NLS-1$
+		TargetContainerContract target= targetContract();
 
 		RecommendedMigration result= new RecommendedMigration(
 				protocol,
@@ -121,9 +129,7 @@ class ConcurrencyProtocolAssessmentTest {
 				List.of(new Evidence(EvidenceKind.UNRESOLVED_BOUNDARY, "", //$NON-NLS-1$
 						"A framework callback could not be resolved.", 60, 8))); //$NON-NLS-1$
 		assertThrows(IllegalArgumentException.class,
-				() -> new RecommendedMigration(unresolved, target,
-						Strategy.COPY_ON_WRITE_SEQUENCE, Confidence.LOW,
-						List.of("Unresolved evidence must reject this recommendation."))); //$NON-NLS-1$
+				() -> createRecommendedMigration(unresolved, target));
 	}
 
 	@Test
@@ -156,11 +162,43 @@ class ConcurrencyProtocolAssessmentTest {
 		assertFalse(result.permitsSourceRewrite());
 		assertTrue(rejected.hasUnresolvedBoundary());
 		assertThrows(IllegalArgumentException.class,
-				() -> new Rejected(protocol(
-						SynchronizationKind.NONE,
-						AnalysisCompleteness.LOCAL_USAGE_COMPLETE,
-						List.of()),
-						List.of("A supported protocol cannot use the rejected outcome."))); //$NON-NLS-1$
+				ConcurrencyProtocolAssessmentTest::createRejectedOutcomeForSupportedProtocol);
+	}
+
+	private static Evidence createLockedEvidenceWithoutIdentity() {
+		return new Evidence(EvidenceKind.CHECK_THEN_ACT, "", //$NON-NLS-1$
+				"contains followed by add", 10, 5); //$NON-NLS-1$
+	}
+
+	private static RetainExistingLocking createRetainExistingLocking(ConcurrencyProtocol protocol) {
+		return new RetainExistingLocking(protocol,
+				List.of("Seed-only evidence cannot prove coherent locking.")); //$NON-NLS-1$
+	}
+
+	private static RecommendedMigration createRecommendedMigration(
+			ConcurrencyProtocol protocol,
+			TargetContainerContract target) {
+		return new RecommendedMigration(protocol, target,
+				Strategy.COPY_ON_WRITE_SEQUENCE, Confidence.LOW,
+				List.of("Unresolved evidence must reject this recommendation.")); //$NON-NLS-1$
+	}
+
+	private static Rejected createRejectedOutcomeForSupportedProtocol() {
+		return new Rejected(protocol(
+				SynchronizationKind.NONE,
+				AnalysisCompleteness.LOCAL_USAGE_COMPLETE,
+				List.of()),
+				List.of("A supported protocol cannot use the rejected outcome.")); //$NON-NLS-1$
+	}
+
+	private static TargetContainerContract targetContract() {
+		return new TargetContainerContract(
+				ContainerShape.CONCURRENT_CONTAINER,
+				OrderRequirement.ENCOUNTER,
+				UniquenessRequirement.DUPLICATES_ALLOWED,
+				Mutability.MUTABLE,
+				NullContract.REJECTED,
+				"Copy-on-write snapshot semantics match the observed reader contract."); //$NON-NLS-1$
 	}
 
 	private static ConcurrencyProtocol protocol(
