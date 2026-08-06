@@ -11,6 +11,7 @@
 package org.sandbox.jdt.container.api;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,7 +31,26 @@ public record ContainerLocalRewritePlan(
 		String targetInterfaceType,
 		String targetImplementationType,
 		TargetContainerContract targetContract,
-		List<LocalEdit> edits) {
+		List<LocalEdit> edits,
+		List<ArgumentTransfer> argumentTransfers) {
+
+	/** Compatibility constructor for plans without a cross-signature argument edge. */
+	public ContainerLocalRewritePlan(
+			String compilationUnitHandle,
+			String bindingKey,
+			String targetInterfaceType,
+			String targetImplementationType,
+			TargetContainerContract targetContract,
+			List<LocalEdit> edits) {
+		this(
+				compilationUnitHandle,
+				bindingKey,
+				targetInterfaceType,
+				targetImplementationType,
+				targetContract,
+				edits,
+				List.of());
+	}
 
 	public ContainerLocalRewritePlan {
 		compilationUnitHandle= requiredText(
@@ -41,7 +61,9 @@ public record ContainerLocalRewritePlan(
 				targetImplementationType, "targetImplementationType"); //$NON-NLS-1$
 		Objects.requireNonNull(targetContract, "targetContract"); //$NON-NLS-1$
 		edits= List.copyOf(Objects.requireNonNull(edits, "edits")); //$NON-NLS-1$
-		validateEdits(edits);
+		argumentTransfers= List.copyOf(
+				Objects.requireNonNull(argumentTransfers, "argumentTransfers")); //$NON-NLS-1$
+		validateEdits(edits, argumentTransfers);
 	}
 
 	/** One local semantic rewrite or verification anchored to source evidence. */
@@ -52,9 +74,28 @@ public record ContainerLocalRewritePlan(
 
 		public LocalEdit {
 			Objects.requireNonNull(kind, "kind"); //$NON-NLS-1$
-			if (sourceStart < 0 || sourceLength < 0) {
-				throw new IllegalArgumentException("Source range must not be negative"); //$NON-NLS-1$
+			validateSourceRange(sourceStart, sourceLength);
+		}
+	}
+
+	/**
+	 * Exact target of one unchanged argument whose parameter declaration migrates in
+	 * the same aggregate plan.
+	 */
+	public record ArgumentTransfer(
+			String methodJavaElementHandle,
+			int parameterIndex,
+			int sourceStart,
+			int sourceLength) {
+
+		public ArgumentTransfer {
+			methodJavaElementHandle= requiredText(
+					methodJavaElementHandle, "methodJavaElementHandle"); //$NON-NLS-1$
+			if (parameterIndex < 0) {
+				throw new IllegalArgumentException(
+						"parameterIndex must not be negative"); //$NON-NLS-1$
 			}
+			validateSourceRange(sourceStart, sourceLength);
 		}
 	}
 
@@ -72,7 +113,7 @@ public record ContainerLocalRewritePlan(
 			}
 		}
 
-		public static PlanningResult ready(ContainerLocalRewritePlan plan) {
+		public static PlanningResult accepted(ContainerLocalRewritePlan plan) {
 			return new PlanningResult(Optional.of(plan), List.of());
 		}
 
@@ -120,16 +161,24 @@ public record ContainerLocalRewritePlan(
 		POSITIONAL_SEMANTICS,
 		MISSING_APPEND_PATTERN,
 		UNBALANCED_APPEND_PATTERN,
+		ARGUMENT_TRANSFER_MISMATCH,
 		UNSUPPORTED_EVIDENCE
 	}
 
-	private static void validateEdits(List<LocalEdit> edits) {
+	private static void validateEdits(
+			List<LocalEdit> edits,
+			List<ArgumentTransfer> argumentTransfers) {
 		if (edits.isEmpty()) {
 			throw new IllegalArgumentException("A local rewrite plan requires edits"); //$NON-NLS-1$
 		}
 		Set<EditKind> kinds= EnumSet.noneOf(EditKind.class);
+		Set<SourceRange> expectedTransfers= HashSet.newHashSet(edits.size());
 		for (LocalEdit edit : edits) {
 			kinds.add(edit.kind());
+			if (edit.kind() == EditKind.VERIFY_ARGUMENT_TRANSFER) {
+				expectedTransfers.add(new SourceRange(
+						edit.sourceStart(), edit.sourceLength()));
+			}
 		}
 		if (!kinds.contains(EditKind.CHANGE_LOCAL_DECLARATION)
 				|| !kinds.contains(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER)
@@ -137,6 +186,26 @@ public record ContainerLocalRewritePlan(
 				|| !kinds.contains(EditKind.REPLACE_TAIL_WRITE_WITH_ADD)) {
 			throw new IllegalArgumentException(
 					"A local append-array rewrite requires declaration, initializer, growth and append edits"); //$NON-NLS-1$
+		}
+
+		Set<SourceRange> describedTransfers=
+				HashSet.newHashSet(argumentTransfers.size());
+		for (ArgumentTransfer transfer : argumentTransfers) {
+			if (!describedTransfers.add(new SourceRange(
+					transfer.sourceStart(), transfer.sourceLength()))) {
+				throw new IllegalArgumentException(
+						"Argument transfer source ranges must be unique"); //$NON-NLS-1$
+			}
+		}
+		if (!expectedTransfers.equals(describedTransfers)) {
+			throw new IllegalArgumentException(
+					"Every argument verification edit requires one exact target description"); //$NON-NLS-1$
+		}
+	}
+
+	private static void validateSourceRange(int sourceStart, int sourceLength) {
+		if (sourceStart < 0 || sourceLength < 0) {
+			throw new IllegalArgumentException("Source range must not be negative"); //$NON-NLS-1$
 		}
 	}
 
@@ -146,5 +215,8 @@ public record ContainerLocalRewritePlan(
 			throw new IllegalArgumentException(fieldName + " must not be empty"); //$NON-NLS-1$
 		}
 		return text;
+	}
+
+	private record SourceRange(int start, int length) {
 	}
 }
