@@ -183,8 +183,8 @@ public final class ClosedFlowArrayUsageRefiner {
 			}
 		}
 		return component.edges().stream().allMatch(edge -> component.node(edge.targetNodeId())
-				.map(node -> node.kind() == NodeKind.PARAMETER)
-				.orElse(false));
+				.filter(node -> node.kind() == NodeKind.PARAMETER)
+				.isPresent());
 	}
 
 	private static boolean safeParameterProfile(ContainerUsageProfile profile) {
