@@ -17,8 +17,8 @@ on:
         type: string
 
 concurrency:
-  group: zenodo-release-${{ github.event.release.tag_name || inputs.tag || github.ref }}
-  cancel-in-progress: false
+  group: zenodo-release-${{ github.event.pull_request.number || github.event.release.tag_name || inputs.tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
