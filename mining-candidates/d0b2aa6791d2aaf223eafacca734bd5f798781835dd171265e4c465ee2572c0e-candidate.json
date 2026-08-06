@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d0b2aa6791d2aaf223eafacca734bd5f798781835dd171265e4c465ee2572c0e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: remove.fqn.for.static.method.objects.requirenonnull*/\n\u003c!description: Replace fully qualified static method call java.util.Objects.requireNonNull() with simple name, relying on static import.\u003e\n\u003c!severity: HINT\u003e\njava.util.Objects.requireNonNull($arg$)\n\u003d\u003e\nrequireNonNull($arg$)\n;;",
+  "beforeExample": "public class MyClass {\n    public void foo(String s) {\n        // Original code with fully qualified static method call\n        java.util.Objects.requireNonNull(s, \"String must not be null\");\n        System.out.println(\"Length: \" + s.length());\n    }\n\n    public void bar(Object o) {\n        // Example with another argument type\n        java.util.Objects.requireNonNull(o);\n    }\n}",
+  "afterExample": "import static java.util.Objects.requireNonNull;\n\npublic class MyClass {\n    public void foo(String s) {\n        // Transformed code using simple name after static import\n        requireNonNull(s, \"String must not be null\");\n        System.out.println(\"Length: \" + s.length());\n    }\n\n    public void bar(Object o) {\n        // Example with another argument type\n        requireNonNull(o);\n    }\n}",
+  "negativeExample": "import java.util.Collections;\n\npublic class MyClass {\n    public void notMatchingStaticCall(String s) {\n        // This should not match because it\u0027s a different static method\n        Collections.emptyList();\n    }\n\n    public void notMatchingNonStaticCall(String s) {\n        // This should not match because it\u0027s a non-static method\n        s.trim();\n    }\n\n    public void alreadySimplified(String s) {\n        // This should not apply a change as it\u0027s already in the desired form\n        // (assuming static import is already present or implied)\n        // The DSL engine ensures no-op changes are not applied.\n        // requireNonNull(s);\n    }\n}",
+  "targetHintFile": "simplification.sandbox-hint",
+  "sourceCommit": "182a1609f5d754dfb8873f8e2f6d3fc1dd560a6b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-06T03:14:25.727614100Z",
+  "ruleFingerprint": "sha256:44fb38dc14f2ca663947e8ee4fce4908b74b87e945bb619e321a163dd7c422d3",
+  "behaviorFingerprint": "sha256:a41f3508ef064a45a6b7a940da7b5d94e8acfbbb22a8106d06445a03c5ec50ff",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-06T03:14:28.284377894Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

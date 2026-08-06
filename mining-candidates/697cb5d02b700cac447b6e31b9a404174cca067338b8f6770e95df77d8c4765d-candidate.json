@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "697cb5d02b700cac447b6e31b9a404174cca067338b8f6770e95df77d8c4765d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!map CleanUpMethod: \"setDefaultOptions\" \u003d\u003e \"setDefaultOptions\", \"initDefaults\" \u003d\u003e \"initDefaults\"\u003e\n\norg.eclipse.jdt.internal.corext.fix.CleanUpConstants.#{CleanUpMethod}($args$)\n\u003d\u003e org.eclipse.jdt.internal.corext.fix.CleanUpConstantsOptions.#{CleanUpMethod_VALUE}($args$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences.cleanup;\nimport org.eclipse.jdt.internal.corext.fix.CleanUpConstants;\nimport org.eclipse.jdt.ui.cleanup.CleanUpOptions;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\npublic class Example {\n    public void setOptions(CleanUpOptions options) {\n        CleanUpConstants.setDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS, options);\n    }\n\n    public void initializeDefaults(IPreferenceStore store) {\n        CleanUpConstants.initDefaults(store);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences.cleanup;\nimport org.eclipse.jdt.internal.corext.fix.CleanUpConstantsOptions;\nimport org.eclipse.jdt.internal.corext.fix.CleanUpConstants;\nimport org.eclipse.jdt.ui.cleanup.CleanUpOptions;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\npublic class Example {\n    public void setOptions(CleanUpOptions options) {\n        CleanUpConstantsOptions.setDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS, options);\n    }\n\n    public void initializeDefaults(IPreferenceStore store) {\n        CleanUpConstantsOptions.initDefaults(store);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences.cleanup;\nimport org.eclipse.jdt.internal.corext.fix.CleanUpConstants;\n\npublic class NegativeExample {\n    public String getConstantValue() {\n        // Accessing a static field (constant), not calling a method, should not be transformed.\n        return CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS;\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "cc687aa53456a6211f191da39dd3b04107316a77",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Migrate calls to `CleanUpConstants.setDefaultOptions` and `CleanUpConstants.initDefaults` to `CleanUpConstantsOptions`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-06T03:14:25.782413445Z",
+  "ruleFingerprint": "sha256:5cdc0bf350a96cf870e56777fc02c46ba5afdff4370f0b8f3f81af0a3777326b",
+  "behaviorFingerprint": "sha256:a22d6fc113d11e0d1783ecddb5e476df9c2b3bba38d04d8fd11b08af6152e9c5",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
+    "verifiedAt": "2026-08-06T03:14:28.315762505Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

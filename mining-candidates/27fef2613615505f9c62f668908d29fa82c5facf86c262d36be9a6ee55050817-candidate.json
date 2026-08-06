@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "27fef2613615505f9c62f668908d29fa82c5facf86c262d36be9a6ee55050817",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.util.Arrays.stream($wsMgr.getAllWorkingSets()).filter($anyParam -\u003e $id.equals($anyParam.getId()) \u0026\u0026 $name.equals($anyParam.getName())).findAny().orElse(null)\n\u003d\u003e\n$wsMgr.getWorkingSet($name)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.dialogs;\n\nimport java.util.Arrays;\nimport org.eclipse.ui.IWorkingSet;\nimport org.eclipse.ui.IWorkingSetManager;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    void createOrUpdateWorkingSet(String name, String oldname, String label, final String id, IWorkingSetManager workingSetManager) {\n        // This is the target line\n        IWorkingSet workingSet \u003d Arrays.stream(workingSetManager.getAllWorkingSets())\n                .filter(w -\u003e id.equals(w.getId()) \u0026\u0026 name.equals(w.getName()))\n                .findAny()\n                .orElse(null);\n        System.out.println(workingSet);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.dialogs;\n\nimport org.eclipse.ui.IWorkingSet;\nimport org.eclipse.ui.IWorkingSetManager;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    void createOrUpdateWorkingSet(String name, String oldname, String label, final String id, IWorkingSetManager workingSetManager) {\n        // This is the replacement\n        IWorkingSet workingSet \u003d workingSetManager.getWorkingSet(name);\n        System.out.println(workingSet);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.dialogs;\n\nimport java.util.Arrays;\nimport org.eclipse.ui.IWorkingSet;\nimport org.eclipse.ui.IWorkingSetManager;\nimport org.eclipse.core.runtime.IAdaptable;\n\npublic class NegativeTestClass {\n    void findWorkingSetByLabel(String labelToFind, IWorkingSetManager workingSetManager) {\n        // This stream operation has a different filter condition, should not be matched.\n        IWorkingSet foundSet \u003d Arrays.stream(workingSetManager.getAllWorkingSets())\n                .filter(ws -\u003e labelToFind.equals(ws.getLabel()))\n                .findAny()\n                .orElse(null);\n        System.out.println(foundSet);\n\n        // This uses getWorkingSet directly, which is not the pattern.\n        IWorkingSet directLookup \u003d workingSetManager.getWorkingSet(\"someName\");\n        System.out.println(directLookup);\n    }\n}",
+  "targetHintFile": "java-standard.sandbox-hint",
+  "sourceCommit": "f49f45c8f9f2047db09e89802fa658a0b50d589c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Simplify IWorkingSet lookup from stream-based filtering to direct `getWorkingSet(name)` call.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-06T03:14:25.770400106Z",
+  "ruleFingerprint": "sha256:dc207c6d4177f14b04f62430e01178ef90548ac699aee8eed7864c559c83d144",
+  "behaviorFingerprint": "sha256:1b1acb10fd0d3e96013c76e6ab226b7eb2bdd3516c05de6b7b035f1da6820e7a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-08-06T03:14:28.308993715Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

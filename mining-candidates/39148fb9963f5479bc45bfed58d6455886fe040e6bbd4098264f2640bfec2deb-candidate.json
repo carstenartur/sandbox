@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "39148fb9963f5479bc45bfed58d6455886fe040e6bbd4098264f2640bfec2deb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string-redundant-constructor\u003e\n\u003c!description: Replace redundant new String(String) constructor with the string itself.\nThis transformation is safe only when the constructor argument is already a java.lang.String.\nIt avoids unnecessary object creation, improving performance and code readability.\nIt will not apply to constructors like new String(char[]) or new String(byte[]).\u003e\n\u003c!severity: HINT\u003e\n\nnew java.lang.String($x) :: instanceof($x, \"java.lang.String\")\n\u003d\u003e $x\n;;",
+  "beforeExample": "public class MyClass {\n    public String getStringReference(String input) {\n        return new java.lang.String(input);\n    }\n    public String getLiteral() {\n        return new java.lang.String(\"Hello\");\n    }\n    public String getEmptyString() {\n        return new java.lang.String(\"\");\n    }\n    public String methodCallInput() {\n        return new java.lang.String(getStringReference(\"test\"));\n    }\n    public String nonStringInput() {\n        char[] chars \u003d {\u0027a\u0027, \u0027b\u0027, \u0027c\u0027};\n        return new java.lang.String(chars); // Should not match\n    }\n}",
+  "afterExample": "public class MyClass {\n    public String getStringReference(String input) {\n        return input;\n    }\n    public String getLiteral() {\n        return \"Hello\";\n    }\n    public String getEmptyString() {\n        return \"\";\n    }\n    public String methodCallInput() {\n        return getStringReference(\"test\");\n    }\n    public String nonStringInput() {\n        char[] chars \u003d {\u0027a\u0027, \u0027b\u0027, \u0027c\u0027};\n        return new java.lang.String(chars); // Still new String(chars)\n    }\n}",
+  "negativeExample": "public class MyOtherClass {\n    public String fromChars() {\n        char[] data \u003d {\u0027x\u0027, \u0027y\u0027, \u0027z\u0027};\n        // This must NOT match because \u0027data\u0027 is char[], not String.\n        return new java.lang.String(data);\n    }\n    public String fromBytes() {\n        byte[] data \u003d {1, 2, 3};\n        // This must NOT match because \u0027data\u0027 is byte[], not String.\n        return new java.lang.String(data);\n    }\n    public String fromBytesWithCharset(byte[] bytes) {\n        // This must NOT match because \u0027bytes\u0027 is byte[] and a charset is involved.\n        return new java.lang.String(bytes, java.nio.charset.StandardCharsets.UTF_8);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "bd8e49db68c0f414680cc5220b826de22a17e60e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Performance",
+  "summary": "Replaces redundant new java.lang.String($x) with $x when $x is already a String, improving performance and readability.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-06T03:14:25.754039976Z",
+  "ruleFingerprint": "sha256:d052a02faa275446a7f3006e8c178e13df2797fa4dbe66a76052d10884223431",
+  "behaviorFingerprint": "sha256:3ecb0988413e1d73b4b25f0aa02d29ccce1c670b2dfcef2221e43da9b897defd",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-06T03:14:28.290229759Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

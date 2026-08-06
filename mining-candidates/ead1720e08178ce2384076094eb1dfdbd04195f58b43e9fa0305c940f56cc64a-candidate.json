@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ead1720e08178ce2384076094eb1dfdbd04195f58b43e9fa0305c940f56cc64a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: jdt.internal.StubUtility2ToStubUtility2Core\n\u003c!description: Renames StubUtility2.findAnnotation to StubUtility2Core.findAnnotation due to internal refactoring.\n\u003c!severity: INFO\u003e\n*/\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility2.findAnnotation($arg0$, $arg1$)\n\u003d\u003e\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core.findAnnotation($arg0$, $arg1$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport java.util.List;\nimport org.eclipse.jdt.core.dom.Annotation;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2;\n\npublic class ModifierCorrectionSubProcessor {\n    public void process(ASTNode selectedNode) {\n        List modifiers \u003d null;\n        Annotation annot \u003d StubUtility2.findAnnotation(\"java.lang.Override\", modifiers);\n        System.out.println(annot);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport java.util.List;\nimport org.eclipse.jdt.core.dom.Annotation;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core;\n\npublic class ModifierCorrectionSubProcessor {\n    public void process(ASTNode selectedNode) {\n        List modifiers \u003d null;\n        Annotation annot \u003d StubUtility2Core.findAnnotation(\"java.lang.Override\", modifiers);\n        System.out.println(annot);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport java.util.List;\nimport org.eclipse.jdt.core.dom.Annotation;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport some.other.package.SomeAnnotationUtility;\n\npublic class AnotherProcessor {\n    public void process(ASTNode selectedNode) {\n        List modifiers \u003d null;\n        // This should NOT be touched as it\u0027s not StubUtility2\n        Annotation annot \u003d SomeAnnotationUtility.findAnnotation(\"java.lang.Override\", modifiers);\n        System.out.println(annot);\n    }\n}",
+  "targetHintFile": "jdt-internal-api-refactoring.sandbox-hint",
+  "sourceCommit": "f5bc72cf819d844d33aec51b583a6ebe6a12f0fd",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Rename internal JDT utility method StubUtility2.findAnnotation to StubUtility2Core.findAnnotation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-06T03:14:25.793805372Z",
+  "ruleFingerprint": "sha256:c47dd09f92e61fee97b595ded03547ae5c849368515b8a98eef1a136a2a0b898",
+  "behaviorFingerprint": "sha256:6a887de9cc4add2dd5dabd545057b240a28fa9f5e07b2fd58f09fcc316ee72af",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-08-06T03:14:28.330760657Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

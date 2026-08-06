@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
-    "verifiedAt": "2026-08-05T03:15:58.351864208Z",
+    "verifiedAt": "2026-08-06T03:14:27.950880063Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
