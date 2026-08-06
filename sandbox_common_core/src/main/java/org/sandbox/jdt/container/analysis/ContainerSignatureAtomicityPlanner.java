@@ -35,23 +35,52 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
 import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSearchTarget;
 
 /**
- * Derives report-only atomic method-signature groups from a closed container flow.
+ * Derives atomic method-signature groups from a closed container flow.
  *
- * <p>The planner does not claim semantic bridge safety. It records only the Java-level
- * coexistence constraint: an array parameter and a collection parameter may form
- * distinct overloads, while an array return and a collection return cannot coexist
- * under the same method name and parameter list.</p>
+ * <p>The ordinary planning entry point remains report-only and records Java-level
+ * coexistence constraints for compatibility-policy analysis. The explicit
+ * closed-source entry point marks only the currently executable single-parameter
+ * group as directly automatic.</p>
  */
 public final class ContainerSignatureAtomicityPlanner {
 
-	/** Builds an immutable signature plan for one closed flow recommendation. */
+	/** Builds an immutable report-only signature plan for one closed flow. */
 	public ContainerSignatureMigrationPlan plan(
 			ContainerFlowComponent component,
 			ResolvedContainerFlowSearchPlan resolvedPlan,
 			ContainerRecommendation recommendation) {
+		return createPlan(
+				component, resolvedPlan, recommendation, PlanningStatus.REPORT_ONLY);
+	}
+
+	/**
+	 * Builds an immutable direct-migration plan for the implemented closed-source
+	 * parameter slice. No compatibility bridge is implied by this mode.
+	 */
+	public ContainerSignatureMigrationPlan planClosedSource(
+			ContainerFlowComponent component,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
+			ContainerRecommendation recommendation) {
+		return createPlan(
+				component,
+				resolvedPlan,
+				recommendation,
+				PlanningStatus.CLOSED_SOURCE_AUTOMATIC);
+	}
+
+	private static ContainerSignatureMigrationPlan createPlan(
+			ContainerFlowComponent component,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
+			ContainerRecommendation recommendation,
+			PlanningStatus completedStatus) {
 		Objects.requireNonNull(component, "component"); //$NON-NLS-1$
 		Objects.requireNonNull(resolvedPlan, "resolvedPlan"); //$NON-NLS-1$
 		Objects.requireNonNull(recommendation, "recommendation"); //$NON-NLS-1$
+		Objects.requireNonNull(completedStatus, "completedStatus"); //$NON-NLS-1$
+		if (completedStatus != PlanningStatus.REPORT_ONLY
+				&& completedStatus != PlanningStatus.CLOSED_SOURCE_AUTOMATIC) {
+			throw new IllegalArgumentException("Unsupported completed signature status"); //$NON-NLS-1$
+		}
 
 		List<SignatureDiagnostic> diagnostics= new ArrayList<>();
 		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED) {
@@ -141,11 +170,26 @@ public final class ContainerSignatureAtomicityPlanner {
 			}
 		}
 		groups.sort(Comparator.comparing(SignatureAtomicityGroup::groupId));
+		if (completedStatus == PlanningStatus.CLOSED_SOURCE_AUTOMATIC
+				&& !supportsAutomaticExecution(groups)) {
+			diagnostics.add(new SignatureDiagnostic(
+					DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+					component.rootNodeId(),
+					"", //$NON-NLS-1$
+					"Automatic signature execution currently supports exactly one source-resolved parameter declaration and no return or override family.")); //$NON-NLS-1$
+		}
 		return new ContainerSignatureMigrationPlan(
 				recommendation.targetContract(),
 				groups,
-				diagnostics.isEmpty() ? PlanningStatus.REPORT_ONLY : PlanningStatus.REJECTED,
+				diagnostics.isEmpty() ? completedStatus : PlanningStatus.REJECTED,
 				diagnostics);
+	}
+
+	private static boolean supportsAutomaticExecution(
+			List<SignatureAtomicityGroup> groups) {
+		return groups.size() == 1
+				&& groups.get(0).positionKind() == PositionKind.PARAMETER
+				&& groups.get(0).members().size() == 1;
 	}
 
 	private static boolean declarationTarget(ResolvedSearchTarget target) {

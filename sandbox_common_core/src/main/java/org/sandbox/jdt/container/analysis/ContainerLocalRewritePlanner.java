@@ -39,7 +39,7 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
-/** Plans the first executable, strictly local append-array to list migration. */
+/** Plans the first executable append-array to list migration. */
 public final class ContainerLocalRewritePlanner {
 
 	private static final String LIST_TYPE= "java.util.List"; //$NON-NLS-1$
@@ -51,6 +51,7 @@ public final class ContainerLocalRewritePlanner {
 			Kind.REFERENCE_COMPONENT,
 			Kind.ARRAY_LENGTH_READ,
 			Kind.ENCOUNTER_ITERATION,
+			Kind.FLOW_CONTINUATION_ROOT,
 			Kind.LOCAL_USAGE_COMPLETE);
 
 	/** Builds a local rewrite plan or returns complete rejection diagnostics. */
@@ -128,7 +129,7 @@ public final class ContainerLocalRewritePlanner {
 				|| component.nodes().get(0).kind() != NodeKind.LOCAL_VARIABLE) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.FLOW_NOT_STRICTLY_LOCAL,
-					"The first rewrite requires exactly one closed local variable and no flow edges.")); //$NON-NLS-1$
+					"The local member requires exactly one closed local variable and no local flow edges.")); //$NON-NLS-1$
 			return null;
 		}
 		FlowNode node= component.nodes().get(0);
@@ -197,6 +198,7 @@ public final class ContainerLocalRewritePlanner {
 				case ENCOUNTER_ITERATION -> verifyEncounterIterations
 						? EditKind.VERIFY_ENCOUNTER_ITERATION
 						: null;
+				case FLOW_CONTINUATION_ROOT -> EditKind.VERIFY_ARGUMENT_TRANSFER;
 				default -> null;
 			};
 			if (kind != null) {

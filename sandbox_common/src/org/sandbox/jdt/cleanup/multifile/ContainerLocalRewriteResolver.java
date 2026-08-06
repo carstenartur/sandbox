@@ -12,6 +12,7 @@ package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -99,6 +100,13 @@ final class ContainerLocalRewriteResolver {
 			recognisedAssignments.add(pair.appendAssignment());
 		}
 
+		Set<SourceRange> expectedTransfers= plannedRanges(
+				plan, EditKind.VERIFY_ARGUMENT_TRANSFER);
+		if (expectedTransfers.size()
+				!= editCount(plan, EditKind.VERIFY_ARGUMENT_TRANSFER)) {
+			throw stale(unit, "duplicate argument-transfer source range in plan"); //$NON-NLS-1$
+		}
+		Set<SourceRange> observedTransfers= new HashSet<>(expectedTransfers.size() * 2);
 		Set<Expression> lengthExpressions=
 				java.util.Collections.newSetFromMap(new IdentityHashMap<>());
 		for (SimpleName reference : collected.references()) {
@@ -117,11 +125,18 @@ final class ContainerLocalRewriteResolver {
 			if (isEnhancedForExpression(reference, plan.bindingKey())) {
 				continue;
 			}
+			if (isPlannedArgumentTransfer(
+					reference, expectedTransfers, observedTransfers)) {
+				continue;
+			}
 			throw stale(unit, "unexpected use of local array binding at source offset " //$NON-NLS-1$
 					+ reference.getStartPosition());
 		}
 		if (lengthExpressions.size() != editCount(plan, EditKind.REPLACE_LENGTH_WITH_SIZE)) {
 			throw stale(unit, "array length occurrence count changed"); //$NON-NLS-1$
+		}
+		if (!observedTransfers.equals(expectedTransfers)) {
+			throw stale(unit, "argument-transfer occurrence set changed"); //$NON-NLS-1$
 		}
 
 		List<ResolvedLength> lengths= new ArrayList<>();
@@ -222,6 +237,32 @@ final class ContainerLocalRewriteResolver {
 		return List.copyOf(pairs);
 	}
 
+	private static boolean isPlannedArgumentTransfer(
+			SimpleName reference,
+			Set<SourceRange> expected,
+			Set<SourceRange> observed) {
+		ASTNode parent= reference.getParent();
+		if (!(parent instanceof MethodInvocation invocation)
+				|| !invocation.arguments().contains(reference)) {
+			return false;
+		}
+		SourceRange range= new SourceRange(
+				reference.getStartPosition(), reference.getLength());
+		return expected.contains(range) && observed.add(range);
+	}
+
+	private static Set<SourceRange> plannedRanges(
+			ContainerLocalRewritePlan plan,
+			EditKind kind) {
+		Set<SourceRange> result= new HashSet<>();
+		plan.edits().stream()
+				.filter(edit -> edit.kind() == kind)
+				.map(edit -> new SourceRange(
+						edit.sourceStart(), edit.sourceLength()))
+				.forEach(result::add);
+		return Set.copyOf(result);
+	}
+
 	static record ResolvedPlan(
 			ContainerLocalRewritePlan plan,
 			VariableDeclarationStatement declaration,
@@ -256,6 +297,15 @@ final class ContainerLocalRewriteResolver {
 		CollectedAst {
 			references= List.copyOf(references);
 			assignments= List.copyOf(assignments);
+		}
+	}
+
+	private record SourceRange(int start, int length) {
+		private SourceRange {
+			if (start < 0 || length < 0) {
+				throw new IllegalArgumentException(
+						"Source range must not be negative"); //$NON-NLS-1$
+			}
 		}
 	}
 

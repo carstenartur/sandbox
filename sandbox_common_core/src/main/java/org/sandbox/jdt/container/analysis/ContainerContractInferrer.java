@@ -85,9 +85,8 @@ public final class ContainerContractInferrer {
 		assessments.add(concurrencyAssessment(profile));
 		assessments.add(signatureAssessment(profile));
 
-		Confidence confidence= strictlyLocalProof(profile)
-				? Confidence.HIGH
-				: Confidence.MEDIUM;
+		Confidence confidence= completeProof(profile)
+				? Confidence.HIGH : Confidence.MEDIUM;
 		return Optional.of(new ContainerRecommendation(
 				profile,
 				target,
@@ -98,10 +97,9 @@ public final class ContainerContractInferrer {
 	}
 
 	private static boolean eligibleAppendArray(ContainerUsageProfile profile) {
-		if (profile.completeness() != AnalysisCompleteness.LOCAL_USAGE_COMPLETE
+		if (!completeProfile(profile)
 				|| profile.currentShape() != ContainerShape.ARRAY
-				|| profile.elementDomain() != ElementDomain.REFERENCE
-						&& profile.elementDomain() != ElementDomain.ENUM
+				|| !referenceDomain(profile.elementDomain())
 				|| !profile.access().append()
 				|| profile.access().positionalInsert()
 				|| profile.access().positionalRemove()) {
@@ -109,6 +107,15 @@ public final class ContainerContractInferrer {
 		}
 		return profile.orderRequirement() == OrderRequirement.ENCOUNTER
 				|| profile.orderRequirement() == OrderRequirement.POSITIONAL;
+	}
+
+	private static boolean completeProfile(ContainerUsageProfile profile) {
+		return profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE
+				|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE;
+	}
+
+	private static boolean referenceDomain(ElementDomain domain) {
+		return domain == ElementDomain.REFERENCE || domain == ElementDomain.ENUM;
 	}
 
 	private static ContractAssessment orderAssessment(ContainerUsageProfile profile) {
@@ -125,12 +132,13 @@ public final class ContainerContractInferrer {
 	}
 
 	private static ContractAssessment aliasingAssessment(ContainerUsageProfile profile) {
-		if (profile.escapeLevel() == EscapeLevel.LOCAL
-				&& profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS) {
+		if (profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS
+				&& (profile.escapeLevel() == EscapeLevel.LOCAL
+						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)) {
 			return new ContractAssessment(
 					ContractProperty.ALIASING,
 					Preservation.PRESERVED,
-					"Every local use was classified and no alias, identity observation, or external publication was found."); //$NON-NLS-1$
+					"Every local use and closed-flow transfer was classified; no identity observation, external publication or unmatched alias remains."); //$NON-NLS-1$
 		}
 		return new ContractAssessment(
 				ContractProperty.ALIASING,
@@ -139,12 +147,13 @@ public final class ContainerContractInferrer {
 	}
 
 	private static ContractAssessment concurrencyAssessment(ContainerUsageProfile profile) {
-		if (profile.escapeLevel() == EscapeLevel.LOCAL
-				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED) {
+		if (profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED
+				&& (profile.escapeLevel() == EscapeLevel.LOCAL
+						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)) {
 			return new ContractAssessment(
 					ContractProperty.CONCURRENCY,
 					Preservation.PRESERVED,
-					"All uses stay in the declaring method body and no lambda, nested type, method boundary, or publication path captures the value."); //$NON-NLS-1$
+					"The complete source flow contains only synchronous local and parameter transfers and no capture or publication path."); //$NON-NLS-1$
 		}
 		return new ContractAssessment(
 				ContractProperty.CONCURRENCY,
@@ -159,14 +168,20 @@ public final class ContainerContractInferrer {
 					Preservation.PRESERVED,
 					"The represented value is a local variable and no method, constructor, field, or override signature changes are required."); //$NON-NLS-1$
 		}
+		if (profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE) {
+			return new ContractAssessment(
+					ContractProperty.SIGNATURES,
+					Preservation.PRESERVED,
+					"The closed flow identifies every participating source signature; the atomic signature planner must still approve the exact executable group."); //$NON-NLS-1$
+		}
 		return new ContractAssessment(
 				ContractProperty.SIGNATURES,
 				Preservation.REQUIRES_PROOF,
 				"Fields, parameters, return values, callers and override families must be migrated atomically before execution."); //$NON-NLS-1$
 	}
 
-	private static boolean strictlyLocalProof(ContainerUsageProfile profile) {
-		return profile.escapeLevel() == EscapeLevel.LOCAL
+	private static boolean completeProof(ContainerUsageProfile profile) {
+		return completeProfile(profile)
 				&& profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS
 				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;
 	}

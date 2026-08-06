@@ -16,8 +16,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Report-only plan describing which method signatures must change atomically for one
- * semantic container migration.
+ * Plan describing which method signatures must change atomically for one semantic
+ * container migration.
  */
 public record ContainerSignatureMigrationPlan(
 		TargetContainerContract targetContract,
@@ -33,6 +33,11 @@ public record ContainerSignatureMigrationPlan(
 		validateUniqueGroups(groups);
 		if (status == PlanningStatus.REJECTED && diagnostics.isEmpty()) {
 			throw new IllegalArgumentException("A rejected signature plan requires diagnostics"); //$NON-NLS-1$
+		}
+		if (status == PlanningStatus.CLOSED_SOURCE_AUTOMATIC
+				&& (groups.isEmpty() || !diagnostics.isEmpty())) {
+			throw new IllegalArgumentException(
+					"A closed-source automatic signature plan requires groups without diagnostics"); //$NON-NLS-1$
 		}
 	}
 
@@ -109,6 +114,9 @@ public record ContainerSignatureMigrationPlan(
 
 	public enum PlanningStatus {
 		NO_SIGNATURE_CHANGE,
+		/** All source declarations and uses are closed and may be changed directly. */
+		CLOSED_SOURCE_AUTOMATIC,
+		/** Signatures are known, but compatibility or execution policy is still required. */
 		REPORT_ONLY,
 		REJECTED
 	}
@@ -117,11 +125,12 @@ public record ContainerSignatureMigrationPlan(
 		FLOW_NOT_CLOSED,
 		MISSING_SIGNATURE_NODE,
 		AMBIGUOUS_SIGNATURE_NODE,
-		MISSING_METHOD_HANDLE
+		MISSING_METHOD_HANDLE,
+		UNSUPPORTED_AUTOMATIC_GROUP
 	}
 
 	private static void validateUniqueGroups(List<SignatureAtomicityGroup> groups) {
-		Set<String> ids= new HashSet<>();
+		Set<String> ids= HashSet.newHashSet(groups.size());
 		for (SignatureAtomicityGroup group : groups) {
 			if (!ids.add(group.groupId())) {
 				throw new IllegalArgumentException("Duplicate signature group: " + group.groupId()); //$NON-NLS-1$
@@ -130,7 +139,7 @@ public record ContainerSignatureMigrationPlan(
 	}
 
 	private static void validateUniqueMembers(List<SignatureMember> members) {
-		Set<String> handles= new HashSet<>();
+		Set<String> handles= HashSet.newHashSet(members.size());
 		for (SignatureMember member : members) {
 			if (!handles.add(member.javaElementHandle())) {
 				throw new IllegalArgumentException(
