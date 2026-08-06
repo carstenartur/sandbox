@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import time
 import urllib.parse
@@ -15,10 +16,20 @@ from typing import Any, Iterable
 
 STABLE_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
 SNAPSHOT_MARKER = re.compile(r"snapshot", re.IGNORECASE)
+ZENODO_PAGE_SIZE = 25
+ZENODO_MAX_PAGES = 1000
 
 
 class ZenodoVerificationError(RuntimeError):
     """Raised when the expected stable Zenodo record cannot be proven."""
+
+
+class ZenodoRetryError(ZenodoVerificationError):
+    """Raised after all online verification attempts have failed."""
+
+    def __init__(self, message: str, attempts: int) -> None:
+        super().__init__(message)
+        self.attempts = attempts
 
 
 @dataclass(frozen=True)
@@ -97,11 +108,9 @@ def doi_from(value: object) -> str:
 
 
 def version_doi(record: dict[str, Any]) -> str:
-    for value in (
-        record.get("doi"),
-        metadata(record).get("doi"),
-        (record.get("pids") or {}).get("doi") if isinstance(record.get("pids"), dict) else None,
-    ):
+    pids = record.get("pids")
+    pid_doi = pids.get("doi") if isinstance(pids, dict) else None
+    for value in (record.get("doi"), metadata(record).get("doi"), pid_doi):
         doi = doi_from(value)
         if doi:
             return doi
@@ -216,22 +225,94 @@ def find_verified_record(
     )
 
 
-def fetch_records(api_url: str, repository_url: str, timeout_seconds: float) -> object:
+def fetch_json(url: str, timeout_seconds: float) -> object:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "sandbox-release-verifier/1.0",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+        return json.load(response)
+
+
+def next_page_url(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    links = payload.get("links")
+    if isinstance(links, dict):
+        value = links.get("next")
+        if isinstance(value, str) and value.startswith("http"):
+            return value
+    return ""
+
+
+def total_records(payload: object) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+    hits = payload.get("hits")
+    if isinstance(hits, dict):
+        total = hits.get("total")
+        if isinstance(total, int):
+            return total
+        if isinstance(total, dict) and isinstance(total.get("value"), int):
+            return int(total["value"])
+    return None
+
+
+def first_page_url(api_url: str, repository_url: str) -> str:
     query = urllib.parse.urlencode(
         {
             "q": f'"{normalize_repository_url(repository_url)}"',
             "all_versions": "true",
-            "size": "100",
+            "size": str(ZENODO_PAGE_SIZE),
+            "page": "1",
             "sort": "-mostrecent",
         }
     )
     separator = "&" if "?" in api_url else "?"
-    request = urllib.request.Request(
-        api_url + separator + query,
-        headers={"Accept": "application/json", "User-Agent": "sandbox-release-verifier/1.0"},
-    )
-    with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-        return json.load(response)
+    return api_url + separator + query
+
+
+def page_url(api_url: str, repository_url: str, page: int) -> str:
+    parsed = urllib.parse.urlsplit(first_page_url(api_url, repository_url))
+    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    query["page"] = [str(page)]
+    encoded = urllib.parse.urlencode(query, doseq=True)
+    return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, encoded, parsed.fragment))
+
+
+def fetch_records(api_url: str, repository_url: str, timeout_seconds: float) -> list[dict[str, Any]]:
+    collected: list[dict[str, Any]] = []
+    url = first_page_url(api_url, repository_url)
+    page = 1
+    expected_pages: int | None = None
+
+    while url:
+        if page > ZENODO_MAX_PAGES:
+            raise ZenodoVerificationError(
+                f"Zenodo pagination exceeded {ZENODO_MAX_PAGES} pages"
+            )
+        payload = fetch_json(url, timeout_seconds)
+        current = records(payload)
+        collected.extend(current)
+
+        total = total_records(payload)
+        if total is not None:
+            expected_pages = max(1, math.ceil(total / ZENODO_PAGE_SIZE))
+        explicit_next = next_page_url(payload)
+        if explicit_next:
+            url = explicit_next
+        elif expected_pages is not None and page < expected_pages:
+            url = page_url(api_url, repository_url, page + 1)
+        elif expected_pages is None and len(current) == ZENODO_PAGE_SIZE:
+            url = page_url(api_url, repository_url, page + 1)
+        else:
+            url = ""
+        page += 1
+
+    return collected
 
 
 def verify_with_retry(
@@ -254,8 +335,9 @@ def verify_with_retry(
             last_error = error
             if attempt < max_attempts:
                 time.sleep(interval_seconds)
-    raise ZenodoVerificationError(
-        f"Zenodo did not expose a valid stable record after {max_attempts} attempts: {last_error}"
+    raise ZenodoRetryError(
+        f"Zenodo did not expose a valid stable record after {max_attempts} attempts: {last_error}",
+        max_attempts,
     )
 
 
@@ -308,6 +390,8 @@ def main() -> int:
             )
     except (OSError, ValueError, ZenodoVerificationError) as error:
         failure = str(error)
+        if isinstance(error, ZenodoRetryError):
+            attempts = error.attempts
 
     report: dict[str, object] = {
         "schemaVersion": 1,
