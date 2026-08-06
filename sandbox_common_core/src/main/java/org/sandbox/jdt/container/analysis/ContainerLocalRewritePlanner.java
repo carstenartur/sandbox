@@ -13,6 +13,7 @@ package org.sandbox.jdt.container.analysis;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -22,6 +23,7 @@ import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.DiagnosticKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.LocalEdit;
@@ -54,14 +56,25 @@ public final class ContainerLocalRewritePlanner {
 			Kind.FLOW_CONTINUATION_ROOT,
 			Kind.LOCAL_USAGE_COMPLETE);
 
-	/** Builds a local rewrite plan or returns complete rejection diagnostics. */
+	/** Builds a local rewrite plan without cross-signature argument transfers. */
 	public PlanningResult plan(
 			ContainerFlowComponent component,
 			ContainerRecommendation recommendation,
 			ContainerMigrationReadiness readiness) {
+		return plan(component, recommendation, readiness, List.of());
+	}
+
+	/** Builds a local rewrite plan with exact aggregate argument targets. */
+	public PlanningResult plan(
+			ContainerFlowComponent component,
+			ContainerRecommendation recommendation,
+			ContainerMigrationReadiness readiness,
+			List<ArgumentTransfer> argumentTransfers) {
 		Objects.requireNonNull(component, "component"); //$NON-NLS-1$
 		Objects.requireNonNull(recommendation, "recommendation"); //$NON-NLS-1$
 		Objects.requireNonNull(readiness, "readiness"); //$NON-NLS-1$
+		argumentTransfers= List.copyOf(
+				Objects.requireNonNull(argumentTransfers, "argumentTransfers")); //$NON-NLS-1$
 
 		List<PlanningDiagnostic> diagnostics= new ArrayList<>();
 		if (readiness.status() != ExecutionStatus.AUTOMATIC) {
@@ -90,17 +103,19 @@ public final class ContainerLocalRewritePlanner {
 					"The first local rewrite does not yet translate indexed reads or positional writes.")); //$NON-NLS-1$
 		}
 		validateEvidence(profile, diagnostics);
+		validateArgumentTransfers(profile, argumentTransfers, diagnostics);
 		if (!diagnostics.isEmpty()) {
 			return PlanningResult.rejected(diagnostics);
 		}
 
-		return PlanningResult.ready(new ContainerLocalRewritePlan(
+		return PlanningResult.accepted(new ContainerLocalRewritePlan(
 				variable.compilationUnitHandle(),
 				variable.bindingKey(),
 				LIST_TYPE,
 				ARRAY_LIST_TYPE,
 				recommendation.targetContract(),
-				edits(profile)));
+				edits(profile),
+				argumentTransfers));
 	}
 
 	private static void validateTarget(
@@ -166,6 +181,33 @@ public final class ContainerLocalRewritePlanner {
 		}
 	}
 
+	private static void validateArgumentTransfers(
+			ContainerUsageProfile profile,
+			List<ArgumentTransfer> argumentTransfers,
+			List<PlanningDiagnostic> diagnostics) {
+		List<UsageEvidence> transferEvidence= profile.evidence().stream()
+				.filter(evidence -> evidence.kind() == Kind.FLOW_CONTINUATION_ROOT)
+				.toList();
+		Set<SourceRange> evidenceRanges= HashSet.newHashSet(transferEvidence.size());
+		for (UsageEvidence evidence : transferEvidence) {
+			evidenceRanges.add(new SourceRange(
+					evidence.sourceStart(), evidence.sourceLength()));
+		}
+		Set<SourceRange> describedRanges=
+				HashSet.newHashSet(argumentTransfers.size());
+		for (ArgumentTransfer transfer : argumentTransfers) {
+			describedRanges.add(new SourceRange(
+					transfer.sourceStart(), transfer.sourceLength()));
+		}
+		if (evidenceRanges.size() != transferEvidence.size()
+				|| describedRanges.size() != argumentTransfers.size()
+				|| !evidenceRanges.equals(describedRanges)) {
+			diagnostics.add(diagnostic(
+					DiagnosticKind.ARGUMENT_TRANSFER_MISMATCH,
+					"Every closed-flow argument occurrence requires one exact target method and parameter index.")); //$NON-NLS-1$
+		}
+	}
+
 	private static long count(ContainerUsageProfile profile, Kind kind) {
 		return profile.evidence().stream()
 				.filter(evidence -> evidence.kind() == kind)
@@ -227,5 +269,8 @@ public final class ContainerLocalRewritePlanner {
 			DiagnosticKind kind,
 			String message) {
 		return new PlanningDiagnostic(kind, message);
+	}
+
+	private record SourceRange(int start, int length) {
 	}
 }
