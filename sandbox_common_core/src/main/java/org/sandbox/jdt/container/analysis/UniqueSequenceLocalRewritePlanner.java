@@ -74,7 +74,7 @@ public final class UniqueSequenceLocalRewritePlanner {
 			return PlanningResult.rejected(diagnostics);
 		}
 
-		return PlanningResult.ready(new UniqueSequenceLocalRewritePlan(
+		return PlanningResult.accepted(new UniqueSequenceLocalRewritePlan(
 				compilationUnitHandle,
 				profile.identity().bindingKey(),
 				SET_TYPE,
