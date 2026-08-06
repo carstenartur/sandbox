@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from verify_zenodo_release import (
     ZenodoVerificationError,
+    fetch_records,
     find_verified_record,
     main,
 )
@@ -96,6 +97,37 @@ class ZenodoReleaseVerificationTest(unittest.TestCase):
 
         self.assertEqual("10.5281/zenodo.204", verified.version_doi)
         self.assertEqual("10.5281/zenodo.200", verified.concept_doi)
+
+    def test_fetch_records_follows_zenodo_pagination(self) -> None:
+        next_url = "https://zenodo.example/api/records?page=2"
+        first_page = {
+            "hits": {
+                "hits": [new_api_record(version="1.3.9")],
+                "total": 26,
+            },
+            "links": {"next": next_url},
+        }
+        second_page = {
+            "hits": {
+                "hits": [new_api_record()],
+                "total": 26,
+            },
+            "links": {},
+        }
+
+        with patch(
+            "verify_zenodo_release.fetch_json",
+            side_effect=[first_page, second_page],
+        ) as fetch_json_mock:
+            fetched = fetch_records(
+                "https://zenodo.example/api/records",
+                REPOSITORY_URL,
+                1.0,
+            )
+
+        self.assertEqual(2, len(fetched))
+        self.assertEqual(2, fetch_json_mock.call_count)
+        self.assertEqual(next_url, fetch_json_mock.call_args_list[1].args[0])
 
     def test_rejects_snapshot_metadata(self) -> None:
         payload = {
@@ -205,6 +237,41 @@ class ZenodoReleaseVerificationTest(unittest.TestCase):
         report = json.loads(output.read_text(encoding="utf-8"))
         self.assertEqual("FAIL", report["status"])
         self.assertIn("SNAPSHOT", report["failure"])
+
+    def test_cli_reports_all_exhausted_online_attempts(self) -> None:
+        output = self.root / "report.json"
+        arguments = [
+            "verify_zenodo_release.py",
+            "--repository-url",
+            REPOSITORY_URL,
+            "--expected-version",
+            "1.4.0",
+            "--expected-tag",
+            "v1.4.0",
+            "--api-url",
+            "https://zenodo.example/api/records",
+            "--max-attempts",
+            "3",
+            "--interval-seconds",
+            "0",
+            "--timeout-seconds",
+            "1",
+            "--output",
+            str(output),
+        ]
+
+        with patch("sys.argv", arguments), patch(
+            "verify_zenodo_release.fetch_records",
+            side_effect=OSError("Zenodo unavailable"),
+        ) as fetch_records_mock:
+            with self.assertRaises(ZenodoVerificationError):
+                main()
+
+        report = json.loads(output.read_text(encoding="utf-8"))
+        self.assertEqual("FAIL", report["status"])
+        self.assertEqual(3, report["attempts"])
+        self.assertEqual(3, fetch_records_mock.call_count)
+        self.assertIn("after 3 attempts", report["failure"])
 
 
 if __name__ == "__main__":
