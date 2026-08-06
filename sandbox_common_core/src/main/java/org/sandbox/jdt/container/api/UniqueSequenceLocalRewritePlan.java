@@ -10,7 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.api;
 
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -64,7 +64,7 @@ public record UniqueSequenceLocalRewritePlan(
 			}
 		}
 
-		public static PlanningResult ready(UniqueSequenceLocalRewritePlan plan) {
+		public static PlanningResult accepted(UniqueSequenceLocalRewritePlan plan) {
 			return new PlanningResult(Optional.of(plan), List.of());
 		}
 
@@ -112,7 +112,7 @@ public record UniqueSequenceLocalRewritePlan(
 		if (edits.isEmpty()) {
 			throw new IllegalArgumentException("A local rewrite plan requires edits"); //$NON-NLS-1$
 		}
-		Set<EditKind> kinds= new HashSet<>();
+		Set<EditKind> kinds= EnumSet.noneOf(EditKind.class);
 		for (LocalEdit edit : edits) {
 			kinds.add(edit.kind());
 		}
