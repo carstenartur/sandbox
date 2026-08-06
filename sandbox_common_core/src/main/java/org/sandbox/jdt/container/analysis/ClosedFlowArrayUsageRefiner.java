@@ -32,6 +32,7 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
@@ -137,7 +138,7 @@ public final class ClosedFlowArrayUsageRefiner {
 				localProfile.currentShape(),
 				localProfile.elementDomain(),
 				localProfile.access(),
-				localProfile.orderRequirement(),
+				aggregateOrder(localProfile, parameterProfiles),
 				localProfile.uniquenessRequirement(),
 				localProfile.mutationLifecycle(),
 				localProfile.nullContract(),
@@ -194,6 +195,38 @@ public final class ClosedFlowArrayUsageRefiner {
 						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)
 				&& profile.evidence().stream().noneMatch(evidence ->
 						REJECTION_EVIDENCE.contains(evidence.kind()));
+	}
+
+	private static OrderRequirement aggregateOrder(
+			ContainerUsageProfile localProfile,
+			List<ContainerUsageProfile> parameterProfiles) {
+		boolean positional= false;
+		boolean sorted= false;
+		boolean encounter= false;
+		boolean none= false;
+		boolean unknown= false;
+		List<ContainerUsageProfile> profiles= new ArrayList<>(parameterProfiles.size() + 1);
+		profiles.add(localProfile);
+		profiles.addAll(parameterProfiles);
+		for (ContainerUsageProfile profile : profiles) {
+			switch (profile.orderRequirement()) {
+				case POSITIONAL -> positional= true;
+				case SORTED -> sorted= true;
+				case ENCOUNTER -> encounter= true;
+				case NONE -> none= true;
+				case UNKNOWN -> unknown= true;
+			}
+		}
+		if (positional) {
+			return OrderRequirement.POSITIONAL;
+		}
+		if (sorted) {
+			return OrderRequirement.SORTED;
+		}
+		if (encounter) {
+			return OrderRequirement.ENCOUNTER;
+		}
+		return none && !unknown ? OrderRequirement.NONE : OrderRequirement.UNKNOWN;
 	}
 
 	private static ContainerUsageProfile rejected(
