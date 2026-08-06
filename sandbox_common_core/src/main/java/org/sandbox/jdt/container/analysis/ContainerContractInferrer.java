@@ -32,16 +32,30 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 
-/** Infers explainable, report-only target contracts from complete local profiles. */
+/** Infers explainable, report-only target contracts from complete profiles. */
 public final class ContainerContractInferrer {
 
+	private final UniqueSequenceContractInferrer uniqueSequenceInferrer=
+			new UniqueSequenceContractInferrer();
+
 	/**
-	 * Infers the first semantic migration family: dynamically appended reference arrays
-	 * to mutable sequence contracts.
+	 * Selects the applicable semantic container strategy and returns one explainable
+	 * target contract. Specialized strategies remain separate, readable classes; callers
+	 * use this common entry point.
 	 */
 	public Optional<ContainerRecommendation> infer(ContainerUsageProfile profile) {
 		Objects.requireNonNull(profile, "profile"); //$NON-NLS-1$
-		if (!eligible(profile)) {
+		Optional<ContainerRecommendation> uniqueSequence=
+				uniqueSequenceInferrer.infer(profile);
+		if (uniqueSequence.isPresent()) {
+			return uniqueSequence;
+		}
+		return inferAppendArray(profile);
+	}
+
+	private static Optional<ContainerRecommendation> inferAppendArray(
+			ContainerUsageProfile profile) {
+		if (!eligibleAppendArray(profile)) {
 			return Optional.empty();
 		}
 
@@ -83,7 +97,7 @@ public final class ContainerContractInferrer {
 				assessments));
 	}
 
-	private static boolean eligible(ContainerUsageProfile profile) {
+	private static boolean eligibleAppendArray(ContainerUsageProfile profile) {
 		if (profile.completeness() != AnalysisCompleteness.LOCAL_USAGE_COMPLETE
 				|| profile.currentShape() != ContainerShape.ARRAY
 				|| profile.elementDomain() != ElementDomain.REFERENCE

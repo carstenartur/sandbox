@@ -43,7 +43,9 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 	public enum Kind {
 		ARRAY_GROWTH,
 		APPEND_WRITE,
+		DUPLICATE_SUPPRESSION,
 		REFERENCE_COMPONENT,
+		HASH_STABLE_COMPONENT,
 		ARRAY_LENGTH_READ,
 		INDEXED_READ,
 		INDEXED_WRITE,
