@@ -110,6 +110,7 @@ public record ConcurrencyProtocol(
 
 	/** Concurrency-specific evidence categories understood by report-only analysis. */
 	public enum EvidenceKind {
+		SYNCHRONIZED_WRAPPER_CREATION(false),
 		LOCKED_READ(true),
 		LOCKED_WRITE(true),
 		LOCKED_ITERATION(true),
