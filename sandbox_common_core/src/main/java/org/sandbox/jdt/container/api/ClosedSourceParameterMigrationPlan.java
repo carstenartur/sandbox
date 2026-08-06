@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
+
 /**
  * Immutable two-compilation-unit plan for the first closed-source local-array to
  * parameter-list migration.
@@ -41,6 +43,7 @@ public record ClosedSourceParameterMigrationPlan(
 			throw new IllegalArgumentException(
 					"The first aggregate slice requires distinct caller and parameter units"); //$NON-NLS-1$
 		}
+		validateArgumentTransfer(callerPlan, parameterPlan);
 	}
 
 	/** Returns the two affected compilation-unit handles in execution order. */
@@ -100,6 +103,22 @@ public record ClosedSourceParameterMigrationPlan(
 		LOCAL_REWRITE_REJECTED,
 		PARAMETER_REWRITE_REJECTED,
 		SAME_COMPILATION_UNIT
+	}
+
+	private static void validateArgumentTransfer(
+			ContainerLocalRewritePlan caller,
+			ContainerParameterRewritePlan parameter) {
+		if (caller.argumentTransfers().size() != 1) {
+			throw new IllegalArgumentException(
+					"The first aggregate slice requires one exact argument transfer"); //$NON-NLS-1$
+		}
+		ArgumentTransfer transfer= caller.argumentTransfers().get(0);
+		if (!transfer.methodJavaElementHandle()
+				.equals(parameter.methodJavaElementHandle())
+				|| transfer.parameterIndex() != parameter.parameterIndex()) {
+			throw new IllegalArgumentException(
+					"Caller argument target and parameter rewrite must describe the same method position"); //$NON-NLS-1$
+		}
 	}
 
 	private static String requiredText(String value, String fieldName) {
