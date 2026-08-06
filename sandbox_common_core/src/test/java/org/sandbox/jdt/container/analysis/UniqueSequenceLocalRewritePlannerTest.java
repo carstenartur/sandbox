@@ -11,9 +11,12 @@
 package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +41,10 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.DiagnosticKind;
 import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.PlanningDiagnostic;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.PlanningResult;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
@@ -51,7 +57,7 @@ class UniqueSequenceLocalRewritePlannerTest {
 		ContainerMigrationReadiness readiness= new ContainerMigrationReadiness(
 				recommendation.targetContract(), ExecutionStatus.AUTOMATIC, List.of());
 
-		var result= new UniqueSequenceLocalRewritePlanner().plan(
+		PlanningResult result= new UniqueSequenceLocalRewritePlanner().plan(
 				"=project/src<test{Sample.java", recommendation, readiness); //$NON-NLS-1$
 
 		assertTrue(result.ready());
@@ -61,6 +67,29 @@ class UniqueSequenceLocalRewritePlannerTest {
 		assertTrue(plan.edits().stream()
 				.anyMatch(edit -> edit.kind() == EditKind.REPLACE_DUPLICATE_GUARD));
 		assertEquals(ContainerShape.SET, recommendation.targetContract().shape());
+	}
+
+	@Test
+	void planningResultRequiresExactlyOneOutcome() {
+		ContainerRecommendation recommendation=
+				new UniqueSequenceContractInferrer().infer(profile()).orElseThrow();
+		ContainerMigrationReadiness readiness= new ContainerMigrationReadiness(
+				recommendation.targetContract(), ExecutionStatus.AUTOMATIC, List.of());
+		PlanningResult ready= new UniqueSequenceLocalRewritePlanner().plan(
+				"=project/src<test{Sample.java", recommendation, readiness); //$NON-NLS-1$
+		PlanningDiagnostic diagnostic= new PlanningDiagnostic(
+				DiagnosticKind.NOT_AUTOMATIC, "Execution is blocked"); //$NON-NLS-1$
+
+		PlanningResult rejected= PlanningResult.rejected(List.of(diagnostic));
+
+		assertTrue(ready.ready());
+		assertTrue(ready.diagnostics().isEmpty());
+		assertFalse(rejected.ready());
+		assertEquals(List.of(diagnostic), rejected.diagnostics());
+		assertThrows(IllegalArgumentException.class,
+				() -> new PlanningResult(Optional.empty(), List.of()));
+		assertThrows(IllegalArgumentException.class,
+				() -> new PlanningResult(ready.plan(), List.of(diagnostic)));
 	}
 
 	private static ContainerUsageProfile profile() {
