@@ -182,7 +182,7 @@ class ContainerLocalArgumentTransferIntegrationTest {
 	}
 
 	private static String source(boolean secondCall) {
-		return """
+		String template= """
 			package test;
 			import java.util.Arrays;
 			class Sample {
@@ -191,12 +191,14 @@ class ContainerLocalArgumentTransferIntegrationTest {
 					values = Arrays.copyOf(values, values.length + 1);
 					values[values.length - 1] = value;
 					consume(values);
-					%s
+					__SECOND_CALL__
 				}
 				void consume(String[] values) {}
 				void another(String[] values) {}
 			}
-			""".formatted(secondCall ? "consume(values);" : ""); //$NON-NLS-1$ //$NON-NLS-2$
+			""";
+		return template.replace(
+				"__SECOND_CALL__", secondCall ? "consume(values);" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	private static TargetContainerContract target() {
