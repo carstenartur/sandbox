@@ -32,6 +32,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -150,8 +151,8 @@ class ClosedSourceParameterMigrationIntegrationTest {
 				parameterFacts.lengthLength()));
 		parameterEdits.add(new ParameterEdit(
 				ContainerParameterRewritePlan.EditKind.VERIFY_ENCOUNTER_ITERATION,
-				2,
-				1));
+				parameterFacts.iterationStart(),
+				parameterFacts.iterationLength()));
 		ContainerParameterRewritePlan parameterPlan= new ContainerParameterRewritePlan(
 				receiver.getHandleIdentifier(),
 				parameterFacts.methodHandle(),
@@ -204,6 +205,7 @@ class ClosedSourceParameterMigrationIntegrationTest {
 		String[] methodHandle= { null };
 		String[] bindingKey= { null };
 		int[] lengthRange= { -1, -1 };
+		int[] iterationRange= { -1, -1 };
 		root.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodDeclaration method) {
@@ -233,12 +235,29 @@ class ClosedSourceParameterMigrationIntegrationTest {
 				}
 				return true;
 			}
+
+			@Override
+			public boolean visit(EnhancedForStatement statement) {
+				Expression expression= statement.getExpression();
+				if (expression instanceof SimpleName name
+						&& "values".equals(name.getIdentifier())) { //$NON-NLS-1$
+					iterationRange[0]= expression.getStartPosition();
+					iterationRange[1]= expression.getLength();
+				}
+				return true;
+			}
 		});
-		if (methodHandle[0] == null || bindingKey[0] == null || lengthRange[0] < 0) {
+		if (methodHandle[0] == null || bindingKey[0] == null
+				|| lengthRange[0] < 0 || iterationRange[0] < 0) {
 			throw new IllegalStateException("Missing parameter source facts"); //$NON-NLS-1$
 		}
 		return new ParameterFacts(
-				methodHandle[0], bindingKey[0], lengthRange[0], lengthRange[1]);
+				methodHandle[0],
+				bindingKey[0],
+				lengthRange[0],
+				lengthRange[1],
+				iterationRange[0],
+				iterationRange[1]);
 	}
 
 	private ICompilationUnit createUnit(String name, String source) throws CoreException {
@@ -306,6 +325,8 @@ class ClosedSourceParameterMigrationIntegrationTest {
 			String methodHandle,
 			String bindingKey,
 			int lengthStart,
-			int lengthLength) {
+			int lengthLength,
+			int iterationStart,
+			int iterationLength) {
 	}
 }
