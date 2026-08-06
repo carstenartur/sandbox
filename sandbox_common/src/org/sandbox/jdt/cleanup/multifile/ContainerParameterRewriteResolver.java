@@ -12,8 +12,10 @@ package org.sandbox.jdt.cleanup.multifile;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
@@ -89,7 +91,7 @@ final class ContainerParameterRewriteResolver {
 
 		List<SimpleName> references= matchingReferences(method, plan.parameterBindingKey());
 		List<ResolvedLength> lengths= new ArrayList<>();
-		int encounterIterations= 0;
+		List<Expression> encounterIterations= new ArrayList<>();
 		for (SimpleName name : references) {
 			if (parameter.getName() == name) {
 				continue;
@@ -105,18 +107,24 @@ final class ContainerParameterRewriteResolver {
 			}
 			if (reference.getParent() instanceof EnhancedForStatement enhanced
 					&& enhanced.getExpression() == reference) {
-				encounterIterations++;
+				encounterIterations.add(reference);
 				continue;
 			}
 			throw stale(unit, "unexpected parameter use at source offset " //$NON-NLS-1$
 					+ name.getStartPosition());
 		}
-		if (lengths.size() != editCount(plan, EditKind.REPLACE_LENGTH_WITH_SIZE)) {
-			throw stale(unit, "array length occurrence count changed"); //$NON-NLS-1$
-		}
-		if (encounterIterations != editCount(plan, EditKind.VERIFY_ENCOUNTER_ITERATION)) {
-			throw stale(unit, "encounter iteration occurrence count changed"); //$NON-NLS-1$
-		}
+		verifyEditRanges(
+				unit,
+				plan,
+				EditKind.REPLACE_LENGTH_WITH_SIZE,
+				lengths.stream().map(ResolvedLength::expression).toList(),
+				"array length occurrence count or source ranges changed"); //$NON-NLS-1$
+		verifyEditRanges(
+				unit,
+				plan,
+				EditKind.VERIFY_ENCOUNTER_ITERATION,
+				encounterIterations,
+				"encounter iteration occurrence count or source ranges changed"); //$NON-NLS-1$
 		lengths.sort(Comparator.comparingInt(length -> length.expression().getStartPosition()));
 		return new ResolvedPlan(plan, method, parameter, arrayType, lengths);
 	}
@@ -198,6 +206,30 @@ final class ContainerParameterRewriteResolver {
 		return null;
 	}
 
+	private static void verifyEditRanges(
+			ICompilationUnit unit,
+			ContainerParameterRewritePlan plan,
+			EditKind kind,
+			List<? extends ASTNode> resolvedNodes,
+			String staleMessage) throws CoreException {
+		List<ContainerParameterRewritePlan.ParameterEdit> planned= plan.edits().stream()
+				.filter(edit -> edit.kind() == kind)
+				.toList();
+		Set<SourceRange> expected= HashSet.newHashSet(planned.size());
+		for (ContainerParameterRewritePlan.ParameterEdit edit : planned) {
+			expected.add(new SourceRange(edit.sourceStart(), edit.sourceLength()));
+		}
+		Set<SourceRange> actual= HashSet.newHashSet(resolvedNodes.size());
+		for (ASTNode node : resolvedNodes) {
+			actual.add(new SourceRange(node.getStartPosition(), node.getLength()));
+		}
+		if (expected.size() != planned.size()
+				|| actual.size() != resolvedNodes.size()
+				|| !expected.equals(actual)) {
+			throw stale(unit, staleMessage);
+		}
+	}
+
 	private static boolean isReferenceComponent(ArrayType arrayType) {
 		ITypeBinding component= arrayType.getElementType().resolveBinding();
 		return component != null && !component.isPrimitive();
@@ -213,14 +245,6 @@ final class ContainerParameterRewriteResolver {
 		IJavaElement element= binding == null
 				? null : binding.getMethodDeclaration().getJavaElement();
 		return element == null ? "" : element.getHandleIdentifier(); //$NON-NLS-1$
-	}
-
-	private static int editCount(
-			ContainerParameterRewritePlan plan,
-			EditKind kind) {
-		return Math.toIntExact(plan.edits().stream()
-				.filter(edit -> edit.kind() == kind)
-				.count());
 	}
 
 	private static CoreException stale(ICompilationUnit unit, String reason) {
@@ -252,5 +276,8 @@ final class ContainerParameterRewriteResolver {
 			Objects.requireNonNull(expression, "expression"); //$NON-NLS-1$
 			Objects.requireNonNull(arrayExpression, "arrayExpression"); //$NON-NLS-1$
 		}
+	}
+
+	private record SourceRange(int start, int length) {
 	}
 }
