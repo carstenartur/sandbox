@@ -22,18 +22,21 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.LocalEdit;
 import org.sandbox.jdt.container.api.ContainerShape;
@@ -79,6 +82,21 @@ class ContainerLocalArgumentTransferIntegrationTest {
 		assertTrue(exception.getMessage().contains("unexpected use")); //$NON-NLS-1$
 	}
 
+	@Test
+	void rejectsAChangedTargetWithTheSameArgumentSourceRange() throws Exception {
+		ICompilationUnit unit= createUnit(source(false));
+		CompilationUnit originalRoot= parse(unit);
+		ContainerLocalRewritePlan originalPlan= plan(unit, facts(originalRoot));
+		unit.getBuffer().setContents(
+				unit.getSource().replace("consume(values);", "another(values);")); //$NON-NLS-1$ //$NON-NLS-2$
+		unit.save(null, true);
+
+		CoreException exception= assertThrows(CoreException.class, () ->
+				ContainerLocalRewriteFix.create(unit, parse(unit), originalPlan));
+
+		assertTrue(exception.getMessage().contains("argument-transfer target changed")); //$NON-NLS-1$
+	}
+
 	private ContainerLocalRewritePlan plan(
 			ICompilationUnit unit,
 			SourceFacts facts) {
@@ -96,11 +114,17 @@ class ContainerLocalArgumentTransferIntegrationTest {
 						new LocalEdit(
 								EditKind.VERIFY_ARGUMENT_TRANSFER,
 								facts.argumentStart(),
-								facts.argumentLength())));
+								facts.argumentLength())),
+				List.of(new ArgumentTransfer(
+						facts.methodJavaElementHandle(),
+						0,
+						facts.argumentStart(),
+						facts.argumentLength())));
 	}
 
 	private static SourceFacts facts(CompilationUnit root) {
 		String[] bindingKey= { null };
+		String[] methodHandle= { null };
 		int[] range= { -1, -1 };
 		root.accept(new ASTVisitor() {
 			@Override
@@ -125,14 +149,20 @@ class ContainerLocalArgumentTransferIntegrationTest {
 						&& "values".equals(name.getIdentifier())) { //$NON-NLS-1$
 					range[0]= name.getStartPosition();
 					range[1]= name.getLength();
+					IMethodBinding method= invocation.resolveMethodBinding();
+					IJavaElement element= method == null
+							? null : method.getMethodDeclaration().getJavaElement();
+					methodHandle[0]= element == null
+							? null : element.getHandleIdentifier();
 				}
 				return true;
 			}
 		});
-		if (bindingKey[0] == null || range[0] < 0) {
+		if (bindingKey[0] == null || methodHandle[0] == null || range[0] < 0) {
 			throw new IllegalStateException("Missing planned source facts"); //$NON-NLS-1$
 		}
-		return new SourceFacts(bindingKey[0], range[0], range[1]);
+		return new SourceFacts(
+				bindingKey[0], methodHandle[0], range[0], range[1]);
 	}
 
 	private ICompilationUnit createUnit(String source) throws CoreException {
@@ -164,6 +194,7 @@ class ContainerLocalArgumentTransferIntegrationTest {
 					%s
 				}
 				void consume(String[] values) {}
+				void another(String[] values) {}
 			}
 			""".formatted(secondCall ? "consume(values);" : ""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
@@ -180,6 +211,7 @@ class ContainerLocalArgumentTransferIntegrationTest {
 
 	private record SourceFacts(
 			String bindingKey,
+			String methodJavaElementHandle,
 			int argumentStart,
 			int argumentLength) {
 	}
