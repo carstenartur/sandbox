@@ -36,6 +36,22 @@ import java.util.function.Function;
  */
 public sealed interface GuardExpression
 		permits GuardExpression.FunctionCall, GuardExpression.And, GuardExpression.Or, GuardExpression.Not {
+
+	/** Semantic truth state independent from optional compatibility fallback. */
+	enum TruthValue {
+		MATCH,
+		NO_MATCH,
+		UNKNOWN
+	}
+
+	/**
+	 * Detailed guard result.
+	 *
+	 * @param truthValue semantic three-valued result
+	 * @param compatibilityValue historical boolean result used by optional hints
+	 */
+	record Evaluation(TruthValue truthValue, boolean compatibilityValue) {
+	}
 	
 	/**
 	 * Sets the guard function resolver used by {@link FunctionCall} to look up
@@ -63,6 +79,71 @@ public sealed interface GuardExpression
 	 * @return {@code true} if the guard condition is satisfied
 	 */
 	boolean evaluate(GuardContext ctx);
+
+	/**
+	 * Evaluates this expression with three-valued semantic tracking while
+	 * retaining the historical boolean fallback for optional hints.
+	 */
+	default Evaluation evaluateDetailed(GuardContext ctx) {
+		return switch (this) {
+		case FunctionCall call -> evaluateFunction(call, ctx);
+		case And and -> evaluateAnd(and, ctx);
+		case Or or -> evaluateOr(or, ctx);
+		case Not not -> evaluateNot(not, ctx);
+		};
+	}
+
+	private static Evaluation evaluateFunction(FunctionCall call, GuardContext ctx) {
+		int unknownBefore= ctx.unknownSemanticRequirementCount();
+		boolean compatibility= call.evaluate(ctx);
+		if (ctx.unknownSemanticRequirementCount() > unknownBefore) {
+			return new Evaluation(TruthValue.UNKNOWN, compatibility);
+		}
+		return new Evaluation(compatibility ? TruthValue.MATCH : TruthValue.NO_MATCH,
+				compatibility);
+	}
+
+	private static Evaluation evaluateAnd(And and, GuardContext ctx) {
+		Evaluation left= and.left().evaluateDetailed(ctx);
+		if (left.truthValue() == TruthValue.NO_MATCH) {
+			return new Evaluation(TruthValue.NO_MATCH, false);
+		}
+		Evaluation right= and.right().evaluateDetailed(ctx);
+		TruthValue truth= switch (left.truthValue()) {
+		case MATCH -> right.truthValue();
+		case UNKNOWN -> right.truthValue() == TruthValue.NO_MATCH
+				? TruthValue.NO_MATCH : TruthValue.UNKNOWN;
+		case NO_MATCH -> TruthValue.NO_MATCH;
+		};
+		return new Evaluation(truth,
+				left.compatibilityValue() && right.compatibilityValue());
+	}
+
+	private static Evaluation evaluateOr(Or or, GuardContext ctx) {
+		Evaluation left= or.left().evaluateDetailed(ctx);
+		if (left.truthValue() == TruthValue.MATCH) {
+			return new Evaluation(TruthValue.MATCH, true);
+		}
+		Evaluation right= or.right().evaluateDetailed(ctx);
+		TruthValue truth= switch (left.truthValue()) {
+		case NO_MATCH -> right.truthValue();
+		case UNKNOWN -> right.truthValue() == TruthValue.MATCH
+				? TruthValue.MATCH : TruthValue.UNKNOWN;
+		case MATCH -> TruthValue.MATCH;
+		};
+		return new Evaluation(truth,
+				left.compatibilityValue() || right.compatibilityValue());
+	}
+
+	private static Evaluation evaluateNot(Not not, GuardContext ctx) {
+		Evaluation operand= not.operand().evaluateDetailed(ctx);
+		TruthValue truth= switch (operand.truthValue()) {
+		case MATCH -> TruthValue.NO_MATCH;
+		case NO_MATCH -> TruthValue.MATCH;
+		case UNKNOWN -> TruthValue.UNKNOWN;
+		};
+		return new Evaluation(truth, !operand.compatibilityValue());
+	}
 	
 	/**
 	 * A function call guard expression (e.g., {@code sourceVersionGE(11)},
@@ -159,7 +240,7 @@ public sealed interface GuardExpression
 		/**
 		 * Creates a logical NOT guard expression.
 		 * 
-		 * @param operand the operand to negate
+		 * @param operand the operand
 		 */
 		public Not {
 			Objects.requireNonNull(operand, "Operand cannot be null"); //$NON-NLS-1$

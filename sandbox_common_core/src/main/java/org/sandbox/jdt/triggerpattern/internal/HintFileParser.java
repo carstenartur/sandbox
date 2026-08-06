@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 
 import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
 import org.sandbox.jdt.triggerpattern.api.ImportDirective;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
@@ -152,7 +153,7 @@ public final class HintFileParser {
 		try {
 			return parse(new StringReader(content));
 		} catch (IOException e) {
-			throw new HintParseException("I/O error reading hint file: " + e.getMessage(), 0); //$NON-NLS-1$
+			throw new HintParseException("I/O error reading hint file: " + e.getMessage(), 0, e); //$NON-NLS-1$
 		}
 	}
 	
@@ -423,8 +424,22 @@ public final class HintFileParser {
 				try {
 					hintFile.setMinJavaVersion(Integer.parseInt(value));
 				} catch (NumberFormatException e) {
-					throw new HintParseException("Invalid minJavaVersion: " + value, lineNumber); //$NON-NLS-1$
+					throw new HintParseException("Invalid minJavaVersion: " + value, lineNumber, e); //$NON-NLS-1$
 				}
+				break;
+			case "binding-policy": //$NON-NLS-1$
+				HintBindingPolicy bindingPolicy;
+				try {
+					bindingPolicy= HintBindingPolicy.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
+				} catch (IllegalArgumentException exception) {
+					throw new HintParseException(
+							"Invalid binding-policy: " + value + "; expected optional or required", //$NON-NLS-1$ //$NON-NLS-2$
+							lineNumber, exception);
+				}
+				if (hintFile.getBindingPolicy() != null && hintFile.getBindingPolicy() != bindingPolicy) {
+					throw new HintParseException("Conflicting binding-policy declarations", lineNumber); //$NON-NLS-1$
+				}
+				hintFile.setBindingPolicy(bindingPolicy);
 				break;
 			case "tags": //$NON-NLS-1$
 				hintFile.setTags(Arrays.asList(value.split("\\s*,\\s*"))); //$NON-NLS-1$
@@ -818,7 +833,8 @@ public final class HintFileParser {
 				try {
 					ruleSeverity = Severity.valueOf(severityStr.toUpperCase(java.util.Locale.ROOT));
 				} catch (IllegalArgumentException e) {
-					throw new HintParseException("Invalid per-rule severity: " + severityStr, startIndex + ruleLineIdx + 1); //$NON-NLS-1$
+					throw new HintParseException(
+							"Invalid per-rule severity: " + severityStr, startIndex + ruleLineIdx + 1, e); //$NON-NLS-1$
 				}
 				ruleLineIdx++;
 			} else {
@@ -1207,7 +1223,18 @@ public final class HintFileParser {
 		 * @param lineNumber the line number where the error occurred
 		 */
 		public HintParseException(String message, int lineNumber) {
-			super(message + " (line " + lineNumber + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+			this(message, lineNumber, null);
+		}
+
+		/**
+		 * Creates a new parse exception and preserves the originating failure.
+		 *
+		 * @param message the error message
+		 * @param lineNumber the line number where the error occurred
+		 * @param cause the originating failure, or {@code null}
+		 */
+		public HintParseException(String message, int lineNumber, Throwable cause) {
+			super(message + " (line " + lineNumber + ")", cause); //$NON-NLS-1$ //$NON-NLS-2$
 			this.lineNumber = lineNumber;
 		}
 		
