@@ -21,6 +21,7 @@ import org.sandbox.jdt.container.api.ContainerFlowComponent;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness.ExecutionStatus;
@@ -50,7 +51,7 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 class ContainerLocalArgumentTransferPlannerTest {
 
 	@Test
-	void turnsClosedFlowEvidenceIntoARequiredVerificationEdit() {
+	void turnsClosedFlowEvidenceIntoAnExactTargetVerification() {
 		ContainerUsageProfile profile= profile();
 		TargetContainerContract target= target();
 		ContainerRecommendation recommendation= new ContainerRecommendation(
@@ -68,17 +69,21 @@ class ContainerLocalArgumentTransferPlannerTest {
 				List.of());
 		ContainerMigrationReadiness readiness= new ContainerMigrationReadiness(
 				target, ExecutionStatus.AUTOMATIC, List.of());
+		ArgumentTransfer transfer= new ArgumentTransfer(
+				"receiver-method", 0, 80, 6); //$NON-NLS-1$
 
 		var result= new ContainerLocalRewritePlanner().plan(
-				component(), recommendation, readiness);
+				component(), recommendation, readiness, List.of(transfer));
 
 		assertTrue(result.ready());
-		var transferEdits= result.plan().orElseThrow().edits().stream()
+		var plan= result.plan().orElseThrow();
+		var transferEdits= plan.edits().stream()
 				.filter(edit -> edit.kind() == EditKind.VERIFY_ARGUMENT_TRANSFER)
 				.toList();
 		assertEquals(1, transferEdits.size());
 		assertEquals(80, transferEdits.get(0).sourceStart());
 		assertEquals(6, transferEdits.get(0).sourceLength());
+		assertEquals(List.of(transfer), plan.argumentTransfers());
 	}
 
 	private static ContainerUsageProfile profile() {
