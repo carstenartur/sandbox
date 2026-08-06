@@ -27,18 +27,25 @@ jobs:
   test:
     name: Test Zenodo verifier
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - name: Checkout verifier source
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+      - name: Download verifier source
+        run: |
+          set -euo pipefail
+          source_repository="${PR_HEAD_REPOSITORY:-$GITHUB_REPOSITORY}"
+          source_ref="${PR_HEAD_SHA:-main}"
+          mkdir -p verifier-source
+          gh api "repos/${source_repository}/tarball/${source_ref}" > verifier-source.tar.gz
+          tar -xzf verifier-source.tar.gz --strip-components=1 -C verifier-source
 
       - name: Compile and run tests
-        working-directory: .github/scripts
+        working-directory: verifier-source/.github/scripts
         run: |
+          set -euo pipefail
+          python3 --version
           python3 -m py_compile verify_zenodo_release.py test_verify_zenodo_release.py
           python3 test_verify_zenodo_release.py
 
@@ -50,6 +57,8 @@ jobs:
     timeout-minutes: 40
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Resolve stable tag
         id: release
@@ -66,21 +75,17 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout current verifier
-        uses: actions/checkout@v6
-        with:
-          ref: main
-          fetch-depth: 1
+      - name: Download current verifier
+        run: |
+          set -euo pipefail
+          mkdir -p verifier-source
+          gh api "repos/${GITHUB_REPOSITORY}/tarball/main" > verifier-source.tar.gz
+          tar -xzf verifier-source.tar.gz --strip-components=1 -C verifier-source
 
       - name: Verify immutable release tag exists
         run: |
-          git ls-remote --exit-code --tags origin \
-            "refs/tags/${{ steps.release.outputs.tag }}" >/dev/null
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${{ steps.release.outputs.tag }}" >/dev/null
 
       - name: Verify published Zenodo record
         env:
@@ -99,22 +104,21 @@ jobs:
           if [[ -n "$EXPECTED_CONCEPT_DOI" ]]; then
             arguments+=(--expected-concept-doi "$EXPECTED_CONCEPT_DOI")
           fi
-          python3 .github/scripts/verify_zenodo_release.py "${arguments[@]}"
+          python3 verifier-source/.github/scripts/verify_zenodo_release.py "${arguments[@]}"
 
-      - name: Upload verification evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: zenodo-verification-${{ steps.release.outputs.tag }}-${{ github.run_id }}
-          path: target/zenodo-release-verification.json
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Attach DOI evidence to GitHub Release
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Preserve DOI evidence on the GitHub Release
+        if: always() && steps.release.outcome == 'success'
         run: |
-          gh release upload "${{ steps.release.outputs.tag }}" \
-            target/zenodo-release-verification.json \
-            --clobber
+          set -euo pipefail
+          report=target/zenodo-release-verification.json
+          if [[ ! -f "$report" ]]; then
+            echo "No Zenodo verification report was produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo '## Zenodo verification evidence'
+            echo '```json'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          gh release upload "${{ steps.release.outputs.tag }}" "$report" --clobber
