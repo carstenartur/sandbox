@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "e6b154d2aef77874f398ea3f9a4477b6e6ddb0ca",
-      "lastProcessedDate": "2026-08-05T03:15:54.704843748Z",
-      "totalProcessed": 3508,
+      "lastProcessedCommit": "27d164be4a06b6dc828b21ee0f1339ca35a8f3c7",
+      "lastProcessedDate": "2026-08-06T03:14:24.361481370Z",
+      "totalProcessed": 3592,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2726,6 +2726,24 @@
           "deferredAt": "2026-08-05T03:14:06.732525824Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "84c2032b21c4f6b9742e5e006b7c1c431556a4f5",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA11",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-06T03:08:14.621615326Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "37327c3f94f3784283be665f65b65abb9d1d9c68",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA11\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-06T03:14:10.512855866Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2739,7 +2757,7 @@
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
         "Code Simplification": 11,
-        "Performance": 27,
+        "Performance": 28,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
@@ -2868,7 +2886,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 7,
+        "API Migration": 9,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -2879,7 +2897,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 19,
+        "API Modernization": 21,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2912,7 +2930,9 @@
         "Typo Correction": 1,
         "Array Literal Update": 1,
         "Deprecation/Modernization": 1,
-        "Constant Extraction": 2
+        "Constant Extraction": 2,
+        "Simplification": 1,
+        "API Removal": 1
       },
       "exhaustedCategories": []
     },
@@ -2953,5 +2973,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26167
+  "globalTotalProcessed": 26251
 }
