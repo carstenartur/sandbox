@@ -105,6 +105,17 @@ class ConcurrencyProtocolAssessmentTest {
 	}
 
 	@Test
+	void retainingExistingLockingRequiresLockBasedSynchronization() {
+		ConcurrencyProtocol snapshot= protocol(
+				SynchronizationKind.VOLATILE_SNAPSHOT,
+				AnalysisCompleteness.LOCAL_USAGE_COMPLETE,
+				List.of(locked(EvidenceKind.LOCKED_READ, "listeners", 20))); //$NON-NLS-1$
+
+		assertThrows(IllegalArgumentException.class,
+				() -> createRetainExistingLocking(snapshot));
+	}
+
+	@Test
 	void recommendationRemainsReportOnlyAndRequiresResolvedUsage() {
 		ConcurrencyProtocol protocol= protocol(
 				SynchronizationKind.VOLATILE_SNAPSHOT,
@@ -172,7 +183,7 @@ class ConcurrencyProtocolAssessmentTest {
 
 	private static RetainExistingLocking createRetainExistingLocking(ConcurrencyProtocol protocol) {
 		return new RetainExistingLocking(protocol,
-				List.of("Seed-only evidence cannot prove coherent locking.")); //$NON-NLS-1$
+				List.of("The protocol does not meet the retained-locking proof boundary.")); //$NON-NLS-1$
 	}
 
 	private static RecommendedMigration createRecommendedMigration(
