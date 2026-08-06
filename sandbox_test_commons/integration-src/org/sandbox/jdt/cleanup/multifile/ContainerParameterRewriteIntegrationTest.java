@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -29,9 +30,12 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 
 import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
@@ -143,6 +147,32 @@ class ContainerParameterRewriteIntegrationTest {
 		assertTrue(iteration.getMessage().contains("encounter iteration")); //$NON-NLS-1$
 	}
 
+	@Test
+	void rejectsShiftedUsageRangesWithUnchangedCounts() throws Exception {
+		ICompilationUnit unit= createUnit("""
+			package test;
+			class Sample {
+				void consume(String[] values) {
+					int count = values.length;
+					for (String value : values) {
+						System.out.println(value + count);
+					}
+				}
+			}
+			""");
+		ContainerParameterRewritePlan originalPlan= plan(unit, parse(unit), 1, 1);
+		unit.getBuffer().setContents(unit.getSource().replace(
+				"int count = values.length;", //$NON-NLS-1$
+				"\n\t\tint count = values.length;")); //$NON-NLS-1$
+		unit.save(null, true);
+
+		CoreException exception= assertThrows(CoreException.class, () ->
+				ContainerParameterRewriteFix.create(
+						unit, parse(unit), originalPlan));
+
+		assertTrue(exception.getMessage().contains("source ranges changed")); //$NON-NLS-1$
+	}
+
 	private ICompilationUnit createUnit(String source) throws CoreException {
 		IPackageFragment fragment= context.getSourceFolder()
 				.createPackageFragment("test", false, null); //$NON-NLS-1$
@@ -164,6 +194,35 @@ class ContainerParameterRewriteIntegrationTest {
 			CompilationUnit root,
 			int lengthCount,
 			int iterationCount) {
+		SourceFacts facts= sourceFacts(root);
+		if (lengthCount > facts.lengths().size()
+				|| iterationCount > facts.iterations().size()) {
+			throw new IllegalArgumentException("Requested evidence exceeds source facts"); //$NON-NLS-1$
+		}
+		List<ParameterEdit> edits= new ArrayList<>();
+		edits.add(new ParameterEdit(
+				EditKind.CHANGE_PARAMETER_DECLARATION,
+				facts.parameter().getStartPosition(),
+				facts.parameter().getLength()));
+		facts.lengths().stream().limit(lengthCount).forEach(range -> edits.add(
+				new ParameterEdit(
+						EditKind.REPLACE_LENGTH_WITH_SIZE,
+						range.start(), range.length())));
+		facts.iterations().stream().limit(iterationCount).forEach(range -> edits.add(
+				new ParameterEdit(
+						EditKind.VERIFY_ENCOUNTER_ITERATION,
+						range.start(), range.length())));
+		return new ContainerParameterRewritePlan(
+				unit.getHandleIdentifier(),
+				facts.methodJavaElementHandle(),
+				facts.parameterBindingKey(),
+				0,
+				"java.util.List", //$NON-NLS-1$
+				targetContract(),
+				edits);
+	}
+
+	private static SourceFacts sourceFacts(CompilationUnit root) {
 		MethodDeclaration method= method(root);
 		SingleVariableDeclaration parameter=
 				(SingleVariableDeclaration) method.parameters().get(0);
@@ -174,22 +233,42 @@ class ContainerParameterRewriteIntegrationTest {
 		if (parameterBinding == null || methodElement == null) {
 			throw new IllegalStateException("Missing method or parameter binding"); //$NON-NLS-1$
 		}
+		String bindingKey= parameterBinding.getVariableDeclaration().getKey();
+		List<SourceRange> lengths= new ArrayList<>();
+		List<SourceRange> iterations= new ArrayList<>();
+		method.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(QualifiedName name) {
+				if ("length".equals(name.getName().getIdentifier()) //$NON-NLS-1$
+						&& name.getQualifier() instanceof SimpleName qualifier
+						&& qualifier.resolveBinding() instanceof IVariableBinding binding
+						&& bindingKey.equals(binding.getVariableDeclaration().getKey())) {
+					lengths.add(new SourceRange(
+							name.getStartPosition(), name.getLength()));
+				}
+				return true;
+			}
 
-		List<ParameterEdit> edits= new ArrayList<>();
-		edits.add(new ParameterEdit(
-				EditKind.CHANGE_PARAMETER_DECLARATION,
-				parameter.getStartPosition(),
-				parameter.getLength()));
-		addEdits(edits, EditKind.REPLACE_LENGTH_WITH_SIZE, lengthCount, 30);
-		addEdits(edits, EditKind.VERIFY_ENCOUNTER_ITERATION, iterationCount, 40);
-		return new ContainerParameterRewritePlan(
-				unit.getHandleIdentifier(),
+			@Override
+			public boolean visit(EnhancedForStatement enhanced) {
+				if (enhanced.getExpression() instanceof SimpleName name
+						&& name.resolveBinding() instanceof IVariableBinding binding
+						&& bindingKey.equals(binding.getVariableDeclaration().getKey())) {
+					iterations.add(new SourceRange(
+							name.getStartPosition(), name.getLength()));
+				}
+				return true;
+			}
+		});
+		Comparator<SourceRange> order= Comparator.comparingInt(SourceRange::start);
+		lengths.sort(order);
+		iterations.sort(order);
+		return new SourceFacts(
+				parameter,
 				methodElement.getHandleIdentifier(),
-				parameterBinding.getVariableDeclaration().getKey(),
-				0,
-				"java.util.List", //$NON-NLS-1$
-				targetContract(),
-				edits);
+				bindingKey,
+				List.copyOf(lengths),
+				List.copyOf(iterations));
 	}
 
 	private static MethodDeclaration method(CompilationUnit root) {
@@ -209,16 +288,6 @@ class ContainerParameterRewriteIntegrationTest {
 		return result[0];
 	}
 
-	private static void addEdits(
-			List<ParameterEdit> edits,
-			EditKind kind,
-			int count,
-			int offset) {
-		for (int index= 0; index < count; index++) {
-			edits.add(new ParameterEdit(kind, offset + index, 1));
-		}
-	}
-
 	private static TargetContainerContract targetContract() {
 		return new TargetContainerContract(
 				ContainerShape.LIST,
@@ -227,5 +296,16 @@ class ContainerParameterRewriteIntegrationTest {
 				Mutability.MUTABLE,
 				NullContract.ALLOWED,
 				"Use a mutable dynamic sequence."); //$NON-NLS-1$
+	}
+
+	private record SourceFacts(
+			SingleVariableDeclaration parameter,
+			String methodJavaElementHandle,
+			String parameterBindingKey,
+			List<SourceRange> lengths,
+			List<SourceRange> iterations) {
+	}
+
+	private record SourceRange(int start, int length) {
 	}
 }
