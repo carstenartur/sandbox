@@ -40,7 +40,9 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAt
  *
  * <p>A parameter overload is never labelled compatible merely because it compiles.
  * The bridge must still decide or prove order, uniqueness, mutability, null behavior,
- * aliasing, concurrency and whether it passes a view, wrapper or independent copy.</p>
+ * aliasing, concurrency and whether it passes a view, wrapper or independent copy.
+ * A closed-source direct migration needs no compatibility bridge because the old
+ * signature is not retained.</p>
  */
 public final class ContainerBridgePolicyPlanner {
 
@@ -52,7 +54,7 @@ public final class ContainerBridgePolicyPlanner {
 			ContractProperty.ALIASING,
 			ContractProperty.CONCURRENCY);
 
-	/** Builds one immutable report-only bridge policy plan. */
+	/** Builds one immutable bridge policy plan. */
 	public ContainerBridgePolicyPlan plan(
 			ContainerSignatureMigrationPlan signaturePlan,
 			ContainerRecommendation recommendation) {
@@ -77,6 +79,8 @@ public final class ContainerBridgePolicyPlanner {
 		}
 		if (signaturePlan.status()
 				== ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE
+				|| signaturePlan.status()
+						== ContainerSignatureMigrationPlan.PlanningStatus.CLOSED_SOURCE_AUTOMATIC
 				|| signaturePlan.groups().isEmpty()) {
 			return new ContainerBridgePolicyPlan(
 					signaturePlan.targetContract(),

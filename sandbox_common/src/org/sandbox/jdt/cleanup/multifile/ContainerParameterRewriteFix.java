@@ -20,7 +20,6 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParameterizedType;
-import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
@@ -34,43 +33,29 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.eclipse.text.edits.TextEditGroup;
 
-import org.sandbox.jdt.cleanup.multifile.ContainerLocalRewriteResolver.AppendPair;
-import org.sandbox.jdt.cleanup.multifile.ContainerLocalRewriteResolver.ResolvedLength;
-import org.sandbox.jdt.cleanup.multifile.ContainerLocalRewriteResolver.ResolvedPlan;
-import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.cleanup.multifile.ContainerParameterRewriteResolver.ResolvedLength;
+import org.sandbox.jdt.cleanup.multifile.ContainerParameterRewriteResolver.ResolvedPlan;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
 
-/** Applies the first strictly local append-array to list rewrite. */
-public final class ContainerLocalRewriteFix {
+/** Applies one strictly validated closed-source array-parameter to list rewrite. */
+public final class ContainerParameterRewriteFix {
 
-	private static final String DESCRIPTION= "Convert local append array to list"; //$NON-NLS-1$
+	private static final String DESCRIPTION= "Convert closed array parameter to list"; //$NON-NLS-1$
 
-	private ContainerLocalRewriteFix() {
+	private ContainerParameterRewriteFix() {
 	}
 
-	/**
-	 * Revalidates the immutable plan against the current AST and creates one ordinary
-	 * local cleanup fix.
-	 */
+	/** Revalidates the immutable plan and creates one ordinary local cleanup fix. */
 	public static ICleanUpFix create(
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
-			ContainerLocalRewritePlan plan) throws CoreException {
-		ResolvedPlan resolved= resolve(unit, root, plan);
+			ContainerParameterRewritePlan plan) throws CoreException {
+		ResolvedPlan resolved= ContainerParameterRewriteResolver.resolve(unit, root, plan);
 		return new CompilationUnitRewriteOperationsFixCore(
 				DESCRIPTION,
 				root,
 				new CompilationUnitRewriteOperationWithSourceRange[] {
 						new RewriteOperation(resolved) });
-	}
-
-	/** Package-visible semantic resolution used by the cleanup adapter. */
-	static ResolvedPlan resolve(
-			ICompilationUnit unit,
-			org.eclipse.jdt.core.dom.CompilationUnit root,
-			ContainerLocalRewritePlan plan) throws CoreException {
-		ContainerLocalArgumentTransferVerifier.verify(unit, root, plan);
-		ContainerLocalRewritePlanVerifier.verifyEncounterIterations(unit, root, plan);
-		return ContainerLocalRewriteResolver.resolve(unit, root, plan);
 	}
 
 	private static final class RewriteOperation
@@ -92,30 +77,12 @@ public final class ContainerLocalRewriteFix {
 			TextEditGroup group= createTextEditGroup(DESCRIPTION, cuRewrite);
 
 			Type componentType= resolved.arrayType().getElementType();
-			String listName= imports.addImport(resolved.plan().targetInterfaceType());
-			SimpleType listRawType= ast.newSimpleType(ast.newName(listName));
-			ParameterizedType listType= ast.newParameterizedType(listRawType);
+			String interfaceName= imports.addImport(
+					resolved.plan().targetInterfaceType());
+			ParameterizedType listType= ast.newParameterizedType(
+					ast.newSimpleType(ast.newName(interfaceName)));
 			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));
-			rewrite.replace(resolved.declaration().getType(), listType, group);
-
-			String implementationName=
-					imports.addImport(resolved.plan().targetImplementationType());
-			org.eclipse.jdt.core.dom.ClassInstanceCreation creation=
-					ast.newClassInstanceCreation();
-			ParameterizedType implementationType= ast.newParameterizedType(
-					ast.newSimpleType(ast.newName(implementationName)));
-			creation.setType(implementationType);
-			rewrite.replace(resolved.initializer(), creation, group);
-
-			for (AppendPair pair : resolved.appendPairs()) {
-				rewrite.remove(pair.growthStatement(), group);
-				MethodInvocation add= ast.newMethodInvocation();
-				add.setExpression((Expression) ASTNode.copySubtree(
-						ast, pair.arrayAccess().getArray()));
-				add.setName(ast.newSimpleName("add")); //$NON-NLS-1$
-				add.arguments().add(ASTNode.copySubtree(ast, pair.value()));
-				rewrite.replace(pair.appendAssignment(), add, group);
-			}
+			rewrite.replace(resolved.parameter().getType(), listType, group);
 
 			for (ResolvedLength length : resolved.lengths()) {
 				MethodInvocation size= ast.newMethodInvocation();

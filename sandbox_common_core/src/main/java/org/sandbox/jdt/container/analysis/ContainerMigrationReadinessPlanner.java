@@ -179,13 +179,16 @@ public final class ContainerMigrationReadinessPlanner {
 			ContainerBridgePolicyPlan bridgePlan,
 			List<ExecutionBlocker> blockers) {
 		if (signaturePlan.status()
-				== ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE) {
-			if (bridgePlan.status() != ContainerBridgePolicyPlan.PlanningStatus.NO_BRIDGE_NEEDED) {
+				== ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE
+				|| signaturePlan.status()
+						== ContainerSignatureMigrationPlan.PlanningStatus.CLOSED_SOURCE_AUTOMATIC) {
+			if (bridgePlan.status()
+					!= ContainerBridgePolicyPlan.PlanningStatus.NO_BRIDGE_NEEDED) {
 				blockers.add(blocker(
 						BlockerProperty.SIGNATURES,
 						BlockerSeverity.FATAL,
 						"signature-plan", //$NON-NLS-1$
-						"The bridge plan requests compatibility work although no signature changes are planned.")); //$NON-NLS-1$
+						"The bridge plan requests compatibility work although the signature plan retains no old API.")); //$NON-NLS-1$
 			}
 			return;
 		}
