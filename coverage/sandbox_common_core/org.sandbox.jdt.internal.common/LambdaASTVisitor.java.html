@@ -334,8 +334,8 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(ExpressionMethodReference node) {
-<span class="pc bpc" id="L337" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ExpressionMethodReference)) {</span>
-<span class="nc" id="L338">			return this.helperVisitor.testPredicate(VisitorEnum.ExpressionMethodReference, node);</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">		if (this.helperVisitor.hasPredicate(VisitorEnum.ExpressionMethodReference)) {</span>
+<span class="fc" id="L338">			return this.helperVisitor.testPredicate(VisitorEnum.ExpressionMethodReference, node);</span>
 		}
 <span class="fc" id="L340">		return true;</span>
 	}
@@ -1130,10 +1130,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(TypeDeclarationStatement node) {
-<span class="nc bnc" id="L1133" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclarationStatement)) {</span>
+<span class="pc bpc" id="L1133" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.TypeDeclarationStatement)) {</span>
 <span class="nc" id="L1134">			return this.helperVisitor.testPredicate(VisitorEnum.TypeDeclarationStatement, node);</span>
 		}
-<span class="nc" id="L1136">		return true;</span>
+<span class="fc" id="L1136">		return true;</span>
 	}
 
 	@Override
@@ -1927,10 +1927,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(TypeDeclarationStatement node) {
-<span class="nc bnc" id="L1930" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclarationStatement)) {</span>
+<span class="pc bpc" id="L1930" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.TypeDeclarationStatement)) {</span>
 <span class="nc" id="L1931">			this.helperVisitor.acceptConsumer(VisitorEnum.TypeDeclarationStatement, node);</span>
 		}
-<span class="nc" id="L1933">	}</span>
+<span class="fc" id="L1933">	}</span>
 
 	@Override
 	public void endVisit(TypeLiteral node) {

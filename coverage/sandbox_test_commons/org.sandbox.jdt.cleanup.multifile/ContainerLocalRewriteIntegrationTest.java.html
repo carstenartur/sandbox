@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerLocalRewriteIntegrationTest.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ContainerLocalRewriteIntegrationTest.java</span></div><h1>ContainerLocalRewriteIntegrationTest.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.LocalEdit;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+
+<span class="fc" id="L47">class ContainerLocalRewriteIntegrationTest {</span>
+
+	@RegisterExtension
+<span class="fc" id="L50">	final AbstractEclipseJava context= new EclipseJava22();</span>
+
+	@Test
+	void appliesTheStrictLocalRewrite() throws Exception {
+<span class="fc" id="L54">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					int count = values.length;
+					for (String current : values) {
+						System.out.println(current + count);
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L69">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L71">		ContainerLocalRewriteFix.create(</span>
+<span class="fc" id="L72">				unit, root, plan(unit, root, 1, 1, 1, 1))</span>
+<span class="fc" id="L73">				.createChange(null).perform(null);</span>
+
+<span class="fc" id="L75">		String source= unit.getSource();</span>
+<span class="fc" id="L76">		assertTrue(source.contains(&quot;List&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L77">		assertTrue(source.contains(&quot;new ArrayList&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L78">		assertTrue(source.contains(&quot;values.add(value)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L80">		assertFalse(source.contains(&quot;Arrays.copyOf(values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L81">		assertFalse(source.contains(&quot;values[values.length - 1]&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L82">	}</span>
+
+	@Test
+	void rewritesSeveralAdjacentAppendPairs() throws Exception {
+<span class="fc" id="L86">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String first, String second) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = first;
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = second;
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L99">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L101">		ContainerLocalRewriteFix.create(</span>
+<span class="fc" id="L102">				unit, root, plan(unit, root, 2, 2, 0, 0))</span>
+<span class="fc" id="L103">				.createChange(null).perform(null);</span>
+
+<span class="fc" id="L105">		String source= unit.getSource();</span>
+<span class="fc" id="L106">		assertEquals(2, occurrences(source, &quot;values.add(&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		assertTrue(source.contains(&quot;values.add(first)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L108">		assertTrue(source.contains(&quot;values.add(second)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L109">	}</span>
+
+	@Test
+	void rejectsAnUnexpectedBindingUse() throws Exception {
+<span class="fc" id="L113">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					System.identityHashCode(values);
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L125">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L127">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L128">				ContainerLocalRewriteFix.create(</span>
+<span class="pc" id="L129">						unit, root, plan(unit, root, 1, 1, 0, 0)));</span>
+
+<span class="fc" id="L131">		assertTrue(exception.getMessage().contains(&quot;unexpected use&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L132">	}</span>
+
+	@Test
+	void rejectsChangedEditingAndIterationCounts() throws Exception {
+<span class="fc" id="L136">		ICompilationUnit editingUnit= createUnit(appendSource());</span>
+<span class="fc" id="L137">		CompilationUnit editingRoot= parse(editingUnit);</span>
+<span class="fc" id="L138">		CoreException editing= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L139">				ContainerLocalRewriteFix.create(</span>
+<span class="fc" id="L140">						editingUnit, editingRoot,</span>
+<span class="pc" id="L141">						plan(editingUnit, editingRoot, 2, 2, 0, 0)));</span>
+<span class="fc" id="L142">		assertTrue(editing.getMessage().contains(&quot;occurrence count changed&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L144">		ICompilationUnit iterationUnit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					for (String current : values) {
+						System.out.println(current);
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L158">		CompilationUnit iterationRoot= parse(iterationUnit);</span>
+<span class="fc" id="L159">		CoreException iteration= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L160">				ContainerLocalRewriteFix.create(</span>
+<span class="fc" id="L161">						iterationUnit, iterationRoot,</span>
+<span class="pc" id="L162">						plan(iterationUnit, iterationRoot, 1, 1, 0, 0)));</span>
+<span class="fc" id="L163">		assertTrue(iteration.getMessage().contains(&quot;encounter iteration&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L164">	}</span>
+
+	@Test
+	void rejectsAnInterveningStatement() throws Exception {
+<span class="fc" id="L168">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					System.out.println(value);
+					values[values.length - 1] = value;
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L180">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L182">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L183">				ContainerLocalRewriteFix.create(</span>
+<span class="pc" id="L184">						unit, root, plan(unit, root, 1, 1, 0, 0)));</span>
+
+<span class="fc" id="L186">		assertTrue(exception.getMessage().contains(&quot;immediately followed&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L187">	}</span>
+
+	@Test
+	void rejectsTheWrongCompilationUnitHandle() throws Exception {
+<span class="fc" id="L191">		ICompilationUnit unit= createUnit(appendSource());</span>
+<span class="fc" id="L192">		CompilationUnit root= parse(unit);</span>
+<span class="fc" id="L193">		ContainerLocalRewritePlan original= plan(unit, root, 1, 1, 0, 0);</span>
+<span class="fc" id="L194">		ContainerLocalRewritePlan wrongUnit= new ContainerLocalRewritePlan(</span>
+<span class="fc" id="L195">				&quot;other-unit&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L196">				original.bindingKey(),</span>
+<span class="fc" id="L197">				original.targetInterfaceType(),</span>
+<span class="fc" id="L198">				original.targetImplementationType(),</span>
+<span class="fc" id="L199">				original.targetContract(),</span>
+<span class="fc" id="L200">				original.edits());</span>
+
+<span class="fc" id="L202">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L203">				ContainerLocalRewriteFix.create(unit, root, wrongUnit));</span>
+
+<span class="fc" id="L205">		assertTrue(exception.getMessage().contains(&quot;handle changed&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L206">	}</span>
+
+	private ICompilationUnit createUnit(String source) throws CoreException {
+<span class="fc" id="L209">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L210">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L211">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+	}
+
+	private CompilationUnit parse(ICompilationUnit unit) {
+<span class="fc" id="L215">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L216">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L217">		parser.setSource(unit);</span>
+<span class="fc" id="L218">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L219">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L220">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L221">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+
+	private static ContainerLocalRewritePlan plan(
+			ICompilationUnit unit,
+			CompilationUnit root,
+			int growthCount,
+			int appendCount,
+			int lengthCount,
+			int iterationCount) {
+<span class="fc" id="L231">		List&lt;LocalEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L232">		edits.add(new LocalEdit(EditKind.CHANGE_LOCAL_DECLARATION, 1, 1));</span>
+<span class="fc" id="L233">		edits.add(new LocalEdit(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER, 1, 1));</span>
+<span class="fc" id="L234">		addEdits(edits, EditKind.REMOVE_ARRAY_GROWTH, growthCount, 10);</span>
+<span class="fc" id="L235">		addEdits(edits, EditKind.REPLACE_TAIL_WRITE_WITH_ADD, appendCount, 20);</span>
+<span class="fc" id="L236">		addEdits(edits, EditKind.REPLACE_LENGTH_WITH_SIZE, lengthCount, 30);</span>
+<span class="fc" id="L237">		addEdits(edits, EditKind.VERIFY_ENCOUNTER_ITERATION, iterationCount, 40);</span>
+<span class="fc" id="L238">		return new ContainerLocalRewritePlan(</span>
+<span class="fc" id="L239">				unit.getHandleIdentifier(),</span>
+<span class="fc" id="L240">				bindingKey(root),</span>
+<span class="fc" id="L241">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L242">				&quot;java.util.ArrayList&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L243">				targetContract(),</span>
+<span class="fc" id="L244">				edits);</span>
+	}
+
+	private static void addEdits(
+			List&lt;LocalEdit&gt; edits,
+			EditKind kind,
+			int count,
+			int offset) {
+<span class="fc bfc" id="L252" title="All 2 branches covered.">		for (int index= 0; index &lt; count; index++) {</span>
+<span class="fc" id="L253">			edits.add(new LocalEdit(kind, offset + index, 1));</span>
+		}
+<span class="fc" id="L255">	}</span>
+
+	private static String bindingKey(CompilationUnit root) {
+<span class="fc" id="L258">		String[] result= { null };</span>
+<span class="fc" id="L259">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(VariableDeclarationFragment node) {
+<span class="fc bfc" id="L262" title="All 2 branches covered.">				if (&quot;values&quot;.equals(node.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L263">					IVariableBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">					result[0]= binding == null ? null : binding.getVariableDeclaration().getKey();</span>
+				}
+<span class="fc" id="L266">				return true;</span>
+			}
+		});
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">		if (result[0] == null) {</span>
+<span class="nc" id="L270">			throw new IllegalStateException(&quot;Missing values binding&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L272">		return result[0];</span>
+	}
+
+	private static String appendSource() {
+<span class="fc" id="L276">		return &quot;&quot;&quot;</span>
+			package test;
+			import java.util.Arrays;
+			class Sample {
+				void collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+				}
+			}
+			&quot;&quot;&quot;;
+	}
+
+	private static int occurrences(String source, String token) {
+<span class="fc" id="L290">		int count= 0;</span>
+<span class="fc" id="L291">		int offset= 0;</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">		while ((offset= source.indexOf(token, offset)) &gt;= 0) {</span>
+<span class="fc" id="L293">			count++;</span>
+<span class="fc" id="L294">			offset+= token.length();</span>
+		}
+<span class="fc" id="L296">		return count;</span>
+	}
+
+	private static TargetContainerContract targetContract() {
+<span class="fc" id="L300">		return new TargetContainerContract(</span>
+<span class="fc" id="L301">				ContainerShape.LIST,</span>
+<span class="fc" id="L302">				OrderRequirement.ENCOUNTER,</span>
+<span class="fc" id="L303">				UniquenessRequirement.DUPLICATES_ALLOWED,</span>
+<span class="fc" id="L304">				Mutability.MUTABLE,</span>
+<span class="fc" id="L305">				NullContract.ALLOWED,</span>
+<span class="fc" id="L306">				&quot;Use a mutable dynamic sequence.&quot;); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

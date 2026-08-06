@@ -107,14 +107,14 @@ final class ContainerAstFacts {
 <span class="fc" id="L107">			binding= simpleName.resolveBinding();</span>
 <span class="pc bpc" id="L108" title="1 of 2 branches missed.">		} else if (unwrapped instanceof QualifiedName qualifiedName) {</span>
 <span class="nc" id="L109">			binding= qualifiedName.resolveBinding();</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		} else if (unwrapped instanceof FieldAccess fieldAccess) {</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">		} else if (unwrapped instanceof FieldAccess fieldAccess) {</span>
 <span class="fc" id="L111">			binding= fieldAccess.resolveFieldBinding();</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">		} else if (unwrapped instanceof SuperFieldAccess superFieldAccess) {</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		} else if (unwrapped instanceof SuperFieldAccess superFieldAccess) {</span>
 <span class="nc" id="L113">			binding= superFieldAccess.resolveFieldBinding();</span>
 		}
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		return binding instanceof IVariableBinding variableBinding</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		return binding instanceof IVariableBinding variableBinding</span>
 <span class="fc" id="L116">				? Optional.of(variableBinding)</span>
-<span class="nc" id="L117">				: Optional.empty();</span>
+<span class="fc" id="L117">				: Optional.empty();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowContinuationLinker.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ContainerFlowContinuationLinker.java</span></div><h1>ContainerFlowContinuationLinker.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowComponent.LocatedFlowDiagnostic;
+import org.sandbox.jdt.container.api.ContainerFlowComponent.LocatedFlowEdge;
+import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan;
+import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.ContinuationKind;
+import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.ContinuationRoot;
+import org.sandbox.jdt.container.api.ContainerFlowContinuationPlan.Relationship;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.DiagnosticKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSearchTarget;
+
+/**
+ * Connects newly assembled local continuation roots to the canonical boundary nodes
+ * that initiated workspace scope expansion.
+ *
+ * &lt;p&gt;The linker never parses stable identifiers. Parameter and return positions are
+ * selected from the exact resolved search target, using the Java-model handle and
+ * signature index retained by the search layer.&lt;/p&gt;
+ */
+<span class="fc" id="L46">public final class ContainerFlowContinuationLinker {</span>
+
+	/** Links all supported continuation roots and recomputes component closure. */
+	public ContainerFlowComponent link(
+			ContainerFlowComponent component,
+			ContainerFlowContinuationPlan continuations,
+			ResolvedContainerFlowSearchPlan resolvedPlan) {
+<span class="fc" id="L53">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		Objects.requireNonNull(continuations, &quot;continuations&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		Objects.requireNonNull(resolvedPlan, &quot;resolvedPlan&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L57">		Map&lt;String, FlowNode&gt; nodesById= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		for (FlowNode node : component.nodes()) {</span>
+<span class="fc" id="L59">			nodesById.put(node.stableId(), node);</span>
+<span class="fc" id="L60">		}</span>
+<span class="fc" id="L61">		List&lt;LocatedFlowEdge&gt; edges= new ArrayList&lt;&gt;(component.edges());</span>
+<span class="fc" id="L62">		Set&lt;String&gt; edgeKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="pc" id="L63">		component.edges().forEach(edge -&gt; edgeKeys.add(edgeKey(edge)));</span>
+<span class="fc" id="L64">		List&lt;LocatedFlowDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;(component.diagnostics());</span>
+<span class="fc" id="L65">		Set&lt;String&gt; diagnosticKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L66">		component.diagnostics().forEach(diagnostic -&gt; diagnosticKeys.add(diagnosticKey(diagnostic)));</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">		boolean rejected= !continuations.complete();</span>
+
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		for (ContinuationRoot root : continuations.roots()) {</span>
+<span class="fc" id="L70">			Optional&lt;FlowNode&gt; continuationNode= findContinuationNode(component.nodes(), root);</span>
+<span class="fc" id="L71">			Optional&lt;ResolvedSearchTarget&gt; target= findTarget(resolvedPlan, root);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">			if (continuationNode.isEmpty()) {</span>
+<span class="nc" id="L73">				rejected= true;</span>
+<span class="nc" id="L74">				addDiagnostic(diagnostics, diagnosticKeys, root,</span>
+						&quot;The continuation binding is not present in the assembled flow component.&quot;); //$NON-NLS-1$
+<span class="nc" id="L76">				continue;</span>
+			}
+<span class="fc bfc" id="L78" title="All 2 branches covered.">			if (target.isEmpty()) {</span>
+<span class="fc" id="L79">				rejected= true;</span>
+<span class="fc" id="L80">				addDiagnostic(diagnostics, diagnosticKeys, root,</span>
+						&quot;No exact resolved search target matches the continuation root.&quot;); //$NON-NLS-1$
+<span class="fc" id="L82">				continue;</span>
+			}
+<span class="fc" id="L84">			Optional&lt;FlowNode&gt; boundaryNode= findBoundaryNode(</span>
+<span class="fc" id="L85">					component.nodes(), nodesById, root, target.get(), continuationNode.get());</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">			if (boundaryNode.isEmpty()) {</span>
+<span class="nc" id="L87">				rejected= true;</span>
+<span class="nc" id="L88">				addDiagnostic(diagnostics, diagnosticKeys, root,</span>
+						&quot;The canonical signature or field boundary is not present in the component.&quot;); //$NON-NLS-1$
+<span class="nc" id="L90">				continue;</span>
+			}
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">			if (root.relationship() == Relationship.SAME_NODE) {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">				if (!continuationNode.get().stableId().equals(boundaryNode.get().stableId())) {</span>
+<span class="nc" id="L95">					rejected= true;</span>
+<span class="nc" id="L96">					addDiagnostic(diagnostics, diagnosticKeys, root,</span>
+							&quot;A same-node continuation was not canonicalized to its boundary node.&quot;); //$NON-NLS-1$
+				}
+				continue;
+			}
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">			String sourceId= root.relationship() == Relationship.ROOT_TO_BOUNDARY</span>
+<span class="fc" id="L103">					? continuationNode.get().stableId()</span>
+<span class="fc" id="L104">					: boundaryNode.get().stableId();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">			String targetId= root.relationship() == Relationship.ROOT_TO_BOUNDARY</span>
+<span class="fc" id="L106">					? boundaryNode.get().stableId()</span>
+<span class="fc" id="L107">					: continuationNode.get().stableId();</span>
+<span class="fc" id="L108">			LocatedFlowEdge edge= new LocatedFlowEdge(</span>
+<span class="fc" id="L109">					root.compilationUnitHandle(),</span>
+					sourceId,
+					targetId,
+<span class="fc" id="L112">					root.transferKind(),</span>
+<span class="fc" id="L113">					root.profile().identity().sourceStart(),</span>
+<span class="fc" id="L114">					root.profile().identity().sourceLength());</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			if (edgeKeys.add(edgeKey(edge))) {</span>
+<span class="fc" id="L116">				edges.add(edge);</span>
+			}
+<span class="fc" id="L118">		}</span>
+
+<span class="fc" id="L120">		ClosureStatus status= closureStatus(component, continuations, rejected);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		if (status == ClosureStatus.LOCAL_CLOSED) {</span>
+<span class="fc" id="L122">			diagnostics.removeIf(diagnostic -&gt;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">					diagnostic.kind() == DiagnosticKind.SCOPE_EXPANSION_REQUIRED);</span>
+		}
+<span class="fc" id="L125">		return new ContainerFlowComponent(</span>
+<span class="fc" id="L126">				component.rootNodeId(),</span>
+<span class="fc" id="L127">				component.nodes(),</span>
+				edges,
+				status,
+				diagnostics);
+	}
+
+	private static Optional&lt;FlowNode&gt; findContinuationNode(
+			List&lt;FlowNode&gt; nodes,
+			ContinuationRoot root) {
+<span class="fc" id="L136">		List&lt;FlowNode&gt; matches= nodes.stream()</span>
+<span class="fc" id="L137">				.filter(node -&gt; node.bindingKey().equals(root.profile().identity().bindingKey()))</span>
+<span class="fc" id="L138">				.filter(node -&gt; node.compilationUnitHandle().equals(root.compilationUnitHandle()))</span>
+<span class="fc" id="L139">				.toList();</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();</span>
+	}
+
+	private static Optional&lt;ResolvedSearchTarget&gt; findTarget(
+			ResolvedContainerFlowSearchPlan plan,
+			ContinuationRoot root) {
+<span class="fc" id="L146">		return plan.targets().stream()</span>
+<span class="fc" id="L147">				.filter(target -&gt; target.sourceNodeId().equals(root.boundaryNodeId()))</span>
+<span class="fc" id="L148">				.filter(target -&gt; target.javaElementHandle().equals(root.exactTargetHandle()))</span>
+<span class="fc" id="L149">				.filter(target -&gt; targetMatchesKind(target, root.kind()))</span>
+<span class="pc" id="L150">				.sorted(Comparator.comparing(target -&gt; target.searchKind().ordinal()))</span>
+<span class="fc" id="L151">				.findFirst();</span>
+	}
+
+	private static boolean targetMatchesKind(
+			ResolvedSearchTarget target,
+			ContinuationKind kind) {
+<span class="pc bpc" id="L157" title="2 of 5 branches missed.">		return switch (kind) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">			case FIELD -&gt; target.searchKind() == SearchKind.FIELD_REFERENCES;</span>
+			case PARAMETER_DECLARATION -&gt;
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">					target.searchKind() != SearchKind.METHOD_CALLERS</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">							&amp;&amp; target.signatureIndex() &gt;= 0;</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			case CALL_ARGUMENT -&gt; target.searchKind() == SearchKind.METHOD_CALLERS</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">					&amp;&amp; target.signatureIndex() &gt;= 0;</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">			case RETURN_EXPRESSION -&gt; target.searchKind() != SearchKind.METHOD_CALLERS</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">					&amp;&amp; target.signatureIndex() &lt; 0;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">			case RETURN_CONSUMER -&gt; target.searchKind() == SearchKind.METHOD_CALLERS</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">					&amp;&amp; target.signatureIndex() &lt; 0;</span>
+		};
+	}
+
+	private static Optional&lt;FlowNode&gt; findBoundaryNode(
+			List&lt;FlowNode&gt; nodes,
+			Map&lt;String, FlowNode&gt; nodesById,
+			ContinuationRoot root,
+			ResolvedSearchTarget target,
+			FlowNode continuationNode) {
+<span class="fc bfc" id="L177" title="All 2 branches covered.">		if (root.relationship() == Relationship.SAME_NODE) {</span>
+<span class="fc" id="L178">			return Optional.of(continuationNode);</span>
+		}
+<span class="fc" id="L180">		FlowNode exactId= nodesById.get(root.boundaryNodeId());</span>
+<span class="pc bpc" id="L181" title="2 of 4 branches missed.">		if (exactId != null &amp;&amp; compatibleBoundary(exactId, target)) {</span>
+<span class="fc" id="L182">			return Optional.of(exactId);</span>
+		}
+<span class="nc" id="L184">		List&lt;FlowNode&gt; matches= nodes.stream()</span>
+<span class="nc" id="L185">				.filter(node -&gt; node.javaElementHandle().equals(target.javaElementHandle()))</span>
+<span class="nc" id="L186">				.filter(node -&gt; compatibleBoundary(node, target))</span>
+<span class="nc" id="L187">				.toList();</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">		return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();</span>
+	}
+
+	private static boolean compatibleBoundary(
+			FlowNode node,
+			ResolvedSearchTarget target) {
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		if (target.searchKind() == SearchKind.FIELD_REFERENCES) {</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">			return node.kind() == NodeKind.FIELD;</span>
+		}
+<span class="fc bfc" id="L197" title="All 2 branches covered.">		if (target.signatureIndex() &gt;= 0) {</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			return (node.kind() == NodeKind.PARAMETER</span>
+<span class="pc bnc" id="L199" title="All 2 branches missed.">					|| node.kind() == NodeKind.EXTERNAL_PARAMETER)</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">					&amp;&amp; node.signatureIndex() == target.signatureIndex();</span>
+		}
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		return node.kind() == NodeKind.RETURN_POSITION;</span>
+	}
+
+	private static ClosureStatus closureStatus(
+			ContainerFlowComponent component,
+			ContainerFlowContinuationPlan continuations,
+			boolean rejected) {
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">		if (component.closureStatus() == ClosureStatus.REJECTED || rejected) {</span>
+<span class="fc" id="L210">			return ClosureStatus.REJECTED;</span>
+		}
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">		if (component.closureStatus() == ClosureStatus.EXTERNAL_BOUNDARY) {</span>
+<span class="nc" id="L213">			return ClosureStatus.EXTERNAL_BOUNDARY;</span>
+		}
+<span class="fc" id="L215">		boolean unresolvedSourceBoundary= component.nodes().stream()</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">				.anyMatch(node -&gt; (node.kind() == NodeKind.PARAMETER</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">						|| node.kind() == NodeKind.RETURN_POSITION)</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">						&amp;&amp; !node.sourceResolved());</span>
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">		return unresolvedSourceBoundary || !continuations.complete()</span>
+<span class="nc" id="L220">				? ClosureStatus.REQUIRES_SCOPE_EXPANSION</span>
+<span class="fc" id="L221">				: ClosureStatus.LOCAL_CLOSED;</span>
+	}
+
+	private static void addDiagnostic(
+			List&lt;LocatedFlowDiagnostic&gt; diagnostics,
+			Set&lt;String&gt; keys,
+			ContinuationRoot root,
+			String message) {
+<span class="fc" id="L229">		LocatedFlowDiagnostic diagnostic= new LocatedFlowDiagnostic(</span>
+<span class="fc" id="L230">				root.compilationUnitHandle(),</span>
+				DiagnosticKind.UNCLASSIFIED_FLOW,
+				message,
+<span class="fc" id="L233">				root.profile().identity().sourceStart(),</span>
+<span class="fc" id="L234">				root.profile().identity().sourceLength());</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (keys.add(diagnosticKey(diagnostic))) {</span>
+<span class="fc" id="L236">			diagnostics.add(diagnostic);</span>
+		}
+<span class="fc" id="L238">	}</span>
+
+	private static String edgeKey(LocatedFlowEdge edge) {
+<span class="fc" id="L241">		return edge.compilationUnitHandle() + '|' + edge.sourceNodeId() + '|'</span>
+<span class="fc" id="L242">				+ edge.targetNodeId() + '|' + edge.kind() + '|' + edge.sourceStart();</span>
+	}
+
+	private static String diagnosticKey(LocatedFlowDiagnostic diagnostic) {
+<span class="fc" id="L246">		return diagnostic.compilationUnitHandle() + '|' + diagnostic.kind() + '|'</span>
+<span class="fc" id="L247">				+ diagnostic.message() + '|' + diagnostic.sourceStart();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

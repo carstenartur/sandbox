@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerSignatureAtomicityPlanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ContainerSignatureAtomicityPlanner.java</span></div><h1>ContainerSignatureAtomicityPlanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.BridgeFeasibility;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.DiagnosticKind;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PositionKind;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAtomicityGroup;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureDiagnostic;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureMember;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSearchTarget;
+
+/**
+ * Derives report-only atomic method-signature groups from a closed container flow.
+ *
+ * &lt;p&gt;The planner does not claim semantic bridge safety. It records only the Java-level
+ * coexistence constraint: an array parameter and a collection parameter may form
+ * distinct overloads, while an array return and a collection return cannot coexist
+ * under the same method name and parameter list.&lt;/p&gt;
+ */
+<span class="fc" id="L45">public final class ContainerSignatureAtomicityPlanner {</span>
+
+	/** Builds an immutable signature plan for one closed flow recommendation. */
+	public ContainerSignatureMigrationPlan plan(
+			ContainerFlowComponent component,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
+			ContainerRecommendation recommendation) {
+<span class="fc" id="L52">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L53">		Objects.requireNonNull(resolvedPlan, &quot;resolvedPlan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L56">		List&lt;SignatureDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED) {</span>
+<span class="fc" id="L58">			diagnostics.add(new SignatureDiagnostic(</span>
+					DiagnosticKind.FLOW_NOT_CLOSED,
+<span class="fc" id="L60">					component.rootNodeId(),</span>
+					&quot;&quot;, //$NON-NLS-1$
+					&quot;Signature planning requires a closed source flow component.&quot;)); //$NON-NLS-1$
+<span class="fc" id="L63">			return new ContainerSignatureMigrationPlan(</span>
+<span class="fc" id="L64">					recommendation.targetContract(),</span>
+<span class="fc" id="L65">					List.of(),</span>
+					PlanningStatus.REJECTED,
+					diagnostics);
+		}
+
+<span class="fc" id="L70">		Map&lt;GroupKey, List&lt;ResolvedSearchTarget&gt;&gt; targetsByGroup= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (ResolvedSearchTarget target : resolvedPlan.targets()) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">			if (!declarationTarget(target)) {</span>
+<span class="fc" id="L73">				continue;</span>
+			}
+<span class="fc" id="L75">			GroupKey key= new GroupKey(target.sourceNodeId(), target.signatureIndex());</span>
+<span class="fc" id="L76">			targetsByGroup.computeIfAbsent(key, ignored -&gt; new ArrayList&lt;&gt;()).add(target);</span>
+<span class="fc" id="L77">		}</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (targetsByGroup.isEmpty()) {</span>
+<span class="fc" id="L79">			return new ContainerSignatureMigrationPlan(</span>
+<span class="fc" id="L80">					recommendation.targetContract(),</span>
+<span class="fc" id="L81">					List.of(),</span>
+					PlanningStatus.NO_SIGNATURE_CHANGE,
+<span class="fc" id="L83">					List.of());</span>
+		}
+
+<span class="fc" id="L86">		List&lt;SignatureAtomicityGroup&gt; groups= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">		for (Map.Entry&lt;GroupKey, List&lt;ResolvedSearchTarget&gt;&gt; entry : targetsByGroup.entrySet()) {</span>
+<span class="fc" id="L88">			GroupKey key= entry.getKey();</span>
+<span class="fc" id="L89">			Map&lt;String, SignatureMember&gt; membersByHandle= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			for (ResolvedSearchTarget target : entry.getValue()) {</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				if (target.javaElementHandle().isBlank()) {</span>
+<span class="nc" id="L92">					diagnostics.add(new SignatureDiagnostic(</span>
+							DiagnosticKind.MISSING_METHOD_HANDLE,
+<span class="nc" id="L94">							target.sourceNodeId(),</span>
+							&quot;&quot;, //$NON-NLS-1$
+							&quot;An exact method declaration handle is required.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L97">					continue;</span>
+				}
+<span class="fc" id="L99">				List&lt;FlowNode&gt; matches= matchingNodes(component, target);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">				if (matches.isEmpty()) {</span>
+<span class="fc" id="L101">					diagnostics.add(new SignatureDiagnostic(</span>
+							DiagnosticKind.MISSING_SIGNATURE_NODE,
+<span class="fc" id="L103">							target.sourceNodeId(),</span>
+<span class="fc" id="L104">							target.javaElementHandle(),</span>
+							&quot;The resolved method has no matching signature node in the flow component.&quot;)); //$NON-NLS-1$
+<span class="fc" id="L106">					continue;</span>
+				}
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">				if (matches.size() &gt; 1) {</span>
+<span class="nc" id="L109">					diagnostics.add(new SignatureDiagnostic(</span>
+							DiagnosticKind.AMBIGUOUS_SIGNATURE_NODE,
+<span class="nc" id="L111">							target.sourceNodeId(),</span>
+<span class="nc" id="L112">							target.javaElementHandle(),</span>
+							&quot;Several flow nodes match the same method signature position.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L114">					continue;</span>
+				}
+<span class="fc" id="L116">				FlowNode node= matches.get(0);</span>
+<span class="fc" id="L117">				membersByHandle.putIfAbsent(target.javaElementHandle(), new SignatureMember(</span>
+<span class="fc" id="L118">						target.javaElementHandle(),</span>
+<span class="fc" id="L119">						node.ownerKey(),</span>
+<span class="fc" id="L120">						node.compilationUnitHandle(),</span>
+<span class="fc" id="L121">						node.stableId()));</span>
+<span class="fc" id="L122">			}</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			if (!membersByHandle.isEmpty()) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">				PositionKind position= key.signatureIndex() &gt;= 0</span>
+<span class="fc" id="L125">						? PositionKind.PARAMETER : PositionKind.RETURN;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">				BridgeFeasibility bridge= position == PositionKind.PARAMETER</span>
+<span class="fc" id="L127">						? BridgeFeasibility.OVERLOAD_POSSIBLE_POLICY_REQUIRED</span>
+<span class="fc" id="L128">						: BridgeFeasibility.SAME_NAME_RETURN_BRIDGE_IMPOSSIBLE;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">				String explanation= position == PositionKind.PARAMETER</span>
+<span class="fc" id="L130">						? &quot;Old and new parameter types can coexist as overloads, but any adapter must prove order, aliasing, mutation, null and duplicate semantics.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L131">						: &quot;Java cannot retain the old and new signatures under the same name because methods cannot be overloaded solely by return type.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L132">				List&lt;SignatureMember&gt; members= new ArrayList&lt;&gt;(membersByHandle.values());</span>
+<span class="fc" id="L133">				members.sort(Comparator.comparing(SignatureMember::javaElementHandle));</span>
+<span class="fc" id="L134">				groups.add(new SignatureAtomicityGroup(</span>
+<span class="fc" id="L135">						groupId(key),</span>
+						position,
+<span class="fc" id="L137">						key.signatureIndex(),</span>
+						members,
+						bridge,
+						explanation));
+			}
+<span class="fc" id="L142">		}</span>
+<span class="fc" id="L143">		groups.sort(Comparator.comparing(SignatureAtomicityGroup::groupId));</span>
+<span class="fc" id="L144">		return new ContainerSignatureMigrationPlan(</span>
+<span class="fc" id="L145">				recommendation.targetContract(),</span>
+				groups,
+<span class="fc bfc" id="L147" title="All 2 branches covered.">				diagnostics.isEmpty() ? PlanningStatus.REPORT_ONLY : PlanningStatus.REJECTED,</span>
+				diagnostics);
+	}
+
+	private static boolean declarationTarget(ResolvedSearchTarget target) {
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		return target.searchKind() == SearchKind.METHOD_DECLARATION</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">				|| target.searchKind() == SearchKind.METHOD_OVERRIDE_FAMILY;</span>
+	}
+
+	private static List&lt;FlowNode&gt; matchingNodes(
+			ContainerFlowComponent component,
+			ResolvedSearchTarget target) {
+<span class="fc" id="L159">		return component.nodes().stream()</span>
+<span class="fc" id="L160">				.filter(node -&gt; node.javaElementHandle().equals(target.javaElementHandle()))</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">				.filter(node -&gt; target.signatureIndex() &gt;= 0</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">						? (node.kind() == NodeKind.PARAMETER</span>
+<span class="pc bnc" id="L163" title="All 2 branches missed.">								|| node.kind() == NodeKind.EXTERNAL_PARAMETER)</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">								&amp;&amp; node.signatureIndex() == target.signatureIndex()</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">						: node.kind() == NodeKind.RETURN_POSITION)</span>
+<span class="fc" id="L166">				.toList();</span>
+	}
+
+	private static String groupId(GroupKey key) {
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		return key.sourceNodeId() + (key.signatureIndex() &gt;= 0</span>
+<span class="fc" id="L171">				? &quot;:parameter:&quot; + key.signatureIndex() //$NON-NLS-1$</span>
+<span class="fc" id="L172">				: &quot;:return&quot;); //$NON-NLS-1$</span>
+	}
+
+	private record GroupKey(String sourceNodeId, int signatureIndex) {
+<span class="fc" id="L176">		private GroupKey {</span>
+<span class="fc" id="L177">			sourceNodeId= Objects.requireNonNull(sourceNodeId, &quot;sourceNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L178">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

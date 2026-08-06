@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowComponentAssembler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ContainerFlowComponentAssembler.java</span></div><h1>ContainerFlowComponentAssembler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowComponent.LocatedFlowDiagnostic;
+import org.sandbox.jdt.container.api.ContainerFlowComponent.LocatedFlowEdge;
+import org.sandbox.jdt.container.api.ContainerFlowGraph;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.DiagnosticKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowDiagnostic;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowEdge;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+
+/**
+ * Assembles compilation-unit-local flow fragments into one canonical component.
+ *
+ * &lt;p&gt;Signature boundary nodes and their later source declarations use different local
+ * binding keys. They are therefore coalesced by semantic signature identity rather
+ * than by fragment-local node identifier.&lt;/p&gt;
+ */
+<span class="fc" id="L39">public final class ContainerFlowComponentAssembler {</span>
+
+	/** Assembles fragments in deterministic input order. */
+	public ContainerFlowComponent assemble(List&lt;ContainerFlowGraph&gt; fragments) {
+<span class="fc" id="L43">		Objects.requireNonNull(fragments, &quot;fragments&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		if (fragments.isEmpty()) {</span>
+<span class="fc" id="L45">			throw new IllegalArgumentException(&quot;At least one flow fragment is required&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L48">		Map&lt;String, MutableNode&gt; nodes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L49">		List&lt;LocatedFlowEdge&gt; edges= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L50">		Set&lt;String&gt; edgeKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L51">		List&lt;LocatedFlowDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L52">		Set&lt;String&gt; diagnosticKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L53">		ClosureStatus status= ClosureStatus.LOCAL_CLOSED;</span>
+<span class="fc" id="L54">		String componentRoot= null;</span>
+
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		for (int fragmentIndex= 0; fragmentIndex &lt; fragments.size(); fragmentIndex++) {</span>
+<span class="fc" id="L57">			ContainerFlowGraph fragment= Objects.requireNonNull(</span>
+<span class="fc" id="L58">					fragments.get(fragmentIndex), &quot;fragment&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L59">			String fragmentUnit= compilationUnitHandle(fragment);</span>
+<span class="fc" id="L60">			Map&lt;String, String&gt; remappedIds= new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			for (FlowNode node : fragment.nodes()) {</span>
+<span class="fc" id="L63">				String canonicalId= canonicalId(node);</span>
+<span class="fc" id="L64">				remappedIds.put(node.stableId(), canonicalId);</span>
+<span class="fc" id="L65">				MutableNode merged= nodes.computeIfAbsent(</span>
+<span class="fc" id="L66">						canonicalId, ignored -&gt; new MutableNode(canonicalId, node));</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">				if (merged.merge(node)) {</span>
+<span class="fc" id="L68">					status= ClosureStatus.REJECTED;</span>
+<span class="fc" id="L69">					addDiagnostic(</span>
+							diagnostics,
+							diagnosticKeys,
+							fragmentUnit,
+							DiagnosticKind.UNCLASSIFIED_FLOW,
+							&quot;Conflicting declarations map to the same canonical flow node: &quot; //$NON-NLS-1$
+									+ canonicalId,
+<span class="fc" id="L76">							node.sourceStart(),</span>
+<span class="fc" id="L77">							node.sourceLength());</span>
+				}
+<span class="fc" id="L79">			}</span>
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">			if (fragmentIndex == 0) {</span>
+<span class="fc" id="L82">				componentRoot= remappedIds.get(fragment.rootNodeId());</span>
+			}
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">			for (FlowEdge edge : fragment.edges()) {</span>
+<span class="fc" id="L86">				String source= remappedIds.get(edge.sourceNodeId());</span>
+<span class="fc" id="L87">				String target= remappedIds.get(edge.targetNodeId());</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">				if (source == null || target == null) {</span>
+<span class="nc" id="L89">					status= ClosureStatus.REJECTED;</span>
+<span class="nc" id="L90">					addDiagnostic(</span>
+							diagnostics,
+							diagnosticKeys,
+							fragmentUnit,
+							DiagnosticKind.UNCLASSIFIED_FLOW,
+							&quot;A fragment edge cannot be mapped to canonical component nodes.&quot;, //$NON-NLS-1$
+<span class="nc" id="L96">							edge.sourceStart(),</span>
+<span class="nc" id="L97">							edge.sourceLength());</span>
+<span class="nc" id="L98">					continue;</span>
+				}
+<span class="fc" id="L100">				String edgeUnit= edgeCompilationUnit(fragment, edge, fragmentUnit);</span>
+<span class="fc" id="L101">				LocatedFlowEdge located= new LocatedFlowEdge(</span>
+						edgeUnit,
+						source,
+						target,
+<span class="fc" id="L105">						edge.kind(),</span>
+<span class="fc" id="L106">						edge.sourceStart(),</span>
+<span class="fc" id="L107">						edge.sourceLength());</span>
+<span class="fc" id="L108">				String key= edgeKey(located);</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">				if (edgeKeys.add(key)) {</span>
+<span class="fc" id="L110">					edges.add(located);</span>
+				}
+<span class="fc" id="L112">			}</span>
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">			for (FlowDiagnostic diagnostic : fragment.diagnostics()) {</span>
+<span class="fc" id="L115">				addDiagnostic(</span>
+						diagnostics,
+						diagnosticKeys,
+						fragmentUnit,
+<span class="fc" id="L119">						diagnostic.kind(),</span>
+<span class="fc" id="L120">						diagnostic.message(),</span>
+<span class="fc" id="L121">						diagnostic.sourceStart(),</span>
+<span class="fc" id="L122">						diagnostic.sourceLength());</span>
+<span class="fc" id="L123">			}</span>
+<span class="fc" id="L124">			status= moreSevere(status, fragment.closureStatus());</span>
+		}
+
+<span class="fc" id="L127">		List&lt;FlowNode&gt; canonicalNodes= nodes.values().stream()</span>
+<span class="fc" id="L128">				.map(MutableNode::toFlowNode)</span>
+<span class="fc" id="L129">				.toList();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		for (FlowNode node : canonicalNodes) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">			if (node.kind() == NodeKind.EXTERNAL_PARAMETER) {</span>
+<span class="fc" id="L132">				status= moreSevere(status, ClosureStatus.EXTERNAL_BOUNDARY);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">			} else if ((node.kind() == NodeKind.PARAMETER</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">					|| node.kind() == NodeKind.RETURN_POSITION)</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">					&amp;&amp; !node.sourceResolved()) {</span>
+<span class="nc" id="L136">				status= moreSevere(status, ClosureStatus.REQUIRES_SCOPE_EXPANSION);</span>
+			}
+<span class="fc" id="L138">		}</span>
+
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">		if (componentRoot == null || !nodes.containsKey(componentRoot)) {</span>
+<span class="nc" id="L141">			throw new IllegalArgumentException(&quot;The first fragment root cannot be canonicalized&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L143">		return new ContainerFlowComponent(</span>
+				componentRoot,
+				canonicalNodes,
+				edges,
+				status,
+				diagnostics);
+	}
+
+	private static String canonicalId(FlowNode node) {
+<span class="pc bpc" id="L152" title="3 of 5 branches missed.">		return switch (node.kind()) {</span>
+			case PARAMETER, EXTERNAL_PARAMETER -&gt;
+<span class="fc" id="L154">					canonicalParameterId(node);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">			case RETURN_POSITION -&gt; node.ownerKey().isBlank()</span>
+<span class="nc" id="L156">					? &quot;return-local:&quot; + node.stableId() //$NON-NLS-1$</span>
+<span class="nc" id="L157">					: &quot;return:&quot; + node.ownerKey(); //$NON-NLS-1$</span>
+<span class="nc" id="L158">			case FIELD -&gt; &quot;field:&quot; + preferredIdentity(node); //$NON-NLS-1$</span>
+<span class="fc" id="L159">			case LOCAL_VARIABLE -&gt; &quot;local:&quot; + preferredIdentity(node); //$NON-NLS-1$</span>
+<span class="nc" id="L160">			case UNKNOWN_BOUNDARY -&gt; &quot;unknown:&quot; + node.stableId(); //$NON-NLS-1$</span>
+		};
+	}
+
+	private static String canonicalParameterId(FlowNode node) {
+<span class="pc bpc" id="L165" title="2 of 4 branches missed.">		if (node.ownerKey().isBlank() || node.signatureIndex() &lt; 0) {</span>
+<span class="nc" id="L166">			return &quot;parameter-local:&quot; + node.stableId(); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L168">		return &quot;parameter:&quot; + node.ownerKey() + ':' + node.signatureIndex(); //$NON-NLS-1$</span>
+	}
+
+	private static String preferredIdentity(FlowNode node) {
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (!node.javaElementHandle().isBlank()) {</span>
+<span class="fc" id="L173">			return node.javaElementHandle();</span>
+		}
+<span class="nc bnc" id="L175" title="All 2 branches missed.">		if (!node.bindingKey().isBlank()) {</span>
+<span class="nc" id="L176">			return node.bindingKey();</span>
+		}
+<span class="nc" id="L178">		return node.compilationUnitHandle() + ':' + node.stableId();</span>
+	}
+
+	private static String compilationUnitHandle(ContainerFlowGraph fragment) {
+<span class="fc" id="L182">		FlowNode root= fragment.node(fragment.rootNodeId()).orElseThrow();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		if (!root.compilationUnitHandle().isBlank()) {</span>
+<span class="fc" id="L184">			return root.compilationUnitHandle();</span>
+		}
+<span class="pc" id="L186">		return fragment.nodes().stream()</span>
+<span class="fc" id="L187">				.map(FlowNode::compilationUnitHandle)</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">				.filter(handle -&gt; !handle.isBlank())</span>
+<span class="fc" id="L189">				.findFirst()</span>
+<span class="pc" id="L190">				.orElseThrow(() -&gt; new IllegalArgumentException(</span>
+						&quot;A multi-file flow fragment requires a compilation-unit handle&quot;)); //$NON-NLS-1$
+	}
+
+	private static String edgeCompilationUnit(
+			ContainerFlowGraph fragment,
+			FlowEdge edge,
+			String fallback) {
+<span class="fc" id="L198">		return fragment.node(edge.sourceNodeId())</span>
+<span class="fc" id="L199">				.map(FlowNode::compilationUnitHandle)</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				.filter(handle -&gt; !handle.isBlank())</span>
+<span class="fc" id="L201">				.orElse(fallback);</span>
+	}
+
+	private static String edgeKey(LocatedFlowEdge edge) {
+<span class="fc" id="L205">		return edge.compilationUnitHandle() + '|' + edge.sourceNodeId() + '|'</span>
+<span class="fc" id="L206">				+ edge.targetNodeId() + '|' + edge.kind() + '|' + edge.sourceStart();</span>
+	}
+
+	private static void addDiagnostic(
+			List&lt;LocatedFlowDiagnostic&gt; diagnostics,
+			Set&lt;String&gt; keys,
+			String compilationUnitHandle,
+			DiagnosticKind kind,
+			String message,
+			int sourceStart,
+			int sourceLength) {
+<span class="fc" id="L217">		LocatedFlowDiagnostic diagnostic= new LocatedFlowDiagnostic(</span>
+				compilationUnitHandle,
+				kind,
+				message,
+				sourceStart,
+				sourceLength);
+<span class="fc" id="L223">		String key= compilationUnitHandle + '|' + kind + '|' + message + '|' + sourceStart;</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (keys.add(key)) {</span>
+<span class="fc" id="L225">			diagnostics.add(diagnostic);</span>
+		}
+<span class="fc" id="L227">	}</span>
+
+	private static ClosureStatus moreSevere(ClosureStatus left, ClosureStatus right) {
+<span class="fc bfc" id="L230" title="All 2 branches covered.">		return rank(right) &gt; rank(left) ? right : left;</span>
+	}
+
+	private static int rank(ClosureStatus status) {
+<span class="fc bfc" id="L234" title="All 4 branches covered.">		return switch (status) {</span>
+<span class="fc" id="L235">			case LOCAL_CLOSED -&gt; 0;</span>
+<span class="fc" id="L236">			case REQUIRES_SCOPE_EXPANSION -&gt; 1;</span>
+<span class="fc" id="L237">			case EXTERNAL_BOUNDARY -&gt; 2;</span>
+<span class="fc" id="L238">			case REJECTED -&gt; 3;</span>
+		};
+	}
+
+	private static final class MutableNode {
+
+		private final String canonicalId;
+		private NodeKind kind;
+		private String bindingKey;
+		private String ownerKey;
+		private String compilationUnitHandle;
+		private String javaElementHandle;
+		private int signatureIndex;
+		private boolean sourceResolved;
+		private int sourceStart;
+		private int sourceLength;
+
+<span class="fc" id="L255">		MutableNode(String canonicalId, FlowNode initial) {</span>
+<span class="fc" id="L256">			this.canonicalId= canonicalId;</span>
+<span class="fc" id="L257">			kind= initial.kind();</span>
+<span class="fc" id="L258">			bindingKey= initial.bindingKey();</span>
+<span class="fc" id="L259">			ownerKey= initial.ownerKey();</span>
+<span class="fc" id="L260">			compilationUnitHandle= initial.compilationUnitHandle();</span>
+<span class="fc" id="L261">			javaElementHandle= initial.javaElementHandle();</span>
+<span class="fc" id="L262">			signatureIndex= initial.signatureIndex();</span>
+<span class="fc" id="L263">			sourceResolved= initial.sourceResolved();</span>
+<span class="fc" id="L264">			sourceStart= initial.sourceStart();</span>
+<span class="fc" id="L265">			sourceLength= initial.sourceLength();</span>
+<span class="fc" id="L266">		}</span>
+
+		boolean merge(FlowNode incoming) {
+<span class="fc" id="L269">			boolean conflict= false;</span>
+<span class="fc" id="L270">			NodeKind mergedKind= mergeKind(kind, incoming.kind());</span>
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">			if (mergedKind == null) {</span>
+<span class="nc" id="L272">				conflict= true;</span>
+			} else {
+<span class="fc" id="L274">				kind= mergedKind;</span>
+			}
+<span class="fc" id="L276">			TextMerge binding= mergeText(bindingKey, incoming.bindingKey());</span>
+<span class="fc" id="L277">			TextMerge owner= mergeText(ownerKey, incoming.ownerKey());</span>
+<span class="fc" id="L278">			TextMerge element= mergeText(javaElementHandle, incoming.javaElementHandle());</span>
+<span class="pc bpc" id="L279" title="2 of 6 branches missed.">			conflict|= binding.conflict() || owner.conflict() || element.conflict();</span>
+<span class="fc" id="L280">			bindingKey= binding.value();</span>
+<span class="fc" id="L281">			ownerKey= owner.value();</span>
+<span class="fc" id="L282">			javaElementHandle= element.value();</span>
+
+<span class="fc bfc" id="L284" title="All 2 branches covered.">			if (signatureIndex &lt; 0) {</span>
+<span class="fc" id="L285">				signatureIndex= incoming.signatureIndex();</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">			} else if (incoming.signatureIndex() &gt;= 0</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">					&amp;&amp; signatureIndex != incoming.signatureIndex()) {</span>
+<span class="nc" id="L288">				conflict= true;</span>
+			}
+<span class="fc bfc" id="L290" title="All 4 branches covered.">			if (!sourceResolved &amp;&amp; incoming.sourceResolved()) {</span>
+<span class="fc" id="L291">				compilationUnitHandle= incoming.compilationUnitHandle();</span>
+<span class="fc" id="L292">				sourceStart= incoming.sourceStart();</span>
+<span class="fc" id="L293">				sourceLength= incoming.sourceLength();</span>
+			}
+<span class="fc" id="L295">			sourceResolved|= incoming.sourceResolved();</span>
+<span class="fc" id="L296">			return conflict;</span>
+		}
+
+		FlowNode toFlowNode() {
+<span class="fc" id="L300">			return new FlowNode(</span>
+					canonicalId,
+					kind,
+					bindingKey,
+					ownerKey,
+					compilationUnitHandle,
+					javaElementHandle,
+					signatureIndex,
+					sourceResolved,
+					sourceStart,
+					sourceLength);
+		}
+
+		private static NodeKind mergeKind(NodeKind current, NodeKind incoming) {
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">			if (current == incoming) {</span>
+<span class="fc" id="L315">				return current;</span>
+			}
+<span class="nc bnc" id="L317" title="All 8 branches missed.">			if ((current == NodeKind.PARAMETER &amp;&amp; incoming == NodeKind.EXTERNAL_PARAMETER)</span>
+					|| (current == NodeKind.EXTERNAL_PARAMETER &amp;&amp; incoming == NodeKind.PARAMETER)) {
+<span class="nc" id="L319">				return NodeKind.EXTERNAL_PARAMETER;</span>
+			}
+<span class="nc" id="L321">			return null;</span>
+		}
+
+		private static TextMerge mergeText(String current, String incoming) {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">			if (current.isBlank()) {</span>
+<span class="fc" id="L326">				return new TextMerge(incoming, false);</span>
+			}
+<span class="pc bpc" id="L328" title="1 of 4 branches missed.">			if (incoming.isBlank() || current.equals(incoming)) {</span>
+<span class="fc" id="L329">				return new TextMerge(current, false);</span>
+			}
+<span class="fc" id="L331">			return new TextMerge(current, true);</span>
+		}
+	}
+
+<span class="fc" id="L335">	private record TextMerge(String value, boolean conflict) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

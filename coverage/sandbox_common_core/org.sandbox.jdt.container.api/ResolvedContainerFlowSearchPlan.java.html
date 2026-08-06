@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ResolvedContainerFlowSearchPlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">ResolvedContainerFlowSearchPlan.java</span></div><h1>ResolvedContainerFlowSearchPlan.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
+
+/**
+ * Exact Java-model targets produced by resolving a container flow search plan.
+ *
+ * &lt;p&gt;The original search intention is retained for every exact field or method so a
+ * later parser pass can distinguish declarations, callers and override-family
+ * members without repeating workspace model resolution.&lt;/p&gt;
+ */
+public record ResolvedContainerFlowSearchPlan(List&lt;ResolvedSearchTarget&gt; targets) {
+
+<span class="fc" id="L29">	public ResolvedContainerFlowSearchPlan {</span>
+<span class="fc" id="L30">		targets= List.copyOf(Objects.requireNonNull(targets, &quot;targets&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L31">		Set&lt;String&gt; keys= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">		for (ResolvedSearchTarget target : targets) {</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">			if (!keys.add(target.stableKey())) {</span>
+<span class="fc" id="L34">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L35">						&quot;Duplicate resolved container flow target: &quot; + target.stableKey()); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L37">		}</span>
+<span class="fc" id="L38">	}</span>
+
+	/** Returns an empty, immutable resolved plan. */
+	public static ResolvedContainerFlowSearchPlan empty() {
+<span class="fc" id="L42">		return new ResolvedContainerFlowSearchPlan(List.of());</span>
+	}
+
+	/** Returns whether no exact continuation target was resolved. */
+	public boolean isEmpty() {
+<span class="fc" id="L47">		return targets.isEmpty();</span>
+	}
+
+	/** One exact field or method related to one original graph boundary. */
+	public record ResolvedSearchTarget(
+			String sourceNodeId,
+			SearchKind searchKind,
+			TargetKind targetKind,
+			String bindingKey,
+			String ownerKey,
+			String javaElementHandle,
+			int signatureIndex,
+			String reason) {
+
+<span class="fc" id="L61">		public ResolvedSearchTarget {</span>
+<span class="fc" id="L62">			sourceNodeId= requiredText(sourceNodeId, &quot;sourceNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">			Objects.requireNonNull(searchKind, &quot;searchKind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L64">			Objects.requireNonNull(targetKind, &quot;targetKind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">			bindingKey= optionalText(bindingKey);</span>
+<span class="fc" id="L66">			ownerKey= optionalText(ownerKey);</span>
+<span class="fc" id="L67">			javaElementHandle= requiredText(javaElementHandle, &quot;javaElementHandle&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			if (signatureIndex &lt; -1) {</span>
+<span class="nc" id="L69">				throw new IllegalArgumentException(</span>
+						&quot;signatureIndex must be -1 or a parameter index&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L72">			reason= requiredText(reason, &quot;reason&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L73" title="All 4 branches covered.">			if (targetKind == TargetKind.FIELD &amp;&amp; searchKind != SearchKind.FIELD_REFERENCES) {</span>
+<span class="fc" id="L74">				throw new IllegalArgumentException(</span>
+						&quot;A resolved field must originate from a field-reference search&quot;); //$NON-NLS-1$
+			}
+<span class="fc bfc" id="L77" title="All 4 branches covered.">			if (targetKind == TargetKind.FIELD &amp;&amp; signatureIndex != -1) {</span>
+<span class="fc" id="L78">				throw new IllegalArgumentException(</span>
+						&quot;A resolved field cannot have a signature index&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L81">		}</span>
+
+		/** Stable deterministic de-duplication key. */
+		public String stableKey() {
+<span class="fc" id="L85">			return sourceNodeId + '|' + searchKind + '|' + targetKind + '|'</span>
+					+ javaElementHandle + '|' + signatureIndex;
+		}
+	}
+
+<span class="fc" id="L90">	public enum TargetKind {</span>
+<span class="fc" id="L91">		FIELD,</span>
+<span class="fc" id="L92">		METHOD</span>
+	}
+
+	private static String requiredText(String value, String fieldName) {
+<span class="fc" id="L96">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L98">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L100">		return text;</span>
+	}
+
+	private static String optionalText(String value) {
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value.strip(); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

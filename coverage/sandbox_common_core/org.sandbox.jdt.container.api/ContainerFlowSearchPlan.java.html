@@ -53,10 +53,10 @@ public record ContainerFlowSearchPlan(List&lt;SearchSeed&gt; seeds) {
 <span class="nc" id="L53">				throw new IllegalArgumentException(&quot;signatureIndex must be -1 or a parameter index&quot;); //$NON-NLS-1$</span>
 			}
 <span class="fc" id="L55">			reason= requiredText(reason, &quot;reason&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L56" title="3 of 4 branches missed.">			if (kind == SearchKind.FIELD_REFERENCES &amp;&amp; bindingKey.isEmpty()) {</span>
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">			if (kind == SearchKind.FIELD_REFERENCES &amp;&amp; bindingKey.isEmpty()) {</span>
 <span class="nc" id="L57">				throw new IllegalArgumentException(&quot;Field reference search requires a binding key&quot;); //$NON-NLS-1$</span>
 			}
-<span class="pc bpc" id="L59" title="2 of 4 branches missed.">			if (kind != SearchKind.FIELD_REFERENCES &amp;&amp; ownerKey.isEmpty()) {</span>
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">			if (kind != SearchKind.FIELD_REFERENCES &amp;&amp; ownerKey.isEmpty()) {</span>
 <span class="nc" id="L60">				throw new IllegalArgumentException(&quot;Method search requires an owner key&quot;); //$NON-NLS-1$</span>
 			}
 <span class="fc" id="L62">		}</span>
@@ -69,7 +69,7 @@ public record ContainerFlowSearchPlan(List&lt;SearchSeed&gt; seeds) {
 
 		/** Returns whether the workspace layer can resolve the exact Java element. */
 		public boolean hasJavaElementHandle() {
-<span class="nc bnc" id="L72" title="All 2 branches missed.">			return !javaElementHandle.isEmpty();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">			return !javaElementHandle.isEmpty();</span>
 		}
 	}
 

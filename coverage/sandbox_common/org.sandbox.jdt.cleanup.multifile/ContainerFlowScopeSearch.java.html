@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerFlowScopeSearch.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ContainerFlowScopeSearch.java</span></div><h1>ContainerFlowScopeSearch.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IField;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSearchTarget;
+import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.TargetKind;
+
+/**
+ * Resolves an AST-free container flow search plan to the source compilation units
+ * required by coordinated multi-file planning.
+ *
+ * &lt;p&gt;This class deliberately does not implement another JDT reference search. It
+ * resolves stable Java-model handles, expands method override families and delegates
+ * all workspace matching, source-root policy and binary-boundary checks to
+ * {@link RelatedCompilationUnitSearch}.&lt;/p&gt;
+ */
+public final class ContainerFlowScopeSearch {
+
+	/** Stable result of one flow-scope expansion attempt. */
+	public record Result(
+			List&lt;ICompilationUnit&gt; compilationUnits,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
+			boolean complete,
+			List&lt;String&gt; rejectionReasons) {
+
+<span class="fc" id="L61">		public Result {</span>
+<span class="fc" id="L62">			compilationUnits= List.copyOf(compilationUnits);</span>
+<span class="fc" id="L63">			Objects.requireNonNull(resolvedPlan, &quot;resolvedPlan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L64">			rejectionReasons= List.copyOf(rejectionReasons);</span>
+<span class="fc" id="L65">		}</span>
+	}
+
+	@FunctionalInterface
+	interface ElementResolver {
+		IJavaElement resolve(String handleIdentifier);
+	}
+
+	@FunctionalInterface
+	interface RelatedUnitFinder {
+		RelatedCompilationUnitSearch.Result find(
+				IJavaProject project,
+				Collection&lt;? extends IJavaElement&gt; targets,
+				Collection&lt;ICompilationUnit&gt; initialUnits,
+				Collection&lt;ICompilationUnit&gt; allowedUnits,
+				IProgressMonitor monitor) throws CoreException;
+	}
+
+	@FunctionalInterface
+	interface MethodFamilyResolver {
+		MethodFamily resolve(IMethod method, IProgressMonitor monitor);
+	}
+
+	record MethodFamily(List&lt;IMethod&gt; methods, boolean complete, List&lt;String&gt; rejectionReasons) {
+<span class="fc" id="L89">		MethodFamily {</span>
+<span class="fc" id="L90">			methods= List.copyOf(methods);</span>
+<span class="fc" id="L91">			rejectionReasons= List.copyOf(rejectionReasons);</span>
+<span class="fc" id="L92">		}</span>
+	}
+
+	private final ElementResolver elementResolver;
+	private final MethodFamilyResolver methodFamilyResolver;
+	private final RelatedUnitFinder relatedUnitFinder;
+
+	private ContainerFlowScopeSearch() {
+<span class="fc" id="L100">		this(JavaCore::create,</span>
+<span class="fc" id="L101">				ContainerFlowScopeSearch::resolveMethodFamily,</span>
+<span class="fc" id="L102">				RelatedCompilationUnitSearch::findReferences);</span>
+<span class="fc" id="L103">	}</span>
+
+<span class="fc" id="L105">	ContainerFlowScopeSearch(</span>
+			ElementResolver elementResolver,
+			MethodFamilyResolver methodFamilyResolver,
+			RelatedUnitFinder relatedUnitFinder) {
+<span class="fc" id="L109">		this.elementResolver= Objects.requireNonNull(elementResolver, &quot;elementResolver&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L110">		this.methodFamilyResolver= Objects.requireNonNull(methodFamilyResolver, &quot;methodFamilyResolver&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L111">		this.relatedUnitFinder= Objects.requireNonNull(relatedUnitFinder, &quot;relatedUnitFinder&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L112">	}</span>
+
+	/**
+	 * Finds all editable source units needed by the supplied flow search plan.
+	 *
+	 * @param project coordinated Java project
+	 * @param plan AST-free search plan
+	 * @param currentScope source units already admitted
+	 * @param allowedUnits complete source-root-policy allow-list
+	 * @param monitor progress monitor, may be {@code null}
+	 * @return deterministic source closure and completeness diagnostics
+	 * @throws CoreException if the delegated JDT search fails
+	 */
+	public static Result findRelatedUnits(
+			IJavaProject project,
+			ContainerFlowSearchPlan plan,
+			Collection&lt;ICompilationUnit&gt; currentScope,
+			Collection&lt;ICompilationUnit&gt; allowedUnits,
+			IProgressMonitor monitor) throws CoreException {
+<span class="pc" id="L131">		return new ContainerFlowScopeSearch().find(</span>
+<span class="fc" id="L132">				project, plan, currentScope, allowedUnits, monitor);</span>
+	}
+
+	Result find(
+			IJavaProject project,
+			ContainerFlowSearchPlan plan,
+			Collection&lt;ICompilationUnit&gt; currentScope,
+			Collection&lt;ICompilationUnit&gt; allowedUnits,
+			IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L141">		Objects.requireNonNull(project, &quot;project&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L142">		Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		Objects.requireNonNull(currentScope, &quot;currentScope&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L144">		Objects.requireNonNull(allowedUnits, &quot;allowedUnits&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L145">		checkCanceled(monitor);</span>
+
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (plan.isEmpty()) {</span>
+<span class="fc" id="L148">			RelatedCompilationUnitSearch.Result validated= validateCurrentScope(</span>
+<span class="fc" id="L149">					project, currentScope, allowedUnits);</span>
+<span class="fc" id="L150">			return result(</span>
+<span class="fc" id="L151">					validated,</span>
+<span class="fc" id="L152">					ResolvedContainerFlowSearchPlan.empty(),</span>
+<span class="fc" id="L153">					List.of());</span>
+		}
+
+<span class="fc" id="L156">		Map&lt;String, IJavaElement&gt; targetsByHandle= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L157">		Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L158">		Set&lt;String&gt; rejectionReasons= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		for (SearchSeed seed : plan.seeds()) {</span>
+<span class="fc" id="L160">			checkCanceled(monitor);</span>
+<span class="fc" id="L161">			resolveSeed(</span>
+<span class="fc" id="L162">					seed,</span>
+<span class="fc" id="L163">					targetsByHandle,</span>
+<span class="fc" id="L164">					resolvedByKey,</span>
+<span class="fc" id="L165">					rejectionReasons,</span>
+<span class="fc" id="L166">					monitor);</span>
+		}
+
+		RelatedCompilationUnitSearch.Result searched;
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (targetsByHandle.isEmpty()) {</span>
+<span class="fc" id="L171">			searched= validateCurrentScope(project, currentScope, allowedUnits);</span>
+<span class="fc" id="L172">		} else {</span>
+<span class="fc" id="L173">			searched= relatedUnitFinder.find(</span>
+<span class="fc" id="L174">					project,</span>
+<span class="fc" id="L175">					targetsByHandle.values(),</span>
+<span class="fc" id="L176">					currentScope,</span>
+<span class="fc" id="L177">					allowedUnits,</span>
+<span class="fc" id="L178">					monitor);</span>
+		}
+<span class="fc" id="L180">		return result(</span>
+<span class="fc" id="L181">				searched,</span>
+<span class="fc" id="L182">				new ResolvedContainerFlowSearchPlan(</span>
+<span class="fc" id="L183">						new ArrayList&lt;&gt;(resolvedByKey.values())),</span>
+<span class="fc" id="L184">				rejectionReasons);</span>
+	}
+
+	private void resolveSeed(
+			SearchSeed seed,
+			Map&lt;String, IJavaElement&gt; targetsByHandle,
+			Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey,
+			Set&lt;String&gt; rejectionReasons,
+			IProgressMonitor monitor) {
+<span class="fc bfc" id="L193" title="All 2 branches covered.">		if (!seed.hasJavaElementHandle()) {</span>
+<span class="fc" id="L194">			rejectionReasons.add(&quot;A container flow search seed has no Java-model handle: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L195">					+ seed.sourceNodeId());</span>
+<span class="fc" id="L196">			return;</span>
+		}
+
+<span class="fc" id="L199">		IJavaElement element= elementResolver.resolve(seed.javaElementHandle());</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">		if (element == null || !element.exists()) {</span>
+<span class="nc" id="L201">			rejectionReasons.add(&quot;A container flow Java-model handle cannot be resolved: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L202">					+ seed.javaElementHandle());</span>
+<span class="nc" id="L203">			return;</span>
+		}
+
+<span class="pc bpc" id="L206" title="1 of 4 branches missed.">		switch (seed.kind()) {</span>
+<span class="fc" id="L207">			case FIELD_REFERENCES -&gt; addField(</span>
+<span class="fc" id="L208">					seed, element, targetsByHandle, resolvedByKey, rejectionReasons);</span>
+<span class="fc" id="L209">			case METHOD_DECLARATION, METHOD_CALLERS -&gt; addMethod(</span>
+<span class="fc" id="L210">					seed, element, targetsByHandle, resolvedByKey, rejectionReasons);</span>
+<span class="fc" id="L211">			case METHOD_OVERRIDE_FAMILY -&gt; addMethodFamily(</span>
+<span class="fc" id="L212">					seed,</span>
+<span class="fc" id="L213">					element,</span>
+<span class="fc" id="L214">					targetsByHandle,</span>
+<span class="fc" id="L215">					resolvedByKey,</span>
+<span class="fc" id="L216">					rejectionReasons,</span>
+<span class="fc" id="L217">					monitor);</span>
+		}
+<span class="fc" id="L219">	}</span>
+
+	private static void addField(
+			SearchSeed seed,
+			IJavaElement element,
+			Map&lt;String, IJavaElement&gt; targetsByHandle,
+			Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey,
+			Set&lt;String&gt; rejectionReasons) {
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">		if (!(element instanceof IField field)) {</span>
+<span class="fc" id="L228">			rejectionReasons.add(&quot;A field-reference seed does not resolve to an IField: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L229">					+ seed.javaElementHandle());</span>
+<span class="fc" id="L230">			return;</span>
+		}
+<span class="nc" id="L232">		addTarget(field, targetsByHandle);</span>
+<span class="nc" id="L233">		addResolved(seed, TargetKind.FIELD, field, resolvedByKey);</span>
+<span class="nc" id="L234">	}</span>
+
+	private static void addMethod(
+			SearchSeed seed,
+			IJavaElement element,
+			Map&lt;String, IJavaElement&gt; targetsByHandle,
+			Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey,
+			Set&lt;String&gt; rejectionReasons) {
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (!(element instanceof IMethod method)) {</span>
+<span class="nc" id="L243">			rejectionReasons.add(&quot;A method search seed does not resolve to an IMethod: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L244">					+ seed.javaElementHandle());</span>
+<span class="nc" id="L245">			return;</span>
+		}
+<span class="fc" id="L247">		addTarget(method, targetsByHandle);</span>
+<span class="fc" id="L248">		addResolved(seed, TargetKind.METHOD, method, resolvedByKey);</span>
+<span class="fc" id="L249">	}</span>
+
+	private void addMethodFamily(
+			SearchSeed seed,
+			IJavaElement element,
+			Map&lt;String, IJavaElement&gt; targetsByHandle,
+			Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey,
+			Set&lt;String&gt; rejectionReasons,
+			IProgressMonitor monitor) {
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">		if (!(element instanceof IMethod method)) {</span>
+<span class="nc" id="L259">			rejectionReasons.add(&quot;An override-family seed does not resolve to an IMethod: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L260">					+ seed.javaElementHandle());</span>
+<span class="nc" id="L261">			return;</span>
+		}
+
+<span class="fc" id="L264">		MethodFamily family= methodFamilyResolver.resolve(method, monitor);</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">		for (IMethod member : family.methods()) {</span>
+<span class="fc" id="L266">			addTarget(member, targetsByHandle);</span>
+<span class="fc" id="L267">			addResolved(seed, TargetKind.METHOD, member, resolvedByKey);</span>
+		}
+<span class="fc bfc" id="L269" title="All 2 branches covered.">		if (!family.complete()) {</span>
+<span class="fc" id="L270">			rejectionReasons.addAll(family.rejectionReasons());</span>
+		}
+<span class="fc" id="L272">	}</span>
+
+	private static void addResolved(
+			SearchSeed seed,
+			TargetKind targetKind,
+			IJavaElement element,
+			Map&lt;String, ResolvedSearchTarget&gt; resolvedByKey) {
+<span class="pc bpc" id="L279" title="2 of 4 branches missed.">		if (element == null || !element.exists()) {</span>
+<span class="nc" id="L280">			return;</span>
+		}
+<span class="fc" id="L282">		String handle= element.getHandleIdentifier();</span>
+<span class="pc bpc" id="L283" title="2 of 4 branches missed.">		if (handle == null || handle.isBlank()) {</span>
+<span class="nc" id="L284">			return;</span>
+		}
+<span class="fc" id="L286">		ResolvedSearchTarget target= new ResolvedSearchTarget(</span>
+<span class="fc" id="L287">				seed.sourceNodeId(),</span>
+<span class="fc" id="L288">				seed.kind(),</span>
+<span class="fc" id="L289">				targetKind,</span>
+<span class="fc" id="L290">				seed.bindingKey(),</span>
+<span class="fc" id="L291">				seed.ownerKey(),</span>
+<span class="fc" id="L292">				handle,</span>
+<span class="fc" id="L293">				seed.signatureIndex(),</span>
+<span class="fc" id="L294">				seed.reason());</span>
+<span class="fc" id="L295">		resolvedByKey.putIfAbsent(target.stableKey(), target);</span>
+<span class="fc" id="L296">	}</span>
+
+	private static void addTarget(
+			IJavaElement element,
+			Map&lt;String, IJavaElement&gt; targetsByHandle) {
+<span class="pc bpc" id="L301" title="2 of 4 branches missed.">		if (element == null || !element.exists()) {</span>
+<span class="nc" id="L302">			return;</span>
+		}
+<span class="fc" id="L304">		String handle= element.getHandleIdentifier();</span>
+<span class="pc bpc" id="L305" title="2 of 4 branches missed.">		if (handle != null &amp;&amp; !handle.isBlank()) {</span>
+<span class="fc" id="L306">			targetsByHandle.putIfAbsent(handle, element);</span>
+		}
+<span class="fc" id="L308">	}</span>
+
+	private static MethodFamily resolveMethodFamily(IMethod method, IProgressMonitor monitor) {
+<span class="nc" id="L311">		Map&lt;String, IMethod&gt; methodsByHandle= new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L312">		Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L313">		addMethod(methodsByHandle, method);</span>
+
+<span class="nc" id="L315">		IType declaringType= method.getDeclaringType();</span>
+<span class="nc bnc" id="L316" title="All 4 branches missed.">		if (declaringType == null || !declaringType.exists()) {</span>
+<span class="nc" id="L317">			reasons.add(&quot;The method declaring type is missing while expanding the override family.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L318">			return methodFamily(methodsByHandle, reasons);</span>
+		}
+
+		try {
+<span class="nc" id="L322">			ITypeHierarchy hierarchy= declaringType.newTypeHierarchy(monitor);</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">			for (IType type : hierarchy.getAllTypes()) {</span>
+<span class="nc" id="L324">				checkCanceled(monitor);</span>
+<span class="nc" id="L325">				IMethod[] corresponding= type.findMethods(method);</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">				if (corresponding == null) {</span>
+<span class="nc" id="L327">					continue;</span>
+				}
+<span class="nc bnc" id="L329" title="All 2 branches missed.">				for (IMethod candidate : corresponding) {</span>
+<span class="nc" id="L330">					addMethod(methodsByHandle, candidate);</span>
+				}
+			}
+<span class="nc" id="L333">		} catch (JavaModelException exception) {</span>
+<span class="nc" id="L334">			reasons.add(&quot;JDT could not resolve the complete method override family: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L335">					+ exception.getMessage());</span>
+		}
+<span class="nc" id="L337">		return methodFamily(methodsByHandle, reasons);</span>
+	}
+
+	private static MethodFamily methodFamily(
+			Map&lt;String, IMethod&gt; methodsByHandle,
+			Set&lt;String&gt; reasons) {
+<span class="nc" id="L343">		List&lt;IMethod&gt; methods= new ArrayList&lt;&gt;(methodsByHandle.values());</span>
+<span class="nc" id="L344">		methods.sort(Comparator.comparing(IJavaElement::getHandleIdentifier));</span>
+<span class="nc" id="L345">		return new MethodFamily(methods, reasons.isEmpty(), new ArrayList&lt;&gt;(reasons));</span>
+	}
+
+	private static void addMethod(Map&lt;String, IMethod&gt; methodsByHandle, IMethod method) {
+<span class="nc bnc" id="L349" title="All 4 branches missed.">		if (method == null || !method.exists()) {</span>
+<span class="nc" id="L350">			return;</span>
+		}
+<span class="nc" id="L352">		String handle= method.getHandleIdentifier();</span>
+<span class="nc bnc" id="L353" title="All 4 branches missed.">		if (handle != null &amp;&amp; !handle.isBlank()) {</span>
+<span class="nc" id="L354">			methodsByHandle.putIfAbsent(handle, method);</span>
+		}
+<span class="nc" id="L356">	}</span>
+
+	private static RelatedCompilationUnitSearch.Result validateCurrentScope(
+			IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope,
+			Collection&lt;ICompilationUnit&gt; allowedUnits) {
+<span class="fc" id="L362">		RelatedCompilationUnitSearch.MatchAccumulator accumulator=</span>
+<span class="fc" id="L363">				new RelatedCompilationUnitSearch.MatchAccumulator(</span>
+<span class="fc" id="L364">						project, currentScope, allowedUnits);</span>
+<span class="fc" id="L365">		return accumulator.finish();</span>
+	}
+
+	private static Result result(
+			RelatedCompilationUnitSearch.Result searchResult,
+			ResolvedContainerFlowSearchPlan resolvedPlan,
+			Collection&lt;String&gt; additionalReasons) {
+<span class="fc" id="L372">		Set&lt;String&gt; reasons= new LinkedHashSet&lt;&gt;(searchResult.rejectionReasons());</span>
+<span class="fc" id="L373">		reasons.addAll(additionalReasons);</span>
+<span class="fc" id="L374">		return new Result(</span>
+<span class="fc" id="L375">				searchResult.compilationUnits(),</span>
+<span class="fc" id="L376">				resolvedPlan,</span>
+<span class="pc bpc" id="L377" title="1 of 4 branches missed.">				searchResult.complete() &amp;&amp; reasons.isEmpty(),</span>
+<span class="fc" id="L378">				new ArrayList&lt;&gt;(reasons));</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L382" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L383">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L385">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
