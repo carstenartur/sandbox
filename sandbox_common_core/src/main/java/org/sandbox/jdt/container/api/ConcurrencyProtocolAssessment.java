@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.api;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -64,7 +66,7 @@ public sealed interface ConcurrencyProtocolAssessment
 
 		@Override
 		public List<String> explanations() {
-			return List.copyOf(explanations);
+			return defensiveCopy(explanations);
 		}
 	}
 
@@ -78,17 +80,16 @@ public sealed interface ConcurrencyProtocolAssessment
 			explanations= copyExplanations(explanations);
 			SynchronizationKind synchronization= protocol.summary().synchronization();
 			if (!hasCompleteUsageProof(protocol)
-					|| synchronization == SynchronizationKind.NONE
-					|| synchronization == SynchronizationKind.UNKNOWN
+					|| !isLockBased(synchronization)
 					|| !protocol.hasSingleProtectingLock()) {
 				throw new IllegalArgumentException(
-						"Retaining existing locking requires complete usage proof and one protecting lock"); //$NON-NLS-1$
+						"Retaining existing locking requires complete usage proof and one lock-based protecting protocol"); //$NON-NLS-1$
 			}
 		}
 
 		@Override
 		public List<String> explanations() {
-			return List.copyOf(explanations);
+			return defensiveCopy(explanations);
 		}
 	}
 
@@ -110,7 +111,7 @@ public sealed interface ConcurrencyProtocolAssessment
 
 		@Override
 		public List<String> explanations() {
-			return List.copyOf(explanations);
+			return defensiveCopy(explanations);
 		}
 	}
 
@@ -130,7 +131,7 @@ public sealed interface ConcurrencyProtocolAssessment
 
 		@Override
 		public List<String> explanations() {
-			return List.copyOf(explanations);
+			return defensiveCopy(explanations);
 		}
 	}
 
@@ -141,6 +142,12 @@ public sealed interface ConcurrencyProtocolAssessment
 				&& !protocol.hasUnresolvedBoundary();
 	}
 
+	private static boolean isLockBased(SynchronizationKind synchronization) {
+		return synchronization == SynchronizationKind.INTRINSIC_LOCK
+				|| synchronization == SynchronizationKind.EXPLICIT_LOCK
+				|| synchronization == SynchronizationKind.SYNCHRONIZED_WRAPPER;
+	}
+
 	private static List<String> copyExplanations(List<String> source) {
 		List<String> result= Objects.requireNonNull(source, "explanations").stream() //$NON-NLS-1$
 				.map(item -> Objects.requireNonNull(item, "explanation").strip()) //$NON-NLS-1$
@@ -149,6 +156,10 @@ public sealed interface ConcurrencyProtocolAssessment
 			throw new IllegalArgumentException("At least one non-empty explanation is required"); //$NON-NLS-1$
 		}
 		return result;
+	}
+
+	private static List<String> defensiveCopy(List<String> source) {
+		return Collections.unmodifiableList(new ArrayList<>(source));
 	}
 
 	/** Concurrency implementation family suggested by the report-only analyzer. */
