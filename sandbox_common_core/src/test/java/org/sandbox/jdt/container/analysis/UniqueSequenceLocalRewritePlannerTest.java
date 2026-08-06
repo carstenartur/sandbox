@@ -12,6 +12,7 @@ package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -87,9 +88,9 @@ class UniqueSequenceLocalRewritePlannerTest {
 		assertFalse(rejected.ready());
 		assertEquals(List.of(diagnostic), rejected.diagnostics());
 		assertThrows(IllegalArgumentException.class,
-				() -> new PlanningResult(Optional.empty(), List.of()));
+				() -> assertNotNull(new PlanningResult(Optional.empty(), List.of())));
 		assertThrows(IllegalArgumentException.class,
-				() -> new PlanningResult(ready.plan(), List.of(diagnostic)));
+				() -> assertNotNull(new PlanningResult(ready.plan(), List.of(diagnostic))));
 	}
 
 	private static ContainerUsageProfile profile() {
