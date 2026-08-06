@@ -210,20 +210,28 @@ public final class LocalUniqueSequenceAnalyzer {
 		if (declaringMethod == null) {
 			return true;
 		}
-		String expectedKey= methodKey(declaringMethod);
 		for (ASTNode current= reference.getParent(); current != null;
 				current= current.getParent()) {
-			if (current instanceof LambdaExpression
-					|| current instanceof AnonymousClassDeclaration
-					|| current instanceof AbstractTypeDeclaration) {
+			if (isNestedExecutableBoundary(current)) {
 				return true;
 			}
 			if (current instanceof MethodDeclaration method) {
-				IMethodBinding actual= method.resolveBinding();
-				return actual == null || !expectedKey.equals(methodKey(actual));
+				return !sameDeclaringMethod(declaringMethod, method.resolveBinding());
 			}
 		}
 		return true;
+	}
+
+	private static boolean isNestedExecutableBoundary(ASTNode node) {
+		return node instanceof LambdaExpression
+				|| node instanceof AnonymousClassDeclaration
+				|| node instanceof AbstractTypeDeclaration;
+	}
+
+	private static boolean sameDeclaringMethod(
+			IMethodBinding expected,
+			IMethodBinding actual) {
+		return actual != null && methodKey(expected).equals(methodKey(actual));
 	}
 
 	private static String methodKey(IMethodBinding binding) {
