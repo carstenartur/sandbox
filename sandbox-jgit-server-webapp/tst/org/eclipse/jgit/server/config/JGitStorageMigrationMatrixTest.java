@@ -74,14 +74,33 @@ public class JGitStorageMigrationMatrixTest {
 	}
 
 	@Test
-	public void repositoryDeletionRemainsExplicitlyUnwired() throws IOException {
+	public void repositoryDeletionPolicyIsVerifiedButNotPubliclyExposed() throws IOException {
 		JsonObject deletion= capability(matrix(), "repository-delete"); //$NON-NLS-1$
+		Set<String> entrypoints= strings(deletion.getAsJsonArray("currentEntrypoints")); //$NON-NLS-1$
+		Set<String> requiredEvidence= strings(deletion.getAsJsonArray("requiredEvidence")); //$NON-NLS-1$
+		Set<String> verifiedEvidence= strings(deletion.getAsJsonArray("verifiedEvidence")); //$NON-NLS-1$
 
-		assertTrue(deletion.getAsJsonArray("currentEntrypoints").isEmpty()); //$NON-NLS-1$
-		assertEquals("core-api-available-adapter-policy-required", //$NON-NLS-1$
+		assertEquals(2, entrypoints.size());
+		assertTrue(entrypoints.contains(
+				"org.eclipse.jgit.server.repository.SandboxRepositoryService.delete")); //$NON-NLS-1$
+		assertTrue(entrypoints.contains(
+				"org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService.delete")); //$NON-NLS-1$
+		assertEquals("core-adapter-delete-policy-verified-runtime-cutover-pending", //$NON-NLS-1$
 				deletion.get("migrationStatus").getAsString()); //$NON-NLS-1$
-		assertTrue(deletion.getAsJsonArray("requiredEvidence").toString() //$NON-NLS-1$
-				.contains("atomically evicts and closes")); //$NON-NLS-1$
+		assertTrue(deletion.get("currentBackend").getAsString() //$NON-NLS-1$
+				.contains("REST deletion remains disabled")); //$NON-NLS-1$
+		assertTrue(requiredEvidence.contains(
+				"Search deletion participant removes projections")); //$NON-NLS-1$
+		assertTrue(verifiedEvidence.contains(
+				"ExternalHibernateRepositoryDeletionTest.rejectsDeletionWhileTheAdapterOwnsAnOpenHandle")); //$NON-NLS-1$
+	}
+
+	private static Set<String> strings(JsonArray array) {
+		Set<String> values= new HashSet<>();
+		for (JsonElement element : array) {
+			values.add(element.getAsString());
+		}
+		return values;
 	}
 
 	private static JsonObject capability(JsonObject matrix, String id) {
