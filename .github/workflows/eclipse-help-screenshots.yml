@@ -6,6 +6,12 @@ on:
     paths:
       - 'pom.xml'
       - 'docs/ECLIPSE_HELP.md'
+      - 'sandbox_help_build/**'
+      - 'sandbox_target/**'
+      - 'sandbox-functional-converter-core/**'
+      - 'sandbox_common_core/**'
+      - 'sandbox_common/**'
+      - 'sandbox_test_commons/**'
       - 'sandbox*_cleanup/**'
       - 'sandbox*_cleanup_help/**'
       - 'sandbox*_quickfix/**'
@@ -24,6 +30,7 @@ on:
       - 'sandbox_triggerpattern_help/**'
       - 'sandbox_use_general_type/**'
       - 'sandbox_use_general_type_help/**'
+      - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
       - '.github/workflows/eclipse-help-screenshots.yml'
   workflow_dispatch:
@@ -82,13 +89,20 @@ jobs:
           -V
           --batch-mode
           -Dtycho.localArtifacts=ignore
+          -f sandbox_help_build/pom.xml
           -Phelp-screenshots
-          -pl sandbox_target,sandbox_usage_view_test
-          -am
           clean verify
 
       - name: Verify committed screenshots are reproducible
-        run: git diff --exit-code -- 'sandbox*_help/images/*.png'
+        shell: bash
+        run: |
+          changes="$(git status --porcelain=v1 --untracked-files=all -- \
+            ':(glob)sandbox*_help/images/*.png')"
+          if [[ -n "$changes" ]]; then
+            echo "Regenerated Help screenshots differ from the checkout:" >&2
+            printf '%s\n' "$changes" >&2
+            exit 1
+          fi
 
       - name: Upload reproduced screenshots
         if: always()
