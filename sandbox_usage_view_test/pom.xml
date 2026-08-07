@@ -46,9 +46,9 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<profiles>
-		<!-- SWTBot profile: Include SWTBot tests -->
+		<!-- SWTBot profile: Include all SWTBot tests. -->
 		<profile>
 			<id>swtbot</id>
 			<build>
@@ -58,13 +58,108 @@
 						<artifactId>tycho-surefire-plugin</artifactId>
 						<version>${tycho-version}</version>
 						<configuration>
-							<!-- Include SWTBot tests when profile is active -->
 							<excludes />
 							<includes>
 								<include>**/*Test.java</include>
 							</includes>
 							<dependencies>
-								<!-- SWTBot dependencies -->
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.swtbot.eclipse.finder</artifactId>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<artifactId>org.eclipse.swtbot.swt.finder</artifactId>
+								</dependency>
+							</dependencies>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!--
+			Generates the committed Eclipse Help screenshots from a real Eclipse
+			workbench. Keep this separate from the normal verification build because
+			the test intentionally writes documentation assets.
+		-->
+		<profile>
+			<id>help-screenshots</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_css_cleanup</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_encoding_quickfix</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_functional_converter</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_int_to_enum</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_jface_cleanup</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_junit_cleanup</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_method_reuse</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_platform_helper</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_triggerpattern</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_use_general_type</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+				<dependency>
+					<groupId>org.sandbox</groupId>
+					<artifactId>sandbox_xml_cleanup</artifactId>
+					<version>${project.version}</version>
+				</dependency>
+			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<useJDK>BREE</useJDK>
+							<skip>false</skip>
+							<useUIHarness>true</useUIHarness>
+							<showEclipseLog>true</showEclipseLog>
+							<failIfNoTests>true</failIfNoTests>
+							<argLine>-Dsandbox.help.screenshot.output=${project.build.directory}/help-screenshots</argLine>
+							<excludes />
+							<includes>
+								<include>**/SandboxHelpScreenshotsSWTBotTest.java</include>
+							</includes>
+							<dependencies>
 								<dependency>
 									<type>eclipse-plugin</type>
 									<artifactId>org.eclipse.swtbot.eclipse.finder</artifactId>
