@@ -29,6 +29,7 @@
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>
+					<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}"</argLine>
 					<!-- Default: Exclude SWTBot tests -->
 					<excludes>
 						<exclude>**/*SWTBotTest.java</exclude>
@@ -156,7 +157,7 @@
 							<showEclipseLog>true</showEclipseLog>
 							<failIfNoTests>true</failIfNoTests>
 							<appArgLine>-nl en</appArgLine>
-							<argLine>-Dsandbox.help.screenshot.output=${maven.multiModuleProjectDirectory} -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
+							<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.output="${maven.multiModuleProjectDirectory}" -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
 							<excludes />
 							<includes>
 								<include>**/SandboxHelpScreenshotsSWTBotTest.java</include>
