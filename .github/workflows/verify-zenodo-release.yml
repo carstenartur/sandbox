@@ -1,0 +1,124 @@
+name: Verify Zenodo Release
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/verify_zenodo_release.py'
+      - '.github/scripts/test_verify_zenodo_release.py'
+      - '.github/workflows/verify-zenodo-release.yml'
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable release tag to verify, for example v1.3.2
+        required: true
+        type: string
+
+concurrency:
+  group: zenodo-release-${{ github.event.pull_request.number || github.event.release.tag_name || inputs.tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test Zenodo verifier
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Download verifier source
+        run: |
+          set -euo pipefail
+          source_repository="${PR_HEAD_REPOSITORY:-$GITHUB_REPOSITORY}"
+          source_ref="${PR_HEAD_SHA:-main}"
+          mkdir -p verifier-source
+          gh api "repos/${source_repository}/tarball/${source_ref}" > verifier-source.tar.gz
+          tar -xzf verifier-source.tar.gz --strip-components=1 -C verifier-source
+
+      - name: Compile and run tests
+        working-directory: verifier-source/.github/scripts
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m py_compile verify_zenodo_release.py test_verify_zenodo_release.py
+          python3 test_verify_zenodo_release.py
+
+  verify:
+    name: Verify stable Zenodo archive
+    needs: test
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.release.prerelease == false)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Resolve stable tag
+        id: release
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          tag="${EVENT_TAG:-$INPUT_TAG}"
+          if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::Zenodo verification requires a stable vX.Y.Z tag, found '$tag'."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download current verifier
+        run: |
+          set -euo pipefail
+          mkdir -p verifier-source
+          gh api "repos/${GITHUB_REPOSITORY}/tarball/main" > verifier-source.tar.gz
+          tar -xzf verifier-source.tar.gz --strip-components=1 -C verifier-source
+
+      - name: Verify immutable release tag exists
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${{ steps.release.outputs.tag }}" >/dev/null
+
+      - name: Verify published Zenodo record
+        env:
+          EXPECTED_CONCEPT_DOI: ${{ vars.ZENODO_CONCEPT_DOI }}
+        run: |
+          set -euo pipefail
+          arguments=(
+            --repository-url "https://github.com/${GITHUB_REPOSITORY}"
+            --expected-version "${{ steps.release.outputs.version }}"
+            --expected-tag "${{ steps.release.outputs.tag }}"
+            --max-attempts 30
+            --interval-seconds 60
+            --timeout-seconds 30
+            --output target/zenodo-release-verification.json
+          )
+          if [[ -n "$EXPECTED_CONCEPT_DOI" ]]; then
+            arguments+=(--expected-concept-doi "$EXPECTED_CONCEPT_DOI")
+          fi
+          python3 verifier-source/.github/scripts/verify_zenodo_release.py "${arguments[@]}"
+
+      - name: Preserve DOI evidence on the GitHub Release
+        if: always() && steps.release.outcome == 'success'
+        run: |
+          set -euo pipefail
+          report=target/zenodo-release-verification.json
+          if [[ ! -f "$report" ]]; then
+            echo "No Zenodo verification report was produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo '## Zenodo verification evidence'
+            echo '```json'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          gh release upload "${{ steps.release.outputs.tag }}" "$report" --clobber
