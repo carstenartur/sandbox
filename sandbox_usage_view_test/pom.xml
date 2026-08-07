@@ -171,6 +171,72 @@
 									<type>eclipse-plugin</type>
 									<artifactId>org.eclipse.swtbot.swt.finder</artifactId>
 								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_css_cleanup</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_encoding_quickfix</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_functional_converter</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_int_to_enum</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_jface_cleanup</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_junit_cleanup</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_method_reuse</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_platform_helper</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_triggerpattern</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_use_general_type</artifactId>
+									<version>0.0.0</version>
+								</dependency>
+								<dependency>
+									<type>eclipse-plugin</type>
+									<groupId>org.sandbox</groupId>
+									<artifactId>sandbox_xml_cleanup</artifactId>
+									<version>0.0.0</version>
+								</dependency>
 							</dependencies>
 						</configuration>
 					</plugin>
