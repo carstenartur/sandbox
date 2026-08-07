@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Method Reuse reference</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Method Reuse: reference</h1>
+   <h2>Applicability contract</h2>
+   <p>Candidates must be available in the configured search scope and must match the required inputs, output, visibility, and static/instance context.</p>
+
+   <h2>Safety model</h2>
+   <p>A textual similarity is not sufficient: unsupported side effects, exception differences, evaluation ordering, or access constraints reject the candidate.</p>
+
+   <h2>Known limitations</h2>
+   <ul>
+      <li>Complex semantic equivalence and cross-workspace discovery are outside the current deterministic scope.</li>
+      <li>Very large search scopes can increase analysis cost.</li>
+      <li>Candidates should be reviewed for readability and API intent, not only mechanical equivalence.</li>
+   </ul>
+
+   <h2>Support information</h2>
+   <p>The Help content is shipped with the same feature version as the runtime
+      plug-in. When reporting a problem, include the Sandbox feature version,
+      Eclipse version, Java version, the smallest reproducing source, and whether
+      bindings were available.</p>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>

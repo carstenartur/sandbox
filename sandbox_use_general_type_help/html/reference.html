@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Use General Type reference</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Use General Type: reference</h1>
+   <h2>Applicability contract</h2>
+   <p>A more general type must preserve all statically resolved member access and assignment constraints in the analyzed scope.</p>
+
+   <h2>Safety model</h2>
+   <p>The cleanup rejects candidates affected by overload selection, generic incompatibility, casts, reflection-sensitive declarations, or missing binding information.</p>
+
+   <h2>Known limitations</h2>
+   <ul>
+      <li>Public API changes may affect binary/source compatibility outside the workspace.</li>
+      <li>A technically general type is not automatically the best domain abstraction.</li>
+      <li>Frameworks that inspect declared types through reflection require manual review.</li>
+   </ul>
+
+   <h2>Support information</h2>
+   <p>The Help content is shipped with the same feature version as the runtime
+      plug-in. When reporting a problem, include the Sandbox feature version,
+      Eclipse version, Java version, the smallest reproducing source, and whether
+      bindings were available.</p>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>
