@@ -88,9 +88,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static Path outputRoot;
 
     @BeforeAll
-    public static void setUp() throws IOException {
+    public static void setUp() {
         bot = new SWTWorkbenchBot();
-        outputRoot = requiredCheckoutRoot();
+        outputRoot = SandboxCheckout.locate(OUTPUT_PROPERTY);
         closeWelcomeView();
     }
 
@@ -137,21 +137,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
         prepareForScreenshot(preferences);
         capture(preferences, "sandbox_triggerpattern_help", "llm-rule-inference-preferences.png");
         clickButton(preferences, "Cancel");
-    }
-
-    private static Path requiredCheckoutRoot() throws IOException {
-        String configuredOutput = System.getProperty(OUTPUT_PROPERTY);
-        if (configuredOutput == null || configuredOutput.isBlank()) {
-            throw new IllegalStateException("Missing -D" + OUTPUT_PROPERTY
-                    + "; run the Maven help-screenshots profile from the checkout");
-        }
-        Path checkout = Path.of(configuredOutput).toAbsolutePath().normalize();
-        if (!Files.isRegularFile(checkout.resolve("pom.xml"))
-                || !Files.isDirectory(checkout.resolve("sandbox_usage_view_test"))) {
-            throw new IllegalStateException("Screenshot output is not the Sandbox checkout root: " + checkout);
-        }
-        Files.createDirectories(checkout);
-        return checkout;
     }
 
     private static void openPreferences() {
