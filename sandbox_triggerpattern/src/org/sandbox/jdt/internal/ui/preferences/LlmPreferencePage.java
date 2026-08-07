@@ -21,6 +21,7 @@ import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 /**
@@ -84,6 +85,9 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 
 	@Override
 	public void createFieldEditors() {
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),
+				"sandbox_triggerpattern.preferences"); //$NON-NLS-1$
+
 		addField(new ComboFieldEditor(
 				PREF_PROVIDER,
 				"&Provider:", //$NON-NLS-1$
