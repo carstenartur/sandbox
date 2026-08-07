@@ -53,6 +53,8 @@ The Maven profile supplies the checkout root to the test through the standard Ma
 
 The profile fixes the Eclipse locale to English and fixes the Java language, country, timezone, and file encoding. Before each capture, SWTBot sizes the active dialog to a fixed client area and captures that dialog rather than the entire desktop.
 
+The CSS preference page normally discovers Node.js, npx, Prettier, and Stylelint asynchronously. The screenshot profile explicitly suppresses that host-dependent status probe while capturing documentation, so the generated image does not vary with locally installed command-line tools. Normal Eclipse launches retain the live availability check.
+
 Screenshots generated on different operating systems can still differ in native window decorations, font rendering, theme, or widget metrics. The canonical committed images are therefore reproduced and compared on the documented Linux/Xvfb reference environment. Developers on Windows, macOS, or a graphical Linux desktop can still generate and inspect the same screens locally without GitHub Actions.
 
 ## Updating screenshots
