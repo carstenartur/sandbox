@@ -80,8 +80,9 @@
 
 		<!--
 			Generates the committed Eclipse Help screenshots from a real Eclipse
-			workbench. Keep this separate from the normal verification build because
-			the test intentionally writes documentation assets.
+			workbench. The test writes directly into the corresponding *_help/images
+			directories below the Maven checkout root. GitHub Actions only invokes
+			the same local Maven profile; it is not part of the generation contract.
 		-->
 		<profile>
 			<id>help-screenshots</id>
@@ -154,7 +155,8 @@
 							<useUIHarness>true</useUIHarness>
 							<showEclipseLog>true</showEclipseLog>
 							<failIfNoTests>true</failIfNoTests>
-							<argLine>-Dsandbox.help.screenshot.output=${project.build.directory}/help-screenshots</argLine>
+							<appArgLine>-nl en</appArgLine>
+							<argLine>-Dsandbox.help.screenshot.output=${maven.multiModuleProjectDirectory} -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
 							<excludes />
 							<includes>
 								<include>**/SandboxHelpScreenshotsSWTBotTest.java</include>
