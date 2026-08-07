@@ -18,6 +18,8 @@
 		<!-- Target and shared runtime dependencies required by OSGi/Tycho. -->
 		<module>../sandbox_target</module>
 		<module>../sandbox-functional-converter-core</module>
+		<module>../sandbox-ast-api</module>
+		<module>../sandbox-ast-api-jdt</module>
 		<module>../sandbox_common_core</module>
 		<module>../sandbox_common</module>
 		<module>../sandbox_test_commons</module>
