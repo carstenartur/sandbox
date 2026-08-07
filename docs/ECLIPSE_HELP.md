@@ -26,9 +26,8 @@ From the repository root on a graphical workstation:
 
 ```bash
 mvn \
+  -f sandbox_help_build/pom.xml \
   -Phelp-screenshots \
-  -pl sandbox_target,sandbox_usage_view_test \
-  -am \
   clean verify
 ```
 
@@ -39,13 +38,14 @@ xvfb-run \
   --auto-servernum \
   --server-args="-screen 0 1600x1200x24" \
   mvn \
+  -f sandbox_help_build/pom.xml \
   -Phelp-screenshots \
-  -pl sandbox_target,sandbox_usage_view_test \
-  -am \
   clean verify
 ```
 
-`sandbox_target` is selected explicitly because Tycho resolves the target-platform artifact while it reads the reactor. A fresh checkout must therefore include the target project in the selected reactor instead of relying on a previously installed copy in the local Maven repository.
+`sandbox_help_build/pom.xml` is a repository-owned Maven aggregator. It contains the complete Help reactor: target platform, shared runtime bundles such as `sandbox_common`, every documented runtime/Help/feature family, and the SWTBot host and tests. This is necessary because Maven's `-am` follows Maven dependencies, while Tycho also resolves OSGi `Require-Bundle` relationships. A fresh checkout must not rely on an already installed `sandbox_common` or target artifact in the developer's local Maven repository.
+
+The aggregator is not a second parent POM and does not alter the normal module ownership. Participating projects continue to inherit the central repository POM; the Help build POM only defines the complete, reproducible reactor for this task.
 
 The Maven profile supplies the checkout root to the test through the standard Maven property `maven.multiModuleProjectDirectory`. The test rejects any output directory that is not recognizably the Sandbox checkout root, so it cannot silently place documentation assets in an unrelated directory.
 
@@ -65,7 +65,7 @@ Screenshots generated on different operating systems can still differ in native 
 4. Confirm that the Help page still references the expected file name.
 5. Commit the runtime, Help, test, and generated-image changes together.
 
-The `Eclipse Help screenshots` workflow runs the same Maven profile under the reference Xvfb display and fails when the regenerated PNG files differ from the committed files. It is a reproducibility check, not the source of the generated documentation.
+The `Eclipse Help screenshots` workflow runs the same Maven command under the reference Xvfb display and fails when the regenerated PNG files differ from the committed files. It is a reproducibility check, not the source of the generated documentation.
 
 ## Help-content validation
 
