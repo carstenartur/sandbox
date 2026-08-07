@@ -20,6 +20,7 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.HintFileCleanUp;
 import org.sandbox.jdt.internal.ui.fix.MissingHashCodeCleanUp;
@@ -73,6 +74,9 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,
+				"sandbox_triggerpattern.cleanup_configuration"); //$NON-NLS-1$
+
 		// ── Group 1: Code Transformations ──
 		Group transformGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);
 		final CheckboxPreference stringSimplification = createCheckboxPref(transformGroup, numColumns,
