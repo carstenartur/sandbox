@@ -32,6 +32,12 @@ import org.sandbox.jdt.internal.css.core.StylelintRunner;
  */
 public class CSSPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
+	/**
+	 * Suppresses host-dependent tool discovery while the documentation screenshot
+	 * profile captures this page. Normal Eclipse launches never set this property.
+	 */
+	public static final String DOCUMENTATION_SCREENSHOT_PROPERTY = "sandbox.help.screenshot.mode"; //$NON-NLS-1$
+
 	public CSSPreferencePage() {
 		super(GRID);
 		setPreferenceStore(CSSCleanupPlugin.getDefault().getPreferenceStore());
@@ -42,9 +48,6 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 	public void createFieldEditors() {
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),
 				"sandbox_css_cleanup.preferences"); //$NON-NLS-1$
-
-		// Show initial status message
-		setDescription(getDescription() + "\n\nStatus: Checking tool availability..."); //$NON-NLS-1$
 
 		addField(new BooleanFieldEditor(
 				CSSPreferenceConstants.ENABLE_PRETTIER,
@@ -65,6 +68,13 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 				CSSPreferenceConstants.STYLELINT_CONFIG,
 				"Stylelint &config file:", //$NON-NLS-1$
 				getFieldEditorParent()));
+
+		if (Boolean.getBoolean(DOCUMENTATION_SCREENSHOT_PROPERTY)) {
+			return;
+		}
+
+		// Show initial status message only for normal interactive launches.
+		setDescription(getDescription() + "\n\nStatus: Checking tool availability..."); //$NON-NLS-1$
 
 		// Check tool availability asynchronously to avoid blocking UI
 		Job.create("Checking CSS tool availability", monitor -> { //$NON-NLS-1$
