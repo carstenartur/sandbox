@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'pom.xml'
+      - 'docs/ECLIPSE_HELP.md'
       - 'sandbox*_cleanup/**'
       - 'sandbox*_cleanup_help/**'
       - 'sandbox*_quickfix/**'
@@ -36,13 +37,15 @@ permissions:
 
 jobs:
   generate:
-    name: Generate screenshots in Eclipse
+    name: Reproduce screenshots from the checkout
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
       MAVEN_OPTS: -Djava.awt.headless=false
       NO_AT_BRIDGE: '1'
       GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -66,9 +69,14 @@ jobs:
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
-      - name: Generate Eclipse Help screenshots
+      # This is the documented local Maven command with only the Linux virtual
+      # display wrapper added. The workflow is a verifier, not the generator API.
+      - name: Reproduce Eclipse Help screenshots
         run: >-
-          xvfb-run --auto-servernum mvn
+          xvfb-run
+          --auto-servernum
+          --server-args="-screen 0 1600x1200x24"
+          mvn
           --no-transfer-progress
           -e
           -V
@@ -79,12 +87,15 @@ jobs:
           -am
           clean verify
 
-      - name: Upload generated screenshots
+      - name: Verify committed screenshots are reproducible
+        run: git diff --exit-code -- 'sandbox*_help/images/*.png'
+
+      - name: Upload reproduced screenshots
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: eclipse-help-screenshots-${{ github.run_number }}
-          path: sandbox_usage_view_test/target/help-screenshots/**
+          path: sandbox*_help/images/*.png
           retention-days: 14
           if-no-files-found: error
 
