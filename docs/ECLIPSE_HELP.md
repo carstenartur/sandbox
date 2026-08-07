@@ -27,7 +27,7 @@ From the repository root on a graphical workstation:
 ```bash
 mvn \
   -Phelp-screenshots \
-  -pl sandbox_usage_view_test \
+  -pl sandbox_target,sandbox_usage_view_test \
   -am \
   clean verify
 ```
@@ -40,10 +40,12 @@ xvfb-run \
   --server-args="-screen 0 1600x1200x24" \
   mvn \
   -Phelp-screenshots \
-  -pl sandbox_usage_view_test \
+  -pl sandbox_target,sandbox_usage_view_test \
   -am \
   clean verify
 ```
+
+`sandbox_target` is selected explicitly because Tycho resolves the target-platform artifact while it reads the reactor. A fresh checkout must therefore include the target project in the selected reactor instead of relying on a previously installed copy in the local Maven repository.
 
 The Maven profile supplies the checkout root to the test through the standard Maven property `maven.multiModuleProjectDirectory`. The test rejects any output directory that is not recognizably the Sandbox checkout root, so it cannot silently place documentation assets in an unrelated directory.
 
