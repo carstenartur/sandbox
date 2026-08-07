@@ -42,16 +42,16 @@ import org.junit.jupiter.api.Test;
  * </p>
  *
  * <pre>
- * mvn -Phelp-screenshots \
- *     -pl sandbox_target,sandbox_usage_view_test -am clean verify
+ * mvn -f sandbox_help_build/pom.xml \
+ *     -Phelp-screenshots clean verify
  * </pre>
  *
  * <p>On a headless Linux machine, prepend a virtual display:</p>
  *
  * <pre>
  * xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24" \
- *     mvn -Phelp-screenshots \
- *     -pl sandbox_target,sandbox_usage_view_test -am clean verify
+ *     mvn -f sandbox_help_build/pom.xml \
+ *     -Phelp-screenshots clean verify
  * </pre>
  */
 public class SandboxHelpScreenshotsSWTBotTest {
