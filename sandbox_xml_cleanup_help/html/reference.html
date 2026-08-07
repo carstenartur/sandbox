@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>PDE XML Cleanup reference</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>PDE XML Cleanup: reference</h1>
+   <h2>Applicability contract</h2>
+   <p>Only supported PDE metadata and schema resources are processed. The command visibility is restricted to matching files or projects.</p>
+
+   <h2>Safety model</h2>
+   <p>XML is parsed structurally; malformed resources or constructs that cannot be rewritten safely are reported or left unchanged.</p>
+
+   <h2>Known limitations</h2>
+   <ul>
+      <li>Formatting is intentionally scoped and is not a general-purpose XML pretty printer.</li>
+      <li>Comments, processing instructions, and schema-specific layout should be reviewed after large changes.</li>
+      <li>External entity behavior is not used to infer formatting decisions.</li>
+   </ul>
+
+   <h2>Support information</h2>
+   <p>The Help content is shipped with the same feature version as the runtime
+      plug-in. When reporting a problem, include the Sandbox feature version,
+      Eclipse version, Java version, the smallest reproducing source, and whether
+      bindings were available.</p>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>

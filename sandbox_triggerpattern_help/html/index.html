@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Sandbox – Code Patterns and Hint DSL</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Code Patterns and Hint DSL</h1>
+   <p>Applies built-in and DSL-defined source transformations and provides rule mining, quick assists, a wizard, a view, and optional LLM-assisted rule inference.</p>
+   <p class="note">This documentation is installed by <code>sandbox_triggerpattern_feature</code>
+      together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
+
+   <h2>What the feature provides</h2>
+   <ul>
+      <li>Runs built-in cleanups for string simplification, threading, shift ranges, string comparison, logging diagnostics, obsolete collections, hashCode contracts, and constructor calls.</li>
+      <li>Loads transformation rules from <code>.sandbox-hint</code> files.</li>
+      <li>Offers <strong>Generate DSL Rule from Selection</strong> as a Java quick assist.</li>
+      <li>Provides Refactoring Mining commands and the <strong>Refactoring Mining</strong> view.</li>
+      <li>Provides an <strong>LLM Rule Inference</strong> preference page for explicitly configured providers.</li>
+   </ul>
+
+   <h2>Where to start</h2>
+   <p>Use <strong>Code Patterns (Sandbox)</strong> in a JDT cleanup profile. Hint files can also be created from the New wizard or from a Java editor selection.</p>
+
+   <h2>Configuration in Eclipse</h2>
+   <p><img class="screenshot" src="../images/code-patterns-cleanup.png"
+      alt="Code Patterns and Hint DSL configuration in Eclipse"/></p>
+
+   <h2>Optional rule inference configuration</h2>
+   <p><img class="screenshot" src="../images/llm-rule-inference-preferences.png"
+      alt="LLM Rule Inference preferences"/></p>
+   <p>Continue with <a href="usage.html">Using this feature</a> and
+      <a href="reference.html">Reference, safety, and limitations</a>.</p>
+</body>
+</html>

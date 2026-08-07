@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>JUnit Migration reference</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>JUnit Migration: reference</h1>
+   <h2>Applicability contract</h2>
+   <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.</p>
+
+   <h2>Safety model</h2>
+   <p>Tests with custom runners, rules, parameterization, ordering, or lifecycle assumptions are treated conservatively and require review.</p>
+
+   <h2>Known limitations</h2>
+   <ul>
+      <li>Adding or updating the JUnit Jupiter dependency is a build-system task and is not inferred blindly.</li>
+      <li>Custom JUnit 4 runners and rules may need dedicated migrations.</li>
+      <li>The migrated test suite must be executed; source-level conversion alone cannot validate test semantics.</li>
+   </ul>
+
+   <h2>Support information</h2>
+   <p>The Help content is shipped with the same feature version as the runtime
+      plug-in. When reporting a problem, include the Sandbox feature version,
+      Eclipse version, Java version, the smallest reproducing source, and whether
+      bindings were available.</p>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>
