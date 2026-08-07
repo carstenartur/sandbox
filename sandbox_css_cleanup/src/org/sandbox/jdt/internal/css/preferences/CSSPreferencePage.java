@@ -21,6 +21,7 @@ import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
 import org.sandbox.jdt.internal.css.core.NodeExecutor;
 import org.sandbox.jdt.internal.css.core.PrettierRunner;
@@ -39,6 +40,9 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 
 	@Override
 	public void createFieldEditors() {
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),
+				"sandbox_css_cleanup.preferences"); //$NON-NLS-1$
+
 		// Show initial status message
 		setDescription(getDescription() + "\n\nStatus: Checking tool availability..."); //$NON-NLS-1$
 
