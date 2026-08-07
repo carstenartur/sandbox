@@ -88,9 +88,8 @@ public final class SynchronizedWrapperProtocolAnalyzer {
 				|| !Modifier.isPrivate(field.getModifiers())) {
 			return Optional.empty();
 		}
-		Expression initializer= fragment.getInitializer();
-		if (!(initializer != null && unwrap(initializer) instanceof MethodInvocation invocation)
-				|| !isSynchronizedWrapperFactory(invocation)) {
+		Optional<MethodInvocation> wrapperFactory= wrapperFactory(fragment.getInitializer());
+		if (wrapperFactory.isEmpty()) {
 			return Optional.empty();
 		}
 		IVariableBinding binding= fragment.resolveBinding();
@@ -101,7 +100,14 @@ public final class SynchronizedWrapperProtocolAnalyzer {
 		if (bindingKey == null || bindingKey.isBlank()) {
 			return Optional.empty();
 		}
-		return Optional.of(new Candidate(fragment.getName(), binding, invocation));
+		return Optional.of(new Candidate(fragment.getName(), binding, wrapperFactory.orElseThrow()));
+	}
+
+	private static Optional<MethodInvocation> wrapperFactory(Expression initializer) {
+		if (initializer == null || !(unwrap(initializer) instanceof MethodInvocation invocation)) {
+			return Optional.empty();
+		}
+		return isSynchronizedWrapperFactory(invocation) ? Optional.of(invocation) : Optional.empty();
 	}
 
 	private static boolean isSynchronizedWrapperFactory(MethodInvocation invocation) {
@@ -157,14 +163,15 @@ public final class SynchronizedWrapperProtocolAnalyzer {
 	private static Optional<String> protectingLock(
 			EnhancedForStatement loop,
 			IVariableBinding wrapperBinding) {
+		String expectedLock= bindingKey(wrapperBinding);
 		ASTNode current= loop.getParent();
 		while (current != null) {
 			if (current instanceof SynchronizedStatement synchronizedStatement
 					&& variableBinding(synchronizedStatement.getExpression())
 							.map(SynchronizedWrapperProtocolAnalyzer::bindingKey)
-							.filter(bindingKey(wrapperBinding)::equals)
+							.filter(expectedLock::equals)
 							.isPresent()) {
-				return Optional.of(bindingKey(wrapperBinding));
+				return Optional.of(expectedLock);
 			}
 			current= current.getParent();
 		}
