@@ -65,6 +65,70 @@ class SynchronizedWrapperProtocolAnalyzerTest {
 	}
 
 	@Test
+	void explicitThisAccessUsesTheSameWrapperBinding() {
+		CompilationUnit compilationUnit= parse("""
+			import java.util.ArrayList;
+			import java.util.Collections;
+			import java.util.List;
+
+			class Sample {
+				private final List<String> listeners = Collections.synchronizedList(new ArrayList<>());
+
+				void notifyListeners() {
+					synchronized (this.listeners) {
+						for (String listener : this.listeners) {
+							System.out.println(listener);
+						}
+					}
+				}
+			}
+			""");
+
+		ConcurrencyProtocol protocol= analyzer.analyze(compilationUnit).get(0);
+
+		assertEquals(IterationSemantics.EXTERNALLY_LOCKED, protocol.summary().iteration());
+		assertEquals(EvidenceKind.LOCKED_ITERATION, protocol.evidence().get(1).kind());
+		assertTrue(protocol.hasSingleProtectingLock());
+	}
+
+	@Test
+	void mixedLockedAndUnlockedIterationDoesNotClaimExternalLocking() {
+		CompilationUnit compilationUnit= parse("""
+			import java.util.ArrayList;
+			import java.util.Collections;
+			import java.util.List;
+
+			class Sample {
+				private final List<String> listeners = Collections.synchronizedList(new ArrayList<>());
+
+				void locked() {
+					synchronized (listeners) {
+						for (String listener : listeners) {
+							System.out.println(listener);
+						}
+					}
+				}
+
+				void unlocked() {
+					for (String listener : listeners) {
+						System.out.println(listener);
+					}
+				}
+			}
+			""");
+
+		ConcurrencyProtocol protocol= analyzer.analyze(compilationUnit).get(0);
+
+		assertEquals(IterationSemantics.UNKNOWN, protocol.summary().iteration());
+		assertEquals(List.of(
+				EvidenceKind.WRAPPER_CREATION,
+				EvidenceKind.LOCKED_ITERATION,
+				EvidenceKind.UNPROTECTED_ACCESS),
+				protocol.evidence().stream().map(item -> item.kind()).toList());
+		assertFalse(protocol.hasSingleProtectingLock());
+	}
+
+	@Test
 	void reportsUnprotectedEnhancedForIteration() {
 		CompilationUnit compilationUnit= parse("""
 			import java.util.ArrayList;
