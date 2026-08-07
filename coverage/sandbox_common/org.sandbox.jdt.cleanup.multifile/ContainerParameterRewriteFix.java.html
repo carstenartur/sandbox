@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerParameterRewriteFix.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ContainerParameterRewriteFix.java</span></div><h1>ContainerParameterRewriteFix.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.Objects;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.sandbox.jdt.cleanup.multifile.ContainerParameterRewriteResolver.ResolvedLength;
+import org.sandbox.jdt.cleanup.multifile.ContainerParameterRewriteResolver.ResolvedPlan;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
+
+/** Applies one strictly validated closed-source array-parameter to list rewrite. */
+public final class ContainerParameterRewriteFix {
+
+	private static final String DESCRIPTION= &quot;Convert closed array parameter to list&quot;; //$NON-NLS-1$
+
+	private ContainerParameterRewriteFix() {
+	}
+
+	/** Revalidates the immutable plan and creates one ordinary local cleanup fix. */
+	public static ICleanUpFix create(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerParameterRewritePlan plan) throws CoreException {
+<span class="fc" id="L53">		ResolvedPlan resolved= ContainerParameterRewriteResolver.resolve(unit, root, plan);</span>
+<span class="fc" id="L54">		return new CompilationUnitRewriteOperationsFixCore(</span>
+<span class="fc" id="L55">				DESCRIPTION,</span>
+<span class="fc" id="L56">				root,</span>
+<span class="fc" id="L57">				new CompilationUnitRewriteOperationWithSourceRange[] {</span>
+<span class="fc" id="L58">						new RewriteOperation(resolved) });</span>
+	}
+
+	private static final class RewriteOperation
+			extends CompilationUnitRewriteOperationWithSourceRange {
+
+		private final ResolvedPlan resolved;
+
+<span class="fc" id="L66">		RewriteOperation(ResolvedPlan resolved) {</span>
+<span class="fc" id="L67">			this.resolved= Objects.requireNonNull(resolved, &quot;resolved&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		}</span>
+
+		@Override
+		public void rewriteASTInternal(
+				CompilationUnitRewrite cuRewrite,
+				LinkedProposalModelCore linkedModel) throws CoreException {
+<span class="fc" id="L74">			AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L75">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L76">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L77">			TextEditGroup group= createTextEditGroup(DESCRIPTION, cuRewrite);</span>
+
+<span class="fc" id="L79">			Type componentType= resolved.arrayType().getElementType();</span>
+<span class="fc" id="L80">			String interfaceName= imports.addImport(</span>
+<span class="fc" id="L81">					resolved.plan().targetInterfaceType());</span>
+<span class="fc" id="L82">			ParameterizedType listType= ast.newParameterizedType(</span>
+<span class="fc" id="L83">					ast.newSimpleType(ast.newName(interfaceName)));</span>
+<span class="fc" id="L84">			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));</span>
+<span class="fc" id="L85">			rewrite.replace(resolved.parameter().getType(), listType, group);</span>
+
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
+<span class="fc" id="L88">				MethodInvocation size= ast.newMethodInvocation();</span>
+<span class="fc" id="L89">				size.setExpression((Expression) ASTNode.copySubtree(</span>
+<span class="fc" id="L90">						ast, length.arrayExpression()));</span>
+<span class="fc" id="L91">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L92">				rewrite.replace(length.expression(), size, group);</span>
+			}
+<span class="fc" id="L94">		}</span>
+
+		@Override
+		public String getAdditionalInfo() {
+<span class="nc" id="L98">			return DESCRIPTION;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

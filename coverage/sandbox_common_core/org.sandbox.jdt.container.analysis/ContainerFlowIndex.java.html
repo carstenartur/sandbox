@@ -53,7 +53,7 @@ final class ContainerFlowIndex {
 <span class="fc" id="L53">		Map&lt;String, MethodInfo&gt; methods= new LinkedHashMap&lt;&gt;();</span>
 <span class="fc" id="L54">		Map&lt;String, Integer&gt; parameterIndices= new LinkedHashMap&lt;&gt;();</span>
 <span class="fc" id="L55">		IJavaElement javaElement= compilationUnit.getJavaElement();</span>
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">		String unitHandle= javaElement == null ? &quot;&quot; : javaElement.getHandleIdentifier(); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		String unitHandle= javaElement == null ? &quot;&quot; : javaElement.getHandleIdentifier(); //$NON-NLS-1$</span>
 
 <span class="fc" id="L58">		AstProcessing.independent(ReferenceHolder.&lt;String, Object&gt;create())</span>
 <span class="fc" id="L59">				.on(MethodDeclaration.class, (method, holder) -&gt; {</span>

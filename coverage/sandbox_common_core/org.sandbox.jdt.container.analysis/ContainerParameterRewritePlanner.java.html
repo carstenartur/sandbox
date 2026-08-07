@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerParameterRewritePlanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ContainerParameterRewritePlanner.java</span></div><h1>ContainerParameterRewritePlanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness.ExecutionStatus;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.DiagnosticKind;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.ParameterEdit;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.PlanningDiagnostic;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.PlanningResult;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PositionKind;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAtomicityGroup;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureMember;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Plans the first executable closed-source array-parameter to list rewrite. */
+<span class="fc" id="L50">public final class ContainerParameterRewritePlanner {</span>
+
+	private static final String LIST_TYPE= &quot;java.util.List&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L54">	private static final Set&lt;Kind&gt; SUPPORTED_EVIDENCE= EnumSet.of(</span>
+			Kind.REFERENCE_COMPONENT,
+			Kind.ARRAY_LENGTH_READ,
+			Kind.ENCOUNTER_ITERATION,
+			Kind.LOCAL_USAGE_COMPLETE,
+			Kind.FLOW_CONTINUATION_ROOT);
+
+	/**
+	 * Plans one member of a single-member closed-source parameter group.
+	 *
+	 * &lt;p&gt;Override families remain rejected until every member can be emitted through
+	 * one aggregate multi-file rewrite plan.&lt;/p&gt;
+	 */
+	public PlanningResult plan(
+			ContainerFlowComponent component,
+			ContainerSignatureMigrationPlan signaturePlan,
+			SignatureAtomicityGroup group,
+			SignatureMember member,
+			ContainerUsageProfile parameterProfile,
+			ContainerMigrationReadiness readiness) {
+<span class="fc" id="L74">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">		Objects.requireNonNull(signaturePlan, &quot;signaturePlan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L76">		Objects.requireNonNull(group, &quot;group&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L77">		Objects.requireNonNull(member, &quot;member&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L78">		Objects.requireNonNull(parameterProfile, &quot;parameterProfile&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		Objects.requireNonNull(readiness, &quot;readiness&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L81">		List&lt;PlanningDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">		if (readiness.status() != ExecutionStatus.AUTOMATIC) {</span>
+<span class="nc" id="L83">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.NOT_AUTOMATIC,
+					&quot;The semantic execution gate has not approved automatic rewriting.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L87">		validateSignaturePlan(component, signaturePlan, group, member, diagnostics);</span>
+<span class="fc" id="L88">		validateTarget(signaturePlan, readiness, diagnostics);</span>
+<span class="fc" id="L89">		FlowNode parameterNode= validateFlowNode(</span>
+				component, group, member, parameterProfile, diagnostics);
+<span class="fc" id="L91">		validateProfile(parameterProfile, diagnostics);</span>
+<span class="fc" id="L92">		validateEvidence(parameterProfile, diagnostics);</span>
+<span class="pc bpc" id="L93" title="1 of 4 branches missed.">		if (!diagnostics.isEmpty() || parameterNode == null) {</span>
+<span class="fc" id="L94">			return PlanningResult.rejected(diagnostics);</span>
+		}
+
+<span class="fc" id="L97">		return PlanningResult.accepted(new ContainerParameterRewritePlan(</span>
+<span class="fc" id="L98">				parameterNode.compilationUnitHandle(),</span>
+<span class="fc" id="L99">				parameterNode.javaElementHandle(),</span>
+<span class="fc" id="L100">				parameterNode.bindingKey(),</span>
+<span class="fc" id="L101">				group.signatureIndex(),</span>
+				LIST_TYPE,
+<span class="fc" id="L103">				signaturePlan.targetContract(),</span>
+<span class="fc" id="L104">				edits(parameterProfile)));</span>
+	}
+
+	private static void validateSignaturePlan(
+			ContainerFlowComponent component,
+			ContainerSignatureMigrationPlan signaturePlan,
+			SignatureAtomicityGroup group,
+			SignatureMember member,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				|| signaturePlan.status() != PlanningStatus.CLOSED_SOURCE_AUTOMATIC) {</span>
+<span class="nc" id="L115">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.SIGNATURE_PLAN_NOT_CLOSED_SOURCE,
+					&quot;Parameter rewriting requires an explicitly automatic closed-source signature plan.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L119">		Optional&lt;SignatureAtomicityGroup&gt; plannedGroup= signaturePlan.groups().stream()</span>
+<span class="fc" id="L120">				.filter(candidate -&gt; candidate.groupId().equals(group.groupId()))</span>
+<span class="fc" id="L121">				.findFirst();</span>
+<span class="pc bpc" id="L122" title="2 of 4 branches missed.">		if (plannedGroup.isEmpty() || !plannedGroup.get().equals(group)</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">				|| group.positionKind() != PositionKind.PARAMETER</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				|| group.members().size() != 1) {</span>
+<span class="nc" id="L125">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_SIGNATURE_GROUP,
+					&quot;The first executable slice requires one exact, single-member parameter group.&quot;)); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (!group.members().contains(member)) {</span>
+<span class="nc" id="L130">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.SIGNATURE_MEMBER_MISMATCH,
+					&quot;The requested signature member is not part of the planned atomic group.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L134">	}</span>
+
+	private static void validateTarget(
+			ContainerSignatureMigrationPlan signaturePlan,
+			ContainerMigrationReadiness readiness,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		if (!signaturePlan.targetContract().equals(readiness.targetContract())</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">				|| signaturePlan.targetContract().shape() != ContainerShape.LIST</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				|| signaturePlan.targetContract().mutability() != Mutability.MUTABLE</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				|| signaturePlan.targetContract().orderRequirement() == OrderRequirement.SORTED) {</span>
+<span class="nc" id="L144">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_TARGET,
+					&quot;The first parameter rewrite requires a mutable, unsorted list target.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L148">	}</span>
+
+	private static FlowNode validateFlowNode(
+			ContainerFlowComponent component,
+			SignatureAtomicityGroup group,
+			SignatureMember member,
+			ContainerUsageProfile profile,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="fc" id="L156">		Optional&lt;FlowNode&gt; resolved= component.node(member.flowNodeId());</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (resolved.isEmpty()) {</span>
+<span class="nc" id="L158">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.FLOW_NODE_MISMATCH,
+					&quot;The signature member has no exact node in the closed flow component.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L161">			return null;</span>
+		}
+<span class="fc" id="L163">		FlowNode node= resolved.get();</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		if (node.kind() != NodeKind.PARAMETER</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				|| !node.sourceResolved()</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">				|| node.signatureIndex() != group.signatureIndex()</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">				|| !node.javaElementHandle().equals(member.javaElementHandle())</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				|| !node.compilationUnitHandle().equals(member.compilationUnitHandle())</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">				|| !node.bindingKey().equals(profile.identity().bindingKey())) {</span>
+<span class="nc" id="L170">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.FLOW_NODE_MISMATCH,
+					&quot;The parameter profile, signature member and closed flow node do not match.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L173">			return null;</span>
+		}
+<span class="fc" id="L175">		return node;</span>
+	}
+
+	private static void validateProfile(
+			ContainerUsageProfile profile,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (profile.completeness() != AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				&amp;&amp; profile.completeness() != AnalysisCompleteness.FLOW_COMPLETE) {</span>
+<span class="nc" id="L183">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.INCOMPLETE_PARAMETER_PROFILE,
+					&quot;Every use of the parameter binding must be classified before rewriting.&quot;)); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (profile.currentShape() != ContainerShape.ARRAY</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">				|| profile.elementDomain() != ElementDomain.REFERENCE</span>
+<span class="pc bnc" id="L189" title="All 2 branches missed.">						&amp;&amp; profile.elementDomain() != ElementDomain.ENUM</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">				|| profile.escapeLevel() != EscapeLevel.METHOD_BOUNDARY</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">				|| profile.aliasingContract() != AliasingContract.NO_OBSERVED_ALIAS) {</span>
+<span class="nc" id="L192">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_PARAMETER_USAGE,
+					&quot;The first slice requires an alias-free reference array parameter.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		if (profile.access().indexedRead()</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">				|| profile.access().indexedWrite()</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">				|| profile.access().append()</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				|| profile.access().positionalInsert()</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				|| profile.access().positionalRemove()</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				|| profile.access().membershipQuery()</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">				|| profile.access().keyLookup()) {</span>
+<span class="fc" id="L203">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_PARAMETER_USAGE,
+					&quot;Only length reads and enhanced-for iteration are supported for the first parameter rewrite.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L207">	}</span>
+
+	private static void validateEvidence(
+			ContainerUsageProfile profile,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="fc bfc" id="L212" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">			if (!SUPPORTED_EVIDENCE.contains(evidence.kind())) {</span>
+<span class="fc" id="L214">				diagnostics.add(diagnostic(</span>
+						DiagnosticKind.UNSUPPORTED_EVIDENCE,
+						&quot;The parameter profile contains unsupported evidence: &quot;
+<span class="fc" id="L217">								+ evidence.kind() + '.')); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L219">		}</span>
+<span class="fc" id="L220">	}</span>
+
+	private static List&lt;ParameterEdit&gt; edits(ContainerUsageProfile profile) {
+<span class="fc" id="L223">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L224">		edits.add(new ParameterEdit(</span>
+				EditKind.CHANGE_PARAMETER_DECLARATION,
+<span class="fc" id="L226">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L227">				profile.identity().sourceLength()));</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="fc bfc" id="L229" title="All 3 branches covered.">			EditKind kind= switch (evidence.kind()) {</span>
+<span class="fc" id="L230">				case ARRAY_LENGTH_READ -&gt; EditKind.REPLACE_LENGTH_WITH_SIZE;</span>
+<span class="fc" id="L231">				case ENCOUNTER_ITERATION -&gt; EditKind.VERIFY_ENCOUNTER_ITERATION;</span>
+<span class="fc" id="L232">				default -&gt; null;</span>
+			};
+<span class="fc bfc" id="L234" title="All 2 branches covered.">			if (kind != null) {</span>
+<span class="fc" id="L235">				edits.add(new ParameterEdit(</span>
+<span class="fc" id="L236">						kind, evidence.sourceStart(), evidence.sourceLength()));</span>
+			}
+<span class="fc" id="L238">		}</span>
+<span class="fc" id="L239">		edits.sort(Comparator</span>
+<span class="fc" id="L240">				.comparingInt(ParameterEdit::sourceStart)</span>
+<span class="pc" id="L241">				.thenComparing(edit -&gt; edit.kind().ordinal()));</span>
+<span class="fc" id="L242">		return List.copyOf(edits);</span>
+	}
+
+	private static PlanningDiagnostic diagnostic(
+			DiagnosticKind kind,
+			String message) {
+<span class="fc" id="L248">		return new PlanningDiagnostic(kind, message);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

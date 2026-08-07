@@ -13,6 +13,7 @@ package org.sandbox.jdt.container.analysis;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -22,6 +23,7 @@ import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.DiagnosticKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.LocalEdit;
@@ -39,192 +41,237 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
-/** Plans the first executable, strictly local append-array to list migration. */
-<span class="fc" id="L43">public final class ContainerLocalRewritePlanner {</span>
+/** Plans the first executable append-array to list migration. */
+<span class="fc" id="L45">public final class ContainerLocalRewritePlanner {</span>
 
 	private static final String LIST_TYPE= &quot;java.util.List&quot;; //$NON-NLS-1$
 	private static final String ARRAY_LIST_TYPE= &quot;java.util.ArrayList&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L48">	private static final Set&lt;Kind&gt; SUPPORTED_EVIDENCE= EnumSet.of(</span>
+<span class="fc" id="L50">	private static final Set&lt;Kind&gt; SUPPORTED_EVIDENCE= EnumSet.of(</span>
 			Kind.ARRAY_GROWTH,
 			Kind.APPEND_WRITE,
 			Kind.REFERENCE_COMPONENT,
 			Kind.ARRAY_LENGTH_READ,
 			Kind.ENCOUNTER_ITERATION,
+			Kind.FLOW_CONTINUATION_ROOT,
 			Kind.LOCAL_USAGE_COMPLETE);
 
-	/** Builds a local rewrite plan or returns complete rejection diagnostics. */
+	/** Builds a local rewrite plan without cross-signature argument transfers. */
 	public PlanningResult plan(
 			ContainerFlowComponent component,
 			ContainerRecommendation recommendation,
 			ContainerMigrationReadiness readiness) {
-<span class="fc" id="L61">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L62">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L63">		Objects.requireNonNull(readiness, &quot;readiness&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		return plan(component, recommendation, readiness, List.of());</span>
+	}
 
-<span class="fc" id="L65">		List&lt;PlanningDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">		if (readiness.status() != ExecutionStatus.AUTOMATIC) {</span>
-<span class="fc" id="L67">			diagnostics.add(diagnostic(</span>
+	/** Builds a local rewrite plan with exact aggregate argument targets. */
+	public PlanningResult plan(
+			ContainerFlowComponent component,
+			ContainerRecommendation recommendation,
+			ContainerMigrationReadiness readiness,
+			List&lt;ArgumentTransfer&gt; argumentTransfers) {
+<span class="fc" id="L73">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">		Objects.requireNonNull(readiness, &quot;readiness&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L76">		argumentTransfers= List.copyOf(</span>
+<span class="fc" id="L77">				Objects.requireNonNull(argumentTransfers, &quot;argumentTransfers&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L79">		List&lt;PlanningDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (readiness.status() != ExecutionStatus.AUTOMATIC) {</span>
+<span class="fc" id="L81">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.NOT_AUTOMATIC,
 					&quot;The semantic execution gate has not approved automatic rewriting.&quot;)); //$NON-NLS-1$
 		}
-<span class="fc" id="L71">		validateTarget(recommendation, readiness, diagnostics);</span>
-<span class="fc" id="L72">		FlowNode variable= strictlyLocalVariable(component, diagnostics);</span>
-<span class="fc" id="L73">		ContainerUsageProfile profile= recommendation.sourceProfile();</span>
-<span class="fc bfc" id="L74" title="All 4 branches covered.">		if (variable != null &amp;&amp; !variable.bindingKey().equals(profile.identity().bindingKey())) {</span>
-<span class="fc" id="L75">			diagnostics.add(diagnostic(</span>
+<span class="fc" id="L85">		validateTarget(recommendation, readiness, diagnostics);</span>
+<span class="fc" id="L86">		FlowNode variable= strictlyLocalVariable(component, diagnostics);</span>
+<span class="fc" id="L87">		ContainerUsageProfile profile= recommendation.sourceProfile();</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">		if (variable != null &amp;&amp; !variable.bindingKey().equals(profile.identity().bindingKey())) {</span>
+<span class="fc" id="L89">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.SOURCE_BINDING_MISMATCH,
 					&quot;The recommendation binding does not match the closed local flow node.&quot;)); //$NON-NLS-1$
 		}
-<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (profile.elementDomain() != ElementDomain.REFERENCE</span>
-<span class="fc bfc" id="L80" title="All 2 branches covered.">				&amp;&amp; profile.elementDomain() != ElementDomain.ENUM) {</span>
-<span class="fc" id="L81">			diagnostics.add(diagnostic(</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		if (profile.elementDomain() != ElementDomain.REFERENCE</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">				&amp;&amp; profile.elementDomain() != ElementDomain.ENUM) {</span>
+<span class="fc" id="L95">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.UNSUPPORTED_ELEMENT_DOMAIN,
 					&quot;The first local rewrite supports only reference or enum array components.&quot;)); //$NON-NLS-1$
 		}
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (profile.access().hasPositionalSemantics()</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">				|| profile.orderRequirement() == OrderRequirement.POSITIONAL) {</span>
-<span class="fc" id="L87">			diagnostics.add(diagnostic(</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (profile.access().hasPositionalSemantics()</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">				|| profile.orderRequirement() == OrderRequirement.POSITIONAL) {</span>
+<span class="fc" id="L101">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.POSITIONAL_SEMANTICS,
 					&quot;The first local rewrite does not yet translate indexed reads or positional writes.&quot;)); //$NON-NLS-1$
 		}
-<span class="fc" id="L91">		validateEvidence(profile, diagnostics);</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (!diagnostics.isEmpty()) {</span>
-<span class="fc" id="L93">			return PlanningResult.rejected(diagnostics);</span>
+<span class="fc" id="L105">		validateEvidence(profile, diagnostics);</span>
+<span class="fc" id="L106">		validateArgumentTransfers(profile, argumentTransfers, diagnostics);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (!diagnostics.isEmpty()) {</span>
+<span class="fc" id="L108">			return PlanningResult.rejected(diagnostics);</span>
 		}
 
-<span class="fc" id="L96">		return PlanningResult.ready(new ContainerLocalRewritePlan(</span>
-<span class="fc" id="L97">				variable.compilationUnitHandle(),</span>
-<span class="fc" id="L98">				variable.bindingKey(),</span>
+<span class="fc" id="L111">		return PlanningResult.accepted(new ContainerLocalRewritePlan(</span>
+<span class="fc" id="L112">				variable.compilationUnitHandle(),</span>
+<span class="fc" id="L113">				variable.bindingKey(),</span>
 				LIST_TYPE,
 				ARRAY_LIST_TYPE,
-<span class="fc" id="L101">				recommendation.targetContract(),</span>
-<span class="fc" id="L102">				edits(profile)));</span>
+<span class="fc" id="L116">				recommendation.targetContract(),</span>
+<span class="fc" id="L117">				edits(profile),</span>
+				argumentTransfers));
 	}
 
 	private static void validateTarget(
 			ContainerRecommendation recommendation,
 			ContainerMigrationReadiness readiness,
 			List&lt;PlanningDiagnostic&gt; diagnostics) {
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (!recommendation.targetContract().equals(readiness.targetContract())</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| recommendation.targetContract().shape() != ContainerShape.LIST</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				|| recommendation.targetContract().mutability() != Mutability.MUTABLE</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">				|| (recommendation.targetContract().orderRequirement()</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (!recommendation.targetContract().equals(readiness.targetContract())</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				|| recommendation.targetContract().shape() != ContainerShape.LIST</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				|| recommendation.targetContract().mutability() != Mutability.MUTABLE</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">				|| (recommendation.targetContract().orderRequirement()</span>
 						!= OrderRequirement.ENCOUNTER
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">						&amp;&amp; recommendation.targetContract().orderRequirement()</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">						&amp;&amp; recommendation.targetContract().orderRequirement()</span>
 								!= OrderRequirement.NONE)) {
-<span class="fc" id="L116">			diagnostics.add(diagnostic(</span>
+<span class="fc" id="L132">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.UNSUPPORTED_TARGET,
 					&quot;The first local rewrite supports a mutable list with encounter or unspecified order.&quot;)); //$NON-NLS-1$
 		}
-<span class="fc" id="L120">	}</span>
+<span class="fc" id="L136">	}</span>
 
 	private static FlowNode strictlyLocalVariable(
 			ContainerFlowComponent component,
 			List&lt;PlanningDiagnostic&gt; diagnostics) {
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				|| component.nodes().size() != 1</span>
-<span class="fc bfc" id="L127" title="All 2 branches covered.">				|| !component.edges().isEmpty()</span>
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">				|| component.nodes().get(0).kind() != NodeKind.LOCAL_VARIABLE) {</span>
-<span class="fc" id="L129">			diagnostics.add(diagnostic(</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				|| component.nodes().size() != 1</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">				|| !component.edges().isEmpty()</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">				|| component.nodes().get(0).kind() != NodeKind.LOCAL_VARIABLE) {</span>
+<span class="fc" id="L145">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.FLOW_NOT_STRICTLY_LOCAL,
-					&quot;The first rewrite requires exactly one closed local variable and no flow edges.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L132">			return null;</span>
+					&quot;The local member requires exactly one closed local variable and no local flow edges.&quot;)); //$NON-NLS-1$
+<span class="fc" id="L148">			return null;</span>
 		}
-<span class="fc" id="L134">		FlowNode node= component.nodes().get(0);</span>
-<span class="pc bpc" id="L135" title="2 of 4 branches missed.">		if (node.compilationUnitHandle().isBlank() || node.bindingKey().isBlank()) {</span>
-<span class="nc" id="L136">			diagnostics.add(diagnostic(</span>
+<span class="fc" id="L150">		FlowNode node= component.nodes().get(0);</span>
+<span class="pc bpc" id="L151" title="2 of 4 branches missed.">		if (node.compilationUnitHandle().isBlank() || node.bindingKey().isBlank()) {</span>
+<span class="nc" id="L152">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.FLOW_NOT_STRICTLY_LOCAL,
 					&quot;The local flow node lacks a compilation-unit handle or binding key.&quot;)); //$NON-NLS-1$
-<span class="nc" id="L139">			return null;</span>
+<span class="nc" id="L155">			return null;</span>
 		}
-<span class="fc" id="L141">		return node;</span>
+<span class="fc" id="L157">		return node;</span>
 	}
 
 	private static void validateEvidence(
 			ContainerUsageProfile profile,
 			List&lt;PlanningDiagnostic&gt; diagnostics) {
-<span class="fc" id="L147">		long growthCount= count(profile, Kind.ARRAY_GROWTH);</span>
-<span class="fc" id="L148">		long appendCount= count(profile, Kind.APPEND_WRITE);</span>
-<span class="pc bpc" id="L149" title="1 of 4 branches missed.">		if (growthCount == 0 || appendCount == 0) {</span>
-<span class="fc" id="L150">			diagnostics.add(diagnostic(</span>
+<span class="fc" id="L163">		long growthCount= count(profile, Kind.ARRAY_GROWTH);</span>
+<span class="fc" id="L164">		long appendCount= count(profile, Kind.APPEND_WRITE);</span>
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">		if (growthCount == 0 || appendCount == 0) {</span>
+<span class="fc" id="L166">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.MISSING_APPEND_PATTERN,
 					&quot;The profile does not contain a complete array growth and tail-write pattern.&quot;)); //$NON-NLS-1$
-<span class="fc bfc" id="L153" title="All 2 branches covered.">		} else if (growthCount != appendCount) {</span>
-<span class="fc" id="L154">			diagnostics.add(diagnostic(</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		} else if (growthCount != appendCount) {</span>
+<span class="fc" id="L170">			diagnostics.add(diagnostic(</span>
 					DiagnosticKind.UNBALANCED_APPEND_PATTERN,
 					&quot;Array growth and tail-write evidence counts differ.&quot;)); //$NON-NLS-1$
 		}
-<span class="fc bfc" id="L158" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">			if (!SUPPORTED_EVIDENCE.contains(evidence.kind())) {</span>
-<span class="fc" id="L160">				diagnostics.add(diagnostic(</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">			if (!SUPPORTED_EVIDENCE.contains(evidence.kind())) {</span>
+<span class="fc" id="L176">				diagnostics.add(diagnostic(</span>
 						DiagnosticKind.UNSUPPORTED_EVIDENCE,
 						&quot;The local profile contains unsupported evidence: &quot;
-<span class="fc" id="L163">								+ evidence.kind() + '.')); //$NON-NLS-1$</span>
+<span class="fc" id="L179">								+ evidence.kind() + '.')); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L165">		}</span>
-<span class="fc" id="L166">	}</span>
+<span class="fc" id="L181">		}</span>
+<span class="fc" id="L182">	}</span>
+
+	private static void validateArgumentTransfers(
+			ContainerUsageProfile profile,
+			List&lt;ArgumentTransfer&gt; argumentTransfers,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="fc" id="L188">		List&lt;UsageEvidence&gt; transferEvidence= profile.evidence().stream()</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				.filter(evidence -&gt; evidence.kind() == Kind.FLOW_CONTINUATION_ROOT)</span>
+<span class="fc" id="L190">				.toList();</span>
+<span class="fc" id="L191">		Set&lt;SourceRange&gt; evidenceRanges= HashSet.newHashSet(transferEvidence.size());</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		for (UsageEvidence evidence : transferEvidence) {</span>
+<span class="fc" id="L193">			evidenceRanges.add(new SourceRange(</span>
+<span class="fc" id="L194">					evidence.sourceStart(), evidence.sourceLength()));</span>
+<span class="fc" id="L195">		}</span>
+<span class="fc" id="L196">		Set&lt;SourceRange&gt; describedRanges=</span>
+<span class="fc" id="L197">				HashSet.newHashSet(argumentTransfers.size());</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		for (ArgumentTransfer transfer : argumentTransfers) {</span>
+<span class="fc" id="L199">			describedRanges.add(new SourceRange(</span>
+<span class="fc" id="L200">					transfer.sourceStart(), transfer.sourceLength()));</span>
+<span class="fc" id="L201">		}</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (evidenceRanges.size() != transferEvidence.size()</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">				|| describedRanges.size() != argumentTransfers.size()</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">				|| !evidenceRanges.equals(describedRanges)) {</span>
+<span class="nc" id="L205">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.ARGUMENT_TRANSFER_MISMATCH,
+					&quot;Every closed-flow argument occurrence requires one exact target method and parameter index.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L209">	}</span>
 
 	private static long count(ContainerUsageProfile profile, Kind kind) {
-<span class="fc" id="L169">		return profile.evidence().stream()</span>
-<span class="fc bfc" id="L170" title="All 2 branches covered.">				.filter(evidence -&gt; evidence.kind() == kind)</span>
-<span class="fc" id="L171">				.count();</span>
+<span class="fc" id="L212">		return profile.evidence().stream()</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">				.filter(evidence -&gt; evidence.kind() == kind)</span>
+<span class="fc" id="L214">				.count();</span>
 	}
 
 	private static List&lt;LocalEdit&gt; edits(ContainerUsageProfile profile) {
-<span class="fc" id="L175">		List&lt;LocalEdit&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L176">		result.add(new LocalEdit(</span>
+<span class="fc" id="L218">		List&lt;LocalEdit&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L219">		result.add(new LocalEdit(</span>
 				EditKind.CHANGE_LOCAL_DECLARATION,
-<span class="fc" id="L178">				profile.identity().sourceStart(),</span>
-<span class="fc" id="L179">				profile.identity().sourceLength()));</span>
-<span class="fc" id="L180">		result.add(new LocalEdit(</span>
+<span class="fc" id="L221">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L222">				profile.identity().sourceLength()));</span>
+<span class="fc" id="L223">		result.add(new LocalEdit(</span>
 				EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER,
-<span class="fc" id="L182">				profile.identity().sourceStart(),</span>
-<span class="fc" id="L183">				profile.identity().sourceLength()));</span>
-<span class="fc" id="L184">		boolean verifyEncounterIterations=</span>
-<span class="fc bfc" id="L185" title="All 2 branches covered.">				profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;</span>
-<span class="fc" id="L186">		List&lt;UsageEvidence&gt; structuralAppendEvidence= profile.evidence().stream()</span>
-<span class="fc bfc" id="L187" title="All 2 branches covered.">				.filter(evidence -&gt; evidence.kind() == Kind.ARRAY_GROWTH</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">						|| evidence.kind() == Kind.APPEND_WRITE)</span>
-<span class="fc" id="L189">				.toList();</span>
-<span class="fc bfc" id="L190" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
-<span class="fc bfc" id="L191" title="All 5 branches covered.">			EditKind kind= switch (evidence.kind()) {</span>
-<span class="fc" id="L192">				case ARRAY_GROWTH -&gt; EditKind.REMOVE_ARRAY_GROWTH;</span>
-<span class="fc" id="L193">				case APPEND_WRITE -&gt; EditKind.REPLACE_TAIL_WRITE_WITH_ADD;</span>
-<span class="fc bfc" id="L194" title="All 2 branches covered.">				case ARRAY_LENGTH_READ -&gt; isInsideAny(evidence, structuralAppendEvidence)</span>
-<span class="fc" id="L195">						? null</span>
-<span class="fc" id="L196">						: EditKind.REPLACE_LENGTH_WITH_SIZE;</span>
-<span class="fc bfc" id="L197" title="All 2 branches covered.">				case ENCOUNTER_ITERATION -&gt; verifyEncounterIterations</span>
-<span class="fc" id="L198">						? EditKind.VERIFY_ENCOUNTER_ITERATION</span>
-<span class="fc" id="L199">						: null;</span>
-<span class="fc" id="L200">				default -&gt; null;</span>
+<span class="fc" id="L225">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L226">				profile.identity().sourceLength()));</span>
+<span class="fc" id="L227">		boolean verifyEncounterIterations=</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">				profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;</span>
+<span class="fc" id="L229">		List&lt;UsageEvidence&gt; structuralAppendEvidence= profile.evidence().stream()</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">				.filter(evidence -&gt; evidence.kind() == Kind.ARRAY_GROWTH</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">						|| evidence.kind() == Kind.APPEND_WRITE)</span>
+<span class="fc" id="L232">				.toList();</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="fc bfc" id="L234" title="All 6 branches covered.">			EditKind kind= switch (evidence.kind()) {</span>
+<span class="fc" id="L235">				case ARRAY_GROWTH -&gt; EditKind.REMOVE_ARRAY_GROWTH;</span>
+<span class="fc" id="L236">				case APPEND_WRITE -&gt; EditKind.REPLACE_TAIL_WRITE_WITH_ADD;</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">				case ARRAY_LENGTH_READ -&gt; isInsideAny(evidence, structuralAppendEvidence)</span>
+<span class="fc" id="L238">						? null</span>
+<span class="fc" id="L239">						: EditKind.REPLACE_LENGTH_WITH_SIZE;</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">				case ENCOUNTER_ITERATION -&gt; verifyEncounterIterations</span>
+<span class="fc" id="L241">						? EditKind.VERIFY_ENCOUNTER_ITERATION</span>
+<span class="fc" id="L242">						: null;</span>
+<span class="fc" id="L243">				case FLOW_CONTINUATION_ROOT -&gt; EditKind.VERIFY_ARGUMENT_TRANSFER;</span>
+<span class="fc" id="L244">				default -&gt; null;</span>
 			};
-<span class="fc bfc" id="L202" title="All 2 branches covered.">			if (kind != null) {</span>
-<span class="fc" id="L203">				result.add(new LocalEdit(kind, evidence.sourceStart(), evidence.sourceLength()));</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">			if (kind != null) {</span>
+<span class="fc" id="L247">				result.add(new LocalEdit(kind, evidence.sourceStart(), evidence.sourceLength()));</span>
 			}
-<span class="fc" id="L205">		}</span>
-<span class="fc" id="L206">		result.sort(Comparator</span>
-<span class="fc" id="L207">				.comparingInt(LocalEdit::sourceStart)</span>
-<span class="fc" id="L208">				.thenComparing(edit -&gt; edit.kind().ordinal()));</span>
-<span class="fc" id="L209">		return List.copyOf(result);</span>
+<span class="fc" id="L249">		}</span>
+<span class="fc" id="L250">		result.sort(Comparator</span>
+<span class="fc" id="L251">				.comparingInt(LocalEdit::sourceStart)</span>
+<span class="fc" id="L252">				.thenComparing(edit -&gt; edit.kind().ordinal()));</span>
+<span class="fc" id="L253">		return List.copyOf(result);</span>
 	}
 
 	private static boolean isInsideAny(
 			UsageEvidence evidence,
 			List&lt;UsageEvidence&gt; containers) {
-<span class="fc" id="L215">		long start= evidence.sourceStart();</span>
-<span class="fc" id="L216">		long end= start + evidence.sourceLength();</span>
-<span class="fc" id="L217">		return containers.stream().anyMatch(container -&gt; {</span>
-<span class="fc" id="L218">			long containerStart= container.sourceStart();</span>
-<span class="fc" id="L219">			long containerEnd= containerStart + container.sourceLength();</span>
-<span class="pc bpc" id="L220" title="1 of 4 branches missed.">			return start &gt;= containerStart &amp;&amp; end &lt;= containerEnd;</span>
+<span class="fc" id="L259">		long start= evidence.sourceStart();</span>
+<span class="fc" id="L260">		long end= start + evidence.sourceLength();</span>
+<span class="fc" id="L261">		return containers.stream().anyMatch(container -&gt; {</span>
+<span class="fc" id="L262">			long containerStart= container.sourceStart();</span>
+<span class="fc" id="L263">			long containerEnd= containerStart + container.sourceLength();</span>
+<span class="pc bpc" id="L264" title="1 of 4 branches missed.">			return start &gt;= containerStart &amp;&amp; end &lt;= containerEnd;</span>
 		});
 	}
 
 	private static PlanningDiagnostic diagnostic(
 			DiagnosticKind kind,
 			String message) {
-<span class="fc" id="L227">		return new PlanningDiagnostic(kind, message);</span>
+<span class="fc" id="L271">		return new PlanningDiagnostic(kind, message);</span>
+	}
+
+<span class="fc" id="L274">	private record SourceRange(int start, int length) {</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -52,7 +52,7 @@ public record ContainerFlowComponent(
 
 	/** Returns outgoing edges in deterministic assembly order. */
 	public List&lt;LocatedFlowEdge&gt; outgoing(String stableId) {
-<span class="nc" id="L55">		return edges.stream().filter(edge -&gt; edge.sourceNodeId().equals(stableId)).toList();</span>
+<span class="fc" id="L55">		return edges.stream().filter(edge -&gt; edge.sourceNodeId().equals(stableId)).toList();</span>
 	}
 
 	/** One flow transfer together with the source unit containing the expression. */

@@ -325,9 +325,9 @@ import org.sandbox.jdt.container.api.ContainerUsageProfile;
 <span class="pc bpc" id="L325" title="2 of 4 branches missed.">						&amp;&amp; &quot;length&quot;.equals(qualified.getName().getIdentifier()) //$NON-NLS-1$</span>
 <span class="nc" id="L326">				|| parent instanceof FieldAccess fieldAccess</span>
 <span class="nc bnc" id="L327" title="All 2 branches missed.">						&amp;&amp; fieldAccess.getExpression() == reference</span>
-<span class="pc bpc" id="L328" title="3 of 4 branches missed.">						&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier()) //$NON-NLS-1$</span>
-<span class="nc" id="L329">				|| parent instanceof EnhancedForStatement enhancedFor</span>
-<span class="pc bpc" id="L330" title="3 of 4 branches missed.">						&amp;&amp; enhancedFor.getExpression() == reference</span>
+<span class="pc bpc" id="L328" title="2 of 4 branches missed.">						&amp;&amp; &quot;length&quot;.equals(fieldAccess.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="fc" id="L329">				|| parent instanceof EnhancedForStatement enhancedFor</span>
+<span class="pc bpc" id="L330" title="2 of 4 branches missed.">						&amp;&amp; enhancedFor.getExpression() == reference</span>
 <span class="fc bfc" id="L331" title="All 2 branches covered.">				|| parent instanceof Assignment assignment</span>
 <span class="pc bpc" id="L332" title="1 of 2 branches missed.">						&amp;&amp; assignment.getLeftHandSide() == reference;</span>
 	}

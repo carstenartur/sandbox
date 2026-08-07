@@ -40,7 +40,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  */
 <span class="fc" id="L41">public final class HintFileSerializer {</span>
 	
-	private static final String LINE_SEP = &quot;\n&quot;; //$NON-NLS-1$
+	private static final char LINE_SEP = '\n';
 	
 	/**
 	 * Cached reverse map from AST node type constant to field name.
@@ -81,84 +81,89 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 <span class="fc bfc" id="L81" title="All 2 branches covered.">		if (hintFile.getMinJavaVersion() &gt; 0) {</span>
 <span class="fc" id="L82">			sb.append(&quot;&lt;!minJavaVersion: &quot;).append(hintFile.getMinJavaVersion()).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (!hintFile.getTags().isEmpty()) {</span>
-<span class="fc" id="L85">			StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">			for (String tag : hintFile.getTags()) {</span>
-<span class="fc" id="L87">				joiner.add(tag);</span>
-<span class="fc" id="L88">			}</span>
-<span class="fc" id="L89">			sb.append(&quot;&lt;!tags: &quot;).append(joiner).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (hintFile.getBindingPolicy() != null) {</span>
+<span class="fc" id="L85">			sb.append(&quot;&lt;!binding-policy: &quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L86">					.append(hintFile.getBindingPolicy().name().toLowerCase(java.util.Locale.ROOT))</span>
+<span class="fc" id="L87">					.append('&gt;').append(LINE_SEP);</span>
 		}
-<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (String include : hintFile.getIncludes()) {</span>
-<span class="fc" id="L92">			sb.append(&quot;&lt;!include: &quot;).append(include).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
-<span class="fc" id="L93">		}</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (hintFile.isCaseInsensitive()) {</span>
-<span class="fc" id="L95">			sb.append(&quot;&lt;!caseInsensitive&gt;&quot;).append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (!hintFile.getTags().isEmpty()) {</span>
+<span class="fc" id="L90">			StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			for (String tag : hintFile.getTags()) {</span>
+<span class="fc" id="L92">				joiner.add(tag);</span>
+<span class="fc" id="L93">			}</span>
+<span class="fc" id="L94">			sb.append(&quot;&lt;!tags: &quot;).append(joiner).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L97" title="All 2 branches covered.">		if (!hintFile.getSuppressWarnings().isEmpty()) {</span>
-<span class="fc" id="L98">			StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">			for (String sw : hintFile.getSuppressWarnings()) {</span>
-<span class="fc" id="L100">				joiner.add(sw);</span>
-<span class="fc" id="L101">			}</span>
-<span class="fc" id="L102">			sb.append(&quot;&lt;!suppressWarnings: &quot;).append(joiner).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		for (String include : hintFile.getIncludes()) {</span>
+<span class="fc" id="L97">			sb.append(&quot;&lt;!include: &quot;).append(include).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc" id="L98">		}</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">		if (hintFile.isCaseInsensitive()) {</span>
+<span class="fc" id="L100">			sb.append(&quot;&lt;!caseInsensitive&gt;&quot;).append(LINE_SEP); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L104" title="All 2 branches covered.">		if (!hintFile.getTreeKindNodeTypes().isEmpty()) {</span>
-<span class="fc" id="L105">			StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L106" title="All 2 branches covered.">			for (Integer nodeType : hintFile.getTreeKindNodeTypes()) {</span>
-<span class="fc" id="L107">				String name = nodeTypeToName(nodeType);</span>
-<span class="fc" id="L108">				joiner.add(name);</span>
-<span class="fc" id="L109">			}</span>
-<span class="fc" id="L110">			sb.append(&quot;&lt;!treeKind: &quot;).append(joiner).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (!hintFile.getSuppressWarnings().isEmpty()) {</span>
+<span class="fc" id="L103">			StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">			for (String sw : hintFile.getSuppressWarnings()) {</span>
+<span class="fc" id="L105">				joiner.add(sw);</span>
+<span class="fc" id="L106">			}</span>
+<span class="fc" id="L107">			sb.append(&quot;&lt;!suppressWarnings: &quot;).append(joiner).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L112">	}</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (!hintFile.getTreeKindNodeTypes().isEmpty()) {</span>
+<span class="fc" id="L110">			StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			for (Integer nodeType : hintFile.getTreeKindNodeTypes()) {</span>
+<span class="fc" id="L112">				String name = nodeTypeToName(nodeType);</span>
+<span class="fc" id="L113">				joiner.add(name);</span>
+<span class="fc" id="L114">			}</span>
+<span class="fc" id="L115">			sb.append(&quot;&lt;!treeKind: &quot;).append(joiner).append('&gt;').append(LINE_SEP); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L117">	}</span>
 	
 	/**
 	 * Appends all transformation rules.
 	 */
 	private void appendRules(StringBuilder sb, List&lt;TransformationRule&gt; rules) {
-<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
-<span class="fc bfc" id="L119" title="All 2 branches covered.">			if (sb.length() &gt; 0) {</span>
-<span class="fc" id="L120">				sb.append(LINE_SEP);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		for (TransformationRule rule : rules) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L125">				sb.append(LINE_SEP);</span>
 			}
-<span class="fc" id="L122">			appendRule(sb, rule);</span>
-<span class="fc" id="L123">		}</span>
-<span class="fc" id="L124">	}</span>
+<span class="fc" id="L127">			appendRule(sb, rule);</span>
+<span class="fc" id="L128">		}</span>
+<span class="fc" id="L129">	}</span>
 	
 	/**
 	 * Appends a single transformation rule in DSL format.
 	 */
 	private void appendRule(StringBuilder sb, TransformationRule rule) {
 		// Per-rule metadata annotations
-<span class="fc bfc" id="L131" title="All 2 branches covered.">		if (rule.getRuleId() != null) {</span>
-<span class="fc" id="L132">			sb.append(&quot;@id: &quot;).append(rule.getRuleId()).append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		if (rule.getRuleId() != null) {</span>
+<span class="fc" id="L137">			sb.append(&quot;@id: &quot;).append(rule.getRuleId()).append(LINE_SEP); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (rule.getSeverity() != null) {</span>
-<span class="fc" id="L135">			sb.append(&quot;@severity: &quot;).append(rule.getSeverity().name().toLowerCase(java.util.Locale.ROOT)).append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (rule.getSeverity() != null) {</span>
+<span class="fc" id="L140">			sb.append(&quot;@severity: &quot;).append(rule.getSeverity().name().toLowerCase(java.util.Locale.ROOT)).append(LINE_SEP); //$NON-NLS-1$</span>
 		}
 		
 		// Optional description prefix
-<span class="fc bfc" id="L139" title="All 2 branches covered.">		if (rule.getDescription() != null) {</span>
-<span class="fc" id="L140">			sb.append('&quot;').append(rule.getDescription()).append(&quot;\&quot;:&quot;).append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		if (rule.getDescription() != null) {</span>
+<span class="fc" id="L145">			sb.append('&quot;').append(rule.getDescription()).append(&quot;\&quot;:&quot;).append(LINE_SEP); //$NON-NLS-1$</span>
 		}
 		
 		// Source pattern with optional guard
-<span class="fc" id="L144">		sb.append(rule.sourcePattern().getValue());</span>
-<span class="fc bfc" id="L145" title="All 2 branches covered.">		if (rule.sourceGuard() != null) {</span>
-<span class="fc" id="L146">			sb.append(&quot; :: &quot;).append(formatGuard(rule.sourceGuard())); //$NON-NLS-1$</span>
+<span class="fc" id="L149">		sb.append(rule.sourcePattern().getValue());</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (rule.sourceGuard() != null) {</span>
+<span class="fc" id="L151">			sb.append(&quot; :: &quot;).append(formatGuard(rule.sourceGuard())); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L148">		sb.append(LINE_SEP);</span>
+<span class="fc" id="L153">		sb.append(LINE_SEP);</span>
 		
 		// Rewrite alternatives
-<span class="fc bfc" id="L151" title="All 2 branches covered.">		for (RewriteAlternative alt : rule.alternatives()) {</span>
-<span class="fc" id="L152">			sb.append(&quot;=&gt; &quot;).append(alt.replacementPattern()); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L153" title="1 of 2 branches missed.">			if (!alt.isOtherwise()) {</span>
-<span class="nc" id="L154">				sb.append(&quot; :: &quot;).append(formatGuard(alt.condition())); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		for (RewriteAlternative alt : rule.alternatives()) {</span>
+<span class="fc" id="L157">			sb.append(&quot;=&gt; &quot;).append(alt.replacementPattern()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">			if (!alt.isOtherwise()) {</span>
+<span class="nc" id="L159">				sb.append(&quot; :: &quot;).append(formatGuard(alt.condition())); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L156">			sb.append(LINE_SEP);</span>
-<span class="fc" id="L157">		}</span>
+<span class="fc" id="L161">			sb.append(LINE_SEP);</span>
+<span class="fc" id="L162">		}</span>
 		
 		// Terminator
-<span class="fc" id="L160">		sb.append(&quot;;;&quot;).append(LINE_SEP); //$NON-NLS-1$</span>
-<span class="fc" id="L161">	}</span>
+<span class="fc" id="L165">		sb.append(&quot;;;&quot;).append(LINE_SEP); //$NON-NLS-1$</span>
+<span class="fc" id="L166">	}</span>
 	
 	/**
 	 * Formats a {@link GuardExpression} back to DSL text.
@@ -167,7 +172,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return the DSL representation
 	 */
 	private static String formatGuard(GuardExpression guard) {
-<span class="fc" id="L170">		return formatGuard(guard, 0);</span>
+<span class="fc" id="L175">		return formatGuard(guard, 0);</span>
 	}
 	
 	/**
@@ -186,34 +191,34 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	private static String formatGuard(GuardExpression guard, int parentPrecedence) {
 		final int myPrecedence;
 		final String result;
-<span class="pc bpc" id="L189" title="2 of 4 branches missed.">		switch (guard) {</span>
-<span class="fc" id="L190">			case GuardExpression.FunctionCall fc -&gt; {</span>
-<span class="fc" id="L191">				myPrecedence = 4;</span>
-<span class="fc" id="L192">				result = formatFunctionCall(fc);</span>
-<span class="fc" id="L193">			}</span>
-<span class="fc" id="L194">			case GuardExpression.And and -&gt; {</span>
-<span class="fc" id="L195">				myPrecedence = 2;</span>
-<span class="fc" id="L196">				result = formatGuard(and.left(), myPrecedence) + &quot; &amp;&amp; &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L197">						+ formatGuard(and.right(), myPrecedence);</span>
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">		switch (guard) {</span>
+<span class="fc" id="L195">			case GuardExpression.FunctionCall fc -&gt; {</span>
+<span class="fc" id="L196">				myPrecedence = 4;</span>
+<span class="fc" id="L197">				result = formatFunctionCall(fc);</span>
 <span class="fc" id="L198">			}</span>
-<span class="nc" id="L199">			case GuardExpression.Or or -&gt; {</span>
-<span class="nc" id="L200">				myPrecedence = 1;</span>
-<span class="nc" id="L201">				result = formatGuard(or.left(), myPrecedence) + &quot; || &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L202">						+ formatGuard(or.right(), myPrecedence);</span>
-<span class="nc" id="L203">			}</span>
-<span class="nc" id="L204">			case GuardExpression.Not not -&gt; {</span>
-<span class="nc" id="L205">				myPrecedence = 3;</span>
-<span class="nc" id="L206">				String operandText = formatGuard(not.operand(), myPrecedence);</span>
-<span class="nc bnc" id="L207" title="All 2 branches missed.">				if (!(not.operand() instanceof GuardExpression.FunctionCall)) {</span>
-<span class="nc" id="L208">					operandText = &quot;(&quot; + operandText + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L199">			case GuardExpression.And and -&gt; {</span>
+<span class="fc" id="L200">				myPrecedence = 2;</span>
+<span class="fc" id="L201">				result = formatGuard(and.left(), myPrecedence) + &quot; &amp;&amp; &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L202">						+ formatGuard(and.right(), myPrecedence);</span>
+<span class="fc" id="L203">			}</span>
+<span class="nc" id="L204">			case GuardExpression.Or or -&gt; {</span>
+<span class="nc" id="L205">				myPrecedence = 1;</span>
+<span class="nc" id="L206">				result = formatGuard(or.left(), myPrecedence) + &quot; || &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L207">						+ formatGuard(or.right(), myPrecedence);</span>
+<span class="nc" id="L208">			}</span>
+<span class="nc" id="L209">			case GuardExpression.Not not -&gt; {</span>
+<span class="nc" id="L210">				myPrecedence = 3;</span>
+<span class="nc" id="L211">				String operandText = formatGuard(not.operand(), myPrecedence);</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">				if (!(not.operand() instanceof GuardExpression.FunctionCall)) {</span>
+<span class="nc" id="L213">					operandText = &quot;(&quot; + operandText + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 				}
-<span class="nc" id="L210">				result = &quot;!&quot; + operandText; //$NON-NLS-1$</span>
+<span class="nc" id="L215">				result = &quot;!&quot; + operandText; //$NON-NLS-1$</span>
 			}
 		}
-<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (myPrecedence &lt; parentPrecedence) {</span>
-<span class="nc" id="L214">			return &quot;(&quot; + result + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (myPrecedence &lt; parentPrecedence) {</span>
+<span class="nc" id="L219">			return &quot;(&quot; + result + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="fc" id="L216">		return result;</span>
+<span class="fc" id="L221">		return result;</span>
 	}
 	
 	/**
@@ -221,17 +226,17 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * {@code instanceof} syntax.
 	 */
 	private static String formatFunctionCall(GuardExpression.FunctionCall fc) {
-<span class="pc bpc" id="L224" title="3 of 4 branches missed.">		if (&quot;instanceof&quot;.equals(fc.name()) &amp;&amp; fc.args().size() == 2) { //$NON-NLS-1$</span>
-<span class="nc" id="L225">			return fc.args().get(0) + &quot; instanceof &quot; + fc.args().get(1); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L229" title="3 of 4 branches missed.">		if (&quot;instanceof&quot;.equals(fc.name()) &amp;&amp; fc.args().size() == 2) { //$NON-NLS-1$</span>
+<span class="nc" id="L230">			return fc.args().get(0) + &quot; instanceof &quot; + fc.args().get(1); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">		if (fc.args().isEmpty()) {</span>
-<span class="nc" id="L228">			return fc.name() + &quot;()&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">		if (fc.args().isEmpty()) {</span>
+<span class="nc" id="L233">			return fc.name() + &quot;()&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L230">		StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L231" title="All 2 branches covered.">		for (String arg : fc.args()) {</span>
-<span class="fc" id="L232">			joiner.add(arg);</span>
-<span class="fc" id="L233">		}</span>
-<span class="fc" id="L234">		return fc.name() + &quot;(&quot; + joiner + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L235">		StringJoiner joiner = new StringJoiner(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		for (String arg : fc.args()) {</span>
+<span class="fc" id="L237">			joiner.add(arg);</span>
+<span class="fc" id="L238">		}</span>
+<span class="fc" id="L239">		return fc.name() + &quot;(&quot; + joiner + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	/**
@@ -240,7 +245,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * Uses a cached reverse map built lazily on first use.
 	 */
 	private static String nodeTypeToName(int nodeType) {
-<span class="fc" id="L243">		return getReverseNodeTypeMap().getOrDefault(nodeType, String.valueOf(nodeType));</span>
+<span class="fc" id="L248">		return getReverseNodeTypeMap().getOrDefault(nodeType, String.valueOf(nodeType));</span>
 	}
 
 	/**
@@ -248,14 +253,14 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * initializing it lazily via reflection on first use.
 	 */
 	private static Map&lt;Integer, String&gt; getReverseNodeTypeMap() {
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">		if (reverseNodeTypeMap == null) {</span>
-<span class="fc" id="L252">			synchronized (HintFileSerializer.class) {</span>
-<span class="pc bpc" id="L253" title="1 of 2 branches missed.">				if (reverseNodeTypeMap == null) {</span>
-<span class="fc" id="L254">					reverseNodeTypeMap = buildReverseNodeTypeMap();</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (reverseNodeTypeMap == null) {</span>
+<span class="fc" id="L257">			synchronized (HintFileSerializer.class) {</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">				if (reverseNodeTypeMap == null) {</span>
+<span class="fc" id="L259">					reverseNodeTypeMap = buildReverseNodeTypeMap();</span>
 				}
-<span class="fc" id="L256">			}</span>
+<span class="fc" id="L261">			}</span>
 		}
-<span class="fc" id="L258">		return reverseNodeTypeMap;</span>
+<span class="fc" id="L263">		return reverseNodeTypeMap;</span>
 	}
 
 	/**
@@ -263,20 +268,20 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * using reflection on {@link org.eclipse.jdt.core.dom.ASTNode}.
 	 */
 	private static Map&lt;Integer, String&gt; buildReverseNodeTypeMap() {
-<span class="fc" id="L266">		Map&lt;Integer, String&gt; map = new HashMap&lt;&gt;(128);</span>
-<span class="fc bfc" id="L267" title="All 2 branches covered.">		for (java.lang.reflect.Field field : org.eclipse.jdt.core.dom.ASTNode.class.getDeclaredFields()) {</span>
-<span class="fc bfc" id="L268" title="All 2 branches covered.">			if (field.getType() == int.class</span>
-<span class="fc bfc" id="L269" title="All 2 branches covered.">					&amp;&amp; java.lang.reflect.Modifier.isPublic(field.getModifiers())</span>
-<span class="pc bpc" id="L270" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isStatic(field.getModifiers())</span>
-<span class="pc bpc" id="L271" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isFinal(field.getModifiers())) {</span>
+<span class="fc" id="L271">		Map&lt;Integer, String&gt; map = new HashMap&lt;&gt;(128);</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">		for (java.lang.reflect.Field field : org.eclipse.jdt.core.dom.ASTNode.class.getDeclaredFields()) {</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">			if (field.getType() == int.class</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">					&amp;&amp; java.lang.reflect.Modifier.isPublic(field.getModifiers())</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isStatic(field.getModifiers())</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isFinal(field.getModifiers())) {</span>
 				try {
-<span class="fc" id="L273">					map.put(field.getInt(null), field.getName());</span>
-<span class="nc" id="L274">				} catch (IllegalAccessException e) {</span>
+<span class="fc" id="L278">					map.put(field.getInt(null), field.getName());</span>
+<span class="nc" id="L279">				} catch (IllegalAccessException e) {</span>
 					// skip inaccessible fields
-<span class="fc" id="L276">				}</span>
+<span class="fc" id="L281">				}</span>
 			}
 		}
-<span class="fc" id="L279">		return Collections.unmodifiableMap(map);</span>
+<span class="fc" id="L284">		return Collections.unmodifiableMap(map);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

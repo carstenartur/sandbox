@@ -27,12 +27,13 @@ import org.sandbox.jdt.container.api.ContainerShape;
 public final class ContainerRuleRegistry {
 
 	public static final String ARRAY_APPEND_SEQUENCE= &quot;semantic.array.append.sequence&quot;; //$NON-NLS-1$
+	public static final String UNIQUE_SEQUENCE_SET= &quot;semantic.sequence.unique.set&quot;; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= &quot;existing.collection.bulk-add&quot;; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= &quot;existing.collection.copy-constructor&quot;; //$NON-NLS-1$
 	public static final String ARRAY_FILL= &quot;existing.array.fill&quot;; //$NON-NLS-1$
 	public static final String TYPE_GENERALIZATION= &quot;existing.type.generalization&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L35">	private static final Map&lt;String, ContainerRuleDescriptor&gt; RULES= createRules();</span>
+<span class="fc" id="L36">	private static final Map&lt;String, ContainerRuleDescriptor&gt; RULES= createRules();</span>
 
 	private ContainerRuleRegistry() {
 		// Static registry.
@@ -40,65 +41,78 @@ public final class ContainerRuleRegistry {
 
 	/** Returns one descriptor by stable identifier. */
 	public static Optional&lt;ContainerRuleDescriptor&gt; find(String ruleId) {
-<span class="fc" id="L43">		return Optional.ofNullable(RULES.get(ruleId));</span>
+<span class="fc" id="L44">		return Optional.ofNullable(RULES.get(ruleId));</span>
 	}
 
 	/** Returns descriptors in deterministic registration order. */
 	public static List&lt;ContainerRuleDescriptor&gt; all() {
-<span class="fc" id="L48">		return List.copyOf(RULES.values());</span>
+<span class="fc" id="L49">		return List.copyOf(RULES.values());</span>
 	}
 
-	/** Returns the descriptor for the first implemented semantic migration family. */
+	/** Returns the descriptor for append-array to sequence migration. */
 	public static ContainerRuleDescriptor arrayAppendSequence() {
-<span class="fc" id="L53">		return RULES.get(ARRAY_APPEND_SEQUENCE);</span>
+<span class="fc" id="L54">		return RULES.get(ARRAY_APPEND_SEQUENCE);</span>
+	}
+
+	/** Returns the descriptor for manually unique sequence to ordered-set migration. */
+	public static ContainerRuleDescriptor uniqueSequenceSet() {
+<span class="fc" id="L59">		return RULES.get(UNIQUE_SEQUENCE_SET);</span>
 	}
 
 	private static Map&lt;String, ContainerRuleDescriptor&gt; createRules() {
-<span class="fc" id="L57">		Map&lt;String, ContainerRuleDescriptor&gt; rules= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L58">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L63">		Map&lt;String, ContainerRuleDescriptor&gt; rules= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L64">		register(rules, new ContainerRuleDescriptor(</span>
 				COLLECTION_BULK_ADD,
 				ContainerShape.LIST,
 				ContainerShape.LIST,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse collection bulk-add cleanup&quot;, //$NON-NLS-1$
 				&quot;Local loop-to-bulk-add syntax is already owned by an existing cleanup.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L65">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L71">		register(rules, new ContainerRuleDescriptor(</span>
 				COLLECTION_COPY_CONSTRUCTOR,
 				ContainerShape.LIST,
 				ContainerShape.LIST,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse collection copy-constructor cleanup&quot;, //$NON-NLS-1$
 				&quot;Local construction followed by copying is already normalized elsewhere.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L72">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L78">		register(rules, new ContainerRuleDescriptor(</span>
 				ARRAY_FILL,
 				ContainerShape.ARRAY,
 				ContainerShape.ARRAY,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse array-fill cleanup&quot;, //$NON-NLS-1$
 				&quot;Replacing a uniform assignment loop with array fill is a local syntax cleanup.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L79">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L85">		register(rules, new ContainerRuleDescriptor(</span>
 				TYPE_GENERALIZATION,
 				ContainerShape.LIST,
 				ContainerShape.LIST,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse Change Type and Sandbox Use General Type&quot;, //$NON-NLS-1$
 				&quot;Changing only the declared supertype is already covered by type-generalization tools.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L86">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L92">		register(rules, new ContainerRuleDescriptor(</span>
+				UNIQUE_SEQUENCE_SET,
+				ContainerShape.LIST,
+				ContainerShape.SET,
+				RuleOwnership.NOVEL,
+				&quot;&quot;, //$NON-NLS-1$
+				&quot;The rule changes duplicate semantics in the declared contract &quot; //$NON-NLS-1$
+						+ &quot;and may require coordinated signature migration.&quot;)); //$NON-NLS-1$
+<span class="fc" id="L100">		register(rules, new ContainerRuleDescriptor(</span>
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,
 				ContainerShape.LIST,
 				RuleOwnership.NOVEL,
 				&quot;&quot;, //$NON-NLS-1$
 				&quot;The rule changes representation and may propagate through fields, signatures and callers.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L93">		return Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(rules));</span>
+<span class="fc" id="L107">		return Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(rules));</span>
 	}
 
 	private static void register(
 			Map&lt;String, ContainerRuleDescriptor&gt; rules,
 			ContainerRuleDescriptor descriptor) {
-<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (rules.putIfAbsent(descriptor.ruleId(), descriptor) != null) {</span>
-<span class="nc" id="L100">			throw new IllegalStateException(&quot;Duplicate container rule id: &quot; + descriptor.ruleId()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (rules.putIfAbsent(descriptor.ruleId(), descriptor) != null) {</span>
+<span class="nc" id="L114">			throw new IllegalStateException(&quot;Duplicate container rule id: &quot; + descriptor.ruleId()); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L102">	}</span>
+<span class="fc" id="L116">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

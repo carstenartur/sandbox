@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintBindingPolicy.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">HintBindingPolicy.java</span></div><h1>HintBindingPolicy.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Reads the {@code &lt;!binding-policy: optional|required&gt;} safety contract from
+ * an ordinary hint program without otherwise interpreting the DSL.
+ *
+ * &lt;p&gt;{@link #OPTIONAL} preserves the historical behaviour of ordinary hints:
+ * a binding-aware guard may degrade when semantic bindings are unavailable.
+ * {@link #REQUIRED} is the fail-closed mode for ordinary migration programs
+ * whose correctness depends on overload, owner, type or hierarchy information.
+ * Plan-aware programs do not need this second declaration because
+ * {@code &lt;!requires-plan: ...&gt;} already implies required semantic bindings.&lt;/p&gt;
+ *
+ * &lt;p&gt;Duplicate identical declarations are tolerated. Blank, malformed or
+ * conflicting declarations are rejected. Commented declarations are ignored.&lt;/p&gt;
+ *
+ * @since 1.3.3
+ */
+<span class="fc" id="L33">public enum HintBindingPolicy {</span>
+<span class="fc" id="L34">	OPTIONAL,</span>
+<span class="fc" id="L35">	REQUIRED;</span>
+
+	private static final String PREFIX= &quot;&lt;!binding-policy&quot;; //$NON-NLS-1$
+<span class="fc" id="L38">	private static final Pattern DIRECTIVE= Pattern.compile(</span>
+			&quot;^\\s*&lt;!binding-policy\\s*:\\s*([^&gt;\\r\\n]*)&gt;\\s*$&quot;); //$NON-NLS-1$
+
+	/**
+	 * Reads an explicitly declared binding policy.
+	 *
+	 * @param content complete hint program text
+	 * @return the declared policy, or empty when the program uses the compatibility default
+	 * @throws IllegalArgumentException for blank, malformed, unknown or conflicting declarations
+	 */
+	public static Optional&lt;HintBindingPolicy&gt; fromContent(String content) {
+<span class="pc bpc" id="L49" title="2 of 4 branches missed.">		if (content == null || content.isBlank()) {</span>
+<span class="nc" id="L50">			return Optional.empty();</span>
+		}
+<span class="fc" id="L52">		HintBindingPolicy policy= null;</span>
+<span class="fc" id="L53">		boolean inBlockComment= false;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		for (String line : content.split(&quot;\\R&quot;, -1)) { //$NON-NLS-1$</span>
+<span class="fc" id="L55">			VisibleLine visibleLine= visibleLine(line, inBlockComment);</span>
+<span class="fc" id="L56">			inBlockComment= visibleLine.inBlockComment();</span>
+<span class="fc" id="L57">			String visible= visibleLine.text().trim();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (!visible.startsWith(PREFIX)) {</span>
+<span class="fc" id="L59">				continue;</span>
+			}
+<span class="fc" id="L61">			Matcher matcher= DIRECTIVE.matcher(visible);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			if (!matcher.matches()) {</span>
+<span class="fc" id="L63">				throw new IllegalArgumentException(&quot;Malformed binding-policy declaration: &quot; + visible); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L65">			String candidateText= matcher.group(1).trim();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">			if (candidateText.isEmpty()) {</span>
+<span class="nc" id="L67">				throw new IllegalArgumentException(&quot;binding-policy must be optional or required&quot;); //$NON-NLS-1$</span>
+			}
+			HintBindingPolicy candidate;
+			try {
+<span class="fc" id="L71">				candidate= HintBindingPolicy.valueOf(candidateText.toUpperCase(java.util.Locale.ROOT));</span>
+<span class="fc" id="L72">			} catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L73">				throw new IllegalArgumentException(</span>
+						&quot;Unknown binding-policy &quot; + candidateText + &quot;; expected optional or required&quot;, e); //$NON-NLS-1$ //$NON-NLS-2$
+<span class="fc" id="L75">			}</span>
+<span class="fc bfc" id="L76" title="All 4 branches covered.">			if (policy != null &amp;&amp; policy != candidate) {</span>
+<span class="fc" id="L77">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L78">						&quot;Conflicting binding-policy declarations: &quot; + policy.name().toLowerCase(java.util.Locale.ROOT) //$NON-NLS-1$</span>
+<span class="fc" id="L79">								+ &quot; and &quot; + candidate.name().toLowerCase(java.util.Locale.ROOT)); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L81">			policy= candidate;</span>
+		}
+<span class="fc" id="L83">		return Optional.ofNullable(policy);</span>
+	}
+
+	private static VisibleLine visibleLine(String line, boolean initiallyInBlockComment) {
+<span class="fc" id="L87">		StringBuilder visible= new StringBuilder();</span>
+<span class="fc" id="L88">		boolean inBlockComment= initiallyInBlockComment;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		for (int index= 0; index &lt; line.length();) {</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			if (inBlockComment) {</span>
+<span class="fc" id="L91">				int end= line.indexOf(&quot;*/&quot;, index); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">				if (end &lt; 0) {</span>
+<span class="nc" id="L93">					return new VisibleLine(visible.toString(), true);</span>
+				}
+<span class="fc" id="L95">				inBlockComment= false;</span>
+<span class="fc" id="L96">				index= end + 2;</span>
+<span class="fc" id="L97">				continue;</span>
+			}
+<span class="fc bfc" id="L99" title="All 2 branches covered.">			if (line.startsWith(&quot;//&quot;, index)) { //$NON-NLS-1$</span>
+<span class="fc" id="L100">				break;</span>
+			}
+<span class="fc bfc" id="L102" title="All 2 branches covered.">			if (line.startsWith(&quot;/*&quot;, index)) { //$NON-NLS-1$</span>
+<span class="fc" id="L103">				inBlockComment= true;</span>
+<span class="fc" id="L104">				index+= 2;</span>
+<span class="fc" id="L105">				continue;</span>
+			}
+<span class="fc" id="L107">			visible.append(line.charAt(index++));</span>
+		}
+<span class="fc" id="L109">		return new VisibleLine(visible.toString(), inBlockComment);</span>
+	}
+
+<span class="fc" id="L112">	private record VisibleLine(String text, boolean inBlockComment) {</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

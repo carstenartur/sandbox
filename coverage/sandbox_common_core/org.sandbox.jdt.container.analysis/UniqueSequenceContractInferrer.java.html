@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UniqueSequenceContractInferrer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">UniqueSequenceContractInferrer.java</span></div><h1>UniqueSequenceContractInferrer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Infers the first manually-unique sequence to ordered-set contract. */
+<span class="fc" id="L37">public final class UniqueSequenceContractInferrer {</span>
+
+	/** Returns an explainable report-only recommendation for a proven local profile. */
+	public Optional&lt;ContainerRecommendation&gt; infer(ContainerUsageProfile profile) {
+<span class="fc" id="L41">		Objects.requireNonNull(profile, &quot;profile&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">		if (!eligible(profile)) {</span>
+<span class="fc" id="L43">			return Optional.empty();</span>
+		}
+
+<span class="fc" id="L46">		TargetContainerContract target= new TargetContainerContract(</span>
+				ContainerShape.SET,
+				OrderRequirement.ENCOUNTER,
+				UniquenessRequirement.REQUIRED,
+				Mutability.MUTABLE,
+<span class="fc" id="L51">				profile.nullContract(),</span>
+				&quot;Use an encounter-ordered mutable set for a sequence whose insertions already suppress duplicates.&quot;); //$NON-NLS-1$
+
+<span class="fc" id="L54">		return Optional.of(new ContainerRecommendation(</span>
+				profile,
+				target,
+<span class="fc" id="L57">				ContainerRuleRegistry.uniqueSequenceSet(),</span>
+				Confidence.HIGH,
+				AutomationLevel.REPORT_ONLY,
+<span class="fc" id="L60">				List.of(</span>
+<span class="fc" id="L61">						assessment(</span>
+								ContractProperty.ORDER,
+								&quot;LinkedHashSet preserves the observed encounter order.&quot;), //$NON-NLS-1$
+<span class="fc" id="L64">						assessment(</span>
+								ContractProperty.UNIQUENESS,
+								&quot;Every insertion suppresses duplicates and the element type has stable equality and hash semantics.&quot;), //$NON-NLS-1$
+<span class="fc" id="L67">						assessment(</span>
+								ContractProperty.MUTABILITY,
+								&quot;The target remains mutable during the same local use phase.&quot;), //$NON-NLS-1$
+<span class="fc" id="L70">						assessment(</span>
+								ContractProperty.NULLS,
+								&quot;ArrayList and LinkedHashSet both permit one null element; an unknown application policy remains unknown.&quot;), //$NON-NLS-1$
+<span class="fc" id="L73">						assessment(</span>
+								ContractProperty.ALIASING,
+								&quot;Every local use was classified and no alias or publication was found.&quot;), //$NON-NLS-1$
+<span class="fc" id="L76">						assessment(</span>
+								ContractProperty.SIGNATURES,
+								&quot;The represented value is local, so no signature changes are required.&quot;), //$NON-NLS-1$
+<span class="fc" id="L79">						assessment(</span>
+								ContractProperty.CONCURRENCY,
+								&quot;The value is proven thread-confined and is not captured.&quot;)))); //$NON-NLS-1$
+	}
+
+	private static boolean eligible(ContainerUsageProfile profile) {
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		return profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">				&amp;&amp; profile.currentShape() == ContainerShape.LIST</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">				&amp;&amp; (profile.elementDomain() == ElementDomain.REFERENCE</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">						|| profile.elementDomain() == ElementDomain.ENUM)</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				&amp;&amp; profile.access().append()</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				&amp;&amp; profile.access().membershipQuery()</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				&amp;&amp; !profile.access().hasPositionalSemantics()</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">				&amp;&amp; profile.orderRequirement() == OrderRequirement.ENCOUNTER</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				&amp;&amp; profile.uniquenessRequirement() == UniquenessRequirement.REQUIRED</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">				&amp;&amp; profile.escapeLevel() == EscapeLevel.LOCAL</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">				&amp;&amp; profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">				&amp;&amp; profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				&amp;&amp; hasEvidence(profile, Kind.DUPLICATE_SUPPRESSION)</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				&amp;&amp; hasEvidence(profile, Kind.HASH_STABLE_COMPONENT);</span>
+	}
+
+	private static boolean hasEvidence(ContainerUsageProfile profile, Kind kind) {
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		return profile.evidence().stream().anyMatch(evidence -&gt; evidence.kind() == kind);</span>
+	}
+
+	private static ContractAssessment assessment(
+			ContractProperty property,
+			String explanation) {
+<span class="fc" id="L108">		return new ContractAssessment(</span>
+				property, Preservation.PRESERVED, explanation);
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

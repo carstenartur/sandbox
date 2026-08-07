@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClosedFlowArrayUsageRefiner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ClosedFlowArrayUsageRefiner.java</span></div><h1>ClosedFlowArrayUsageRefiner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowComponent.LocatedFlowEdge;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/**
+ * Reclassifies exact method-argument escapes after the multi-file flow is closed.
+ *
+ * &lt;p&gt;The first refinement accepts only one local source and source-resolved parameter
+ * nodes joined by {@link EdgeKind#ARGUMENT_TO_PARAMETER}. Each parameter must also
+ * have a complete, rejection-free usage profile. Assignments, fields, returns,
+ * captures and every unmatched escape remain rejected.&lt;/p&gt;
+ */
+<span class="fc" id="L50">public final class ClosedFlowArrayUsageRefiner {</span>
+
+<span class="fc" id="L52">	private static final Set&lt;Kind&gt; REJECTION_EVIDENCE= EnumSet.of(</span>
+			Kind.UNSUPPORTED_CONTINUATION,
+			Kind.CAPTURED_USAGE,
+			Kind.UNSAFE_ESCAPE,
+			Kind.ARRAY_IDENTITY,
+			Kind.UNCLASSIFIED_USAGE,
+			Kind.UNRESOLVED_BINDING,
+			Kind.REJECTION_BOUNDARY);
+
+	/** Refines one rejected local profile from exact closed-flow evidence. */
+	public ContainerUsageProfile refine(
+			String compilationUnitHandle,
+			ContainerUsageProfile localProfile,
+			ContainerFlowComponent component,
+			List&lt;ContainerUsageProfile&gt; parameterProfiles) {
+<span class="fc" id="L67">		String unitHandle= requiredText(</span>
+				compilationUnitHandle, &quot;compilationUnitHandle&quot;); //$NON-NLS-1$
+<span class="fc" id="L69">		Objects.requireNonNull(localProfile, &quot;localProfile&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L70">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L71">		parameterProfiles= List.copyOf(</span>
+<span class="fc" id="L72">				Objects.requireNonNull(parameterProfiles, &quot;parameterProfiles&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		if (localProfile.currentShape() != ContainerShape.ARRAY) {</span>
+<span class="nc" id="L74">			throw new IllegalArgumentException(</span>
+					&quot;ClosedFlowArrayUsageRefiner requires an array profile&quot;); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L78">		List&lt;UsageEvidence&gt; evidence= new ArrayList&lt;&gt;(localProfile.evidence());</span>
+<span class="fc" id="L79">		List&lt;FlowNode&gt; sourceNodes= component.nodes().stream()</span>
+<span class="fc" id="L80">				.filter(node -&gt; node.compilationUnitHandle().equals(unitHandle))</span>
+<span class="fc" id="L81">				.filter(node -&gt; node.bindingKey().equals(</span>
+<span class="fc" id="L82">						localProfile.identity().bindingKey()))</span>
+<span class="fc" id="L83">				.toList();</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		if (sourceNodes.size() != 1) {</span>
+<span class="nc" id="L85">			return rejected(localProfile, evidence,</span>
+					&quot;Closed flow does not contain one exact local source node&quot;); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L89">		FlowNode sourceNode= sourceNodes.get(0);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (!eligibleComponent(component, sourceNode, parameterProfiles)) {</span>
+<span class="fc" id="L91">			return rejected(localProfile, evidence,</span>
+					&quot;Closed flow or parameter usage evidence is incomplete&quot;); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L95">		Set&lt;SourceRange&gt; allowedTransfers= HashSet.newHashSet(component.edges().size());</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		for (LocatedFlowEdge edge : component.outgoing(sourceNode.stableId())) {</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (edge.kind() != EdgeKind.ARGUMENT_TO_PARAMETER</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">					|| !edge.compilationUnitHandle().equals(unitHandle)) {</span>
+<span class="nc" id="L99">				return rejected(localProfile, evidence,</span>
+						&quot;Closed flow contains an unsupported transfer kind&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L102">			allowedTransfers.add(new SourceRange(edge.sourceStart(), edge.sourceLength()));</span>
+<span class="fc" id="L103">		}</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		if (allowedTransfers.isEmpty()) {</span>
+<span class="nc" id="L105">			return rejected(localProfile, evidence,</span>
+					&quot;No closed argument-to-parameter transfer was found&quot;); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L109">		Set&lt;SourceRange&gt; discharged= HashSet.newHashSet(allowedTransfers.size());</span>
+<span class="fc" id="L110">		List&lt;UsageEvidence&gt; refined= new ArrayList&lt;&gt;(evidence.size() + 1);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		for (UsageEvidence item : evidence) {</span>
+<span class="fc" id="L112">			SourceRange range= new SourceRange(item.sourceStart(), item.sourceLength());</span>
+<span class="fc bfc" id="L113" title="All 4 branches covered.">			if (item.kind() == Kind.UNSAFE_ESCAPE &amp;&amp; allowedTransfers.contains(range)) {</span>
+<span class="fc" id="L114">				discharged.add(range);</span>
+<span class="fc" id="L115">				refined.add(new UsageEvidence(</span>
+						Kind.FLOW_CONTINUATION_ROOT,
+						&quot;Method argument transfer is covered by the closed source flow&quot;, //$NON-NLS-1$
+<span class="fc" id="L118">						item.sourceStart(), item.sourceLength()));</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">			} else if (item.kind() != Kind.LOCAL_USAGE_COMPLETE) {</span>
+<span class="fc" id="L120">				refined.add(item);</span>
+			}
+<span class="fc" id="L122">		}</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (!discharged.equals(allowedTransfers)</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				|| refined.stream().anyMatch(item -&gt; REJECTION_EVIDENCE.contains(item.kind()))) {</span>
+<span class="fc" id="L125">			return rejected(localProfile, refined,</span>
+					&quot;Not every rejected escape is explained by the closed source flow&quot;); //$NON-NLS-1$
+		}
+
+<span class="fc" id="L129">		refined.add(new UsageEvidence(</span>
+				Kind.LOCAL_USAGE_COMPLETE,
+				&quot;Every local operation and closed-flow transfer was classified&quot;, //$NON-NLS-1$
+<span class="fc" id="L132">				localProfile.identity().sourceStart(),</span>
+<span class="fc" id="L133">				localProfile.identity().sourceLength()));</span>
+<span class="fc" id="L134">		refined.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
+<span class="fc" id="L135">				.thenComparing(item -&gt; item.kind().ordinal()));</span>
+<span class="fc" id="L136">		return new ContainerUsageProfile(</span>
+<span class="fc" id="L137">				localProfile.identity(),</span>
+<span class="fc" id="L138">				localProfile.currentShape(),</span>
+<span class="fc" id="L139">				localProfile.elementDomain(),</span>
+<span class="fc" id="L140">				localProfile.access(),</span>
+<span class="fc" id="L141">				aggregateOrder(localProfile, parameterProfiles),</span>
+<span class="fc" id="L142">				localProfile.uniquenessRequirement(),</span>
+<span class="fc" id="L143">				localProfile.mutationLifecycle(),</span>
+<span class="fc" id="L144">				localProfile.nullContract(),</span>
+				AliasingContract.NO_OBSERVED_ALIAS,
+				EscapeLevel.METHOD_BOUNDARY,
+<span class="fc" id="L147">				threadConfined(),</span>
+				AnalysisCompleteness.FLOW_COMPLETE,
+				refined);
+	}
+
+	private static boolean eligibleComponent(
+			ContainerFlowComponent component,
+			FlowNode sourceNode,
+			List&lt;ContainerUsageProfile&gt; parameterProfiles) {
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">				|| !component.diagnostics().isEmpty()</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">				|| sourceNode.kind() != NodeKind.LOCAL_VARIABLE</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">				|| !sourceNode.sourceResolved()</span>
+<span class="fc" id="L160">				|| component.nodes().stream().filter(node -&gt;</span>
+<span class="pc bpc" id="L161" title="1 of 4 branches missed.">						node.kind() == NodeKind.LOCAL_VARIABLE).count() != 1</span>
+<span class="pc bpc" id="L162" title="2 of 4 branches missed.">				|| component.nodes().stream().anyMatch(node -&gt; !node.sourceResolved()</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">						|| node.kind() != NodeKind.LOCAL_VARIABLE</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">								&amp;&amp; node.kind() != NodeKind.PARAMETER)</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				|| component.edges().stream().anyMatch(edge -&gt;</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">						edge.kind() != EdgeKind.ARGUMENT_TO_PARAMETER</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">								|| !edge.sourceNodeId().equals(sourceNode.stableId()))) {</span>
+<span class="nc" id="L168">			return false;</span>
+		}
+<span class="fc" id="L170">		List&lt;FlowNode&gt; parameters= component.nodes().stream()</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">				.filter(node -&gt; node.kind() == NodeKind.PARAMETER)</span>
+<span class="fc" id="L172">				.toList();</span>
+<span class="pc bpc" id="L173" title="2 of 4 branches missed.">		if (parameters.isEmpty() || parameters.size() != parameterProfiles.size()) {</span>
+<span class="nc" id="L174">			return false;</span>
+		}
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		for (FlowNode parameter : parameters) {</span>
+<span class="fc" id="L177">			List&lt;ContainerUsageProfile&gt; matches= parameterProfiles.stream()</span>
+<span class="fc" id="L178">					.filter(profile -&gt; profile.identity().bindingKey().equals(</span>
+<span class="fc" id="L179">							parameter.bindingKey()))</span>
+<span class="fc" id="L180">					.toList();</span>
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">			if (matches.size() != 1 || !safeParameterProfile(matches.get(0))) {</span>
+<span class="fc" id="L182">				return false;</span>
+			}
+<span class="fc" id="L184">		}</span>
+<span class="fc" id="L185">		return component.edges().stream().allMatch(edge -&gt; component.node(edge.targetNodeId())</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				.filter(node -&gt; node.kind() == NodeKind.PARAMETER)</span>
+<span class="fc" id="L187">				.isPresent());</span>
+	}
+
+	private static boolean safeParameterProfile(ContainerUsageProfile profile) {
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		return profile.currentShape() == ContainerShape.ARRAY</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">				&amp;&amp; profile.escapeLevel() == EscapeLevel.METHOD_BOUNDARY</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">				&amp;&amp; profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">				&amp;&amp; (profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="pc bnc" id="L195" title="All 2 branches missed.">						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">				&amp;&amp; profile.evidence().stream().noneMatch(evidence -&gt;</span>
+<span class="fc" id="L197">						REJECTION_EVIDENCE.contains(evidence.kind()));</span>
+	}
+
+	private static OrderRequirement aggregateOrder(
+			ContainerUsageProfile localProfile,
+			List&lt;ContainerUsageProfile&gt; parameterProfiles) {
+<span class="fc" id="L203">		boolean positional= false;</span>
+<span class="fc" id="L204">		boolean sorted= false;</span>
+<span class="fc" id="L205">		boolean encounter= false;</span>
+<span class="fc" id="L206">		boolean none= false;</span>
+<span class="fc" id="L207">		boolean unknown= false;</span>
+<span class="fc" id="L208">		List&lt;ContainerUsageProfile&gt; profiles= new ArrayList&lt;&gt;(parameterProfiles.size() + 1);</span>
+<span class="fc" id="L209">		profiles.add(localProfile);</span>
+<span class="fc" id="L210">		profiles.addAll(parameterProfiles);</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		for (ContainerUsageProfile profile : profiles) {</span>
+<span class="pc bpc" id="L212" title="4 of 6 branches missed.">			switch (profile.orderRequirement()) {</span>
+<span class="nc" id="L213">				case POSITIONAL -&gt; positional= true;</span>
+<span class="nc" id="L214">				case SORTED -&gt; sorted= true;</span>
+<span class="fc" id="L215">				case ENCOUNTER -&gt; encounter= true;</span>
+<span class="nc" id="L216">				case NONE -&gt; none= true;</span>
+<span class="fc" id="L217">				case UNKNOWN -&gt; unknown= true;</span>
+			}
+<span class="fc" id="L219">		}</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (positional) {</span>
+<span class="nc" id="L221">			return OrderRequirement.POSITIONAL;</span>
+		}
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		if (sorted) {</span>
+<span class="nc" id="L224">			return OrderRequirement.SORTED;</span>
+		}
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		if (encounter) {</span>
+<span class="fc" id="L227">			return OrderRequirement.ENCOUNTER;</span>
+		}
+<span class="nc bnc" id="L229" title="All 4 branches missed.">		return none &amp;&amp; !unknown ? OrderRequirement.NONE : OrderRequirement.UNKNOWN;</span>
+	}
+
+	private static ContainerUsageProfile rejected(
+			ContainerUsageProfile source,
+			List&lt;UsageEvidence&gt; evidence,
+			String message) {
+<span class="fc" id="L236">		List&lt;UsageEvidence&gt; rejected= new ArrayList&lt;&gt;(evidence.size() + 1);</span>
+<span class="fc" id="L237">		rejected.addAll(evidence);</span>
+<span class="fc" id="L238">		rejected.add(new UsageEvidence(</span>
+				Kind.REJECTION_BOUNDARY,
+				message,
+<span class="fc" id="L241">				source.identity().sourceStart(),</span>
+<span class="fc" id="L242">				source.identity().sourceLength()));</span>
+<span class="fc" id="L243">		rejected.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
+<span class="fc" id="L244">				.thenComparing(item -&gt; item.kind().ordinal()));</span>
+<span class="fc" id="L245">		return new ContainerUsageProfile(</span>
+<span class="fc" id="L246">				source.identity(),</span>
+<span class="fc" id="L247">				source.currentShape(),</span>
+<span class="fc" id="L248">				source.elementDomain(),</span>
+<span class="fc" id="L249">				source.access(),</span>
+<span class="fc" id="L250">				source.orderRequirement(),</span>
+<span class="fc" id="L251">				source.uniquenessRequirement(),</span>
+<span class="fc" id="L252">				source.mutationLifecycle(),</span>
+<span class="fc" id="L253">				source.nullContract(),</span>
+				AliasingContract.UNKNOWN,
+<span class="fc" id="L255">				source.escapeLevel(),</span>
+<span class="fc" id="L256">				ConcurrencyProfile.unknown(),</span>
+				AnalysisCompleteness.REJECTED,
+				rejected);
+	}
+
+	private static ConcurrencyProfile threadConfined() {
+<span class="fc" id="L262">		return new ConcurrencyProfile(</span>
+				ThreadExposure.THREAD_CONFINED,
+				SynchronizationKind.NONE,
+				IterationSemantics.LIVE,
+				AtomicityRequirement.INDIVIDUAL_OPERATIONS,
+				WorkloadShape.UNKNOWN);
+	}
+
+	private static String requiredText(String value, String fieldName) {
+<span class="fc" id="L271">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L273">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L275">		return text;</span>
+	}
+
+	private record SourceRange(int start, int length) {
+<span class="fc" id="L279">		private SourceRange {</span>
+<span class="pc bpc" id="L280" title="2 of 4 branches missed.">			if (start &lt; 0 || length &lt; 0) {</span>
+<span class="nc" id="L281">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L283">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

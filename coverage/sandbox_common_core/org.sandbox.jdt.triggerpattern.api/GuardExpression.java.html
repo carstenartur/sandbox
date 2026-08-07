@@ -36,6 +36,22 @@ import java.util.function.Function;
  */
 public sealed interface GuardExpression
 		permits GuardExpression.FunctionCall, GuardExpression.And, GuardExpression.Or, GuardExpression.Not {
+
+	/** Semantic truth state independent from optional compatibility fallback. */
+<span class="fc" id="L41">	enum TruthValue {</span>
+<span class="fc" id="L42">		MATCH,</span>
+<span class="fc" id="L43">		NO_MATCH,</span>
+<span class="fc" id="L44">		UNKNOWN</span>
+	}
+
+	/**
+	 * Detailed guard result.
+	 *
+	 * @param truthValue semantic three-valued result
+	 * @param compatibilityValue historical boolean result used by optional hints
+	 */
+<span class="fc" id="L53">	record Evaluation(TruthValue truthValue, boolean compatibilityValue) {</span>
+	}
 	
 	/**
 	 * Sets the guard function resolver used by {@link FunctionCall} to look up
@@ -44,8 +60,8 @@ public sealed interface GuardExpression
 	 * @param resolver a function that maps guard function names to implementations
 	 */
 	static void setGuardFunctionResolver(Function&lt;String, GuardFunction&gt; resolver) {
-<span class="nc" id="L47">		GuardFunctionResolverHolder.setResolver(resolver);</span>
-<span class="nc" id="L48">	}</span>
+<span class="nc" id="L63">		GuardFunctionResolverHolder.setResolver(resolver);</span>
+<span class="nc" id="L64">	}</span>
 	
 	/**
 	 * Returns the current guard function resolver.
@@ -53,7 +69,7 @@ public sealed interface GuardExpression
 	 * @return the resolver, or {@code null} if not set
 	 */
 	static Function&lt;String, GuardFunction&gt; getGuardFunctionResolver() {
-<span class="nc" id="L56">		return GuardFunctionResolverHolder.getResolver();</span>
+<span class="nc" id="L72">		return GuardFunctionResolverHolder.getResolver();</span>
 	}
 	
 	/**
@@ -63,6 +79,71 @@ public sealed interface GuardExpression
 	 * @return {@code true} if the guard condition is satisfied
 	 */
 	boolean evaluate(GuardContext ctx);
+
+	/**
+	 * Evaluates this expression with three-valued semantic tracking while
+	 * retaining the historical boolean fallback for optional hints.
+	 */
+	default Evaluation evaluateDetailed(GuardContext ctx) {
+<span class="fc bfc" id="L88" title="All 4 branches covered.">		return switch (this) {</span>
+<span class="fc" id="L89">		case FunctionCall call -&gt; evaluateFunction(call, ctx);</span>
+<span class="fc" id="L90">		case And and -&gt; evaluateAnd(and, ctx);</span>
+<span class="fc" id="L91">		case Or or -&gt; evaluateOr(or, ctx);</span>
+<span class="fc" id="L92">		case Not not -&gt; evaluateNot(not, ctx);</span>
+		};
+	}
+
+	private static Evaluation evaluateFunction(FunctionCall call, GuardContext ctx) {
+<span class="fc" id="L97">		int unknownBefore= ctx.unknownSemanticRequirementCount();</span>
+<span class="fc" id="L98">		boolean compatibility= call.evaluate(ctx);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">		if (ctx.unknownSemanticRequirementCount() &gt; unknownBefore) {</span>
+<span class="fc" id="L100">			return new Evaluation(TruthValue.UNKNOWN, compatibility);</span>
+		}
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		return new Evaluation(compatibility ? TruthValue.MATCH : TruthValue.NO_MATCH,</span>
+				compatibility);
+	}
+
+	private static Evaluation evaluateAnd(And and, GuardContext ctx) {
+<span class="fc" id="L107">		Evaluation left= and.left().evaluateDetailed(ctx);</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		if (left.truthValue() == TruthValue.NO_MATCH) {</span>
+<span class="fc" id="L109">			return new Evaluation(TruthValue.NO_MATCH, false);</span>
+		}
+<span class="fc" id="L111">		Evaluation right= and.right().evaluateDetailed(ctx);</span>
+<span class="pc bpc" id="L112" title="2 of 3 branches missed.">		TruthValue truth= switch (left.truthValue()) {</span>
+<span class="fc" id="L113">		case MATCH -&gt; right.truthValue();</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		case UNKNOWN -&gt; right.truthValue() == TruthValue.NO_MATCH</span>
+<span class="nc" id="L115">				? TruthValue.NO_MATCH : TruthValue.UNKNOWN;</span>
+<span class="pc" id="L116">		case NO_MATCH -&gt; TruthValue.NO_MATCH;</span>
+		};
+<span class="fc" id="L118">		return new Evaluation(truth,</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">				left.compatibilityValue() &amp;&amp; right.compatibilityValue());</span>
+	}
+
+	private static Evaluation evaluateOr(Or or, GuardContext ctx) {
+<span class="fc" id="L123">		Evaluation left= or.left().evaluateDetailed(ctx);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">		if (left.truthValue() == TruthValue.MATCH) {</span>
+<span class="fc" id="L125">			return new Evaluation(TruthValue.MATCH, true);</span>
+		}
+<span class="fc" id="L127">		Evaluation right= or.right().evaluateDetailed(ctx);</span>
+<span class="pc bpc" id="L128" title="1 of 3 branches missed.">		TruthValue truth= switch (left.truthValue()) {</span>
+<span class="fc" id="L129">		case NO_MATCH -&gt; right.truthValue();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		case UNKNOWN -&gt; right.truthValue() == TruthValue.MATCH</span>
+<span class="fc" id="L131">				? TruthValue.MATCH : TruthValue.UNKNOWN;</span>
+<span class="pc" id="L132">		case MATCH -&gt; TruthValue.MATCH;</span>
+		};
+<span class="fc" id="L134">		return new Evaluation(truth,</span>
+<span class="pc bpc" id="L135" title="1 of 4 branches missed.">				left.compatibilityValue() || right.compatibilityValue());</span>
+	}
+
+	private static Evaluation evaluateNot(Not not, GuardContext ctx) {
+<span class="fc" id="L139">		Evaluation operand= not.operand().evaluateDetailed(ctx);</span>
+<span class="pc bpc" id="L140" title="2 of 3 branches missed.">		TruthValue truth= switch (operand.truthValue()) {</span>
+<span class="fc" id="L141">		case MATCH -&gt; TruthValue.NO_MATCH;</span>
+<span class="nc" id="L142">		case NO_MATCH -&gt; TruthValue.MATCH;</span>
+<span class="pc" id="L143">		case UNKNOWN -&gt; TruthValue.UNKNOWN;</span>
+		};
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">		return new Evaluation(truth, !operand.compatibilityValue());</span>
+	}
 	
 	/**
 	 * A function call guard expression (e.g., {@code sourceVersionGE(11)},
@@ -83,19 +164,19 @@ public sealed interface GuardExpression
 		 * @param name the function name
 		 * @param args the function arguments
 		 */
-<span class="fc" id="L86">		public FunctionCall {</span>
-<span class="fc" id="L87">			Objects.requireNonNull(name, &quot;Function name cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L88">			args = List.copyOf(args);</span>
-<span class="fc" id="L89">		}</span>
+<span class="fc" id="L167">		public FunctionCall {</span>
+<span class="fc" id="L168">			Objects.requireNonNull(name, &quot;Function name cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L169">			args = List.copyOf(args);</span>
+<span class="fc" id="L170">		}</span>
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-<span class="fc" id="L93">			Function&lt;String, GuardFunction&gt; resolver = GuardFunctionResolverHolder.getResolver();</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			GuardFunction fn = resolver != null ? resolver.apply(name) : null;</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">			if (fn == null) {</span>
-<span class="nc" id="L96">				throw new IllegalStateException(&quot;Unknown guard function: &quot; + name); //$NON-NLS-1$</span>
+<span class="fc" id="L174">			Function&lt;String, GuardFunction&gt; resolver = GuardFunctionResolverHolder.getResolver();</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">			GuardFunction fn = resolver != null ? resolver.apply(name) : null;</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">			if (fn == null) {</span>
+<span class="nc" id="L177">				throw new IllegalStateException(&quot;Unknown guard function: &quot; + name); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L98">			return fn.evaluate(ctx, args.toArray());</span>
+<span class="fc" id="L179">			return fn.evaluate(ctx, args.toArray());</span>
 		}
 	}
 	
@@ -113,14 +194,14 @@ public sealed interface GuardExpression
 		 * @param left the left operand
 		 * @param right the right operand
 		 */
-<span class="fc" id="L116">		public And {</span>
-<span class="fc" id="L117">			Objects.requireNonNull(left, &quot;Left operand cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L118">			Objects.requireNonNull(right, &quot;Right operand cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L119">		}</span>
+<span class="fc" id="L197">		public And {</span>
+<span class="fc" id="L198">			Objects.requireNonNull(left, &quot;Left operand cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L199">			Objects.requireNonNull(right, &quot;Right operand cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L200">		}</span>
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-<span class="fc bfc" id="L123" title="All 4 branches covered.">			return left.evaluate(ctx) &amp;&amp; right.evaluate(ctx);</span>
+<span class="pc bpc" id="L204" title="2 of 4 branches missed.">			return left.evaluate(ctx) &amp;&amp; right.evaluate(ctx);</span>
 		}
 	}
 	
@@ -138,14 +219,14 @@ public sealed interface GuardExpression
 		 * @param left the left operand
 		 * @param right the right operand
 		 */
-<span class="fc" id="L141">		public Or {</span>
-<span class="fc" id="L142">			Objects.requireNonNull(left, &quot;Left operand cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L143">			Objects.requireNonNull(right, &quot;Right operand cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L144">		}</span>
+<span class="fc" id="L222">		public Or {</span>
+<span class="fc" id="L223">			Objects.requireNonNull(left, &quot;Left operand cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L224">			Objects.requireNonNull(right, &quot;Right operand cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L225">		}</span>
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-<span class="pc bpc" id="L148" title="1 of 4 branches missed.">			return left.evaluate(ctx) || right.evaluate(ctx);</span>
+<span class="pc bpc" id="L229" title="2 of 4 branches missed.">			return left.evaluate(ctx) || right.evaluate(ctx);</span>
 		}
 	}
 	
@@ -159,15 +240,15 @@ public sealed interface GuardExpression
 		/**
 		 * Creates a logical NOT guard expression.
 		 * 
-		 * @param operand the operand to negate
+		 * @param operand the operand
 		 */
-<span class="fc" id="L164">		public Not {</span>
-<span class="fc" id="L165">			Objects.requireNonNull(operand, &quot;Operand cannot be null&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L166">		}</span>
+<span class="fc" id="L245">		public Not {</span>
+<span class="fc" id="L246">			Objects.requireNonNull(operand, &quot;Operand cannot be null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L247">		}</span>
 		
 		@Override
 		public boolean evaluate(GuardContext ctx) {
-<span class="fc bfc" id="L170" title="All 2 branches covered.">			return !operand.evaluate(ctx);</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">			return !operand.evaluate(ctx);</span>
 		}
 	}
 }

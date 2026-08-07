@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerParameterRewriteIntegrationTest.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ContainerParameterRewriteIntegrationTest.java</span></div><h1>ContainerParameterRewriteIntegrationTest.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan.ParameterEdit;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+
+<span class="fc" id="L53">class ContainerParameterRewriteIntegrationTest {</span>
+
+	@RegisterExtension
+<span class="fc" id="L56">	final AbstractEclipseJava context= new EclipseJava22();</span>
+
+	@Test
+	void convertsAReadOnlyArrayParameterToList() throws Exception {
+<span class="fc" id="L60">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				void consume(String[] values) {
+					int count = values.length;
+					for (String value : values) {
+						System.out.println(value + count);
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L71">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L73">		ContainerParameterRewriteFix.create(</span>
+<span class="fc" id="L74">				unit, root, plan(unit, root, 1, 1))</span>
+<span class="fc" id="L75">				.createChange(null).perform(null);</span>
+
+<span class="fc" id="L77">		String source= unit.getSource();</span>
+<span class="fc" id="L78">		assertTrue(source.contains(&quot;import java.util.List;&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L79">		assertTrue(source.contains(&quot;void consume(List&lt;String&gt; values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L80">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L81">		assertTrue(source.contains(&quot;for (String value : values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L82">		assertFalse(source.contains(&quot;values.length&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L83">	}</span>
+
+	@Test
+	void rejectsAnUnexpectedParameterUse() throws Exception {
+<span class="fc" id="L87">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				void consume(String[] values) {
+					System.identityHashCode(values);
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L95">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L97">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L98">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L99">						unit, root, plan(unit, root, 0, 0)));</span>
+
+<span class="fc" id="L101">		assertTrue(exception.getMessage().contains(&quot;unexpected parameter use&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L102">	}</span>
+
+	@Test
+	void rejectsParameterCaptureEvenWhenTheNestedUseIsOnlyLength() throws Exception {
+<span class="fc" id="L106">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				void consume(String[] values) {
+					Runnable task = () -&gt; System.out.println(values.length);
+					task.run();
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L115">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L117">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L118">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L119">						unit, root, plan(unit, root, 1, 0)));</span>
+
+<span class="fc" id="L121">		assertTrue(exception.getMessage().contains(&quot;captured&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L122">	}</span>
+
+	@Test
+	void rejectsChangedLengthAndIterationCounts() throws Exception {
+<span class="fc" id="L126">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				void consume(String[] values) {
+					System.out.println(values.length);
+					for (String value : values) {
+						System.out.println(value);
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L137">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L139">		CoreException length= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L140">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L141">						unit, root, plan(unit, root, 0, 1)));</span>
+<span class="fc" id="L142">		assertTrue(length.getMessage().contains(&quot;length occurrence count&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L144">		CoreException iteration= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L145">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L146">						unit, root, plan(unit, root, 1, 0)));</span>
+<span class="fc" id="L147">		assertTrue(iteration.getMessage().contains(&quot;encounter iteration&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L148">	}</span>
+
+	@Test
+	void rejectsShiftedUsageRangesWithUnchangedCounts() throws Exception {
+<span class="fc" id="L152">		ICompilationUnit unit= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				void consume(String[] values) {
+					int count = values.length;
+					for (String value : values) {
+						System.out.println(value + count);
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L163">		ContainerParameterRewritePlan originalPlan= plan(unit, parse(unit), 1, 1);</span>
+<span class="fc" id="L164">		unit.getBuffer().setContents(unit.getSource().replace(</span>
+<span class="fc" id="L165">				&quot;int count = values.length;&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L166">				&quot;\n\t\tint count = values.length;&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L167">		unit.save(null, true);</span>
+
+<span class="fc" id="L169">		CoreException exception= assertThrows(CoreException.class, () -&gt;</span>
+<span class="nc" id="L170">				ContainerParameterRewriteFix.create(</span>
+<span class="pc" id="L171">						unit, parse(unit), originalPlan));</span>
+
+<span class="fc" id="L173">		assertTrue(exception.getMessage().contains(&quot;source ranges changed&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L174">	}</span>
+
+	private ICompilationUnit createUnit(String source) throws CoreException {
+<span class="fc" id="L177">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L178">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L179">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+	}
+
+	private CompilationUnit parse(ICompilationUnit unit) {
+<span class="fc" id="L183">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L184">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L185">		parser.setSource(unit);</span>
+<span class="fc" id="L186">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L187">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L188">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L189">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+
+	private static ContainerParameterRewritePlan plan(
+			ICompilationUnit unit,
+			CompilationUnit root,
+			int lengthCount,
+			int iterationCount) {
+<span class="fc" id="L197">		SourceFacts facts= sourceFacts(root);</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		if (lengthCount &gt; facts.lengths().size()</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				|| iterationCount &gt; facts.iterations().size()) {</span>
+<span class="nc" id="L200">			throw new IllegalArgumentException(&quot;Requested evidence exceeds source facts&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L202">		List&lt;ParameterEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L203">		edits.add(new ParameterEdit(</span>
+<span class="fc" id="L204">				EditKind.CHANGE_PARAMETER_DECLARATION,</span>
+<span class="fc" id="L205">				facts.parameter().getStartPosition(),</span>
+<span class="fc" id="L206">				facts.parameter().getLength()));</span>
+<span class="fc" id="L207">		facts.lengths().stream().limit(lengthCount).forEach(range -&gt; edits.add(</span>
+<span class="fc" id="L208">				new ParameterEdit(</span>
+<span class="fc" id="L209">						EditKind.REPLACE_LENGTH_WITH_SIZE,</span>
+<span class="fc" id="L210">						range.start(), range.length())));</span>
+<span class="fc" id="L211">		facts.iterations().stream().limit(iterationCount).forEach(range -&gt; edits.add(</span>
+<span class="fc" id="L212">				new ParameterEdit(</span>
+<span class="fc" id="L213">						EditKind.VERIFY_ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L214">						range.start(), range.length())));</span>
+<span class="fc" id="L215">		return new ContainerParameterRewritePlan(</span>
+<span class="fc" id="L216">				unit.getHandleIdentifier(),</span>
+<span class="fc" id="L217">				facts.methodJavaElementHandle(),</span>
+<span class="fc" id="L218">				facts.parameterBindingKey(),</span>
+<span class="fc" id="L219">				0,</span>
+<span class="fc" id="L220">				&quot;java.util.List&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L221">				targetContract(),</span>
+<span class="fc" id="L222">				edits);</span>
+	}
+
+	private static SourceFacts sourceFacts(CompilationUnit root) {
+<span class="fc" id="L226">		MethodDeclaration method= method(root);</span>
+<span class="fc" id="L227">		SingleVariableDeclaration parameter=</span>
+<span class="fc" id="L228">				(SingleVariableDeclaration) method.parameters().get(0);</span>
+<span class="fc" id="L229">		IVariableBinding parameterBinding= parameter.resolveBinding();</span>
+<span class="fc" id="L230">		IMethodBinding methodBinding= method.resolveBinding();</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		IJavaElement methodElement= methodBinding == null</span>
+<span class="pc" id="L232">				? null : methodBinding.getMethodDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L233" title="2 of 4 branches missed.">		if (parameterBinding == null || methodElement == null) {</span>
+<span class="nc" id="L234">			throw new IllegalStateException(&quot;Missing method or parameter binding&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L236">		String bindingKey= parameterBinding.getVariableDeclaration().getKey();</span>
+<span class="fc" id="L237">		List&lt;SourceRange&gt; lengths= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L238">		List&lt;SourceRange&gt; iterations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L239">		method.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(QualifiedName name) {
+<span class="fc bfc" id="L242" title="All 2 branches covered.">				if (&quot;length&quot;.equals(name.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">						&amp;&amp; name.getQualifier() instanceof SimpleName qualifier</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">						&amp;&amp; qualifier.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L246">					lengths.add(new SourceRange(</span>
+<span class="fc" id="L247">							name.getStartPosition(), name.getLength()));</span>
+				}
+<span class="fc" id="L249">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(EnhancedForStatement enhanced) {
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">				if (enhanced.getExpression() instanceof SimpleName name</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">						&amp;&amp; name.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">						&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L257">					iterations.add(new SourceRange(</span>
+<span class="fc" id="L258">							name.getStartPosition(), name.getLength()));</span>
+				}
+<span class="fc" id="L260">				return true;</span>
+			}
+		});
+<span class="fc" id="L263">		Comparator&lt;SourceRange&gt; order= Comparator.comparingInt(SourceRange::start);</span>
+<span class="fc" id="L264">		lengths.sort(order);</span>
+<span class="fc" id="L265">		iterations.sort(order);</span>
+<span class="fc" id="L266">		return new SourceFacts(</span>
+<span class="fc" id="L267">				parameter,</span>
+<span class="fc" id="L268">				methodElement.getHandleIdentifier(),</span>
+<span class="fc" id="L269">				bindingKey,</span>
+<span class="fc" id="L270">				List.copyOf(lengths),</span>
+<span class="fc" id="L271">				List.copyOf(iterations));</span>
+	}
+
+	private static MethodDeclaration method(CompilationUnit root) {
+<span class="fc" id="L275">		MethodDeclaration[] result= { null };</span>
+<span class="fc" id="L276">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodDeclaration declaration) {
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">				if (&quot;consume&quot;.equals(declaration.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L280">					result[0]= declaration;</span>
+				}
+<span class="fc" id="L282">				return true;</span>
+			}
+		});
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">		if (result[0] == null) {</span>
+<span class="nc" id="L286">			throw new IllegalStateException(&quot;Missing consume method&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L288">		return result[0];</span>
+	}
+
+	private static TargetContainerContract targetContract() {
+<span class="fc" id="L292">		return new TargetContainerContract(</span>
+<span class="fc" id="L293">				ContainerShape.LIST,</span>
+<span class="fc" id="L294">				OrderRequirement.ENCOUNTER,</span>
+<span class="fc" id="L295">				UniquenessRequirement.DUPLICATES_ALLOWED,</span>
+<span class="fc" id="L296">				Mutability.MUTABLE,</span>
+<span class="fc" id="L297">				NullContract.ALLOWED,</span>
+<span class="fc" id="L298">				&quot;Use a mutable dynamic sequence.&quot;); //$NON-NLS-1$</span>
+	}
+
+	private record SourceFacts(
+			SingleVariableDeclaration parameter,
+			String methodJavaElementHandle,
+			String parameterBindingKey,
+			List&lt;SourceRange&gt; lengths,
+			List&lt;SourceRange&gt; iterations) {
+	}
+
+	private record SourceRange(int start, int length) {
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -179,86 +179,89 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
 			ContainerBridgePolicyPlan bridgePlan,
 			List&lt;ExecutionBlocker&gt; blockers) {
 <span class="fc bfc" id="L181" title="All 2 branches covered.">		if (signaturePlan.status()</span>
-				== ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE) {
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">			if (bridgePlan.status() != ContainerBridgePolicyPlan.PlanningStatus.NO_BRIDGE_NEEDED) {</span>
-<span class="nc" id="L184">				blockers.add(blocker(</span>
+				== ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE
+<span class="fc bfc" id="L183" title="All 2 branches covered.">				|| signaturePlan.status()</span>
+						== ContainerSignatureMigrationPlan.PlanningStatus.CLOSED_SOURCE_AUTOMATIC) {
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">			if (bridgePlan.status()</span>
+					!= ContainerBridgePolicyPlan.PlanningStatus.NO_BRIDGE_NEEDED) {
+<span class="nc" id="L187">				blockers.add(blocker(</span>
 						BlockerProperty.SIGNATURES,
 						BlockerSeverity.FATAL,
 						&quot;signature-plan&quot;, //$NON-NLS-1$
-						&quot;The bridge plan requests compatibility work although no signature changes are planned.&quot;)); //$NON-NLS-1$
+						&quot;The bridge plan requests compatibility work although the signature plan retains no old API.&quot;)); //$NON-NLS-1$
 			}
-<span class="fc" id="L190">			return;</span>
+<span class="fc" id="L193">			return;</span>
 		}
 
-<span class="fc bfc" id="L193" title="All 2 branches covered.">		for (BridgePolicyGroup group : bridgePlan.groups()) {</span>
-<span class="fc bfc" id="L194" title="All 2 branches covered.">			if (group.decision() == BridgeDecision.IMPOSSIBLE) {</span>
-<span class="fc" id="L195">				blockers.add(blocker(</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">		for (BridgePolicyGroup group : bridgePlan.groups()) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">			if (group.decision() == BridgeDecision.IMPOSSIBLE) {</span>
+<span class="fc" id="L198">				blockers.add(blocker(</span>
 						BlockerProperty.SIGNATURES,
 						BlockerSeverity.BREAKING_CHANGE,
-<span class="fc" id="L198">						group.signatureGroupId(),</span>
-<span class="fc" id="L199">						group.explanation()));</span>
-<span class="fc" id="L200">				continue;</span>
+<span class="fc" id="L201">						group.signatureGroupId(),</span>
+<span class="fc" id="L202">						group.explanation()));</span>
+<span class="fc" id="L203">				continue;</span>
 			}
-<span class="fc bfc" id="L202" title="All 2 branches covered.">			for (SemanticRequirement requirement : group.requirements()) {</span>
-<span class="fc bfc" id="L203" title="All 2 branches covered.">				if (requirement.status() == RequirementStatus.CONFIRMED) {</span>
-<span class="fc" id="L204">					continue;</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">			for (SemanticRequirement requirement : group.requirements()) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (requirement.status() == RequirementStatus.CONFIRMED) {</span>
+<span class="fc" id="L207">					continue;</span>
 				}
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">				BlockerSeverity severity= requirement.status()</span>
-<span class="fc" id="L207">						== RequirementStatus.PROOF_REQUIRED</span>
-<span class="nc" id="L208">								? BlockerSeverity.PROOF_REQUIRED</span>
-<span class="fc" id="L209">								: BlockerSeverity.POLICY_REQUIRED;</span>
-<span class="fc" id="L210">				blockers.add(blocker(</span>
-<span class="fc" id="L211">						blockerProperty(requirement.property()),</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">				BlockerSeverity severity= requirement.status()</span>
+<span class="fc" id="L210">						== RequirementStatus.PROOF_REQUIRED</span>
+<span class="nc" id="L211">								? BlockerSeverity.PROOF_REQUIRED</span>
+<span class="fc" id="L212">								: BlockerSeverity.POLICY_REQUIRED;</span>
+<span class="fc" id="L213">				blockers.add(blocker(</span>
+<span class="fc" id="L214">						blockerProperty(requirement.property()),</span>
 						severity,
-<span class="fc" id="L213">						group.signatureGroupId(),</span>
-<span class="fc" id="L214">						requirement.explanation()));</span>
-<span class="fc" id="L215">			}</span>
-<span class="fc" id="L216">		}</span>
-<span class="fc" id="L217">	}</span>
+<span class="fc" id="L216">						group.signatureGroupId(),</span>
+<span class="fc" id="L217">						requirement.explanation()));</span>
+<span class="fc" id="L218">			}</span>
+<span class="fc" id="L219">		}</span>
+<span class="fc" id="L220">	}</span>
 
 	private static ExecutionStatus status(List&lt;ExecutionBlocker&gt; blockers) {
-<span class="fc bfc" id="L220" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.FATAL)) {</span>
-<span class="fc" id="L221">			return ExecutionStatus.REJECTED;</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.FATAL)) {</span>
+<span class="fc" id="L224">			return ExecutionStatus.REJECTED;</span>
 		}
-<span class="fc bfc" id="L223" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.PROOF_REQUIRED)) {</span>
-<span class="fc" id="L224">			return ExecutionStatus.REPORT_ONLY;</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.PROOF_REQUIRED)) {</span>
+<span class="fc" id="L227">			return ExecutionStatus.REPORT_ONLY;</span>
 		}
-<span class="fc bfc" id="L226" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.BREAKING_CHANGE)) {</span>
-<span class="fc" id="L227">			return ExecutionStatus.INTERACTIVE_BREAKING;</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.BREAKING_CHANGE)) {</span>
+<span class="fc" id="L230">			return ExecutionStatus.INTERACTIVE_BREAKING;</span>
 		}
-<span class="fc bfc" id="L229" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.POLICY_REQUIRED)) {</span>
-<span class="fc" id="L230">			return ExecutionStatus.INTERACTIVE_POLICY;</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">		if (contains(blockers, BlockerSeverity.POLICY_REQUIRED)) {</span>
+<span class="fc" id="L233">			return ExecutionStatus.INTERACTIVE_POLICY;</span>
 		}
-<span class="fc" id="L232">		return ExecutionStatus.AUTOMATIC;</span>
+<span class="fc" id="L235">		return ExecutionStatus.AUTOMATIC;</span>
 	}
 
 	private static boolean contains(
 			List&lt;ExecutionBlocker&gt; blockers,
 			BlockerSeverity severity) {
-<span class="fc bfc" id="L238" title="All 2 branches covered.">		return blockers.stream().anyMatch(blocker -&gt; blocker.severity() == severity);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">		return blockers.stream().anyMatch(blocker -&gt; blocker.severity() == severity);</span>
 	}
 
 	private static BlockerProperty blockerProperty(ContractProperty property) {
-<span class="pc bpc" id="L242" title="1 of 7 branches missed.">		return switch (property) {</span>
-<span class="fc" id="L243">			case ORDER -&gt; BlockerProperty.ORDER;</span>
-<span class="fc" id="L244">			case UNIQUENESS -&gt; BlockerProperty.UNIQUENESS;</span>
-<span class="fc" id="L245">			case MUTABILITY -&gt; BlockerProperty.MUTABILITY;</span>
-<span class="fc" id="L246">			case NULLS -&gt; BlockerProperty.NULLS;</span>
-<span class="fc" id="L247">			case ALIASING -&gt; BlockerProperty.ALIASING;</span>
-<span class="fc" id="L248">			case CONCURRENCY -&gt; BlockerProperty.CONCURRENCY;</span>
-<span class="nc" id="L249">			case SIGNATURES -&gt; BlockerProperty.SIGNATURES;</span>
+<span class="pc bpc" id="L245" title="1 of 7 branches missed.">		return switch (property) {</span>
+<span class="fc" id="L246">			case ORDER -&gt; BlockerProperty.ORDER;</span>
+<span class="fc" id="L247">			case UNIQUENESS -&gt; BlockerProperty.UNIQUENESS;</span>
+<span class="fc" id="L248">			case MUTABILITY -&gt; BlockerProperty.MUTABILITY;</span>
+<span class="fc" id="L249">			case NULLS -&gt; BlockerProperty.NULLS;</span>
+<span class="fc" id="L250">			case ALIASING -&gt; BlockerProperty.ALIASING;</span>
+<span class="fc" id="L251">			case CONCURRENCY -&gt; BlockerProperty.CONCURRENCY;</span>
+<span class="nc" id="L252">			case SIGNATURES -&gt; BlockerProperty.SIGNATURES;</span>
 		};
 	}
 
 	private static BlockerProperty blockerProperty(BridgeProperty property) {
-<span class="pc bpc" id="L254" title="6 of 7 branches missed.">		return switch (property) {</span>
-<span class="nc" id="L255">			case ORDER -&gt; BlockerProperty.ORDER;</span>
-<span class="nc" id="L256">			case UNIQUENESS -&gt; BlockerProperty.UNIQUENESS;</span>
-<span class="nc" id="L257">			case MUTABILITY -&gt; BlockerProperty.MUTABILITY;</span>
-<span class="nc" id="L258">			case NULLS -&gt; BlockerProperty.NULLS;</span>
-<span class="nc" id="L259">			case ALIASING -&gt; BlockerProperty.ALIASING;</span>
-<span class="nc" id="L260">			case CONCURRENCY -&gt; BlockerProperty.CONCURRENCY;</span>
-<span class="fc" id="L261">			case ADAPTER_FORM -&gt; BlockerProperty.ADAPTER_FORM;</span>
+<span class="pc bpc" id="L257" title="6 of 7 branches missed.">		return switch (property) {</span>
+<span class="nc" id="L258">			case ORDER -&gt; BlockerProperty.ORDER;</span>
+<span class="nc" id="L259">			case UNIQUENESS -&gt; BlockerProperty.UNIQUENESS;</span>
+<span class="nc" id="L260">			case MUTABILITY -&gt; BlockerProperty.MUTABILITY;</span>
+<span class="nc" id="L261">			case NULLS -&gt; BlockerProperty.NULLS;</span>
+<span class="nc" id="L262">			case ALIASING -&gt; BlockerProperty.ALIASING;</span>
+<span class="nc" id="L263">			case CONCURRENCY -&gt; BlockerProperty.CONCURRENCY;</span>
+<span class="fc" id="L264">			case ADAPTER_FORM -&gt; BlockerProperty.ADAPTER_FORM;</span>
 		};
 	}
 
@@ -267,7 +270,7 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
 			BlockerSeverity severity,
 			String sourceId,
 			String explanation) {
-<span class="fc" id="L270">		return new ExecutionBlocker(property, severity, sourceId, explanation);</span>
+<span class="fc" id="L273">		return new ExecutionBlocker(property, severity, sourceId, explanation);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

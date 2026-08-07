@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UniqueSequenceLocalRewritePlanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">UniqueSequenceLocalRewritePlanner.java</span></div><h1>UniqueSequenceLocalRewritePlanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness.ExecutionStatus;
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.DiagnosticKind;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.EditKind;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.LocalEdit;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.PlanningDiagnostic;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.PlanningResult;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Plans a strictly local, manually unique sequence to ordered-set rewrite. */
+<span class="fc" id="L43">public final class UniqueSequenceLocalRewritePlanner {</span>
+
+	private static final String SET_TYPE= &quot;java.util.Set&quot;; //$NON-NLS-1$
+	private static final String LINKED_HASH_SET_TYPE= &quot;java.util.LinkedHashSet&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L48">	private static final Set&lt;Kind&gt; SUPPORTED_EVIDENCE= EnumSet.of(</span>
+			Kind.DUPLICATE_SUPPRESSION,
+			Kind.REFERENCE_COMPONENT,
+			Kind.HASH_STABLE_COMPONENT,
+			Kind.ENCOUNTER_ITERATION,
+			Kind.LOCAL_USAGE_COMPLETE);
+
+	/** Builds one local rewrite plan or complete rejection diagnostics. */
+	public PlanningResult plan(
+			String compilationUnitHandle,
+			ContainerRecommendation recommendation,
+			ContainerMigrationReadiness readiness) {
+<span class="fc" id="L60">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		Objects.requireNonNull(readiness, &quot;readiness&quot;); //$NON-NLS-1$</span>
+
+<span class="fc" id="L63">		List&lt;PlanningDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		if (readiness.status() != ExecutionStatus.AUTOMATIC) {</span>
+<span class="nc" id="L65">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.NOT_AUTOMATIC,
+					&quot;The semantic execution gate has not approved automatic rewriting.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L69">		validateTarget(recommendation, readiness, diagnostics);</span>
+<span class="fc" id="L70">		ContainerUsageProfile profile= recommendation.sourceProfile();</span>
+<span class="fc" id="L71">		validateSource(profile, diagnostics);</span>
+<span class="fc" id="L72">		validateEvidence(profile, diagnostics);</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		if (!diagnostics.isEmpty()) {</span>
+<span class="nc" id="L74">			return PlanningResult.rejected(diagnostics);</span>
+		}
+
+<span class="fc" id="L77">		return PlanningResult.accepted(new UniqueSequenceLocalRewritePlan(</span>
+				compilationUnitHandle,
+<span class="fc" id="L79">				profile.identity().bindingKey(),</span>
+				SET_TYPE,
+				LINKED_HASH_SET_TYPE,
+<span class="fc" id="L82">				recommendation.targetContract(),</span>
+<span class="fc" id="L83">				edits(profile)));</span>
+	}
+
+	private static void validateTarget(
+			ContainerRecommendation recommendation,
+			ContainerMigrationReadiness readiness,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if (!recommendation.targetContract().equals(readiness.targetContract())</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				|| recommendation.targetContract().shape() != ContainerShape.SET</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">				|| recommendation.targetContract().mutability() != Mutability.MUTABLE</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				|| recommendation.targetContract().orderRequirement()</span>
+						!= OrderRequirement.ENCOUNTER
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">				|| recommendation.targetContract().uniquenessRequirement()</span>
+						!= UniquenessRequirement.REQUIRED) {
+<span class="nc" id="L97">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_TARGET,
+					&quot;The first unique-sequence rewrite requires a mutable encounter-ordered set.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L101">	}</span>
+
+	private static void validateSource(
+			ContainerUsageProfile profile,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">		if (profile.completeness() != AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">				|| profile.escapeLevel() != EscapeLevel.LOCAL</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">				|| profile.aliasingContract() != AliasingContract.NO_OBSERVED_ALIAS</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">				|| profile.concurrency().exposure() != ThreadExposure.THREAD_CONFINED</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| !profile.identity().hasResolvedBinding()) {</span>
+<span class="nc" id="L111">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.SOURCE_NOT_STRICTLY_LOCAL,
+					&quot;The first set rewrite requires one complete, alias-free, thread-confined local value.&quot;)); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (profile.currentShape() != ContainerShape.LIST</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">				|| profile.elementDomain() != ElementDomain.REFERENCE</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">						&amp;&amp; profile.elementDomain() != ElementDomain.ENUM</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">				|| !profile.access().append()</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				|| !profile.access().membershipQuery()</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				|| profile.uniquenessRequirement() != UniquenessRequirement.REQUIRED) {</span>
+<span class="nc" id="L121">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_SOURCE,
+					&quot;The source must be a reference sequence whose every insertion suppresses duplicates.&quot;)); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (profile.access().hasPositionalSemantics()</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				|| profile.orderRequirement() == OrderRequirement.POSITIONAL) {</span>
+<span class="nc" id="L127">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.POSITIONAL_SEMANTICS,
+					&quot;Indexed and positional sequence semantics cannot be represented by the ordered set rewrite.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc" id="L131">	}</span>
+
+	private static void validateEvidence(
+			ContainerUsageProfile profile,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (count(profile, Kind.DUPLICATE_SUPPRESSION) == 0) {</span>
+<span class="nc" id="L137">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.MISSING_DUPLICATE_GUARD,
+					&quot;The profile does not contain a proven contains-before-add insertion.&quot;)); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		if (count(profile, Kind.HASH_STABLE_COMPONENT) == 0) {</span>
+<span class="nc" id="L142">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_SOURCE,
+					&quot;The profile does not prove stable equality and hash semantics.&quot;)); //$NON-NLS-1$
+		}
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">			if (!SUPPORTED_EVIDENCE.contains(evidence.kind())) {</span>
+<span class="nc" id="L148">				diagnostics.add(diagnostic(</span>
+						DiagnosticKind.UNSUPPORTED_EVIDENCE,
+						&quot;The local profile contains unsupported evidence: &quot;
+<span class="nc" id="L151">								+ evidence.kind() + '.')); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L153">		}</span>
+<span class="fc" id="L154">	}</span>
+
+	private static long count(ContainerUsageProfile profile, Kind kind) {
+<span class="fc" id="L157">		return profile.evidence().stream()</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">				.filter(evidence -&gt; evidence.kind() == kind)</span>
+<span class="fc" id="L159">				.count();</span>
+	}
+
+	private static List&lt;LocalEdit&gt; edits(ContainerUsageProfile profile) {
+<span class="fc" id="L163">		List&lt;LocalEdit&gt; edits= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L164">		edits.add(new LocalEdit(</span>
+				EditKind.CHANGE_LOCAL_DECLARATION,
+<span class="fc" id="L166">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L167">				profile.identity().sourceLength()));</span>
+<span class="fc" id="L168">		edits.add(new LocalEdit(</span>
+				EditKind.REPLACE_EMPTY_IMPLEMENTATION,
+<span class="fc" id="L170">				profile.identity().sourceStart(),</span>
+<span class="fc" id="L171">				profile.identity().sourceLength()));</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="fc bfc" id="L173" title="All 3 branches covered.">			EditKind kind= switch (evidence.kind()) {</span>
+<span class="fc" id="L174">				case DUPLICATE_SUPPRESSION -&gt; EditKind.REPLACE_DUPLICATE_GUARD;</span>
+<span class="fc" id="L175">				case ENCOUNTER_ITERATION -&gt; EditKind.VERIFY_ENCOUNTER_ITERATION;</span>
+<span class="fc" id="L176">				default -&gt; null;</span>
+			};
+<span class="fc bfc" id="L178" title="All 2 branches covered.">			if (kind != null) {</span>
+<span class="fc" id="L179">				edits.add(new LocalEdit(</span>
+<span class="fc" id="L180">						kind, evidence.sourceStart(), evidence.sourceLength()));</span>
+			}
+<span class="fc" id="L182">		}</span>
+<span class="fc" id="L183">		edits.sort(Comparator</span>
+<span class="fc" id="L184">				.comparingInt(LocalEdit::sourceStart)</span>
+<span class="fc" id="L185">				.thenComparing(edit -&gt; edit.kind().ordinal()));</span>
+<span class="fc" id="L186">		return List.copyOf(edits);</span>
+	}
+
+	private static PlanningDiagnostic diagnostic(
+			DiagnosticKind kind,
+			String message) {
+<span class="nc" id="L192">		return new PlanningDiagnostic(kind, message);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

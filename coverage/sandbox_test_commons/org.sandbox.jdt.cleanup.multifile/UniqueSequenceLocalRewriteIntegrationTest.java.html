@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UniqueSequenceLocalRewriteIntegrationTest.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">UniqueSequenceLocalRewriteIntegrationTest.java</span></div><h1>UniqueSequenceLocalRewriteIntegrationTest.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+
+import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.UniqueSequenceContractInferrer;
+import org.sandbox.jdt.container.analysis.UniqueSequenceLocalRewritePlanner;
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness.ExecutionStatus;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+
+<span class="fc" id="L40">class UniqueSequenceLocalRewriteIntegrationTest {</span>
+
+	@RegisterExtension
+<span class="fc" id="L43">	final AbstractEclipseJava context= new EclipseJava22();</span>
+
+	@Test
+	void appliesTheStrictLocalOrderedSetRewrite() throws Exception {
+<span class="fc" id="L47">		ICompilationUnit unit= createUnit(validSource());</span>
+<span class="fc" id="L48">		CompilationUnit root= parse(unit);</span>
+
+<span class="fc" id="L50">		UniqueSequenceLocalRewritePlan plan= plan(unit, root);</span>
+<span class="fc" id="L51">		UniqueSequenceLocalRewriteFix.create(unit, root, plan)</span>
+<span class="fc" id="L52">				.createChange(null).perform(null);</span>
+
+<span class="fc" id="L54">		String source= unit.getSource();</span>
+<span class="fc" id="L55">		assertTrue(source.contains(&quot;Set&lt;String&gt; values&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		assertTrue(source.contains(&quot;new LinkedHashSet&lt;&gt;()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L57">		assertTrue(source.contains(&quot;values.add(value);&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L58">		assertTrue(source.contains(&quot;values.size()&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L59">		assertTrue(source.contains(&quot;for (String current : values)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L60">		assertFalse(source.contains(&quot;values.contains(value)&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L61">	}</span>
+
+	@Test
+	void rejectsUnguardedOrMismatchedInsertion() throws Exception {
+<span class="fc" id="L65">		ICompilationUnit unguarded= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.ArrayList;
+			import java.util.List;
+			class Sample {
+				void collect(String value) {
+					List&lt;String&gt; values = new ArrayList&lt;&gt;();
+					values.add(value);
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L76">		var unguardedProfile= new LocalUniqueSequenceAnalyzer()</span>
+<span class="fc" id="L77">				.analyze(parse(unguarded)).get(0);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		assertTrue(unguardedProfile.completeness() == AnalysisCompleteness.REJECTED);</span>
+<span class="fc" id="L79">		assertTrue(new UniqueSequenceContractInferrer().infer(unguardedProfile).isEmpty());</span>
+
+<span class="fc" id="L81">		ICompilationUnit mismatched= createUnit(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.ArrayList;
+			import java.util.List;
+			class Sample {
+				void collect(String first, String second) {
+					List&lt;String&gt; values = new ArrayList&lt;&gt;();
+					if (!values.contains(first)) {
+						values.add(second);
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+<span class="fc" id="L94">		var mismatchedProfile= new LocalUniqueSequenceAnalyzer()</span>
+<span class="fc" id="L95">				.analyze(parse(mismatched)).get(0);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		assertTrue(mismatchedProfile.completeness() == AnalysisCompleteness.REJECTED);</span>
+<span class="fc" id="L97">	}</span>
+
+	@Test
+	void rejectsAStaleGuardPlan() throws Exception {
+<span class="fc" id="L101">		ICompilationUnit unit= createUnit(validSource());</span>
+<span class="fc" id="L102">		UniqueSequenceLocalRewritePlan plan= plan(unit, parse(unit));</span>
+<span class="fc" id="L103">		unit.getBuffer().setContents(validSource().replace(</span>
+<span class="fc" id="L104">				&quot;if (!values.contains(value)) {&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L105">				&quot;if (true) {&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L107">		CoreException exception= assertThrows(</span>
+<span class="fc" id="L108">				CoreException.class,</span>
+<span class="pc" id="L109">				() -&gt; UniqueSequenceLocalRewriteFix.create(unit, parse(unit), plan));</span>
+<span class="fc" id="L110">		assertTrue(exception.getMessage().contains(&quot;occurrence count changed&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L111">	}</span>
+
+	private UniqueSequenceLocalRewritePlan plan(
+			ICompilationUnit unit,
+			CompilationUnit root) {
+<span class="fc" id="L116">		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);</span>
+<span class="fc" id="L117">		var recommendation= new UniqueSequenceContractInferrer()</span>
+<span class="fc" id="L118">				.infer(profile).orElseThrow();</span>
+<span class="fc" id="L119">		var readiness= new ContainerMigrationReadiness(</span>
+<span class="fc" id="L120">				recommendation.targetContract(),</span>
+<span class="fc" id="L121">				ExecutionStatus.AUTOMATIC,</span>
+<span class="fc" id="L122">				List.of());</span>
+<span class="fc" id="L123">		return new UniqueSequenceLocalRewritePlanner()</span>
+<span class="fc" id="L124">				.plan(unit.getHandleIdentifier(), recommendation, readiness)</span>
+<span class="fc" id="L125">				.plan().orElseThrow();</span>
+	}
+
+	private ICompilationUnit createUnit(String source) throws CoreException {
+<span class="fc" id="L129">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L130">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L131">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+	}
+
+	private CompilationUnit parse(ICompilationUnit unit) {
+<span class="fc" id="L135">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L136">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L137">		parser.setSource(unit);</span>
+<span class="fc" id="L138">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L139">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L140">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L141">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+
+	private static String validSource() {
+<span class="fc" id="L145">		return &quot;&quot;&quot;</span>
+			package test;
+			import java.util.ArrayList;
+			import java.util.List;
+			class Sample {
+				void collect(String value) {
+					List&lt;String&gt; values = new ArrayList&lt;&gt;();
+					if (!values.contains(value)) {
+						values.add(value);
+					}
+					int count = values.size();
+					for (String current : values) {
+						System.out.println(current + count);
+					}
+				}
+			}
+			&quot;&quot;&quot;;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

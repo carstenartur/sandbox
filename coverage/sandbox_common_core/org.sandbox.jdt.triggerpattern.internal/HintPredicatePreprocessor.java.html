@@ -405,9 +405,7 @@ public final class HintPredicatePreprocessor {
 	}
 
 	private static HintParseException parseFailure(String message, int line, Throwable cause) {
-<span class="fc" id="L408">		HintParseException failure= new HintParseException(message, line);</span>
-<span class="fc" id="L409">		failure.initCause(cause);</span>
-<span class="fc" id="L410">		return failure;</span>
+<span class="fc" id="L408">		return new HintParseException(message, line, cause);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

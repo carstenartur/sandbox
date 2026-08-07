@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.api;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -17,12 +18,12 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Immutable, AST-free rewrite description for the first strictly local semantic
- * container migration.
+ * Immutable, AST-free rewrite description for one local semantic container member.
  *
- * &lt;p&gt;The current vertical slice supports one local reference array with no aliases,
- * signatures or index contract. A later Eclipse-dependent resolver must revalidate
- * the binding and every expected occurrence against the current AST before editing.&lt;/p&gt;
+ * &lt;p&gt;A later Eclipse-dependent resolver revalidates the binding and every expected
+ * occurrence against the current AST before editing. Optional verification edits can
+ * retain source uses whose corresponding declarations are changed by the same
+ * aggregate multi-file plan.&lt;/p&gt;
  */
 public record ContainerLocalRewritePlan(
 		String compilationUnitHandle,
@@ -30,19 +31,40 @@ public record ContainerLocalRewritePlan(
 		String targetInterfaceType,
 		String targetImplementationType,
 		TargetContainerContract targetContract,
-		List&lt;LocalEdit&gt; edits) {
+		List&lt;LocalEdit&gt; edits,
+		List&lt;ArgumentTransfer&gt; argumentTransfers) {
 
-<span class="fc" id="L35">	public ContainerLocalRewritePlan {</span>
-<span class="fc" id="L36">		compilationUnitHandle= requiredText(</span>
+	/** Compatibility constructor for plans without a cross-signature argument edge. */
+	public ContainerLocalRewritePlan(
+			String compilationUnitHandle,
+			String bindingKey,
+			String targetInterfaceType,
+			String targetImplementationType,
+			TargetContainerContract targetContract,
+			List&lt;LocalEdit&gt; edits) {
+<span class="fc" id="L45">		this(</span>
+				compilationUnitHandle,
+				bindingKey,
+				targetInterfaceType,
+				targetImplementationType,
+				targetContract,
+				edits,
+<span class="fc" id="L52">				List.of());</span>
+<span class="fc" id="L53">	}</span>
+
+<span class="fc" id="L55">	public ContainerLocalRewritePlan {</span>
+<span class="fc" id="L56">		compilationUnitHandle= requiredText(</span>
 				compilationUnitHandle, &quot;compilationUnitHandle&quot;); //$NON-NLS-1$
-<span class="fc" id="L38">		bindingKey= requiredText(bindingKey, &quot;bindingKey&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L39">		targetInterfaceType= requiredText(targetInterfaceType, &quot;targetInterfaceType&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L40">		targetImplementationType= requiredText(</span>
+<span class="fc" id="L58">		bindingKey= requiredText(bindingKey, &quot;bindingKey&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L59">		targetInterfaceType= requiredText(targetInterfaceType, &quot;targetInterfaceType&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L60">		targetImplementationType= requiredText(</span>
 				targetImplementationType, &quot;targetImplementationType&quot;); //$NON-NLS-1$
-<span class="fc" id="L42">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L43">		edits= List.copyOf(Objects.requireNonNull(edits, &quot;edits&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L44">		validateEdits(edits);</span>
-<span class="fc" id="L45">	}</span>
+<span class="fc" id="L62">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		edits= List.copyOf(Objects.requireNonNull(edits, &quot;edits&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		argumentTransfers= List.copyOf(</span>
+<span class="fc" id="L65">				Objects.requireNonNull(argumentTransfers, &quot;argumentTransfers&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L66">		validateEdits(edits, argumentTransfers);</span>
+<span class="fc" id="L67">	}</span>
 
 	/** One local semantic rewrite or verification anchored to source evidence. */
 	public record LocalEdit(
@@ -50,12 +72,31 @@ public record ContainerLocalRewritePlan(
 			int sourceStart,
 			int sourceLength) {
 
-<span class="fc" id="L53">		public LocalEdit {</span>
-<span class="fc" id="L54">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L55" title="2 of 4 branches missed.">			if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
-<span class="nc" id="L56">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">		public LocalEdit {</span>
+<span class="fc" id="L76">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L77">			validateSourceRange(sourceStart, sourceLength);</span>
+<span class="fc" id="L78">		}</span>
+	}
+
+	/**
+	 * Exact target of one unchanged argument whose parameter declaration migrates in
+	 * the same aggregate plan.
+	 */
+	public record ArgumentTransfer(
+			String methodJavaElementHandle,
+			int parameterIndex,
+			int sourceStart,
+			int sourceLength) {
+
+<span class="fc" id="L91">		public ArgumentTransfer {</span>
+<span class="fc" id="L92">			methodJavaElementHandle= requiredText(</span>
+					methodJavaElementHandle, &quot;methodJavaElementHandle&quot;); //$NON-NLS-1$
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (parameterIndex &lt; 0) {</span>
+<span class="nc" id="L95">				throw new IllegalArgumentException(</span>
+						&quot;parameterIndex must not be negative&quot;); //$NON-NLS-1$
 			}
-<span class="fc" id="L58">		}</span>
+<span class="fc" id="L98">			validateSourceRange(sourceStart, sourceLength);</span>
+<span class="fc" id="L99">		}</span>
 	}
 
 	/** Result that preserves rejection explanations instead of returning null. */
@@ -63,28 +104,28 @@ public record ContainerLocalRewritePlan(
 			Optional&lt;ContainerLocalRewritePlan&gt; plan,
 			List&lt;PlanningDiagnostic&gt; diagnostics) {
 
-<span class="fc" id="L66">		public PlanningResult {</span>
-<span class="fc" id="L67">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L68">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L69" title="1 of 4 branches missed.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
-<span class="nc" id="L70">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L107">		public PlanningResult {</span>
+<span class="fc" id="L108">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L109">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
+<span class="nc" id="L111">				throw new IllegalArgumentException(</span>
 						&quot;A local rewrite result must contain either one plan or diagnostics&quot;); //$NON-NLS-1$
 			}
-<span class="fc" id="L73">		}</span>
+<span class="fc" id="L114">		}</span>
 
-		public static PlanningResult ready(ContainerLocalRewritePlan plan) {
-<span class="fc" id="L76">			return new PlanningResult(Optional.of(plan), List.of());</span>
+		public static PlanningResult accepted(ContainerLocalRewritePlan plan) {
+<span class="fc" id="L117">			return new PlanningResult(Optional.of(plan), List.of());</span>
 		}
 
 		public static PlanningResult rejected(List&lt;PlanningDiagnostic&gt; diagnostics) {
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
-<span class="nc" id="L81">				throw new IllegalArgumentException(&quot;A rejected rewrite plan requires diagnostics&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
+<span class="nc" id="L122">				throw new IllegalArgumentException(&quot;A rejected rewrite plan requires diagnostics&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L83">			return new PlanningResult(Optional.empty(), diagnostics);</span>
+<span class="fc" id="L124">			return new PlanningResult(Optional.empty(), diagnostics);</span>
 		}
 
 		public boolean ready() {
-<span class="fc" id="L87">			return plan.isPresent();</span>
+<span class="fc" id="L128">			return plan.isPresent();</span>
 		}
 	}
 
@@ -93,57 +134,90 @@ public record ContainerLocalRewritePlan(
 			DiagnosticKind kind,
 			String message) {
 
-<span class="fc" id="L96">		public PlanningDiagnostic {</span>
-<span class="fc" id="L97">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L98">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L99">		}</span>
+<span class="fc" id="L137">		public PlanningDiagnostic {</span>
+<span class="fc" id="L138">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L139">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L140">		}</span>
 	}
 
-<span class="fc" id="L102">	public enum EditKind {</span>
-<span class="fc" id="L103">		CHANGE_LOCAL_DECLARATION,</span>
-<span class="fc" id="L104">		REPLACE_EMPTY_ARRAY_INITIALIZER,</span>
-<span class="fc" id="L105">		REMOVE_ARRAY_GROWTH,</span>
-<span class="fc" id="L106">		REPLACE_TAIL_WRITE_WITH_ADD,</span>
-<span class="fc" id="L107">		REPLACE_LENGTH_WITH_SIZE,</span>
-		/** Verifies an allowed use that requires no source edit. */
-<span class="fc" id="L109">		VERIFY_ENCOUNTER_ITERATION</span>
+<span class="fc" id="L143">	public enum EditKind {</span>
+<span class="fc" id="L144">		CHANGE_LOCAL_DECLARATION,</span>
+<span class="fc" id="L145">		REPLACE_EMPTY_ARRAY_INITIALIZER,</span>
+<span class="fc" id="L146">		REMOVE_ARRAY_GROWTH,</span>
+<span class="fc" id="L147">		REPLACE_TAIL_WRITE_WITH_ADD,</span>
+<span class="fc" id="L148">		REPLACE_LENGTH_WITH_SIZE,</span>
+		/** Verifies an allowed encounter-order traversal requiring no source edit. */
+<span class="fc" id="L150">		VERIFY_ENCOUNTER_ITERATION,</span>
+		/** Verifies an unchanged argument whose target signature migrates atomically. */
+<span class="fc" id="L152">		VERIFY_ARGUMENT_TRANSFER</span>
 	}
 
-<span class="fc" id="L112">	public enum DiagnosticKind {</span>
-<span class="fc" id="L113">		NOT_AUTOMATIC,</span>
-<span class="fc" id="L114">		FLOW_NOT_STRICTLY_LOCAL,</span>
-<span class="fc" id="L115">		SOURCE_BINDING_MISMATCH,</span>
-<span class="fc" id="L116">		UNSUPPORTED_TARGET,</span>
-<span class="fc" id="L117">		UNSUPPORTED_ELEMENT_DOMAIN,</span>
-<span class="fc" id="L118">		POSITIONAL_SEMANTICS,</span>
-<span class="fc" id="L119">		MISSING_APPEND_PATTERN,</span>
-<span class="fc" id="L120">		UNBALANCED_APPEND_PATTERN,</span>
-<span class="fc" id="L121">		UNSUPPORTED_EVIDENCE</span>
+<span class="fc" id="L155">	public enum DiagnosticKind {</span>
+<span class="fc" id="L156">		NOT_AUTOMATIC,</span>
+<span class="fc" id="L157">		FLOW_NOT_STRICTLY_LOCAL,</span>
+<span class="fc" id="L158">		SOURCE_BINDING_MISMATCH,</span>
+<span class="fc" id="L159">		UNSUPPORTED_TARGET,</span>
+<span class="fc" id="L160">		UNSUPPORTED_ELEMENT_DOMAIN,</span>
+<span class="fc" id="L161">		POSITIONAL_SEMANTICS,</span>
+<span class="fc" id="L162">		MISSING_APPEND_PATTERN,</span>
+<span class="fc" id="L163">		UNBALANCED_APPEND_PATTERN,</span>
+<span class="fc" id="L164">		ARGUMENT_TRANSFER_MISMATCH,</span>
+<span class="fc" id="L165">		UNSUPPORTED_EVIDENCE</span>
 	}
 
-	private static void validateEdits(List&lt;LocalEdit&gt; edits) {
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
-<span class="nc" id="L126">			throw new IllegalArgumentException(&quot;A local rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
+	private static void validateEdits(
+			List&lt;LocalEdit&gt; edits,
+			List&lt;ArgumentTransfer&gt; argumentTransfers) {
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
+<span class="nc" id="L172">			throw new IllegalArgumentException(&quot;A local rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L128">		Set&lt;EditKind&gt; kinds= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (LocalEdit edit : edits) {</span>
-<span class="fc" id="L130">			kinds.add(edit.kind());</span>
-<span class="fc" id="L131">		}</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_LOCAL_DECLARATION)</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">				|| !kinds.contains(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER)</span>
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REMOVE_ARRAY_GROWTH)</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REPLACE_TAIL_WRITE_WITH_ADD)) {</span>
-<span class="fc" id="L136">			throw new IllegalArgumentException(</span>
+<span class="fc" id="L174">		Set&lt;EditKind&gt; kinds= EnumSet.noneOf(EditKind.class);</span>
+<span class="fc" id="L175">		Set&lt;SourceRange&gt; expectedTransfers= HashSet.newHashSet(edits.size());</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		for (LocalEdit edit : edits) {</span>
+<span class="fc" id="L177">			kinds.add(edit.kind());</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">			if (edit.kind() == EditKind.VERIFY_ARGUMENT_TRANSFER) {</span>
+<span class="fc" id="L179">				expectedTransfers.add(new SourceRange(</span>
+<span class="fc" id="L180">						edit.sourceStart(), edit.sourceLength()));</span>
+			}
+<span class="fc" id="L182">		}</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_LOCAL_DECLARATION)</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">				|| !kinds.contains(EditKind.REPLACE_EMPTY_ARRAY_INITIALIZER)</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REMOVE_ARRAY_GROWTH)</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REPLACE_TAIL_WRITE_WITH_ADD)) {</span>
+<span class="fc" id="L187">			throw new IllegalArgumentException(</span>
 					&quot;A local append-array rewrite requires declaration, initializer, growth and append edits&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L139">	}</span>
+
+<span class="fc" id="L191">		Set&lt;SourceRange&gt; describedTransfers=</span>
+<span class="fc" id="L192">				HashSet.newHashSet(argumentTransfers.size());</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">		for (ArgumentTransfer transfer : argumentTransfers) {</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (!describedTransfers.add(new SourceRange(</span>
+<span class="fc" id="L195">					transfer.sourceStart(), transfer.sourceLength()))) {</span>
+<span class="nc" id="L196">				throw new IllegalArgumentException(</span>
+						&quot;Argument transfer source ranges must be unique&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L199">		}</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (!expectedTransfers.equals(describedTransfers)) {</span>
+<span class="nc" id="L201">			throw new IllegalArgumentException(</span>
+					&quot;Every argument verification edit requires one exact target description&quot;); //$NON-NLS-1$
+		}
+<span class="fc" id="L204">	}</span>
+
+	private static void validateSourceRange(int sourceStart, int sourceLength) {
+<span class="pc bpc" id="L207" title="2 of 4 branches missed.">		if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
+<span class="nc" id="L208">			throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L210">	}</span>
 
 	private static String requiredText(String value, String fieldName) {
-<span class="fc" id="L142">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L144">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L213">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L215">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L146">		return text;</span>
+<span class="fc" id="L217">		return text;</span>
+	}
+
+<span class="fc" id="L220">	private record SourceRange(int start, int length) {</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

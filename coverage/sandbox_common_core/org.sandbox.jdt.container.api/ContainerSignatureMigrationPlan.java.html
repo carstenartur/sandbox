@@ -16,8 +16,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Report-only plan describing which method signatures must change atomically for one
- * semantic container migration.
+ * Plan describing which method signatures must change atomically for one semantic
+ * container migration.
  */
 public record ContainerSignatureMigrationPlan(
 		TargetContainerContract targetContract,
@@ -34,7 +34,12 @@ public record ContainerSignatureMigrationPlan(
 <span class="pc bpc" id="L34" title="1 of 4 branches missed.">		if (status == PlanningStatus.REJECTED &amp;&amp; diagnostics.isEmpty()) {</span>
 <span class="nc" id="L35">			throw new IllegalArgumentException(&quot;A rejected signature plan requires diagnostics&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L37">	}</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">		if (status == PlanningStatus.CLOSED_SOURCE_AUTOMATIC</span>
+<span class="pc bpc" id="L38" title="2 of 4 branches missed.">				&amp;&amp; (groups.isEmpty() || !diagnostics.isEmpty())) {</span>
+<span class="nc" id="L39">			throw new IllegalArgumentException(</span>
+					&quot;A closed-source automatic signature plan requires groups without diagnostics&quot;); //$NON-NLS-1$
+		}
+<span class="fc" id="L42">	}</span>
 
 	/** One parameter or return position that must move as one hierarchy-wide unit. */
 	public record SignatureAtomicityGroup(
@@ -45,23 +50,23 @@ public record ContainerSignatureMigrationPlan(
 			BridgeFeasibility bridgeFeasibility,
 			String explanation) {
 
-<span class="fc" id="L48">		public SignatureAtomicityGroup {</span>
-<span class="fc" id="L49">			groupId= requiredText(groupId, &quot;groupId&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L50">			Objects.requireNonNull(positionKind, &quot;positionKind&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L51" title="1 of 4 branches missed.">			if (positionKind == PositionKind.PARAMETER &amp;&amp; signatureIndex &lt; 0) {</span>
-<span class="nc" id="L52">				throw new IllegalArgumentException(&quot;A parameter group requires an index&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L53">		public SignatureAtomicityGroup {</span>
+<span class="fc" id="L54">			groupId= requiredText(groupId, &quot;groupId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">			Objects.requireNonNull(positionKind, &quot;positionKind&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">			if (positionKind == PositionKind.PARAMETER &amp;&amp; signatureIndex &lt; 0) {</span>
+<span class="nc" id="L57">				throw new IllegalArgumentException(&quot;A parameter group requires an index&quot;); //$NON-NLS-1$</span>
 			}
-<span class="pc bpc" id="L54" title="1 of 4 branches missed.">			if (positionKind == PositionKind.RETURN &amp;&amp; signatureIndex != -1) {</span>
-<span class="nc" id="L55">				throw new IllegalArgumentException(&quot;A return group must use signature index -1&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">			if (positionKind == PositionKind.RETURN &amp;&amp; signatureIndex != -1) {</span>
+<span class="nc" id="L60">				throw new IllegalArgumentException(&quot;A return group must use signature index -1&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L57">			members= List.copyOf(Objects.requireNonNull(members, &quot;members&quot;)); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L58" title="1 of 2 branches missed.">			if (members.isEmpty()) {</span>
-<span class="nc" id="L59">				throw new IllegalArgumentException(&quot;A signature group requires members&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L62">			members= List.copyOf(Objects.requireNonNull(members, &quot;members&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">			if (members.isEmpty()) {</span>
+<span class="nc" id="L64">				throw new IllegalArgumentException(&quot;A signature group requires members&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L61">			validateUniqueMembers(members);</span>
-<span class="fc" id="L62">			Objects.requireNonNull(bridgeFeasibility, &quot;bridgeFeasibility&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L63">			explanation= requiredText(explanation, &quot;explanation&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L64">		}</span>
+<span class="fc" id="L66">			validateUniqueMembers(members);</span>
+<span class="fc" id="L67">			Objects.requireNonNull(bridgeFeasibility, &quot;bridgeFeasibility&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">			explanation= requiredText(explanation, &quot;explanation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		}</span>
 	}
 
 	/** One exact method declaration in an atomic signature group. */
@@ -71,13 +76,13 @@ public record ContainerSignatureMigrationPlan(
 			String compilationUnitHandle,
 			String flowNodeId) {
 
-<span class="fc" id="L74">		public SignatureMember {</span>
-<span class="fc" id="L75">			javaElementHandle= requiredText(javaElementHandle, &quot;javaElementHandle&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L76">			ownerKey= optionalText(ownerKey);</span>
-<span class="fc" id="L77">			compilationUnitHandle= requiredText(</span>
+<span class="fc" id="L79">		public SignatureMember {</span>
+<span class="fc" id="L80">			javaElementHandle= requiredText(javaElementHandle, &quot;javaElementHandle&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L81">			ownerKey= optionalText(ownerKey);</span>
+<span class="fc" id="L82">			compilationUnitHandle= requiredText(</span>
 					compilationUnitHandle, &quot;compilationUnitHandle&quot;); //$NON-NLS-1$
-<span class="fc" id="L79">			flowNodeId= requiredText(flowNodeId, &quot;flowNodeId&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L80">		}</span>
+<span class="fc" id="L84">			flowNodeId= requiredText(flowNodeId, &quot;flowNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L85">		}</span>
 	}
 
 	/** One reason why a complete atomic group could not be established. */
@@ -87,68 +92,72 @@ public record ContainerSignatureMigrationPlan(
 			String javaElementHandle,
 			String message) {
 
-<span class="fc" id="L90">		public SignatureDiagnostic {</span>
-<span class="fc" id="L91">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L92">			sourceNodeId= requiredText(sourceNodeId, &quot;sourceNodeId&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L93">			javaElementHandle= optionalText(javaElementHandle);</span>
-<span class="fc" id="L94">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L95">		}</span>
+<span class="fc" id="L95">		public SignatureDiagnostic {</span>
+<span class="fc" id="L96">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">			sourceNodeId= requiredText(sourceNodeId, &quot;sourceNodeId&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">			javaElementHandle= optionalText(javaElementHandle);</span>
+<span class="fc" id="L99">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L100">		}</span>
 	}
 
-<span class="fc" id="L98">	public enum PositionKind {</span>
-<span class="fc" id="L99">		PARAMETER,</span>
-<span class="fc" id="L100">		RETURN</span>
+<span class="fc" id="L103">	public enum PositionKind {</span>
+<span class="fc" id="L104">		PARAMETER,</span>
+<span class="fc" id="L105">		RETURN</span>
 	}
 
-<span class="fc" id="L103">	public enum BridgeFeasibility {</span>
+<span class="fc" id="L108">	public enum BridgeFeasibility {</span>
 		/** The JVM/Java signatures can coexist, but semantic adaptation requires policy. */
-<span class="fc" id="L105">		OVERLOAD_POSSIBLE_POLICY_REQUIRED,</span>
+<span class="fc" id="L110">		OVERLOAD_POSSIBLE_POLICY_REQUIRED,</span>
 		/** Java cannot overload two methods solely by return type. */
-<span class="fc" id="L107">		SAME_NAME_RETURN_BRIDGE_IMPOSSIBLE</span>
+<span class="fc" id="L112">		SAME_NAME_RETURN_BRIDGE_IMPOSSIBLE</span>
 	}
 
-<span class="fc" id="L110">	public enum PlanningStatus {</span>
-<span class="fc" id="L111">		NO_SIGNATURE_CHANGE,</span>
-<span class="fc" id="L112">		REPORT_ONLY,</span>
-<span class="fc" id="L113">		REJECTED</span>
+<span class="fc" id="L115">	public enum PlanningStatus {</span>
+<span class="fc" id="L116">		NO_SIGNATURE_CHANGE,</span>
+		/** All source declarations and uses are closed and may be changed directly. */
+<span class="fc" id="L118">		CLOSED_SOURCE_AUTOMATIC,</span>
+		/** Signatures are known, but compatibility or execution policy is still required. */
+<span class="fc" id="L120">		REPORT_ONLY,</span>
+<span class="fc" id="L121">		REJECTED</span>
 	}
 
-<span class="fc" id="L116">	public enum DiagnosticKind {</span>
-<span class="fc" id="L117">		FLOW_NOT_CLOSED,</span>
-<span class="fc" id="L118">		MISSING_SIGNATURE_NODE,</span>
-<span class="fc" id="L119">		AMBIGUOUS_SIGNATURE_NODE,</span>
-<span class="fc" id="L120">		MISSING_METHOD_HANDLE</span>
+<span class="fc" id="L124">	public enum DiagnosticKind {</span>
+<span class="fc" id="L125">		FLOW_NOT_CLOSED,</span>
+<span class="fc" id="L126">		MISSING_SIGNATURE_NODE,</span>
+<span class="fc" id="L127">		AMBIGUOUS_SIGNATURE_NODE,</span>
+<span class="fc" id="L128">		MISSING_METHOD_HANDLE,</span>
+<span class="fc" id="L129">		UNSUPPORTED_AUTOMATIC_GROUP</span>
 	}
 
 	private static void validateUniqueGroups(List&lt;SignatureAtomicityGroup&gt; groups) {
-<span class="fc" id="L124">		Set&lt;String&gt; ids= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">		for (SignatureAtomicityGroup group : groups) {</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if (!ids.add(group.groupId())) {</span>
-<span class="nc" id="L127">				throw new IllegalArgumentException(&quot;Duplicate signature group: &quot; + group.groupId()); //$NON-NLS-1$</span>
+<span class="fc" id="L133">		Set&lt;String&gt; ids= HashSet.newHashSet(groups.size());</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		for (SignatureAtomicityGroup group : groups) {</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">			if (!ids.add(group.groupId())) {</span>
+<span class="nc" id="L136">				throw new IllegalArgumentException(&quot;Duplicate signature group: &quot; + group.groupId()); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L129">		}</span>
-<span class="fc" id="L130">	}</span>
+<span class="fc" id="L138">		}</span>
+<span class="fc" id="L139">	}</span>
 
 	private static void validateUniqueMembers(List&lt;SignatureMember&gt; members) {
-<span class="fc" id="L133">		Set&lt;String&gt; handles= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">		for (SignatureMember member : members) {</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">			if (!handles.add(member.javaElementHandle())) {</span>
-<span class="nc" id="L136">				throw new IllegalArgumentException(</span>
-<span class="nc" id="L137">						&quot;Duplicate signature member: &quot; + member.javaElementHandle()); //$NON-NLS-1$</span>
+<span class="fc" id="L142">		Set&lt;String&gt; handles= HashSet.newHashSet(members.size());</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		for (SignatureMember member : members) {</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">			if (!handles.add(member.javaElementHandle())) {</span>
+<span class="nc" id="L145">				throw new IllegalArgumentException(</span>
+<span class="nc" id="L146">						&quot;Duplicate signature member: &quot; + member.javaElementHandle()); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L139">		}</span>
-<span class="fc" id="L140">	}</span>
+<span class="fc" id="L148">		}</span>
+<span class="fc" id="L149">	}</span>
 
 	private static String requiredText(String value, String fieldName) {
-<span class="fc" id="L143">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L145">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L154">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L147">		return text;</span>
+<span class="fc" id="L156">		return text;</span>
 	}
 
 	private static String optionalText(String value) {
-<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value.strip(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">		return value == null ? &quot;&quot; : value.strip(); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

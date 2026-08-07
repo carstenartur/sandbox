@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UniqueSequenceLocalRewriteResolver.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">UniqueSequenceLocalRewriteResolver.java</span></div><h1>UniqueSequenceLocalRewriteResolver.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+import org.sandbox.jdt.container.analysis.UniqueSequencePattern;
+import org.sandbox.jdt.container.analysis.UniqueSequencePattern.GuardedAdd;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
+import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.EditKind;
+
+/** Re-resolves and verifies one local unique-sequence rewrite plan. */
+final class UniqueSequenceLocalRewriteResolver {
+
+	private static final String PLUGIN_ID= &quot;sandbox_common&quot;; //$NON-NLS-1$
+	private static final String ARRAY_LIST= &quot;java.util.ArrayList&quot;; //$NON-NLS-1$
+	private static final String LIST= &quot;java.util.List&quot;; //$NON-NLS-1$
+	private static final String STRING= &quot;java.lang.String&quot;; //$NON-NLS-1$
+	private static final String SET= &quot;java.util.Set&quot;; //$NON-NLS-1$
+	private static final String LINKED_HASH_SET= &quot;java.util.LinkedHashSet&quot;; //$NON-NLS-1$
+
+	private UniqueSequenceLocalRewriteResolver() {
+	}
+
+	static ResolvedPlan resolve(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			UniqueSequenceLocalRewritePlan plan) throws CoreException {
+<span class="fc" id="L66">		Objects.requireNonNull(unit, &quot;unit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">		Objects.requireNonNull(root, &quot;root&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (!plan.compilationUnitHandle().equals(unit.getHandleIdentifier())) {</span>
+<span class="nc" id="L70">			throw stale(unit, &quot;compilation-unit handle changed&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (!isExpectedTarget(plan)) {</span>
+<span class="nc" id="L73">			throw stale(unit, &quot;target strategy changed&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L76">		CollectedAst collected= collect(root, plan.bindingKey());</span>
+<span class="fc" id="L77">		VariableDeclarationFragment fragment= collected.declaration();</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (fragment == null</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				|| !(declaration.getType() instanceof ParameterizedType declarationType)</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">				|| declarationType.typeArguments().size() != 1</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">				|| !isSupportedSourceType(declaration.getType().resolveBinding())</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">				|| !hasStableHash(declarationType)</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				|| !(fragment.getInitializer() instanceof ClassInstanceCreation initializer)</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">				|| !isEmptyArrayList(initializer)) {</span>
+<span class="nc" id="L87">			throw stale(unit,</span>
+<span class="nc" id="L88">					&quot;local list declaration, element contract, or empty ArrayList initializer changed&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L91">		List&lt;GuardedAdd&gt; guards= collected.guards().stream()</span>
+<span class="pc" id="L92">				.sorted(Comparator.comparingInt(guard -&gt; guard.statement().getStartPosition()))</span>
+<span class="fc" id="L93">				.toList();</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (guards.size() != editCount(plan, EditKind.REPLACE_DUPLICATE_GUARD)) {</span>
+<span class="fc" id="L95">			throw stale(unit, &quot;duplicate-guard occurrence count changed&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L98">		Set&lt;MethodInvocation&gt; recognizedInvocations=</span>
+<span class="fc" id="L99">				java.util.Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		for (GuardedAdd guard : guards) {</span>
+<span class="fc" id="L101">			recognizedInvocations.add(guard.contains());</span>
+<span class="fc" id="L102">			recognizedInvocations.add(guard.add());</span>
+		}
+
+<span class="fc" id="L105">		int encounterIterations= 0;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		for (SimpleName reference : collected.references()) {</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">			if (fragment.getName() == reference) {</span>
+<span class="fc" id="L108">				continue;</span>
+			}
+<span class="fc" id="L110">			ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			if (parent instanceof MethodInvocation invocation</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">					&amp;&amp; invocation.getExpression() == reference) {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">				if (recognizedInvocations.contains(invocation)</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">						|| isReadOnlyCollectionQuery(invocation)) {</span>
+<span class="fc" id="L115">					continue;</span>
+				}
+			}
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">			if (parent instanceof EnhancedForStatement enhanced</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">					&amp;&amp; enhanced.getExpression() == reference) {</span>
+<span class="fc" id="L120">				encounterIterations++;</span>
+<span class="fc" id="L121">				continue;</span>
+			}
+<span class="nc" id="L123">			throw stale(unit, &quot;unexpected use of local sequence binding at source offset &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L124">					+ reference.getStartPosition());</span>
+		}
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (encounterIterations != editCount(plan, EditKind.VERIFY_ENCOUNTER_ITERATION)) {</span>
+<span class="nc" id="L127">			throw stale(unit, &quot;encounter-iteration occurrence count changed&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L130">		return new ResolvedPlan(</span>
+<span class="fc" id="L131">				plan,</span>
+<span class="fc" id="L132">				declaration,</span>
+<span class="fc" id="L133">				fragment,</span>
+<span class="fc" id="L134">				declarationType,</span>
+<span class="fc" id="L135">				initializer,</span>
+<span class="fc" id="L136">				guards);</span>
+	}
+
+	private static boolean isExpectedTarget(UniqueSequenceLocalRewritePlan plan) {
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		return SET.equals(plan.targetInterfaceType())</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">				&amp;&amp; LINKED_HASH_SET.equals(plan.targetImplementationType())</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().shape() == ContainerShape.SET</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().mutability() == Mutability.MUTABLE</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().orderRequirement() == OrderRequirement.ENCOUNTER</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().uniquenessRequirement()</span>
+<span class="fc" id="L146">						== UniquenessRequirement.REQUIRED;</span>
+	}
+
+	private static CollectedAst collect(
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			String bindingKey) {
+<span class="fc" id="L152">		List&lt;SimpleName&gt; references= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L153">		List&lt;GuardedAdd&gt; guards= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L154">		VariableDeclarationFragment[] declaration= { null };</span>
+<span class="fc" id="L155">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc" id="L158">				IVariableBinding binding= variableBinding(name.resolveBinding());</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (binding == null</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">						|| !bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L161">					return true;</span>
+				}
+<span class="fc" id="L163">				references.add(name);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">				if (name.getParent() instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">						&amp;&amp; fragment.getName() == name) {</span>
+<span class="fc" id="L166">					declaration[0]= fragment;</span>
+				}
+<span class="fc" id="L168">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(IfStatement statement) {
+<span class="fc" id="L173">				UniqueSequencePattern.match(statement, bindingKey).ifPresent(guards::add);</span>
+<span class="fc" id="L174">				return true;</span>
+			}
+		});
+<span class="fc" id="L177">		return new CollectedAst(declaration[0], references, guards);</span>
+	}
+
+	private static boolean isSupportedSourceType(ITypeBinding type) {
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L182">			return false;</span>
+		}
+<span class="fc" id="L184">		String name= type.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L185" title="3 of 4 branches missed.">		return LIST.equals(name) || ARRAY_LIST.equals(name);</span>
+	}
+
+	private static boolean hasStableHash(ParameterizedType declarationType) {
+<span class="fc" id="L189">		Type elementType= (Type) declarationType.typeArguments().get(0);</span>
+<span class="fc" id="L190">		ITypeBinding binding= elementType.resolveBinding();</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		return binding != null</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">				&amp;&amp; (binding.isEnum()</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">						|| STRING.equals(binding.getErasure().getQualifiedName()));</span>
+	}
+
+	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
+<span class="fc" id="L197">		ITypeBinding type= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		return type != null</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				&amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; creation.arguments().isEmpty()</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
+	}
+
+	private static boolean isReadOnlyCollectionQuery(MethodInvocation invocation) {
+<span class="fc" id="L205">		String method= invocation.getName().getIdentifier();</span>
+<span class="pc bpc" id="L206" title="3 of 4 branches missed.">		return (&quot;size&quot;.equals(method) || &quot;isEmpty&quot;.equals(method)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().isEmpty();</span>
+	}
+
+	private static int editCount(
+			UniqueSequenceLocalRewritePlan plan,
+			EditKind kind) {
+<span class="fc" id="L213">		return (int) plan.edits().stream()</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">				.filter(edit -&gt; edit.kind() == kind)</span>
+<span class="fc" id="L215">				.count();</span>
+	}
+
+	private static IVariableBinding variableBinding(IBinding binding) {
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		return binding instanceof IVariableBinding variable ? variable : null;</span>
+	}
+
+	private static CoreException stale(ICompilationUnit unit, String reason) {
+<span class="fc" id="L223">		return new CoreException(new Status(</span>
+<span class="fc" id="L224">				IStatus.ERROR,</span>
+<span class="fc" id="L225">				PLUGIN_ID,</span>
+<span class="fc" id="L226">				&quot;Stale unique-sequence rewrite plan for &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L227">						+ unit.getElementName() + &quot;: &quot; + reason)); //$NON-NLS-1$</span>
+	}
+
+	static record ResolvedPlan(
+			UniqueSequenceLocalRewritePlan plan,
+			VariableDeclarationStatement declaration,
+			VariableDeclarationFragment fragment,
+			ParameterizedType declarationType,
+			ClassInstanceCreation initializer,
+			List&lt;GuardedAdd&gt; guards) {
+
+<span class="fc" id="L238">		ResolvedPlan {</span>
+<span class="fc" id="L239">			guards= List.copyOf(guards);</span>
+<span class="fc" id="L240">		}</span>
+	}
+
+	private record CollectedAst(
+			VariableDeclarationFragment declaration,
+			List&lt;SimpleName&gt; references,
+			List&lt;GuardedAdd&gt; guards) {
+
+<span class="fc" id="L248">		CollectedAst {</span>
+<span class="fc" id="L249">			references= List.copyOf(references);</span>
+<span class="fc" id="L250">			guards= List.copyOf(guards);</span>
+<span class="fc" id="L251">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

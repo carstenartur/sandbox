@@ -43,20 +43,22 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 <span class="fc" id="L43">	public enum Kind {</span>
 <span class="fc" id="L44">		ARRAY_GROWTH,</span>
 <span class="fc" id="L45">		APPEND_WRITE,</span>
-<span class="fc" id="L46">		REFERENCE_COMPONENT,</span>
-<span class="fc" id="L47">		ARRAY_LENGTH_READ,</span>
-<span class="fc" id="L48">		INDEXED_READ,</span>
-<span class="fc" id="L49">		INDEXED_WRITE,</span>
-<span class="fc" id="L50">		ENCOUNTER_ITERATION,</span>
-<span class="fc" id="L51">		LOCAL_USAGE_COMPLETE,</span>
-<span class="fc" id="L52">		FLOW_CONTINUATION_ROOT,</span>
-<span class="fc" id="L53">		UNSUPPORTED_CONTINUATION,</span>
-<span class="fc" id="L54">		CAPTURED_USAGE,</span>
-<span class="fc" id="L55">		UNSAFE_ESCAPE,</span>
-<span class="fc" id="L56">		ARRAY_IDENTITY,</span>
-<span class="fc" id="L57">		UNCLASSIFIED_USAGE,</span>
-<span class="fc" id="L58">		UNRESOLVED_BINDING,</span>
-<span class="fc" id="L59">		REJECTION_BOUNDARY</span>
+<span class="fc" id="L46">		DUPLICATE_SUPPRESSION,</span>
+<span class="fc" id="L47">		REFERENCE_COMPONENT,</span>
+<span class="fc" id="L48">		HASH_STABLE_COMPONENT,</span>
+<span class="fc" id="L49">		ARRAY_LENGTH_READ,</span>
+<span class="fc" id="L50">		INDEXED_READ,</span>
+<span class="fc" id="L51">		INDEXED_WRITE,</span>
+<span class="fc" id="L52">		ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L53">		LOCAL_USAGE_COMPLETE,</span>
+<span class="fc" id="L54">		FLOW_CONTINUATION_ROOT,</span>
+<span class="fc" id="L55">		UNSUPPORTED_CONTINUATION,</span>
+<span class="fc" id="L56">		CAPTURED_USAGE,</span>
+<span class="fc" id="L57">		UNSAFE_ESCAPE,</span>
+<span class="fc" id="L58">		ARRAY_IDENTITY,</span>
+<span class="fc" id="L59">		UNCLASSIFIED_USAGE,</span>
+<span class="fc" id="L60">		UNRESOLVED_BINDING,</span>
+<span class="fc" id="L61">		REJECTION_BOUNDARY</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

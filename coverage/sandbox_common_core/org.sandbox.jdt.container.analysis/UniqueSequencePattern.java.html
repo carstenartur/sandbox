@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UniqueSequencePattern.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">UniqueSequencePattern.java</span></div><h1>UniqueSequencePattern.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import static org.sandbox.jdt.container.analysis.ContainerAstFacts.unwrap;
+import static org.sandbox.jdt.container.analysis.ContainerAstFacts.variableBinding;
+
+import java.util.Objects;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+
+/**
+ * Shared AST facts for the deliberately narrow
+ * {@code if (!values.contains(value)) values.add(value)} pattern.
+ *
+ * &lt;p&gt;The matcher proves only the local syntactic relationship. The surrounding
+ * analyzer must still classify every use of the collection binding before a
+ * migration may be offered.&lt;/p&gt;
+ */
+public final class UniqueSequencePattern {
+
+	private UniqueSequencePattern() {
+		// Utility class.
+	}
+
+	/**
+	 * Matches one duplicate-suppressing insertion for the supplied collection binding.
+	 *
+	 * @param statement candidate conditional
+	 * @param bindingKey stable collection binding key
+	 * @return the matched guard and insertion, or an empty result
+	 */
+	public static Optional&lt;GuardedAdd&gt; match(
+			IfStatement statement,
+			String bindingKey) {
+<span class="fc" id="L60">		Objects.requireNonNull(statement, &quot;statement&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L61" title="3 of 6 branches missed.">		if (bindingKey == null || bindingKey.isBlank() || statement.getElseStatement() != null) {</span>
+<span class="nc" id="L62">			return Optional.empty();</span>
+		}
+
+<span class="fc" id="L65">		Expression condition= unwrap(statement.getExpression());</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">		if (!(condition instanceof PrefixExpression negation)</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">				|| negation.getOperator() != PrefixExpression.Operator.NOT</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">				|| !(unwrap(negation.getOperand()) instanceof MethodInvocation contains)</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">				|| !isInvocation(contains, &quot;contains&quot;, bindingKey) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">				|| contains.arguments().size() != 1) {</span>
+<span class="fc" id="L71">			return Optional.empty();</span>
+		}
+
+<span class="fc" id="L74">		MethodInvocation add= singleInvocation(statement.getThenStatement());</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">		if (add == null</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">				|| !isInvocation(add, &quot;add&quot;, bindingKey) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">				|| add.arguments().size() != 1) {</span>
+<span class="nc" id="L78">			return Optional.empty();</span>
+		}
+
+<span class="fc" id="L81">		Expression testedValue= (Expression) contains.arguments().get(0);</span>
+<span class="fc" id="L82">		Expression insertedValue= (Expression) add.arguments().get(0);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (!sameStableValue(testedValue, insertedValue)) {</span>
+<span class="fc" id="L84">			return Optional.empty();</span>
+		}
+<span class="fc" id="L86">		return Optional.of(new GuardedAdd(statement, contains, add, insertedValue));</span>
+	}
+
+	/** Returns the nearest matching guarded add enclosing the supplied AST node. */
+	public static Optional&lt;GuardedAdd&gt; enclosing(
+			ASTNode node,
+			String bindingKey) {
+<span class="fc" id="L93">		ASTNode current= Objects.requireNonNull(node, &quot;node&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof MethodDeclaration)) {</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">			if (current instanceof IfStatement statement) {</span>
+<span class="fc" id="L96">				Optional&lt;GuardedAdd&gt; match= match(statement, bindingKey);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">				if (match.isPresent()) {</span>
+<span class="fc" id="L98">					GuardedAdd guardedAdd= match.get();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">					if (isDescendant(node, guardedAdd.contains())</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">							|| isDescendant(node, guardedAdd.add())) {</span>
+<span class="fc" id="L101">						return match;</span>
+					}
+				}
+			}
+<span class="fc" id="L105">			current= current.getParent();</span>
+		}
+<span class="fc" id="L107">		return Optional.empty();</span>
+	}
+
+	/** Returns whether the invocation receiver resolves to the supplied binding. */
+	public static boolean isInvocation(
+			MethodInvocation invocation,
+			String methodName,
+			String bindingKey) {
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		return methodName.equals(invocation.getName().getIdentifier())</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				&amp;&amp; invocation.getExpression() != null</span>
+<span class="fc" id="L117">				&amp;&amp; variableBinding(unwrap(invocation.getExpression()))</span>
+<span class="fc" id="L118">						.map(IVariableBinding::getVariableDeclaration)</span>
+<span class="fc" id="L119">						.map(IVariableBinding::getKey)</span>
+<span class="fc" id="L120">						.filter(bindingKey::equals)</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">						.isPresent();</span>
+	}
+
+	private static MethodInvocation singleInvocation(Statement statement) {
+<span class="fc" id="L125">		Statement effective= statement;</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (effective instanceof Block block) {</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (block.statements().size() != 1</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">					|| !(block.statements().get(0) instanceof Statement nested)) {</span>
+<span class="nc" id="L129">				return null;</span>
+			}
+<span class="fc" id="L131">			effective= nested;</span>
+		}
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if (!(effective instanceof ExpressionStatement expressionStatement)</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">				|| !(unwrap(expressionStatement.getExpression()) instanceof MethodInvocation invocation)) {</span>
+<span class="nc" id="L135">			return null;</span>
+		}
+<span class="fc" id="L137">		return invocation;</span>
+	}
+
+	private static boolean sameStableValue(Expression first, Expression second) {
+<span class="fc" id="L141">		Expression left= unwrap(first);</span>
+<span class="fc" id="L142">		Expression right= unwrap(second);</span>
+<span class="pc bpc" id="L143" title="2 of 4 branches missed.">		if (left instanceof SimpleName leftName &amp;&amp; right instanceof SimpleName rightName) {</span>
+<span class="fc" id="L144">			return sameStableLocalValue(leftName, rightName);</span>
+		}
+<span class="nc bnc" id="L146" title="All 4 branches missed.">		if (left instanceof StringLiteral leftLiteral &amp;&amp; right instanceof StringLiteral rightLiteral) {</span>
+<span class="nc" id="L147">			return leftLiteral.getLiteralValue().equals(rightLiteral.getLiteralValue());</span>
+		}
+<span class="nc bnc" id="L149" title="All 4 branches missed.">		if (left instanceof NumberLiteral leftLiteral &amp;&amp; right instanceof NumberLiteral rightLiteral) {</span>
+<span class="nc" id="L150">			return leftLiteral.getToken().equals(rightLiteral.getToken());</span>
+		}
+<span class="nc bnc" id="L152" title="All 4 branches missed.">		if (left instanceof CharacterLiteral leftLiteral</span>
+<span class="nc" id="L153">				&amp;&amp; right instanceof CharacterLiteral rightLiteral) {</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">			return leftLiteral.charValue() == rightLiteral.charValue();</span>
+		}
+<span class="nc bnc" id="L156" title="All 4 branches missed.">		if (left instanceof BooleanLiteral leftLiteral</span>
+<span class="nc" id="L157">				&amp;&amp; right instanceof BooleanLiteral rightLiteral) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">			return leftLiteral.booleanValue() == rightLiteral.booleanValue();</span>
+		}
+<span class="nc bnc" id="L160" title="All 4 branches missed.">		return left instanceof NullLiteral &amp;&amp; right instanceof NullLiteral;</span>
+	}
+
+	private static boolean sameStableLocalValue(
+			SimpleName first,
+			SimpleName second) {
+<span class="fc" id="L166">		IVariableBinding firstBinding= variableBinding(first).orElse(null);</span>
+<span class="fc" id="L167">		IVariableBinding secondBinding= variableBinding(second).orElse(null);</span>
+<span class="pc bpc" id="L168" title="2 of 4 branches missed.">		return firstBinding != null &amp;&amp; secondBinding != null</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">				&amp;&amp; sameLocalValue(firstBinding, secondBinding);</span>
+	}
+
+	private static boolean sameLocalValue(
+			IVariableBinding first,
+			IVariableBinding second) {
+<span class="fc" id="L175">		IVariableBinding firstDeclaration= first.getVariableDeclaration();</span>
+<span class="fc" id="L176">		IVariableBinding secondDeclaration= second.getVariableDeclaration();</span>
+<span class="pc bpc" id="L177" title="1 of 4 branches missed.">		if (firstDeclaration.isField() || secondDeclaration.isField()) {</span>
+<span class="fc" id="L178">			return false;</span>
+		}
+<span class="fc" id="L180">		String firstKey= firstDeclaration.getKey();</span>
+<span class="fc" id="L181">		String secondKey= secondDeclaration.getKey();</span>
+<span class="pc bpc" id="L182" title="1 of 4 branches missed.">		return firstKey != null &amp;&amp; firstKey.equals(secondKey);</span>
+	}
+
+	private static boolean isDescendant(ASTNode candidate, ASTNode ancestor) {
+<span class="fc" id="L186">		ASTNode current= candidate;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">			if (current == ancestor) {</span>
+<span class="fc" id="L189">				return true;</span>
+			}
+<span class="fc" id="L191">			current= current.getParent();</span>
+		}
+<span class="fc" id="L193">		return false;</span>
+	}
+
+	/** One matched membership guard and its sole insertion. */
+	public record GuardedAdd(
+			IfStatement statement,
+			MethodInvocation contains,
+			MethodInvocation add,
+			Expression value) {
+
+<span class="fc" id="L203">		public GuardedAdd {</span>
+<span class="fc" id="L204">			Objects.requireNonNull(statement, &quot;statement&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L205">			Objects.requireNonNull(contains, &quot;contains&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L206">			Objects.requireNonNull(add, &quot;add&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L207">			Objects.requireNonNull(value, &quot;value&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L208">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

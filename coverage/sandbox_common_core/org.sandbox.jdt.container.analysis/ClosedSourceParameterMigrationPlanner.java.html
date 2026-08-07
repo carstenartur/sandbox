@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClosedSourceParameterMigrationPlanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">ClosedSourceParameterMigrationPlanner.java</span></div><h1>ClosedSourceParameterMigrationPlanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+
+import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
+import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan.DiagnosticKind;
+import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan.PlanningDiagnostic;
+import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan.PlanningResult;
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowComponent.LocatedFlowEdge;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
+import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PositionKind;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAtomicityGroup;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureMember;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+
+/**
+ * Builds the first aggregate two-compilation-unit caller/parameter rewrite plan.
+ *
+ * &lt;p&gt;The accepted topology is deliberately narrow: one local array source, one direct
+ * {@code ARGUMENT_TO_PARAMETER} edge and one source-resolved parameter declaration in
+ * a different compilation unit. The unchanged argument is tied to the exact target
+ * method handle and parameter index before either member plan is emitted.&lt;/p&gt;
+ */
+<span class="fc" id="L48">public final class ClosedSourceParameterMigrationPlanner {</span>
+
+<span class="fc" id="L50">	private final ContainerLocalRewritePlanner localPlanner=</span>
+			new ContainerLocalRewritePlanner();
+<span class="fc" id="L52">	private final ContainerParameterRewritePlanner parameterPlanner=</span>
+			new ContainerParameterRewritePlanner();
+
+	/** Builds one immutable aggregate plan or complete rejection diagnostics. */
+	public PlanningResult plan(
+			ContainerFlowComponent component,
+			ContainerSignatureMigrationPlan signaturePlan,
+			ContainerRecommendation recommendation,
+			ContainerMigrationReadiness readiness,
+			List&lt;ContainerUsageProfile&gt; memberProfiles) {
+<span class="fc" id="L62">		Objects.requireNonNull(component, &quot;component&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">		Objects.requireNonNull(signaturePlan, &quot;signaturePlan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L65">		Objects.requireNonNull(readiness, &quot;readiness&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L66">		memberProfiles= List.copyOf(</span>
+<span class="fc" id="L67">				Objects.requireNonNull(memberProfiles, &quot;memberProfiles&quot;)); //$NON-NLS-1$</span>
+
+<span class="fc" id="L69">		List&lt;PlanningDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L70">		Topology topology= topology(component);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		if (topology == null) {</span>
+<span class="nc" id="L72">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.UNSUPPORTED_FLOW_TOPOLOGY,
+					&quot;The first aggregate rewrite requires one local caller and one direct source parameter edge.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L75">			return PlanningResult.rejected(diagnostics);</span>
+		}
+<span class="fc" id="L77">		Signature signature= signature(signaturePlan, topology.parameter());</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (signature == null) {</span>
+<span class="nc" id="L79">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.SIGNATURE_PLAN_MISMATCH,
+					&quot;The automatic signature plan does not contain the exact parameter member.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L82">			return PlanningResult.rejected(diagnostics);</span>
+		}
+<span class="fc" id="L84">		ContainerUsageProfile callerProfile= profile(</span>
+<span class="fc" id="L85">				memberProfiles, topology.caller().bindingKey());</span>
+<span class="fc" id="L86">		ContainerUsageProfile parameterProfile= profile(</span>
+<span class="fc" id="L87">				memberProfiles, topology.parameter().bindingKey());</span>
+<span class="pc bpc" id="L88" title="2 of 4 branches missed.">		if (callerProfile == null || parameterProfile == null) {</span>
+<span class="nc" id="L89">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.PROFILE_NOT_FOUND,
+					&quot;Caller and parameter profiles must both be present exactly once.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L92">			return PlanningResult.rejected(diagnostics);</span>
+		}
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (!recommendation.sourceProfile().equals(callerProfile)</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">				|| !recommendation.targetContract().equals(signaturePlan.targetContract())) {</span>
+<span class="nc" id="L96">			diagnostics.add(diagnostic(</span>
+					DiagnosticKind.RECOMMENDATION_MISMATCH,
+					&quot;The recommendation does not describe the exact aggregate caller and signature target.&quot;)); //$NON-NLS-1$
+<span class="nc" id="L99">			return PlanningResult.rejected(diagnostics);</span>
+		}
+
+<span class="fc" id="L102">		ArgumentTransfer transfer= new ArgumentTransfer(</span>
+<span class="fc" id="L103">				signature.member().javaElementHandle(),</span>
+<span class="fc" id="L104">				signature.group().signatureIndex(),</span>
+<span class="fc" id="L105">				topology.edge().sourceStart(),</span>
+<span class="fc" id="L106">				topology.edge().sourceLength());</span>
+<span class="fc" id="L107">		ContainerLocalRewritePlan.PlanningResult callerResult= localPlanner.plan(</span>
+<span class="fc" id="L108">				localComponent(topology.caller()),</span>
+				recommendation,
+				readiness,
+<span class="fc" id="L111">				List.of(transfer));</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		if (!callerResult.ready()) {</span>
+<span class="nc" id="L113">			callerResult.diagnostics().forEach(item -&gt; diagnostics.add(diagnostic(</span>
+					DiagnosticKind.LOCAL_REWRITE_REJECTED,
+<span class="nc" id="L115">					item.kind() + &quot;: &quot; + item.message()))); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L117">		ContainerParameterRewritePlan.PlanningResult parameterResult=</span>
+<span class="fc" id="L118">				parameterPlanner.plan(</span>
+						component,
+						signaturePlan,
+<span class="fc" id="L121">						signature.group(),</span>
+<span class="fc" id="L122">						signature.member(),</span>
+						parameterProfile,
+						readiness);
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (!parameterResult.ready()) {</span>
+<span class="nc" id="L126">			parameterResult.diagnostics().forEach(item -&gt; diagnostics.add(diagnostic(</span>
+					DiagnosticKind.PARAMETER_REWRITE_REJECTED,
+<span class="nc" id="L128">					item.kind() + &quot;: &quot; + item.message()))); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">		if (!diagnostics.isEmpty()) {</span>
+<span class="nc" id="L131">			return PlanningResult.rejected(diagnostics);</span>
+		}
+
+<span class="fc" id="L134">		ContainerLocalRewritePlan callerPlan= callerResult.plan().orElseThrow();</span>
+<span class="fc" id="L135">		ContainerParameterRewritePlan parameterPlan=</span>
+<span class="fc" id="L136">				parameterResult.plan().orElseThrow();</span>
+<span class="fc" id="L137">		if (callerPlan.compilationUnitHandle()</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">				.equals(parameterPlan.compilationUnitHandle())) {</span>
+<span class="nc" id="L139">			return PlanningResult.rejected(List.of(diagnostic(</span>
+					DiagnosticKind.SAME_COMPILATION_UNIT,
+					&quot;The first aggregate slice requires caller and parameter in distinct units.&quot;))); //$NON-NLS-1$
+		}
+<span class="fc" id="L143">		return PlanningResult.accepted(new ClosedSourceParameterMigrationPlan(</span>
+<span class="fc" id="L144">				recommendation.targetContract(), callerPlan, parameterPlan));</span>
+	}
+
+	private static Topology topology(ContainerFlowComponent component) {
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">				|| !component.diagnostics().isEmpty()</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">				|| component.nodes().size() != 2</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">				|| component.edges().size() != 1) {</span>
+<span class="nc" id="L152">			return null;</span>
+		}
+<span class="fc" id="L154">		LocatedFlowEdge edge= component.edges().get(0);</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (edge.kind() != EdgeKind.ARGUMENT_TO_PARAMETER) {</span>
+<span class="nc" id="L156">			return null;</span>
+		}
+<span class="fc" id="L158">		FlowNode source= component.node(edge.sourceNodeId()).orElse(null);</span>
+<span class="fc" id="L159">		FlowNode target= component.node(edge.targetNodeId()).orElse(null);</span>
+<span class="pc bpc" id="L160" title="2 of 4 branches missed.">		if (source == null || target == null</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				|| source.kind() != NodeKind.LOCAL_VARIABLE</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				|| target.kind() != NodeKind.PARAMETER</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">				|| !source.sourceResolved()</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				|| !target.sourceResolved()</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				|| source.compilationUnitHandle().equals(target.compilationUnitHandle())</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">				|| !edge.compilationUnitHandle().equals(source.compilationUnitHandle())) {</span>
+<span class="nc" id="L167">			return null;</span>
+		}
+<span class="fc" id="L169">		return new Topology(source, target, edge);</span>
+	}
+
+	private static Signature signature(
+			ContainerSignatureMigrationPlan plan,
+			FlowNode parameter) {
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">		if (plan.status() != PlanningStatus.CLOSED_SOURCE_AUTOMATIC</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				|| plan.groups().size() != 1) {</span>
+<span class="nc" id="L177">			return null;</span>
+		}
+<span class="fc" id="L179">		SignatureAtomicityGroup group= plan.groups().get(0);</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (group.positionKind() != PositionKind.PARAMETER</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				|| group.signatureIndex() != parameter.signatureIndex()</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				|| group.members().size() != 1) {</span>
+<span class="nc" id="L183">			return null;</span>
+		}
+<span class="fc" id="L185">		SignatureMember member= group.members().get(0);</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		return member.flowNodeId().equals(parameter.stableId())</span>
+<span class="fc" id="L187">				&amp;&amp; member.compilationUnitHandle()</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">						.equals(parameter.compilationUnitHandle())</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">				&amp;&amp; member.javaElementHandle().equals(parameter.javaElementHandle())</span>
+<span class="pc" id="L190">						? new Signature(group, member) : null;</span>
+	}
+
+	private static ContainerUsageProfile profile(
+			Collection&lt;ContainerUsageProfile&gt; profiles,
+			String bindingKey) {
+<span class="fc" id="L196">		List&lt;ContainerUsageProfile&gt; matches= profiles.stream()</span>
+<span class="fc" id="L197">				.filter(profile -&gt; profile.identity().bindingKey().equals(bindingKey))</span>
+<span class="fc" id="L198">				.toList();</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		return matches.size() == 1 ? matches.get(0) : null;</span>
+	}
+
+	private static ContainerFlowComponent localComponent(FlowNode local) {
+<span class="fc" id="L203">		return new ContainerFlowComponent(</span>
+<span class="fc" id="L204">				local.stableId(),</span>
+<span class="fc" id="L205">				List.of(local),</span>
+<span class="fc" id="L206">				List.of(),</span>
+				ClosureStatus.LOCAL_CLOSED,
+<span class="fc" id="L208">				List.of());</span>
+	}
+
+	private static PlanningDiagnostic diagnostic(
+			DiagnosticKind kind,
+			String message) {
+<span class="nc" id="L214">		return new PlanningDiagnostic(kind, message);</span>
+	}
+
+<span class="fc" id="L217">	private record Topology(</span>
+			FlowNode caller,
+			FlowNode parameter,
+			LocatedFlowEdge edge) {
+	}
+
+<span class="fc" id="L223">	private record Signature(</span>
+			SignatureAtomicityGroup group,
+			SignatureMember member) {
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

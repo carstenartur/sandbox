@@ -44,6 +44,7 @@ public final class HintFile {
 	private String description;
 	private Severity severity;
 	private int minJavaVersion;
+	private HintBindingPolicy bindingPolicy;
 	private List&lt;String&gt; tags;
 	private final List&lt;TransformationRule&gt; rules;
 	private final List&lt;String&gt; includes;
@@ -55,15 +56,15 @@ public final class HintFile {
 	/**
 	 * Creates a new empty hint file.
 	 */
-<span class="fc" id="L58">	public HintFile() {</span>
-<span class="fc" id="L59">		this.tags = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L60">		this.rules = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L61">		this.includes = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L62">		this.embeddedJavaBlocks = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L63">		this.severity = Severity.INFO;</span>
-<span class="fc" id="L64">		this.suppressWarnings = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L65">		this.treeKindNodeTypes = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L66">	}</span>
+<span class="fc" id="L59">	public HintFile() {</span>
+<span class="fc" id="L60">		this.tags = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L61">		this.rules = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L62">		this.includes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L63">		this.embeddedJavaBlocks = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L64">		this.severity = Severity.INFO;</span>
+<span class="fc" id="L65">		this.suppressWarnings = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L66">		this.treeKindNodeTypes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L67">	}</span>
 	
 	/**
 	 * Returns the hint file ID.
@@ -71,7 +72,7 @@ public final class HintFile {
 	 * @return the ID, or {@code null} if not set
 	 */
 	public String getId() {
-<span class="fc" id="L74">		return id;</span>
+<span class="fc" id="L75">		return id;</span>
 	}
 	
 	/**
@@ -80,8 +81,8 @@ public final class HintFile {
 	 * @param id the ID
 	 */
 	public void setId(String id) {
-<span class="fc" id="L83">		this.id = id;</span>
-<span class="fc" id="L84">	}</span>
+<span class="fc" id="L84">		this.id = id;</span>
+<span class="fc" id="L85">	}</span>
 	
 	/**
 	 * Returns the hint file description.
@@ -89,7 +90,7 @@ public final class HintFile {
 	 * @return the description, or {@code null} if not set
 	 */
 	public String getDescription() {
-<span class="fc" id="L92">		return description;</span>
+<span class="fc" id="L93">		return description;</span>
 	}
 	
 	/**
@@ -98,8 +99,8 @@ public final class HintFile {
 	 * @param description the description
 	 */
 	public void setDescription(String description) {
-<span class="fc" id="L101">		this.description = description;</span>
-<span class="fc" id="L102">	}</span>
+<span class="fc" id="L102">		this.description = description;</span>
+<span class="fc" id="L103">	}</span>
 	
 	/**
 	 * Returns the severity level.
@@ -107,7 +108,7 @@ public final class HintFile {
 	 * @return the severity enum value
 	 */
 	public Severity getSeverity() {
-<span class="fc" id="L110">		return severity;</span>
+<span class="fc" id="L111">		return severity;</span>
 	}
 	
 	/**
@@ -116,7 +117,7 @@ public final class HintFile {
 	 * @return the severity name in lowercase (e.g. {@code &quot;info&quot;}, {@code &quot;warning&quot;})
 	 */
 	public String getSeverityAsString() {
-<span class="fc" id="L119">		return severity.name().toLowerCase();</span>
+<span class="fc" id="L120">		return severity.name().toLowerCase();</span>
 	}
 	
 	/**
@@ -126,16 +127,16 @@ public final class HintFile {
 	 * @param severity the severity string ({@code &quot;info&quot;}, {@code &quot;warning&quot;}, {@code &quot;error&quot;}, or {@code &quot;hint&quot;})
 	 */
 	public void setSeverity(String severity) {
-<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (severity == null) {</span>
-<span class="fc" id="L130">			this.severity = Severity.INFO;</span>
-<span class="fc" id="L131">			return;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (severity == null) {</span>
+<span class="fc" id="L131">			this.severity = Severity.INFO;</span>
+<span class="fc" id="L132">			return;</span>
 		}
 		try {
-<span class="fc" id="L134">			this.severity = Severity.valueOf(severity.toUpperCase(Locale.ROOT));</span>
-<span class="fc" id="L135">		} catch (IllegalArgumentException e) {</span>
-<span class="fc" id="L136">			this.severity = Severity.INFO;</span>
-<span class="fc" id="L137">		}</span>
-<span class="fc" id="L138">	}</span>
+<span class="fc" id="L135">			this.severity = Severity.valueOf(severity.toUpperCase(Locale.ROOT));</span>
+<span class="fc" id="L136">		} catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L137">			this.severity = Severity.INFO;</span>
+<span class="fc" id="L138">		}</span>
+<span class="fc" id="L139">	}</span>
 	
 	/**
 	 * Sets the severity level.
@@ -143,8 +144,8 @@ public final class HintFile {
 	 * @param severity the severity enum value
 	 */
 	public void setSeverity(Severity severity) {
-<span class="fc" id="L146">		this.severity = severity;</span>
-<span class="fc" id="L147">	}</span>
+<span class="fc" id="L147">		this.severity = severity;</span>
+<span class="fc" id="L148">	}</span>
 	
 	/**
 	 * Returns the minimum Java version required for this hint file.
@@ -152,7 +153,7 @@ public final class HintFile {
 	 * @return the minimum Java version, or 0 if not set
 	 */
 	public int getMinJavaVersion() {
-<span class="fc" id="L155">		return minJavaVersion;</span>
+<span class="fc" id="L156">		return minJavaVersion;</span>
 	}
 	
 	/**
@@ -161,8 +162,32 @@ public final class HintFile {
 	 * @param minJavaVersion the minimum Java version
 	 */
 	public void setMinJavaVersion(int minJavaVersion) {
-<span class="fc" id="L164">		this.minJavaVersion = minJavaVersion;</span>
-<span class="fc" id="L165">	}</span>
+<span class="fc" id="L165">		this.minJavaVersion = minJavaVersion;</span>
+<span class="fc" id="L166">	}</span>
+
+	/**
+	 * Returns the explicitly declared semantic binding policy.
+	 *
+	 * &lt;p&gt;A {@code null} value means that the compatibility default applies.
+	 * Plan-aware programs derive strictness from their semantic plan contract and
+	 * normally leave this property unset.&lt;/p&gt;
+	 *
+	 * @return the binding policy, or {@code null} when no directive was declared
+	 * @since 1.6.0
+	 */
+	public HintBindingPolicy getBindingPolicy() {
+<span class="fc" id="L179">		return bindingPolicy;</span>
+	}
+
+	/**
+	 * Sets the semantic binding policy.
+	 *
+	 * @param bindingPolicy the policy, or {@code null} to omit the directive
+	 * @since 1.6.0
+	 */
+	public void setBindingPolicy(HintBindingPolicy bindingPolicy) {
+<span class="fc" id="L189">		this.bindingPolicy = bindingPolicy;</span>
+<span class="fc" id="L190">	}</span>
 	
 	/**
 	 * Returns the tags for this hint file.
@@ -170,7 +195,7 @@ public final class HintFile {
 	 * @return unmodifiable list of tags
 	 */
 	public List&lt;String&gt; getTags() {
-<span class="fc" id="L173">		return Collections.unmodifiableList(tags);</span>
+<span class="fc" id="L198">		return Collections.unmodifiableList(tags);</span>
 	}
 	
 	/**
@@ -179,8 +204,8 @@ public final class HintFile {
 	 * @param tags the tags
 	 */
 	public void setTags(List&lt;String&gt; tags) {
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		this.tags = tags != null ? new ArrayList&lt;&gt;(tags) : new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L183">	}</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">		this.tags = tags != null ? new ArrayList&lt;&gt;(tags) : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L208">	}</span>
 	
 	/**
 	 * Returns the transformation rules.
@@ -188,7 +213,7 @@ public final class HintFile {
 	 * @return unmodifiable list of rules
 	 */
 	public List&lt;TransformationRule&gt; getRules() {
-<span class="fc" id="L191">		return Collections.unmodifiableList(rules);</span>
+<span class="fc" id="L216">		return Collections.unmodifiableList(rules);</span>
 	}
 	
 	/**
@@ -197,8 +222,8 @@ public final class HintFile {
 	 * @param rule the rule to add
 	 */
 	public void addRule(TransformationRule rule) {
-<span class="fc" id="L200">		rules.add(rule);</span>
-<span class="fc" id="L201">	}</span>
+<span class="fc" id="L225">		rules.add(rule);</span>
+<span class="fc" id="L226">	}</span>
 	
 	/**
 	 * Returns the list of included hint file IDs for pattern composition.
@@ -210,7 +235,7 @@ public final class HintFile {
 	 * @since 1.3.4
 	 */
 	public List&lt;String&gt; getIncludes() {
-<span class="fc" id="L213">		return Collections.unmodifiableList(includes);</span>
+<span class="fc" id="L238">		return Collections.unmodifiableList(includes);</span>
 	}
 	
 	/**
@@ -220,10 +245,10 @@ public final class HintFile {
 	 * @since 1.3.4
 	 */
 	public void addInclude(String hintFileId) {
-<span class="fc bfc" id="L223" title="All 4 branches covered.">		if (hintFileId != null &amp;&amp; !hintFileId.isBlank()) {</span>
-<span class="fc" id="L224">			includes.add(hintFileId.trim());</span>
+<span class="fc bfc" id="L248" title="All 4 branches covered.">		if (hintFileId != null &amp;&amp; !hintFileId.isBlank()) {</span>
+<span class="fc" id="L249">			includes.add(hintFileId.trim());</span>
 		}
-<span class="fc" id="L226">	}</span>
+<span class="fc" id="L251">	}</span>
 
 	/**
 	 * Returns the list of embedded Java code blocks.
@@ -236,7 +261,7 @@ public final class HintFile {
 	 * @since 1.5.0
 	 */
 	public List&lt;EmbeddedJavaBlock&gt; getEmbeddedJavaBlocks() {
-<span class="fc" id="L239">		return Collections.unmodifiableList(embeddedJavaBlocks);</span>
+<span class="fc" id="L264">		return Collections.unmodifiableList(embeddedJavaBlocks);</span>
 	}
 
 	/**
@@ -246,10 +271,10 @@ public final class HintFile {
 	 * @since 1.5.0
 	 */
 	public void addEmbeddedJavaBlock(EmbeddedJavaBlock block) {
-<span class="pc bpc" id="L249" title="1 of 2 branches missed.">		if (block != null) {</span>
-<span class="fc" id="L250">			embeddedJavaBlocks.add(block);</span>
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">		if (block != null) {</span>
+<span class="fc" id="L275">			embeddedJavaBlocks.add(block);</span>
 		}
-<span class="fc" id="L252">	}</span>
+<span class="fc" id="L277">	}</span>
 
 	/**
 	 * Returns whether string literal matching should be case-insensitive.
@@ -261,7 +286,7 @@ public final class HintFile {
 	 * @since 1.3.8
 	 */
 	public boolean isCaseInsensitive() {
-<span class="fc" id="L264">		return caseInsensitive;</span>
+<span class="fc" id="L289">		return caseInsensitive;</span>
 	}
 
 	/**
@@ -271,8 +296,8 @@ public final class HintFile {
 	 * @since 1.3.8
 	 */
 	public void setCaseInsensitive(boolean caseInsensitive) {
-<span class="fc" id="L274">		this.caseInsensitive = caseInsensitive;</span>
-<span class="fc" id="L275">	}</span>
+<span class="fc" id="L299">		this.caseInsensitive = caseInsensitive;</span>
+<span class="fc" id="L300">	}</span>
 
 	/**
 	 * Returns the suppress warnings keys for this hint file.
@@ -285,7 +310,7 @@ public final class HintFile {
 	 * @since 1.4.0
 	 */
 	public List&lt;String&gt; getSuppressWarnings() {
-<span class="fc" id="L288">		return Collections.unmodifiableList(suppressWarnings);</span>
+<span class="fc" id="L313">		return Collections.unmodifiableList(suppressWarnings);</span>
 	}
 
 	/**
@@ -295,8 +320,8 @@ public final class HintFile {
 	 * @since 1.4.0
 	 */
 	public void setSuppressWarnings(List&lt;String&gt; suppressWarnings) {
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">		this.suppressWarnings = suppressWarnings != null ? new ArrayList&lt;&gt;(suppressWarnings) : new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L299">	}</span>
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">		this.suppressWarnings = suppressWarnings != null ? new ArrayList&lt;&gt;(suppressWarnings) : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L324">	}</span>
 
 	/**
 	 * Adds a suppress warnings key.
@@ -305,10 +330,10 @@ public final class HintFile {
 	 * @since 1.4.0
 	 */
 	public void addSuppressWarnings(String key) {
-<span class="pc bpc" id="L308" title="2 of 4 branches missed.">		if (key != null &amp;&amp; !key.isBlank()) {</span>
-<span class="fc" id="L309">			this.suppressWarnings.add(key.trim());</span>
+<span class="pc bpc" id="L333" title="2 of 4 branches missed.">		if (key != null &amp;&amp; !key.isBlank()) {</span>
+<span class="fc" id="L334">			this.suppressWarnings.add(key.trim());</span>
 		}
-<span class="fc" id="L311">	}</span>
+<span class="fc" id="L336">	}</span>
 
 	/**
 	 * Returns the list of AST node type constants that this hint file targets.
@@ -321,7 +346,7 @@ public final class HintFile {
 	 * @since 1.4.1
 	 */
 	public List&lt;Integer&gt; getTreeKindNodeTypes() {
-<span class="fc" id="L324">		return Collections.unmodifiableList(treeKindNodeTypes);</span>
+<span class="fc" id="L349">		return Collections.unmodifiableList(treeKindNodeTypes);</span>
 	}
 
 	/**
@@ -331,7 +356,7 @@ public final class HintFile {
 	 * @since 1.4.1
 	 */
 	public void setTreeKindNodeTypes(List&lt;Integer&gt; treeKindNodeTypes) {
-<span class="pc bpc" id="L334" title="1 of 2 branches missed.">		this.treeKindNodeTypes = treeKindNodeTypes != null ? new ArrayList&lt;&gt;(treeKindNodeTypes) : new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L335">	}</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">		this.treeKindNodeTypes = treeKindNodeTypes != null ? new ArrayList&lt;&gt;(treeKindNodeTypes) : new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L360">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

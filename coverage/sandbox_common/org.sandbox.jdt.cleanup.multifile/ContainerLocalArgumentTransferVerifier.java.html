@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ContainerLocalArgumentTransferVerifier.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile</a> &gt; <span class="el_source">ContainerLocalArgumentTransferVerifier.java</span></div><h1>ContainerLocalArgumentTransferVerifier.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
+
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
+
+/** Revalidates unchanged caller arguments against their exact planned method target. */
+final class ContainerLocalArgumentTransferVerifier {
+
+	private static final String PLUGIN_ID= &quot;sandbox_common&quot;; //$NON-NLS-1$
+
+	private ContainerLocalArgumentTransferVerifier() {
+	}
+
+	static void verify(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerLocalRewritePlan plan) throws CoreException {
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		if (plan.argumentTransfers().isEmpty()) {</span>
+<span class="fc" id="L46">			return;</span>
+		}
+<span class="fc" id="L48">		Map&lt;SourceRange, ArgumentTransfer&gt; expected=</span>
+<span class="fc" id="L49">				HashMap.newHashMap(plan.argumentTransfers().size());</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">		for (ArgumentTransfer transfer : plan.argumentTransfers()) {</span>
+<span class="fc" id="L51">			expected.put(new SourceRange(</span>
+<span class="fc" id="L52">					transfer.sourceStart(), transfer.sourceLength()), transfer);</span>
+		}
+<span class="fc" id="L54">		Set&lt;SourceRange&gt; observed= HashSet.newHashSet(expected.size());</span>
+<span class="fc" id="L55">		CoreException[] failure= { null };</span>
+<span class="fc" id="L56">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L59" title="All 2 branches covered.">				if (failure[0] != null) {</span>
+<span class="fc" id="L60">					return false;</span>
+				}
+<span class="fc" id="L62">				SourceRange range= new SourceRange(</span>
+<span class="fc" id="L63">						name.getStartPosition(), name.getLength());</span>
+<span class="fc" id="L64">				ArgumentTransfer transfer= expected.get(range);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">				if (transfer == null) {</span>
+<span class="fc" id="L66">					return true;</span>
+				}
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">				if (!plannedVariable(name, plan.bindingKey())</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">						|| !(name.getParent() instanceof MethodInvocation invocation)) {</span>
+<span class="nc" id="L70">					failure[0]= stale(unit,</span>
+<span class="nc" id="L71">							&quot;planned argument transfer no longer contains the local value&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L72">					return false;</span>
+				}
+<span class="fc" id="L74">				int argumentIndex= invocation.arguments().indexOf(name);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">				if (argumentIndex != transfer.parameterIndex()</span>
+<span class="fc" id="L76">						|| !transfer.methodJavaElementHandle().equals(</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">								methodHandle(invocation.resolveMethodBinding()))) {</span>
+<span class="fc" id="L78">					failure[0]= stale(unit, &quot;argument-transfer target changed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L79">					return false;</span>
+				}
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">				if (!observed.add(range)) {</span>
+<span class="nc" id="L82">					failure[0]= stale(unit,</span>
+<span class="nc" id="L83">							&quot;argument-transfer source range resolves more than once&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L84">					return false;</span>
+				}
+<span class="fc" id="L86">				return true;</span>
+			}
+		});
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (failure[0] != null) {</span>
+<span class="fc" id="L90">			throw failure[0];</span>
+		}
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (!observed.equals(expected.keySet())) {</span>
+<span class="nc" id="L93">			throw stale(unit, &quot;argument-transfer occurrence set changed&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L95">	}</span>
+
+	private static boolean plannedVariable(SimpleName name, String bindingKey) {
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		return name.resolveBinding() instanceof IVariableBinding binding</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">				&amp;&amp; bindingKey.equals(binding.getVariableDeclaration().getKey());</span>
+	}
+
+	private static String methodHandle(IMethodBinding binding) {
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		IJavaElement element= binding == null</span>
+<span class="pc" id="L104">				? null : binding.getMethodDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		return element == null ? &quot;&quot; : element.getHandleIdentifier(); //$NON-NLS-1$</span>
+	}
+
+	private static CoreException stale(ICompilationUnit unit, String detail) {
+<span class="fc" id="L109">		return new CoreException(new Status(</span>
+<span class="fc" id="L110">				IStatus.ERROR,</span>
+<span class="fc" id="L111">				PLUGIN_ID,</span>
+<span class="fc" id="L112">				&quot;Container rewrite plan is stale for &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L113">						+ unit.getElementName() + &quot;: &quot; + detail)); //$NON-NLS-1$</span>
+	}
+
+	private record SourceRange(int start, int length) {
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

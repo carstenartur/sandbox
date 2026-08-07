@@ -159,57 +159,58 @@ public final class PlanAwareHintFileFixCore {
 <span class="fc" id="L159">		copy.setDescription(source.getDescription());</span>
 <span class="fc" id="L160">		copy.setSeverity(source.getSeverity());</span>
 <span class="fc" id="L161">		copy.setMinJavaVersion(source.getMinJavaVersion());</span>
-<span class="fc" id="L162">		copy.setTags(source.getTags());</span>
-<span class="fc" id="L163">		copy.setCaseInsensitive(source.isCaseInsensitive());</span>
-<span class="fc" id="L164">		copy.setSuppressWarnings(source.getSuppressWarnings());</span>
-<span class="fc" id="L165">		copy.setTreeKindNodeTypes(source.getTreeKindNodeTypes());</span>
-<span class="fc" id="L166">		source.getIncludes().forEach(copy::addInclude);</span>
-<span class="fc" id="L167">		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);</span>
-<span class="fc bfc" id="L168" title="All 2 branches covered.">		for (TransformationRule rule : source.getRules()) {</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">			if (rule.alternatives().stream().noneMatch(RewriteAlternative::hasStructuredActions)) {</span>
-<span class="fc" id="L170">				copy.addRule(rule);</span>
+<span class="fc" id="L162">		copy.setBindingPolicy(source.getBindingPolicy());</span>
+<span class="fc" id="L163">		copy.setTags(source.getTags());</span>
+<span class="fc" id="L164">		copy.setCaseInsensitive(source.isCaseInsensitive());</span>
+<span class="fc" id="L165">		copy.setSuppressWarnings(source.getSuppressWarnings());</span>
+<span class="fc" id="L166">		copy.setTreeKindNodeTypes(source.getTreeKindNodeTypes());</span>
+<span class="fc" id="L167">		source.getIncludes().forEach(copy::addInclude);</span>
+<span class="fc" id="L168">		source.getEmbeddedJavaBlocks().forEach(copy::addEmbeddedJavaBlock);</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		for (TransformationRule rule : source.getRules()) {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">			if (rule.alternatives().stream().noneMatch(RewriteAlternative::hasStructuredActions)) {</span>
+<span class="fc" id="L171">				copy.addRule(rule);</span>
 			}
 		}
-<span class="fc" id="L173">		return copy;</span>
+<span class="fc" id="L174">		return copy;</span>
 	}
 
 	private static String requiredPlan(String content) throws CoreException {
 		try {
-<span class="fc" id="L178">			return HintPlanRequirement.fromContent(content)</span>
-<span class="pc" id="L179">					.orElseThrow(() -&gt; new IllegalArgumentException(</span>
-<span class="nc" id="L180">							&quot;A plan-aware hint program must declare &lt;!requires-plan: ...&gt;&quot;)); //$NON-NLS-1$</span>
-<span class="nc" id="L181">		} catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L182">			throw failure(&quot;Invalid plan-aware hint contract: &quot; + e.getMessage(), e); //$NON-NLS-1$</span>
+<span class="fc" id="L179">			return HintPlanRequirement.fromContent(content)</span>
+<span class="pc" id="L180">					.orElseThrow(() -&gt; new IllegalArgumentException(</span>
+<span class="nc" id="L181">							&quot;A plan-aware hint program must declare &lt;!requires-plan: ...&gt;&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L182">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L183">			throw failure(&quot;Invalid plan-aware hint contract: &quot; + e.getMessage(), e); //$NON-NLS-1$</span>
 		}
 	}
 
 	private static ParsedProgram parse(String content) throws CoreException {
 		try {
-<span class="fc" id="L188">			return new HintProgramParser().parse(content);</span>
-<span class="nc" id="L189">		} catch (HintFileParser.HintParseException e) {</span>
-<span class="nc" id="L190">			throw failure(&quot;Cannot parse trusted plan-aware hint program&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L189">			return new HintProgramParser().parse(content);</span>
+<span class="nc" id="L190">		} catch (HintFileParser.HintParseException e) {</span>
+<span class="nc" id="L191">			throw failure(&quot;Cannot parse trusted plan-aware hint program&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 
 	private static CoreException failure(String message, Throwable cause) {
-<span class="fc" id="L195">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_common&quot;, message, cause)); //$NON-NLS-1$</span>
+<span class="fc" id="L196">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_common&quot;, message, cause)); //$NON-NLS-1$</span>
 	}
 
 	private static Set&lt;String&gt; annotationNames(String source) {
-<span class="nc" id="L199">		Set&lt;String&gt; names= new LinkedHashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">		if (source == null) {</span>
-<span class="nc" id="L201">			return names;</span>
+<span class="nc" id="L200">		Set&lt;String&gt; names= new LinkedHashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (source == null) {</span>
+<span class="nc" id="L202">			return names;</span>
 		}
-<span class="nc" id="L203">		Matcher matcher= ANNOTATION_NAME.matcher(source);</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">		while (matcher.find()) {</span>
-<span class="nc" id="L205">			names.add(matcher.group(1));</span>
+<span class="nc" id="L204">		Matcher matcher= ANNOTATION_NAME.matcher(source);</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">		while (matcher.find()) {</span>
+<span class="nc" id="L206">			names.add(matcher.group(1));</span>
 		}
-<span class="nc" id="L207">		return names;</span>
+<span class="nc" id="L208">		return names;</span>
 	}
 
 	private static String simpleName(String qualifiedName) {
-<span class="nc" id="L211">		int separator= qualifiedName.lastIndexOf('.');</span>
-<span class="nc bnc" id="L212" title="All 2 branches missed.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
+<span class="nc" id="L212">		int separator= qualifiedName.lastIndexOf('.');</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
 	}
 
 	/**
@@ -220,73 +221,73 @@ public final class PlanAwareHintFileFixCore {
 			extends CompilationUnitRewriteOperationWithSourceRange {
 		private final TransformationResult result;
 
-<span class="fc" id="L223">		PlannedMethodAnnotationOperation(TransformationResult result) {</span>
-<span class="fc" id="L224">			this.result= result;</span>
-<span class="fc" id="L225">		}</span>
+<span class="fc" id="L224">		PlannedMethodAnnotationOperation(TransformationResult result) {</span>
+<span class="fc" id="L225">			this.result= result;</span>
+<span class="fc" id="L226">		}</span>
 
 		@Override
 		public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)
 				throws CoreException {
-<span class="nc bnc" id="L230" title="All 2 branches missed.">			if (!(result.match().getMatchedNode() instanceof MethodDeclaration method)) {</span>
-<span class="nc" id="L231">				throw failure(&quot;The planned method annotation target is missing&quot;, null); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">			if (!(result.match().getMatchedNode() instanceof MethodDeclaration method)) {</span>
+<span class="nc" id="L232">				throw failure(&quot;The planned method annotation target is missing&quot;, null); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L233">			Set&lt;String&gt; annotationsToAdd= annotationNames(result.replacement());</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">			if (result.rule() != null) {</span>
-<span class="nc" id="L235">				annotationsToAdd.removeAll(annotationNames(result.rule().sourcePattern().getValue()));</span>
+<span class="nc" id="L234">			Set&lt;String&gt; annotationsToAdd= annotationNames(result.replacement());</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">			if (result.rule() != null) {</span>
+<span class="nc" id="L236">				annotationsToAdd.removeAll(annotationNames(result.rule().sourcePattern().getValue()));</span>
 			}
-<span class="nc bnc" id="L237" title="All 2 branches missed.">			if (annotationsToAdd.isEmpty()) {</span>
-<span class="nc" id="L238">				throw failure(&quot;The planned method hint does not add an annotation&quot;, null); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">			if (annotationsToAdd.isEmpty()) {</span>
+<span class="nc" id="L239">				throw failure(&quot;The planned method hint does not add an annotation&quot;, null); //$NON-NLS-1$</span>
 			}
 
-<span class="nc" id="L241">			Set&lt;String&gt; existing= new LinkedHashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">			for (Object modifier : method.modifiers()) {</span>
-<span class="nc bnc" id="L243" title="All 2 branches missed.">				if (modifier instanceof Annotation annotation) {</span>
-<span class="nc" id="L244">					ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="nc bnc" id="L245" title="All 2 branches missed.">					String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
-<span class="nc" id="L246">							: binding.getQualifiedName();</span>
-<span class="nc" id="L247">					existing.add(simpleName(name));</span>
+<span class="nc" id="L242">			Set&lt;String&gt; existing= new LinkedHashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">			for (Object modifier : method.modifiers()) {</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">				if (modifier instanceof Annotation annotation) {</span>
+<span class="nc" id="L245">					ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">					String name= binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
+<span class="nc" id="L247">							: binding.getQualifiedName();</span>
+<span class="nc" id="L248">					existing.add(simpleName(name));</span>
 				}
 			}
 
-<span class="nc" id="L251">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="nc" id="L252">			AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="nc" id="L253">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
-<span class="nc" id="L254">			ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="nc" id="L255">			TextEditGroup group= createTextEditGroup(</span>
-<span class="nc bnc" id="L256" title="All 2 branches missed.">					result.description() == null ? &quot;Apply planned method annotation&quot; : result.description(), //$NON-NLS-1$</span>
-<span class="nc" id="L257">					cuRewrite);</span>
-<span class="nc bnc" id="L258" title="All 2 branches missed.">			for (String annotationName : annotationsToAdd) {</span>
-<span class="nc" id="L259">				String simple= simpleName(annotationName);</span>
-<span class="nc bnc" id="L260" title="All 2 branches missed.">				if (existing.contains(simple)) {</span>
-<span class="nc" id="L261">					continue;</span>
+<span class="nc" id="L252">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="nc" id="L253">			AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="nc" id="L254">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="nc" id="L255">			ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="nc" id="L256">			TextEditGroup group= createTextEditGroup(</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">					result.description() == null ? &quot;Apply planned method annotation&quot; : result.description(), //$NON-NLS-1$</span>
+<span class="nc" id="L258">					cuRewrite);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">			for (String annotationName : annotationsToAdd) {</span>
+<span class="nc" id="L260">				String simple= simpleName(annotationName);</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">				if (existing.contains(simple)) {</span>
+<span class="nc" id="L262">					continue;</span>
 				}
-<span class="nc bnc" id="L263" title="All 2 branches missed.">				String importedName= annotationName.indexOf('.') &gt;= 0</span>
-<span class="nc" id="L264">						? imports.addImport(annotationName) : annotationName;</span>
-<span class="nc" id="L265">				MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
-<span class="nc" id="L266">				annotation.setTypeName(ast.newName(importedName));</span>
-<span class="nc" id="L267">				modifiers.insertFirst(annotation, group);</span>
-<span class="nc" id="L268">				existing.add(simple);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">				String importedName= annotationName.indexOf('.') &gt;= 0</span>
+<span class="nc" id="L265">						? imports.addImport(annotationName) : annotationName;</span>
+<span class="nc" id="L266">				MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
+<span class="nc" id="L267">				annotation.setTypeName(ast.newName(importedName));</span>
+<span class="nc" id="L268">				modifiers.insertFirst(annotation, group);</span>
+<span class="nc" id="L269">				existing.add(simple);</span>
 			}
-<span class="nc" id="L270">		}</span>
+<span class="nc" id="L271">		}</span>
 	}
 
 	/** Preserves the source-range behavior expected by coordinated cleanups. */
 	private static final class DelegatingHintOperation extends CompilationUnitRewriteOperationWithSourceRange {
 		private final CompilationUnitRewriteOperation delegate;
 
-<span class="fc" id="L277">		DelegatingHintOperation(CompilationUnitRewriteOperation delegate) {</span>
-<span class="fc" id="L278">			this.delegate= delegate;</span>
-<span class="fc" id="L279">		}</span>
+<span class="fc" id="L278">		DelegatingHintOperation(CompilationUnitRewriteOperation delegate) {</span>
+<span class="fc" id="L279">			this.delegate= delegate;</span>
+<span class="fc" id="L280">		}</span>
 
 		@Override
 		public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)
 				throws CoreException {
-<span class="fc" id="L284">			delegate.rewriteAST(cuRewrite, linkedModel);</span>
-<span class="fc" id="L285">		}</span>
+<span class="fc" id="L285">			delegate.rewriteAST(cuRewrite, linkedModel);</span>
+<span class="fc" id="L286">		}</span>
 
 		@Override
 		public String getAdditionalInfo() {
-<span class="nc" id="L289">			return delegate.getAdditionalInfo();</span>
+<span class="nc" id="L290">			return delegate.getAdditionalInfo();</span>
 		}
 	}
 }

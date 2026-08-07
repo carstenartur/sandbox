@@ -40,11 +40,13 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAt
  *
  * &lt;p&gt;A parameter overload is never labelled compatible merely because it compiles.
  * The bridge must still decide or prove order, uniqueness, mutability, null behavior,
- * aliasing, concurrency and whether it passes a view, wrapper or independent copy.&lt;/p&gt;
+ * aliasing, concurrency and whether it passes a view, wrapper or independent copy.
+ * A closed-source direct migration needs no compatibility bridge because the old
+ * signature is not retained.&lt;/p&gt;
  */
-<span class="fc" id="L45">public final class ContainerBridgePolicyPlanner {</span>
+<span class="fc" id="L47">public final class ContainerBridgePolicyPlanner {</span>
 
-<span class="fc" id="L47">	private static final List&lt;ContractProperty&gt; BRIDGE_PROPERTIES= List.of(</span>
+<span class="fc" id="L49">	private static final List&lt;ContractProperty&gt; BRIDGE_PROPERTIES= List.of(</span>
 			ContractProperty.ORDER,
 			ContractProperty.UNIQUENESS,
 			ContractProperty.MUTABILITY,
@@ -52,53 +54,55 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAt
 			ContractProperty.ALIASING,
 			ContractProperty.CONCURRENCY);
 
-	/** Builds one immutable report-only bridge policy plan. */
+	/** Builds one immutable bridge policy plan. */
 	public ContainerBridgePolicyPlan plan(
 			ContainerSignatureMigrationPlan signaturePlan,
 			ContainerRecommendation recommendation) {
-<span class="fc" id="L59">		Objects.requireNonNull(signaturePlan, &quot;signaturePlan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L60">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		Objects.requireNonNull(signaturePlan, &quot;signaturePlan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		Objects.requireNonNull(recommendation, &quot;recommendation&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L62">		List&lt;BridgePolicyDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L63" title="All 2 branches covered.">		if (!signaturePlan.targetContract().equals(recommendation.targetContract())) {</span>
-<span class="fc" id="L64">			diagnostics.add(new BridgePolicyDiagnostic(</span>
+<span class="fc" id="L64">		List&lt;BridgePolicyDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (!signaturePlan.targetContract().equals(recommendation.targetContract())) {</span>
+<span class="fc" id="L66">			diagnostics.add(new BridgePolicyDiagnostic(</span>
 					DiagnosticKind.TARGET_CONTRACT_MISMATCH,
 					&quot;signature-plan&quot;, //$NON-NLS-1$
 					&quot;The signature plan and recommendation describe different target contracts.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L68">			return rejected(signaturePlan, diagnostics);</span>
+<span class="fc" id="L70">			return rejected(signaturePlan, diagnostics);</span>
 		}
-<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (signaturePlan.status()</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (signaturePlan.status()</span>
 				== ContainerSignatureMigrationPlan.PlanningStatus.REJECTED) {
-<span class="fc" id="L72">			diagnostics.add(new BridgePolicyDiagnostic(</span>
+<span class="fc" id="L74">			diagnostics.add(new BridgePolicyDiagnostic(</span>
 					DiagnosticKind.SIGNATURE_PLAN_REJECTED,
 					&quot;signature-plan&quot;, //$NON-NLS-1$
 					&quot;Semantic bridge planning requires a valid atomic signature plan.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L76">			return rejected(signaturePlan, diagnostics);</span>
+<span class="fc" id="L78">			return rejected(signaturePlan, diagnostics);</span>
 		}
-<span class="fc bfc" id="L78" title="All 2 branches covered.">		if (signaturePlan.status()</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (signaturePlan.status()</span>
 				== ContainerSignatureMigrationPlan.PlanningStatus.NO_SIGNATURE_CHANGE
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				|| signaturePlan.groups().isEmpty()) {</span>
-<span class="fc" id="L81">			return new ContainerBridgePolicyPlan(</span>
-<span class="fc" id="L82">					signaturePlan.targetContract(),</span>
-<span class="fc" id="L83">					List.of(),</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">				|| signaturePlan.status()</span>
+						== ContainerSignatureMigrationPlan.PlanningStatus.CLOSED_SOURCE_AUTOMATIC
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">				|| signaturePlan.groups().isEmpty()) {</span>
+<span class="fc" id="L85">			return new ContainerBridgePolicyPlan(</span>
+<span class="fc" id="L86">					signaturePlan.targetContract(),</span>
+<span class="fc" id="L87">					List.of(),</span>
 					PlanningStatus.NO_BRIDGE_NEEDED,
-<span class="fc" id="L85">					List.of());</span>
+<span class="fc" id="L89">					List.of());</span>
 		}
 
-<span class="fc" id="L88">		AssessmentIndex assessments= AssessmentIndex.create(</span>
-<span class="fc" id="L89">				recommendation.assessments(), diagnostics);</span>
-<span class="fc" id="L90">		List&lt;BridgePolicyGroup&gt; groups= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (SignatureAtomicityGroup signatureGroup : signaturePlan.groups()) {</span>
-<span class="fc" id="L92">			BridgePolicyGroup policyGroup= policyGroup(</span>
+<span class="fc" id="L92">		AssessmentIndex assessments= AssessmentIndex.create(</span>
+<span class="fc" id="L93">				recommendation.assessments(), diagnostics);</span>
+<span class="fc" id="L94">		List&lt;BridgePolicyGroup&gt; groups= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">		for (SignatureAtomicityGroup signatureGroup : signaturePlan.groups()) {</span>
+<span class="fc" id="L96">			BridgePolicyGroup policyGroup= policyGroup(</span>
 					signatureGroup, assessments, diagnostics);
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (policyGroup != null) {</span>
-<span class="fc" id="L95">				groups.add(policyGroup);</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			if (policyGroup != null) {</span>
+<span class="fc" id="L99">				groups.add(policyGroup);</span>
 			}
-<span class="fc" id="L97">		}</span>
-<span class="fc" id="L98">		return new ContainerBridgePolicyPlan(</span>
-<span class="fc" id="L99">				signaturePlan.targetContract(),</span>
+<span class="fc" id="L101">		}</span>
+<span class="fc" id="L102">		return new ContainerBridgePolicyPlan(</span>
+<span class="fc" id="L103">				signaturePlan.targetContract(),</span>
 				groups,
-<span class="fc bfc" id="L101" title="All 2 branches covered.">				diagnostics.isEmpty() ? PlanningStatus.REPORT_ONLY : PlanningStatus.REJECTED,</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">				diagnostics.isEmpty() ? PlanningStatus.REPORT_ONLY : PlanningStatus.REJECTED,</span>
 				diagnostics);
 	}
 
@@ -106,75 +110,75 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAt
 			SignatureAtomicityGroup signatureGroup,
 			AssessmentIndex assessments,
 			List&lt;BridgePolicyDiagnostic&gt; diagnostics) {
-<span class="fc bfc" id="L109" title="All 2 branches covered.">		if (signatureGroup.positionKind() == PositionKind.RETURN</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				&amp;&amp; signatureGroup.bridgeFeasibility()</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">		if (signatureGroup.positionKind() == PositionKind.RETURN</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				&amp;&amp; signatureGroup.bridgeFeasibility()</span>
 						== BridgeFeasibility.SAME_NAME_RETURN_BRIDGE_IMPOSSIBLE) {
-<span class="fc" id="L112">			return new BridgePolicyGroup(</span>
-<span class="fc" id="L113">					signatureGroup.groupId(),</span>
+<span class="fc" id="L116">			return new BridgePolicyGroup(</span>
+<span class="fc" id="L117">					signatureGroup.groupId(),</span>
 					PositionKind.RETURN,
 					BridgeDecision.IMPOSSIBLE,
-<span class="fc" id="L116">					List.of(),</span>
+<span class="fc" id="L120">					List.of(),</span>
 					&quot;The old and new return contracts cannot coexist under the same method name; a compatibility path requires a different method name or an explicitly breaking migration.&quot;); //$NON-NLS-1$
 		}
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (signatureGroup.positionKind() == PositionKind.PARAMETER</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				&amp;&amp; signatureGroup.bridgeFeasibility()</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">		if (signatureGroup.positionKind() == PositionKind.PARAMETER</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">				&amp;&amp; signatureGroup.bridgeFeasibility()</span>
 						== BridgeFeasibility.OVERLOAD_POSSIBLE_POLICY_REQUIRED) {
-<span class="fc" id="L122">			List&lt;SemanticRequirement&gt; requirements= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L123" title="All 2 branches covered.">			for (ContractProperty property : BRIDGE_PROPERTIES) {</span>
-<span class="fc" id="L124">				requirements.add(requirement(property, assessments.assessment(property)));</span>
-<span class="fc" id="L125">			}</span>
-<span class="fc" id="L126">			requirements.add(new SemanticRequirement(</span>
+<span class="fc" id="L126">			List&lt;SemanticRequirement&gt; requirements= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">			for (ContractProperty property : BRIDGE_PROPERTIES) {</span>
+<span class="fc" id="L128">				requirements.add(requirement(property, assessments.assessment(property)));</span>
+<span class="fc" id="L129">			}</span>
+<span class="fc" id="L130">			requirements.add(new SemanticRequirement(</span>
 					BridgeProperty.ADAPTER_FORM,
 					RequirementStatus.EXPLICIT_POLICY_REQUIRED,
 					Preservation.UNKNOWN,
 					&quot;Choose whether the deprecated overload passes a backed view, a wrapper, or an independent copy. These choices change structural mutation, element replacement and alias visibility.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L131">			return new BridgePolicyGroup(</span>
-<span class="fc" id="L132">					signatureGroup.groupId(),</span>
+<span class="fc" id="L135">			return new BridgePolicyGroup(</span>
+<span class="fc" id="L136">					signatureGroup.groupId(),</span>
 					PositionKind.PARAMETER,
 					BridgeDecision.POLICY_REQUIRED,
 					requirements,
 					&quot;The old and new parameter signatures can coexist, but a deprecated overload is not semantically safe until every listed property has an explicit proof or policy.&quot;); //$NON-NLS-1$
 		}
 
-<span class="nc" id="L139">		diagnostics.add(new BridgePolicyDiagnostic(</span>
+<span class="nc" id="L143">		diagnostics.add(new BridgePolicyDiagnostic(</span>
 				DiagnosticKind.UNSUPPORTED_BRIDGE_CLASSIFICATION,
-<span class="nc" id="L141">				signatureGroup.groupId(),</span>
+<span class="nc" id="L145">				signatureGroup.groupId(),</span>
 				&quot;The signature group's position and Java-level bridge classification are inconsistent.&quot;)); //$NON-NLS-1$
-<span class="nc" id="L143">		return null;</span>
+<span class="nc" id="L147">		return null;</span>
 	}
 
 	private static SemanticRequirement requirement(
 			ContractProperty property,
 			ContractAssessment assessment) {
-<span class="fc" id="L149">		BridgeProperty bridgeProperty= bridgeProperty(property);</span>
-<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (assessment == null) {</span>
-<span class="fc" id="L151">			return new SemanticRequirement(</span>
+<span class="fc" id="L153">		BridgeProperty bridgeProperty= bridgeProperty(property);</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		if (assessment == null) {</span>
+<span class="fc" id="L155">			return new SemanticRequirement(</span>
 					bridgeProperty,
 					RequirementStatus.PROOF_REQUIRED,
 					Preservation.UNKNOWN,
 					&quot;No contract assessment is available for this property; the bridge must remain disabled until the behavior is proven.&quot;); //$NON-NLS-1$
 		}
-<span class="fc bfc" id="L157" title="All 3 branches covered.">		RequirementStatus status= switch (assessment.preservation()) {</span>
-<span class="fc" id="L158">			case PRESERVED -&gt; RequirementStatus.CONFIRMED;</span>
-<span class="fc" id="L159">			case REQUIRES_PROOF, UNKNOWN -&gt; RequirementStatus.PROOF_REQUIRED;</span>
-<span class="fc" id="L160">			case CHANGED -&gt; RequirementStatus.EXPLICIT_POLICY_REQUIRED;</span>
+<span class="fc bfc" id="L161" title="All 3 branches covered.">		RequirementStatus status= switch (assessment.preservation()) {</span>
+<span class="fc" id="L162">			case PRESERVED -&gt; RequirementStatus.CONFIRMED;</span>
+<span class="fc" id="L163">			case REQUIRES_PROOF, UNKNOWN -&gt; RequirementStatus.PROOF_REQUIRED;</span>
+<span class="fc" id="L164">			case CHANGED -&gt; RequirementStatus.EXPLICIT_POLICY_REQUIRED;</span>
 		};
-<span class="fc" id="L162">		return new SemanticRequirement(</span>
+<span class="fc" id="L166">		return new SemanticRequirement(</span>
 				bridgeProperty,
 				status,
-<span class="fc" id="L165">				assessment.preservation(),</span>
-<span class="fc" id="L166">				assessment.explanation());</span>
+<span class="fc" id="L169">				assessment.preservation(),</span>
+<span class="fc" id="L170">				assessment.explanation());</span>
 	}
 
 	private static BridgeProperty bridgeProperty(ContractProperty property) {
-<span class="pc bpc" id="L170" title="1 of 7 branches missed.">		return switch (property) {</span>
-<span class="fc" id="L171">			case ORDER -&gt; BridgeProperty.ORDER;</span>
-<span class="fc" id="L172">			case UNIQUENESS -&gt; BridgeProperty.UNIQUENESS;</span>
-<span class="fc" id="L173">			case MUTABILITY -&gt; BridgeProperty.MUTABILITY;</span>
-<span class="fc" id="L174">			case NULLS -&gt; BridgeProperty.NULLS;</span>
-<span class="fc" id="L175">			case ALIASING -&gt; BridgeProperty.ALIASING;</span>
-<span class="fc" id="L176">			case CONCURRENCY -&gt; BridgeProperty.CONCURRENCY;</span>
-<span class="nc" id="L177">			case SIGNATURES -&gt; throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L174" title="1 of 7 branches missed.">		return switch (property) {</span>
+<span class="fc" id="L175">			case ORDER -&gt; BridgeProperty.ORDER;</span>
+<span class="fc" id="L176">			case UNIQUENESS -&gt; BridgeProperty.UNIQUENESS;</span>
+<span class="fc" id="L177">			case MUTABILITY -&gt; BridgeProperty.MUTABILITY;</span>
+<span class="fc" id="L178">			case NULLS -&gt; BridgeProperty.NULLS;</span>
+<span class="fc" id="L179">			case ALIASING -&gt; BridgeProperty.ALIASING;</span>
+<span class="fc" id="L180">			case CONCURRENCY -&gt; BridgeProperty.CONCURRENCY;</span>
+<span class="nc" id="L181">			case SIGNATURES -&gt; throw new IllegalArgumentException(</span>
 					&quot;Signature compatibility is represented by the atomic signature plan&quot;); //$NON-NLS-1$
 		};
 	}
@@ -182,9 +186,9 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAt
 	private static ContainerBridgePolicyPlan rejected(
 			ContainerSignatureMigrationPlan signaturePlan,
 			List&lt;BridgePolicyDiagnostic&gt; diagnostics) {
-<span class="fc" id="L185">		return new ContainerBridgePolicyPlan(</span>
-<span class="fc" id="L186">				signaturePlan.targetContract(),</span>
-<span class="fc" id="L187">				List.of(),</span>
+<span class="fc" id="L189">		return new ContainerBridgePolicyPlan(</span>
+<span class="fc" id="L190">				signaturePlan.targetContract(),</span>
+<span class="fc" id="L191">				List.of(),</span>
 				PlanningStatus.REJECTED,
 				diagnostics);
 	}
@@ -193,31 +197,31 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureAt
 
 		private final Map&lt;ContractProperty, ContractAssessment&gt; assessments;
 
-<span class="fc" id="L196">		private AssessmentIndex(Map&lt;ContractProperty, ContractAssessment&gt; assessments) {</span>
-<span class="fc" id="L197">			this.assessments= assessments;</span>
-<span class="fc" id="L198">		}</span>
+<span class="fc" id="L200">		private AssessmentIndex(Map&lt;ContractProperty, ContractAssessment&gt; assessments) {</span>
+<span class="fc" id="L201">			this.assessments= assessments;</span>
+<span class="fc" id="L202">		}</span>
 
 		static AssessmentIndex create(
 				List&lt;ContractAssessment&gt; input,
 				List&lt;BridgePolicyDiagnostic&gt; diagnostics) {
-<span class="fc" id="L203">			Map&lt;ContractProperty, ContractAssessment&gt; result=</span>
+<span class="fc" id="L207">			Map&lt;ContractProperty, ContractAssessment&gt; result=</span>
 					new EnumMap&lt;&gt;(ContractProperty.class);
-<span class="fc bfc" id="L205" title="All 2 branches covered.">			for (ContractAssessment assessment : input) {</span>
-<span class="fc" id="L206">				ContractAssessment existing= result.putIfAbsent(</span>
-<span class="fc" id="L207">						assessment.property(), assessment);</span>
-<span class="pc bpc" id="L208" title="1 of 4 branches missed.">				if (existing != null &amp;&amp; !existing.equals(assessment)) {</span>
-<span class="fc" id="L209">					diagnostics.add(new BridgePolicyDiagnostic(</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">			for (ContractAssessment assessment : input) {</span>
+<span class="fc" id="L210">				ContractAssessment existing= result.putIfAbsent(</span>
+<span class="fc" id="L211">						assessment.property(), assessment);</span>
+<span class="pc bpc" id="L212" title="1 of 4 branches missed.">				if (existing != null &amp;&amp; !existing.equals(assessment)) {</span>
+<span class="fc" id="L213">					diagnostics.add(new BridgePolicyDiagnostic(</span>
 							DiagnosticKind.AMBIGUOUS_CONTRACT_ASSESSMENT,
 							&quot;recommendation&quot;, //$NON-NLS-1$
 							&quot;Conflicting assessments exist for &quot;
-<span class="fc" id="L213">									+ assessment.property() + '.')); //$NON-NLS-1$</span>
+<span class="fc" id="L217">									+ assessment.property() + '.')); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L215">			}</span>
-<span class="fc" id="L216">			return new AssessmentIndex(Map.copyOf(result));</span>
+<span class="fc" id="L219">			}</span>
+<span class="fc" id="L220">			return new AssessmentIndex(Map.copyOf(result));</span>
 		}
 
 		ContractAssessment assessment(ContractProperty property) {
-<span class="fc" id="L220">			return assessments.get(property);</span>
+<span class="fc" id="L224">			return assessments.get(property);</span>
 		}
 	}
 }

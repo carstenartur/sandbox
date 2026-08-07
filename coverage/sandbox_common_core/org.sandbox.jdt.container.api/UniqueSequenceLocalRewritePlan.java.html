@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UniqueSequenceLocalRewritePlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">UniqueSequenceLocalRewritePlan.java</span></div><h1>UniqueSequenceLocalRewritePlan.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Immutable, AST-free plan for the first strictly local sequence-to-set migration.
+ */
+public record UniqueSequenceLocalRewritePlan(
+		String compilationUnitHandle,
+		String bindingKey,
+		String targetInterfaceType,
+		String targetImplementationType,
+		TargetContainerContract targetContract,
+		List&lt;LocalEdit&gt; edits) {
+
+<span class="fc" id="L30">	public UniqueSequenceLocalRewritePlan {</span>
+<span class="fc" id="L31">		compilationUnitHandle= requiredText(</span>
+				compilationUnitHandle, &quot;compilationUnitHandle&quot;); //$NON-NLS-1$
+<span class="fc" id="L33">		bindingKey= requiredText(bindingKey, &quot;bindingKey&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L34">		targetInterfaceType= requiredText(targetInterfaceType, &quot;targetInterfaceType&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L35">		targetImplementationType= requiredText(</span>
+				targetImplementationType, &quot;targetImplementationType&quot;); //$NON-NLS-1$
+<span class="fc" id="L37">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L38">		edits= List.copyOf(Objects.requireNonNull(edits, &quot;edits&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L39">		validateEdits(edits);</span>
+<span class="fc" id="L40">	}</span>
+
+	/** One local rewrite or verification anchored to immutable source evidence. */
+	public record LocalEdit(EditKind kind, int sourceStart, int sourceLength) {
+
+<span class="fc" id="L45">		public LocalEdit {</span>
+<span class="fc" id="L46">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L47" title="2 of 4 branches missed.">			if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
+<span class="nc" id="L48">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L50">		}</span>
+	}
+
+	/** Planning result retaining complete fail-closed diagnostics. */
+	public record PlanningResult(
+			Optional&lt;UniqueSequenceLocalRewritePlan&gt; plan,
+			List&lt;PlanningDiagnostic&gt; diagnostics) {
+
+<span class="fc" id="L58">		public PlanningResult {</span>
+<span class="fc" id="L59">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L60">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L61" title="All 4 branches covered.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
+<span class="fc" id="L62">				throw new IllegalArgumentException(</span>
+						&quot;A local rewrite result must contain either one plan or diagnostics&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L65">		}</span>
+
+		public static PlanningResult accepted(UniqueSequenceLocalRewritePlan plan) {
+<span class="fc" id="L68">			return new PlanningResult(Optional.of(plan), List.of());</span>
+		}
+
+		public static PlanningResult rejected(List&lt;PlanningDiagnostic&gt; diagnostics) {
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
+<span class="nc" id="L73">				throw new IllegalArgumentException(</span>
+						&quot;A rejected rewrite plan requires diagnostics&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L76">			return new PlanningResult(Optional.empty(), diagnostics);</span>
+		}
+
+		public boolean ready() {
+<span class="fc" id="L80">			return plan.isPresent();</span>
+		}
+	}
+
+	/** One eligibility diagnostic. */
+	public record PlanningDiagnostic(DiagnosticKind kind, String message) {
+
+<span class="fc" id="L87">		public PlanningDiagnostic {</span>
+<span class="fc" id="L88">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L89">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L90">		}</span>
+	}
+
+<span class="fc" id="L93">	public enum EditKind {</span>
+<span class="fc" id="L94">		CHANGE_LOCAL_DECLARATION,</span>
+<span class="fc" id="L95">		REPLACE_EMPTY_IMPLEMENTATION,</span>
+<span class="fc" id="L96">		REPLACE_DUPLICATE_GUARD,</span>
+<span class="fc" id="L97">		VERIFY_ENCOUNTER_ITERATION</span>
+	}
+
+<span class="fc" id="L100">	public enum DiagnosticKind {</span>
+<span class="fc" id="L101">		NOT_AUTOMATIC,</span>
+<span class="fc" id="L102">		SOURCE_NOT_STRICTLY_LOCAL,</span>
+<span class="fc" id="L103">		SOURCE_BINDING_MISMATCH,</span>
+<span class="fc" id="L104">		UNSUPPORTED_SOURCE,</span>
+<span class="fc" id="L105">		UNSUPPORTED_TARGET,</span>
+<span class="fc" id="L106">		POSITIONAL_SEMANTICS,</span>
+<span class="fc" id="L107">		MISSING_DUPLICATE_GUARD,</span>
+<span class="fc" id="L108">		UNSUPPORTED_EVIDENCE</span>
+	}
+
+	private static void validateEdits(List&lt;LocalEdit&gt; edits) {
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
+<span class="nc" id="L113">			throw new IllegalArgumentException(&quot;A local rewrite plan requires edits&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L115">		Set&lt;EditKind&gt; kinds= EnumSet.noneOf(EditKind.class);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">		for (LocalEdit edit : edits) {</span>
+<span class="fc" id="L117">			kinds.add(edit.kind());</span>
+<span class="fc" id="L118">		}</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (!kinds.contains(EditKind.CHANGE_LOCAL_DECLARATION)</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REPLACE_EMPTY_IMPLEMENTATION)</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">				|| !kinds.contains(EditKind.REPLACE_DUPLICATE_GUARD)) {</span>
+<span class="nc" id="L122">			throw new IllegalArgumentException(</span>
+					&quot;A unique-sequence rewrite requires declaration, implementation, and guard edits&quot;); //$NON-NLS-1$
+		}
+<span class="fc" id="L125">	}</span>
+
+	private static String requiredText(String value, String fieldName) {
+<span class="fc" id="L128">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L130">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L132">		return text;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

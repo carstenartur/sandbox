@@ -258,9 +258,9 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 
 	private static boolean isDeclarationName(SimpleName name) {
 <span class="fc" id="L260">		ASTNode parent= name.getParent();</span>
-<span class="pc bpc" id="L261" title="1 of 4 branches missed.">		return parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getName() == name</span>
-<span class="pc bfc" id="L262" title="All 2 branches covered.">				|| parent instanceof SingleVariableDeclaration declaration</span>
-<span class="pc bnc" id="L263" title="All 2 branches missed.">						&amp;&amp; declaration.getName() == name;</span>
+<span class="fc bfc" id="L261" title="All 4 branches covered.">		return parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getName() == name</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">				|| parent instanceof SingleVariableDeclaration declaration</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">						&amp;&amp; declaration.getName() == name;</span>
 	}
 
 	private static Expression completeReferenceExpression(SimpleName name, String bindingKey) {
@@ -464,7 +464,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc bfc" id="L464" title="All 2 branches covered.">					: encounterIteration ? OrderRequirement.ENCOUNTER : seed.orderRequirement();</span>
 <span class="fc bfc" id="L465" title="All 2 branches covered.">			EscapeLevel escape= field</span>
 <span class="fc" id="L466">					? EscapeLevel.FIELD</span>
-<span class="pc bpc" id="L467" title="1 of 2 branches missed.">					: parameter ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">					: parameter ? EscapeLevel.METHOD_BOUNDARY : EscapeLevel.LOCAL;</span>
 <span class="fc bfc" id="L468" title="All 2 branches covered.">			AliasingContract aliasing= rejected</span>
 <span class="fc" id="L469">					? AliasingContract.UNKNOWN</span>
 <span class="fc" id="L470">					: AliasingContract.NO_OBSERVED_ALIAS;</span>
