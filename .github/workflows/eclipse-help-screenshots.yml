@@ -1,0 +1,100 @@
+name: Eclipse Help screenshots
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'pom.xml'
+      - 'sandbox*_cleanup/**'
+      - 'sandbox*_cleanup_help/**'
+      - 'sandbox*_quickfix/**'
+      - 'sandbox*_quickfix_help/**'
+      - 'sandbox_functional_converter/**'
+      - 'sandbox_functional_converter_help/**'
+      - 'sandbox_int_to_enum/**'
+      - 'sandbox_int_to_enum_help/**'
+      - 'sandbox_method_reuse/**'
+      - 'sandbox_method_reuse_help/**'
+      - 'sandbox_platform_helper/**'
+      - 'sandbox_platform_helper_help/**'
+      - 'sandbox_tools/**'
+      - 'sandbox_tools_help/**'
+      - 'sandbox_triggerpattern/**'
+      - 'sandbox_triggerpattern_help/**'
+      - 'sandbox_use_general_type/**'
+      - 'sandbox_use_general_type_help/**'
+      - 'sandbox_usage_view_test/**'
+      - '.github/workflows/eclipse-help-screenshots.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    name: Generate screenshots in Eclipse
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=false
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
+
+      - name: Install Eclipse desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Generate Eclipse Help screenshots
+        run: >-
+          xvfb-run --auto-servernum mvn
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          -Phelp-screenshots
+          -pl sandbox_usage_view_test
+          -am
+          clean verify
+
+      - name: Upload generated screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: eclipse-help-screenshots-${{ github.run_number }}
+          path: sandbox_usage_view_test/target/help-screenshots/**
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload SWTBot diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: eclipse-help-swtbot-diagnostics-${{ github.run_number }}
+          path: |
+            sandbox_usage_view_test/target/work/data/.metadata/.log
+            sandbox_usage_view_test/target/surefire-reports/**
+          retention-days: 14
+          if-no-files-found: warn
