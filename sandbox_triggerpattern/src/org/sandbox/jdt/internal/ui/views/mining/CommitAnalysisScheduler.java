@@ -14,84 +14,140 @@
 package org.sandbox.jdt.internal.ui.views.mining;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.widgets.Display;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 
 /**
- * Orchestrates asynchronous AI-powered analysis of multiple commits using
- * Eclipse {@link org.eclipse.core.runtime.jobs.Job Jobs}.
+ * Orchestrates AI-powered commit analysis through one bounded queue.
  *
- * <p>Strategy:</p>
- * <ol>
- *   <li>All commits start with status PENDING (⏳)</li>
- *   <li>Jobs are scheduled (one per commit)</li>
- *   <li>Each job uses {@link EclipseLlmService} for AI inference</li>
- *   <li>On completion: {@link TableViewer#update(Object, String[])} is called
- *       via {@link Display#asyncExec(Runnable)}</li>
- * </ol>
+ * <p>Only one commit is analyzed at a time. This deliberately trades raw
+ * parallelism for predictable provider usage, cancellation, and rate-limit
+ * behavior. The queue itself is one user-visible Eclipse {@link Job}, while the
+ * commit table continues to expose per-commit state.</p>
  *
  * @since 1.2.6
  */
 public class CommitAnalysisScheduler {
 
+	/** Aggregate state suitable for a view status line or tests. */
+	public record Progress(int completed, int total, int active, int queued,
+			boolean running, boolean cancelled) {
+	}
+
 	private final GitHistoryProvider gitProvider;
 	private final Path repositoryPath;
 	private final TableViewer tableViewer;
-	private final List<CommitAnalysisJob> runningJobs = new ArrayList<>();
-	private volatile boolean running;
+	private final Consumer<Progress> progressListener;
 
-	/**
-	 * Creates a new scheduler.
-	 *
-	 * @param gitProvider    the git history provider
-	 * @param repositoryPath path to the Git repository
-	 * @param tableViewer    the commit table viewer to update
-	 */
+	private volatile boolean running;
+	private volatile boolean cancelled;
+	private volatile int completed;
+	private volatile int total;
+	private Job analysisJob;
+
 	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,
 			TableViewer tableViewer) {
+		this(gitProvider, repositoryPath, tableViewer, progress -> {
+		});
+	}
+
+	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,
+			TableViewer tableViewer, Consumer<Progress> progressListener) {
 		this.gitProvider = gitProvider;
 		this.repositoryPath = repositoryPath;
 		this.tableViewer = tableViewer;
+		this.progressListener = progressListener != null ? progressListener : progress -> {
+		};
 	}
 
-	/**
-	 * Starts asynchronous analysis of the given commits.
-	 *
-	 * @param entries the commit entries to analyze
-	 */
-	public void startAnalysis(List<CommitTableEntry> entries) {
+	/** Starts a bounded, user-visible analysis queue. */
+	public synchronized void startAnalysis(List<CommitTableEntry> entries) {
 		cancelAnalysis();
-		running = true;
+		List<CommitTableEntry> queue = List.copyOf(entries);
+		total = queue.size();
+		completed = 0;
+		cancelled = false;
+		running = !queue.isEmpty();
 
-		for (CommitTableEntry entry : entries) {
-			CommitAnalysisJob job = new CommitAnalysisJob(
-					entry, gitProvider, repositoryPath,
-					() -> notifyUpdate(entry));
-			runningJobs.add(job);
-			job.schedule();
+		if (queue.isEmpty()) {
+			notifyProgress(new Progress(0, 0, 0, 0, false, false));
+			return;
+		}
+
+		notifyProgress(progress(0));
+		analysisJob = new Job("Refactoring Mining: " + total + " commits") { //$NON-NLS-1$ //$NON-NLS-2$
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				monitor.beginTask("Inferring TriggerPattern rules from commit history", total); //$NON-NLS-1$
+				try {
+					for (int index = 0; index < queue.size(); index++) {
+						if (monitor.isCanceled()) {
+							cancelled = true;
+							return Status.CANCEL_STATUS;
+						}
+
+						CommitTableEntry entry = queue.get(index);
+						monitor.subTask("Analyzing " + entry.getCommitInfo().shortId() + ": " //$NON-NLS-1$ //$NON-NLS-2$
+								+ entry.getCommitInfo().message());
+						notifyProgress(progress(1));
+
+						CommitAnalysisJob commitJob = new CommitAnalysisJob(entry, gitProvider,
+								repositoryPath, () -> notifyUpdate(entry));
+						IStatus status = commitJob.analyze(monitor);
+						if (status.matches(IStatus.CANCEL) || monitor.isCanceled()) {
+							cancelled = true;
+							return Status.CANCEL_STATUS;
+						}
+
+						completed++;
+						monitor.worked(1);
+						notifyProgress(progress(0));
+					}
+					return Status.OK_STATUS;
+				} finally {
+					running = false;
+					monitor.done();
+					notifyProgress(progress(0));
+				}
+			}
+		};
+		analysisJob.setUser(true);
+		analysisJob.schedule();
+	}
+
+	/** Cancels both the active commit and all queued commits. */
+	public synchronized void cancelAnalysis() {
+		if (analysisJob != null) {
+			cancelled = true;
+			analysisJob.cancel();
+			analysisJob = null;
+		}
+		if (running) {
+			running = false;
+			notifyProgress(progress(0));
 		}
 	}
 
-	/**
-	 * Cancels all running analysis jobs.
-	 */
-	public void cancelAnalysis() {
-		running = false;
-		for (CommitAnalysisJob job : runningJobs) {
-			job.cancel();
-		}
-		runningJobs.clear();
-	}
-
-	/**
-	 * @return {@code true} if any analysis is still running
-	 */
 	public boolean isRunning() {
 		return running;
+	}
+
+	public Progress getProgress() {
+		return progress(running ? 1 : 0);
+	}
+
+	private Progress progress(int active) {
+		int boundedCompleted = Math.min(completed, total);
+		int queued = Math.max(0, total - boundedCompleted - active);
+		return new Progress(boundedCompleted, total, active, queued, running, cancelled);
 	}
 
 	private void notifyUpdate(CommitTableEntry entry) {
@@ -102,6 +158,13 @@ public class CommitAnalysisScheduler {
 					tableViewer.update(entry, null);
 				}
 			});
+		}
+	}
+
+	private void notifyProgress(Progress progress) {
+		Display display = tableViewer.getTable().getDisplay();
+		if (display != null && !display.isDisposed()) {
+			display.asyncExec(() -> progressListener.accept(progress));
 		}
 	}
 }
