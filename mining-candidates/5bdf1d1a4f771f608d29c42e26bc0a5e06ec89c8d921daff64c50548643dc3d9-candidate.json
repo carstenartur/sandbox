@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5bdf1d1a4f771f608d29c42e26bc0a5e06ec89c8d921daff64c50548643dc3d9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "public final org.eclipse.ltk.core.refactoring.TextChange getTextChange() throws org.eclipse.core.runtime.CoreException\n\u003d\u003e @java.lang.Override public final org.eclipse.ltk.core.refactoring.TextChange getTextChange() throws org.eclipse.core.runtime.CoreException\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui.text.java.correction;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.ltk.core.refactoring.TextChange;\nimport org.eclipse.ltk.core.refactoring.Change;\n\nclass ChangeCorrectionProposal {\n    protected Change getChange() { return null; }\n}\n\npublic class CUCorrectionProposal extends ChangeCorrectionProposal {\n    public final TextChange getTextChange() throws CoreException {\n        return (TextChange) getChange();\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui.text.java.correction;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.ltk.core.refactoring.TextChange;\nimport org.eclipse.ltk.core.refactoring.Change;\n\nclass ChangeCorrectionProposal {\n    protected Change getChange() { return null; }\n}\n\npublic class CUCorrectionProposal extends ChangeCorrectionProposal {\n    @java.lang.Override\n    public final TextChange getTextChange() throws CoreException {\n        return (TextChange) getChange();\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.ui.text.java.correction;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.ltk.core.refactoring.TextChange;\nimport org.eclipse.ltk.core.refactoring.Change;\n\nclass ChangeCorrectionProposal {\n    protected Change getChange() { return null; }\n}\n\npublic class CUCorrectionProposal extends ChangeCorrectionProposal {\n    @java.lang.Override\n    public final TextChange getTextChange() throws CoreException {\n        return (TextChange) getChange();\n    }\n\n    public final TextChange anotherMethod() throws CoreException {\n        return (TextChange) getChange();\n    }\n}",
+  "targetHintFile": "annotations.sandbox-hint",
+  "sourceCommit": "752ba92ac6c8a1942fedc7d9f2cbc2123cbbc1f2",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Annotation modernization",
+  "summary": "Adds the @Override annotation to the getTextChange method, indicating it overrides a supertype method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.639721134Z",
+  "ruleFingerprint": "sha256:42cfcd7088e8b44cdee10b321a26660d15bc9bc64360f685bd144f80df727f25",
+  "behaviorFingerprint": "sha256:05030b245bd04bac257f9e636620c2801545e429342baa4f8af990e31a1db498",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ltk cannot be resolved",
+    "verifiedAt": "2026-08-08T02:51:17.552806587Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

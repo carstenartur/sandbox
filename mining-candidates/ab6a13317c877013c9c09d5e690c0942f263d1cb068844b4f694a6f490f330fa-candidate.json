@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ab6a13317c877013c9c09d5e690c0942f263d1cb068844b4f694a6f490f330fa",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "this.findRequiredOrGreaterVMInstall()\n\u003d\u003e org.eclipse.jdt.internal.ui.util.ClasspathVMUtil.findRequiredOrGreaterVMInstall(fRequiredVersion, false, false)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.JavaCore;\nimport org.eclipse.jdt.launching.IVMInstall;\nimport org.eclipse.jdt.launching.JavaRuntime;\nimport org.eclipse.ltk.core.refactoring.Change;\n\nclass ReorgCorrectionsSubProcessor {\n    static class RequiredComplianceFix extends Change {\n        private String fRequiredVersion \u003d JavaCore.VERSION_9; // Example field\n        private org.eclipse.jdt.core.IJavaProject fProject; // Example field\n\n        private IVMInstall findRequiredOrGreaterVMInstall() {\n            return JavaRuntime.getDefaultVMInstall(); // Simplified for example\n        }\n\n        public void run(IProgressMonitor monitor) throws CoreException {\n            IVMInstall vmInstall \u003d this.findRequiredOrGreaterVMInstall();\n        }\n        @Override public String getName() { return \"\"; }\n        @Override public Object getModifiedElement() { return null; }\n        @Override public void initializeValidationData(IProgressMonitor pm) {}\n        @Override public org.eclipse.ltk.core.refactoring.RefactoringStatus isValid(IProgressMonitor pm) throws CoreException { return null; }\n        @Override public org.eclipse.ltk.core.refactoring.Change perform(IProgressMonitor pm) throws CoreException { return null; }\n    }\n}\n\npackage org.eclipse.jdt.internal.ui.util;\n\nimport org.eclipse.jdt.launching.IVMInstall;\nimport org.eclipse.jdt.launching.JavaCore;\nimport org.eclipse.jdt.launching.JavaRuntime;\n\npublic class ClasspathVMUtil {\n    public static IVMInstall findRequiredOrGreaterVMInstall(String requiredVersion, boolean allowNullCompliance, boolean getHighestVersion) {\n        return JavaRuntime.getDefaultVMInstall(); // Simplified\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.JavaCore;\nimport org.eclipse.jdt.launching.IVMInstall;\nimport org.eclipse.jdt.launching.JavaRuntime;\nimport org.eclipse.ltk.core.refactoring.Change;\nimport org.eclipse.jdt.internal.ui.util.ClasspathVMUtil; // Import added by tool\n\nclass ReorgCorrectionsSubProcessor {\n    static class RequiredComplianceFix extends Change {\n        private String fRequiredVersion \u003d JavaCore.VERSION_9; // Example field\n        private org.eclipse.jdt.core.IJavaProject fProject; // Example field\n\n        public void run(IProgressMonitor monitor) throws CoreException {\n            IVMInstall vmInstall \u003d ClasspathVMUtil.findRequiredOrGreaterVMInstall(fRequiredVersion, false, false);\n        }\n        @Override public String getName() { return \"\"; }\n        @Override public Object getModifiedElement() { return null; }\n        @Override public void initializeValidationData(IProgressMonitor pm) {}\n        @Override public org.eclipse.ltk.core.refactoring.RefactoringStatus isValid(IProgressMonitor pm) throws CoreException { return null; }\n        @Override public org.eclipse.ltk.core.refactoring.Change perform(IProgressMonitor pm) throws CoreException { return null; }\n    }\n}\n\npackage org.eclipse.jdt.internal.ui.util;\n\nimport org.eclipse.jdt.launching.IVMInstall;\nimport org.eclipse.jdt.launching.JavaCore;\nimport org.eclipse.jdt.launching.JavaRuntime;\n\npublic class ClasspathVMUtil {\n    public static IVMInstall findRequiredOrGreaterVMInstall(String requiredVersion, boolean allowNullCompliance, boolean getHighestVersion) {\n        return JavaRuntime.getDefaultVMInstall(); // Simplified\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport org.eclipse.jdt.launching.IVMInstall;\n\nclass ReorgCorrectionsSubProcessor {\n    static class RequiredComplianceFix {\n        private String fRequiredVersion \u003d \"\";\n        private IVMInstall someOtherMethod() {\n            return null;\n        }\n        public void run() {\n            IVMInstall vmInstall \u003d someOtherMethod(); // Should not match\n        }\n    }\n}",
+  "targetHintFile": "classpath.sandbox-hint",
+  "sourceCommit": "32932b22cb766856cfc43bdd9935eac5b4cfd612",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API usage modernization",
+  "summary": "Replaces calls to the internal instance method \u0027findRequiredOrGreaterVMInstall()\u0027 with a static call to \u0027ClasspathVMUtil.findRequiredOrGreaterVMInstall()\u0027, passing \u0027fRequiredVersion\u0027 and explicit boolean arguments.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.651252420Z",
+  "ruleFingerprint": "sha256:3bde093a50e8a47504ec41674d1ba8391c0ac72c29db345c7ce28c792b790fc1",
+  "behaviorFingerprint": "sha256:957fb9eccdda6b094149638295ec09684d722dcdb6b1aef39d590252ae5f675e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-08-08T02:51:17.596178830Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

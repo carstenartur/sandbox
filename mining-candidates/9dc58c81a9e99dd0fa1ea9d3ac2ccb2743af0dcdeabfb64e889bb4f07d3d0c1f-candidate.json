@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9dc58c81a9e99dd0fa1ea9d3ac2ccb2743af0dcdeabfb64e889bb4f07d3d0c1f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove.redundant.static.nested.enum\u003e\n\u003c!description: Remove redundant \u0027static\u0027 modifier from a nested enum declaration. Nested enums are implicitly static.\u003e\n\u003c!severity: HINT\u003e\n\u003c!minJavaVersion: 8\u003e\n\nstatic enum $name { $body$ } :: parentMatches(\"class $parentName\") || parentMatches(\"interface $parentName\")\n\u003d\u003e enum $name { $body$ }\n;;",
+  "beforeExample": "public class TestClass {\n    class OuterClass {\n        static enum InnerEnum {\n            CONSTANT1,\n            CONSTANT2;\n            void doSomething() { }\n        }\n    }\n\n    interface OuterInterface {\n        static enum InnerInterfaceEnum {\n            CONSTANT_A,\n            CONSTANT_B;\n            int value;\n            InnerInterfaceEnum() { this.value \u003d 0; }\n        }\n    }\n}\n",
+  "afterExample": "public class TestClass {\n    class OuterClass {\n        enum InnerEnum {\n            CONSTANT1,\n            CONSTANT2;\n            void doSomething() { }\n        }\n    }\n\n    interface OuterInterface {\n        enum InnerInterfaceEnum {\n            CONSTANT_A,\n            CONSTANT_B;\n            int value;\n            InnerInterfaceEnum() { this.value \u003d 0; }\n        }\n    }\n}\n",
+  "negativeExample": "// Top-level enum, should not match\nenum TopLevelEnum {\n    VAL1, VAL2;\n    void someMethod() {}\n}\n\n// Class with static modifier (illegal in top-level context, but not matched by enum rule if legal)\nclass ContainingClass {\n    static class StaticInnerClass { /* legal for nested class */ }\n}\n\n// Enum field, not an enum declaration\nclass HasEnumField {\n    enum MyEnum { V1 };\n    private static MyEnum field \u003d MyEnum.V1; // should not match\n}\n",
+  "targetHintFile": "modifiers.sandbox-hint",
+  "sourceCommit": "5ce3b0aff0b22b77262f72e8bc71eff9af9d8e75",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Redundant Modifier",
+  "summary": "Remove redundant \u0027static\u0027 from nested enum declarations.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.592771198Z",
+  "ruleFingerprint": "sha256:8f0445ab3357828620258a1565b82b7ec5cbaa0ef03ed231ca6d450b7390e35e",
+  "behaviorFingerprint": "sha256:635b8be9b854f25619a204154957213634befe172b84f2844f49c9433d1c1d41",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-08T02:51:17.502875795Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

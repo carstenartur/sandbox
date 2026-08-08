@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "620a25fbf9d39e1e44b35439e96ad9e715ab1c2f733bfa5f5b3d1483b492db41",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.swt.layout.GridData($style1$, $style2$, $grabH$, $grabV$, 1, 1)\n\u003d\u003e\norg.eclipse.swt.layout.GridData($style1$, $style2$, $grabH$, $grabV$)\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class GridDataCleanupExample {\n    public void createButton(Composite parent) {\n        Button button \u003d new Button(parent, SWT.PUSH);\n        button.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 1, 1));\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class GridDataCleanupExample {\n    public void createButton(Composite parent) {\n        Button button \u003d new Button(parent, SWT.PUSH);\n        button.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class GridDataNegativeExample {\n    public void createButtons(Composite parent) {\n        // Should not match: horizontal span is 2, not 1\n        Button button1 \u003d new Button(parent, SWT.PUSH);\n        button1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false, 2, 1));\n\n        // Should not match: uses a different constructor (4 args)\n        Button button2 \u003d new Button(parent, SWT.PUSH);\n        button2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));\n\n        // Should not match: uses a different constructor (no args)\n        Button button3 \u003d new Button(parent, SWT.PUSH);\n        button3.setLayoutData(new GridData());\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "a98ea8e304fa434cdd547b109d61e39a68029689",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Simplification",
+  "summary": "Simplify GridData constructor by removing default 1,1 spans",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.604797616Z",
+  "ruleFingerprint": "sha256:73e6e3a61a4b980d04a825f0e105c08ac0028caaf2daf0927e1a408a5097ef0f",
+  "behaviorFingerprint": "sha256:4c82cb7fd215d4a214b56e7453fb1e531a5c7ec9db1828d53f02861ad50ea537",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-08T02:51:17.514013952Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "72e4782616acadbbe2d7408e3cbd11dc512112dc0372376b0eb2afbe7dd3c1fb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$field.setFocus() :: instanceof($field, \"org.eclipse.jdt.internal.ui.wizards.dialogfields.StringDialogField\")\n\u003d\u003e\n$field.setFocus(false)\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui.wizards;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.StringDialogField;\n\n// Assume StringDialogField and its methods exist in the classpath\nclass StringDialogFieldStub extends StringDialogField {\n    public StringDialogFieldStub() { super(); }\n    @Override public boolean setFocus() { return super.setFocus(); }\n    @Override public boolean setFocus(boolean selectAll) { return super.setFocus(selectAll); }\n}\n\npublic class NewPackageWizardPage {\n    private StringDialogField fPackageDialogField;\n\n    public NewPackageWizardPage() {\n        fPackageDialogField \u003d new StringDialogFieldStub();\n    }\n\n    protected void setFocus() {\n        fPackageDialogField.setFocus();\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui.wizards;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.StringDialogField;\n\n// Assume StringDialogField and its methods exist in the classpath\nclass StringDialogFieldStub extends StringDialogField {\n    public StringDialogFieldStub() { super(); }\n    @Override public boolean setFocus() { return super.setFocus(); }\n    @Override public boolean setFocus(boolean selectAll) { return super.setFocus(selectAll); }\n}\n\npublic class NewPackageWizardPage {\n    private StringDialogField fPackageDialogField;\n\n    public NewPackageWizardPage() {\n        fPackageDialogField \u003d new StringDialogFieldStub();\n    }\n\n    protected void setFocus() {\n        fPackageDialogField.setFocus(false);\n    }\n}",
+  "negativeExample": "package some.other.pkg;\n\n// Assume these types are available for compilation\nimport org.eclipse.swt.widgets.Text;\n\n// Dummy StringDialogField class to make compilation possible for negative example.\n// In a real scenario, the FQN would resolve to the actual Eclipse class.\nclass DummyStringDialogField {\n    public boolean setFocus() { return true; }\n    public boolean setFocus(boolean selectAll) { return true; }\n}\n\npublic class MyClass {\n    private Text myText;\n    private DummyStringDialogField fSomeOtherField;\n\n    public MyClass() {\n        myText \u003d new Text(null, 0); // Placeholder constructor\n        fSomeOtherField \u003d new DummyStringDialogField();\n    }\n\n    public void someMethod() {\n        myText.setFocus(); // Should not be changed (different type)\n        fSomeOtherField.setFocus(true); // Should not be changed (already explicit and correct)\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "df3971b3f765441320c0716be2a6410ca456bfba",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.633758005Z",
+  "ruleFingerprint": "sha256:07d061840f5e173f096d8786a27dd0d2a5ed52004ee062e8d5235a82fe9aa1b2",
+  "behaviorFingerprint": "sha256:f02bfa467477578d02539a8a4e49489b88cc3fb2f5bf2a31f14f6dbd102e20a9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-08T02:51:17.541210881Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

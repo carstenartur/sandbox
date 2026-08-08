@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9839b2ccf86b40f4dc1b74645783eaeb5bc3d9ab6da6606a7d3c89f3d5a4566f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use.imagedescriptor.registry\u003e\n\u003c!description: Use ImageDescriptorRegistry to obtain images from JavaPluginImages descriptors.\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.$descriptor.createImage()\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPlugin.getImageDescriptorRegistry().get(org.eclipse.jdt.internal.ui.JavaPluginImages.$descriptor)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.resource.Image;\nimport org.eclipse.jface.resource.ImageDescriptor;\n\n// Mock classes to enable compilation for the example\nclass JavaPluginImages {\n    public static final ImageDescriptor DESC_OBJS_TEST_CASE \u003d new ImageDescriptor() {};\n    public static final ImageDescriptor DESC_OBJS_OTHER \u003d new ImageDescriptor() {};\n}\n\nclass JavaPlugin {\n    private static final ImageDescriptorRegistry registry \u003d new ImageDescriptorRegistry();\n    public static ImageDescriptorRegistry getImageDescriptorRegistry() { return registry; }\n}\n\nclass ImageDescriptorRegistry {\n    public Image get(ImageDescriptor descriptor) { return null; }\n}\n\npublic class MyClass {\n    public void someMethod() {\n        Image image \u003d JavaPluginImages.DESC_OBJS_TEST_CASE.createImage();\n        Image image2 \u003d JavaPluginImages.DESC_OBJS_OTHER.createImage();\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.resource.Image;\nimport org.eclipse.jface.resource.ImageDescriptor;\n\n// Mock classes to enable compilation for the example\nclass JavaPluginImages {\n    public static final ImageDescriptor DESC_OBJS_TEST_CASE \u003d new ImageDescriptor() {};\n    public static final ImageDescriptor DESC_OBJS_OTHER \u003d new ImageDescriptor() {};\n}\n\nclass JavaPlugin {\n    private static final ImageDescriptorRegistry registry \u003d new ImageDescriptorRegistry();\n    public static ImageDescriptorRegistry getImageDescriptorRegistry() { return registry; }\n}\n\nclass ImageDescriptorRegistry {\n    public Image get(ImageDescriptor descriptor) { return null; }\n}\n\npublic class MyClass {\n    public void someMethod() {\n        Image image \u003d JavaPlugin.getImageDescriptorRegistry().get(JavaPluginImages.DESC_OBJS_TEST_CASE);\n        Image image2 \u003d JavaPlugin.getImageDescriptorRegistry().get(JavaPluginImages.DESC_OBJS_OTHER);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jface.resource.Image;\nimport org.eclipse.jface.resource.ImageDescriptor;\n\n// Mock classes to enable compilation for the example\nclass JavaPluginImages {\n    public static final ImageDescriptor DESC_OBJS_TEST_CASE \u003d new ImageDescriptor() {};\n}\n\nclass JavaPlugin {\n    private static final ImageDescriptorRegistry registry \u003d new ImageDescriptorRegistry();\n    public static ImageDescriptorRegistry getImageDescriptorRegistry() { return registry; }\n}\n\nclass ImageDescriptorRegistry {\n    public Image get(ImageDescriptor descriptor) { return null; }\n}\n\npublic class MyClass {\n    public void someMethod() {\n        ImageDescriptor someOtherDescriptor \u003d new ImageDescriptor() {};\n        Image image \u003d someOtherDescriptor.createImage(); // Should not match as it\u0027s not from JavaPluginImages\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "fd3764c8acb080d8a65e6771e7faea0ba2ff11f6",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces direct calls to `createImage()` on `JavaPluginImages` descriptors with a call to the `JavaPlugin`\u0027s `ImageDescriptorRegistry`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.620556448Z",
+  "ruleFingerprint": "sha256:859e02e5fd6b4aaf938c26d8f61987a944210afa0ebfd7a147111bc87d0b9de1",
+  "behaviorFingerprint": "sha256:08a09e7b1ebc0d4d0f604cc5cf8cfca983d8dead1089061b1e97f2d35f1f89a0",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-08T02:51:17.524310406Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
