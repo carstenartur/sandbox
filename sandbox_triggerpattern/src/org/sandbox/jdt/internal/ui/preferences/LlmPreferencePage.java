@@ -105,7 +105,6 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 		apiKeyText = new Text(parent, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);
 		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		apiKeyText.setText(LlmSecureCredentials.loadApiKey());
-		label.setLabelFor(apiKeyText);
 
 		Label explanation = new Label(parent, SWT.WRAP);
 		explanation.setText("Stored encrypted by Eclipse Equinox Secure Storage; environment-variable fallback remains available."); //$NON-NLS-1$
