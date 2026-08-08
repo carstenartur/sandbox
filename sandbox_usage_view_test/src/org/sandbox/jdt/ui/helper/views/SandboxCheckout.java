@@ -14,6 +14,8 @@
 package org.sandbox.jdt.ui.helper.views;
 
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.CodeSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,11 +45,14 @@ final class SandboxCheckout {
 		}
 
 		starts.add(Path.of(System.getProperty("user.dir", "."))); //$NON-NLS-1$ //$NON-NLS-2$
-		try {
-			starts.add(Path.of(SandboxCheckout.class.getProtectionDomain()
-					.getCodeSource().getLocation().toURI()));
-		} catch (URISyntaxException | NullPointerException exception) {
-			// The working-directory search below remains available.
+		CodeSource codeSource= SandboxCheckout.class.getProtectionDomain().getCodeSource();
+		URL location= codeSource == null ? null : codeSource.getLocation();
+		if (location != null) {
+			try {
+				starts.add(Path.of(location.toURI()));
+			} catch (URISyntaxException exception) {
+				// The working-directory search below remains available.
+			}
 		}
 
 		for (Path start : starts) {
