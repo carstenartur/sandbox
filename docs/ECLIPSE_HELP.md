@@ -26,6 +26,7 @@ From the repository root on a graphical workstation:
 
 ```bash
 mvn \
+  -Dtycho.localArtifacts=ignore \
   -f sandbox_help_build/pom.xml \
   -Phelp-screenshots \
   clean verify
@@ -38,6 +39,7 @@ xvfb-run \
   --auto-servernum \
   --server-args="-screen 0 1600x1200x24" \
   mvn \
+  -Dtycho.localArtifacts=ignore \
   -f sandbox_help_build/pom.xml \
   -Phelp-screenshots \
   clean verify
