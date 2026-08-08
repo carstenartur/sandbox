@@ -69,6 +69,8 @@ Use this to test the latest features. Updated automatically on every commit to `
 6. Click **Next** and follow the installation wizard
 7. Restart Eclipse when prompted
 
+Each cleanup or quick-fix feature installs its matching offline user documentation. After restarting Eclipse, open **Help** → **Help Contents** and select the corresponding **Sandbox – ...** book. Sandbox-owned configuration pages also support context-sensitive **F1** help.
+
 > **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
 
 ## 📦 Release Process
@@ -106,6 +108,7 @@ The repository includes CI workflows for building, testing, and code quality ana
 - **Quick Build**: `mvn -T 1C verify`
 - **Standalone IDE Product**: `mvn -Pproduct clean verify`
 - **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`
+- **Eclipse Help and screenshot reproduction**: [docs/ECLIPSE_HELP.md](docs/ECLIPSE_HELP.md)
 
 **Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
 
@@ -119,6 +122,7 @@ The repository includes CI workflows for building, testing, and code quality ana
 2. **Open Eclipse** and navigate to **Source** → **Clean Up...** or use **Preferences** → **Java** → **Code Style** → **Clean Up**
 3. **Configure cleanups**: Select the sandbox cleanup profiles you want to enable
 4. **Apply cleanups**: Run cleanup on your Java files
+5. **Open installed documentation** through **Help** → **Help Contents**, or press **F1** on a Sandbox configuration page
 
 ### For Contributors/Developers
 
@@ -358,11 +362,14 @@ The following directories provide supplementary tooling and distribution packagi
 
 This repository contains extensive documentation organized at multiple levels to help you understand, use, and contribute to the project.
 
+Installed end-user documentation is available offline in Eclipse through **Help** → **Help Contents**. The source layout, validation contract, and checkout-local screenshot reproduction process are documented in [docs/ECLIPSE_HELP.md](docs/ECLIPSE_HELP.md).
+
 📚 **For a complete documentation index covering all plugins, architecture guides, and contributing information**, see [DOCUMENTATION_INVENTORY.md](DOCUMENTATION_INVENTORY.md).
 
 ### Quick Documentation Links
 
 - **[Installation](#-installation)** - How to install plugins in Eclipse
+- **[Installed Eclipse Help](docs/ECLIPSE_HELP.md)** - Help-bundle architecture, local validation, and screenshot reproduction
 - **[Building from Source](CONTRIBUTING.md#building-from-source)** - How to build the project with Maven/Tycho
 - **[Projects](#projects)** - Descriptions and documentation for all plugins
 - **[Contributing](CONTRIBUTING.md)** - How to contribute to this project

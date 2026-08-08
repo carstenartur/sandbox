@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Sandbox – Platform Status</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Platform Status</h1>
+   <p>Modernizes verbose Eclipse Platform status construction to the supported status factory APIs.</p>
+   <p class="note">This documentation is installed by <code>sandbox_platform_helper_feature</code>
+      together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
+
+   <h2>What the feature provides</h2>
+   <ul>
+      <li>Recognizes supported <code>new Status(...)</code> construction patterns.</li>
+      <li>Replaces them with concise Eclipse Platform status factory methods where equivalent.</li>
+      <li>Preserves severity, message, exception, plug-in identifier, and code where the target factory supports the same semantics.</li>
+      <li>Runs as a cleanup or save action.</li>
+   </ul>
+
+   <h2>Where to start</h2>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Platform Status (Sandbox)</strong>.</p>
+
+   <h2>Configuration in Eclipse</h2>
+   <p><img class="screenshot" src="../images/platform-status-cleanup.png"
+      alt="Platform Status configuration in Eclipse"/></p>
+
+   <p>Continue with <a href="usage.html">Using this feature</a> and
+      <a href="reference.html">Reference, safety, and limitations</a>.</p>
+</body>
+</html>

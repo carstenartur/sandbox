@@ -40,4 +40,8 @@
          id="sandbox_method_reuse"
          version="1.3.3.qualifier"/>
 
+   <plugin
+         id="sandbox_method_reuse_help"
+         version="1.3.3.qualifier"/>
+
 </feature>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>JFace API Modernization reference</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>JFace API Modernization: reference</h1>
+   <h2>Applicability contract</h2>
+   <p>A migration is offered only when the source invocation resolves to a known JFace API signature and an equivalent replacement is available.</p>
+
+   <h2>Safety model</h2>
+   <p>The cleanup does not replace unrelated methods that merely share a name. Ambiguous overloads and unsupported behavior differences are left for manual review.</p>
+
+   <h2>Known limitations</h2>
+   <ul>
+      <li>Coverage is limited to the migrations implemented by this bundle.</li>
+      <li>Projects targeting older JFace versions may not provide the replacement API.</li>
+      <li>UI behavior should be verified with the application's SWT/JFace tests.</li>
+   </ul>
+
+   <h2>Support information</h2>
+   <p>The Help content is shipped with the same feature version as the runtime
+      plug-in. When reporting a problem, include the Sandbox feature version,
+      Eclipse version, Java version, the smallest reproducing source, and whether
+      bindings were available.</p>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>

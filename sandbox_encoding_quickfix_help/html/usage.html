@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Using Explicit Encoding</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Using Explicit Encoding</h1>
+   <h2>Entry point</h2>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Explicit Encoding (Sandbox)</strong>.</p>
+
+   <h2>When it is offered</h2>
+   <p>The cleanup is offered only when the Java AST and bindings identify a supported encoding-sensitive API call and the selected policy provides an unambiguous replacement.</p>
+
+   <h2>Recommended workflow</h2>
+   <ol>
+      <li>Enable only the transformation options you intend to evaluate.</li>
+      <li>Run the cleanup on a small, version-controlled selection.</li>
+      <li>Inspect the preview or diff before accepting the change.</li>
+      <li>Compile and execute the relevant tests.</li>
+      <li>Expand the scope only after the result is understood.</li>
+   </ol>
+
+   <h2>Screenshot regeneration</h2>
+   <p>The image in this Help bundle is generated from a real Eclipse workbench by
+      <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
+      <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>
