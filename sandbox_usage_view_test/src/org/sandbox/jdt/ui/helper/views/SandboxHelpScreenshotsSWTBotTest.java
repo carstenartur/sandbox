@@ -30,6 +30,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
@@ -101,6 +102,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final String DOCUMENTATION_PROJECT = "SandboxHelpTriggerPattern";
     private static final String REFACTORING_MINING_VIEW = "org.sandbox.jdt.views.refactoringMining";
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
+    private static final String HINT_FILE_CLEANUP_LABEL = "Apply transformation rules from .sandbox-hint files";
     private static SWTWorkbenchBot bot;
     private static Path outputRoot;
     private static IProject documentationProject;
@@ -133,6 +135,12 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
         for (CleanupTab tab : CLEANUP_TABS) {
             profileDialog.bot().tabItem(tab.label()).activate();
+            if ("Code Patterns (Sandbox)".equals(tab.label())) {
+                var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
+                if (!hintFileCleanup.isChecked()) {
+                    hintFileCleanup.click();
+                }
+            }
             bot.sleep(300);
             capture(profileDialog, tab.helpBundle(), tab.fileName());
         }
@@ -163,7 +171,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     @Test
     public void captureRefactoringMiningWorkflow() throws Exception {
-        SWTBotShell workbench = bot.shell("Eclipse SDK").activate();
+        SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, REFACTORING_MINING_VIEW);
         SWTBotView miningView = bot.viewByTitle("Refactoring Mining");
         miningView.toolbarButton("Analyze Project").click();
@@ -186,7 +194,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     @Test
     public void captureNewHintRuleWizard() throws Exception {
-        SWTBotShell workbench = bot.shell("Eclipse SDK").activate();
+        SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, PROJECT_EXPLORER_VIEW);
         SWTBotView projectExplorer = bot.viewByTitle("Project Explorer");
         projectExplorer.bot().tree().getTreeItem(DOCUMENTATION_PROJECT).select();
@@ -244,6 +252,15 @@ public class SandboxHelpScreenshotsSWTBotTest {
         PersonIdent identity = new PersonIdent("Sandbox Help", "help@example.invalid",
                 Date.from(Instant.parse(timestamp)), TimeZone.getTimeZone("UTC"));
         git.commit().setMessage(message).setAuthor(identity).setCommitter(identity).call();
+    }
+
+    private static SWTBotShell workbenchShell() {
+        return UIThreadRunnable.syncExec(Display.getDefault(), new Result<SWTBotShell>() {
+            @Override
+            public SWTBotShell run() {
+                return new SWTBotShell(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell());
+            }
+        });
     }
 
     private static void showView(SWTBotShell workbench, String viewId) {
@@ -337,7 +354,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static void closeDialogIfOpen() {
         try {
             SWTBotShell active = bot.activeShell();
-            if (!"Eclipse SDK".equals(active.getText())) {
+            SWTBotShell workbench = workbenchShell();
+            if (active.widget != workbench.widget) {
                 active.close();
             }
         } catch (WidgetNotFoundException exception) {
