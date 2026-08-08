@@ -293,23 +293,26 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	/**
 	 * Returns whether an invocation whose JDT binding is temporarily unavailable can
 	 * still be identified without ambiguity as the private local method being
-	 * migrated. This is intentionally narrow: save-action ASTs can occasionally
-	 * lose the invocation binding while retaining the declaration and field
-	 * bindings, and treating that situation as "unrelated" would allow a partial
-	 * int-to-enum rewrite.
+	 * migrated. The recovery is intentionally limited to the one-parameter form
+	 * from a method or constructor declared directly in the same type. More complex
+	 * signatures, nested/anonymous types and overloads stay fail-closed.
 	 */
 	private static boolean isSafelyRecoverableLocalInvocation(MethodInvocation invocation, Candidate candidate) {
-		if (invocation.getExpression() != null
+		if (candidate.holder.method.parameters().size() != 1
+				|| invocation.getExpression() != null
 				|| !invocation.getName().getIdentifier().equals(candidate.holder.method.getName().getIdentifier())
-				|| invocation.arguments().size() != candidate.holder.method.parameters().size()
+				|| invocation.arguments().size() != 1
 				|| findEnclosingType(invocation) != candidate.holder.enclosingType) {
 			return false;
 		}
+		MethodDeclaration caller = findEnclosingMethod(invocation);
+		if (caller == null || caller.getParent() != candidate.holder.enclosingType) {
+			return false;
+		}
 		String methodName = candidate.holder.method.getName().getIdentifier();
-		int parameterCount = candidate.holder.method.parameters().size();
 		for (MethodDeclaration method : candidate.holder.enclosingType.getMethods()) {
 			if (method != candidate.holder.method && method.getName().getIdentifier().equals(methodName)
-					&& method.parameters().size() == parameterCount) {
+					&& method.parameters().size() == 1) {
 				return false;
 			}
 		}
