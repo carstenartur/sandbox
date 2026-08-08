@@ -23,7 +23,8 @@ import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
 
 /**
  * Mutable model entry for the commit table, wrapping a {@link CommitInfo} with
- * analysis status, AI evaluations, and inferred rules.
+ * analysis status, AI evaluations, inferred rules, and an actionable failure
+ * message when analysis cannot complete.
  *
  * <p>Supports both AI-based evaluation ({@link CommitEvaluation}) and
  * deterministic rule inference ({@link InferredRule}).</p>
@@ -36,6 +37,7 @@ public class CommitTableEntry {
 	private AnalysisStatus status;
 	private List<InferredRule> inferredRules;
 	private List<CommitEvaluation> evaluations;
+	private String failureMessage;
 
 	/**
 	 * Creates a new table entry with initial PENDING status.
@@ -49,58 +51,48 @@ public class CommitTableEntry {
 		this.evaluations = List.of();
 	}
 
-	/**
-	 * @return the commit metadata
-	 */
 	public CommitInfo getCommitInfo() {
 		return commitInfo;
 	}
 
-	/**
-	 * @return the current analysis status
-	 */
 	public AnalysisStatus getStatus() {
 		return status;
 	}
 
-	/**
-	 * @param status the new analysis status
-	 */
 	public void setStatus(AnalysisStatus status) {
 		this.status = status;
+		if (status != AnalysisStatus.FAILED) {
+			failureMessage = null;
+		}
 	}
 
-	/**
-	 * @return the inferred rules (empty list if none)
-	 */
 	public List<InferredRule> getInferredRules() {
 		return inferredRules;
 	}
 
-	/**
-	 * @param inferredRules the inferred rules
-	 */
 	public void setInferredRules(List<InferredRule> inferredRules) {
 		this.inferredRules = inferredRules != null ? inferredRules : List.of();
 	}
 
-	/**
-	 * @return the AI evaluations (empty list if none)
-	 */
 	public List<CommitEvaluation> getEvaluations() {
 		return evaluations;
 	}
 
-	/**
-	 * @param evaluations the AI evaluations
-	 */
 	public void setEvaluations(List<CommitEvaluation> evaluations) {
 		this.evaluations = evaluations != null ? evaluations : List.of();
 	}
 
-	/**
-	 * @return the number of rules (from AI evaluations or deterministic inference)
-	 */
+	/** Returns the user-facing reason for a failed analysis, if available. */
+	public String getFailureMessage() {
+		return failureMessage;
+	}
+
+	/** Records an analysis failure without retaining prompts, credentials, or provider responses. */
+	public void setFailureMessage(String failureMessage) {
+		this.failureMessage = failureMessage;
+		this.status = AnalysisStatus.FAILED;
+	}
+
 	public int getRuleCount() {
 		if (!evaluations.isEmpty()) {
 			return (int) evaluations.stream()
@@ -110,18 +102,10 @@ public class CommitTableEntry {
 		return inferredRules.size();
 	}
 
-	/**
-	 * @return {@code true} if the commit has analyzable rules
-	 */
 	public boolean hasRules() {
 		return status == AnalysisStatus.DONE && getRuleCount() > 0;
 	}
 
-	/**
-	 * Collects DSL rule strings from AI evaluations.
-	 *
-	 * @return list of non-blank DSL rules
-	 */
 	public List<String> getDslRules() {
 		List<String> rules = new ArrayList<>();
 		for (CommitEvaluation eval : evaluations) {
