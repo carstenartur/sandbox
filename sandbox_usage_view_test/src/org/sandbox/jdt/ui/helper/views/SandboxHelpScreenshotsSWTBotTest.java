@@ -24,6 +24,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
+import org.eclipse.swtbot.swt.finder.results.Result;
 import org.eclipse.swtbot.swt.finder.results.VoidResult;
 import org.eclipse.swtbot.swt.finder.utils.SWTUtils;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
@@ -191,7 +192,15 @@ public class SandboxHelpScreenshotsSWTBotTest {
         Path imageDirectory = outputRoot.resolve(helpBundle).resolve("images");
         Files.createDirectories(imageDirectory);
         Path image = imageDirectory.resolve(fileName);
-        assertTrue(SWTUtils.captureScreenshot(image.toString(), shell.widget),
+        Rectangle clientBounds = UIThreadRunnable.syncExec(shell.display,
+                new Result<Rectangle>() {
+                    @Override
+                    public Rectangle run() {
+                        Rectangle clientArea = shell.widget.getClientArea();
+                        return shell.widget.getDisplay().map(shell.widget, null, clientArea);
+                    }
+                });
+        assertTrue(SWTUtils.captureScreenshot(image.toString(), clientBounds),
                 () -> "Could not capture " + image);
         assertTrue(Files.isRegularFile(image) && Files.size(image) > 0,
                 () -> "Screenshot was not written: " + image);
