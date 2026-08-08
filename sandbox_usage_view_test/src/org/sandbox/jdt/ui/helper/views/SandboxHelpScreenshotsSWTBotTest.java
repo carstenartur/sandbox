@@ -140,7 +140,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void openPreferences() {
-        bot.menu("Window").menu("Preferences").click();
+        bot.menu("Window").menu("Preferences...").click();
         bot.shell("Preferences").activate();
     }
 
