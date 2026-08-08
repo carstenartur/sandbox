@@ -16,6 +16,7 @@ package org.sandbox.jdt.triggerpattern.mining.llm;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
+import org.sandbox.jdt.internal.ui.preferences.LlmSecureCredentials;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
 import org.sandbox.jdt.triggerpattern.llm.LlmClientFactory;
@@ -62,12 +63,12 @@ public class EclipseLlmService {
         }
     }
 
-    /** Documentation generation must never contact an external provider. */
+    /** Documentation generation must never contact or unlock an external provider. */
     public boolean isAvailable() {
         if (Boolean.getBoolean(DOCUMENTATION_SCREENSHOT_PROPERTY)) {
             return false;
         }
-        return hasPreferenceApiKey() || hasAnyEnvApiKey();
+        return hasSecureApiKey() || hasAnyEnvApiKey();
     }
 
     public void shutdown() {
@@ -94,7 +95,7 @@ public class EclipseLlmService {
     private static LlmClient createClientFromPreferences() {
         IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
         String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-        String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
+        String apiKey= LlmSecureCredentials.loadApiKey();
         String modelName= prefs.get(LlmPreferencePage.PREF_MODEL_NAME, ""); //$NON-NLS-1$
         LlmInferenceSettings settings= new LlmInferenceSettings(modelName, null, null);
 
@@ -107,11 +108,10 @@ public class EclipseLlmService {
         return LlmClientFactory.createFromEnvironment(null, settings);
     }
 
-    private static boolean hasPreferenceApiKey() {
+    private static boolean hasSecureApiKey() {
         IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-        String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
         String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-        return !apiKey.isBlank() && !provider.isBlank();
+        return !provider.isBlank() && !LlmSecureCredentials.loadApiKey().isBlank();
     }
 
     private static boolean hasAnyEnvApiKey() {
