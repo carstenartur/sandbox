@@ -25,9 +25,11 @@ import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.layout.GridData;
@@ -35,6 +37,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Table;
+import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.part.ViewPart;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitInfo;
 import org.sandbox.jdt.triggerpattern.mining.git.CommandLineGitProvider;
@@ -145,10 +148,10 @@ public class RefactoringMiningView extends ViewPart {
 	private void createToolbar() {
 		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
 
-		mgr.add(new Action("Analyze Project") { //$NON-NLS-1$
+		mgr.add(new Action("Analyze Project...") { //$NON-NLS-1$
 			@Override
 			public void run() {
-				analyzeFirstGitProject();
+				chooseAndAnalyzeProject();
 			}
 		});
 
@@ -157,13 +160,14 @@ public class RefactoringMiningView extends ViewPart {
 			public void run() {
 				if (scheduler != null) {
 					scheduler.cancelAnalysis();
+					setContentDescription("Analysis cancelled"); //$NON-NLS-1$
 				}
 			}
 		});
 
 		mgr.add(new Separator());
 
-		mgr.add(new Action("Export as .sandbox-hint") { //$NON-NLS-1$
+		mgr.add(new Action("Export selected as .sandbox-hint") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				exportAsHintFile();
@@ -175,18 +179,34 @@ public class RefactoringMiningView extends ViewPart {
 
 	// ---- analysis ----
 
-	/**
-	 * Finds the first Git-enabled project in the workspace and starts analysis.
-	 */
-	void analyzeFirstGitProject() {
-		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-		for (IProject project : projects) {
+	private void chooseAndAnalyzeProject() {
+		List<IProject> projects = new ArrayList<>();
+		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 			if (project.isOpen() && project.getLocation() != null) {
-				Path repoPath = project.getLocation().toFile().toPath();
-				analyzeRepository(repoPath);
-				return;
+				projects.add(project);
 			}
 		}
+		if (projects.isEmpty()) {
+			setContentDescription("No open workspace project is available for analysis"); //$NON-NLS-1$
+			return;
+		}
+
+		ElementListSelectionDialog dialog = new ElementListSelectionDialog(getSite().getShell(), new LabelProvider() {
+			@Override
+			public String getText(Object element) {
+				return element instanceof IProject project ? project.getName() : super.getText(element);
+			}
+		});
+		dialog.setTitle("Select project for Refactoring Mining"); //$NON-NLS-1$
+		dialog.setMessage("Choose the Git-backed workspace project to analyze:"); //$NON-NLS-1$
+		dialog.setMultipleSelection(false);
+		dialog.setElements(projects.toArray());
+		if (dialog.open() != Window.OK || !(dialog.getFirstResult() instanceof IProject project)) {
+			return;
+		}
+
+		setContentDescription("Repository: " + project.getName()); //$NON-NLS-1$
+		analyzeRepository(project.getLocation().toFile().toPath());
 	}
 
 	/**
@@ -220,8 +240,9 @@ public class RefactoringMiningView extends ViewPart {
 	// ---- export ----
 
 	private void exportAsHintFile() {
-		List<String> allDslRules = collectSelectedDslRules();
-		if (allDslRules.isEmpty()) {
+		List<String> selectedDslRules = detailPanel.getSelectedDslRules();
+		if (selectedDslRules.isEmpty()) {
+			setContentDescription("Select a commit with inferred rules and check the rules to export"); //$NON-NLS-1$
 			return;
 		}
 
@@ -232,26 +253,13 @@ public class RefactoringMiningView extends ViewPart {
 
 		String path = dialog.open();
 		if (path != null) {
-			String content = buildHintFileContent(allDslRules);
+			String content = buildHintFileContent(selectedDslRules);
 			try {
 				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);
 			} catch (java.io.IOException e) {
 				setContentDescription("Export failed: " + e.getMessage()); //$NON-NLS-1$
 			}
 		}
-	}
-
-	private List<String> collectSelectedDslRules() {
-		List<String> rules = new ArrayList<>();
-		Object input = commitTable.getInput();
-		if (input instanceof CommitTableEntry[] entries) {
-			for (CommitTableEntry entry : entries) {
-				if (entry.hasRules()) {
-					rules.addAll(entry.getDslRules());
-				}
-			}
-		}
-		return rules;
 	}
 
 	private static String buildHintFileContent(List<String> dslRules) {
