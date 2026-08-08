@@ -263,7 +263,11 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 					return false;
 				}
 				IMethodBinding binding = node.resolveMethodBinding();
-				if (binding == null || !candidate.methodBinding.isEqualTo(binding.getMethodDeclaration())) {
+				if (binding != null) {
+					if (!candidate.methodBinding.isEqualTo(binding.getMethodDeclaration())) {
+						return true;
+					}
+				} else if (!isSafelyRecoverableLocalInvocation(node, candidate)) {
 					return true;
 				}
 				if (candidate.parameterIndex >= node.arguments().size()) {
@@ -272,6 +276,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 				}
 				Expression argument = (Expression) node.arguments().get(candidate.parameterIndex);
 				ConstantInfo constant = resolveConstant(argument, enumConstants);
+				if (constant == null) {
+					constant = recoverUnresolvedConstant(argument, candidate, enumConstants);
+				}
 				if (constant == null) {
 					valid.set(false);
 					return false;
@@ -283,9 +290,86 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		return valid.get();
 	}
 
+	/**
+	 * Returns whether an invocation whose JDT binding is temporarily unavailable can
+	 * still be identified without ambiguity as the private local method being
+	 * migrated. This is intentionally narrow: save-action ASTs can occasionally
+	 * lose the invocation binding while retaining the declaration and field
+	 * bindings, and treating that situation as "unrelated" would allow a partial
+	 * int-to-enum rewrite.
+	 */
+	private static boolean isSafelyRecoverableLocalInvocation(MethodInvocation invocation, Candidate candidate) {
+		if (invocation.getExpression() != null
+				|| !invocation.getName().getIdentifier().equals(candidate.holder.method.getName().getIdentifier())
+				|| invocation.arguments().size() != candidate.holder.method.parameters().size()
+				|| findEnclosingType(invocation) != candidate.holder.enclosingType) {
+			return false;
+		}
+		String methodName = candidate.holder.method.getName().getIdentifier();
+		int parameterCount = candidate.holder.method.parameters().size();
+		for (MethodDeclaration method : candidate.holder.enclosingType.getMethods()) {
+			if (method != candidate.holder.method && method.getName().getIdentifier().equals(methodName)
+					&& method.parameters().size() == parameterCount) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static ConstantInfo recoverUnresolvedConstant(Expression argument, Candidate candidate,
+			Map<String, ConstantInfo> enumConstants) {
+		Expression unwrapped = unparenthesize(argument);
+		if (!(unwrapped instanceof SimpleName simpleName)) {
+			return null;
+		}
+		ConstantInfo match = null;
+		for (ConstantInfo constant : enumConstants.values()) {
+			if (constant.name.equals(simpleName.getIdentifier())) {
+				match = constant;
+				break;
+			}
+		}
+		if (match == null) {
+			return null;
+		}
+		MethodDeclaration enclosingMethod = findEnclosingMethod(simpleName);
+		if (enclosingMethod == null || hasLocalDeclarationNamed(enclosingMethod, match.name)) {
+			return null;
+		}
+		return match;
+	}
+
+	private static boolean hasLocalDeclarationNamed(MethodDeclaration method, String identifier) {
+		AtomicBoolean found = new AtomicBoolean(false);
+		method.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SingleVariableDeclaration node) {
+				if (node.getName().getIdentifier().equals(identifier)) {
+					found.set(true);
+					return false;
+				}
+				return !found.get();
+			}
+
+			@Override
+			public boolean visit(VariableDeclarationFragment node) {
+				if (node.getName().getIdentifier().equals(identifier)) {
+					found.set(true);
+					return false;
+				}
+				return !found.get();
+			}
+		});
+		return found.get();
+	}
+
 	private static boolean validateAllReferences(CompilationUnit compilationUnit, Candidate candidate,
 			Map<String, ConstantInfo> enumConstants) {
 		AtomicBoolean valid = new AtomicBoolean(true);
+		Set<String> enumConstantNames = new HashSet<>();
+		for (ConstantInfo constant : enumConstants.values()) {
+			enumConstantNames.add(constant.name);
+		}
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SimpleName node) {
@@ -316,11 +400,44 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 						&& !(node.getParent() instanceof MethodInvocation invocation && invocation.getName() == node)) {
 					valid.set(false);
 					return false;
+				} else if (binding == null && !validateUnresolvedReference(node, candidate, enumConstantNames)) {
+					valid.set(false);
+					return false;
 				}
 				return true;
 			}
 		});
 		return valid.get();
+	}
+
+	private static boolean validateUnresolvedReference(SimpleName node, Candidate candidate,
+			Set<String> enumConstantNames) {
+		String identifier = node.getIdentifier();
+		if (enumConstantNames.contains(identifier)) {
+			if (isCandidateConstantDeclaration(node, candidate)) {
+				return true;
+			}
+			return candidate.holder.constantReferences.containsKey(containingExpression(node));
+		}
+		if (identifier.equals(candidate.holder.parameter.getName().getIdentifier())
+				&& findEnclosingMethod(node) == candidate.holder.method
+				&& node != candidate.holder.parameter.getName()) {
+			return candidate.stateReferences.contains(containingExpression(node));
+		}
+		if (identifier.equals(candidate.holder.method.getName().getIdentifier())
+				&& node != candidate.holder.method.getName()) {
+			return node.getParent() instanceof MethodInvocation invocation && invocation.getName() == node
+					&& isSafelyRecoverableLocalInvocation(invocation, candidate);
+		}
+		return true;
+	}
+
+	private static boolean isCandidateConstantDeclaration(SimpleName name, Candidate candidate) {
+		if (!(name.getParent() instanceof VariableDeclarationFragment fragment) || fragment.getName() != name
+				|| !(fragment.getParent() instanceof FieldDeclaration field)) {
+			return false;
+		}
+		return candidate.holder.constantFields.get(name.getIdentifier()) == field;
 	}
 
 	private static Map<String, ConstantInfo> collectPrivateIntConstants(TypeDeclaration typeDeclaration) {
