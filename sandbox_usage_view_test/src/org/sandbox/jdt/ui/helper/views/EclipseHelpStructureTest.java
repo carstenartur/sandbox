@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,7 +35,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
@@ -191,7 +191,7 @@ public class EclipseHelpStructureTest {
 		Path html= help.resolve("html"); //$NON-NLS-1$
 		try (Stream<Path> files= Files.walk(html)) {
 			for (Path page : files.filter(Files::isRegularFile)
-					.filter(path -> path.getFileName().toString().endsWith(".html")) //$NON-NLS-1$
+					.filter(EclipseHelpStructureTest::isHtmlFile)
 					.toList()) {
 				Matcher matcher= LOCAL_HTML_REFERENCE.matcher(read(page));
 				while (matcher.find()) {
@@ -199,6 +199,11 @@ public class EclipseHelpStructureTest {
 				}
 			}
 		}
+	}
+
+	private static boolean isHtmlFile(Path path) {
+		Path fileName= path.getFileName();
+		return fileName != null && fileName.toString().endsWith(".html"); //$NON-NLS-1$
 	}
 
 	private static void validateScreenshots(Path help, Family family) throws IOException {
@@ -250,7 +255,9 @@ public class EclipseHelpStructureTest {
 		if (pathPart.isEmpty()) {
 			return;
 		}
-		Path target= source.getParent().resolve(pathPart).normalize();
+		Path sourceDirectory= Objects.requireNonNull(source.getParent(),
+				() -> "Help source has no parent directory: " + source); //$NON-NLS-1$
+		Path target= sourceDirectory.resolve(pathPart).normalize();
 		assertTrue(target.startsWith(help),
 				() -> "Help reference escapes its bundle: " + source + " -> " + rawReference); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(Files.isRegularFile(target),
