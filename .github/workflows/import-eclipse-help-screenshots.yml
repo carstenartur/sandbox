@@ -60,15 +60,18 @@ jobs:
 
           python3 - <<'PY'
           from pathlib import Path
-          from PIL import Image
+          import struct
 
           images = sorted(Path('.').glob('sandbox*_help/images/*.png'))
           if len(images) != 12:
               raise SystemExit(f'Expected 12 checkout PNG files, found {len(images)}')
           for image_path in images:
-              with Image.open(image_path) as image:
-                  if image.size != (1280, 900):
-                      raise SystemExit(f'{image_path}: expected 1280x900, got {image.size}')
+              header = image_path.read_bytes()[:24]
+              if header[:8] != b'\x89PNG\r\n\x1a\n' or header[12:16] != b'IHDR':
+                  raise SystemExit(f'{image_path}: not a valid PNG header')
+              size = struct.unpack('>II', header[16:24])
+              if size != (1280, 900):
+                  raise SystemExit(f'{image_path}: expected 1280x900, got {size[0]}x{size[1]}')
           PY
 
       - name: Commit screenshots to the branch
