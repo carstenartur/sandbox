@@ -17,51 +17,31 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
-import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
-/**
- * Preference page for LLM settings used by AI-powered rule inference.
- * <p>
- * Users can configure the LLM provider, API key, model name, max tokens,
- * and temperature. When preferences are empty, the system falls back to
- * environment variables via {@code LlmClientFactory.createFromEnvironment()}.
- * </p>
- *
- * @since 1.2.6
- */
+/** Preference page for the LLM settings actually consumed by rule inference. */
 public class LlmPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
-	/** Plugin identifier used as preference scope node. */
 	public static final String PLUGIN_ID = "sandbox_triggerpattern"; //$NON-NLS-1$
-
 	private static final String PREFIX = "org.sandbox.jdt.triggerpattern.llm."; //$NON-NLS-1$
 
-	/** Preference key for the selected LLM provider. */
 	public static final String PREF_PROVIDER = PREFIX + "provider"; //$NON-NLS-1$
-
-	/** Preference key for the API key. */
 	public static final String PREF_API_KEY = PREFIX + "apiKey"; //$NON-NLS-1$
-
-	/** Preference key for the model name. */
 	public static final String PREF_MODEL_NAME = PREFIX + "modelName"; //$NON-NLS-1$
 
-	/** Preference key for the maximum number of tokens. */
+	/** Legacy keys retained so existing preference nodes can be migrated/ignored safely. */
+	@Deprecated
 	public static final String PREF_MAX_TOKENS = PREFIX + "maxTokens"; //$NON-NLS-1$
-
-	/** Preference key for the temperature value. */
+	@Deprecated
 	public static final String PREF_TEMPERATURE = PREFIX + "temperature"; //$NON-NLS-1$
 
 	private static final String WIZARD_PREFIX = "org.sandbox.jdt.triggerpattern.wizard."; //$NON-NLS-1$
-
-	/** Preference key for auto-running AI inference when the wizard opens from a selection. */
 	public static final String PREF_WIZARD_AUTO_AI = WIZARD_PREFIX + "autoInferOnSelection"; //$NON-NLS-1$
-
-	/** Preference key for the default hint file folder path. */
+	@Deprecated
 	public static final String PREF_WIZARD_DEFAULT_FOLDER = WIZARD_PREFIX + "defaultHintFolder"; //$NON-NLS-1$
 
 	private static final String[][] PROVIDER_ENTRIES = {
@@ -73,14 +53,12 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 			{ "Mistral", "MISTRAL" } //$NON-NLS-1$ //$NON-NLS-2$
 	};
 
-	/**
-	 * Creates a new LLM preference page with GRID layout.
-	 */
 	public LlmPreferencePage() {
 		super(GRID);
 		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));
-		setDescription("Configure LLM settings for AI-powered rule inference.\n" //$NON-NLS-1$
-				+ "Leave API Key empty to fall back to environment variables."); //$NON-NLS-1$
+		setDescription("Configure the provider used for AI-assisted rule inference.\n" //$NON-NLS-1$
+				+ "Leave API Key empty to use the provider-specific environment variable; " //$NON-NLS-1$
+				+ "leave Model name empty to use the provider/environment default."); //$NON-NLS-1$
 	}
 
 	@Override
@@ -101,52 +79,17 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 
 		addField(new StringFieldEditor(
 				PREF_MODEL_NAME,
-				"&Model name:", //$NON-NLS-1$
+				"&Model name (optional):", //$NON-NLS-1$
 				getFieldEditorParent()));
 
-		IntegerFieldEditor maxTokensField = new IntegerFieldEditor(
-				PREF_MAX_TOKENS,
-				"Max &tokens:", //$NON-NLS-1$
-				getFieldEditorParent());
-		maxTokensField.setValidRange(1, 128000);
-		addField(maxTokensField);
-
-		StringFieldEditor temperatureField = new StringFieldEditor(
-				PREF_TEMPERATURE,
-				"T&emperature (0.0\u20131.0):", //$NON-NLS-1$
-				getFieldEditorParent()) {
-			@Override
-			protected boolean doCheckState() {
-				try {
-					double value = Double.parseDouble(getStringValue().trim());
-					if (value < 0.0 || value > 1.0) {
-						setErrorMessage("Temperature must be between 0.0 and 1.0"); //$NON-NLS-1$
-						return false;
-					}
-				} catch (NumberFormatException e) {
-					setErrorMessage("Temperature must be a valid decimal number"); //$NON-NLS-1$
-					return false;
-				}
-				return true;
-			}
-		};
-		temperatureField.setEmptyStringAllowed(false);
-		addField(temperatureField);
-
-		// --- Wizard section ---
 		addField(new BooleanFieldEditor(
 				PREF_WIZARD_AUTO_AI,
 				"Automatically generate rule with AI when opening wizard from selection", //$NON-NLS-1$
-				getFieldEditorParent()));
-
-		addField(new StringFieldEditor(
-				PREF_WIZARD_DEFAULT_FOLDER,
-				"Default hint file &folder:", //$NON-NLS-1$
 				getFieldEditorParent()));
 	}
 
 	@Override
 	public void init(IWorkbench workbench) {
-		// Defaults are set by LlmPreferenceInitializer
+		// Defaults are set by LlmPreferenceInitializer.
 	}
 }
