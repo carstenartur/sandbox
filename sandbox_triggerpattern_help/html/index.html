@@ -8,31 +8,42 @@
    <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
-   <h1>Code Patterns and Hint DSL</h1>
-   <p>Applies built-in and DSL-defined source transformations and provides rule mining, quick assists, a wizard, a view, and optional LLM-assisted rule inference.</p>
+   <h1>Code Patterns, Hint DSL, and Rule Inference</h1>
+   <p>Sandbox TriggerPattern turns recurring source changes into reusable transformations. Rules are stored as <code>.sandbox-hint</code> files and can be authored manually, inferred from examples, or proposed from Git history.</p>
    <p class="note">This documentation is installed by <code>sandbox_triggerpattern_feature</code>
       together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
 
-   <h2>What the feature provides</h2>
+   <h2>How the pieces fit together</h2>
+   <p>The optional LLM is not a separate end-user feature. It is one inference backend shared by several ways of creating TriggerPattern DSL rules:</p>
+   <pre>Git commit history ----&gt; Refactoring Mining ----\
+Unified diff ----------&gt; Mine DSL Rule from Diff --+--&gt; LLM Rule Inference --&gt; DSL validation --&gt; .sandbox-hint
+Java selection --------&gt; Quick Assist ------------/
+Rule wizard -----------&gt; Generate with AI -------/
+
+.sandbox-hint --&gt; Code Patterns cleanup / quick-fix execution</pre>
+   <p>Inference proposes a generalized rule. Deterministic DSL validation checks whether the generated text is structurally valid; the user must still review whether the proposed transformation is semantically appropriate before broad application.</p>
+
+   <h2>Choose the workflow that matches your input</h2>
    <ul>
-      <li>Runs built-in cleanups for string simplification, threading, shift ranges, string comparison, logging diagnostics, obsolete collections, hashCode contracts, and constructor calls.</li>
-      <li>Loads transformation rules from <code>.sandbox-hint</code> files.</li>
-      <li>Offers <strong>Generate DSL Rule from Selection</strong> as a Java quick assist.</li>
-      <li>Provides Refactoring Mining commands and the <strong>Refactoring Mining</strong> view.</li>
-      <li>Provides an <strong>LLM Rule Inference</strong> preference page for explicitly configured providers.</li>
+      <li><strong>Mine commits</strong> when a repository history contains examples of a repeated refactoring. See <a href="mining.html">Mining rules from Git changes</a>.</li>
+      <li><strong>Mine a diff</strong> when you already have a concrete before/after change in unified-diff form. See <a href="mining.html#diff">Mining a selected diff</a>.</li>
+      <li><strong>Generate from a Java selection</strong> for a fast starting point directly in the editor. See <a href="authoring.html#selection">Generating from a selection</a>.</li>
+      <li><strong>Use the New Hint File wizard</strong> when you want to control metadata, source pattern, guards, replacement, and validation interactively. See <a href="authoring.html#wizard">Authoring with the rule wizard</a>.</li>
    </ul>
 
-   <h2>Where to start</h2>
-   <p>Use <strong>Code Patterns (Sandbox)</strong> in a JDT cleanup profile. Hint files can also be created from the New wizard or from a Java editor selection.</p>
-
-   <h2>Configuration in Eclipse</h2>
+   <h2>Cleanup configuration</h2>
+   <p>Existing built-in and <code>.sandbox-hint</code> rules are executed through <strong>Code Patterns (Sandbox)</strong> in the JDT cleanup profile.</p>
    <p><img class="screenshot" src="../images/code-patterns-cleanup.png"
-      alt="Code Patterns and Hint DSL configuration in Eclipse"/></p>
+      alt="Code Patterns cleanup configuration in Eclipse"/></p>
 
-   <h2>Optional rule inference configuration</h2>
+   <h2>LLM configuration</h2>
+   <p>AI-assisted workflows share the <strong>Java &gt; LLM Rule Inference</strong> preferences. The provider configuration is described in <a href="llm.html">Configuring optional LLM rule inference</a>.</p>
    <p><img class="screenshot" src="../images/llm-rule-inference-preferences.png"
       alt="LLM Rule Inference preferences"/></p>
-   <p>Continue with <a href="usage.html">Using this feature</a> and
-      <a href="reference.html">Reference, safety, and limitations</a>.</p>
+
+   <p>Continue with <a href="usage.html">Workflow guide</a>,
+      <a href="mining.html">Git and diff mining</a>,
+      <a href="authoring.html">selection and wizard authoring</a>, and
+      <a href="reference.html">reference, safety, and limitations</a>.</p>
 </body>
 </html>
