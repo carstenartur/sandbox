@@ -174,7 +174,12 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, REFACTORING_MINING_VIEW);
         SWTBotView miningView = bot.viewByTitle("Refactoring Mining");
-        miningView.toolbarButton("Analyze Project").click();
+        miningView.toolbarButton("Analyze Project...").click();
+
+        SWTBotShell projectSelection = bot.shell("Select project for Refactoring Mining").activate();
+        projectSelection.bot().table().select(DOCUMENTATION_PROJECT);
+        clickButton(projectSelection, "OK");
+
         bot.waitUntil(new DefaultCondition() {
             @Override
             public boolean test() {
