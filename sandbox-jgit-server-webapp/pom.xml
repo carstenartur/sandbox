@@ -22,7 +22,7 @@
 		<!-- Keep the server's direct ORM dependency aligned with the storage module's Search mapper. -->
 		<hibernate.version>7.4.5.Final</hibernate.version>
 		<hibernate-search.version>8.4.0.Final</hibernate-search.version>
-		<jgit-storage-hibernate.version>0.1.18</jgit-storage-hibernate.version>
+		<jgit-storage-hibernate.version>0.9.0</jgit-storage-hibernate.version>
 	</properties>
 
 	<repositories>
