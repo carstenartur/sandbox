@@ -70,7 +70,21 @@ jobs:
         uses: ./.github/actions/use-runner-maven
 
       - name: Install Eclipse desktop dependencies
+        shell: bash
         run: |
+          set -euo pipefail
+
+          # The hosted Ubuntu runner contains third-party APT sources that are
+          # unrelated to Eclipse. A temporary outage or access policy on one of
+          # them must not prevent us from installing packages from Ubuntu.
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              echo "Disabling unrelated runner APT source: $source"
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
