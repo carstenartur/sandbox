@@ -16,20 +16,33 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.Result;
 import org.eclipse.swtbot.swt.finder.results.VoidResult;
 import org.eclipse.swtbot.swt.finder.utils.SWTUtils;
+import org.eclipse.swtbot.swt.finder.waits.DefaultCondition;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -85,19 +98,27 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final int SCREENSHOT_CLIENT_WIDTH = 1280;
     private static final int SCREENSHOT_CLIENT_HEIGHT = 900;
     private static final String OUTPUT_PROPERTY = "sandbox.help.screenshot.output";
+    private static final String DOCUMENTATION_PROJECT = "SandboxHelpTriggerPattern";
+    private static final String REFACTORING_MINING_VIEW = "org.sandbox.jdt.views.refactoringMining";
+    private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
     private static SWTWorkbenchBot bot;
     private static Path outputRoot;
+    private static IProject documentationProject;
 
     @BeforeAll
-    public static void setUp() {
+    public static void setUp() throws Exception {
         bot = new SWTWorkbenchBot();
         outputRoot = SandboxCheckout.locate(OUTPUT_PROPERTY);
         closeWelcomeView();
+        documentationProject = createDocumentationProject();
     }
 
     @AfterAll
-    public static void tearDown() {
+    public static void tearDown() throws Exception {
         closeDialogIfOpen();
+        if (documentationProject != null && documentationProject.exists()) {
+            documentationProject.delete(true, true, new NullProgressMonitor());
+        }
     }
 
     @Test
@@ -138,6 +159,105 @@ public class SandboxHelpScreenshotsSWTBotTest {
         prepareForScreenshot(preferences);
         capture(preferences, "sandbox_triggerpattern_help", "llm-rule-inference-preferences.png");
         clickButton(preferences, "Cancel");
+    }
+
+    @Test
+    public void captureRefactoringMiningWorkflow() throws Exception {
+        SWTBotShell workbench = bot.shell("Eclipse SDK").activate();
+        showView(workbench, REFACTORING_MINING_VIEW);
+        SWTBotView miningView = bot.viewByTitle("Refactoring Mining");
+        miningView.toolbarButton("Analyze Project").click();
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                return miningView.bot().table().rowCount() >= 2;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The deterministic mining fixture did not appear in Refactoring Mining";
+            }
+        }, 10_000);
+        bot.sleep(500);
+        prepareForScreenshot(workbench);
+        capture(workbench, "sandbox_triggerpattern_help", "refactoring-mining-view.png");
+        miningView.close();
+    }
+
+    @Test
+    public void captureNewHintRuleWizard() throws Exception {
+        SWTBotShell workbench = bot.shell("Eclipse SDK").activate();
+        showView(workbench, PROJECT_EXPLORER_VIEW);
+        SWTBotView projectExplorer = bot.viewByTitle("Project Explorer");
+        projectExplorer.bot().tree().getTreeItem(DOCUMENTATION_PROJECT).select();
+
+        bot.menu("File").menu("New").menu("Other...").click();
+        SWTBotShell newWizard = bot.activeShell();
+        SWTBotTreeItem category = newWizard.bot().tree().getTreeItem("Sandbox TriggerPattern").expand();
+        category.getNode("Sandbox Hint File").select();
+        clickButton(newWizard, "Next >");
+
+        SWTBotShell hintWizard = bot.activeShell();
+        clickButton(hintWizard, "Next >");
+        hintWizard = bot.activeShell();
+        hintWizard.bot().textWithLabel("Source Pattern:").setText("$s.getBytes(\"UTF-8\")");
+        hintWizard.bot().textWithLabel("Guard (optional):").setText("sourceVersionGE(7)");
+        hintWizard.bot().textWithLabel("Replacement:")
+                .setText("$s.getBytes(java.nio.charset.StandardCharsets.UTF_8)");
+        bot.sleep(300);
+
+        prepareForScreenshot(hintWizard);
+        capture(hintWizard, "sandbox_triggerpattern_help", "new-hint-rule-wizard.png");
+        clickButton(hintWizard, "Cancel");
+        projectExplorer.close();
+    }
+
+    private static IProject createDocumentationProject() throws Exception {
+        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(DOCUMENTATION_PROJECT);
+        NullProgressMonitor monitor = new NullProgressMonitor();
+        if (project.exists()) {
+            project.delete(true, true, monitor);
+        }
+        project.create(monitor);
+        project.open(monitor);
+
+        Path repository = project.getLocation().toFile().toPath();
+        Path javaFile = repository.resolve("Example.java");
+        try (Git git = Git.init().setDirectory(repository.toFile()).call()) {
+            Files.writeString(javaFile,
+                    "class Example { String decode(byte[] bytes) throws Exception { return new String(bytes, \"UTF-8\"); } }\n",
+                    StandardCharsets.UTF_8);
+            git.add().addFilepattern("Example.java").call();
+            commit(git, "Use explicit charset name", "2026-01-01T10:00:00Z");
+
+            Files.writeString(javaFile,
+                    "import java.nio.charset.StandardCharsets;\n"
+                    + "class Example { String decode(byte[] bytes) { return new String(bytes, StandardCharsets.UTF_8); } }\n",
+                    StandardCharsets.UTF_8);
+            git.add().addFilepattern("Example.java").call();
+            commit(git, "Replace charset name with StandardCharsets", "2026-01-02T10:00:00Z");
+        }
+        return project;
+    }
+
+    private static void commit(Git git, String message, String timestamp) throws Exception {
+        PersonIdent identity = new PersonIdent("Sandbox Help", "help@example.invalid",
+                Date.from(Instant.parse(timestamp)), TimeZone.getTimeZone("UTC"));
+        git.commit().setMessage(message).setAuthor(identity).setCommitter(identity).call();
+    }
+
+    private static void showView(SWTBotShell workbench, String viewId) {
+        UIThreadRunnable.syncExec(workbench.display, new VoidResult() {
+            @Override
+            public void run() {
+                try {
+                    PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(viewId);
+                } catch (PartInitException exception) {
+                    throw new IllegalStateException("Could not open view " + viewId, exception);
+                }
+            }
+        });
+        bot.sleep(300);
     }
 
     private static void openPreferences() {
