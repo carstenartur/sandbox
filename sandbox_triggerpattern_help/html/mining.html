@@ -14,11 +14,11 @@
    <h2>Mine commit history</h2>
    <ol>
       <li>Open <strong>Window &gt; Show View &gt; Other... &gt; Sandbox &gt; Refactoring Mining</strong>.</li>
-      <li>Make the Git-backed Eclipse project you want to inspect available in the workspace.</li>
-      <li>Choose <strong>Analyze Project</strong> in the view toolbar.</li>
+      <li>Choose <strong>Analyze Project...</strong> in the view toolbar.</li>
+      <li>Select the Git-backed workspace project whose history you want to inspect. The view identifies the selected repository in its description instead of silently choosing the first open project.</li>
       <li>Inspect the commit table. The columns identify the commit, message, number of changed Java files, and AI analysis status.</li>
       <li>Select a commit with inferred rules to inspect the proposed DSL and its validation state.</li>
-      <li>Review the proposal before exporting or adopting it as a <code>.sandbox-hint</code> rule.</li>
+      <li>Check only the candidate rules you want to keep and choose <strong>Export selected as .sandbox-hint</strong>.</li>
    </ol>
    <p class="note">Mining is an analysis aid, not an automatic semantic proof. A green or valid DSL result means that the rule is syntactically accepted by the DSL validator; it does not prove that every future match preserves program behavior.</p>
 
@@ -38,6 +38,7 @@
       <li>Sandbox runs inference in a background job.</li>
       <li>When a rule is produced, a new <code>.sandbox-hint</code> file is created in the workspace and opened for review.</li>
    </ol>
+   <p class="note">The direct diff command still needs a clearer destination choice when several projects are open. The Refactoring Mining view now has explicit project selection; direct-command destination handling is tracked separately as QA work.</p>
 
    <h2>Example</h2>
    <p>A commit that repeatedly replaces a charset name with a typed constant could contain a change like this:</p>
@@ -48,6 +49,6 @@
    <h2>Current QA note: Working Tree command</h2>
    <p class="note">The command currently named <strong>Mine DSL rules from working tree...</strong> does not yet analyze uncommitted working-tree changes; its implementation reads <code>HEAD</code>. Until that mismatch is fixed, use commit mining or a selected unified diff when you need a documented and reproducible before/after source.</p>
 
-   <p><a href="index.html">Back to overview</a> | <a href="authoring.html">Selection and wizard authoring</a></p>
+   <p><a href="index.html">Back to overview</a> | <a href="authoring.html">Selection and wizard authoring</a> | <a href="apply.html">Apply a reviewed rule</a></p>
 </body>
 </html>
