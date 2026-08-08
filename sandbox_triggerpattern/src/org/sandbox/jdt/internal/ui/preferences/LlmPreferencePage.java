@@ -13,15 +13,25 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.preferences;
 
+import java.io.IOException;
+
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
 import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
+import org.osgi.service.prefs.BackingStoreException;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /** Preference page for the LLM settings actually consumed by rule inference. */
 public class LlmPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
@@ -30,10 +40,11 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 	private static final String PREFIX = "org.sandbox.jdt.triggerpattern.llm."; //$NON-NLS-1$
 
 	public static final String PREF_PROVIDER = PREFIX + "provider"; //$NON-NLS-1$
+	/** Legacy ordinary-preference key. New versions migrate it to Secure Storage. */
+	@Deprecated
 	public static final String PREF_API_KEY = PREFIX + "apiKey"; //$NON-NLS-1$
 	public static final String PREF_MODEL_NAME = PREFIX + "modelName"; //$NON-NLS-1$
 
-	/** Legacy keys retained so existing preference nodes can be migrated/ignored safely. */
 	@Deprecated
 	public static final String PREF_MAX_TOKENS = PREFIX + "maxTokens"; //$NON-NLS-1$
 	@Deprecated
@@ -53,12 +64,14 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 			{ "Mistral", "MISTRAL" } //$NON-NLS-1$ //$NON-NLS-2$
 	};
 
+	private Text apiKeyText;
+
 	public LlmPreferencePage() {
 		super(GRID);
 		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));
 		setDescription("Configure the provider used for AI-assisted rule inference.\n" //$NON-NLS-1$
-				+ "Leave API Key empty to use the provider-specific environment variable; " //$NON-NLS-1$
-				+ "leave Model name empty to use the provider/environment default."); //$NON-NLS-1$
+				+ "API keys are encrypted in Eclipse Secure Storage. Leave the key empty to use " //$NON-NLS-1$
+				+ "the provider-specific environment variable; leave Model name empty to use the provider default."); //$NON-NLS-1$
 	}
 
 	@Override
@@ -72,10 +85,7 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 				PROVIDER_ENTRIES,
 				getFieldEditorParent()));
 
-		addField(new StringFieldEditor(
-				PREF_API_KEY,
-				"&API Key:", //$NON-NLS-1$
-				getFieldEditorParent()));
+		createSecureApiKeyField(getFieldEditorParent());
 
 		addField(new StringFieldEditor(
 				PREF_MODEL_NAME,
@@ -86,6 +96,45 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 				PREF_WIZARD_AUTO_AI,
 				"Automatically generate rule with AI when opening wizard from selection", //$NON-NLS-1$
 				getFieldEditorParent()));
+	}
+
+	private void createSecureApiKeyField(Composite parent) {
+		Label label = new Label(parent, SWT.NONE);
+		label.setText("&API Key (Secure Storage):"); //$NON-NLS-1$
+
+		apiKeyText = new Text(parent, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);
+		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		apiKeyText.setText(LlmSecureCredentials.loadApiKey());
+		label.setLabelFor(apiKeyText);
+
+		Label explanation = new Label(parent, SWT.WRAP);
+		explanation.setText("Stored encrypted by Eclipse Equinox Secure Storage; environment-variable fallback remains available."); //$NON-NLS-1$
+		GridData explanationData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		explanationData.horizontalSpan = 2;
+		explanation.setLayoutData(explanationData);
+	}
+
+	@Override
+	public boolean performOk() {
+		try {
+			LlmSecureCredentials.storeApiKey(apiKeyText != null ? apiKeyText.getText() : ""); //$NON-NLS-1$
+		} catch (StorageException | IOException | BackingStoreException e) {
+			setErrorMessage("Could not save the API key in Eclipse Secure Storage: " + e.getMessage()); //$NON-NLS-1$
+			return false;
+		}
+		boolean result = super.performOk();
+		if (result) {
+			EclipseLlmService.reset();
+		}
+		return result;
+	}
+
+	@Override
+	protected void performDefaults() {
+		super.performDefaults();
+		if (apiKeyText != null && !apiKeyText.isDisposed()) {
+			apiKeyText.setText(""); //$NON-NLS-1$
+		}
 	}
 
 	@Override
