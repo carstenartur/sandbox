@@ -188,8 +188,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     private static void capture(SWTBotShell shell, String helpBundle, String fileName)
             throws IOException {
-        Path image = outputRoot.resolve(helpBundle).resolve("images").resolve(fileName);
-        Files.createDirectories(image.getParent());
+        Path imageDirectory = outputRoot.resolve(helpBundle).resolve("images");
+        Files.createDirectories(imageDirectory);
+        Path image = imageDirectory.resolve(fileName);
         assertTrue(SWTUtils.captureScreenshot(image.toString(), shell.widget),
                 () -> "Could not capture " + image);
         assertTrue(Files.isRegularFile(image) && Files.size(image) > 0,
