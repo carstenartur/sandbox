@@ -11,6 +11,18 @@ Sandbox keeps installed end-user documentation separate from runtime code. Each 
 
 The runtime plug-in must not require its Help plug-in. The feature is the installation boundary that brings both bundles into Eclipse.
 
+## Documentation is part of QA
+
+Installed Help is not considered complete merely because a TOC, a generic usage page, and one screenshot exist. Writing the documentation is also a product inspection exercise:
+
+- task-oriented instructions must follow real, reproducible UI paths;
+- screenshots must show useful states rather than only disabled/default configuration;
+- transformation features should pair invocation/configuration screenshots with compact before/after examples;
+- if a workflow cannot be documented truthfully, the implementation mismatch is a QA finding to fix or track explicitly;
+- screenshot review is required whenever the UI changes, because the image can reveal misleading labels, ineffective controls, inaccessible actions, or confusing layout.
+
+The first detailed application of this policy is [`TRIGGERPATTERN_HELP_QA.md`](TRIGGERPATTERN_HELP_QA.md), which maps Refactoring Mining, diff mining, Java-selection Quick Assist, the rule wizard, optional LLM inference, DSL validation, and deterministic rule execution to concrete documentation and screenshot evidence.
+
 ## Reproducing the screenshots locally
 
 The screenshot generator is a normal Tycho/SWTBot test. It does not call GitHub, download an Actions artifact, or depend on a GitHub-specific environment variable. It writes the generated PNG files directly into the checked-out `sandbox*_help/images` directories.
@@ -57,6 +69,8 @@ The profile fixes the Eclipse locale to English and fixes the Java language, cou
 
 The CSS preference page normally discovers Node.js, npx, Prettier, and Stylelint asynchronously. The screenshot profile explicitly suppresses that host-dependent status probe while capturing documentation, so the generated image does not vary with locally installed command-line tools. Normal Eclipse launches retain the live availability check.
 
+TriggerPattern screenshots also run with external LLM availability disabled. The documentation profile must never send source code to a configured provider merely because the developer running screenshot reproduction has an API key in Eclipse preferences or in the process environment. Mining screenshots use deterministic local Git fixtures instead of a developer's repository history.
+
 Screenshots generated on different operating systems can still differ in native window decorations, font rendering, theme, or widget metrics. The canonical committed images are therefore reproduced and compared on the documented Linux/Xvfb reference environment. Developers on Windows, macOS, or a graphical Linux desktop can still generate and inspect the same screens locally without GitHub Actions.
 
 ## Updating screenshots
@@ -64,8 +78,9 @@ Screenshots generated on different operating systems can still differ in native 
 1. Change the runtime UI or Help page.
 2. Run the local command above.
 3. Review the changed PNG files in the corresponding `*_help/images` directories.
-4. Confirm that the Help page still references the expected file name.
-5. Commit the runtime, Help, test, and generated-image changes together.
+4. Confirm that each image demonstrates the task/state claimed by the Help text, not merely that a dialog opened.
+5. Confirm that the Help page still references the expected file name.
+6. Commit the runtime, Help, test, and generated-image changes together.
 
 The `Eclipse Help screenshots` workflow runs the same Maven command under the reference Xvfb display and fails when the regenerated PNG files differ from the committed files. It is a reproducibility check, not the source of the generated documentation.
 
