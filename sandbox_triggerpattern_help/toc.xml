@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <toc label="Sandbox – Code Patterns and Hint DSL" topic="html/index.html">
-   <topic label="Overview" href="html/index.html"/>
-   <topic label="Using this feature" href="html/usage.html"/>
+   <topic label="Overview and component workflow" href="html/index.html"/>
+   <topic label="Workflow guide" href="html/usage.html"/>
+   <topic label="Mine rules from Git changes" href="html/mining.html"/>
+   <topic label="Author rules from selection or wizard" href="html/authoring.html"/>
+   <topic label="Configure optional LLM inference" href="html/llm.html"/>
    <topic label="Reference, safety, and limitations" href="html/reference.html"/>
 </toc>
