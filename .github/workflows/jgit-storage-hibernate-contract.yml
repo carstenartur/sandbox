@@ -1,0 +1,69 @@
+name: JGit Storage Consumer Contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/jgit-storage-hibernate-contract.sh'
+      - '.github/workflows/jgit-storage-hibernate-contract.yml'
+      - 'pom.xml'
+      - 'sandbox-jgit-storage-hibernate/**'
+      - 'sandbox-jgit-server-webapp/**'
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/jgit-storage-hibernate-contract.sh'
+      - '.github/workflows/jgit-storage-hibernate-contract.yml'
+      - 'pom.xml'
+      - 'sandbox-jgit-storage-hibernate/**'
+      - 'sandbox-jgit-server-webapp/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Core-only OSGi and shaded-server contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: |
+            pom.xml
+            sandbox-jgit-storage-hibernate/pom.xml
+            sandbox-jgit-server-webapp/pom.xml
+
+      - name: Validate and run the consumer-owned contract
+        shell: bash
+        env:
+          JGIT_STORAGE_HIBERNATE_CONTRACT_MODE: baseline
+        run: |
+          set -euo pipefail
+          bash -n .github/jgit-storage-hibernate-contract.sh
+          .github/jgit-storage-hibernate-contract.sh
+
+      - name: Upload contract evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sandbox-jgit-storage-hibernate-contract
+          path: |
+            target/jgit-storage-hibernate-contract/**
+            sandbox-jgit-storage-hibernate/target/classes/META-INF/MANIFEST.MF
+            sandbox-jgit-server-webapp/target/jgit-server.jar
+            sandbox-jgit-storage-hibernate/target/surefire-reports/**
+            sandbox-jgit-server-webapp/target/surefire-reports/**
+          if-no-files-found: error
