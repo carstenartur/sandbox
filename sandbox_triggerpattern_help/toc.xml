@@ -4,6 +4,7 @@
    <topic label="Workflow guide" href="html/usage.html"/>
    <topic label="Mine rules from Git changes" href="html/mining.html"/>
    <topic label="Author rules from selection or wizard" href="html/authoring.html"/>
+   <topic label="Apply rules with Quick Assist or Clean Up" href="html/apply.html"/>
    <topic label="Configure optional LLM inference" href="html/llm.html"/>
    <topic label="Reference, safety, and limitations" href="html/reference.html"/>
 </toc>
