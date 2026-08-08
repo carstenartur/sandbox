@@ -44,141 +44,148 @@ import org.sandbox.jdt.triggerpattern.llm.LlmProvider;
  */
 public class EclipseLlmService {
 
-	private static final Object INSTANCE_LOCK= new Object();
+    private static final String DOCUMENTATION_SCREENSHOT_PROPERTY = "sandbox.help.screenshot.mode"; //$NON-NLS-1$
+    private static final Object INSTANCE_LOCK= new Object();
 
-	private static volatile EclipseLlmService instance;
+    private static volatile EclipseLlmService instance;
 
-	private final Object lifecycleLock= new Object();
+    private final Object lifecycleLock= new Object();
 
-	private LlmClient llmClient;
-	private AiRuleInferenceEngine engine;
+    private LlmClient llmClient;
+    private AiRuleInferenceEngine engine;
 
-	private EclipseLlmService() {
-		// lazy initialization
-	}
+    private EclipseLlmService() {
+        // lazy initialization
+    }
 
-	/**
-	 * Returns the singleton instance.
-	 *
-	 * @return the service instance
-	 */
-	public static EclipseLlmService getInstance() {
-		EclipseLlmService current= instance;
-		if (current == null) {
-			synchronized (INSTANCE_LOCK) {
-				current= instance;
-				if (current == null) {
-					current= new EclipseLlmService();
-					instance= current;
-				}
-			}
-		}
-		return current;
-	}
+    /**
+     * Returns the singleton instance.
+     *
+     * @return the service instance
+     */
+    public static EclipseLlmService getInstance() {
+        EclipseLlmService current= instance;
+        if (current == null) {
+            synchronized (INSTANCE_LOCK) {
+                current= instance;
+                if (current == null) {
+                    current= new EclipseLlmService();
+                    instance= current;
+                }
+            }
+        }
+        return current;
+    }
 
-	/**
-	 * Returns the AI rule inference engine, creating the LLM client if needed.
-	 *
-	 * <p>The LLM provider is resolved from Eclipse preferences first,
-	 * falling back to environment variables if preferences are empty.</p>
-	 *
-	 * <p><strong>Thread safety:</strong> The engine instance is shared across
-	 * concurrent analysis jobs. The underlying {@link LlmClient} implementations
-	 * should tolerate concurrent calls; if they do not, callers should serialize
-	 * access externally (e.g. via a scheduling rule on the analysis jobs).</p>
-	 *
-	 * @return the inference engine
-	 */
-	public AiRuleInferenceEngine getEngine() {
-		synchronized (lifecycleLock) {
-			if (engine == null) {
-				llmClient= createClientFromPreferences();
-				engine= new AiRuleInferenceEngine(llmClient);
-			}
-			return engine;
-		}
-	}
+    /**
+     * Returns the AI rule inference engine, creating the LLM client if needed.
+     *
+     * <p>The LLM provider is resolved from Eclipse preferences first,
+     * falling back to environment variables if preferences are empty.</p>
+     *
+     * <p><strong>Thread safety:</strong> The engine instance is shared across
+     * concurrent analysis jobs. The underlying {@link LlmClient} implementations
+     * should tolerate concurrent calls; if they do not, callers should serialize
+     * access externally (e.g. via a scheduling rule on the analysis jobs).</p>
+     *
+     * @return the inference engine
+     */
+    public AiRuleInferenceEngine getEngine() {
+        synchronized (lifecycleLock) {
+            if (engine == null) {
+                llmClient= createClientFromPreferences();
+                engine= new AiRuleInferenceEngine(llmClient);
+            }
+            return engine;
+        }
+    }
 
-	/**
-	 * Returns whether the LLM service is configured and available.
-	 *
-	 * <p>Checks if an API key is configured in preferences or environment.</p>
-	 *
-	 * @return {@code true} if an LLM provider can be configured
-	 */
-	public boolean isAvailable() {
-		return hasPreferenceApiKey() || hasAnyEnvApiKey();
-	}
+    /**
+     * Returns whether the LLM service is configured and available.
+     *
+     * <p>The deterministic Eclipse Help screenshot profile deliberately forces
+     * this method to return {@code false}. Documentation generation must never
+     * contact an external provider merely because a developer has an API key in
+     * preferences or the process environment.</p>
+     *
+     * @return {@code true} if an LLM provider can be configured
+     */
+    public boolean isAvailable() {
+        if (Boolean.getBoolean(DOCUMENTATION_SCREENSHOT_PROPERTY)) {
+            return false;
+        }
+        return hasPreferenceApiKey() || hasAnyEnvApiKey();
+    }
 
-	/**
-	 * Shuts down the service and releases the underlying LLM client.
-	 */
-	public void shutdown() {
-		synchronized (lifecycleLock) {
-			if (llmClient != null) {
-				llmClient.close();
-				llmClient= null;
-				engine= null;
-			}
-		}
-	}
+    /**
+     * Shuts down the service and releases the underlying LLM client.
+     */
+    public void shutdown() {
+        synchronized (lifecycleLock) {
+            if (llmClient != null) {
+                llmClient.close();
+                llmClient= null;
+                engine= null;
+            }
+        }
+    }
 
-	/**
-	 * Resets the singleton (useful for testing or after preference changes).
-	 */
-	public static void reset() {
-		EclipseLlmService current;
-		synchronized (INSTANCE_LOCK) {
-			current= instance;
-			instance= null;
-		}
-		if (current != null) {
-			current.shutdown();
-		}
-	}
+    /**
+     * Resets the singleton (useful for testing or after preference changes).
+     */
+    public static void reset() {
+        EclipseLlmService current;
+        synchronized (INSTANCE_LOCK) {
+            current= instance;
+            instance= null;
+        }
+        if (current != null) {
+            current.shutdown();
+        }
+    }
 
-	/**
-	 * Creates an LLM client using Eclipse preferences, falling back to env vars.
-	 *
-	 * <p>When both provider and API key are set in preferences, the client is
-	 * constructed with the explicit API key from preferences. If only the
-	 * provider is set, the provider-specific environment variable is used.
-	 * If neither is set, auto-detection from environment variables is used.</p>
-	 */
-	private static LlmClient createClientFromPreferences() {
-		IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-		String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-		String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
+    /**
+     * Creates an LLM client using Eclipse preferences, falling back to env vars.
+     *
+     * <p>When both provider and API key are set in preferences, the client is
+     * constructed with the explicit API key from preferences. If only the
+     * provider is set, the provider-specific environment variable is used.
+     * If neither is set, auto-detection from environment variables is used.</p>
+     */
+    private static LlmClient createClientFromPreferences() {
+        IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
+        String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
+        String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
 
-		if (!provider.isBlank()) {
-			// Use preference provider and API key (key may be blank → client reads env)
-			return LlmClientFactory.create(
-					LlmProvider.fromString(provider),
-					apiKey.isBlank() ? null : apiKey);
-		}
+        if (!provider.isBlank()) {
+            // Use preference provider and API key (key may be blank → client reads env)
+            return LlmClientFactory.create(
+                    LlmProvider.fromString(provider),
+                    apiKey.isBlank() ? null : apiKey);
+        }
 
-		// Fallback to environment variables for both provider and API key
-		return LlmClientFactory.createFromEnvironment(null);
-	}
+        // Fallback to environment variables for both provider and API key
+        return LlmClientFactory.createFromEnvironment(null);
+    }
 
-	private static boolean hasPreferenceApiKey() {
-		IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
-		String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
-		String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-		return !apiKey.isBlank() && !provider.isBlank();
-	}
+    private static boolean hasPreferenceApiKey() {
+        IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
+        String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
+        String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
+        return !apiKey.isBlank() && !provider.isBlank();
+    }
 
-	private static boolean hasAnyEnvApiKey() {
-		return envSet("GEMINI_API_KEY") //$NON-NLS-1$
-				|| envSet("OPENAI_API_KEY") //$NON-NLS-1$
-				|| envSet("DEEPSEEK_API_KEY") //$NON-NLS-1$
-				|| envSet("DASHSCOPE_API_KEY") //$NON-NLS-1$
-				|| envSet("LLAMA_API_KEY") //$NON-NLS-1$
-				|| envSet("MISTRAL_API_KEY"); //$NON-NLS-1$
-	}
+    private static boolean hasAnyEnvApiKey() {
+        return envSet("GEMINI_API_KEY") //$NON-NLS-1$
+                || envSet("OPENAI_API_KEY") //$NON-NLS-1$
+                || envSet("DEEPSEEK_API_KEY") //$NON-NLS-1$
+                || envSet("DASHSCOPE_API_KEY") //$NON-NLS-1$
+                || envSet("LLAMA_API_KEY") //$NON-NLS-1$
+                || envSet("MISTRAL_API_KEY"); //$NON-NLS-1$
+    }
 
-	private static boolean envSet(String key) {
-		String value= System.getenv(key);
-		return value != null && !value.isBlank();
-	}
+    private static boolean envSet(String key) {
+        String value= System.getenv(key);
+        return value != null && !value.isBlank();
+    }
 }
