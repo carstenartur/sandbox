@@ -22,7 +22,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -43,17 +42,7 @@ import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
-/**
- * Eclipse command handler that infers a TriggerPattern DSL rule from a
- * unified diff pasted or selected in the active editor.
- *
- * <p>The handler reads the current text selection, sends it to
- * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)} in a background
- * {@link Job}, and opens the resulting DSL rule as a new
- * {@code .sandbox-hint} file.</p>
- *
- * @since 1.2.6
- */
+/** Infers a TriggerPattern DSL rule from a selected unified diff. */
 public class MineDiffHandler extends AbstractHandler {
 
 	private static final ILog LOG = Platform.getLog(MineDiffHandler.class);
@@ -64,12 +53,16 @@ public class MineDiffHandler extends AbstractHandler {
 		if (!(editor instanceof ITextEditor textEditor)) {
 			return null;
 		}
+		IFile activeFile = editor.getEditorInput().getAdapter(IFile.class);
+		if (activeFile == null) {
+			return null;
+		}
+		IProject targetProject = activeFile.getProject();
 
 		ISelection sel = textEditor.getSelectionProvider().getSelection();
 		if (!(sel instanceof ITextSelection textSelection)) {
 			return null;
 		}
-
 		String diffText = textSelection.getText();
 		if (diffText == null || diffText.isBlank()) {
 			return null;
@@ -88,7 +81,7 @@ public class MineDiffHandler extends AbstractHandler {
 				if (result.isPresent()) {
 					String dslRule = result.get().dslRule();
 					if (dslRule != null && !dslRule.isBlank()) {
-						openHintFileOnUi(dslRule);
+						openHintFileOnUi(targetProject, dslRule);
 					}
 				}
 				return Status.OK_STATUS;
@@ -99,21 +92,13 @@ public class MineDiffHandler extends AbstractHandler {
 		return null;
 	}
 
-	private static void openHintFileOnUi(String ruleContent) {
+	private static void openHintFileOnUi(IProject project, String ruleContent) {
 		Display.getDefault().asyncExec(() -> {
 			try {
-				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-				if (projects.length == 0) {
-					return;
-				}
-				IProject project = projects[0];
 				String fileName = "mined-diff-" + System.currentTimeMillis() + ".sandbox-hint"; //$NON-NLS-1$ //$NON-NLS-2$
 				IFile file = project.getFile(new Path(fileName));
-				file.create(
-						new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),
-						true, null);
-				IWorkbenchPage page = PlatformUI.getWorkbench()
-						.getActiveWorkbenchWindow().getActivePage();
+				file.create(new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)), true, null);
+				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 				if (page != null) {
 					IDE.openEditor(page, file);
 				}
