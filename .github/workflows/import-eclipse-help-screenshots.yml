@@ -1,0 +1,86 @@
+name: Import Eclipse Help screenshots
+
+on:
+  push:
+    branches: [ issue-1423-eclipse-help ]
+    paths:
+      - '.github/workflows/import-eclipse-help-screenshots.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  import:
+    name: Import generated PNG files
+    if: github.repository == 'carstenartur/sandbox'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout screenshot branch
+        uses: actions/checkout@v6
+        with:
+          ref: issue-1423-eclipse-help
+          fetch-depth: 0
+
+      - name: Download verified screenshot artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/eclipse-help-screenshots
+          mkdir -p /tmp/eclipse-help-screenshots
+          gh run download 31263839750 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name eclipse-help-screenshots-59 \
+            --dir /tmp/eclipse-help-screenshots
+
+      - name: Copy and validate screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t screenshots < <(find /tmp/eclipse-help-screenshots -type f -name '*.png' | sort)
+          if [[ ${#screenshots[@]} -ne 12 ]]; then
+            printf 'Expected 12 PNG files, found %s\n' "${#screenshots[@]}" >&2
+            printf '%s\n' "${screenshots[@]}" >&2
+            exit 1
+          fi
+
+          for source in "${screenshots[@]}"; do
+            relative="${source#/tmp/eclipse-help-screenshots/}"
+            case "$relative" in
+              sandbox*_help/images/*.png) ;;
+              *)
+                printf 'Unexpected artifact path: %s\n' "$relative" >&2
+                exit 1
+                ;;
+            esac
+            mkdir -p "$(dirname "$relative")"
+            cp "$source" "$relative"
+          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          images = sorted(Path('.').glob('sandbox*_help/images/*.png'))
+          if len(images) != 12:
+              raise SystemExit(f'Expected 12 checkout PNG files, found {len(images)}')
+          for image_path in images:
+              with Image.open(image_path) as image:
+                  if image.size != (1280, 900):
+                      raise SystemExit(f'{image_path}: expected 1280x900, got {image.size}')
+          PY
+
+      - name: Commit screenshots to the branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add ':(glob)sandbox*_help/images/*.png'
+          if git diff --cached --quiet; then
+            echo 'No screenshot changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Add reproducible Eclipse Help screenshots'
+          git push origin HEAD:issue-1423-eclipse-help
