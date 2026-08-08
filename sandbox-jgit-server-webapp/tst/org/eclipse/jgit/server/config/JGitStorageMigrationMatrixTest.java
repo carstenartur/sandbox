@@ -39,16 +39,23 @@ public class JGitStorageMigrationMatrixTest {
 	private static final Pattern COMMIT_SHA= Pattern.compile("[0-9a-f]{40}"); //$NON-NLS-1$
 
 	@Test
-	public void selectedCoreVersionMatchesTheModulePom() throws IOException {
+	public void selectedCoreVersionMatchesTheActiveContract() throws IOException {
 		JsonObject matrix= matrix();
 		String selectedVersion= matrix.getAsJsonObject("releasePolicy") //$NON-NLS-1$
 				.get("selectedVersion").getAsString(); //$NON-NLS-1$
 		Matcher pomVersion= CORE_VERSION.matcher(read("pom.xml")); //$NON-NLS-1$
+		String candidateVersion= System.getenv(
+				"JGIT_STORAGE_HIBERNATE_CANDIDATE_VERSION"); //$NON-NLS-1$
 
 		assertTrue("The module POM must declare jgit-storage-hibernate.version", //$NON-NLS-1$
 				pomVersion.find());
-		assertEquals(pomVersion.group(1), selectedVersion);
 		assertFalse(selectedVersion.endsWith("-SNAPSHOT")); //$NON-NLS-1$
+		if (candidateVersion == null || candidateVersion.isBlank()) {
+			assertEquals(pomVersion.group(1), selectedVersion);
+		} else {
+			assertEquals("The substituted module POM must select the exact candidate", //$NON-NLS-1$
+					candidateVersion, pomVersion.group(1));
+		}
 	}
 
 	@Test
