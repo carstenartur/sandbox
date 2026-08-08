@@ -19,29 +19,10 @@ import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
 import org.sandbox.jdt.triggerpattern.llm.LlmClientFactory;
+import org.sandbox.jdt.triggerpattern.llm.LlmInferenceSettings;
 import org.sandbox.jdt.triggerpattern.llm.LlmProvider;
 
-/**
- * Eclipse-level service that provides access to the AI rule inference engine.
- *
- * <p>This service wraps {@link LlmClientFactory} and manages the lifecycle of
- * the underlying {@link LlmClient}. It reads the LLM provider configuration
- * from Eclipse preferences first, falling back to environment variables when
- * preferences are empty.</p>
- *
- * <p>The service is a lazy-initialized singleton. The LLM client is created
- * on first access and reused for subsequent calls. Call {@link #shutdown()}
- * to release resources when the Eclipse workbench shuts down.</p>
- *
- * <p>Usage:</p>
- * <pre>
- * EclipseLlmService service = EclipseLlmService.getInstance();
- * AiRuleInferenceEngine engine = service.getEngine();
- * engine.inferRule(before, after).ifPresent(eval -&gt; ...);
- * </pre>
- *
- * @since 1.2.6
- */
+/** Eclipse-level service that owns the shared AI rule-inference engine. */
 public class EclipseLlmService {
 
     private static final String DOCUMENTATION_SCREENSHOT_PROPERTY = "sandbox.help.screenshot.mode"; //$NON-NLS-1$
@@ -55,14 +36,8 @@ public class EclipseLlmService {
     private AiRuleInferenceEngine engine;
 
     private EclipseLlmService() {
-        // lazy initialization
     }
 
-    /**
-     * Returns the singleton instance.
-     *
-     * @return the service instance
-     */
     public static EclipseLlmService getInstance() {
         EclipseLlmService current= instance;
         if (current == null) {
@@ -77,19 +52,6 @@ public class EclipseLlmService {
         return current;
     }
 
-    /**
-     * Returns the AI rule inference engine, creating the LLM client if needed.
-     *
-     * <p>The LLM provider is resolved from Eclipse preferences first,
-     * falling back to environment variables if preferences are empty.</p>
-     *
-     * <p><strong>Thread safety:</strong> The engine instance is shared across
-     * concurrent analysis jobs. The underlying {@link LlmClient} implementations
-     * should tolerate concurrent calls; if they do not, callers should serialize
-     * access externally (e.g. via a scheduling rule on the analysis jobs).</p>
-     *
-     * @return the inference engine
-     */
     public AiRuleInferenceEngine getEngine() {
         synchronized (lifecycleLock) {
             if (engine == null) {
@@ -100,16 +62,7 @@ public class EclipseLlmService {
         }
     }
 
-    /**
-     * Returns whether the LLM service is configured and available.
-     *
-     * <p>The deterministic Eclipse Help screenshot profile deliberately forces
-     * this method to return {@code false}. Documentation generation must never
-     * contact an external provider merely because a developer has an API key in
-     * preferences or the process environment.</p>
-     *
-     * @return {@code true} if an LLM provider can be configured
-     */
+    /** Documentation generation must never contact an external provider. */
     public boolean isAvailable() {
         if (Boolean.getBoolean(DOCUMENTATION_SCREENSHOT_PROPERTY)) {
             return false;
@@ -117,9 +70,6 @@ public class EclipseLlmService {
         return hasPreferenceApiKey() || hasAnyEnvApiKey();
     }
 
-    /**
-     * Shuts down the service and releases the underlying LLM client.
-     */
     public void shutdown() {
         synchronized (lifecycleLock) {
             if (llmClient != null) {
@@ -130,9 +80,6 @@ public class EclipseLlmService {
         }
     }
 
-    /**
-     * Resets the singleton (useful for testing or after preference changes).
-     */
     public static void reset() {
         EclipseLlmService current;
         synchronized (INSTANCE_LOCK) {
@@ -144,28 +91,20 @@ public class EclipseLlmService {
         }
     }
 
-    /**
-     * Creates an LLM client using Eclipse preferences, falling back to env vars.
-     *
-     * <p>When both provider and API key are set in preferences, the client is
-     * constructed with the explicit API key from preferences. If only the
-     * provider is set, the provider-specific environment variable is used.
-     * If neither is set, auto-detection from environment variables is used.</p>
-     */
     private static LlmClient createClientFromPreferences() {
         IEclipsePreferences prefs= InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
         String provider= prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
         String apiKey= prefs.get(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
+        String modelName= prefs.get(LlmPreferencePage.PREF_MODEL_NAME, ""); //$NON-NLS-1$
+        LlmInferenceSettings settings= new LlmInferenceSettings(modelName, null, null);
 
         if (!provider.isBlank()) {
-            // Use preference provider and API key (key may be blank → client reads env)
             return LlmClientFactory.create(
                     LlmProvider.fromString(provider),
-                    apiKey.isBlank() ? null : apiKey);
+                    apiKey.isBlank() ? null : apiKey,
+                    settings);
         }
-
-        // Fallback to environment variables for both provider and API key
-        return LlmClientFactory.createFromEnvironment(null);
+        return LlmClientFactory.createFromEnvironment(null, settings);
     }
 
     private static boolean hasPreferenceApiKey() {
