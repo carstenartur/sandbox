@@ -142,7 +142,7 @@ public class IntToEnumSaveActionIsolationTest {
 		JavaEditor localEditor= openEditor(local);
 		local.getBuffer().setContents(localInEditor);
 		local.reconcile(IASTSharedValues.SHARED_AST_LEVEL, true, null, null);
-		localEditor.doSave(null);
+		saveEditor(localEditor);
 
 		String savedLocal= Files.readString(local.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8);
 		assertTrue(savedLocal.contains("enum Status"), "The proven local cleanup must run during save"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -199,5 +199,9 @@ public class IntToEnumSaveActionIsolationTest {
 		JavaEditor editor= (JavaEditor) EditorUtility.openInEditor(unit);
 		openedEditors.add(editor);
 		return editor;
+	}
+
+	private static void saveEditor(JavaEditor editor) {
+		PlatformUI.getWorkbench().getDisplay().syncExec(() -> editor.doSave(null));
 	}
 }
