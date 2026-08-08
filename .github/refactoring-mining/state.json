@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "27d164be4a06b6dc828b21ee0f1339ca35a8f3c7",
-      "lastProcessedDate": "2026-08-06T03:14:24.361481370Z",
-      "totalProcessed": 3592,
+      "lastProcessedCommit": "d15cdfa16f1865d985ec5fa32560d85edfe32936",
+      "lastProcessedDate": "2026-08-08T02:51:13.839766904Z",
+      "totalProcessed": 3664,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2744,6 +2744,15 @@
           "deferredAt": "2026-08-06T03:14:10.512855866Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "5adfd41ede0e57898fc2e990b69332e4a0b8eaef",
+          "message": "Bug 529127 - [code mining] Provide Java References/Implementation CodeMinings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-08T02:49:39.070823171Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2886,7 +2895,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 9,
+        "API Migration": 11,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -2897,7 +2906,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 21,
+        "API Modernization": 23,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2906,7 +2915,7 @@
         "Null Safety": 4,
         "Boolean Simplification": 1,
         "Constant Replacement": 2,
-        "API Simplification": 1,
+        "API Simplification": 2,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
         "String Literal Refactoring": 1,
@@ -2932,7 +2941,13 @@
         "Deprecation/Modernization": 1,
         "Constant Extraction": 2,
         "Simplification": 1,
-        "API Removal": 1
+        "API Removal": 1,
+        "Redundant Modifier": 1,
+        "Utility Simplification": 1,
+        "Annotation modernization": 1,
+        "Conditional expression modernization": 1,
+        "API usage modernization": 1,
+        "Preference Defaults": 1
       },
       "exhaustedCategories": []
     },
@@ -2973,5 +2988,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26251
+  "globalTotalProcessed": 26323
 }
