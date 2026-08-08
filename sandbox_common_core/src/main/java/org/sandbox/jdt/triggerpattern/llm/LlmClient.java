@@ -17,9 +17,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 
-/**
- * Abstraction over an LLM provider for commit evaluation.
- */
+/** Abstraction over an LLM provider for commit evaluation. */
 public interface LlmClient extends AutoCloseable {
 
 CommitEvaluation evaluate(String prompt, String commitHash,
@@ -39,17 +37,17 @@ Duration getMaxFailureDuration();
 void setMaxFailureDuration(Duration duration);
 
 /**
- * Returns true if the last API response was truncated (e.g. finishReason=MAX_TOKENS).
+ * Applies optional generation settings after client creation. Implementations
+ * that do not support a setting may keep their provider default.
  *
- * @return true if truncation was detected
+ * @param settings provider-independent inference settings
  */
+default void applyInferenceSettings(LlmInferenceSettings settings) {
+	// Optional capability; concrete HTTP clients override it.
+}
+
 boolean wasLastResponseTruncated();
 
-/**
- * Returns the model name being used by this client.
- *
- * @return the model name
- */
 String getModel();
 
 @Override
