@@ -51,6 +51,7 @@ public class CommitAnalysisScheduler {
 	private volatile boolean cancelled;
 	private volatile int completed;
 	private volatile int total;
+	private volatile long generation;
 	private Job analysisJob;
 
 	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,
@@ -71,6 +72,7 @@ public class CommitAnalysisScheduler {
 	/** Starts a bounded, user-visible analysis queue. */
 	public synchronized void startAnalysis(List<CommitTableEntry> entries) {
 		cancelAnalysis();
+		long runGeneration = ++generation;
 		List<CommitTableEntry> queue = List.copyOf(entries);
 		total = queue.size();
 		completed = 0;
@@ -78,44 +80,50 @@ public class CommitAnalysisScheduler {
 		running = !queue.isEmpty();
 
 		if (queue.isEmpty()) {
-			notifyProgress(new Progress(0, 0, 0, 0, false, false));
+			notifyProgress(new Progress(0, 0, 0, 0, false, false), runGeneration);
 			return;
 		}
 
-		notifyProgress(progress(0));
+		notifyProgress(progress(0), runGeneration);
 		analysisJob = new Job("Refactoring Mining: " + total + " commits") { //$NON-NLS-1$ //$NON-NLS-2$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				monitor.beginTask("Inferring TriggerPattern rules from commit history", total); //$NON-NLS-1$
 				try {
 					for (int index = 0; index < queue.size(); index++) {
-						if (monitor.isCanceled()) {
-							cancelled = true;
+						if (runGeneration != generation || monitor.isCanceled()) {
+							if (runGeneration == generation) {
+								cancelled = true;
+							}
 							return Status.CANCEL_STATUS;
 						}
 
 						CommitTableEntry entry = queue.get(index);
 						monitor.subTask("Analyzing " + entry.getCommitInfo().shortId() + ": " //$NON-NLS-1$ //$NON-NLS-2$
 								+ entry.getCommitInfo().message());
-						notifyProgress(progress(1));
+						notifyProgress(progress(1), runGeneration);
 
 						CommitAnalysisJob commitJob = new CommitAnalysisJob(entry, gitProvider,
 								repositoryPath, () -> notifyUpdate(entry));
 						IStatus status = commitJob.analyze(monitor);
-						if (status.matches(IStatus.CANCEL) || monitor.isCanceled()) {
-							cancelled = true;
+						if (runGeneration != generation || status.matches(IStatus.CANCEL) || monitor.isCanceled()) {
+							if (runGeneration == generation) {
+								cancelled = true;
+							}
 							return Status.CANCEL_STATUS;
 						}
 
 						completed++;
 						monitor.worked(1);
-						notifyProgress(progress(0));
+						notifyProgress(progress(0), runGeneration);
 					}
 					return Status.OK_STATUS;
 				} finally {
-					running = false;
 					monitor.done();
-					notifyProgress(progress(0));
+					if (runGeneration == generation) {
+						running = false;
+						notifyProgress(progress(0), runGeneration);
+					}
 				}
 			}
 		};
@@ -125,6 +133,7 @@ public class CommitAnalysisScheduler {
 
 	/** Cancels both the active commit and all queued commits. */
 	public synchronized void cancelAnalysis() {
+		long cancelledGeneration = ++generation;
 		if (analysisJob != null) {
 			cancelled = true;
 			analysisJob.cancel();
@@ -132,7 +141,7 @@ public class CommitAnalysisScheduler {
 		}
 		if (running) {
 			running = false;
-			notifyProgress(progress(0));
+			notifyProgress(progress(0), cancelledGeneration);
 		}
 	}
 
@@ -161,10 +170,14 @@ public class CommitAnalysisScheduler {
 		}
 	}
 
-	private void notifyProgress(Progress progress) {
+	private void notifyProgress(Progress progress, long progressGeneration) {
 		Display display = tableViewer.getTable().getDisplay();
 		if (display != null && !display.isDisposed()) {
-			display.asyncExec(() -> progressListener.accept(progress));
+			display.asyncExec(() -> {
+				if (progressGeneration == generation) {
+					progressListener.accept(progress);
+				}
+			});
 		}
 	}
 }
