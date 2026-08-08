@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "75c05e4350522bdc2f6a3db4c86f9b0508f36036a173db8d3906b3d8622ae2c0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.ui.CodeGeneration.$expression\n\u003d\u003e\norg.eclipse.jdt.core.manipulation.CodeGeneration.$expression\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.CoreException;\n\npublic class MyClass {\n    public static final String MY_TEMPLATE_ID \u003d org.eclipse.jdt.ui.CodeGeneration.CLASS_BODY_TEMPLATE_ID;\n\n    public void generate(ICompilationUnit cu, String typeComment, String typeContent, String lineDelimiter) throws CoreException {\n        String content \u003d org.eclipse.jdt.ui.CodeGeneration.getCompilationUnitContent(cu, typeComment, typeContent, lineDelimiter);\n        System.out.println(content);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.CoreException;\nimport org.eclipse.jdt.core.manipulation.CodeGeneration;\n\npublic class MyClass {\n    public static final String MY_TEMPLATE_ID \u003d CodeGeneration.CLASS_BODY_TEMPLATE_ID;\n\n    public void generate(ICompilationUnit cu, String typeComment, String typeContent, String lineDelimiter) throws CoreException {\n        String content \u003d CodeGeneration.getCompilationUnitContent(cu, typeComment, typeContent, lineDelimiter);\n        System.out.println(content);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.CoreException;\nimport org.eclipse.jdt.core.manipulation.CodeGeneration;\n\npublic class MyClass {\n    public static final String MY_TEMPLATE_ID \u003d CodeGeneration.CLASS_BODY_TEMPLATE_ID;\n\n    public void generate(ICompilationUnit cu, String typeComment, String typeContent, String lineDelimiter) throws CoreException {\n        String content \u003d CodeGeneration.getCompilationUnitContent(cu, typeComment, typeContent, lineDelimiter);\n        System.out.println(content);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "ecbdf7afb4ae0185a434491310c0751bbd0cb607",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replace deprecated org.eclipse.jdt.ui.CodeGeneration static member access and method calls with org.eclipse.jdt.core.manipulation.CodeGeneration.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.570530627Z",
+  "ruleFingerprint": "sha256:61db5b229169b1ed29de24880f9b0e6c8363cd852e2f448318262f4fbee6691f",
+  "behaviorFingerprint": "sha256:a076f3aae7cc0903f5dc6248004cddbd42ddcec05f54cfb51eea1eec5ab03502",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.core.CoreException cannot be resolved",
+    "verifiedAt": "2026-08-08T02:51:17.496971438Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

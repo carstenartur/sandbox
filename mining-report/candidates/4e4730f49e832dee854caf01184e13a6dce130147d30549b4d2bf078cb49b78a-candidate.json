@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4e4730f49e832dee854caf01184e13a6dce130147d30549b4d2bf078cb49b78a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$projectModule.exists() \u0026\u0026 !$projectModule.equals($currentModuleDescription)\n\u003d\u003e ($projectModule.exists() \u0026\u0026 !$projectModule.equals($currentModuleDescription)) || $projectModule.isAutoModule()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.IModuleDescription; // Assume this interface exists with exists(), equals(), and isAutoModule()\n\nclass MyClass {\n    void checkModule(IModuleDescription projectModule, IModuleDescription currentModuleDescription) {\n        if (projectModule !\u003d null \u0026\u0026 projectModule.exists() \u0026\u0026 !projectModule.equals(currentModuleDescription) \u0026\u0026 !\"JAVA_BASE\".equals(projectModule.getElementName())) {\n            System.out.println(\"Module condition met (old)\");\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.IModuleDescription;\n\nclass MyClass {\n    void checkModule(IModuleDescription projectModule, IModuleDescription currentModuleDescription) {\n        if (projectModule !\u003d null \u0026\u0026 ((projectModule.exists() \u0026\u0026 !projectModule.equals(currentModuleDescription)) || projectModule.isAutoModule()) \u0026\u0026 !\"JAVA_BASE\".equals(projectModule.getElementName())) {\n            System.out.println(\"Module condition met (new)\");\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.IModuleDescription;\n\nclass MyClass {\n    void anotherCheck(IModuleDescription projectModule, IModuleDescription currentModuleDescription) {\n        boolean someOtherCondition \u003d projectModule.exists() \u0026\u0026 currentModuleDescription.exists();\n        boolean simpleEquals \u003d !projectModule.equals(currentModuleDescription);\n    }\n}",
+  "targetHintFile": "module.sandbox-hint",
+  "sourceCommit": "8b5c4cfb82dc61f1744f87a7d08eac75a4d77ce8",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Conditional expression modernization",
+  "summary": "Updates module comparison logic to also consider automatic modules by adding \u0027|| projectModule.isAutoModule()\u0027 to the condition.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.645581879Z",
+  "ruleFingerprint": "sha256:a56548b81aaf8d8195008e264462e9faef2d589561f784b2ae2c2b7e894d8912",
+  "behaviorFingerprint": "sha256:be716bc5d614b41819206cd9c4e25473417631f1fa097c166b4952c7c3b044a0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-08-08T02:51:17.577105257Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

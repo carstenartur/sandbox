@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 1: The public type JavadocView must be defined in its own file",
-    "verifiedAt": "2026-08-06T03:14:27.667912520Z",
+    "verifiedAt": "2026-08-08T02:51:16.863067385Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d27633f4aa33ec05f15a3ef71013e0a1d255358fcf5774e28f01bb1cd6832864",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.enableCodeMiningPreferences\u003e\n\u003c!description: Enable specific JDT UI code mining preferences by changing their default boolean value from false to true.\u003e\n\u003c!severity: INFO\u003e\n\n$store.setDefault($prefConstant, false) :: matchesAny($prefConstant, \"org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES\", \"org.eclipse.jdt.ui.PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_IMPLEMENTATIONS\")\n\u003d\u003e\n$store.setDefault($prefConstant, true)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\npublic class TestClass {\n    public void setupDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.EDITOR_CODEMINING_ENABLED, false);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_CODEMINING_AT_LEAST_ONE, true);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES, false); \n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_CLASSES, true);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_FIELDS, false);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_METHODS, true);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_IMPLEMENTATIONS, false); \n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\npublic class TestClass {\n    public void setupDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.EDITOR_CODEMINING_ENABLED, false);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_CODEMINING_AT_LEAST_ONE, true);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES, true); \n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_CLASSES, true);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_FIELDS, false);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_METHODS, true);\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_IMPLEMENTATIONS, true); \n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\nimport org.eclipse.jface.preference.IPreferenceStore;\n\npublic class NegativeTestClass {\n    public void setupDefaults(IPreferenceStore store) {\n        // Should not match: Not in the list of constants specified in matchesAny()\n        store.setDefault(PreferenceConstants.EDITOR_CODEMINING_ENABLED, false);\n        \n        // Should not match: The value is already true\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES, true);\n        \n        // Should not match: Not in the list of constants specified in matchesAny()\n        store.setDefault(PreferenceConstants.EDITOR_JAVA_CODEMINING_SHOW_REFERENCES_ON_FIELDS, false);\n    }\n}",
+  "targetHintFile": "preferences.sandbox-hint",
+  "sourceCommit": "cf06059a975abc71973b463ffceb83b86e18ede8",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Preference Defaults",
+  "summary": "Change default preference settings for specific JDT UI code mining features from \u0027false\u0027 to \u0027true\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.656833842Z",
+  "ruleFingerprint": "sha256:d95e7464f3cc0c7743cd970b86df84cd03fa7f4a50933d4fa21175065807e06e",
+  "behaviorFingerprint": "sha256:775c37e7bead2362ae2d90967d609cd97af7738029ac77b5098040b58f0691aa",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-08T02:51:17.601249063Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

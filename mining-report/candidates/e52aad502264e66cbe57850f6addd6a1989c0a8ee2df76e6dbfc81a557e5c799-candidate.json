@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e52aad502264e66cbe57850f6addd6a1989c0a8ee2df76e6dbfc81a557e5c799",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: stubutility2.to.stubutility2core\u003e\n\u003c!description: Migrate static method calls from StubUtility2 to StubUtility2Core.\u003e_\n\u003c!severity: WARNING\u003e\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility2.$method($args$)\n\u003d\u003e\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility2Core.$method($args$)\n;;",
+  "beforeExample": "package test;\n\n// Mock classes to enable compilation for the example\nclass AST { /* ... */ }\ninterface IMethodBinding { /* ... */ }\ninterface ITypeBinding { /* ... */ }\n\nclass StubUtility2 {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n    public static ITypeBinding replaceWildcardsAndCaptures(ITypeBinding type) { return null; }\n    public static Object getDelegatableMethods(ITypeBinding binding) { return null; }\n    public static Object getVisibleConstructors(ITypeBinding binding, boolean b1, boolean b2) { return null; }\n}\n\nclass StubUtility2Core {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n    public static ITypeBinding replaceWildcardsAndCaptures(ITypeBinding type) { return null; }\n    public static Object getDelegatableMethods(ITypeBinding binding) { return null; }\n    public static Object getVisibleConstructors(ITypeBinding binding, boolean b1, boolean b2) { return null; }\n}\n\npublic class MyClass {\n    AST fUnitAST \u003d null;\n    ITypeBinding binding \u003d null;\n\n    public void someMethod() {\n        IMethodBinding[] methods \u003d StubUtility2.getOverridableMethods(fUnitAST, binding, false);\n        ITypeBinding type \u003d StubUtility2.replaceWildcardsAndCaptures(binding);\n        Object delegates \u003d StubUtility2.getDelegatableMethods(binding);\n        Object constructors \u003d StubUtility2.getVisibleConstructors(binding, true, false);\n    }\n}",
+  "afterExample": "package test;\n\n// Mock classes to enable compilation for the example\nclass AST { /* ... */ }\ninterface IMethodBinding { /* ... */ }\ninterface ITypeBinding { /* ... */ }\n\nclass StubUtility2 {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n    public static ITypeBinding replaceWildcardsAndCaptures(ITypeBinding type) { return null; }\n    public static Object getDelegatableMethods(ITypeBinding binding) { return null; }\n    public static Object getVisibleConstructors(ITypeBinding binding, boolean b1, boolean b2) { return null; }\n}\n\nclass StubUtility2Core {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n    public static ITypeBinding replaceWildcardsAndCaptures(ITypeBinding type) { return null; }\n    public static Object getDelegatableMethods(ITypeBinding binding) { return null; }\n    public static Object getVisibleConstructors(ITypeBinding binding, boolean b1, boolean b2) { return null; }\n}\n\npublic class MyClass {\n    AST fUnitAST \u003d null;\n    ITypeBinding binding \u003d null;\n\n    public void someMethod() {\n        IMethodBinding[] methods \u003d StubUtility2Core.getOverridableMethods(fUnitAST, binding, false);\n        ITypeBinding type \u003d StubUtility2Core.replaceWildcardsAndCaptures(binding);\n        Object delegates \u003d StubUtility2Core.getDelegatableMethods(binding);\n        Object constructors \u003d StubUtility2Core.getVisibleConstructors(binding, true, false);\n    }\n}",
+  "negativeExample": "package test;\n\n// Mock classes to enable compilation for the example\nclass AST { /* ... */ }\ninterface IMethodBinding { /* ... */ }\ninterface ITypeBinding { /* ... */ }\n\nclass StubUtility2 {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n}\n\nclass StubUtility2Core {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n}\n\nclass SomeOtherUtility {\n    public static IMethodBinding[] getOverridableMethods(AST ast, ITypeBinding binding, boolean b) { return null; }\n}\n\npublic class MyClass {\n    AST fUnitAST \u003d null;\n    ITypeBinding binding \u003d null;\n\n    public void someMethod() {\n        // This should not be matched as it\u0027s not a call to StubUtility2\n        IMethodBinding[] methods \u003d SomeOtherUtility.getOverridableMethods(fUnitAST, binding, false);\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "e0e48eedd24ea7cb85b1731ae1e2c161dcddfc1b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces all static method calls on `StubUtility2` with corresponding calls on `StubUtility2Core`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.627681468Z",
+  "ruleFingerprint": "sha256:c64e552c55d7e9ecbf59dded6963d0104efbdc4ee22e1d1e758651e2d92d0b1c",
+  "behaviorFingerprint": "sha256:2b9a0f69354f3452d0d60760e92a5e74412da73a0014ed00e5698f601c096080",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-08T02:51:17.528966281Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

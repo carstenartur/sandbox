@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6f23488b1c4eac0e12000ea139a393546bf603da2215c3f4bba3ace3a70c201a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: util.replaceLocalGetClosestMonitor\u003e\n\u003c!description: Replace calls to local getClosestMonitor with org.eclipse.jface.util.Util.getClosestMonitor for de-duplication. The local implementation is often a copy-pasted version of the canonical one.\nEnsures the method arguments are of the expected types for semantic safety.\u003e\n\u003c!severity: WARNING\u003e\ngetClosestMonitor($display, $point) :: instanceof($display, \"org.eclipse.swt.widgets.Display\") \u0026\u0026 instanceof($point, \"org.eclipse.swt.graphics.Point\")\n\u003d\u003e org.eclipse.jface.util.Util.getClosestMonitor($display, $point)\n;;",
+  "beforeExample": "package org.example;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Monitor;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyClass {\n    // This local method is assumed to exist for the \u0027before\u0027 state to compile.\n    // In the original commit, this method was removed after the call site was updated.\n    private static Monitor getClosestMonitor(Display display, Point point) {\n        Monitor[] monitors \u003d display.getMonitors();\n        if (monitors.length \u003e 0) return monitors[0];\n        return null; // Simplified for example, actual logic is more complex\n    }\n\n    public void doSomething(Shell shell, Point pt, int width) {\n        Rectangle monitorArea \u003d getClosestMonitor(shell.getDisplay(), pt).getClientArea();\n    }\n}",
+  "afterExample": "package org.example;\nimport org.eclipse.jface.util.Util; // Added import\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Monitor; // Kept to ensure the \u0027before\u0027 local method compiles in this example\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyClass {\n    // The local method remains here in the example because the DSL rule\n    // only changes the call site, not the method declaration itself. \n    // In the actual commit, this method was deleted.\n    private static Monitor getClosestMonitor(Display display, Point point) {\n        Monitor[] monitors \u003d display.getMonitors();\n        if (monitors.length \u003e 0) return monitors[0];\n        return null; // Simplified for example, actual logic is more complex\n    }\n\n    public void doSomething(Shell shell, Point pt, int width) {\n        Rectangle monitorArea \u003d Util.getClosestMonitor(shell.getDisplay(), pt).getClientArea();\n    }\n}",
+  "negativeExample": "package org.example;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.widgets.Display;\n\npublic class AnotherClass {\n    // This method has different parameter types and should not match the guarded rule.\n    public String getClosestMonitor(String name, int id) {\n        return name + id;\n    }\n\n    // This method has correct argument types but one argument is a local variable string, not a Point.\n    // The guarded rule ensures this call is not matched.\n    public void calculate(Display display, String someString) {\n        // int val \u003d getClosestMonitor(display, someString); // Would not compile due to type mismatch\n    }\n\n    // This method does not involve Display or Point types, so it should not match.\n    public int getClosestMonitor(int x, int y) {\n        return Math.min(x, y);\n    }\n\n    public void performCalculation() {\n        int result \u003d getClosestMonitor(10, 20); // Should not match the guarded rule\n    }\n}",
+  "targetHintFile": "utility-deduplication.sandbox-hint",
+  "sourceCommit": "10346ec15dac3db7a9b1247fa7aabcd545febdb8",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Utility Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-08T02:51:14.612825156Z",
+  "ruleFingerprint": "sha256:114e97b3eb7526742697a93241751cbe384d5eefad5ad7c04b9428660a44e595",
+  "behaviorFingerprint": "sha256:f7d069b9bd09ebf8ccdd91e9955c089b434a01128c14a37ad1c1519df1a256ba",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-08T02:51:17.519093201Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
