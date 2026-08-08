@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Mining TriggerPattern rules from Git changes</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Mining rules from Git changes</h1>
+   <p>Refactoring Mining looks at concrete source changes and asks whether a change can be expressed as a reusable TriggerPattern DSL rule. The LLM proposes the generalization; Sandbox validates the returned DSL before presenting it as a candidate.</p>
+
+   <h2>Mine commit history</h2>
+   <ol>
+      <li>Open <strong>Window &gt; Show View &gt; Other... &gt; Sandbox &gt; Refactoring Mining</strong>.</li>
+      <li>Make the Git-backed Eclipse project you want to inspect available in the workspace.</li>
+      <li>Choose <strong>Analyze Project</strong> in the view toolbar.</li>
+      <li>Inspect the commit table. The columns identify the commit, message, number of changed Java files, and AI analysis status.</li>
+      <li>Select a commit with inferred rules to inspect the proposed DSL and its validation state.</li>
+      <li>Review the proposal before exporting or adopting it as a <code>.sandbox-hint</code> rule.</li>
+   </ol>
+   <p class="note">Mining is an analysis aid, not an automatic semantic proof. A green or valid DSL result means that the rule is syntactically accepted by the DSL validator; it does not prove that every future match preserves program behavior.</p>
+
+   <h2>What is sent to rule inference?</h2>
+   <p>For each changed Java file, Sandbox reconstructs a unified diff from the commit. That diff is passed to the shared rule-inference engine. Non-Java changes are not part of this mining path.</p>
+   <pre>commit
+  |- Java file diff 1 --&gt; infer candidate rule --&gt; validate DSL
+  |- Java file diff 2 --&gt; infer candidate rule --&gt; validate DSL
+  `- ...</pre>
+
+   <h2 id="diff">Mine a selected unified diff</h2>
+   <p>If you already have a unified diff, you do not need to scan repository history:</p>
+   <ol>
+      <li>Open or paste the diff into an Eclipse text editor.</li>
+      <li>Select the complete diff text.</li>
+      <li>Invoke <strong>Sandbox TriggerPattern &gt; Mine DSL rule from diff...</strong>.</li>
+      <li>Sandbox runs inference in a background job.</li>
+      <li>When a rule is produced, a new <code>.sandbox-hint</code> file is created in the workspace and opened for review.</li>
+   </ol>
+
+   <h2>Example</h2>
+   <p>A commit that repeatedly replaces a charset name with a typed constant could contain a change like this:</p>
+   <pre>-new String(bytes, "UTF-8")
++new String(bytes, StandardCharsets.UTF_8)</pre>
+   <p>The useful mining result is not a copy of that one edit. It is a generalized rule that captures the replaceable expression and the conditions under which the replacement is safe.</p>
+
+   <h2>Current QA note: Working Tree command</h2>
+   <p class="note">The command currently named <strong>Mine DSL rules from working tree...</strong> does not yet analyze uncommitted working-tree changes; its implementation reads <code>HEAD</code>. Until that mismatch is fixed, use commit mining or a selected unified diff when you need a documented and reproducible before/after source.</p>
+
+   <p><a href="index.html">Back to overview</a> | <a href="authoring.html">Selection and wizard authoring</a></p>
+</body>
+</html>
