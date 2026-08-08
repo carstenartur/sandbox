@@ -49,21 +49,14 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
  * Eclipse view that displays Git commit history and allows asynchronous
  * AI-powered analysis of commits to infer transformation rules.
  *
- * <p>Layout:</p>
- * <ul>
- *   <li>Top: Commit table with columns (Commit, Message, Files, AI Status)</li>
- *   <li>Bottom: Detail panel showing inferred rules for the selected commit</li>
- * </ul>
- *
- * <p>The view uses {@link CommitAnalysisScheduler} to analyze commits
- * asynchronously via {@link EclipseLlmService} and updates the table
- * via {@code Display.asyncExec()}.</p>
+ * <p>The selected repository and aggregate queue state are kept visible in the
+ * view description so a potentially quota-consuming analysis never looks like
+ * an unexplained background operation.</p>
  *
  * @since 1.2.6
  */
 public class RefactoringMiningView extends ViewPart {
 
-	/** The unique view ID registered in plugin.xml. */
 	public static final String VIEW_ID = "org.sandbox.jdt.views.refactoringMining"; //$NON-NLS-1$
 
 	private static final int DEFAULT_MAX_COMMITS = 50;
@@ -74,21 +67,18 @@ public class RefactoringMiningView extends ViewPart {
 
 	private GitHistoryProvider gitProvider;
 	private int maxCommits = DEFAULT_MAX_COMMITS;
+	private String activeRepositoryName = ""; //$NON-NLS-1$
 
 	@Override
 	public void createPartControl(Composite parent) {
 		parent.setLayout(new GridLayout(1, false));
-
 		gitProvider = createGitProvider();
 
 		SashForm sash = new SashForm(parent, SWT.VERTICAL);
 		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
 		createCommitTable(sash);
 		detailPanel = new InferredRuleDetailPanel(sash);
-
 		sash.setWeights(60, 40);
-
 		createToolbar();
 	}
 
@@ -107,8 +97,6 @@ public class RefactoringMiningView extends ViewPart {
 		super.dispose();
 	}
 
-	// ---- table creation ----
-
 	private void createCommitTable(Composite parent) {
 		commitTable = new TableViewer(parent, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		Table table = commitTable.getTable();
@@ -122,7 +110,6 @@ public class RefactoringMiningView extends ViewPart {
 
 		commitTable.setContentProvider(ArrayContentProvider.getInstance());
 		commitTable.setLabelProvider(new CommitTableLabelProvider());
-
 		commitTable.addSelectionChangedListener(new ISelectionChangedListener() {
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
@@ -143,41 +130,31 @@ public class RefactoringMiningView extends ViewPart {
 		col.getColumn().setResizable(true);
 	}
 
-	// ---- toolbar ----
-
 	private void createToolbar() {
 		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
-
 		mgr.add(new Action("Analyze Project...") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				chooseAndAnalyzeProject();
 			}
 		});
-
 		mgr.add(new Action("Stop Analysis") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				if (scheduler != null) {
 					scheduler.cancelAnalysis();
-					setContentDescription("Analysis cancelled"); //$NON-NLS-1$
 				}
 			}
 		});
-
 		mgr.add(new Separator());
-
 		mgr.add(new Action("Export selected as .sandbox-hint") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				exportAsHintFile();
 			}
 		});
-
 		mgr.update(true);
 	}
-
-	// ---- analysis ----
 
 	private void chooseAndAnalyzeProject() {
 		List<IProject> projects = new ArrayList<>();
@@ -205,18 +182,18 @@ public class RefactoringMiningView extends ViewPart {
 			return;
 		}
 
-		setContentDescription("Repository: " + project.getName()); //$NON-NLS-1$
+		activeRepositoryName = project.getName();
+		setContentDescription("Repository: " + activeRepositoryName); //$NON-NLS-1$
 		analyzeRepository(project.getLocation().toFile().toPath());
 	}
 
-	/**
-	 * Analyzes the given Git repository.
-	 *
-	 * @param repositoryPath path to the repository working directory
-	 */
 	void analyzeRepository(Path repositoryPath) {
 		if (scheduler != null) {
 			scheduler.cancelAnalysis();
+		}
+		if (activeRepositoryName.isBlank()) {
+			Path fileName = repositoryPath.getFileName();
+			activeRepositoryName = fileName != null ? fileName.toString() : repositoryPath.toString();
 		}
 
 		try {
@@ -226,23 +203,36 @@ public class RefactoringMiningView extends ViewPart {
 				entries.add(new CommitTableEntry(commit));
 			}
 
-			CommitTableEntry[] entryArray = entries.toArray(CommitTableEntry[]::new);
-			commitTable.setInput(entryArray);
-
-			scheduler = new CommitAnalysisScheduler(
-					gitProvider, repositoryPath, commitTable);
+			commitTable.setInput(entries.toArray(CommitTableEntry[]::new));
+			detailPanel.showRules(null);
+			scheduler = new CommitAnalysisScheduler(gitProvider, repositoryPath, commitTable,
+					this::updateProgressDescription);
 			scheduler.startAnalysis(entries);
 		} catch (Exception e) {
-			setContentDescription("Error: " + e.getMessage()); //$NON-NLS-1$
+			setContentDescription("Repository: " + activeRepositoryName + " — error: " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 	}
 
-	// ---- export ----
+	private void updateProgressDescription(CommitAnalysisScheduler.Progress progress) {
+		String prefix = "Repository: " + activeRepositoryName + " — "; //$NON-NLS-1$ //$NON-NLS-2$
+		if (progress.cancelled() && !progress.running()) {
+			setContentDescription(prefix + "cancelled after " + progress.completed() + "/" + progress.total()); //$NON-NLS-1$ //$NON-NLS-2$
+		} else if (progress.running()) {
+			setContentDescription(prefix + "analyzed " + progress.completed() + "/" + progress.total() //$NON-NLS-1$ //$NON-NLS-2$
+					+ " — active " + progress.active() + " — queued " + progress.queued()); //$NON-NLS-1$ //$NON-NLS-2$
+		} else if (progress.total() == 0) {
+			setContentDescription(prefix + "no commits to analyze"); //$NON-NLS-1$
+		} else {
+			setContentDescription(prefix + "analyzed " + progress.completed() + "/" + progress.total() //$NON-NLS-1$ //$NON-NLS-2$
+					+ " — finished"); //$NON-NLS-1$
+		}
+	}
 
 	private void exportAsHintFile() {
 		List<String> selectedDslRules = detailPanel.getSelectedDslRules();
 		if (selectedDslRules.isEmpty()) {
-			setContentDescription("Select a commit with inferred rules and check the rules to export"); //$NON-NLS-1$
+			setContentDescription("Repository: " + activeRepositoryName //$NON-NLS-1$
+					+ " — select a commit and check the rules to export"); //$NON-NLS-1$
 			return;
 		}
 
@@ -257,7 +247,8 @@ public class RefactoringMiningView extends ViewPart {
 			try {
 				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);
 			} catch (java.io.IOException e) {
-				setContentDescription("Export failed: " + e.getMessage()); //$NON-NLS-1$
+				setContentDescription("Repository: " + activeRepositoryName + " — export failed: " //$NON-NLS-1$ //$NON-NLS-2$
+						+ e.getMessage());
 			}
 		}
 	}
@@ -274,13 +265,10 @@ public class RefactoringMiningView extends ViewPart {
 		return sb.toString();
 	}
 
-	// ---- git provider ----
-
 	private static GitHistoryProvider createGitProvider() {
 		try {
 			return new JGitHistoryProvider();
 		} catch (Exception e) {
-			// Fallback to command-line git if JGit is not available
 			return new CommandLineGitProvider();
 		}
 	}
