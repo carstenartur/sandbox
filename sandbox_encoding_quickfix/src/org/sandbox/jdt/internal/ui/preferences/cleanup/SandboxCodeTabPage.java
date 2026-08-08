@@ -20,6 +20,7 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp;
 
@@ -44,6 +45,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
+		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,
+				"sandbox_encoding_quickfix.cleanup_configuration"); //$NON-NLS-1$
 		Group java1d6Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d6);
 		final CheckboxPreference explicit_encoding= createCheckboxPref(java1d6Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_ExplicitEncoding, MYCleanUpConstants.EXPLICITENCODING_CLEANUP, FALSE_TRUE);
 		intent(java1d6Group);

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Using Headless Cleanup Application</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Using Headless Cleanup Application</h1>
+   <h2>Entry point</h2>
+   <p>Launch Eclipse with application id <code>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</code>, a workspace supplied through <code>-data</code>, and one or more workspace files or directories.</p>
+
+   <h2>Command-line example</h2>
+   <pre>eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup -data &lt;workspace&gt; --mode check -config cleanup.properties &lt;files-or-directories&gt;</pre>
+   <p>Use <code>--mode check</code> or <code>--mode diff</code> before enabling
+      write mode in automation.</p>
+   <h2>When it is offered</h2>
+   <p>Inputs must resolve to Java-like files inside the selected Eclipse workspace. The same cleanup bundles that provide the configured options must be installed in the application.</p>
+
+   <h2>Recommended workflow</h2>
+   <ol>
+      <li>Enable only the transformation options you intend to evaluate.</li>
+      <li>Run the cleanup on a small, version-controlled selection.</li>
+      <li>Inspect the preview or diff before accepting the change.</li>
+      <li>Compile and execute the relevant tests.</li>
+      <li>Expand the scope only after the result is understood.</li>
+   </ol>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>

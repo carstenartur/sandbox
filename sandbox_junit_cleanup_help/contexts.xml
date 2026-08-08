@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<contexts>
+   <context id="overview">
+      <description>Migrates supported JUnit 3 and JUnit 4 test code to JUnit Jupiter.</description>
+      <topic label="JUnit Migration" href="html/index.html"/>
+   </context>
+   <context id="cleanup_configuration">
+      <description>Configure the JUnit Migration cleanup in an Eclipse JDT cleanup profile.</description>
+      <topic label="JUnit Migration configuration" href="html/usage.html"/>
+      <topic label="Safety and limitations" href="html/reference.html"/>
+   </context>
+   <context id="preferences">
+      <description>Configure JUnit Migration.</description>
+      <topic label="JUnit Migration preferences" href="html/usage.html"/>
+      <topic label="Safety and limitations" href="html/reference.html"/>
+   </context>
+</contexts>

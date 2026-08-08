@@ -1,0 +1,37 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.45;
+    margin: 1.5rem 2rem;
+    max-width: 72rem;
+}
+h1, h2 {
+    font-weight: 600;
+}
+code, pre {
+    font-family: monospace;
+}
+pre {
+    background: #f4f4f4;
+    border: 1px solid #d6d6d6;
+    overflow: auto;
+    padding: 0.8rem;
+}
+.note, .warning {
+    border-left: 0.3rem solid #777;
+    margin: 1rem 0;
+    padding: 0.2rem 0.9rem;
+}
+.screenshot {
+    border: 1px solid #aaa;
+    height: auto;
+    max-width: 100%;
+}
+table {
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #aaa;
+    padding: 0.35rem 0.55rem;
+    text-align: left;
+    vertical-align: top;
+}

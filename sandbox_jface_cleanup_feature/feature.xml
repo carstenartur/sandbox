@@ -41,4 +41,8 @@
          id="sandbox_jface_cleanup"
          version="1.3.3.qualifier"/>
 
+   <plugin
+         id="sandbox_jface_cleanup_help"
+         version="1.3.3.qualifier"/>
+
 </feature>

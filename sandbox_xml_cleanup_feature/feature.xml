@@ -40,4 +40,8 @@
          id="sandbox_xml_cleanup"
          version="0.0.0"/>
 
+   <plugin
+         id="sandbox_xml_cleanup_help"
+         version="0.0.0"/>
+
 </feature>

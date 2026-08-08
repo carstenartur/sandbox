@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Sandbox – Headless Cleanup Application</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Headless Cleanup Application</h1>
+   <p>Runs Eclipse JDT cleanup profiles from an Equinox command line without opening the full IDE.</p>
+   <p class="note">This documentation is installed by <code>sandbox_cleanup_application_feature</code>
+      together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
+
+   <h2>What the feature provides</h2>
+   <ul>
+      <li>Supports <code>apply</code>, <code>check</code>, and <code>diff</code> modes.</li>
+      <li>Reads cleanup options from a Java properties file.</li>
+      <li>Can write a unified patch and a JSON report.</li>
+      <li>Supports main/test/both scope filtering and quiet or verbose output.</li>
+      <li>Uses exit code 2 when check or diff mode detects required changes.</li>
+   </ul>
+
+   <h2>Where to start</h2>
+   <p>Launch Eclipse with application id <code>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</code>, a workspace supplied through <code>-data</code>, and one or more workspace files or directories.</p>
+
+
+   <p>Continue with <a href="usage.html">Using this feature</a> and
+      <a href="reference.html">Reference, safety, and limitations</a>.</p>
+</body>
+</html>

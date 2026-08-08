@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Sandbox Functional Converter Help
+Bundle-SymbolicName: sandbox_functional_converter_help;singleton:=true
+Bundle-Version: 1.3.3.qualifier
+Bundle-Vendor: sandbox
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Eclipse-BundleShape: dir
+Automatic-Module-Name: sandbox.functional.converter.help

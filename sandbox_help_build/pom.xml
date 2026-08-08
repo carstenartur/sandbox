@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.sandbox.build</groupId>
+	<artifactId>sandbox-help-build</artifactId>
+	<version>1.0.0</version>
+	<packaging>pom</packaging>
+	<name>Sandbox Eclipse Help build</name>
+	<description>
+		Checkout-local reactor for building and reproducing the feature-scoped
+		Eclipse Help bundles and their SWTBot screenshots. This POM is an
+		aggregator only; the participating projects keep the normal central parent.
+	</description>
+
+	<modules>
+		<!-- Target and shared runtime dependencies required by OSGi/Tycho. -->
+		<module>../sandbox_target</module>
+		<module>../sandbox-functional-converter-core</module>
+		<module>../sandbox-ast-api</module>
+		<module>../sandbox-ast-api-jdt</module>
+		<module>../sandbox_common_core</module>
+		<module>../sandbox_common</module>
+		<module>../sandbox_test_commons</module>
+
+		<!-- Headless cleanup application family. -->
+		<module>../sandbox_cleanup_application</module>
+		<module>../sandbox_cleanup_application_help</module>
+		<module>../sandbox_cleanup_application_feature</module>
+
+		<!-- CSS cleanup family. -->
+		<module>../sandbox_css_cleanup</module>
+		<module>../sandbox_css_cleanup_help</module>
+		<module>../sandbox_css_cleanup_feature</module>
+
+		<!-- Explicit encoding family. -->
+		<module>../sandbox_encoding_quickfix</module>
+		<module>../sandbox_encoding_quickfix_help</module>
+		<module>../sandbox_encoding_quickfix_feature</module>
+
+		<!-- Functional converter family. -->
+		<module>../sandbox_functional_converter</module>
+		<module>../sandbox_functional_converter_help</module>
+		<module>../sandbox_functional_converter_feature</module>
+
+		<!-- Eclipse Platform status family. -->
+		<module>../sandbox_platform_helper</module>
+		<module>../sandbox_platform_helper_help</module>
+		<module>../sandbox_platform_helper_feature</module>
+
+		<!-- Iterator cleanup family. -->
+		<module>../sandbox_tools</module>
+		<module>../sandbox_tools_help</module>
+		<module>../sandbox_tools_feature</module>
+
+		<!-- Code patterns and hint DSL family. -->
+		<module>../sandbox_triggerpattern</module>
+		<module>../sandbox_triggerpattern_help</module>
+		<module>../sandbox_triggerpattern_feature</module>
+
+		<!-- PDE XML cleanup family. -->
+		<module>../sandbox_xml_cleanup</module>
+		<module>../sandbox_xml_cleanup_help</module>
+		<module>../sandbox_xml_cleanup_feature</module>
+
+		<!-- JFace cleanup family. -->
+		<module>../sandbox_jface_cleanup</module>
+		<module>../sandbox_jface_cleanup_help</module>
+		<module>../sandbox_jface_cleanup_feature</module>
+
+		<!-- JUnit migration family. -->
+		<module>../sandbox_junit_cleanup</module>
+		<module>../sandbox_junit_cleanup_help</module>
+		<module>../sandbox_junit_cleanup_feature</module>
+
+		<!-- Method reuse family. -->
+		<module>../sandbox_method_reuse</module>
+		<module>../sandbox_method_reuse_help</module>
+		<module>../sandbox_method_reuse_feature</module>
+
+		<!-- Int-to-enum family. -->
+		<module>../sandbox_int_to_enum</module>
+		<module>../sandbox_int_to_enum_help</module>
+		<module>../sandbox_int_to_enum_feature</module>
+
+		<!-- General-type family. -->
+		<module>../sandbox_use_general_type</module>
+		<module>../sandbox_use_general_type_help</module>
+		<module>../sandbox_use_general_type_feature</module>
+
+		<!-- SWTBot host and screenshot/structure tests. -->
+		<module>../sandbox_usage_view</module>
+		<module>../sandbox_usage_view_test</module>
+	</modules>
+
+	<profiles>
+		<!--
+			The same profile ID exists in sandbox_usage_view_test and activates the
+			actual screenshot test there. Defining it here makes the documented
+			execution-root contract explicit and avoids a root-profile warning.
+		-->
+		<profile>
+			<id>help-screenshots</id>
+		</profile>
+	</profiles>
+</project>

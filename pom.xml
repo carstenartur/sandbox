@@ -57,50 +57,63 @@
 		<module>sandbox-jgit-server-webapp</module>
 		<module>sandbox_target</module>
 		<module>sandbox_cleanup_application</module>
+		<module>sandbox_cleanup_application_help</module>
 		<module>sandbox_cleanup_application_feature</module>
 		<module>sandbox_cleanup_application_test</module>
 		<module>sandbox_common</module>
 		<module>sandbox_common_test</module>
 		<module>sandbox_test_commons</module>
 		<module>sandbox_css_cleanup</module>
+		<module>sandbox_css_cleanup_help</module>
 		<module>sandbox_css_cleanup_feature</module>
 		<module>sandbox_css_cleanup_test</module>
 		<module>sandbox_encoding_quickfix</module>
+		<module>sandbox_encoding_quickfix_help</module>
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
 		<module>sandbox_extra_search</module>
 		<module>sandbox_extra_search_feature</module>
 		<module>sandbox_functional_converter</module>
+		<module>sandbox_functional_converter_help</module>
 		<module>sandbox_functional_converter_feature</module>
 		<module>sandbox_functional_converter_test</module>
 		<module>sandbox_platform_helper</module>
+		<module>sandbox_platform_helper_help</module>
 		<module>sandbox_platform_helper_feature</module>
 		<module>sandbox_platform_helper_test</module>
 		<module>sandbox_tools</module>
+		<module>sandbox_tools_help</module>
 		<module>sandbox_tools_feature</module>
 		<module>sandbox_tools_test</module>
 		<module>sandbox_triggerpattern</module>
+		<module>sandbox_triggerpattern_help</module>
 		<module>sandbox_triggerpattern_feature</module>
 		<module>sandbox_triggerpattern_test</module>
 		<module>sandbox_xml_cleanup</module>
+		<module>sandbox_xml_cleanup_help</module>
 		<module>sandbox_xml_cleanup_feature</module>
 		<module>sandbox_xml_cleanup_test</module>
 		<module>sandbox_jface_cleanup</module>
+		<module>sandbox_jface_cleanup_help</module>
 		<module>sandbox_jface_cleanup_feature</module>
 		<module>sandbox_jface_cleanup_test</module>
 		<module>sandbox_junit_cleanup</module>
+		<module>sandbox_junit_cleanup_help</module>
 		<module>sandbox_junit_cleanup_feature</module>
 		<module>sandbox_junit_cleanup_test</module>
 		<module>sandbox_method_reuse</module>
+		<module>sandbox_method_reuse_help</module>
 		<module>sandbox_method_reuse_feature</module>
 		<module>sandbox_method_reuse_test</module>
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
 		<module>sandbox_int_to_enum</module>
+		<module>sandbox_int_to_enum_help</module>
 		<module>sandbox_int_to_enum_feature</module>
 		<module>sandbox_int_to_enum_test</module>
 		<module>sandbox_use_general_type</module>
+		<module>sandbox_use_general_type_help</module>
 		<module>sandbox_use_general_type_feature</module>
 		<module>sandbox_use_general_type_test</module>
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to
@@ -966,9 +979,9 @@
 								</configuration>
 							</execution>
 						</executions>
-					</plugin>
-				</plugins>
-			</build>
+						</plugin>
+					</plugins>
+				</build>
 		</profile>
 
 		<!-- Benchmark profile: JMH performance benchmarks -->
