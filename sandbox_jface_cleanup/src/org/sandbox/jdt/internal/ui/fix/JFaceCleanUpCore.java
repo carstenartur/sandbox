@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JFACE_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JFaceCleanUpFix_refactor;
-import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JFaceCleanUp_description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,14 +23,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
@@ -78,16 +75,15 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 			return null;
 		}
 		return new CompilationUnitRewriteOperationsFixCore(JFaceCleanUpFix_refactor, compilationUnit,
-				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
+				operations.toArray(
+						new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(JFACE_CLEANUP)) {
-			result.add(Messages.format(JFaceCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
-					computeFixSet().stream().map(JfaceCleanUpFixCore::toString)
-					.collect(Collectors.toList())) }));
+			computeFixSet().stream().map(JfaceCleanUpFixCore::getDescription).forEach(result::add);
 		}
 		return result.toArray(new String[0]);
 	}
@@ -97,12 +93,12 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 		StringBuilder sb= new StringBuilder();
 		EnumSet<JfaceCleanUpFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(JfaceCleanUpFixCore.class)
-		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
+				.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
 		return sb.toString();
 	}
 
 	private EnumSet<JfaceCleanUpFixCore> computeFixSet() {
-		EnumSet<JfaceCleanUpFixCore> fixSet = EnumSet.noneOf(JfaceCleanUpFixCore.class);
+		EnumSet<JfaceCleanUpFixCore> fixSet= EnumSet.noneOf(JfaceCleanUpFixCore.class);
 		if (isEnabled(MYCleanUpConstants.JFACE_CLEANUP_MONITOR)) {
 			fixSet.add(JfaceCleanUpFixCore.MONITOR);
 		}
