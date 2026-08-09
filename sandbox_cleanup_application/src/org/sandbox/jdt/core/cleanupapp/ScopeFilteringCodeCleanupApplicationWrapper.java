@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -123,6 +124,8 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 		}
 
 		Path emptyInput= null;
+		IOException deletionFailure= null;
+		Object result;
 		try {
 			FilteredArguments filtered= filterArguments(arguments, scope);
 			String[] forwarded= filtered.arguments();
@@ -131,15 +134,25 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 				forwarded= Arrays.copyOf(forwarded, forwarded.length + 1);
 				forwarded[forwarded.length - 1]= emptyInput.toString();
 			}
-			return super.start(new ArgumentContext(context, forwarded));
+			result= super.start(new ArgumentContext(context, forwarded));
 		} catch (IOException e) {
 			System.err.println("Cannot enumerate cleanup source scope: " + e.getMessage()); //$NON-NLS-1$
 			return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);
 		} finally {
 			if (emptyInput != null) {
-				Files.deleteIfExists(emptyInput);
+				try {
+					Files.deleteIfExists(emptyInput);
+				} catch (IOException e) {
+					deletionFailure= e;
+				}
 			}
 		}
+		if (deletionFailure != null) {
+			System.err.println("Cannot remove temporary cleanup scope directory: " //$NON-NLS-1$
+					+ deletionFailure.getMessage());
+			return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);
+		}
+		return result;
 	}
 
 	static String[] filterArgumentsForScope(String[] arguments) throws IOException {
@@ -158,6 +171,9 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 			if (ARG_SOURCE.equals(argument)) {
 				result.add(argument);
 				if (++index >= arguments.length) {
+					// Keep the incomplete option intact so the delegate reports a syntax
+					// error instead of receiving the empty-scope fallback as its value.
+					hasCleanupInput= true;
 					break;
 				}
 				List<String> selected= expandRoot(arguments[index], scope);
@@ -227,7 +243,7 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 
 	private static boolean accepts(Path path, RequestedScope scope) {
 		boolean testPath= false;
-		for (Path segment : path.normalize()) {
+		for (Path segment : path.toAbsolutePath().normalize()) {
 			String name= segment.toString();
 			if ("test".equals(name) || "tests".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
 				testPath= true;
@@ -250,7 +266,7 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 				return RequestedScope.INVALID;
 			}
 			try {
-				result= RequestedScope.valueOf(arguments[index].toUpperCase());
+				result= RequestedScope.valueOf(arguments[index].toUpperCase(Locale.ROOT));
 			} catch (@SuppressWarnings("unused") IllegalArgumentException e) {
 				return RequestedScope.INVALID;
 			}
