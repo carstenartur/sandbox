@@ -99,12 +99,14 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final int SCREENSHOT_CLIENT_WIDTH = 1280;
     private static final int SCREENSHOT_CLIENT_HEIGHT = 900;
     private static final String OUTPUT_PROPERTY = "sandbox.help.screenshot.output";
+    private static final String OTHER_PROJECT = "AnotherOpenProject";
     private static final String DOCUMENTATION_PROJECT = "SandboxHelpTriggerPattern";
     private static final String REFACTORING_MINING_VIEW = "org.sandbox.jdt.views.refactoringMining";
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
     private static final String HINT_FILE_CLEANUP_LABEL = "Apply transformation rules from .sandbox-hint files";
     private static SWTWorkbenchBot bot;
     private static Path outputRoot;
+    private static IProject otherProject;
     private static IProject documentationProject;
 
     @BeforeAll
@@ -112,15 +114,15 @@ public class SandboxHelpScreenshotsSWTBotTest {
         bot = new SWTWorkbenchBot();
         outputRoot = SandboxCheckout.locate(OUTPUT_PROPERTY);
         closeWelcomeView();
+        otherProject = createEmptyProject(OTHER_PROJECT);
         documentationProject = createDocumentationProject();
     }
 
     @AfterAll
     public static void tearDown() throws Exception {
         closeDialogIfOpen();
-        if (documentationProject != null && documentationProject.exists()) {
-            documentationProject.delete(true, true, new NullProgressMonitor());
-        }
+        deleteProject(documentationProject);
+        deleteProject(otherProject);
     }
 
     @Test
@@ -180,6 +182,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         miningToolbarButtons.get(0).click();
 
         SWTBotShell projectSelection = bot.shell("Select project for Refactoring Mining").activate();
+        assertTrue(projectSelection.bot().table().rowCount() >= 2,
+                "Refactoring Mining must make the target explicit in a multi-project workspace");
         projectSelection.bot().table().select(DOCUMENTATION_PROJECT);
         clickButton(projectSelection, "OK");
 
@@ -191,7 +195,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
             @Override
             public String getFailureMessage() {
-                return "The deterministic mining fixture did not appear in Refactoring Mining";
+                return "The selected deterministic Git project did not appear in Refactoring Mining";
             }
         }, 10_000);
         bot.sleep(500);
@@ -229,13 +233,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static IProject createDocumentationProject() throws Exception {
-        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(DOCUMENTATION_PROJECT);
-        NullProgressMonitor monitor = new NullProgressMonitor();
-        if (project.exists()) {
-            project.delete(true, true, monitor);
-        }
-        project.create(monitor);
-        project.open(monitor);
+        IProject project = createEmptyProject(DOCUMENTATION_PROJECT);
 
         Path repository = project.getLocation().toFile().toPath();
         Path javaFile = repository.resolve("Example.java");
@@ -254,6 +252,23 @@ public class SandboxHelpScreenshotsSWTBotTest {
             commit(git, "Replace charset name with StandardCharsets", "2026-01-02T10:00:00Z");
         }
         return project;
+    }
+
+    private static IProject createEmptyProject(String projectName) throws Exception {
+        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+        NullProgressMonitor monitor = new NullProgressMonitor();
+        if (project.exists()) {
+            project.delete(true, true, monitor);
+        }
+        project.create(monitor);
+        project.open(monitor);
+        return project;
+    }
+
+    private static void deleteProject(IProject project) throws Exception {
+        if (project != null && project.exists()) {
+            project.delete(true, true, new NullProgressMonitor());
+        }
     }
 
     private static void commit(Git git, String message, String timestamp) throws Exception {
