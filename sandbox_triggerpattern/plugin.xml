@@ -116,7 +116,6 @@
             commandId="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection" />
    </extension>
 
-   <!-- ===== New Wizard ===== -->
    <extension point="org.eclipse.ui.newWizards">
       <category
             id="org.sandbox.jdt.triggerpattern"
@@ -131,7 +130,6 @@
       </wizard>
    </extension>
 
-   <!-- ===== Cheatsheet ===== -->
    <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
       <cheatsheet
             id="org.sandbox.jdt.triggerpattern.gettingStarted"
@@ -141,9 +139,9 @@
       </cheatsheet>
    </extension>
 
-   <!-- ===== Context Menu ===== -->
+   <!-- AbstractTextEditor.COMMON_EDITOR_CONTEXT_MENU_ID: all textual editors. -->
    <extension point="org.eclipse.ui.menus">
-      <menuContribution locationURI="popup:org.eclipse.jdt.ui.CompilationUnitEditor">
+      <menuContribution locationURI="popup:#AbstractTextEditorContext">
          <menu id="org.sandbox.triggerpattern.menu"
                label="Sandbox TriggerPattern">
             <command commandId="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection"
