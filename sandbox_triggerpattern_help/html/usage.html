@@ -12,10 +12,13 @@
    <p>Choose the entry point from the information you already have. All AI-assisted entry points converge on the same TriggerPattern DSL and validator.</p>
 
    <h2>If you have Git history</h2>
-   <p>Use <a href="mining.html">Refactoring Mining</a> to inspect recent commits and infer reusable DSL rules from Java diffs.</p>
+   <p>Use <a href="mining.html">Refactoring Mining</a> to inspect recent commits and infer reusable DSL rules from Java diffs. <strong>Analyze Project...</strong> makes the target repository explicit in a multi-project workspace.</p>
+
+   <h2>If you have current working-tree changes</h2>
+   <p>Open a file in the target Git-backed project and use <strong>Sandbox TriggerPattern &gt; Mine DSL rules from working tree...</strong>. Sandbox compares committed <code>HEAD</code> with the current filesystem working tree, so both staged and unstaged Java source changes participate. See <a href="mining.html#working-tree">Working-tree mining</a>.</p>
 
    <h2>If you have a before/after diff</h2>
-   <p>Select the unified diff in an editor and use <strong>Sandbox TriggerPattern &gt; Mine DSL rule from diff...</strong>. This is the most direct path when the intended transformation is already represented by a concrete change.</p>
+   <p>Select the unified diff in an editor and use <strong>Sandbox TriggerPattern &gt; Mine DSL rule from diff...</strong>. This is the most direct path when the intended transformation is already represented by a concrete change. The active editor determines the project where the generated hint is written.</p>
 
    <h2>If you only have source code</h2>
    <p>Select Java code and invoke <strong>Generate DSL rule from selection (AI)</strong>, or open the <a href="authoring.html#wizard">New Hint File wizard</a> and author the source pattern, guard, and replacement explicitly.</p>
@@ -28,6 +31,7 @@
       <li>Inspect the preview or diff.</li>
       <li>Compile and run the relevant tests before expanding the scope.</li>
    </ol>
+   <p>Project-local hint files are watched for create, edit, move, and delete events, so a saved rule update is visible in the same Eclipse session without relying on a workbench restart.</p>
 
    <h2>Rule-inference lifecycle</h2>
    <pre>example change or source
@@ -47,6 +51,9 @@ DslValidator
         +-- invalid --&gt; review/fix/reject
         |
         `-- valid ----&gt; .sandbox-hint --&gt; preview --&gt; tests --&gt; wider use</pre>
+
+   <h2>When inference cannot proceed</h2>
+   <p>AI-only Quick Assist is offered only when an LLM provider is available. Direct mining commands report missing configuration, provider failures, and no-rule results explicitly. The Refactoring Mining view can still load Git history without scheduling AI analysis when no provider is configured.</p>
 
    <h2>Important distinction</h2>
    <p><strong>Inference creates rules; Code Patterns executes rules.</strong> Configuring an LLM does not cause background source changes. A provider is contacted only when an AI-assisted inference action is invoked.</p>
