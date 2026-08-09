@@ -73,7 +73,8 @@ public class EclipseLlmService {
 		}
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
 		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-		return hasCredentials(provider, LlmSecureCredentials.loadApiKey(), System::getenv);
+		String secureApiKey = provider.isBlank() ? "" : LlmSecureCredentials.loadApiKey(provider); //$NON-NLS-1$
+		return hasCredentials(provider, secureApiKey, System::getenv);
 	}
 
 	/**
@@ -171,11 +172,11 @@ public class EclipseLlmService {
 	private static LlmClient createClientFromPreferences() {
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LlmPreferencePage.PLUGIN_ID);
 		String provider = prefs.get(LlmPreferencePage.PREF_PROVIDER, ""); //$NON-NLS-1$
-		String apiKey = LlmSecureCredentials.loadApiKey();
 		String modelName = prefs.get(LlmPreferencePage.PREF_MODEL_NAME, ""); //$NON-NLS-1$
 		LlmInferenceSettings settings = new LlmInferenceSettings(modelName, null, null);
 
 		if (!provider.isBlank()) {
+			String apiKey = LlmSecureCredentials.loadApiKey(provider);
 			return LlmClientFactory.create(
 					LlmProvider.fromString(provider),
 					apiKey.isBlank() ? null : apiKey,
