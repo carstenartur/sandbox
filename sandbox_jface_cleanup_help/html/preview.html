@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Reviewing Cleanup changes</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Reviewing Cleanup changes</h1>
+
+   <h2>Configuration preview and execution preview</h2>
+   <p>The preview shown while editing a cleanup profile is a small, fixed example.
+      It explains what an option can do, but it is not a preview of your project.</p>
+   <p>After you invoke <strong>Source &gt; Clean Up...</strong> and continue to the
+      final page, Eclipse creates the real refactoring change. The upper pane lists
+      affected files and named cleanup steps; the lower pane shows the diff for the
+      selected item.</p>
+
+   <h2>Several named steps in one file</h2>
+   <p>One cleanup can contain independent transformations. JFace API Modernization
+      therefore labels its changes separately, for example
+      <strong>Replace SubProgressMonitor with SubMonitor</strong> and
+      <strong>Replace ViewerSorter with ViewerComparator</strong>.</p>
+   <p><img class="screenshot" src="../images/cleanup-preview-multiple-steps.png"
+      alt="Cleanup preview with two independently labelled JFace changes in one Java file"/></p>
+   <p>For ordinary local transformations, clear a step's checkbox to omit only that
+      change. The preview diff updates when another step is selected.</p>
+
+   <h2>Several independently changed files</h2>
+   <p>Running Cleanup on a package or project groups the changes by file. Independent
+      local file changes may be reviewed and deselected separately.</p>
+   <p><img class="screenshot" src="../images/cleanup-preview-multiple-files.png"
+      alt="Cleanup preview with independent changes in two Java files"/></p>
+
+   <h2>Coordinated migrations are different</h2>
+   <p>Some migrations are proven safe only as one closed component spanning declarations,
+      signatures, and callers. Those coordinated candidates must be selected or rejected
+      as a whole; individual required files or edits are not independent choices. Until
+      the installed product explicitly presents that atomic selection contract, do not
+      use fine-grained deselection for a coordinated project-wide migration.</p>
+
+   <h2>After review</h2>
+   <ol>
+      <li>Select each file or named step to inspect its diff.</li>
+      <li>Deselect only changes that are documented as independent.</li>
+      <li>Choose <strong>Finish</strong> to apply the enabled change tree.</li>
+      <li>Compile and run the relevant tests. The complete Cleanup operation can also be undone through Eclipse's refactoring undo support.</li>
+   </ol>
+
+   <p><a href="usage.html">Back to usage</a></p>
+</body>
+</html>
