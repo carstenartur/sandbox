@@ -32,7 +32,7 @@ on:
       - 'sandbox_use_general_type_help/**'
       - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
-      - '.github/scripts/VerifyHelpScreenshotDiff.java'
+      - '.github/scripts/*.java'
       - '.github/workflows/eclipse-help-screenshots.yml'
   workflow_dispatch:
 
