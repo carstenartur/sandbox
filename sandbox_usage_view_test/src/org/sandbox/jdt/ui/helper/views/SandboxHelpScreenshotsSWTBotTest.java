@@ -131,7 +131,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
         selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
-        clickButton(preferences, "Edit...", "Edit\u2026");
+        clickButton(preferences, "Edit...", "Edit…");
 
         SWTBotShell profileDialog = bot.activeShell();
         prepareForScreenshot(profileDialog);
@@ -210,7 +210,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotView projectExplorer = bot.viewByTitle("Project Explorer");
         projectExplorer.bot().tree().getTreeItem(DOCUMENTATION_PROJECT).select();
 
-        bot.menu("File").menu("New").menu("Other...").click();
+        workbench.bot().menu("File").menu("New").menu("Other...").click();
         SWTBotShell newWizard = bot.activeShell();
         SWTBotTreeItem category = newWizard.bot().tree().getTreeItem("Sandbox TriggerPattern").expand();
         category.getNode("Sandbox Hint File").select();
@@ -343,7 +343,11 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void openPreferences() {
-        bot.menu("Window").menu("Preferences...").click();
+        SWTBotShell workbench = workbenchShell().activate();
+        // Global bot.menu(...) first resolves the active shell. On GTK there is
+        // a brief gap after a modal dialog closes where no active shell exists.
+        // Bind the menu lookup to the known workbench shell instead.
+        workbench.bot().menu("Window").menu("Preferences...").click();
         bot.shell("Preferences").activate();
     }
 
