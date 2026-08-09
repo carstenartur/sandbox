@@ -132,27 +132,37 @@ public class RefactoringMiningView extends ViewPart {
 
 	private void createToolbar() {
 		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
-		mgr.add(new Action("Analyze Project...") { //$NON-NLS-1$
+
+		Action analyzeAction = new Action("Analyze Project...") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				chooseAndAnalyzeProject();
 			}
-		});
-		mgr.add(new Action("Stop Analysis") { //$NON-NLS-1$
+		};
+		analyzeAction.setToolTipText("Analyze Project..."); //$NON-NLS-1$
+		mgr.add(analyzeAction);
+
+		Action stopAction = new Action("Stop Analysis") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				if (scheduler != null) {
 					scheduler.cancelAnalysis();
 				}
 			}
-		});
+		};
+		stopAction.setToolTipText("Stop Analysis"); //$NON-NLS-1$
+		mgr.add(stopAction);
+
 		mgr.add(new Separator());
-		mgr.add(new Action("Export selected as .sandbox-hint") { //$NON-NLS-1$
+
+		Action exportAction = new Action("Export selected as .sandbox-hint") { //$NON-NLS-1$
 			@Override
 			public void run() {
 				exportAsHintFile();
 			}
-		});
+		};
+		exportAction.setToolTipText("Export selected as .sandbox-hint"); //$NON-NLS-1$
+		mgr.add(exportAction);
 		mgr.update(true);
 	}
 
