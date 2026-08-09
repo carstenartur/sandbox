@@ -5,7 +5,9 @@ import org.eclipse.osgi.util.NLS;
 public class MultiFixMessages {
 	private static final String BUNDLE_NAME= "org.sandbox.jdt.internal.ui.fix.MultiFixMessages"; //$NON-NLS-1$
 
-	public static String JFaceCleanUp_description;
+	public static String JFaceCleanUp_monitor_description;
+	public static String JFaceCleanUp_viewerSorter_description;
+	public static String JFaceCleanUp_imageDpi_description;
 	public static String JFaceCleanUpFix_refactor;
 
 	static {
