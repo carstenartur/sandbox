@@ -98,6 +98,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     private static final int SCREENSHOT_CLIENT_WIDTH = 1280;
     private static final int SCREENSHOT_CLIENT_HEIGHT = 900;
+    private static final int GTK_SETTLE_MILLIS = 1_500;
     private static final String OUTPUT_PROPERTY = "sandbox.help.screenshot.output";
     private static final String OTHER_PROJECT = "AnotherOpenProject";
     private static final String DOCUMENTATION_PROJECT = "SandboxHelpTriggerPattern";
@@ -256,9 +257,21 @@ public class SandboxHelpScreenshotsSWTBotTest {
             public void run() {
                 profileDialog.widget.layout(true, true);
                 profileDialog.widget.update();
+                // SWTBot's checkbox click leaves the pointer inside the scrollable
+                // cleanup pane. GTK then paints its overlay scrollbars in a transient
+                // hover/fade state, causing otherwise identical screenshots to differ
+                // by a handful of color values. Park the pointer outside the dialog
+                // and let that state expire before taking the reference image.
+                profileDialog.widget.getDisplay().setCursorLocation(0, 0);
             }
         });
-        bot.sleep(500);
+        bot.sleep(GTK_SETTLE_MILLIS);
+        UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
+            @Override
+            public void run() {
+                profileDialog.widget.update();
+            }
+        });
     }
 
     private static IProject createDocumentationProject() throws Exception {
