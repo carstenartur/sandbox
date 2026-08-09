@@ -64,7 +64,6 @@ public class CommitAnalysisJob extends Job {
 
 	IStatus analyze(IProgressMonitor monitor) {
 		entry.setStatus(AnalysisStatus.ANALYZING);
-		entry.setFailureMessage(""); //$NON-NLS-1$
 		try {
 			if (monitor.isCanceled()) {
 				entry.setStatus(AnalysisStatus.PENDING);
@@ -89,7 +88,6 @@ public class CommitAnalysisJob extends Job {
 			entry.setFailureMessage(message == null || message.isBlank()
 					? e.getClass().getSimpleName()
 					: message);
-			entry.setStatus(AnalysisStatus.FAILED);
 			return Status.error("Commit analysis failed", e); //$NON-NLS-1$
 		} finally {
 			if (onComplete != null) {
