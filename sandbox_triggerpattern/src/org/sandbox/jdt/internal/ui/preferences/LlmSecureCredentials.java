@@ -54,24 +54,7 @@ public final class LlmSecureCredentials {
 		try {
 			migrateLegacyPreference(provider);
 			ISecurePreferences root = SecurePreferencesFactory.getDefault();
-			if (root == null) {
-				return ""; //$NON-NLS-1$
-			}
-			ISecurePreferences node = root.node(NODE_PATH);
-			String value = node.get(API_KEY, ""); //$NON-NLS-1$
-			if (value.isBlank()) {
-				return ""; //$NON-NLS-1$
-			}
-			String credentialProvider = node.get(API_KEY_PROVIDER, ""); //$NON-NLS-1$
-			if (credentialProvider.isBlank()) {
-				// Secure Storage from the first implementation had one unscoped key. Its
-				// only defensible migration is to bind it to the provider selected when
-				// the upgraded version first reads it.
-				node.put(API_KEY_PROVIDER, provider, false);
-				node.flush();
-				credentialProvider = provider;
-			}
-			return credentialForProvider(provider, credentialProvider, value);
+			return loadApiKeyFromSecureStore(provider, root);
 		} catch (StorageException | IOException | BackingStoreException e) {
 			LOG.log(Status.warning("Could not read the LLM API key from Eclipse Secure Storage", e)); //$NON-NLS-1$
 			return ""; //$NON-NLS-1$
@@ -94,11 +77,44 @@ public final class LlmSecureCredentials {
 		if (provider == null) {
 			throw new IOException("Unsupported LLM provider: " + providerName); //$NON-NLS-1$
 		}
+		migrateLegacyPreference(provider);
 		ISecurePreferences root = SecurePreferencesFactory.getDefault();
+		storeApiKeyInSecureStore(provider, apiKey, root);
+		removeLegacyPreference();
+	}
+
+	static String loadApiKeyFromSecureStore(String providerName, ISecurePreferences root)
+			throws StorageException, IOException {
+		String provider = canonicalProvider(providerName);
+		if (provider == null || root == null) {
+			return ""; //$NON-NLS-1$
+		}
+		ISecurePreferences node = root.node(NODE_PATH);
+		String value = node.get(API_KEY, ""); //$NON-NLS-1$
+		if (value.isBlank()) {
+			return ""; //$NON-NLS-1$
+		}
+		String credentialProvider = node.get(API_KEY_PROVIDER, ""); //$NON-NLS-1$
+		if (credentialProvider.isBlank()) {
+			// Secure Storage from the first implementation had one unscoped key. Its
+			// only defensible migration is to bind it to the provider selected when
+			// the upgraded version first reads it.
+			node.put(API_KEY_PROVIDER, provider, false);
+			node.flush();
+			credentialProvider = provider;
+		}
+		return credentialForProvider(provider, credentialProvider, value);
+	}
+
+	static void storeApiKeyInSecureStore(String providerName, String apiKey, ISecurePreferences root)
+			throws StorageException, IOException {
+		String provider = canonicalProvider(providerName);
+		if (provider == null) {
+			throw new IOException("Unsupported LLM provider: " + providerName); //$NON-NLS-1$
+		}
 		if (root == null) {
 			throw new IOException("Eclipse Secure Storage is unavailable"); //$NON-NLS-1$
 		}
-		migrateLegacyPreference(provider);
 		ISecurePreferences node = root.node(NODE_PATH);
 		String value = apiKey == null ? "" : apiKey.trim(); //$NON-NLS-1$
 		if (value.isEmpty()) {
@@ -113,7 +129,6 @@ public final class LlmSecureCredentials {
 			node.put(API_KEY_PROVIDER, provider, false);
 			node.flush();
 		}
-		removeLegacyPreference();
 	}
 
 	/** Moves an API key saved by older Sandbox versions out of ordinary preferences. */
