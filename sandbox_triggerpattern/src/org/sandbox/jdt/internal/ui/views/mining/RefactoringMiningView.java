@@ -200,6 +200,7 @@ public class RefactoringMiningView extends ViewPart {
 	void analyzeRepository(Path repositoryPath) {
 		if (scheduler != null) {
 			scheduler.cancelAnalysis();
+			scheduler = null;
 		}
 		if (activeRepositoryName.isBlank()) {
 			Path fileName = repositoryPath.getFileName();
@@ -215,6 +216,14 @@ public class RefactoringMiningView extends ViewPart {
 
 			commitTable.setInput(entries.toArray(CommitTableEntry[]::new));
 			detailPanel.showRules(null);
+
+			EclipseLlmService llmService = EclipseLlmService.getInstance();
+			if (!llmService.isAvailable()) {
+				setContentDescription("Repository: " + activeRepositoryName //$NON-NLS-1$
+						+ " — history loaded; LLM inference unavailable. " + llmService.configurationHint()); //$NON-NLS-1$
+				return;
+			}
+
 			scheduler = new CommitAnalysisScheduler(gitProvider, repositoryPath, commitTable,
 					this::updateProgressDescription);
 			scheduler.startAnalysis(entries);
