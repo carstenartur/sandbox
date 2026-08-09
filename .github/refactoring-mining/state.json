@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "d15cdfa16f1865d985ec5fa32560d85edfe32936",
-      "lastProcessedDate": "2026-08-08T02:51:13.839766904Z",
-      "totalProcessed": 3664,
+      "lastProcessedCommit": "82f4e5e641fe9e1f4161bab38df6c86da200aa04",
+      "lastProcessedDate": "2026-08-09T02:54:41.505576779Z",
+      "totalProcessed": 3740,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2753,6 +2753,15 @@
           "deferredAt": "2026-08-08T02:49:39.070823171Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "dd8f407a7fdf3ff1fb95069559e73d34b8b74950",
+          "message": "Bug 536918: Fix case where directory for optional source folder is\ncreated\n\nAlso remove unnecessary ResourceChangeListen",
+          "diffLines": 104,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-09T02:53:08.484094937Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2906,13 +2915,13 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 23,
+        "API Modernization": 24,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
         "Generics": 1,
         "API Constant Update": 1,
-        "Null Safety": 4,
+        "Null Safety": 5,
         "Boolean Simplification": 1,
         "Constant Replacement": 2,
         "API Simplification": 2,
@@ -2947,7 +2956,12 @@
         "Annotation modernization": 1,
         "Conditional expression modernization": 1,
         "API usage modernization": 1,
-        "Preference Defaults": 1
+        "Preference Defaults": 1,
+        "Constructor Call Refactoring": 1,
+        "Annotations": 1,
+        "Type Modernization": 1,
+        "ComplexRefactoring": 2,
+        "ArchitecturalChange": 1
       },
       "exhaustedCategories": []
     },
@@ -2988,5 +3002,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26323
+  "globalTotalProcessed": 26399
 }
