@@ -13,55 +13,48 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.preferences;
 
+import java.io.IOException;
+
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.equinox.security.storage.StorageException;
 import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
+import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
-import org.eclipse.jface.preference.IntegerFieldEditor;
 import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
+import org.osgi.service.prefs.BackingStoreException;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
-/**
- * Preference page for LLM settings used by AI-powered rule inference.
- * <p>
- * Users can configure the LLM provider, API key, model name, max tokens,
- * and temperature. When preferences are empty, the system falls back to
- * environment variables via {@code LlmClientFactory.createFromEnvironment()}.
- * </p>
- *
- * @since 1.2.6
- */
+/** Preference page for the LLM settings actually consumed by rule inference. */
 public class LlmPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
-	/** Plugin identifier used as preference scope node. */
 	public static final String PLUGIN_ID = "sandbox_triggerpattern"; //$NON-NLS-1$
-
 	private static final String PREFIX = "org.sandbox.jdt.triggerpattern.llm."; //$NON-NLS-1$
 
-	/** Preference key for the selected LLM provider. */
 	public static final String PREF_PROVIDER = PREFIX + "provider"; //$NON-NLS-1$
-
-	/** Preference key for the API key. */
+	/** Legacy ordinary-preference key. New versions migrate it to Secure Storage. */
+	@Deprecated
 	public static final String PREF_API_KEY = PREFIX + "apiKey"; //$NON-NLS-1$
-
-	/** Preference key for the model name. */
 	public static final String PREF_MODEL_NAME = PREFIX + "modelName"; //$NON-NLS-1$
 
-	/** Preference key for the maximum number of tokens. */
+	@Deprecated
 	public static final String PREF_MAX_TOKENS = PREFIX + "maxTokens"; //$NON-NLS-1$
-
-	/** Preference key for the temperature value. */
+	@Deprecated
 	public static final String PREF_TEMPERATURE = PREFIX + "temperature"; //$NON-NLS-1$
 
 	private static final String WIZARD_PREFIX = "org.sandbox.jdt.triggerpattern.wizard."; //$NON-NLS-1$
-
-	/** Preference key for auto-running AI inference when the wizard opens from a selection. */
 	public static final String PREF_WIZARD_AUTO_AI = WIZARD_PREFIX + "autoInferOnSelection"; //$NON-NLS-1$
-
-	/** Preference key for the default hint file folder path. */
+	@Deprecated
 	public static final String PREF_WIZARD_DEFAULT_FOLDER = WIZARD_PREFIX + "defaultHintFolder"; //$NON-NLS-1$
 
 	private static final String[][] PROVIDER_ENTRIES = {
@@ -73,14 +66,16 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 			{ "Mistral", "MISTRAL" } //$NON-NLS-1$ //$NON-NLS-2$
 	};
 
-	/**
-	 * Creates a new LLM preference page with GRID layout.
-	 */
+	private Text apiKeyText;
+	private ComboFieldEditor providerField;
+	private String selectedProvider;
+
 	public LlmPreferencePage() {
 		super(GRID);
 		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));
-		setDescription("Configure LLM settings for AI-powered rule inference.\n" //$NON-NLS-1$
-				+ "Leave API Key empty to fall back to environment variables."); //$NON-NLS-1$
+		setDescription("Configure the provider used for AI-assisted rule inference.\n" //$NON-NLS-1$
+				+ "API keys are encrypted in Eclipse Secure Storage and bound to the selected provider. " //$NON-NLS-1$
+				+ "Leave the key empty to use the provider-specific environment variable; leave Model name empty to use the provider default."); //$NON-NLS-1$
 	}
 
 	@Override
@@ -88,65 +83,79 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),
 				"sandbox_triggerpattern.preferences"); //$NON-NLS-1$
 
-		addField(new ComboFieldEditor(
+		selectedProvider = getPreferenceStore().getString(PREF_PROVIDER);
+		providerField = new ComboFieldEditor(
 				PREF_PROVIDER,
 				"&Provider:", //$NON-NLS-1$
 				PROVIDER_ENTRIES,
-				getFieldEditorParent()));
+				getFieldEditorParent());
+		addField(providerField);
 
-		addField(new StringFieldEditor(
-				PREF_API_KEY,
-				"&API Key:", //$NON-NLS-1$
-				getFieldEditorParent()));
+		createSecureApiKeyField(getFieldEditorParent());
 
 		addField(new StringFieldEditor(
 				PREF_MODEL_NAME,
-				"&Model name:", //$NON-NLS-1$
+				"&Model name (optional):", //$NON-NLS-1$
 				getFieldEditorParent()));
 
-		IntegerFieldEditor maxTokensField = new IntegerFieldEditor(
-				PREF_MAX_TOKENS,
-				"Max &tokens:", //$NON-NLS-1$
-				getFieldEditorParent());
-		maxTokensField.setValidRange(1, 128000);
-		addField(maxTokensField);
-
-		StringFieldEditor temperatureField = new StringFieldEditor(
-				PREF_TEMPERATURE,
-				"T&emperature (0.0\u20131.0):", //$NON-NLS-1$
-				getFieldEditorParent()) {
-			@Override
-			protected boolean doCheckState() {
-				try {
-					double value = Double.parseDouble(getStringValue().trim());
-					if (value < 0.0 || value > 1.0) {
-						setErrorMessage("Temperature must be between 0.0 and 1.0"); //$NON-NLS-1$
-						return false;
-					}
-				} catch (NumberFormatException e) {
-					setErrorMessage("Temperature must be a valid decimal number"); //$NON-NLS-1$
-					return false;
-				}
-				return true;
-			}
-		};
-		temperatureField.setEmptyStringAllowed(false);
-		addField(temperatureField);
-
-		// --- Wizard section ---
 		addField(new BooleanFieldEditor(
 				PREF_WIZARD_AUTO_AI,
 				"Automatically generate rule with AI when opening wizard from selection", //$NON-NLS-1$
 				getFieldEditorParent()));
+	}
 
-		addField(new StringFieldEditor(
-				PREF_WIZARD_DEFAULT_FOLDER,
-				"Default hint file &folder:", //$NON-NLS-1$
-				getFieldEditorParent()));
+	private void createSecureApiKeyField(Composite parent) {
+		Label label = new Label(parent, SWT.NONE);
+		label.setText("&API Key (Secure Storage):"); //$NON-NLS-1$
+
+		apiKeyText = new Text(parent, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);
+		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		apiKeyText.setText(LlmSecureCredentials.loadApiKey(selectedProvider));
+
+		Label explanation = new Label(parent, SWT.WRAP);
+		explanation.setText("Stored encrypted by Eclipse Equinox Secure Storage for the selected provider; environment-variable fallback remains available."); //$NON-NLS-1$
+		GridData explanationData = new GridData(SWT.FILL, SWT.CENTER, true, false);
+		explanationData.horizontalSpan = 2;
+		explanation.setLayoutData(explanationData);
+	}
+
+	@Override
+	public void propertyChange(PropertyChangeEvent event) {
+		if (event.getSource() == providerField && FieldEditor.VALUE.equals(event.getProperty())) {
+			selectedProvider = String.valueOf(event.getNewValue());
+			if (apiKeyText != null && !apiKeyText.isDisposed()) {
+				apiKeyText.setText(LlmSecureCredentials.loadApiKey(selectedProvider));
+			}
+		}
+		super.propertyChange(event);
+	}
+
+	@Override
+	public boolean performOk() {
+		try {
+			LlmSecureCredentials.storeApiKey(selectedProvider,
+					apiKeyText != null ? apiKeyText.getText() : ""); //$NON-NLS-1$
+		} catch (StorageException | IOException | BackingStoreException e) {
+			setErrorMessage("Could not save the API key in Eclipse Secure Storage: " + e.getMessage()); //$NON-NLS-1$
+			return false;
+		}
+		boolean result = super.performOk();
+		if (result) {
+			EclipseLlmService.reset();
+		}
+		return result;
+	}
+
+	@Override
+	protected void performDefaults() {
+		super.performDefaults();
+		if (apiKeyText != null && !apiKeyText.isDisposed()) {
+			apiKeyText.setText(""); //$NON-NLS-1$
+		}
 	}
 
 	@Override
 	public void init(IWorkbench workbench) {
-		// Defaults are set by LlmPreferenceInitializer
+		// Defaults are set by LlmPreferenceInitializer.
 	}
 }

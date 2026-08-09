@@ -13,115 +13,83 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.llm;
 
-/**
- * Factory for creating {@link LlmClient} instances.
- */
+import java.net.http.HttpClient;
+import java.time.Duration;
+
+/** Factory for creating {@link LlmClient} instances. */
 public class LlmClientFactory {
 
 private LlmClientFactory() {
-// utility class
 }
 
-/**
- * Creates an {@link LlmClient} for the given provider.
- *
- * @param provider the LLM provider to use
- * @return the configured client
- */
 public static LlmClient create(LlmProvider provider) {
-return switch (provider) {
-case GEMINI -> new GeminiClient();
-case OPENAI -> new OpenAiClient();
-case DEEPSEEK -> new DeepSeekClient();
-case QWEN -> new QwenClient();
-case LLAMA -> new LlamaClient();
-case MISTRAL -> new MistralClient();
-};
+return create(provider, null, LlmInferenceSettings.unspecified());
 }
 
-/**
- * Creates an {@link LlmClient} for the given provider with an explicit API key.
- *
- * <p>Use this overload when the API key is available from Eclipse preferences
- * or another non-environment source. If {@code apiKey} is {@code null} or blank,
- * the client falls back to reading from its provider-specific environment variable.</p>
- *
- * @param provider the LLM provider to use
- * @param apiKey   explicit API key (may be {@code null} or blank to fall back to env)
- * @return the configured client
- */
 public static LlmClient create(LlmProvider provider, String apiKey) {
-if (apiKey == null || apiKey.isBlank()) {
-return create(provider);
-}
-return switch (provider) {
-case GEMINI -> new GeminiClient(apiKey);
-case OPENAI -> new OpenAiClient(apiKey);
-case DEEPSEEK -> new DeepSeekClient(apiKey);
-case QWEN -> new QwenClient(apiKey);
-case LLAMA -> new LlamaClient(apiKey);
-case MISTRAL -> new MistralClient(apiKey);
-};
+return create(provider, apiKey, LlmInferenceSettings.unspecified());
 }
 
 /**
- * Creates an {@link LlmClient} by auto-detecting the provider.
- *
- * <p>Priority order:
- * <ol>
- *   <li>Explicit CLI argument ({@code explicitProvider} parameter, non-blank)</li>
- *   <li>Environment variable {@code LLM_PROVIDER}</li>
- *   <li>Auto-detect from available API keys:
- *     <ul>
- *       <li>If {@code OPENAI_API_KEY} is set → {@link LlmProvider#OPENAI}</li>
- *       <li>If {@code GEMINI_API_KEY} is set → {@link LlmProvider#GEMINI}</li>
- *     </ul>
- *   </li>
- *   <li>Default: {@link LlmProvider#GEMINI}</li>
- * </ol>
- *
- * @param explicitProvider explicit provider name from CLI (may be null or blank)
- * @return the configured client
+ * Creates a provider client and applies the provider-independent inference
+ * settings. A blank API key still falls back to the provider-specific environment
+ * variable.
  */
-public static LlmClient createFromEnvironment(String explicitProvider) {
-// 1. Explicit CLI argument
-if (explicitProvider != null && !explicitProvider.isBlank()) {
-return create(LlmProvider.fromString(explicitProvider));
+public static LlmClient create(LlmProvider provider, String apiKey, LlmInferenceSettings settings) {
+LlmInferenceSettings effectiveSettings = settings != null ? settings : LlmInferenceSettings.unspecified();
+String effectiveApiKey = apiKey == null || apiKey.isBlank() ? environmentApiKey(provider) : apiKey;
+LlmClient client = switch (provider) {
+case GEMINI -> effectiveSettings.modelName() == null
+		? new GeminiClient(effectiveApiKey)
+		: new GeminiClient(effectiveApiKey, newHttpClient(), effectiveSettings.modelName());
+case OPENAI -> new OpenAiClient(effectiveApiKey);
+case DEEPSEEK -> new DeepSeekClient(effectiveApiKey);
+case QWEN -> new QwenClient(effectiveApiKey);
+case LLAMA -> new LlamaClient(effectiveApiKey);
+case MISTRAL -> new MistralClient(effectiveApiKey);
+};
+client.applyInferenceSettings(effectiveSettings);
+return client;
 }
 
-// 2. Environment variable
+public static LlmClient createFromEnvironment(String explicitProvider) {
+return createFromEnvironment(explicitProvider, LlmInferenceSettings.unspecified());
+}
+
+/** Creates a client by auto-detecting the provider while preserving inference settings. */
+public static LlmClient createFromEnvironment(String explicitProvider, LlmInferenceSettings settings) {
+if (explicitProvider != null && !explicitProvider.isBlank()) {
+return create(LlmProvider.fromString(explicitProvider), null, settings);
+}
+
 String envProvider = System.getenv("LLM_PROVIDER"); //$NON-NLS-1$
 if (envProvider != null && !envProvider.isBlank()) {
-return create(LlmProvider.fromString(envProvider));
+return create(LlmProvider.fromString(envProvider), null, settings);
 }
 
-// 3. Auto-detect from available API keys
-String openAiKey = System.getenv("OPENAI_API_KEY"); //$NON-NLS-1$
-if (openAiKey != null && !openAiKey.isBlank()) {
-return create(LlmProvider.OPENAI);
+for (LlmProvider provider : new LlmProvider[] {
+		LlmProvider.OPENAI, LlmProvider.GEMINI, LlmProvider.DEEPSEEK,
+		LlmProvider.QWEN, LlmProvider.LLAMA, LlmProvider.MISTRAL }) {
+	String key = environmentApiKey(provider);
+	if (key != null && !key.isBlank()) {
+		return create(provider, key, settings);
+	}
 }
-String geminiKey = System.getenv("GEMINI_API_KEY"); //$NON-NLS-1$
-if (geminiKey != null && !geminiKey.isBlank()) {
-return create(LlmProvider.GEMINI);
-}
-String deepSeekKey = System.getenv("DEEPSEEK_API_KEY"); //$NON-NLS-1$
-if (deepSeekKey != null && !deepSeekKey.isBlank()) {
-return create(LlmProvider.DEEPSEEK);
-}
-String dashScopeKey = System.getenv("DASHSCOPE_API_KEY"); //$NON-NLS-1$
-if (dashScopeKey != null && !dashScopeKey.isBlank()) {
-return create(LlmProvider.QWEN);
-}
-String llamaKey = System.getenv("LLAMA_API_KEY"); //$NON-NLS-1$
-if (llamaKey != null && !llamaKey.isBlank()) {
-return create(LlmProvider.LLAMA);
-}
-String mistralKey = System.getenv("MISTRAL_API_KEY"); //$NON-NLS-1$
-if (mistralKey != null && !mistralKey.isBlank()) {
-return create(LlmProvider.MISTRAL);
+return create(LlmProvider.GEMINI, null, settings);
 }
 
-// 4. Default: GEMINI
-return create(LlmProvider.GEMINI);
+private static String environmentApiKey(LlmProvider provider) {
+return System.getenv(switch (provider) {
+case GEMINI -> "GEMINI_API_KEY"; //$NON-NLS-1$
+case OPENAI -> "OPENAI_API_KEY"; //$NON-NLS-1$
+case DEEPSEEK -> "DEEPSEEK_API_KEY"; //$NON-NLS-1$
+case QWEN -> "DASHSCOPE_API_KEY"; //$NON-NLS-1$
+case LLAMA -> "LLAMA_API_KEY"; //$NON-NLS-1$
+case MISTRAL -> "MISTRAL_API_KEY"; //$NON-NLS-1$
+});
+}
+
+private static HttpClient newHttpClient() {
+return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 }
 }

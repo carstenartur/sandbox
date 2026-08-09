@@ -24,15 +24,13 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 
-/**
- * Tests for {@link DeepSeekClient}.
- */
+/** Tests for {@link DeepSeekClient}. */
 class DeepSeekClientTest {
 
 @Test
 void testDefaultModel() {
 DeepSeekClient client = new DeepSeekClient("test-key");
-assertEquals("deepseek-reasoner", client.getModel());
+assertEquals("deepseek-v4-flash", client.getModel());
 }
 
 @Test
@@ -44,6 +42,18 @@ assertNotNull(body);
 assertTrue(body.contains("Hello!"));
 assertTrue(body.contains("messages"));
 assertTrue(body.contains("model"));
+}
+
+@Test
+void testInferenceSettingsReachRequestBody() {
+DeepSeekClient client = new DeepSeekClient("test-key");
+client.applyInferenceSettings(new LlmInferenceSettings("deepseek-v4-pro", 2048, 0.2));
+String body = client.buildRequestBody("Hello!");
+
+assertEquals("deepseek-v4-pro", client.getModel());
+assertTrue(body.contains("\"model\":\"deepseek-v4-pro\""));
+assertTrue(body.contains("\"max_tokens\":2048"));
+assertTrue(body.contains("\"temperature\":0.2"));
 }
 
 @Test

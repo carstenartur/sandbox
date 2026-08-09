@@ -17,11 +17,7 @@ import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.core.runtime.preferences.DefaultScope;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 
-/**
- * Initializes default preference values for LLM configuration.
- *
- * @since 1.2.6
- */
+/** Initializes default preference values for the active LLM configuration contract. */
 public class LlmPreferenceInitializer extends AbstractPreferenceInitializer {
 
 	@Override
@@ -30,9 +26,6 @@ public class LlmPreferenceInitializer extends AbstractPreferenceInitializer {
 		defaults.put(LlmPreferencePage.PREF_PROVIDER, "GEMINI"); //$NON-NLS-1$
 		defaults.put(LlmPreferencePage.PREF_API_KEY, ""); //$NON-NLS-1$
 		defaults.put(LlmPreferencePage.PREF_MODEL_NAME, ""); //$NON-NLS-1$
-		defaults.putInt(LlmPreferencePage.PREF_MAX_TOKENS, 4096);
-		defaults.put(LlmPreferencePage.PREF_TEMPERATURE, "0.3"); //$NON-NLS-1$
 		defaults.putBoolean(LlmPreferencePage.PREF_WIZARD_AUTO_AI, false);
-		defaults.put(LlmPreferencePage.PREF_WIZARD_DEFAULT_FOLDER, ""); //$NON-NLS-1$
 	}
 }

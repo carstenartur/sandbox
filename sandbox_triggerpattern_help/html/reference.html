@@ -9,25 +9,57 @@
 </head>
 <body>
    <h1>Code Patterns and Hint DSL: reference</h1>
+
+   <h2>Execution versus inference</h2>
+   <p>TriggerPattern has two distinct responsibilities:</p>
+   <ul>
+      <li><strong>Execution</strong> matches built-in or <code>.sandbox-hint</code> rules and applies deterministic source rewrites.</li>
+      <li><strong>Inference</strong> proposes new <code>.sandbox-hint</code> rules from commit diffs, working-tree diffs, selected diffs, Java selections, or wizard input. LLM inference is optional.</li>
+   </ul>
+
    <h2>Applicability contract</h2>
-   <p>Each built-in cleanup and each hint rule defines its own syntactic and semantic trigger. Rules that cannot be matched or validated are not applied.</p>
+   <p>Each built-in cleanup and each hint rule defines its own syntactic and semantic trigger. Rules that cannot be parsed, validated, or matched are not applied.</p>
 
    <h2>Safety model</h2>
-   <p>Generated or mined rules must be reviewed before broad application. LLM inference is optional and must not silently bypass deterministic validation.</p>
+   <ul>
+      <li>Generated or mined rules must be reviewed before broad application.</li>
+      <li>LLM output must pass deterministic DSL validation before it is treated as an executable candidate.</li>
+      <li>DSL validation checks the rule contract; it does not prove semantic equivalence of every future source match.</li>
+      <li>Use preview/diff, compilation, and project tests as part of accepting a newly inferred rule.</li>
+      <li>Do not send source material to an external provider unless the repository/project policy permits it.</li>
+   </ul>
+
+   <h2>Input-specific confidence</h2>
+   <ul>
+      <li><strong>Commit, working tree, or unified diff:</strong> contains explicit before/after evidence and is normally the strongest inference input.</li>
+      <li><strong>Java selection:</strong> contains only source context and is best treated as a starting point for manual refinement.</li>
+      <li><strong>Wizard:</strong> gives the author explicit control over source pattern, guard, replacement, metadata, and validation.</li>
+   </ul>
+
+   <h2>Project targeting</h2>
+   <p>Refactoring Mining asks the user which open project to analyze. Working-tree mining uses the active editor's project for both repository discovery and generated hints. Selected-diff mining uses the active text editor's project, and Java-selection inference uses the selected compilation unit's project. These paths do not intentionally fall back to the first open workspace project.</p>
+
+   <h2>Long-running analysis</h2>
+   <p>Commit mining uses one bounded, user-visible Eclipse job instead of starting an unbounded group of hidden provider jobs. The view reports completed, active, and queued work. Cancellation stops the active operation and prevents queued commits from starting.</p>
+
+   <h2>Live project hint files</h2>
+   <p>Project-local <code>.sandbox-hint</code> and compatible <code>.hint</code> files are workspace resources. Creating, editing, moving, deleting, closing, or deleting a project invalidates associated registry state, including embedded guards and fixes, so the current file state is used without a workbench restart.</p>
+
+   <h2>Credentials and provider availability</h2>
+   <p>An explicit API key is stored in Eclipse Equinox Secure Storage and rendered as a password field. Legacy ordinary-preference credentials are migrated and removed. Environment-variable fallback remains available. If a provider is explicitly selected, that provider must have a matching Secure Storage key or environment credential; an unrelated provider key does not make it available.</p>
+   <p>User-facing inference failures identify the workflow and failure type without echoing credentials, prompt contents, or provider response bodies. Technical details belong in the Eclipse Error Log.</p>
 
    <h2>Known limitations</h2>
    <ul>
-      <li>Rule quality depends on the trigger and replacement constraints encoded in the hint.</li>
-      <li>LLM-backed inference requires explicit provider configuration and may send selected material to that provider.</li>
-      <li>Mining proposes rules; it does not make semantic equivalence proofs.</li>
+      <li>Rule quality depends on the examples and the constraints encoded in the hint.</li>
+      <li>LLM-backed inference requires a configured provider and may send selected source material to that provider.</li>
+      <li>Mining proposes rules; it does not make semantic-equivalence proofs.</li>
+      <li>The screenshot profile deliberately disables external inference, so documentation screenshots prove workflow discovery and deterministic UI state rather than external-provider availability.</li>
    </ul>
 
    <h2>Support information</h2>
-   <p>The Help content is shipped with the same feature version as the runtime
-      plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+   <p>When reporting an inference problem, include the Sandbox feature version, Eclipse version, Java version, the smallest non-sensitive reproducing before/after example, the entry point used (commit, working tree, diff, selection, or wizard), and the DSL validation result. Do not include API keys.</p>
 
-   <p><a href="index.html">Back to overview</a></p>
+   <p><a href="index.html">Back to overview</a> | <a href="usage.html">Workflow guide</a></p>
 </body>
 </html>

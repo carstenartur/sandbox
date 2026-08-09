@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Configuring TriggerPattern LLM rule inference</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Configuring optional LLM rule inference</h1>
+   <p>LLM Rule Inference is the shared inference backend used by commit mining, working-tree mining, selected-diff mining, the Java-editor rule-generation quick assist, and the New Hint File wizard. It proposes TriggerPattern DSL; it does not execute transformations directly.</p>
+
+   <h2>Configuration page</h2>
+   <p>Open <strong>Window &gt; Preferences &gt; Java &gt; LLM Rule Inference</strong>.</p>
+   <p><img class="screenshot" src="../images/llm-rule-inference-preferences.png"
+      alt="LLM Rule Inference preferences in Eclipse"/></p>
+
+   <h2>Provider, model, and credentials</h2>
+   <p>Select the provider and optionally override its model name. Leaving the model field empty uses the provider/environment default. The model value shown here is part of the runtime inference settings; controls that Sandbox cannot honor are not exposed as configurable preferences.</p>
+   <p>An API key entered in the preference page is stored encrypted in <strong>Eclipse Equinox Secure Storage</strong>, not in the normal exportable Eclipse preference node. Sandbox versions that previously stored an API key as an ordinary preference migrate that value to Secure Storage and remove the legacy value.</p>
+   <p>When no explicit credential is stored, Sandbox can read provider credentials from the process environment:</p>
+   <ul>
+      <li>Gemini: <code>GEMINI_API_KEY</code></li>
+      <li>OpenAI: <code>OPENAI_API_KEY</code></li>
+      <li>DeepSeek: <code>DEEPSEEK_API_KEY</code></li>
+      <li>Qwen/DashScope: <code>DASHSCOPE_API_KEY</code></li>
+      <li>Llama: <code>LLAMA_API_KEY</code></li>
+      <li>Mistral: <code>MISTRAL_API_KEY</code></li>
+   </ul>
+   <p>If a provider is selected explicitly in Preferences, Sandbox requires the Secure Storage key or environment variable for <em>that provider</em>. An unrelated provider key does not make the selected provider appear available. With no explicit preference, <code>LLM_PROVIDER</code> may select a provider; otherwise Sandbox can auto-detect a supported provider from its API-key environment variable.</p>
+
+   <h2>What data can leave Eclipse?</h2>
+   <p>When an AI-assisted action is invoked, the relevant code example is sent to the configured provider as part of the inference prompt. Depending on the entry point, that material can be a Java-file commit diff, a working-tree Java diff, a selected unified diff, or code selected/entered in the rule authoring UI.</p>
+   <p>No LLM call is required to execute an already-authored deterministic <code>.sandbox-hint</code> rule.</p>
+
+   <h2>Validation boundary</h2>
+   <p>The provider response is converted into a rule proposal and passed through Sandbox DSL validation. Validation protects the parser/execution contract, but it is not a proof that the inferred transformation is semantically correct for every future match.</p>
+
+   <h2>When no LLM is configured</h2>
+   <p>Manual <code>.sandbox-hint</code> authoring, Hint File Quick Assist, and deterministic Code Patterns cleanups remain available. The Java-selection AI Quick Assist is not offered without an available provider. Direct mining commands explain how to configure the selected provider rather than silently returning, and the Refactoring Mining view can still load repository history without scheduling AI analysis.</p>
+   <p>Provider failures and successful calls that produce no usable rule are also reported explicitly. Technical errors are recorded in the Eclipse Error Log without placing API keys or prompt contents in the user-facing message.</p>
+
+   <p><a href="index.html">Back to overview</a> | <a href="mining.html">Mine rules from Git changes</a> | <a href="authoring.html">Author rules manually or from a selection</a> | <a href="apply.html">Apply a reviewed rule</a></p>
+</body>
+</html>

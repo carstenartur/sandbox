@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Applying a Sandbox Hint rule</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Applying a <code>.sandbox-hint</code> rule</h1>
+   <p>Rule creation and rule execution are separate steps. A mined or authored rule becomes useful only after it has been reviewed, saved, and exercised against representative source.</p>
+
+   <h2>Project-local rule discovery</h2>
+   <p>Project-local <code>.sandbox-hint</code> and compatible <code>.hint</code> files are watched as workspace resources. Creating, editing, moving, or deleting a rule invalidates the project's TriggerPattern registry, so a saved rule change becomes visible to Quick Assist and cleanup execution in the same Eclipse session without requiring a workbench restart.</p>
+
+   <h2 id="local">Apply one matching rule with Quick Assist</h2>
+   <ol>
+      <li>Keep the reviewed <code>.sandbox-hint</code> file in the Java project that should use it.</li>
+      <li>Open Java source that contains a matching pattern and place the cursor inside the match.</li>
+      <li>Invoke <strong>Quick Assist</strong> (<code>Ctrl+1</code> with the default Eclipse key binding).</li>
+      <li>Choose the proposal contributed by the matching Hint File rule.</li>
+      <li>Inspect the resulting edit and run the relevant tests.</li>
+   </ol>
+   <p>This execution path is provided by <code>HintFileQuickAssistProcessor</code>. It is different from <strong>Generate DSL rule from selection (AI)</strong>: the AI Quick Assist is an authoring tool that creates a new rule, while Hint File Quick Assist applies an already existing rule.</p>
+
+   <h2 id="batch">Apply rules with Source &gt; Clean Up</h2>
+   <ol>
+      <li>Open a JDT cleanup profile and select <strong>Code Patterns (Sandbox)</strong>.</li>
+      <li>Enable <strong>Apply transformation rules from .sandbox-hint files</strong>.</li>
+      <li>Select any bundled rule libraries you also want to run. Project-local <code>.sandbox-hint</code> files are discovered independently of those bundled-library choices.</li>
+      <li>Run <strong>Source &gt; Clean Up...</strong> on a small version-controlled scope first.</li>
+      <li>Review the preview/diff before expanding the cleanup to a package or project.</li>
+   </ol>
+   <p>The batch path is provided by <code>HintFileCleanUp</code>/<code>HintFileCleanUpCore</code>. Both the batch and Quick Assist paths use the same TriggerPattern rule model; they differ in interaction and scope, not in the DSL language.</p>
+
+   <h2>Recommended verification loop</h2>
+   <pre>create or mine rule
+      |
+      v
+validate and review .sandbox-hint
+      |
+      +----&gt; Quick Assist on one match ----&gt; inspect result
+      |
+      +----&gt; Clean Up on small scope ------&gt; preview/diff
+                                               |
+                                               v
+                                      compile and run tests</pre>
+
+   <p class="note">The local Quick Assist screenshot is added only after the generated image itself has been reproduced and visually reviewed. The same-session saved-rule reload behavior is already protected by a workspace regression test.</p>
+
+   <p>See also <a href="authoring.html">authoring rules</a>,
+      <a href="mining.html">mining rules</a>, and
+      <a href="reference.html">safety and limitations</a>.</p>
+</body>
+</html>

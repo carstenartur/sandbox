@@ -30,10 +30,9 @@ import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
 /**
  * Detail panel showing inferred rules or AI evaluations for a selected commit.
  *
- * <p>Displays each rule/evaluation with its source pattern, confidence,
- * traffic light assessment, and a checkbox for selection. Action buttons
- * allow adopting rules into the HintFileRegistry or exporting as
- * {@code .sandbox-hint}.</p>
+ * <p>Besides successful candidates, the panel presents pending, running,
+ * no-result and failure states so users can diagnose a mining run without
+ * consulting the Eclipse error log.</p>
  *
  * @since 1.2.6
  */
@@ -45,18 +44,13 @@ public class InferredRuleDetailPanel extends Composite {
 	private final List<Button> ruleCheckboxes = new ArrayList<>();
 	private CommitTableEntry currentEntry;
 
-	/**
-	 * Creates the detail panel.
-	 *
-	 * @param parent the parent composite
-	 */
 	public InferredRuleDetailPanel(Composite parent) {
 		super(parent, SWT.NONE);
 		setLayout(new GridLayout(1, false));
 
-		headerLabel = new Label(this, SWT.NONE);
+		headerLabel = new Label(this, SWT.WRAP);
 		headerLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		headerLabel.setText("Select a commit with inferred rules (\u2705) to see details."); //$NON-NLS-1$
+		headerLabel.setText("Select a commit to inspect its analysis state and inferred rules."); //$NON-NLS-1$
 
 		scrolled = new ScrolledComposite(this, SWT.V_SCROLL | SWT.H_SCROLL);
 		scrolled.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -68,29 +62,36 @@ public class InferredRuleDetailPanel extends Composite {
 		scrolled.setContent(content);
 	}
 
-	/**
-	 * Shows the inferred rules or AI evaluations for the given commit table entry.
-	 *
-	 * @param entry the selected commit entry (may be {@code null} to clear)
-	 */
 	public void showRules(CommitTableEntry entry) {
 		this.currentEntry = entry;
 		ruleCheckboxes.clear();
-
-		// Dispose old content children
 		for (var child : content.getChildren()) {
 			child.dispose();
 		}
 
-		if (entry == null || !entry.hasRules()) {
-			headerLabel.setText("No rules to display."); //$NON-NLS-1$
-			content.layout();
-			scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+		if (entry == null) {
+			headerLabel.setText("Select a commit to inspect its analysis state and inferred rules."); //$NON-NLS-1$
+			finishLayout();
+			return;
+		}
+
+		if (!entry.hasRules()) {
+			String commit = "Commit " + entry.getCommitInfo().shortId() + ": \"" //$NON-NLS-1$ //$NON-NLS-2$
+					+ firstLine(entry.getCommitInfo().message()) + "\" — "; //$NON-NLS-1$
+			switch (entry.getStatus()) {
+			case PENDING -> headerLabel.setText(commit + "waiting for analysis"); //$NON-NLS-1$
+			case ANALYZING -> headerLabel.setText(commit + "analysis in progress"); //$NON-NLS-1$
+			case NO_RULES -> headerLabel.setText(commit + "analysis finished; no reusable DSL rule was inferred"); //$NON-NLS-1$
+			case FAILED -> headerLabel.setText(commit + "analysis failed: " //$NON-NLS-1$
+					+ safeFailureMessage(entry.getFailureMessage()));
+			case DONE -> headerLabel.setText(commit + "analysis finished without exportable rules"); //$NON-NLS-1$
+			}
+			finishLayout();
 			return;
 		}
 
 		headerLabel.setText("Commit " + entry.getCommitInfo().shortId() + ": \"" //$NON-NLS-1$ //$NON-NLS-2$
-				+ firstLine(entry.getCommitInfo().message()) + "\" \u2014 " //$NON-NLS-1$
+				+ firstLine(entry.getCommitInfo().message()) + "\" — " //$NON-NLS-1$
 				+ entry.getRuleCount() + " rule(s)"); //$NON-NLS-1$
 
 		List<CommitEvaluation> evals = entry.getEvaluations();
@@ -107,16 +108,9 @@ public class InferredRuleDetailPanel extends Composite {
 				createRuleWidget(content, rules.get(i), i + 1);
 			}
 		}
-
-		content.layout();
-		scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+		finishLayout();
 	}
 
-	/**
-	 * Returns the DSL rules from selected (checked) evaluations.
-	 *
-	 * @return list of selected DSL rule strings
-	 */
 	public List<String> getSelectedDslRules() {
 		List<String> selected = new ArrayList<>();
 		if (currentEntry == null || !currentEntry.hasRules()) {
@@ -138,11 +132,6 @@ public class InferredRuleDetailPanel extends Composite {
 		return selected;
 	}
 
-	/**
-	 * Returns the currently selected (checked) rules.
-	 *
-	 * @return list of selected inferred rules
-	 */
 	public List<InferredRule> getSelectedRules() {
 		List<InferredRule> selected = new ArrayList<>();
 		if (currentEntry == null || !currentEntry.hasRules()) {
@@ -162,7 +151,6 @@ public class InferredRuleDetailPanel extends Composite {
 		ruleComposite.setLayout(new GridLayout(2, false));
 		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		// Checkbox + traffic light header
 		Button checkbox = new Button(ruleComposite, SWT.CHECK);
 		checkbox.setSelection(true);
 		String trafficIcon = switch (eval.trafficLight()) {
@@ -176,20 +164,17 @@ public class InferredRuleDetailPanel extends Composite {
 		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		ruleCheckboxes.add(checkbox);
 
-		// Summary
 		if (eval.summary() != null && !eval.summary().isBlank()) {
 			Label summaryLabel = new Label(ruleComposite, SWT.WRAP);
 			summaryLabel.setText(eval.summary());
 			summaryLabel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		}
 
-		// DSL rule display
 		StyledText ruleText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.BORDER);
 		ruleText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		ruleText.setText(eval.dslRule());
 		ruleText.setEditable(false);
 
-		// Validation status
 		if (eval.dslValidationResult() != null) {
 			Label validationLabel = new Label(ruleComposite, SWT.NONE);
 			String validationText = "VALID".equals(eval.dslValidationResult()) //$NON-NLS-1$
@@ -205,7 +190,6 @@ public class InferredRuleDetailPanel extends Composite {
 		ruleComposite.setLayout(new GridLayout(2, false));
 		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
-		// Checkbox + rule header
 		Button checkbox = new Button(ruleComposite, SWT.CHECK);
 		checkbox.setSelection(true);
 		int confidencePercent = (int) (rule.confidence() * 100);
@@ -213,7 +197,6 @@ public class InferredRuleDetailPanel extends Composite {
 		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		ruleCheckboxes.add(checkbox);
 
-		// Pattern display
 		StyledText patternText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
 		patternText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));
 		StringBuilder sb = new StringBuilder();
@@ -221,6 +204,15 @@ public class InferredRuleDetailPanel extends Composite {
 		sb.append("=> ").append(rule.replacementPattern()); //$NON-NLS-1$
 		patternText.setText(sb.toString());
 		patternText.setEditable(false);
+	}
+
+	private void finishLayout() {
+		content.layout();
+		scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+	}
+
+	private static String safeFailureMessage(String message) {
+		return message == null || message.isBlank() ? "unknown analysis error" : message; //$NON-NLS-1$
 	}
 
 	private static String firstLine(String message) {

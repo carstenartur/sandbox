@@ -17,6 +17,7 @@ Require-Bundle: sandbox_test_commons,
  org.eclipse.jdt.core.manipulation,
  org.eclipse.core.resources,
  org.eclipse.core.runtime,
+ org.eclipse.jgit,
  org.eclipse.swtbot.swt.finder;resolution:=optional,
  org.eclipse.swtbot.eclipse.finder;resolution:=optional
 Automatic-Module-Name: sandbox.usage.view.test

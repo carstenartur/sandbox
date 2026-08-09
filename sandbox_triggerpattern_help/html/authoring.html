@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Authoring TriggerPattern rules</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Authoring rules from code selections and the wizard</h1>
+   <p>Commit mining is useful when the transformation already happened in Git history. For a rule you are designing now, use a Java selection or the New Hint File wizard.</p>
+
+   <h2 id="selection">Generate a rule from a Java selection</h2>
+   <ol>
+      <li>Select the Java expression or statement that represents the pattern you want to generalize.</li>
+      <li>Invoke Quick Assist (<strong>Ctrl+1</strong> on common Eclipse key configurations).</li>
+      <li>Select <strong>Generate DSL rule from selection (AI)</strong>.</li>
+      <li>Sandbox wraps the selected source as an inference example and runs the shared LLM rule-inference engine in a user-visible background job.</li>
+      <li>If inference succeeds, Sandbox creates and opens a new <code>.sandbox-hint</code> file in the selected compilation unit's project.</li>
+      <li>Review and generalize metavariables, guards, imports, and replacement constraints before using the rule broadly.</li>
+   </ol>
+   <p class="note">A single source selection contains less information than a before/after commit or diff. Treat the generated rule as a starting point, especially when the intended replacement cannot be inferred unambiguously from the selected code alone.</p>
+   <p>If the provider call succeeds but yields no usable DSL rule, Sandbox reports that result instead of leaving the user to infer what happened. Provider and generated-file failures are also reported while technical details remain in the Eclipse Error Log.</p>
+
+   <h2 id="wizard">Create a rule with the New Hint File wizard</h2>
+   <ol>
+      <li>Open <strong>File &gt; New &gt; Other... &gt; Sandbox TriggerPattern &gt; Sandbox Hint File</strong>.</li>
+      <li>Choose the target container and file name.</li>
+      <li>Set optional metadata such as ID, description, severity, Java version, tags, and binding policy.</li>
+      <li>Select a template or continue to the rule page.</li>
+      <li>Enter the source pattern, optional guard, and replacement.</li>
+      <li>Use the live preview and DSL validation result before finishing.</li>
+   </ol>
+   <p><img class="screenshot" src="../images/new-hint-rule-wizard.png"
+      alt="New Sandbox Hint File wizard with DSL preview and validation result"/></p>
+
+   <h2>Use AI inside the wizard</h2>
+   <p>When LLM inference is configured, the rule page offers <strong>Generate with AI</strong>. This uses the same inference engine as commit mining and the editor quick assist; it is not a separate rule language or execution path.</p>
+   <p>If no LLM is configured, the wizard remains usable for manual rule authoring and offers a link to the shared LLM preferences.</p>
+
+   <h2>From rule to executable transformation</h2>
+   <p>Saving a valid <code>.sandbox-hint</code> file is only the authoring step. Project-local hint files are watched as workspace resources, so a newly created or edited rule becomes visible to the loader in the same Eclipse session; no workbench restart should be required. Run the corresponding Code Patterns cleanup/quick-fix path on a small version-controlled sample first.</p>
+   <pre>example source
+   -- author / infer --&gt; .sandbox-hint
+   -- validate -------&gt; valid DSL
+   -- execute --------&gt; preview/diff
+   -- verify ---------&gt; compile + tests</pre>
+
+   <p><a href="index.html">Back to overview</a> | <a href="mining.html">Git and diff mining</a></p>
+</body>
+</html>

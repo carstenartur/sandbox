@@ -24,7 +24,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -32,57 +31,60 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.internal.ui.views.mining.CommitAnalysisJob;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.FileDiff;
-import org.sandbox.jdt.triggerpattern.mining.git.JGitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.git.WorkingTreeDiffProvider;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
- * Eclipse command handler that mines the most recent commit ({@code HEAD})
- * for TriggerPattern DSL rules using AI-powered inference.
+ * Mines Java source changes between {@code HEAD} and the active project's
+ * current working tree for reusable TriggerPattern DSL rules.
  *
- * <p>The handler uses {@link JGitHistoryProvider} to obtain diffs of the
- * HEAD commit, sends each file diff to
- * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)}, and opens a
- * new {@code .sandbox-hint} file with all inferred rules.</p>
- *
- * <p>Analysis runs in a background {@link Job} so the UI thread is not
- * blocked.</p>
- *
- * <p><strong>Note:</strong> A future enhancement could extend this handler to
- * diff the working tree (uncommitted changes) against HEAD using JGit's
- * {@code DiffCommand} with the working tree iterator.</p>
+ * <p>Both staged and unstaged filesystem content are represented, because the
+ * comparison is made directly from the committed HEAD tree to the working tree.
+ * The target project is derived from the active editor instead of silently using
+ * the first project in the workspace.</p>
  *
  * @since 1.2.6
  */
 public class MineWorkingTreeHandler extends AbstractHandler {
 
 	private static final ILog LOG = Platform.getLog(MineWorkingTreeHandler.class);
-	private static final String HEAD = "HEAD"; //$NON-NLS-1$
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
+		IEditorInput input = HandlerUtil.getActiveEditorInput(event);
+		IFile activeFile = input != null ? input.getAdapter(IFile.class) : null;
+		if (activeFile == null || activeFile.getProject().getLocation() == null) {
+			return null;
+		}
+		IProject project = activeFile.getProject();
+		Path repositoryPath = project.getLocation().toFile().toPath();
+
 		EclipseLlmService llmService = EclipseLlmService.getInstance();
 		if (!llmService.isAvailable()) {
+			RuleInferenceUiFeedback.showConfigurationRequired();
 			return null;
 		}
-
-		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();
-		if (projects.length == 0) {
-			return null;
-		}
-		IProject project = projects[0];
-		Path repositoryPath = project.getLocation().toFile().toPath();
 
 		Job job = new Job("Mining working tree for DSL rules") { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				return mineWorkingTree(repositoryPath, project, monitor);
+				try {
+					return mineWorkingTree(repositoryPath, project, monitor);
+				} catch (RuntimeException e) {
+					LOG.error("Failed to infer DSL rules from the working tree", e); //$NON-NLS-1$
+					RuleInferenceUiFeedback.showFailure("the Java working-tree changes", e); //$NON-NLS-1$
+					return Status.error("Working-tree DSL inference failed", e); //$NON-NLS-1$
+				}
 			}
 		};
 		job.setUser(true);
@@ -92,32 +94,43 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 
 	private static IStatus mineWorkingTree(Path repositoryPath, IProject project,
 			IProgressMonitor monitor) {
-		JGitHistoryProvider gitProvider = new JGitHistoryProvider();
-		List<FileDiff> diffs = gitProvider.getDiffs(repositoryPath, HEAD);
-
-		if (diffs.isEmpty() || monitor.isCanceled()) {
+		List<FileDiff> diffs = new WorkingTreeDiffProvider().getDiffs(repositoryPath);
+		if (monitor.isCanceled()) {
+			return Status.CANCEL_STATUS;
+		}
+		if (diffs.isEmpty()) {
+			RuleInferenceUiFeedback.showInformation(
+					"No Java working-tree changes relative to HEAD were found in the active project."); //$NON-NLS-1$
 			return Status.OK_STATUS;
 		}
 
 		AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();
 		List<String> rules = new ArrayList<>();
-
-		for (FileDiff diff : diffs) {
-			if (monitor.isCanceled()) {
-				return Status.CANCEL_STATUS;
+		monitor.beginTask("Inferring rules from working-tree Java changes", diffs.size()); //$NON-NLS-1$
+		try {
+			for (FileDiff diff : diffs) {
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
+				monitor.subTask(diff.filePath());
+				String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);
+				engine.inferRuleFromDiff(unifiedDiff)
+						.map(CommitEvaluation::dslRule)
+						.filter(rule -> rule != null && !rule.isBlank())
+						.ifPresent(rules::add);
+				monitor.worked(1);
 			}
-			String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);
-			engine.inferRuleFromDiff(unifiedDiff)
-					.map(CommitEvaluation::dslRule)
-					.filter(rule -> rule != null && !rule.isBlank())
-					.ifPresent(rules::add);
+		} finally {
+			monitor.done();
 		}
 
-		if (!rules.isEmpty()) {
-			String content = String.join("\n\n;;\n\n", rules); //$NON-NLS-1$
-			openHintFileOnUi(project, content);
+		if (rules.isEmpty()) {
+			RuleInferenceUiFeedback.showNoRule("the Java working-tree changes"); //$NON-NLS-1$
+			return Status.OK_STATUS;
 		}
 
+		String content = String.join("\n\n;;\n\n", rules); //$NON-NLS-1$
+		openHintFileOnUi(project, content);
 		return Status.OK_STATUS;
 	}
 
@@ -137,6 +150,7 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 				}
 			} catch (Exception e) {
 				LOG.error("Failed to open hint file for working tree rules", e); //$NON-NLS-1$
+				RuleInferenceUiFeedback.showFailure("the generated working-tree hint file", e); //$NON-NLS-1$
 			}
 		});
 	}

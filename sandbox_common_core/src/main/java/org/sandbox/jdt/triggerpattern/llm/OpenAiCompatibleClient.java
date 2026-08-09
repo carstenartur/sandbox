@@ -42,12 +42,11 @@ public abstract class OpenAiCompatibleClient implements LlmClient {
 private static final int MAX_RETRIES = 5;
 private static final int INITIAL_BACKOFF_MS = 5000;
 private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);
-/** Default maximum duration (in seconds) with no successful API call before aborting. */
 public static final int DEFAULT_MAX_FAILURE_DURATION_SECONDS = 300;
 
 private final String apiUrl;
 private final String apiKey;
-private final String model;
+private String model;
 private final String providerName;
 private final HttpClient httpClient;
 private final Gson gson;
@@ -55,30 +54,15 @@ private int dailyRequestCount;
 private Instant lastSuccessfulCall;
 private Duration maxFailureDuration;
 private boolean lastResponseTruncated;
+private Integer maxTokens;
+private Double temperature;
 
-/**
- * Creates a client with the given configuration.
- *
- * @param apiUrl       the API endpoint URL
- * @param apiKey       the API key
- * @param model        the model name to use
- * @param providerName display name for log messages (e.g. "OpenAI", "DeepSeek")
- */
 protected OpenAiCompatibleClient(String apiUrl, String apiKey, String model, String providerName) {
 this(apiUrl, apiKey, model, providerName, HttpClient.newBuilder()
 .connectTimeout(Duration.ofSeconds(30))
 .build());
 }
 
-/**
- * Creates a client with the given configuration and HTTP client (for testing).
- *
- * @param apiUrl       the API endpoint URL
- * @param apiKey       the API key
- * @param model        the model name to use
- * @param providerName display name for log messages
- * @param httpClient   the HTTP client to use
- */
 protected OpenAiCompatibleClient(String apiUrl, String apiKey, String model,
 String providerName, HttpClient httpClient) {
 this.apiUrl = apiUrl;
@@ -89,6 +73,18 @@ this.httpClient = httpClient;
 this.gson = new GsonBuilder().create();
 this.lastSuccessfulCall = Instant.now();
 this.maxFailureDuration = Duration.ofSeconds(DEFAULT_MAX_FAILURE_DURATION_SECONDS);
+}
+
+@Override
+public void applyInferenceSettings(LlmInferenceSettings settings) {
+if (settings == null) {
+return;
+}
+if (settings.modelName() != null) {
+model = settings.modelName();
+}
+maxTokens = settings.maxTokens();
+temperature = settings.temperature();
 }
 
 @Override
@@ -126,13 +122,12 @@ public boolean wasLastResponseTruncated() {
 return lastResponseTruncated;
 }
 
-/**
- * Returns the name of the environment variable for the API key.
- * Used in "key not set" warning messages.
- *
- * @return the API key environment variable name
- */
 protected abstract String getApiKeyEnvVar();
+
+/** Parameter name used by this provider for the output-token cap. */
+protected String getMaxTokensParameterName() {
+return "max_tokens"; //$NON-NLS-1$
+}
 
 @Override
 public CommitEvaluation evaluate(String prompt, String commitHash,
@@ -173,12 +168,6 @@ dailyRequestCount++;
 return parseBatchResponse(responseBody, commitHashes, commitMessages, repoUrl);
 }
 
-/**
- * Builds the JSON request body for the chat completions API.
- *
- * @param prompt the prompt text
- * @return the JSON request body
- */
 public String buildRequestBody(String prompt) {
 JsonObject message = new JsonObject();
 message.addProperty("role", "user"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -190,6 +179,12 @@ messages.add(message);
 JsonObject request = new JsonObject();
 request.addProperty("model", model); //$NON-NLS-1$
 request.add("messages", messages); //$NON-NLS-1$
+if (maxTokens != null) {
+request.addProperty(getMaxTokensParameterName(), maxTokens); //$NON-NLS-1$
+}
+if (temperature != null) {
+request.addProperty("temperature", temperature); //$NON-NLS-1$
+}
 
 return gson.toJson(request);
 }
@@ -252,15 +247,6 @@ System.err.println("Max retries exceeded for " + providerName + " API call"); //
 return null;
 }
 
-/**
- * Parses the API response JSON into a CommitEvaluation.
- *
- * @param responseBody  the raw API response
- * @param commitHash    the commit hash
- * @param commitMessage the commit message
- * @param repoUrl       the repository URL
- * @return the evaluation result, or null on parse failure
- */
 public CommitEvaluation parseResponse(String responseBody, String commitHash,
 String commitMessage, String repoUrl) {
 lastResponseTruncated = false;
@@ -297,15 +283,6 @@ return null;
 }
 }
 
-/**
- * Parses a batch response into a list of CommitEvaluations.
- *
- * @param responseBody   the raw API response
- * @param commitHashes   the commit hashes (in order)
- * @param commitMessages the commit messages (in order)
- * @param repoUrl        the repository URL
- * @return list of evaluations
- */
 public List<CommitEvaluation> parseBatchResponse(String responseBody, List<String> commitHashes,
 List<String> commitMessages, String repoUrl) {
 List<CommitEvaluation> results = new ArrayList<>();

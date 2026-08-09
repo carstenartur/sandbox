@@ -10,6 +10,7 @@ Require-Bundle: org.junit,
  sandbox_test_commons,
  org.eclipse.jdt.core,
  org.eclipse.core.runtime,
+ org.eclipse.jgit;bundle-version="[7.5.0,8.0.0)",
  sandbox_common
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
@@ -17,6 +18,7 @@ Eclipse-BuddyPolicy: global
 Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.api.condition;version="5.7.1",
  org.junit.jupiter.api.extension;version="5.7.1",
+ org.junit.jupiter.api.io;version="5.7.1",
  org.junit.jupiter.params;version="5.7.1",
  org.junit.jupiter.params.provider;version="5.7.1",
  org.opentest4j;version="1.2.0",

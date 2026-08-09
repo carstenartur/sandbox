@@ -30,12 +30,13 @@ import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
- * Eclipse {@link Job} that analyzes a single commit in the background,
- * using AI-powered inference to generate DSL rules from Java file changes.
+ * Analyzes a single commit using AI-powered inference to generate DSL rules
+ * from Java file changes.
  *
- * <p>When the LLM service is available, the job sends file diffs to the
- * AI engine. Otherwise, the job completes without inferring any rules and
- * records that no rules are available for the commit.</p>
+ * <p>The class remains a {@link Job} for compatibility, but the package-visible
+ * {@link #analyze(IProgressMonitor)} method also lets
+ * {@link CommitAnalysisScheduler} execute commits through one bounded,
+ * user-visible queue instead of scheduling an unbounded set of provider calls.</p>
  *
  * @since 1.2.6
  */
@@ -46,14 +47,6 @@ public class CommitAnalysisJob extends Job {
 	private final Path repositoryPath;
 	private final Runnable onComplete;
 
-	/**
-	 * Creates a new analysis job.
-	 *
-	 * @param entry          the commit table entry to analyze
-	 * @param gitProvider    the git history provider
-	 * @param repositoryPath path to the Git repository
-	 * @param onComplete     callback to run (on any thread) when analysis finishes
-	 */
 	public CommitAnalysisJob(CommitTableEntry entry, GitHistoryProvider gitProvider,
 			Path repositoryPath, Runnable onComplete) {
 		super("Analyzing commit " + entry.getCommitInfo().shortId()); //$NON-NLS-1$
@@ -61,22 +54,24 @@ public class CommitAnalysisJob extends Job {
 		this.gitProvider = gitProvider;
 		this.repositoryPath = repositoryPath;
 		this.onComplete = onComplete;
-		setSystem(true); // Don't show in Progress view
+		setSystem(true);
 	}
 
 	@Override
 	protected IStatus run(IProgressMonitor monitor) {
+		return analyze(monitor);
+	}
+
+	IStatus analyze(IProgressMonitor monitor) {
 		entry.setStatus(AnalysisStatus.ANALYZING);
-
-		if (monitor.isCanceled()) {
-			entry.setStatus(AnalysisStatus.PENDING);
-			return Status.CANCEL_STATUS;
-		}
-
 		try {
-			List<FileDiff> diffs = gitProvider.getDiffs(repositoryPath, entry.getCommitInfo().id());
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return Status.CANCEL_STATUS;
+			}
 
-			if (monitor.isCanceled()) {
+			List<FileDiff> diffs = gitProvider.getDiffs(repositoryPath, entry.getCommitInfo().id());
+			if (isCancelled(monitor)) {
 				entry.setStatus(AnalysisStatus.PENDING);
 				return Status.CANCEL_STATUS;
 			}
@@ -85,18 +80,28 @@ public class CommitAnalysisJob extends Job {
 			if (llmService.isAvailable()) {
 				analyzeWithAi(llmService.getEngine(), diffs, monitor);
 			} else {
-				// No LLM available — mark as no rules
 				entry.setStatus(AnalysisStatus.NO_RULES);
 			}
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return Status.CANCEL_STATUS;
+			}
+			return Status.OK_STATUS;
 		} catch (Exception e) {
-			entry.setStatus(AnalysisStatus.FAILED);
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return Status.CANCEL_STATUS;
+			}
+			String message = e.getMessage();
+			entry.setFailureMessage(message == null || message.isBlank()
+					? e.getClass().getSimpleName()
+					: message);
+			return Status.error("Commit analysis failed", e); //$NON-NLS-1$
+		} finally {
+			if (onComplete != null) {
+				onComplete.run();
+			}
 		}
-
-		if (onComplete != null) {
-			onComplete.run();
-		}
-
-		return Status.OK_STATUS;
 	}
 
 	private void analyzeWithAi(AiRuleInferenceEngine engine, List<FileDiff> diffs,
@@ -104,7 +109,7 @@ public class CommitAnalysisJob extends Job {
 		List<CommitEvaluation> evaluations = new ArrayList<>();
 
 		for (FileDiff diff : diffs) {
-			if (monitor.isCanceled()) {
+			if (isCancelled(monitor)) {
 				entry.setStatus(AnalysisStatus.PENDING);
 				return;
 			}
@@ -112,6 +117,10 @@ public class CommitAnalysisJob extends Job {
 			engine.inferRuleFromDiff(unifiedDiff)
 					.filter(e -> e.dslRule() != null && !e.dslRule().isBlank())
 					.ifPresent(evaluations::add);
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return;
+			}
 		}
 
 		if (evaluations.isEmpty()) {
@@ -122,15 +131,10 @@ public class CommitAnalysisJob extends Job {
 		}
 	}
 
-	/**
-	 * Builds a unified diff string from a {@link FileDiff}.
-	 *
-	 * <p>Uses LCS-based hunk line reconstruction to correctly distinguish
-	 * context, added, and removed lines.</p>
-	 *
-	 * @param diff the file diff
-	 * @return a unified diff string suitable for LLM inference
-	 */
+	private static boolean isCancelled(IProgressMonitor monitor) {
+		return monitor.isCanceled() || Thread.currentThread().isInterrupted();
+	}
+
 	public static String buildUnifiedDiff(FileDiff diff) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("--- a/").append(diff.filePath()).append('\n'); //$NON-NLS-1$
@@ -152,14 +156,6 @@ public class CommitAnalysisJob extends Job {
 		return sb.toString();
 	}
 
-	/**
-	 * Builds unified-diff style hunk lines using LCS to correctly distinguish
-	 * context, added, and removed lines.
-	 *
-	 * @param beforeLines lines from the "before" side of the hunk
-	 * @param afterLines  lines from the "after" side of the hunk
-	 * @return list of lines with diff markers ({@code ' '}, {@code '-'}, {@code '+'})
-	 */
 	public static List<String> buildHunkLines(String[] beforeLines, String[] afterLines) {
 		int n = beforeLines.length;
 		int m = afterLines.length;
