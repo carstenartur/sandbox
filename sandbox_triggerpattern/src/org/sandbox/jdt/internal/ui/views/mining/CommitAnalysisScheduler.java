@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.ui.views.mining;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -46,10 +47,10 @@ public class CommitAnalysisScheduler {
 	private final Path repositoryPath;
 	private final TableViewer tableViewer;
 	private final Consumer<Progress> progressListener;
+	private final AtomicInteger completed = new AtomicInteger();
 
 	private volatile boolean running;
 	private volatile boolean cancelled;
-	private volatile int completed;
 	private volatile int total;
 	private volatile long generation;
 	private Job analysisJob;
@@ -75,7 +76,7 @@ public class CommitAnalysisScheduler {
 		long runGeneration = ++generation;
 		List<CommitTableEntry> queue = List.copyOf(entries);
 		total = queue.size();
-		completed = 0;
+		completed.set(0);
 		cancelled = false;
 		running = !queue.isEmpty();
 
@@ -113,7 +114,7 @@ public class CommitAnalysisScheduler {
 							return Status.CANCEL_STATUS;
 						}
 
-						completed++;
+						completed.incrementAndGet();
 						monitor.worked(1);
 						notifyProgress(progress(0), runGeneration);
 					}
@@ -154,7 +155,7 @@ public class CommitAnalysisScheduler {
 	}
 
 	private Progress progress(int active) {
-		int boundedCompleted = Math.min(completed, total);
+		int boundedCompleted = Math.min(completed.get(), total);
 		int queued = Math.max(0, total - boundedCompleted - active);
 		return new Progress(boundedCompleted, total, active, queued, running, cancelled);
 	}
