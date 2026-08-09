@@ -9,17 +9,16 @@ package org.sandbox.jdt.core.cleanupapp;
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
- * 
+ *
  * This Source Code may also be made available under the following Secondary
  * Licenses when the conditions for such availability set forth in the Eclipse
  * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
  * with the GNU Classpath Exception which is
  * available at https://www.gnu.org/software/classpath/license.html.
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  * #L%
  */
-
 
 import java.io.File;
 import java.io.IOException;
@@ -134,54 +133,18 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			NLS.initializeMessages(BUNDLE_NAME, Messages.class);
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message) {
 			return bind(message, null);
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param binding
-		 *            the object to be inserted into the message
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message, final Object binding) {
 			return bind(message, new Object[] { binding });
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param binding1
-		 *            An object to be inserted into the message
-		 * @param binding2
-		 *            A second object to be inserted into the message
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message, final Object binding1, final Object binding2) {
 			return bind(message, new Object[] { binding1, binding2 });
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param bindings
-		 *            An array of objects to be inserted into the message
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message, final Object[] bindings) {
 			return MessageFormat.format(message, bindings);
 		}
@@ -196,9 +159,7 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		try {
 			request= parseImportRequest(arguments);
 		} catch (IllegalArgumentException e) {
-			System.err.println(e.getMessage());
-			System.out.println(Messages.bind(Messages.CommandLineUsage));
-			return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);
+			return fail(e.getMessage());
 		}
 		final List<String> args= Arrays.asList(request.applicationArguments());
 		if (args.isEmpty() || args.contains("-help") || args.contains("--help")) { //$NON-NLS-1$ //$NON-NLS-2$
@@ -206,31 +167,38 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			return IApplication.EXIT_OK;
 		}
 		try {
-			// Try to see if the workspace is available. If it is not available we'll
-			// get a NoClassDefFoundError wrapping a ClassNotFoundException which
-			// has a BundleException in it, whose cause was the original
-			// IllegalStateException raised by
-			// org.eclipse.core.internal.runtime.DataArea.assertLocationInitialized()
 			ResourcesPlugin.getWorkspace();
 		} catch (NoClassDefFoundError noClassError) {
 			if (noClassError.getCause() instanceof ClassNotFoundException classNotFoundException
 					&& classNotFoundException.getException() instanceof BundleException bundleException
 					&& bundleException.getCause() instanceof IllegalStateException) {
-				System.err.println(Messages.bind(Messages.WorkspaceRequired));
-				System.out.println(Messages.bind(Messages.CommandLineUsage));
-				return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);
+				return fail(Messages.bind(Messages.WorkspaceRequired));
 			}
 			throw noClassError;
 		}
 
 		if (request.projectDirectory() != null) {
-			importProject(request.projectDirectory());
+			try {
+				importProject(request.projectDirectory());
+			} catch (CoreException | IOException e) {
+				return fail(e.getMessage());
+			}
 		}
 
-		return delegate.start(new ForwardingApplicationContext(context, request.applicationArguments(), this));
+		Object result= delegate.start(new ForwardingApplicationContext(context, request.applicationArguments(), this));
+		return delegate.hasErrors() ? Integer.valueOf(CodeCleanupApplication.EXIT_ERROR) : result;
+	}
+
+	private static Integer fail(String message) {
+		System.err.println(message);
+		System.out.println(Messages.bind(Messages.CommandLineUsage));
+		return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);
 	}
 
 	private static ImportRequest parseImportRequest(String[] arguments) {
+		if (arguments == null) {
+			throw new IllegalArgumentException("Application arguments are unavailable."); //$NON-NLS-1$
+		}
 		List<String> forwarded= new ArrayList<>(arguments.length);
 		File projectDirectory= null;
 		for (int index= 0; index < arguments.length; index++) {
