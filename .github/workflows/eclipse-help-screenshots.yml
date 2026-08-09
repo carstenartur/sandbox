@@ -32,6 +32,7 @@ on:
       - 'sandbox_use_general_type_help/**'
       - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
+      - '.github/scripts/VerifyHelpScreenshotDiff.java'
       - '.github/workflows/eclipse-help-screenshots.yml'
   workflow_dispatch:
 
@@ -110,12 +111,33 @@ jobs:
       - name: Verify committed screenshots are reproducible
         shell: bash
         run: |
-          changes="$(git status --porcelain=v1 --untracked-files=all -- \
-            ':(glob)sandbox*_help/images/*.png')"
-          if [[ -n "$changes" ]]; then
+          set -euo pipefail
+
+          code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
+          mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
+            ':(glob)sandbox*_help/images/*.png')
+          unexpected=()
+          code_patterns_changed=false
+          for change in "${changes[@]}"; do
+            path="${change:3}"
+            if [[ "$path" == "$code_patterns" ]]; then
+              code_patterns_changed=true
+            else
+              unexpected+=("$change")
+            fi
+          done
+
+          if (( ${#unexpected[@]} > 0 )); then
             echo "Regenerated Help screenshots differ from the checkout:" >&2
-            printf '%s\n' "$changes" >&2
+            printf '%s\n' "${unexpected[@]}" >&2
             exit 1
+          fi
+
+          if [[ "$code_patterns_changed" == true ]]; then
+            baseline="$(mktemp --suffix=.png)"
+            trap 'rm -f "$baseline"' EXIT
+            git show "HEAD:$code_patterns" > "$baseline"
+            java .github/scripts/VerifyHelpScreenshotDiff.java "$baseline" "$code_patterns"
           fi
 
       - name: Upload reproduced screenshots
