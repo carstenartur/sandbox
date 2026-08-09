@@ -54,6 +54,7 @@ public class CommitAnalysisScheduler {
 	private volatile boolean cancelled;
 	private volatile int total;
 	private volatile long generation;
+	private volatile Thread workerThread;
 	private Job analysisJob;
 
 	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,
@@ -91,10 +92,12 @@ public class CommitAnalysisScheduler {
 		analysisJob = new Job("Refactoring Mining: " + total + " commits") { //$NON-NLS-1$ //$NON-NLS-2$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
+				workerThread = Thread.currentThread();
 				monitor.beginTask("Inferring TriggerPattern rules from commit history", total); //$NON-NLS-1$
 				try {
 					for (int index = 0; index < queue.size(); index++) {
-						if (runGeneration != generation || monitor.isCanceled()) {
+						if (runGeneration != generation || monitor.isCanceled()
+								|| Thread.currentThread().isInterrupted()) {
 							if (runGeneration == generation) {
 								cancelled = true;
 							}
@@ -109,7 +112,8 @@ public class CommitAnalysisScheduler {
 						CommitAnalysisJob commitJob = new CommitAnalysisJob(entry, gitProvider,
 								repositoryPath, () -> notifyUpdate(entry));
 						IStatus status = commitJob.analyze(monitor);
-						if (runGeneration != generation || status.matches(IStatus.CANCEL) || monitor.isCanceled()) {
+						if (runGeneration != generation || status.matches(IStatus.CANCEL) || monitor.isCanceled()
+								|| Thread.currentThread().isInterrupted()) {
 							if (runGeneration == generation) {
 								cancelled = true;
 							}
@@ -122,6 +126,7 @@ public class CommitAnalysisScheduler {
 					}
 					return Status.OK_STATUS;
 				} finally {
+					workerThread = null;
 					monitor.done();
 					if (runGeneration == generation) {
 						synchronized (CommitAnalysisScheduler.this) {
@@ -134,12 +139,20 @@ public class CommitAnalysisScheduler {
 					}
 				}
 			}
+
+			@Override
+			protected void canceling() {
+				Thread thread = workerThread;
+				if (thread != null) {
+					thread.interrupt();
+				}
+			}
 		};
 		analysisJob.setUser(true);
 		analysisJob.schedule();
 	}
 
-	/** Cancels both the active commit and all queued commits. */
+	/** Cancels the active commit and all queued commits. */
 	public synchronized void cancelAnalysis() {
 		long cancelledGeneration = ++generation;
 		if (analysisJob != null) {
