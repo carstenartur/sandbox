@@ -65,13 +65,13 @@ public class CommitAnalysisJob extends Job {
 	IStatus analyze(IProgressMonitor monitor) {
 		entry.setStatus(AnalysisStatus.ANALYZING);
 		try {
-			if (monitor.isCanceled()) {
+			if (isCancelled(monitor)) {
 				entry.setStatus(AnalysisStatus.PENDING);
 				return Status.CANCEL_STATUS;
 			}
 
 			List<FileDiff> diffs = gitProvider.getDiffs(repositoryPath, entry.getCommitInfo().id());
-			if (monitor.isCanceled()) {
+			if (isCancelled(monitor)) {
 				entry.setStatus(AnalysisStatus.PENDING);
 				return Status.CANCEL_STATUS;
 			}
@@ -82,8 +82,16 @@ public class CommitAnalysisJob extends Job {
 			} else {
 				entry.setStatus(AnalysisStatus.NO_RULES);
 			}
-			return monitor.isCanceled() ? Status.CANCEL_STATUS : Status.OK_STATUS;
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return Status.CANCEL_STATUS;
+			}
+			return Status.OK_STATUS;
 		} catch (Exception e) {
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return Status.CANCEL_STATUS;
+			}
 			String message = e.getMessage();
 			entry.setFailureMessage(message == null || message.isBlank()
 					? e.getClass().getSimpleName()
@@ -101,7 +109,7 @@ public class CommitAnalysisJob extends Job {
 		List<CommitEvaluation> evaluations = new ArrayList<>();
 
 		for (FileDiff diff : diffs) {
-			if (monitor.isCanceled()) {
+			if (isCancelled(monitor)) {
 				entry.setStatus(AnalysisStatus.PENDING);
 				return;
 			}
@@ -109,6 +117,10 @@ public class CommitAnalysisJob extends Job {
 			engine.inferRuleFromDiff(unifiedDiff)
 					.filter(e -> e.dslRule() != null && !e.dslRule().isBlank())
 					.ifPresent(evaluations::add);
+			if (isCancelled(monitor)) {
+				entry.setStatus(AnalysisStatus.PENDING);
+				return;
+			}
 		}
 
 		if (evaluations.isEmpty()) {
@@ -117,6 +129,10 @@ public class CommitAnalysisJob extends Job {
 			entry.setEvaluations(evaluations);
 			entry.setStatus(AnalysisStatus.DONE);
 		}
+	}
+
+	private static boolean isCancelled(IProgressMonitor monitor) {
+		return monitor.isCanceled() || Thread.currentThread().isInterrupted();
 	}
 
 	public static String buildUnifiedDiff(FileDiff diff) {
