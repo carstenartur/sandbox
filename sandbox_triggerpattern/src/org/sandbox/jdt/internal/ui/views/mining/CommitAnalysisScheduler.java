@@ -137,6 +137,9 @@ public class CommitAnalysisScheduler {
 						}
 						notifyProgress(progress(0), runGeneration);
 					}
+					// The job already decided its result; do not leak our cancellation
+					// interrupt into a worker thread that the Eclipse job manager may reuse.
+					Thread.interrupted();
 				}
 			}
 
