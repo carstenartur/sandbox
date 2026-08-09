@@ -38,6 +38,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
@@ -70,21 +71,30 @@ public class MineDiffHandler extends AbstractHandler {
 
 		EclipseLlmService llmService = EclipseLlmService.getInstance();
 		if (!llmService.isAvailable()) {
+			RuleInferenceUiFeedback.showConfigurationRequired();
 			return null;
 		}
 
 		Job job = new Job("Mining DSL rules from diff") { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				AiRuleInferenceEngine engine = llmService.getEngine();
-				Optional<CommitEvaluation> result = engine.inferRuleFromDiff(diffText);
-				if (result.isPresent()) {
-					String dslRule = result.get().dslRule();
-					if (dslRule != null && !dslRule.isBlank()) {
-						openHintFileOnUi(targetProject, dslRule);
+				try {
+					AiRuleInferenceEngine engine = llmService.getEngine();
+					Optional<CommitEvaluation> result = engine.inferRuleFromDiff(diffText);
+					if (result.isPresent()) {
+						String dslRule = result.get().dslRule();
+						if (dslRule != null && !dslRule.isBlank()) {
+							openHintFileOnUi(targetProject, dslRule);
+							return Status.OK_STATUS;
+						}
 					}
+					RuleInferenceUiFeedback.showNoRule("the selected diff"); //$NON-NLS-1$
+					return Status.OK_STATUS;
+				} catch (RuntimeException e) {
+					LOG.error("Failed to infer a DSL rule from the selected diff", e); //$NON-NLS-1$
+					RuleInferenceUiFeedback.showFailure("the selected diff", e); //$NON-NLS-1$
+					return Status.error("DSL inference from selected diff failed", e); //$NON-NLS-1$
 				}
-				return Status.OK_STATUS;
 			}
 		};
 		job.setUser(true);
@@ -104,6 +114,7 @@ public class MineDiffHandler extends AbstractHandler {
 				}
 			} catch (Exception e) {
 				LOG.error("Failed to open hint file for mined diff rule", e); //$NON-NLS-1$
+				RuleInferenceUiFeedback.showFailure("the generated hint file", e); //$NON-NLS-1$
 			}
 		});
 	}
