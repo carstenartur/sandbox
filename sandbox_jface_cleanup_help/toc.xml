@@ -2,5 +2,6 @@
 <toc label="Sandbox – JFace API Modernization" topic="html/index.html">
    <topic label="Overview" href="html/index.html"/>
    <topic label="Using this feature" href="html/usage.html"/>
+   <topic label="Reviewing Cleanup changes" href="html/preview.html"/>
    <topic label="Reference, safety, and limitations" href="html/reference.html"/>
 </toc>
