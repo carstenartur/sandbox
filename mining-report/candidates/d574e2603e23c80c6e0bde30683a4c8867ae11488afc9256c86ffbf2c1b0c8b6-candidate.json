@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d574e2603e23c80c6e0bde30683a4c8867ae11488afc9256c86ffbf2c1b0c8b6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: invert-equals-for-null-safe-getCompilationUnit\u003e\n\u003c!description: Invert equals() comparison for potentially null results of getCompilationUnit() to prevent NullPointerException. Assumes the other argument is non-null.\u003e\n\u003c!severity: ERROR\u003e\n\n$typeExpr.getCompilationUnit().equals($compilationUnitExpr)\n\u003d\u003e\n$compilationUnitExpr.equals($typeExpr.getCompilationUnit())\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    // Assume IType.getCompilationUnit() can return null for binary types.\n    public void checkVisibility(IType type, ICompilationUnit currentUnit) throws JavaModelException {\n        // Problematic pattern: If type.getCompilationUnit() is null, calling .equals() will throw NPE.\n        if (type.getCompilationUnit().equals(currentUnit)) {\n            System.out.println(\"Same unit\");\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    // Assume IType.getCompilationUnit() can return null for binary types.\n    public void checkVisibility(IType type, ICompilationUnit currentUnit) throws JavaModelException {\n        // Fixed pattern: currentUnit (assumed non-null) handles null argument gracefully.\n        if (currentUnit.equals(type.getCompilationUnit())) {\n            System.out.println(\"Same unit\");\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    public void checkVisibility(IType type, ICompilationUnit currentUnit) throws JavaModelException {\n        // Not matching: direct equals() on objects (not a method call to getCompilationUnit())\n        if (type.equals(currentUnit)) {\n            System.out.println(\"Direct equals\");\n        }\n        \n        // Not matching: a different method call (not getCompilationUnit())\n        if (type.getJavaProject().equals(currentUnit.getJavaProject())) {\n            System.out.println(\"Different method\");\n        }\n        \n        // Not matching: a null check, not an equals() call on a potentially null receiver\n        if (type.getCompilationUnit() \u003d\u003d null) {\n            System.out.println(\"Null check\");\n        }\n    }\n}",
+  "targetHintFile": "null_safety.sandbox-hint",
+  "sourceCommit": "3801df607a69be584b26e412ab29e251abc61998",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Invert an `equals()` method call where the receiver is the result of `getCompilationUnit()` to prevent NullPointerExceptions when `getCompilationUnit()` might return null.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-09T02:54:42.932241322Z",
+  "ruleFingerprint": "sha256:5d2e4b800b2c3f08b78299f79aa1ff2f3f65d979e8153818c7023cb2ced8a0f0",
+  "behaviorFingerprint": "sha256:cda21a6b164443f0402d9240046594e33abcc74adc5225e2bd95373b6bb715f3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-09T02:54:46.331443222Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

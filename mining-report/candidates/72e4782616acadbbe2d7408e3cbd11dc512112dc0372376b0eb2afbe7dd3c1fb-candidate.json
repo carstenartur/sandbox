@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-    "verifiedAt": "2026-08-08T02:51:17.541210881Z",
+    "verifiedAt": "2026-08-09T02:54:46.161055178Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
