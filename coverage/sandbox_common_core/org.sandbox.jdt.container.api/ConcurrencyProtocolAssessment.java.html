@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConcurrencyProtocolAssessment.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.api</a> &gt; <span class="el_source">ConcurrencyProtocolAssessment.java</span></div><h1>ConcurrencyProtocolAssessment.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.api;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
+
+/**
+ * Report-only outcome of concurrent-container protocol analysis.
+ *
+ * &lt;p&gt;All current outcomes deliberately deny source rewriting. They separate a possible
+ * modernization strategy from the equally important conclusions that existing locking
+ * should be retained, that only a diagnostic is justified, or that analysis was
+ * incomplete. A later migration planner must establish its own stronger proof.&lt;/p&gt;
+ */
+public sealed interface ConcurrencyProtocolAssessment
+		permits ConcurrencyProtocolAssessment.RecommendedMigration,
+				ConcurrencyProtocolAssessment.RetainExistingLocking,
+				ConcurrencyProtocolAssessment.DiagnosticOnly,
+				ConcurrencyProtocolAssessment.Rejected {
+
+	/** Returns the immutable source protocol supporting this outcome. */
+	ConcurrencyProtocol protocol();
+
+	/** Returns concise, user-facing reasons for the outcome. */
+	List&lt;String&gt; explanations();
+
+	/** Concurrent-container analysis is report-only in the initial delivery stage. */
+	default boolean permitsSourceRewrite() {
+<span class="fc" id="L44">		return false;</span>
+	}
+
+	/** A possible modernization strategy whose implementation still requires a planner proof. */
+	record RecommendedMigration(
+			ConcurrencyProtocol protocol,
+			TargetContainerContract targetContract,
+			Strategy strategy,
+			Confidence confidence,
+			List&lt;String&gt; explanations) implements ConcurrencyProtocolAssessment {
+
+<span class="fc" id="L55">		public RecommendedMigration {</span>
+<span class="fc" id="L56">			Objects.requireNonNull(protocol, &quot;protocol&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L57">			Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L58">			Objects.requireNonNull(strategy, &quot;strategy&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L59">			Objects.requireNonNull(confidence, &quot;confidence&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L60">			explanations= copyExplanations(explanations);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">			if (!hasCompleteUsageProof(protocol)) {</span>
+<span class="fc" id="L62">				throw new IllegalArgumentException(</span>
+						&quot;A migration recommendation requires complete local usage without unresolved boundaries&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L65">		}</span>
+
+		@Override
+		public List&lt;String&gt; explanations() {
+<span class="nc" id="L69">			return defensiveCopy(explanations);</span>
+		}
+	}
+
+	/** Positive conclusion that the observed lock-based protocol should not be replaced. */
+	record RetainExistingLocking(
+			ConcurrencyProtocol protocol,
+			List&lt;String&gt; explanations) implements ConcurrencyProtocolAssessment {
+
+<span class="fc" id="L78">		public RetainExistingLocking {</span>
+<span class="fc" id="L79">			Objects.requireNonNull(protocol, &quot;protocol&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L80">			explanations= copyExplanations(explanations);</span>
+<span class="fc" id="L81">			SynchronizationKind synchronization= protocol.summary().synchronization();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">			if (!hasCompleteUsageProof(protocol)</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">					|| !isLockBased(synchronization)</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">					|| !protocol.hasSingleProtectingLock()) {</span>
+<span class="fc" id="L85">				throw new IllegalArgumentException(</span>
+						&quot;Retaining existing locking requires complete usage proof and one lock-based protecting protocol&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L88">		}</span>
+
+		@Override
+		public List&lt;String&gt; explanations() {
+<span class="fc" id="L92">			return defensiveCopy(explanations);</span>
+		}
+	}
+
+	/** Actionable warning or observation that does not imply one replacement strategy. */
+	record DiagnosticOnly(
+			ConcurrencyProtocol protocol,
+			Severity severity,
+			List&lt;String&gt; explanations) implements ConcurrencyProtocolAssessment {
+
+<span class="fc" id="L102">		public DiagnosticOnly {</span>
+<span class="fc" id="L103">			Objects.requireNonNull(protocol, &quot;protocol&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L104">			Objects.requireNonNull(severity, &quot;severity&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L105">			explanations= copyExplanations(explanations);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">			if (protocol.completeness() == AnalysisCompleteness.REJECTED) {</span>
+<span class="nc" id="L107">				throw new IllegalArgumentException(</span>
+						&quot;Rejected analysis must use the Rejected outcome&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L110">		}</span>
+
+		@Override
+		public List&lt;String&gt; explanations() {
+<span class="nc" id="L114">			return defensiveCopy(explanations);</span>
+		}
+	}
+
+	/** Analysis result for unresolved, binary, stale or otherwise unsupported protocols. */
+	record Rejected(
+			ConcurrencyProtocol protocol,
+			List&lt;String&gt; explanations) implements ConcurrencyProtocolAssessment {
+
+<span class="fc" id="L123">		public Rejected {</span>
+<span class="fc" id="L124">			Objects.requireNonNull(protocol, &quot;protocol&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L125">			explanations= copyExplanations(explanations);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			if (protocol.completeness() != AnalysisCompleteness.REJECTED) {</span>
+<span class="fc" id="L127">				throw new IllegalArgumentException(</span>
+						&quot;Rejected outcome requires a rejected protocol&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L130">		}</span>
+
+		@Override
+		public List&lt;String&gt; explanations() {
+<span class="nc" id="L134">			return defensiveCopy(explanations);</span>
+		}
+	}
+
+	private static boolean hasCompleteUsageProof(ConcurrencyProtocol protocol) {
+<span class="fc" id="L139">		AnalysisCompleteness completeness= protocol.completeness();</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">		return (completeness == AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+				|| completeness == AnalysisCompleteness.FLOW_COMPLETE)
+<span class="fc bfc" id="L142" title="All 2 branches covered.">				&amp;&amp; !protocol.hasUnresolvedBoundary();</span>
+	}
+
+	private static boolean isLockBased(SynchronizationKind synchronization) {
+<span class="pc bpc" id="L146" title="2 of 6 branches missed.">		return synchronization == SynchronizationKind.INTRINSIC_LOCK</span>
+				|| synchronization == SynchronizationKind.EXPLICIT_LOCK
+				|| synchronization == SynchronizationKind.SYNCHRONIZED_WRAPPER;
+	}
+
+	private static List&lt;String&gt; copyExplanations(List&lt;String&gt; source) {
+<span class="fc" id="L152">		List&lt;String&gt; result= Objects.requireNonNull(source, &quot;explanations&quot;).stream() //$NON-NLS-1$</span>
+<span class="fc" id="L153">				.map(item -&gt; Objects.requireNonNull(item, &quot;explanation&quot;).strip()) //$NON-NLS-1$</span>
+<span class="fc" id="L154">				.toList();</span>
+<span class="pc bpc" id="L155" title="2 of 4 branches missed.">		if (result.isEmpty() || result.stream().anyMatch(String::isEmpty)) {</span>
+<span class="nc" id="L156">			throw new IllegalArgumentException(&quot;At least one non-empty explanation is required&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L158">		return result;</span>
+	}
+
+	private static List&lt;String&gt; defensiveCopy(List&lt;String&gt; source) {
+<span class="fc" id="L162">		return Collections.unmodifiableList(new ArrayList&lt;&gt;(source));</span>
+	}
+
+	/** Concurrency implementation family suggested by the report-only analyzer. */
+<span class="fc" id="L166">	enum Strategy {</span>
+<span class="fc" id="L167">		COPY_ON_WRITE_SEQUENCE,</span>
+<span class="fc" id="L168">		COPY_ON_WRITE_SET,</span>
+<span class="fc" id="L169">		CONCURRENT_MEMBERSHIP_SET,</span>
+<span class="fc" id="L170">		CONCURRENT_QUEUE,</span>
+<span class="fc" id="L171">		CONCURRENT_DEQUE,</span>
+<span class="fc" id="L172">		IMMUTABLE_SNAPSHOT,</span>
+<span class="fc" id="L173">		PURPOSE_SPECIFIC_ABSTRACTION</span>
+	}
+
+	/** Diagnostic importance independent of whether a rewrite exists. */
+<span class="fc" id="L177">	enum Severity {</span>
+<span class="fc" id="L178">		INFO,</span>
+<span class="fc" id="L179">		WARNING,</span>
+<span class="fc" id="L180">		ERROR</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -22,7 +22,7 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 /**
  * Column displaying the variable name.
  */
-<span class="fc" id="L25">public class NameColumn extends AbstractColumn {</span>
+<span class="nc" id="L25">public class NameColumn extends AbstractColumn {</span>
 
 	private static final int MINIMUM_WIDTH = 100;
 	private static final String TITLE = &quot;Variable name&quot;; //$NON-NLS-1$
@@ -41,16 +41,16 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 	
 	@Override
 	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
-<span class="fc" id="L44">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
-<span class="fc" id="L45">		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
+<span class="nc" id="L44">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
+<span class="nc" id="L45">		viewerColumn.setLabelProvider(new ConflictHighlightingLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
 <span class="nc" id="L48">				IVariableBinding binding = (IVariableBinding) element;</span>
 <span class="nc" id="L49">				return binding.getName();</span>
 			}
 		});
-<span class="fc" id="L52">		tableColumnLayout.setColumnData(viewerColumn.getColumn(), new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
-<span class="fc" id="L53">	}</span>
+<span class="nc" id="L52">		tableColumnLayout.setColumnData(viewerColumn.getColumn(), new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
+<span class="nc" id="L53">	}</span>
 	
 	@Override
 	public int getColumnWeight() {

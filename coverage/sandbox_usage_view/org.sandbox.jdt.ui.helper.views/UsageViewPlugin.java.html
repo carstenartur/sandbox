@@ -36,21 +36,21 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 	/**
 	 * The constructor
 	 */
-<span class="fc" id="L39">	public UsageViewPlugin() {</span>
+<span class="nc" id="L39">	public UsageViewPlugin() {</span>
 		// default constructor
-<span class="fc" id="L41">	}</span>
+<span class="nc" id="L41">	}</span>
 
 	@Override
 	public void start(BundleContext context) throws Exception {
-<span class="fc" id="L45">		super.start(context);</span>
-<span class="fc" id="L46">		plugin = this;</span>
-<span class="fc" id="L47">	}</span>
+<span class="nc" id="L45">		super.start(context);</span>
+<span class="nc" id="L46">		plugin = this;</span>
+<span class="nc" id="L47">	}</span>
 
 	@Override
 	public void stop(BundleContext context) throws Exception {
-<span class="fc" id="L51">		plugin = null;</span>
-<span class="fc" id="L52">		super.stop(context);</span>
-<span class="fc" id="L53">	}</span>
+<span class="nc" id="L51">		plugin = null;</span>
+<span class="nc" id="L52">		super.stop(context);</span>
+<span class="nc" id="L53">	}</span>
 
 	/**
 	 * Returns the shared instance
@@ -58,7 +58,7 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 	 * @return the shared instance
 	 */
 	public static UsageViewPlugin getDefault() {
-<span class="fc" id="L61">		return plugin;</span>
+<span class="nc" id="L61">		return plugin;</span>
 	}
 
 	/**
@@ -75,7 +75,7 @@ public class UsageViewPlugin extends AbstractUIPlugin {
 	@Override
 	protected void initializeDefaultPreferences(IPreferenceStore store) {
 		// Set default value for show at startup preference
-<span class="fc" id="L78">		store.setDefault(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP, true);</span>
-<span class="fc" id="L79">	}</span>
+<span class="nc" id="L78">		store.setDefault(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP, true);</span>
+<span class="nc" id="L79">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

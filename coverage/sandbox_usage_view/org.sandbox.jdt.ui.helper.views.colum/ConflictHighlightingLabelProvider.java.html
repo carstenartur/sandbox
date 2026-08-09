@@ -26,20 +26,20 @@ import org.eclipse.swt.widgets.Display;
  * Column label provider that highlights rows with naming conflicts (same name, different type)
  * using a light red background. Also provides alternating row colors for non-conflict rows.
  */
-<span class="fc" id="L29">public class ConflictHighlightingLabelProvider extends ColumnLabelProvider {</span>
+<span class="nc" id="L29">public class ConflictHighlightingLabelProvider extends ColumnLabelProvider {</span>
 	
-<span class="fc" id="L31">	private static final Color GRAY_COLOR = Display.getDefault().getSystemColor(SWT.COLOR_WIDGET_LIGHT_SHADOW);</span>
+<span class="nc" id="L31">	private static final Color GRAY_COLOR = Display.getDefault().getSystemColor(SWT.COLOR_WIDGET_LIGHT_SHADOW);</span>
 	private static final Color CONFLICT_COLOR;
 	
 	/** Shared set of conflicting variable names - set by the view */
-<span class="fc" id="L35">	private static Set&lt;String&gt; conflictingNames = Collections.emptySet();</span>
+<span class="nc" id="L35">	private static Set&lt;String&gt; conflictingNames = Collections.emptySet();</span>
 	
 	static {
 		// Light red/pink color for conflict highlighting
-<span class="fc" id="L39">		CONFLICT_COLOR = new Color(Display.getDefault(), 255, 200, 200);</span>
-<span class="fc" id="L40">	}</span>
+<span class="nc" id="L39">		CONFLICT_COLOR = new Color(Display.getDefault(), 255, 200, 200);</span>
+<span class="nc" id="L40">	}</span>
 	
-<span class="fc" id="L42">	private boolean alternatingColor = false;</span>
+<span class="nc" id="L42">	private boolean alternatingColor = false;</span>
 	
 	/**
 	 * Sets the shared set of conflicting variable names.

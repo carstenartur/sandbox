@@ -26,8 +26,8 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
  * Visitor class that collects all variable bindings from SimpleName nodes
  * using the AstProcessorBuilder API for cleaner and more maintainable code.
  */
-<span class="fc" id="L29">public final class VariableBindingVisitor {</span>
-<span class="fc" id="L30">	private Set&lt;IVariableBinding&gt; collectedVariableBindings = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L29">public final class VariableBindingVisitor {</span>
+<span class="nc" id="L30">	private Set&lt;IVariableBinding&gt; collectedVariableBindings = new HashSet&lt;&gt;();</span>
 
 	/**
 	 * Process the AST node and collect all variable bindings.
@@ -36,16 +36,16 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 	 * @param astNode the AST node to process
 	 */
 	public void process(ASTNode astNode) {
-<span class="fc" id="L39">		AstProcessorBuilder.with(new ReferenceHolder&lt;String, Object&gt;())</span>
-<span class="fc" id="L40">			.onSimpleName((simpleName, dataHolder) -&gt; {</span>
-<span class="fc" id="L41">				IBinding binding = simpleName.resolveBinding();</span>
-<span class="fc bfc" id="L42" title="All 2 branches covered.">				if (binding instanceof IVariableBinding variableBinding) {</span>
-<span class="fc" id="L43">					collectedVariableBindings.add(variableBinding);</span>
+<span class="nc" id="L39">		AstProcessorBuilder.with(new ReferenceHolder&lt;String, Object&gt;())</span>
+<span class="nc" id="L40">			.onSimpleName((simpleName, dataHolder) -&gt; {</span>
+<span class="nc" id="L41">				IBinding binding = simpleName.resolveBinding();</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">				if (binding instanceof IVariableBinding variableBinding) {</span>
+<span class="nc" id="L43">					collectedVariableBindings.add(variableBinding);</span>
 				}
-<span class="fc" id="L45">				return true;</span>
+<span class="nc" id="L45">				return true;</span>
 			})
-<span class="fc" id="L47">			.build(astNode);</span>
-<span class="fc" id="L48">	}</span>
+<span class="nc" id="L47">			.build(astNode);</span>
+<span class="nc" id="L48">	}</span>
 
 	/**
 	 * Returns the set of collected variable bindings.
@@ -53,7 +53,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 	 * @return set of IVariableBinding instances found during processing
 	 */
 	public Set&lt;IVariableBinding&gt; getVariableBindings() {
-<span class="fc" id="L56">		return collectedVariableBindings;</span>
+<span class="nc" id="L56">		return collectedVariableBindings;</span>
 	}
 	
 	/**
@@ -63,7 +63,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 	 * @return set of IVariableBinding instances found during processing
 	 */
 	public Set&lt;IVariableBinding&gt; getVars() {
-<span class="fc" id="L66">		return collectedVariableBindings;</span>
+<span class="nc" id="L66">		return collectedVariableBindings;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

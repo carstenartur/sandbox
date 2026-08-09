@@ -20,37 +20,40 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp;
 
-<span class="nc" id="L26">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L27">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L31">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L32">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L33">			CleanUpOptions.TRUE</span>
+<span class="nc" id="L32">	static final String[] FALSE_TRUE = {</span>
+<span class="nc" id="L33">			CleanUpOptions.FALSE,</span>
+<span class="nc" id="L34">			CleanUpOptions.TRUE</span>
 	};
 
-<span class="nc" id="L36">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.method&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L37">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.method&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L40">		return new AbstractCleanUp[] {</span>
-<span class="nc" id="L41">				new MethodReuseCleanUp(values)</span>
+<span class="nc" id="L41">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L42">				new MethodReuseCleanUp(values)</span>
 		};
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L47">		Group codeQualityGroup= createGroup(numColumns, composite, CleanUpMessages.CodeQualityTabPage_GroupName_MethodReuse);</span>
-<span class="nc" id="L48">		final CheckboxPreference method_reuse= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_MethodReuse, MYCleanUpConstants.METHOD_REUSE_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L49">		intent(codeQualityGroup);</span>
-<span class="nc" id="L50">		final CheckboxPreference inline_sequences= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_InlineSequences, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, FALSE_TRUE);</span>
-<span class="nc" id="L51">		intent(codeQualityGroup);</span>
-<span class="nc" id="L52">		registerPreference(method_reuse);</span>
-<span class="nc" id="L53">		registerPreference(inline_sequences);</span>
-<span class="nc" id="L54">	}</span>
+<span class="nc" id="L48">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
+<span class="nc" id="L49">				&quot;sandbox_method_reuse.cleanup_configuration&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L50">		Group codeQualityGroup= createGroup(numColumns, composite, CleanUpMessages.CodeQualityTabPage_GroupName_MethodReuse);</span>
+<span class="nc" id="L51">		final CheckboxPreference method_reuse= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_MethodReuse, MYCleanUpConstants.METHOD_REUSE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L52">		intent(codeQualityGroup);</span>
+<span class="nc" id="L53">		final CheckboxPreference inline_sequences= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_InlineSequences, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, FALSE_TRUE);</span>
+<span class="nc" id="L54">		intent(codeQualityGroup);</span>
+<span class="nc" id="L55">		registerPreference(method_reuse);</span>
+<span class="nc" id="L56">		registerPreference(inline_sequences);</span>
+<span class="nc" id="L57">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -20,30 +20,33 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp;
 
-<span class="nc" id="L26">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L27">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L31">	static final String[] FALSE_TRUE= { CleanUpOptions.FALSE, CleanUpOptions.TRUE };</span>
+<span class="nc" id="L32">	static final String[] FALSE_TRUE= { CleanUpOptions.FALSE, CleanUpOptions.TRUE };</span>
 
-<span class="nc" id="L33">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.platform&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L34">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.platform&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L37">		return new AbstractCleanUp[] { new SimplifyPlatformStatusCleanUp(values) };</span>
+<span class="nc" id="L38">		return new AbstractCleanUp[] { new SimplifyPlatformStatusCleanUp(values) };</span>
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L42">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
-<span class="nc" id="L43">		final CheckboxPreference simplify_status= createCheckboxPref(java1d8Group, numColumns,</span>
-<span class="nc" id="L44">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_SimplifyPlatformStatus,</span>
-<span class="nc" id="L45">				MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L46">		registerPreference(simplify_status);</span>
-<span class="nc" id="L47">	}</span>
+<span class="nc" id="L43">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
+<span class="nc" id="L44">				&quot;sandbox_platform_helper.cleanup_configuration&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L45">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
+<span class="nc" id="L46">		final CheckboxPreference simplify_status= createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L47">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_SimplifyPlatformStatus,</span>
+<span class="nc" id="L48">				MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L49">		registerPreference(simplify_status);</span>
+<span class="nc" id="L50">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

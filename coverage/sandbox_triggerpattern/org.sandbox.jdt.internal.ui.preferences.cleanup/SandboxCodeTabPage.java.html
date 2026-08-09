@@ -20,6 +20,7 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.HintFileCleanUp;
 import org.sandbox.jdt.internal.ui.fix.MissingHashCodeCleanUp;
@@ -39,189 +40,192 @@ import org.sandbox.jdt.internal.ui.fix.WrongStringComparisonCleanUp;
  * 
  * @since 1.2.2
  */
-<span class="nc" id="L42">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L43">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 	
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L47">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L48">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L49">			CleanUpOptions.TRUE</span>
+<span class="nc" id="L48">	static final String[] FALSE_TRUE = {</span>
+<span class="nc" id="L49">			CleanUpOptions.FALSE,</span>
+<span class="nc" id="L50">			CleanUpOptions.TRUE</span>
 	};
 	
-<span class="nc" id="L52">	public static final String ID = &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.trigger&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L53">	public static final String ID = &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.trigger&quot;; //$NON-NLS-1$</span>
 	
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L56">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L57">		return new AbstractCleanUp[] {</span>
 				// Group 1: Code Transformations
-<span class="nc" id="L58">				new StringSimplificationCleanUp(values),</span>
-<span class="nc" id="L59">				new WrongStringComparisonCleanUp(values),</span>
-<span class="nc" id="L60">				new ShiftOutOfRangeCleanUp(values),</span>
+<span class="nc" id="L59">				new StringSimplificationCleanUp(values),</span>
+<span class="nc" id="L60">				new WrongStringComparisonCleanUp(values),</span>
+<span class="nc" id="L61">				new ShiftOutOfRangeCleanUp(values),</span>
 				// Group 2: Threading
-<span class="nc" id="L62">				new ThreadingCleanUp(values),</span>
+<span class="nc" id="L63">				new ThreadingCleanUp(values),</span>
 				// Group 3: Code Quality Hints
-<span class="nc" id="L64">				new PrintStackTraceCleanUp(values),</span>
-<span class="nc" id="L65">				new SystemOutCleanUp(values),</span>
-<span class="nc" id="L66">				new ObsoleteCollectionCleanUp(values),</span>
-<span class="nc" id="L67">				new MissingHashCodeCleanUp(values),</span>
-<span class="nc" id="L68">				new OverridableCallInConstructorCleanUp(values),</span>
+<span class="nc" id="L65">				new PrintStackTraceCleanUp(values),</span>
+<span class="nc" id="L66">				new SystemOutCleanUp(values),</span>
+<span class="nc" id="L67">				new ObsoleteCollectionCleanUp(values),</span>
+<span class="nc" id="L68">				new MissingHashCodeCleanUp(values),</span>
+<span class="nc" id="L69">				new OverridableCallInConstructorCleanUp(values),</span>
 				// Group 4: Declarative Transformations
-<span class="nc" id="L70">				new HintFileCleanUp(values)</span>
+<span class="nc" id="L71">				new HintFileCleanUp(values)</span>
 		};
 	}
 	
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
+<span class="nc" id="L77">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
+<span class="nc" id="L78">				&quot;sandbox_triggerpattern.cleanup_configuration&quot;); //$NON-NLS-1$</span>
+
 		// ── Group 1: Code Transformations ──
-<span class="nc" id="L77">		Group transformGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);</span>
-<span class="nc" id="L78">		final CheckboxPreference stringSimplification = createCheckboxPref(transformGroup, numColumns,</span>
-<span class="nc" id="L79">				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification,</span>
-<span class="nc" id="L80">				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L81">		intent(transformGroup);</span>
-<span class="nc" id="L82">		final CheckboxPreference wrongStringComparison = createCheckboxPref(transformGroup, numColumns,</span>
-<span class="nc" id="L83">				CleanUpMessages.WrongStringComparisonTabPage_CheckboxName,</span>
-<span class="nc" id="L84">				MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L81">		Group transformGroup = createGroup(numColumns, composite, CleanUpMessages.StringSimplificationTabPage_GroupName);</span>
+<span class="nc" id="L82">		final CheckboxPreference stringSimplification = createCheckboxPref(transformGroup, numColumns,</span>
+<span class="nc" id="L83">				CleanUpMessages.StringSimplificationTabPage_CheckboxName_StringSimplification,</span>
+<span class="nc" id="L84">				MYCleanUpConstants.TRIGGERPATTERN_STRING_SIMPLIFICATION_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L85">		intent(transformGroup);</span>
-<span class="nc" id="L86">		final CheckboxPreference shiftOutOfRange = createCheckboxPref(transformGroup, numColumns,</span>
-<span class="nc" id="L87">				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,</span>
-<span class="nc" id="L88">				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L86">		final CheckboxPreference wrongStringComparison = createCheckboxPref(transformGroup, numColumns,</span>
+<span class="nc" id="L87">				CleanUpMessages.WrongStringComparisonTabPage_CheckboxName,</span>
+<span class="nc" id="L88">				MYCleanUpConstants.WRONG_STRING_COMPARISON_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L89">		intent(transformGroup);</span>
-<span class="nc" id="L90">		registerPreference(stringSimplification);</span>
-<span class="nc" id="L91">		registerPreference(wrongStringComparison);</span>
-<span class="nc" id="L92">		registerPreference(shiftOutOfRange);</span>
+<span class="nc" id="L90">		final CheckboxPreference shiftOutOfRange = createCheckboxPref(transformGroup, numColumns,</span>
+<span class="nc" id="L91">				CleanUpMessages.ShiftOutOfRangeTabPage_CheckboxName_ShiftOutOfRange,</span>
+<span class="nc" id="L92">				MYCleanUpConstants.SHIFT_OUT_OF_RANGE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L93">		intent(transformGroup);</span>
+<span class="nc" id="L94">		registerPreference(stringSimplification);</span>
+<span class="nc" id="L95">		registerPreference(wrongStringComparison);</span>
+<span class="nc" id="L96">		registerPreference(shiftOutOfRange);</span>
 
 		// ── Group 2: Threading ──
-<span class="nc" id="L95">		Group threadingGroup = createGroup(numColumns, composite, CleanUpMessages.ThreadingTabPage_GroupName);</span>
-<span class="nc" id="L96">		final CheckboxPreference threading = createCheckboxPref(threadingGroup, numColumns,</span>
-<span class="nc" id="L97">				CleanUpMessages.ThreadingTabPage_CheckboxName_Threading,</span>
-<span class="nc" id="L98">				MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L99">		intent(threadingGroup);</span>
-<span class="nc" id="L100">		registerPreference(threading);</span>
+<span class="nc" id="L99">		Group threadingGroup = createGroup(numColumns, composite, CleanUpMessages.ThreadingTabPage_GroupName);</span>
+<span class="nc" id="L100">		final CheckboxPreference threading = createCheckboxPref(threadingGroup, numColumns,</span>
+<span class="nc" id="L101">				CleanUpMessages.ThreadingTabPage_CheckboxName_Threading,</span>
+<span class="nc" id="L102">				MYCleanUpConstants.TRIGGERPATTERN_THREADING_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L103">		intent(threadingGroup);</span>
+<span class="nc" id="L104">		registerPreference(threading);</span>
 
 		// ── Group 3: Code Quality Hints (detection only, no code changes) ──
-<span class="nc" id="L103">		Group hintsGroup = createGroup(numColumns, composite, CleanUpMessages.PrintStackTraceTabPage_GroupName);</span>
-<span class="nc" id="L104">		final CheckboxPreference printStackTrace = createCheckboxPref(hintsGroup, numColumns,</span>
-<span class="nc" id="L105">				CleanUpMessages.PrintStackTraceTabPage_CheckboxName,</span>
-<span class="nc" id="L106">				MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L107">		intent(hintsGroup);</span>
-<span class="nc" id="L108">		final CheckboxPreference systemOut = createCheckboxPref(hintsGroup, numColumns,</span>
-<span class="nc" id="L109">				CleanUpMessages.SystemOutTabPage_CheckboxName,</span>
-<span class="nc" id="L110">				MYCleanUpConstants.SYSTEM_OUT_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L107">		Group hintsGroup = createGroup(numColumns, composite, CleanUpMessages.PrintStackTraceTabPage_GroupName);</span>
+<span class="nc" id="L108">		final CheckboxPreference printStackTrace = createCheckboxPref(hintsGroup, numColumns,</span>
+<span class="nc" id="L109">				CleanUpMessages.PrintStackTraceTabPage_CheckboxName,</span>
+<span class="nc" id="L110">				MYCleanUpConstants.PRINT_STACKTRACE_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L111">		intent(hintsGroup);</span>
-<span class="nc" id="L112">		final CheckboxPreference obsoleteCollection = createCheckboxPref(hintsGroup, numColumns,</span>
-<span class="nc" id="L113">				CleanUpMessages.ObsoleteCollectionTabPage_CheckboxName,</span>
-<span class="nc" id="L114">				MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L112">		final CheckboxPreference systemOut = createCheckboxPref(hintsGroup, numColumns,</span>
+<span class="nc" id="L113">				CleanUpMessages.SystemOutTabPage_CheckboxName,</span>
+<span class="nc" id="L114">				MYCleanUpConstants.SYSTEM_OUT_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L115">		intent(hintsGroup);</span>
-<span class="nc" id="L116">		final CheckboxPreference missingHashCode = createCheckboxPref(hintsGroup, numColumns,</span>
-<span class="nc" id="L117">				CleanUpMessages.MissingHashCodeTabPage_CheckboxName,</span>
-<span class="nc" id="L118">				MYCleanUpConstants.MISSING_HASHCODE_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L116">		final CheckboxPreference obsoleteCollection = createCheckboxPref(hintsGroup, numColumns,</span>
+<span class="nc" id="L117">				CleanUpMessages.ObsoleteCollectionTabPage_CheckboxName,</span>
+<span class="nc" id="L118">				MYCleanUpConstants.OBSOLETE_COLLECTION_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L119">		intent(hintsGroup);</span>
-<span class="nc" id="L120">		final CheckboxPreference overridableInConstructor = createCheckboxPref(hintsGroup, numColumns,</span>
-<span class="nc" id="L121">				CleanUpMessages.OverridableCallInConstructorTabPage_CheckboxName,</span>
-<span class="nc" id="L122">				MYCleanUpConstants.OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L120">		final CheckboxPreference missingHashCode = createCheckboxPref(hintsGroup, numColumns,</span>
+<span class="nc" id="L121">				CleanUpMessages.MissingHashCodeTabPage_CheckboxName,</span>
+<span class="nc" id="L122">				MYCleanUpConstants.MISSING_HASHCODE_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L123">		intent(hintsGroup);</span>
-<span class="nc" id="L124">		registerPreference(printStackTrace);</span>
-<span class="nc" id="L125">		registerPreference(systemOut);</span>
-<span class="nc" id="L126">		registerPreference(obsoleteCollection);</span>
-<span class="nc" id="L127">		registerPreference(missingHashCode);</span>
-<span class="nc" id="L128">		registerPreference(overridableInConstructor);</span>
+<span class="nc" id="L124">		final CheckboxPreference overridableInConstructor = createCheckboxPref(hintsGroup, numColumns,</span>
+<span class="nc" id="L125">				CleanUpMessages.OverridableCallInConstructorTabPage_CheckboxName,</span>
+<span class="nc" id="L126">				MYCleanUpConstants.OVERRIDABLE_IN_CONSTRUCTOR_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L127">		intent(hintsGroup);</span>
+<span class="nc" id="L128">		registerPreference(printStackTrace);</span>
+<span class="nc" id="L129">		registerPreference(systemOut);</span>
+<span class="nc" id="L130">		registerPreference(obsoleteCollection);</span>
+<span class="nc" id="L131">		registerPreference(missingHashCode);</span>
+<span class="nc" id="L132">		registerPreference(overridableInConstructor);</span>
 
 		// ── Group 4: Declarative Transformations (.sandbox-hint files) ──
-<span class="nc" id="L131">		Group hintFileGroup = createGroup(numColumns, composite, CleanUpMessages.HintFileTabPage_GroupName);</span>
-<span class="nc" id="L132">		final CheckboxPreference hintFile = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L133">				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,</span>
-<span class="nc" id="L134">				MYCleanUpConstants.HINTFILE_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L135">		intent(hintFileGroup);</span>
-<span class="nc" id="L136">		final CheckboxPreference bundleCollections = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L137">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollections,</span>
-<span class="nc" id="L138">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS, FALSE_TRUE);</span>
+<span class="nc" id="L135">		Group hintFileGroup = createGroup(numColumns, composite, CleanUpMessages.HintFileTabPage_GroupName);</span>
+<span class="nc" id="L136">		final CheckboxPreference hintFile = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L137">				CleanUpMessages.HintFileTabPage_CheckboxName_HintFile,</span>
+<span class="nc" id="L138">				MYCleanUpConstants.HINTFILE_CLEANUP, FALSE_TRUE);</span>
 <span class="nc" id="L139">		intent(hintFileGroup);</span>
-<span class="nc" id="L140">		final CheckboxPreference bundlePerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L141">				CleanUpMessages.HintFileTabPage_CheckboxName_BundlePerformance,</span>
-<span class="nc" id="L142">				MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE, FALSE_TRUE);</span>
+<span class="nc" id="L140">		final CheckboxPreference bundleCollections = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L141">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollections,</span>
+<span class="nc" id="L142">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTIONS, FALSE_TRUE);</span>
 <span class="nc" id="L143">		intent(hintFileGroup);</span>
-<span class="nc" id="L144">		final CheckboxPreference bundleModernizeJava9 = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L145">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava9,</span>
-<span class="nc" id="L146">				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9, FALSE_TRUE);</span>
+<span class="nc" id="L144">		final CheckboxPreference bundlePerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L145">				CleanUpMessages.HintFileTabPage_CheckboxName_BundlePerformance,</span>
+<span class="nc" id="L146">				MYCleanUpConstants.HINTFILE_BUNDLE_PERFORMANCE, FALSE_TRUE);</span>
 <span class="nc" id="L147">		intent(hintFileGroup);</span>
-<span class="nc" id="L148">		final CheckboxPreference bundleModernizeJava11 = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L149">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava11,</span>
-<span class="nc" id="L150">				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, FALSE_TRUE);</span>
+<span class="nc" id="L148">		final CheckboxPreference bundleModernizeJava9 = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L149">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava9,</span>
+<span class="nc" id="L150">				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA9, FALSE_TRUE);</span>
 <span class="nc" id="L151">		intent(hintFileGroup);</span>
-<span class="nc" id="L152">		final CheckboxPreference bundleEncoding = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L153">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleEncoding,</span>
-<span class="nc" id="L154">				MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING, FALSE_TRUE);</span>
+<span class="nc" id="L152">		final CheckboxPreference bundleModernizeJava11 = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L153">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleModernizeJava11,</span>
+<span class="nc" id="L154">				MYCleanUpConstants.HINTFILE_BUNDLE_MODERNIZE_JAVA11, FALSE_TRUE);</span>
 <span class="nc" id="L155">		intent(hintFileGroup);</span>
-<span class="nc" id="L156">		final CheckboxPreference bundleJunit5 = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L157">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleJunit5,</span>
-<span class="nc" id="L158">				MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5, FALSE_TRUE);</span>
+<span class="nc" id="L156">		final CheckboxPreference bundleEncoding = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L157">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleEncoding,</span>
+<span class="nc" id="L158">				MYCleanUpConstants.HINTFILE_BUNDLE_ENCODING, FALSE_TRUE);</span>
 <span class="nc" id="L159">		intent(hintFileGroup);</span>
-<span class="nc" id="L160">		final CheckboxPreference bundleStreamPerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L161">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStreamPerformance,</span>
-<span class="nc" id="L162">				MYCleanUpConstants.HINTFILE_BUNDLE_STREAM_PERFORMANCE, FALSE_TRUE);</span>
+<span class="nc" id="L160">		final CheckboxPreference bundleJunit5 = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L161">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleJunit5,</span>
+<span class="nc" id="L162">				MYCleanUpConstants.HINTFILE_BUNDLE_JUNIT5, FALSE_TRUE);</span>
 <span class="nc" id="L163">		intent(hintFileGroup);</span>
-<span class="nc" id="L164">		final CheckboxPreference bundleIoPerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L165">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleIoPerformance,</span>
-<span class="nc" id="L166">				MYCleanUpConstants.HINTFILE_BUNDLE_IO_PERFORMANCE, FALSE_TRUE);</span>
+<span class="nc" id="L164">		final CheckboxPreference bundleStreamPerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L165">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStreamPerformance,</span>
+<span class="nc" id="L166">				MYCleanUpConstants.HINTFILE_BUNDLE_STREAM_PERFORMANCE, FALSE_TRUE);</span>
 <span class="nc" id="L167">		intent(hintFileGroup);</span>
-<span class="nc" id="L168">		final CheckboxPreference bundleCollectionPerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L169">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollectionPerformance,</span>
-<span class="nc" id="L170">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_PERFORMANCE, FALSE_TRUE);</span>
+<span class="nc" id="L168">		final CheckboxPreference bundleIoPerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L169">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleIoPerformance,</span>
+<span class="nc" id="L170">				MYCleanUpConstants.HINTFILE_BUNDLE_IO_PERFORMANCE, FALSE_TRUE);</span>
 <span class="nc" id="L171">		intent(hintFileGroup);</span>
-<span class="nc" id="L172">		final CheckboxPreference bundleNumberCompare = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L173">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleNumberCompare,</span>
-<span class="nc" id="L174">				MYCleanUpConstants.HINTFILE_BUNDLE_NUMBER_COMPARE, FALSE_TRUE);</span>
+<span class="nc" id="L172">		final CheckboxPreference bundleCollectionPerformance = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L173">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollectionPerformance,</span>
+<span class="nc" id="L174">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_PERFORMANCE, FALSE_TRUE);</span>
 <span class="nc" id="L175">		intent(hintFileGroup);</span>
-<span class="nc" id="L176">		final CheckboxPreference bundleStringEquals = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L177">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStringEquals,</span>
-<span class="nc" id="L178">				MYCleanUpConstants.HINTFILE_BUNDLE_STRING_EQUALS, FALSE_TRUE);</span>
+<span class="nc" id="L176">		final CheckboxPreference bundleNumberCompare = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L177">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleNumberCompare,</span>
+<span class="nc" id="L178">				MYCleanUpConstants.HINTFILE_BUNDLE_NUMBER_COMPARE, FALSE_TRUE);</span>
 <span class="nc" id="L179">		intent(hintFileGroup);</span>
-<span class="nc" id="L180">		final CheckboxPreference bundleStringIsblank = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L181">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStringIsblank,</span>
-<span class="nc" id="L182">				MYCleanUpConstants.HINTFILE_BUNDLE_STRING_ISBLANK, FALSE_TRUE);</span>
+<span class="nc" id="L180">		final CheckboxPreference bundleStringEquals = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L181">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStringEquals,</span>
+<span class="nc" id="L182">				MYCleanUpConstants.HINTFILE_BUNDLE_STRING_EQUALS, FALSE_TRUE);</span>
 <span class="nc" id="L183">		intent(hintFileGroup);</span>
-<span class="nc" id="L184">		final CheckboxPreference bundleArrays = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L185">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleArrays,</span>
-<span class="nc" id="L186">				MYCleanUpConstants.HINTFILE_BUNDLE_ARRAYS, FALSE_TRUE);</span>
+<span class="nc" id="L184">		final CheckboxPreference bundleStringIsblank = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L185">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleStringIsblank,</span>
+<span class="nc" id="L186">				MYCleanUpConstants.HINTFILE_BUNDLE_STRING_ISBLANK, FALSE_TRUE);</span>
 <span class="nc" id="L187">		intent(hintFileGroup);</span>
-<span class="nc" id="L188">		final CheckboxPreference bundleCollectionToarray = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L189">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollectionToarray,</span>
-<span class="nc" id="L190">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_TOARRAY, FALSE_TRUE);</span>
+<span class="nc" id="L188">		final CheckboxPreference bundleArrays = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L189">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleArrays,</span>
+<span class="nc" id="L190">				MYCleanUpConstants.HINTFILE_BUNDLE_ARRAYS, FALSE_TRUE);</span>
 <span class="nc" id="L191">		intent(hintFileGroup);</span>
-<span class="nc" id="L192">		final CheckboxPreference bundleProbableBugs = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L193">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleProbableBugs,</span>
-<span class="nc" id="L194">				MYCleanUpConstants.HINTFILE_BUNDLE_PROBABLE_BUGS, FALSE_TRUE);</span>
+<span class="nc" id="L192">		final CheckboxPreference bundleCollectionToarray = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L193">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleCollectionToarray,</span>
+<span class="nc" id="L194">				MYCleanUpConstants.HINTFILE_BUNDLE_COLLECTION_TOARRAY, FALSE_TRUE);</span>
 <span class="nc" id="L195">		intent(hintFileGroup);</span>
-<span class="nc" id="L196">		final CheckboxPreference bundleMisc = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L197">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleMisc,</span>
-<span class="nc" id="L198">				MYCleanUpConstants.HINTFILE_BUNDLE_MISC, FALSE_TRUE);</span>
+<span class="nc" id="L196">		final CheckboxPreference bundleProbableBugs = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L197">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleProbableBugs,</span>
+<span class="nc" id="L198">				MYCleanUpConstants.HINTFILE_BUNDLE_PROBABLE_BUGS, FALSE_TRUE);</span>
 <span class="nc" id="L199">		intent(hintFileGroup);</span>
-<span class="nc" id="L200">		final CheckboxPreference bundleDeprecations = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L201">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleDeprecations,</span>
-<span class="nc" id="L202">				MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS, FALSE_TRUE);</span>
+<span class="nc" id="L200">		final CheckboxPreference bundleMisc = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L201">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleMisc,</span>
+<span class="nc" id="L202">				MYCleanUpConstants.HINTFILE_BUNDLE_MISC, FALSE_TRUE);</span>
 <span class="nc" id="L203">		intent(hintFileGroup);</span>
-<span class="nc" id="L204">		final CheckboxPreference bundleClassfileApi = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L205">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleClassfileApi,</span>
-<span class="nc" id="L206">				MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API, FALSE_TRUE);</span>
+<span class="nc" id="L204">		final CheckboxPreference bundleDeprecations = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L205">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleDeprecations,</span>
+<span class="nc" id="L206">				MYCleanUpConstants.HINTFILE_BUNDLE_DEPRECATIONS, FALSE_TRUE);</span>
 <span class="nc" id="L207">		intent(hintFileGroup);</span>
-<span class="nc" id="L208">		final CheckboxPreference bundleSerialization = createCheckboxPref(hintFileGroup, numColumns,</span>
-<span class="nc" id="L209">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleSerialization,</span>
-<span class="nc" id="L210">				MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION, FALSE_TRUE);</span>
+<span class="nc" id="L208">		final CheckboxPreference bundleClassfileApi = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L209">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleClassfileApi,</span>
+<span class="nc" id="L210">				MYCleanUpConstants.HINTFILE_BUNDLE_CLASSFILE_API, FALSE_TRUE);</span>
 <span class="nc" id="L211">		intent(hintFileGroup);</span>
-<span class="nc" id="L212">		registerSlavePreference(hintFile, new CheckboxPreference[] {</span>
-<span class="nc" id="L213">				bundleCollections, bundlePerformance,</span>
-<span class="nc" id="L214">				bundleModernizeJava9, bundleModernizeJava11,</span>
-<span class="nc" id="L215">				bundleEncoding, bundleJunit5,</span>
-<span class="nc" id="L216">				bundleStreamPerformance, bundleIoPerformance,</span>
-<span class="nc" id="L217">				bundleCollectionPerformance, bundleNumberCompare,</span>
-<span class="nc" id="L218">				bundleStringEquals, bundleStringIsblank,</span>
-<span class="nc" id="L219">				bundleArrays, bundleCollectionToarray,</span>
-<span class="nc" id="L220">				bundleProbableBugs, bundleMisc,</span>
-<span class="nc" id="L221">				bundleDeprecations, bundleClassfileApi,</span>
-<span class="nc" id="L222">				bundleSerialization</span>
+<span class="nc" id="L212">		final CheckboxPreference bundleSerialization = createCheckboxPref(hintFileGroup, numColumns,</span>
+<span class="nc" id="L213">				CleanUpMessages.HintFileTabPage_CheckboxName_BundleSerialization,</span>
+<span class="nc" id="L214">				MYCleanUpConstants.HINTFILE_BUNDLE_SERIALIZATION, FALSE_TRUE);</span>
+<span class="nc" id="L215">		intent(hintFileGroup);</span>
+<span class="nc" id="L216">		registerSlavePreference(hintFile, new CheckboxPreference[] {</span>
+<span class="nc" id="L217">				bundleCollections, bundlePerformance,</span>
+<span class="nc" id="L218">				bundleModernizeJava9, bundleModernizeJava11,</span>
+<span class="nc" id="L219">				bundleEncoding, bundleJunit5,</span>
+<span class="nc" id="L220">				bundleStreamPerformance, bundleIoPerformance,</span>
+<span class="nc" id="L221">				bundleCollectionPerformance, bundleNumberCompare,</span>
+<span class="nc" id="L222">				bundleStringEquals, bundleStringIsblank,</span>
+<span class="nc" id="L223">				bundleArrays, bundleCollectionToarray,</span>
+<span class="nc" id="L224">				bundleProbableBugs, bundleMisc,</span>
+<span class="nc" id="L225">				bundleDeprecations, bundleClassfileApi,</span>
+<span class="nc" id="L226">				bundleSerialization</span>
 		});
-<span class="nc" id="L224">		registerPreference(hintFile);</span>
-<span class="nc" id="L225">	}</span>
+<span class="nc" id="L228">		registerPreference(hintFile);</span>
+<span class="nc" id="L229">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

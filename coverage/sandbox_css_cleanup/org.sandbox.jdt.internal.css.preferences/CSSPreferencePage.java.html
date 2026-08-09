@@ -21,6 +21,7 @@ import org.eclipse.jface.preference.StringFieldEditor;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
 import org.sandbox.jdt.internal.css.core.NodeExecutor;
 import org.sandbox.jdt.internal.css.core.PrettierRunner;
@@ -31,62 +32,75 @@ import org.sandbox.jdt.internal.css.core.StylelintRunner;
  */
 public class CSSPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
+	/**
+	 * Suppresses host-dependent tool discovery while the documentation screenshot
+	 * profile captures this page. Normal Eclipse launches never set this property.
+	 */
+	public static final String DOCUMENTATION_SCREENSHOT_PROPERTY = &quot;sandbox.help.screenshot.mode&quot;; //$NON-NLS-1$
+
 	public CSSPreferencePage() {
-<span class="nc" id="L35">		super(GRID);</span>
-<span class="nc" id="L36">		setPreferenceStore(CSSCleanupPlugin.getDefault().getPreferenceStore());</span>
-<span class="nc" id="L37">		setDescription(&quot;Configure CSS formatting and validation tools.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L38">	}</span>
+<span class="nc" id="L42">		super(GRID);</span>
+<span class="nc" id="L43">		setPreferenceStore(CSSCleanupPlugin.getDefault().getPreferenceStore());</span>
+<span class="nc" id="L44">		setDescription(&quot;Configure CSS formatting and validation tools.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L45">	}</span>
 
 	@Override
 	public void createFieldEditors() {
-		// Show initial status message
-<span class="nc" id="L43">		setDescription(getDescription() + &quot;\n\nStatus: Checking tool availability...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L49">		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),</span>
+<span class="nc" id="L50">				&quot;sandbox_css_cleanup.preferences&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L45">		addField(new BooleanFieldEditor(</span>
-<span class="nc" id="L46">				CSSPreferenceConstants.ENABLE_PRETTIER,</span>
-<span class="nc" id="L47">				&quot;&amp;Enable Prettier formatting&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L48">				getFieldEditorParent()));</span>
+<span class="nc" id="L52">		addField(new BooleanFieldEditor(</span>
+<span class="nc" id="L53">				CSSPreferenceConstants.ENABLE_PRETTIER,</span>
+<span class="nc" id="L54">				&quot;&amp;Enable Prettier formatting&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L55">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L50">		addField(new BooleanFieldEditor(</span>
-<span class="nc" id="L51">				CSSPreferenceConstants.ENABLE_STYLELINT,</span>
-<span class="nc" id="L52">				&quot;Enable &amp;Stylelint validation&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L53">				getFieldEditorParent()));</span>
+<span class="nc" id="L57">		addField(new BooleanFieldEditor(</span>
+<span class="nc" id="L58">				CSSPreferenceConstants.ENABLE_STYLELINT,</span>
+<span class="nc" id="L59">				&quot;Enable &amp;Stylelint validation&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L60">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L55">		addField(new StringFieldEditor(</span>
-<span class="nc" id="L56">				CSSPreferenceConstants.PRETTIER_OPTIONS,</span>
-<span class="nc" id="L57">				&quot;Prettier &amp;options (JSON):&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L58">				getFieldEditorParent()));</span>
+<span class="nc" id="L62">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L63">				CSSPreferenceConstants.PRETTIER_OPTIONS,</span>
+<span class="nc" id="L64">				&quot;Prettier &amp;options (JSON):&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L65">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L60">		addField(new FileFieldEditor(</span>
-<span class="nc" id="L61">				CSSPreferenceConstants.STYLELINT_CONFIG,</span>
-<span class="nc" id="L62">				&quot;Stylelint &amp;config file:&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L63">				getFieldEditorParent()));</span>
+<span class="nc" id="L67">		addField(new FileFieldEditor(</span>
+<span class="nc" id="L68">				CSSPreferenceConstants.STYLELINT_CONFIG,</span>
+<span class="nc" id="L69">				&quot;Stylelint &amp;config file:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L70">				getFieldEditorParent()));</span>
+
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (Boolean.getBoolean(DOCUMENTATION_SCREENSHOT_PROPERTY)) {</span>
+<span class="nc" id="L73">			return;</span>
+		}
+
+		// Show initial status message only for normal interactive launches.
+<span class="nc" id="L77">		setDescription(getDescription() + &quot;\n\nStatus: Checking tool availability...&quot;); //$NON-NLS-1$</span>
 
 		// Check tool availability asynchronously to avoid blocking UI
-<span class="nc" id="L66">		Job.create(&quot;Checking CSS tool availability&quot;, monitor -&gt; { //$NON-NLS-1$</span>
-<span class="nc" id="L67">			String statusInfo = &quot;\n\nStatus:\n&quot; + //$NON-NLS-1$</span>
-<span class="nc bnc" id="L68" title="All 2 branches missed.">					&quot;  Node.js: &quot; + (NodeExecutor.isNodeAvailable() ? &quot;Available&quot; : &quot;Not found&quot;) + &quot;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">					&quot;  npx: &quot; + (NodeExecutor.isNpxAvailable() ? &quot;Available&quot; : &quot;Not found&quot;) + &quot;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">					&quot;  Prettier: &quot; + (PrettierRunner.isPrettierAvailable() ? &quot;Available&quot; : &quot;Not installed&quot;) + &quot;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">					&quot;  Stylelint: &quot; + (StylelintRunner.isStylelintAvailable() ? &quot;Available&quot; : &quot;Not installed&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L80">		Job.create(&quot;Checking CSS tool availability&quot;, monitor -&gt; { //$NON-NLS-1$</span>
+<span class="nc" id="L81">			String statusInfo = &quot;\n\nStatus:\n&quot; + //$NON-NLS-1$</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">					&quot;  Node.js: &quot; + (NodeExecutor.isNodeAvailable() ? &quot;Available&quot; : &quot;Not found&quot;) + &quot;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">					&quot;  npx: &quot; + (NodeExecutor.isNpxAvailable() ? &quot;Available&quot; : &quot;Not found&quot;) + &quot;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">					&quot;  Prettier: &quot; + (PrettierRunner.isPrettierAvailable() ? &quot;Available&quot; : &quot;Not installed&quot;) + &quot;\n&quot; + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">					&quot;  Stylelint: &quot; + (StylelintRunner.isStylelintAvailable() ? &quot;Available&quot; : &quot;Not installed&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 
 			// Update description on UI thread
-<span class="nc" id="L74">			Display.getDefault().asyncExec(() -&gt; {</span>
-<span class="nc bnc" id="L75" title="All 2 branches missed.">				if (!getControl().isDisposed()) {</span>
-<span class="nc" id="L76">					setDescription(&quot;Configure CSS formatting and validation tools.&quot; + statusInfo); //$NON-NLS-1$</span>
+<span class="nc" id="L88">			Display.getDefault().asyncExec(() -&gt; {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">				if (!getControl().isDisposed()) {</span>
+<span class="nc" id="L90">					setDescription(&quot;Configure CSS formatting and validation tools.&quot; + statusInfo); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L78">			});</span>
-<span class="nc" id="L79">			return org.eclipse.core.runtime.Status.OK_STATUS;</span>
-<span class="nc" id="L80">		}).schedule();</span>
-<span class="nc" id="L81">	}</span>
+<span class="nc" id="L92">			});</span>
+<span class="nc" id="L93">			return org.eclipse.core.runtime.Status.OK_STATUS;</span>
+<span class="nc" id="L94">		}).schedule();</span>
+<span class="nc" id="L95">	}</span>
 
 	@Override
 	public void init(IWorkbench workbench) {
 		// Initialize default values
-<span class="nc" id="L86">		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_PRETTIER, true);</span>
-<span class="nc" id="L87">		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_STYLELINT, true);</span>
-<span class="nc" id="L88">		getPreferenceStore().setDefault(CSSPreferenceConstants.PRETTIER_OPTIONS, &quot;{}&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L89">		getPreferenceStore().setDefault(CSSPreferenceConstants.STYLELINT_CONFIG, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L90">	}</span>
+<span class="nc" id="L100">		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_PRETTIER, true);</span>
+<span class="nc" id="L101">		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_STYLELINT, true);</span>
+<span class="nc" id="L102">		getPreferenceStore().setDefault(CSSPreferenceConstants.PRETTIER_OPTIONS, &quot;{}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L103">		getPreferenceStore().setDefault(CSSPreferenceConstants.STYLELINT_CONFIG, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L104">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

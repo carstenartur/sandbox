@@ -42,9 +42,9 @@ public class WidestTypeColumn extends AbstractColumn {
 	 *
 	 * @param typeWideningCache the cache containing pre-computed type widening results
 	 */
-<span class="fc" id="L45">	public WidestTypeColumn(TypeWideningCache typeWideningCache) {</span>
-<span class="fc" id="L46">		this.typeWideningCache = typeWideningCache;</span>
-<span class="fc" id="L47">	}</span>
+<span class="nc" id="L45">	public WidestTypeColumn(TypeWideningCache typeWideningCache) {</span>
+<span class="nc" id="L46">		this.typeWideningCache = typeWideningCache;</span>
+<span class="nc" id="L47">	}</span>
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos) {
@@ -54,14 +54,14 @@ public class WidestTypeColumn extends AbstractColumn {
 
 	@Override
 	public void createColumn(TableViewer viewer, int pos, TableColumnLayout tableColumnLayout) {
-<span class="fc" id="L57">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
-<span class="fc" id="L58">		viewerColumn.setLabelProvider(createLabelProvider());</span>
-<span class="fc" id="L59">		tableColumnLayout.setColumnData(viewerColumn.getColumn(),</span>
-<span class="fc" id="L60">				new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
-<span class="fc" id="L61">	}</span>
+<span class="nc" id="L57">		TableViewerColumn viewerColumn = createTableViewerColumn(viewer, TITLE, MINIMUM_WIDTH, pos);</span>
+<span class="nc" id="L58">		viewerColumn.setLabelProvider(createLabelProvider());</span>
+<span class="nc" id="L59">		tableColumnLayout.setColumnData(viewerColumn.getColumn(),</span>
+<span class="nc" id="L60">				new ColumnWeightData(COLUMN_WEIGHT, MINIMUM_WIDTH, true));</span>
+<span class="nc" id="L61">	}</span>
 
 	private ConflictHighlightingLabelProvider createLabelProvider() {
-<span class="fc" id="L64">		return new ConflictHighlightingLabelProvider() {</span>
+<span class="nc" id="L64">		return new ConflictHighlightingLabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
 <span class="nc" id="L67">				return getWidestTypeText((IVariableBinding) element);</span>

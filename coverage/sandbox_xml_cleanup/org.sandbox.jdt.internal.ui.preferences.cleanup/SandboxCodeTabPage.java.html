@@ -20,43 +20,46 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.XMLCleanUp;
 
-<span class="nc" id="L26">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L27">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L31">	static final String[] FALSE_TRUE= { CleanUpOptions.FALSE, CleanUpOptions.TRUE };</span>
+<span class="nc" id="L32">	static final String[] FALSE_TRUE= { CleanUpOptions.FALSE, CleanUpOptions.TRUE };</span>
 
-<span class="nc" id="L33">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.xml&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L34">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.xml&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L37">		return new AbstractCleanUp[] { new XMLCleanUp(values) };</span>
+<span class="nc" id="L38">		return new AbstractCleanUp[] { new XMLCleanUp(values) };</span>
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L42">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
+<span class="nc" id="L43">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
+<span class="nc" id="L44">				&quot;sandbox_xml_cleanup.cleanup_configuration&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L45">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
 		
 		// Main XML cleanup checkbox
-<span class="nc" id="L45">		final CheckboxPreference xmlsimplify= createCheckboxPref(java1d8Group, numColumns,</span>
-<span class="nc" id="L46">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_CLEANUP,</span>
-<span class="nc" id="L47">				MYCleanUpConstants.XML_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L48">		final CheckboxPreference xmlsimplify= createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L49">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_CLEANUP,</span>
+<span class="nc" id="L50">				MYCleanUpConstants.XML_CLEANUP, FALSE_TRUE);</span>
 		
 		// Indent sub-option (depends on main checkbox)
-<span class="nc" id="L50">		intent(java1d8Group);</span>
-<span class="nc" id="L51">		final CheckboxPreference xmlIndent= createCheckboxPref(java1d8Group, numColumns - 1,</span>
-<span class="nc" id="L52">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_INDENT,</span>
-<span class="nc" id="L53">				MYCleanUpConstants.XML_CLEANUP_INDENT, FALSE_TRUE);</span>
+<span class="nc" id="L53">		intent(java1d8Group);</span>
+<span class="nc" id="L54">		final CheckboxPreference xmlIndent= createCheckboxPref(java1d8Group, numColumns - 1,</span>
+<span class="nc" id="L55">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_XML_INDENT,</span>
+<span class="nc" id="L56">				MYCleanUpConstants.XML_CLEANUP_INDENT, FALSE_TRUE);</span>
 		
 		// Register dependency
-<span class="nc" id="L56">		registerSlavePreference(xmlsimplify, new CheckboxPreference[] { xmlIndent });</span>
+<span class="nc" id="L59">		registerSlavePreference(xmlsimplify, new CheckboxPreference[] { xmlIndent });</span>
 		
-<span class="nc" id="L58">		intent(java1d8Group);</span>
-<span class="nc" id="L59">		registerPreference(xmlsimplify);</span>
-<span class="nc" id="L60">	}</span>
+<span class="nc" id="L61">		intent(java1d8Group);</span>
+<span class="nc" id="L62">		registerPreference(xmlsimplify);</span>
+<span class="nc" id="L63">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -38,9 +38,9 @@ import org.eclipse.jface.viewers.Viewer;
  * from Java compilation units using AST parsing.
  * Also populates a {@link TypeWideningCache} with type widening analysis results.
  */
-<span class="fc" id="L41">public class JHViewContentProvider implements IStructuredContentProvider {</span>
+<span class="nc" id="L41">public class JHViewContentProvider implements IStructuredContentProvider {</span>
 	
-<span class="fc" id="L43">	private static final ILog logger = UsageViewPlugin.getDefault().getLog();</span>
+<span class="nc" id="L43">	private static final ILog logger = UsageViewPlugin.getDefault().getLog();</span>
 
 	private TypeWideningCache typeWideningCache;
 
@@ -50,34 +50,34 @@ import org.eclipse.jface.viewers.Viewer;
 	 * @param cache the cache to populate, or null to disable caching
 	 */
 	public void setTypeWideningCache(TypeWideningCache cache) {
-<span class="fc" id="L53">		this.typeWideningCache = cache;</span>
-<span class="fc" id="L54">	}</span>
+<span class="nc" id="L53">		this.typeWideningCache = cache;</span>
+<span class="nc" id="L54">	}</span>
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-<span class="pc bpc" id="L58" title="1 of 2 branches missed.">		if (typeWideningCache != null) {</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">		if (typeWideningCache != null) {</span>
 <span class="nc" id="L59">			typeWideningCache.clear();</span>
 		}
-<span class="fc" id="L61">		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();</span>
+<span class="nc" id="L61">		VariableBindingVisitor variableVisitor = new VariableBindingVisitor();</span>
 		
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		if (inputElement instanceof List list) {</span>
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">			if (list.size() == 1) {</span>
-<span class="fc" id="L65">				Object object = list.get(0);</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">				if (object == null) {</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">		if (inputElement instanceof List list) {</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">			if (list.size() == 1) {</span>
+<span class="nc" id="L65">				Object object = list.get(0);</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">				if (object == null) {</span>
 <span class="nc" id="L67">					return new Object[0];</span>
 				}
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">				if (object instanceof WorkspaceRoot root) {</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">				if (object instanceof WorkspaceRoot root) {</span>
 <span class="nc" id="L70">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing workspace root: &quot; + root.getName()));</span>
-<span class="pc bfc" id="L71" title="All 2 branches covered.">				} else if (object instanceof File file) {</span>
-<span class="fc" id="L72">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing file: &quot; + file.getName()));</span>
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">				} else if (object instanceof JavaElement) {</span>
-<span class="fc" id="L74">					IJavaElement javaElement = (IJavaElement) object;</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">					if (javaElement instanceof ICompilationUnit compilationUnit) {</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">				} else if (object instanceof File file) {</span>
+<span class="nc" id="L72">					logger.log(new Status(Status.INFO, UsageViewPlugin.PLUGIN_ID, &quot;Processing file: &quot; + file.getName()));</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">				} else if (object instanceof JavaElement) {</span>
+<span class="nc" id="L74">					IJavaElement javaElement = (IJavaElement) object;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">					if (javaElement instanceof ICompilationUnit compilationUnit) {</span>
 						// now create the AST for the ICompilationUnits
-<span class="fc" id="L77">						CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
-<span class="fc" id="L78">						variableVisitor.process(astRoot);</span>
-<span class="fc" id="L79">						analyzeForWidening(astRoot);</span>
-<span class="pc bnc" id="L80" title="All 2 branches missed.">					} else if (javaElement instanceof IJavaProject javaProject) {</span>
+<span class="nc" id="L77">						CompilationUnit astRoot = parseCompilationUnit(compilationUnit);</span>
+<span class="nc" id="L78">						variableVisitor.process(astRoot);</span>
+<span class="nc" id="L79">						analyzeForWidening(astRoot);</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">					} else if (javaElement instanceof IJavaProject javaProject) {</span>
 						// now create the AST for the ICompilationUnits
 						try {
 <span class="nc" id="L83">							Arrays.asList(javaProject.getAllPackageFragmentRoots()).parallelStream().forEach(packageRoot -&gt; {</span>
@@ -95,7 +95,7 @@ import org.eclipse.jface.viewers.Viewer;
 			}
 		}
 		// Debug logging removed - use Eclipse Logger for debugging if needed
-<span class="fc" id="L98">		return variableVisitor.getVariableBindings().toArray();</span>
+<span class="nc" id="L98">		return variableVisitor.getVariableBindings().toArray();</span>
 	}
 
 	private void processPackageFragmentRoot(VariableBindingVisitor variableVisitor, IPackageFragmentRoot packageRoot) {
@@ -128,27 +128,27 @@ import org.eclipse.jface.viewers.Viewer;
 <span class="nc" id="L128">	}</span>
 
 	private void analyzeForWidening(CompilationUnit astRoot) {
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (typeWideningCache != null) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (typeWideningCache != null) {</span>
 <span class="nc" id="L132">			typeWideningCache.analyzeAndCache(astRoot);</span>
 		}
-<span class="fc" id="L134">	}</span>
+<span class="nc" id="L134">	}</span>
 
 	private static CompilationUnit parseCompilationUnit(ICompilationUnit compilationUnit) {
-<span class="fc" id="L137">		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
-<span class="fc" id="L138">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="fc" id="L139">		parser.setSource(compilationUnit);</span>
-<span class="fc" id="L140">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L141">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="nc" id="L137">		ASTParser parser = ASTParser.newParser(AST.JLS_Latest);</span>
+<span class="nc" id="L138">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L139">		parser.setSource(compilationUnit);</span>
+<span class="nc" id="L140">		parser.setResolveBindings(true);</span>
+<span class="nc" id="L141">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	@Override
 	public void dispose() {
 		// do nothing
-<span class="fc" id="L147">	}</span>
+<span class="nc" id="L147">	}</span>
 
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		// do nothing
-<span class="fc" id="L152">	}</span>
+<span class="nc" id="L152">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

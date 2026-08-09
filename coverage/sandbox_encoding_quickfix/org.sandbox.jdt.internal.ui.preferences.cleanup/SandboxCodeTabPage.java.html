@@ -20,42 +20,45 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
+import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp;
 
-<span class="nc" id="L26">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="nc" id="L27">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L31">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L32">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L33">			CleanUpOptions.TRUE</span>
+<span class="nc" id="L32">	static final String[] FALSE_TRUE = {</span>
+<span class="nc" id="L33">			CleanUpOptions.FALSE,</span>
+<span class="nc" id="L34">			CleanUpOptions.TRUE</span>
 	};
 
-<span class="nc" id="L36">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.encoding&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L37">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.encoding&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L40">		return new AbstractCleanUp[] {</span>
-<span class="nc" id="L41">				new UseExplicitEncodingCleanUp(values)</span>
+<span class="nc" id="L41">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L42">				new UseExplicitEncodingCleanUp(values)</span>
 		};
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L47">		Group java1d6Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d6);</span>
-<span class="nc" id="L48">		final CheckboxPreference explicit_encoding= createCheckboxPref(java1d6Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_ExplicitEncoding, MYCleanUpConstants.EXPLICITENCODING_CLEANUP, FALSE_TRUE);</span>
-<span class="nc" id="L49">		intent(java1d6Group);</span>
-<span class="nc" id="L50">		final RadioPreference useBlockAlwaysPref= createRadioPref(java1d6Group, numColumns - 1, CleanUpMessages.JavaFeatureTabPage_RadioName_Keep_Behavior, MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR, FALSE_TRUE);</span>
-<span class="nc" id="L51">		intent(java1d6Group);</span>
-<span class="nc" id="L52">		final RadioPreference useBlockJDTStylePref= createRadioPref(java1d6Group, numColumns - 1, CleanUpMessages.JavaFeatureTabPage_RadioName_Insert_UTF8, MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8, FALSE_TRUE);</span>
-<span class="nc" id="L53">		intent(java1d6Group);</span>
-<span class="nc" id="L54">		final RadioPreference useBlockNeverPref= createRadioPref(java1d6Group, numColumns - 1, CleanUpMessages.JavaFeatureTabPage_RadioName_Aggregate_to_UTF8, MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8, FALSE_TRUE);</span>
-<span class="nc" id="L55">		registerSlavePreference(explicit_encoding, new RadioPreference[] {useBlockAlwaysPref, useBlockJDTStylePref, useBlockNeverPref});</span>
+<span class="nc" id="L48">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
+<span class="nc" id="L49">				&quot;sandbox_encoding_quickfix.cleanup_configuration&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L50">		Group java1d6Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d6);</span>
+<span class="nc" id="L51">		final CheckboxPreference explicit_encoding= createCheckboxPref(java1d6Group, numColumns, CleanUpMessages.JavaFeatureTabPage_CheckboxName_ExplicitEncoding, MYCleanUpConstants.EXPLICITENCODING_CLEANUP, FALSE_TRUE);</span>
+<span class="nc" id="L52">		intent(java1d6Group);</span>
+<span class="nc" id="L53">		final RadioPreference useBlockAlwaysPref= createRadioPref(java1d6Group, numColumns - 1, CleanUpMessages.JavaFeatureTabPage_RadioName_Keep_Behavior, MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR, FALSE_TRUE);</span>
+<span class="nc" id="L54">		intent(java1d6Group);</span>
+<span class="nc" id="L55">		final RadioPreference useBlockJDTStylePref= createRadioPref(java1d6Group, numColumns - 1, CleanUpMessages.JavaFeatureTabPage_RadioName_Insert_UTF8, MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8, FALSE_TRUE);</span>
+<span class="nc" id="L56">		intent(java1d6Group);</span>
+<span class="nc" id="L57">		final RadioPreference useBlockNeverPref= createRadioPref(java1d6Group, numColumns - 1, CleanUpMessages.JavaFeatureTabPage_RadioName_Aggregate_to_UTF8, MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8, FALSE_TRUE);</span>
+<span class="nc" id="L58">		registerSlavePreference(explicit_encoding, new RadioPreference[] {useBlockAlwaysPref, useBlockJDTStylePref, useBlockNeverPref});</span>
 
 
-<span class="nc" id="L58">	}</span>
+<span class="nc" id="L61">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
