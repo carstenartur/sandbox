@@ -20,6 +20,8 @@
       <li>Select a commit with inferred rules to inspect the proposed DSL and its validation state.</li>
       <li>Check only the candidate rules you want to keep and choose <strong>Export selected as .sandbox-hint</strong>.</li>
    </ol>
+   <p><img class="screenshot" src="../images/refactoring-mining-view.png"
+      alt="Refactoring Mining view with explicit project selection and commit analysis results"/></p>
    <p>The analysis uses one bounded, user-visible Eclipse job. The view reports analyzed/total, active, and queued work; <strong>Stop Analysis</strong> cancels the active request and prevents queued commits from starting. When no LLM provider is configured, the history remains inspectable but AI analysis is not scheduled.</p>
    <p class="note">Mining is an analysis aid, not an automatic semantic proof. A green or valid DSL result means that the rule is syntactically accepted by the DSL validator; it does not prove that every future match preserves program behavior.</p>
 
