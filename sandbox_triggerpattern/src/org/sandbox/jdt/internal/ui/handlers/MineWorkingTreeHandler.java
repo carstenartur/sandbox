@@ -36,6 +36,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.internal.ui.views.mining.CommitAnalysisJob;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
@@ -60,11 +61,6 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		EclipseLlmService llmService = EclipseLlmService.getInstance();
-		if (!llmService.isAvailable()) {
-			return null;
-		}
-
 		IEditorInput input = HandlerUtil.getActiveEditorInput(event);
 		IFile activeFile = input != null ? input.getAdapter(IFile.class) : null;
 		if (activeFile == null || activeFile.getProject().getLocation() == null) {
@@ -73,10 +69,22 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 		IProject project = activeFile.getProject();
 		Path repositoryPath = project.getLocation().toFile().toPath();
 
+		EclipseLlmService llmService = EclipseLlmService.getInstance();
+		if (!llmService.isAvailable()) {
+			RuleInferenceUiFeedback.showConfigurationRequired();
+			return null;
+		}
+
 		Job job = new Job("Mining working tree for DSL rules") { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				return mineWorkingTree(repositoryPath, project, monitor);
+				try {
+					return mineWorkingTree(repositoryPath, project, monitor);
+				} catch (RuntimeException e) {
+					LOG.error("Failed to infer DSL rules from the working tree", e); //$NON-NLS-1$
+					RuleInferenceUiFeedback.showFailure("the Java working-tree changes", e); //$NON-NLS-1$
+					return Status.error("Working-tree DSL inference failed", e); //$NON-NLS-1$
+				}
 			}
 		};
 		job.setUser(true);
@@ -87,31 +95,42 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 	private static IStatus mineWorkingTree(Path repositoryPath, IProject project,
 			IProgressMonitor monitor) {
 		List<FileDiff> diffs = new WorkingTreeDiffProvider().getDiffs(repositoryPath);
-		if (diffs.isEmpty() || monitor.isCanceled()) {
+		if (monitor.isCanceled()) {
+			return Status.CANCEL_STATUS;
+		}
+		if (diffs.isEmpty()) {
+			RuleInferenceUiFeedback.showInformation(
+					"No Java working-tree changes relative to HEAD were found in the active project."); //$NON-NLS-1$
 			return Status.OK_STATUS;
 		}
 
 		AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();
 		List<String> rules = new ArrayList<>();
 		monitor.beginTask("Inferring rules from working-tree Java changes", diffs.size()); //$NON-NLS-1$
-		for (FileDiff diff : diffs) {
-			if (monitor.isCanceled()) {
-				return Status.CANCEL_STATUS;
+		try {
+			for (FileDiff diff : diffs) {
+				if (monitor.isCanceled()) {
+					return Status.CANCEL_STATUS;
+				}
+				monitor.subTask(diff.filePath());
+				String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);
+				engine.inferRuleFromDiff(unifiedDiff)
+						.map(CommitEvaluation::dslRule)
+						.filter(rule -> rule != null && !rule.isBlank())
+						.ifPresent(rules::add);
+				monitor.worked(1);
 			}
-			monitor.subTask(diff.filePath());
-			String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);
-			engine.inferRuleFromDiff(unifiedDiff)
-					.map(CommitEvaluation::dslRule)
-					.filter(rule -> rule != null && !rule.isBlank())
-					.ifPresent(rules::add);
-			monitor.worked(1);
+		} finally {
+			monitor.done();
 		}
-		monitor.done();
 
-		if (!rules.isEmpty()) {
-			String content = String.join("\n\n;;\n\n", rules); //$NON-NLS-1$
-			openHintFileOnUi(project, content);
+		if (rules.isEmpty()) {
+			RuleInferenceUiFeedback.showNoRule("the Java working-tree changes"); //$NON-NLS-1$
+			return Status.OK_STATUS;
 		}
+
+		String content = String.join("\n\n;;\n\n", rules); //$NON-NLS-1$
+		openHintFileOnUi(project, content);
 		return Status.OK_STATUS;
 	}
 
@@ -131,6 +150,7 @@ public class MineWorkingTreeHandler extends AbstractHandler {
 				}
 			} catch (Exception e) {
 				LOG.error("Failed to open hint file for working tree rules", e); //$NON-NLS-1$
+				RuleInferenceUiFeedback.showFailure("the generated working-tree hint file", e); //$NON-NLS-1$
 			}
 		});
 	}
