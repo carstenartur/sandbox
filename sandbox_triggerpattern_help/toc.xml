@@ -2,8 +2,14 @@
 <toc label="Sandbox – Code Patterns and Hint DSL" topic="html/index.html">
    <topic label="Overview and component workflow" href="html/index.html"/>
    <topic label="Workflow guide" href="html/usage.html"/>
-   <topic label="Mine rules from Git changes" href="html/mining.html"/>
-   <topic label="Author rules from selection or wizard" href="html/authoring.html"/>
+   <topic label="Mine rules from Git changes" href="html/mining.html">
+      <topic label="Selected unified diff" href="html/mining.html#diff"/>
+      <topic label="Working tree" href="html/mining.html#working-tree"/>
+   </topic>
+   <topic label="Author rules from selection or wizard" href="html/authoring.html">
+      <topic label="Java selection" href="html/authoring.html#selection"/>
+      <topic label="New Hint File wizard" href="html/authoring.html#wizard"/>
+   </topic>
    <topic label="Apply rules with Quick Assist or Clean Up" href="html/apply.html"/>
    <topic label="Configure optional LLM inference" href="html/llm.html"/>
    <topic label="Reference, safety, and limitations" href="html/reference.html"/>
