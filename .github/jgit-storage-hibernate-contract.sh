@@ -37,9 +37,21 @@ else
   maven=(mvn)
 fi
 
-# The two consumer modules are intentionally built in isolation from the unrelated
-# Eclipse cleanup reactor. Install the root parent first, then verify the OSGi/plain-
-# Maven bridge and the shaded standalone server with their own tests.
+resolved_version="$(sed -n \
+  's:.*<jgit-storage-hibernate.version>\([^<]*\)</jgit-storage-hibernate.version>.*:\1:p' \
+  sandbox-jgit-storage-hibernate/pom.xml | head -n 1)"
+if [[ -z "$resolved_version" ]]; then
+  echo "Could not read jgit-storage-hibernate.version from the consumer POM." >&2
+  exit 1
+fi
+if [[ "$mode" == "candidate" && "$resolved_version" != "$candidate_version" ]]; then
+  echo "Candidate substitution mismatch: POM=$resolved_version, expected=$candidate_version." >&2
+  exit 1
+fi
+
+# These two consumer modules are intentionally built in isolation from the
+# unrelated Eclipse cleanup reactor. Sandbox currently consumes released Core
+# only; Search and Java Analysis remain explicit later migration slices.
 set -o pipefail
 "${maven[@]}" -B -ntp -nsu -N -f pom.xml install 2>&1 \
   | tee "$evidence_dir/parent-install.log"
@@ -52,20 +64,66 @@ set -o pipefail
   -f sandbox-jgit-server-webapp/pom.xml \
   package 2>&1 | tee "$evidence_dir/server-package.log"
 
+if grep -Eq 'Invalid property key|No value specified for key' \
+    "$evidence_dir/storage-bridge.log"; then
+  echo "Bnd rejected part of the OSGi package contract." >&2
+  grep -E 'Invalid property key|No value specified for key' \
+    "$evidence_dir/storage-bridge.log" >&2
+  exit 1
+fi
+
 manifest=sandbox-jgit-storage-hibernate/target/classes/META-INF/MANIFEST.MF
+bridge_jar="$(find sandbox-jgit-storage-hibernate/target -maxdepth 1 -type f \
+  -name 'sandbox-jgit-storage-hibernate-*.jar' \
+  ! -name '*-sources.jar' ! -name '*-javadoc.jar' \
+  | sort | head -n 1)"
 server_jar=sandbox-jgit-server-webapp/target/jgit-server.jar
-for artifact in "$manifest" "$server_jar"; do
-  if [[ ! -s "$artifact" ]]; then
+for artifact in "$manifest" "$bridge_jar" "$server_jar"; do
+  if [[ -z "$artifact" || ! -s "$artifact" ]]; then
     echo "Required Sandbox packaging evidence is missing: $artifact" >&2
     exit 1
   fi
 done
 
-grep -Fq 'Bundle-SymbolicName:' "$manifest"
-jar tf "$server_jar" | grep -Fq \
-  'org/eclipse/jgit/server/config/LegacyCoreSchemaPreflight.class'
-jar tf "$server_jar" | grep -Fq \
-  'io/github/carstenartur/jgit/storage/hibernate/DefaultHibernateRepositoryFactory.class'
+cp "$manifest" "$evidence_dir/bridge-manifest.mf"
+python3 - "$manifest" "$evidence_dir/bridge-manifest-unfolded.txt" <<'PY'
+from pathlib import Path
+import sys
+
+source = Path(sys.argv[1]).read_text(encoding="utf-8")
+unfolded = []
+for line in source.splitlines():
+    if line.startswith(" ") and unfolded:
+        unfolded[-1] += line[1:]
+    else:
+        unfolded.append(line)
+Path(sys.argv[2]).write_text("\n".join(unfolded) + "\n", encoding="utf-8")
+PY
+unfolded_manifest="$evidence_dir/bridge-manifest-unfolded.txt"
+
+required_manifest_fragments=(
+  'Bundle-SymbolicName: sandbox-jgit-storage-hibernate'
+  'Export-Package:'
+  'org.sandbox.jgit.storage.integration'
+  'Import-Package:'
+  'io.github.carstenartur.jgit.storage.hibernate'
+)
+for fragment in "${required_manifest_fragments[@]}"; do
+  if ! grep -Fq "$fragment" "$unfolded_manifest"; then
+    echo "Generated OSGi manifest is missing: $fragment" >&2
+    cat "$unfolded_manifest" >&2
+    exit 1
+  fi
+done
+
+jar tf "$bridge_jar" > "$evidence_dir/bridge-jar-entries.txt"
+jar tf "$server_jar" > "$evidence_dir/server-jar-entries.txt"
+grep -Fq 'org/sandbox/jgit/storage/integration/JGitStorageLibraryBoundary.class' \
+  "$evidence_dir/bridge-jar-entries.txt"
+grep -Fq 'org/eclipse/jgit/server/config/LegacyCoreSchemaPreflight.class' \
+  "$evidence_dir/server-jar-entries.txt"
+grep -Fq 'io/github/carstenartur/jgit/storage/hibernate/DefaultHibernateRepositoryFactory.class' \
+  "$evidence_dir/server-jar-entries.txt"
 
 for module in sandbox-jgit-storage-hibernate sandbox-jgit-server-webapp; do
   "${maven[@]}" -B -ntp -nsu \
@@ -80,20 +138,23 @@ cat "$evidence_dir"/*-dependency-tree.txt \
   > "$evidence_dir/dependency-tree.txt"
 test -s "$evidence_dir/dependency-tree.txt"
 
-if grep -Eq \
-  'jgit-storage-hibernate-(search|java-analysis|architecture|benchmarks)' \
-  "$evidence_dir/dependency-tree.txt"; then
-  echo "Sandbox currently consumes upstream Core only; another upstream module leaked in." >&2
-  cat "$evidence_dir/dependency-tree.txt" >&2
-  exit 1
-fi
+for forbidden_module in \
+    jgit-storage-hibernate-search \
+    jgit-storage-hibernate-java-analysis \
+    jgit-storage-hibernate-architecture \
+    jgit-storage-hibernate-benchmarks; do
+  if grep -Fq "$forbidden_module" "$evidence_dir/dependency-tree.txt"; then
+    echo "Sandbox's Core-only contract resolved forbidden module $forbidden_module." >&2
+    cat "$evidence_dir/dependency-tree.txt" >&2
+    exit 1
+  fi
+done
 if ! grep -Fq 'jgit-storage-hibernate-core' "$evidence_dir/dependency-tree.txt"; then
   echo "The Sandbox contract did not resolve jgit-storage-hibernate-core." >&2
   exit 1
 fi
-if [[ "$mode" == "candidate" ]] \
-    && ! grep -Fq ":$candidate_version" "$evidence_dir/dependency-tree.txt"; then
-  echo "Sandbox did not resolve candidate $candidate_version." >&2
+if ! grep -Fq ":$resolved_version" "$evidence_dir/dependency-tree.txt"; then
+  echo "Sandbox did not resolve selected Core version $resolved_version." >&2
   cat "$evidence_dir/dependency-tree.txt" >&2
   exit 1
 fi
@@ -112,9 +173,18 @@ cat > "$evidence_dir/result.json" <<EOF
   "consumer": "sandbox",
   "mode": "$mode",
   "candidateVersion": "$candidate_version",
+  "resolvedVersion": "$resolved_version",
   "java": "$java_specification",
-  "contract": "Core-only OSGi bridge, legacy preflight, repository lifecycle and shaded-server packaging"
+  "expectedModules": ["jgit-storage-hibernate-core"],
+  "forbiddenModules": [
+    "jgit-storage-hibernate-search",
+    "jgit-storage-hibernate-java-analysis",
+    "jgit-storage-hibernate-architecture",
+    "jgit-storage-hibernate-benchmarks"
+  ],
+  "contract": "Core-only public API, OSGi bridge metadata, legacy preflight, repository lifecycle and shaded-server packaging"
 }
 EOF
 
-printf 'Sandbox jgit-storage-hibernate contract passed in %s mode.\n' "$mode"
+printf 'Sandbox jgit-storage-hibernate contract passed in %s mode with Core %s.\n' \
+  "$mode" "$resolved_version"
