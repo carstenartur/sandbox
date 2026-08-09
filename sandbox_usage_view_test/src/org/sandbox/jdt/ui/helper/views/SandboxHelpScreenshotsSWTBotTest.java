@@ -174,7 +174,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, REFACTORING_MINING_VIEW);
         SWTBotView miningView = bot.viewByTitle("Refactoring Mining");
-        miningView.toolbarButton("Analyze Project...").click();
+        var miningToolbarButtons = miningView.getToolbarButtons();
+        assertTrue(!miningToolbarButtons.isEmpty(), "Refactoring Mining toolbar must expose Analyze Project");
+        // Analyze Project is deliberately the first action contributed by the view.
+        miningToolbarButtons.get(0).click();
 
         SWTBotShell projectSelection = bot.shell("Select project for Refactoring Mining").activate();
         projectSelection.bot().table().select(DOCUMENTATION_PROJECT);
