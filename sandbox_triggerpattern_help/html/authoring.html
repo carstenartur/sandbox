@@ -16,11 +16,12 @@
       <li>Select the Java expression or statement that represents the pattern you want to generalize.</li>
       <li>Invoke Quick Assist (<strong>Ctrl+1</strong> on common Eclipse key configurations).</li>
       <li>Select <strong>Generate DSL rule from selection (AI)</strong>.</li>
-      <li>Sandbox wraps the selected source as an inference example and runs the shared LLM rule-inference engine in a background job.</li>
-      <li>If inference succeeds, Sandbox creates and opens a new <code>.sandbox-hint</code> file.</li>
+      <li>Sandbox wraps the selected source as an inference example and runs the shared LLM rule-inference engine in a user-visible background job.</li>
+      <li>If inference succeeds, Sandbox creates and opens a new <code>.sandbox-hint</code> file in the selected compilation unit's project.</li>
       <li>Review and generalize metavariables, guards, imports, and replacement constraints before using the rule broadly.</li>
    </ol>
    <p class="note">A single source selection contains less information than a before/after commit or diff. Treat the generated rule as a starting point, especially when the intended replacement cannot be inferred unambiguously from the selected code alone.</p>
+   <p>If the provider call succeeds but yields no usable DSL rule, Sandbox reports that result instead of leaving the user to infer what happened. Provider and generated-file failures are also reported while technical details remain in the Eclipse Error Log.</p>
 
    <h2 id="wizard">Create a rule with the New Hint File wizard</h2>
    <ol>
@@ -37,7 +38,7 @@
    <p>If no LLM is configured, the wizard remains usable for manual rule authoring and offers a link to the shared LLM preferences.</p>
 
    <h2>From rule to executable transformation</h2>
-   <p>Saving a valid <code>.sandbox-hint</code> file is only the authoring step. To exercise the transformation, make the hint file available to the TriggerPattern rule loader and run the corresponding Code Patterns cleanup/quick-fix path on a small version-controlled sample first.</p>
+   <p>Saving a valid <code>.sandbox-hint</code> file is only the authoring step. Project-local hint files are watched as workspace resources, so a newly created or edited rule becomes visible to the loader in the same Eclipse session; no workbench restart should be required. Run the corresponding Code Patterns cleanup/quick-fix path on a small version-controlled sample first.</p>
    <pre>example source
    -- author / infer --&gt; .sandbox-hint
    -- validate -------&gt; valid DSL
