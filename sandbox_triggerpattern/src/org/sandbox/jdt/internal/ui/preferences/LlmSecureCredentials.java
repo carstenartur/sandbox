@@ -71,7 +71,7 @@ public final class LlmSecureCredentials {
 				node.flush();
 				credentialProvider = provider;
 			}
-			return provider.equals(credentialProvider) ? value : ""; //$NON-NLS-1$
+			return credentialForProvider(provider, credentialProvider, value);
 		} catch (StorageException | IOException | BackingStoreException e) {
 			LOG.log(Status.warning("Could not read the LLM API key from Eclipse Secure Storage", e)); //$NON-NLS-1$
 			return ""; //$NON-NLS-1$
@@ -155,6 +155,13 @@ public final class LlmSecureCredentials {
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
+	}
+
+	static String credentialForProvider(String requestedProvider, String credentialProvider, String value) {
+		return requestedProvider != null && requestedProvider.equals(credentialProvider)
+				&& value != null && !value.isBlank()
+				? value
+				: ""; //$NON-NLS-1$
 	}
 
 	private static void removeLegacyPreference() throws BackingStoreException {
