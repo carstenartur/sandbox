@@ -46,6 +46,7 @@ public class CommitAnalysisScheduler {
 	private final GitHistoryProvider gitProvider;
 	private final Path repositoryPath;
 	private final TableViewer tableViewer;
+	private final Display display;
 	private final Consumer<Progress> progressListener;
 	private final AtomicInteger completed = new AtomicInteger();
 
@@ -66,6 +67,7 @@ public class CommitAnalysisScheduler {
 		this.gitProvider = gitProvider;
 		this.repositoryPath = repositoryPath;
 		this.tableViewer = tableViewer;
+		this.display = tableViewer.getTable().getDisplay();
 		this.progressListener = progressListener != null ? progressListener : progress -> {
 		};
 	}
@@ -122,7 +124,12 @@ public class CommitAnalysisScheduler {
 				} finally {
 					monitor.done();
 					if (runGeneration == generation) {
-						running = false;
+						synchronized (CommitAnalysisScheduler.this) {
+							if (runGeneration == generation) {
+								running = false;
+								analysisJob = null;
+							}
+						}
 						notifyProgress(progress(0), runGeneration);
 					}
 				}
@@ -161,8 +168,7 @@ public class CommitAnalysisScheduler {
 	}
 
 	private void notifyUpdate(CommitTableEntry entry) {
-		Display display = tableViewer.getTable().getDisplay();
-		if (display != null && !display.isDisposed()) {
+		if (!display.isDisposed()) {
 			display.asyncExec(() -> {
 				if (!tableViewer.getTable().isDisposed()) {
 					tableViewer.update(entry, null);
@@ -172,8 +178,7 @@ public class CommitAnalysisScheduler {
 	}
 
 	private void notifyProgress(Progress progress, long progressGeneration) {
-		Display display = tableViewer.getTable().getDisplay();
-		if (display != null && !display.isDisposed()) {
+		if (!display.isDisposed()) {
 			display.asyncExec(() -> {
 				if (progressGeneration == generation) {
 					progressListener.accept(progress);
