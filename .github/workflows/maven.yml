@@ -103,7 +103,7 @@ jobs:
         uses: ./.github/actions/use-runner-maven
 
       - name: Set up Node.js for CSS tests
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
