@@ -49,6 +49,7 @@ public class CommitAnalysisScheduler {
 	private final Display display;
 	private final Consumer<Progress> progressListener;
 	private final AtomicInteger completed = new AtomicInteger();
+	private final Object stateLock = new Object();
 
 	private volatile boolean running;
 	private volatile boolean cancelled;
@@ -74,89 +75,97 @@ public class CommitAnalysisScheduler {
 	}
 
 	/** Starts a bounded, user-visible analysis queue. */
-	public synchronized void startAnalysis(List<CommitTableEntry> entries) {
-		cancelAnalysis();
-		long runGeneration = ++generation;
-		List<CommitTableEntry> queue = List.copyOf(entries);
-		total = queue.size();
-		completed.set(0);
-		cancelled = false;
-		running = !queue.isEmpty();
+	public void startAnalysis(List<CommitTableEntry> entries) {
+		synchronized (stateLock) {
+			cancelAnalysisLocked();
+			long runGeneration = ++generation;
+			List<CommitTableEntry> queue = List.copyOf(entries);
+			total = queue.size();
+			completed.set(0);
+			cancelled = false;
+			running = !queue.isEmpty();
 
-		if (queue.isEmpty()) {
-			notifyProgress(new Progress(0, 0, 0, 0, false, false), runGeneration);
-			return;
+			if (queue.isEmpty()) {
+				notifyProgress(new Progress(0, 0, 0, 0, false, false), runGeneration);
+				return;
+			}
+
+			notifyProgress(progress(0), runGeneration);
+			analysisJob = new Job("Refactoring Mining: " + total + " commits") { //$NON-NLS-1$ //$NON-NLS-2$
+				@Override
+				protected IStatus run(IProgressMonitor monitor) {
+					workerThread = Thread.currentThread();
+					monitor.beginTask("Inferring TriggerPattern rules from commit history", total); //$NON-NLS-1$
+					try {
+						for (int index = 0; index < queue.size(); index++) {
+							if (runGeneration != generation || monitor.isCanceled()
+									|| Thread.currentThread().isInterrupted()) {
+								if (runGeneration == generation) {
+									cancelled = true;
+								}
+								return Status.CANCEL_STATUS;
+							}
+
+							CommitTableEntry entry = queue.get(index);
+							monitor.subTask("Analyzing " + entry.getCommitInfo().shortId() + ": " //$NON-NLS-1$ //$NON-NLS-2$
+									+ entry.getCommitInfo().message());
+							notifyProgress(progress(1), runGeneration);
+
+							CommitAnalysisJob commitJob = new CommitAnalysisJob(entry, gitProvider,
+									repositoryPath, () -> notifyUpdate(entry));
+							IStatus status = commitJob.analyze(monitor);
+							if (runGeneration != generation || status.matches(IStatus.CANCEL) || monitor.isCanceled()
+									|| Thread.currentThread().isInterrupted()) {
+								if (runGeneration == generation) {
+									cancelled = true;
+								}
+								return Status.CANCEL_STATUS;
+							}
+
+							completed.incrementAndGet();
+							monitor.worked(1);
+							notifyProgress(progress(0), runGeneration);
+						}
+						return Status.OK_STATUS;
+					} finally {
+						workerThread = null;
+						monitor.done();
+						if (runGeneration == generation) {
+							synchronized (stateLock) {
+								if (runGeneration == generation) {
+									running = false;
+									analysisJob = null;
+								}
+							}
+							notifyProgress(progress(0), runGeneration);
+						}
+						// The job already decided its result; do not leak our cancellation
+						// interrupt into a worker thread that the Eclipse job manager may reuse.
+						Thread.interrupted();
+					}
+				}
+
+				@Override
+				protected void canceling() {
+					Thread thread = workerThread;
+					if (thread != null) {
+						thread.interrupt();
+					}
+				}
+			};
+			analysisJob.setUser(true);
+			analysisJob.schedule();
 		}
-
-		notifyProgress(progress(0), runGeneration);
-		analysisJob = new Job("Refactoring Mining: " + total + " commits") { //$NON-NLS-1$ //$NON-NLS-2$
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				workerThread = Thread.currentThread();
-				monitor.beginTask("Inferring TriggerPattern rules from commit history", total); //$NON-NLS-1$
-				try {
-					for (int index = 0; index < queue.size(); index++) {
-						if (runGeneration != generation || monitor.isCanceled()
-								|| Thread.currentThread().isInterrupted()) {
-							if (runGeneration == generation) {
-								cancelled = true;
-							}
-							return Status.CANCEL_STATUS;
-						}
-
-						CommitTableEntry entry = queue.get(index);
-						monitor.subTask("Analyzing " + entry.getCommitInfo().shortId() + ": " //$NON-NLS-1$ //$NON-NLS-2$
-								+ entry.getCommitInfo().message());
-						notifyProgress(progress(1), runGeneration);
-
-						CommitAnalysisJob commitJob = new CommitAnalysisJob(entry, gitProvider,
-								repositoryPath, () -> notifyUpdate(entry));
-						IStatus status = commitJob.analyze(monitor);
-						if (runGeneration != generation || status.matches(IStatus.CANCEL) || monitor.isCanceled()
-								|| Thread.currentThread().isInterrupted()) {
-							if (runGeneration == generation) {
-								cancelled = true;
-							}
-							return Status.CANCEL_STATUS;
-						}
-
-						completed.incrementAndGet();
-						monitor.worked(1);
-						notifyProgress(progress(0), runGeneration);
-					}
-					return Status.OK_STATUS;
-				} finally {
-					workerThread = null;
-					monitor.done();
-					if (runGeneration == generation) {
-						synchronized (CommitAnalysisScheduler.this) {
-							if (runGeneration == generation) {
-								running = false;
-								analysisJob = null;
-							}
-						}
-						notifyProgress(progress(0), runGeneration);
-					}
-					// The job already decided its result; do not leak our cancellation
-					// interrupt into a worker thread that the Eclipse job manager may reuse.
-					Thread.interrupted();
-				}
-			}
-
-			@Override
-			protected void canceling() {
-				Thread thread = workerThread;
-				if (thread != null) {
-					thread.interrupt();
-				}
-			}
-		};
-		analysisJob.setUser(true);
-		analysisJob.schedule();
 	}
 
 	/** Cancels the active commit and all queued commits. */
-	public synchronized void cancelAnalysis() {
+	public void cancelAnalysis() {
+		synchronized (stateLock) {
+			cancelAnalysisLocked();
+		}
+	}
+
+	private void cancelAnalysisLocked() {
 		long cancelledGeneration = ++generation;
 		if (analysisJob != null) {
 			cancelled = true;
