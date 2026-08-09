@@ -1,22 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin>
-    <extension
-          point="org.eclipse.jdt.ui.cleanUps">
-            
-      
-       <cleanUp
-             class="org.sandbox.jdt.internal.ui.fix.UseIteratorToForLoopCleanUp"
-             id="org.eclipse.jdt.ui.cleanup.toolscleanup" />
-              <!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
-    </extension>
-
+   <!--
+      The iterator cleanup was upstreamed to Eclipse JDT UI. Keep the
+      historical implementation in this bundle, but do not contribute the
+      same org.eclipse.jdt.ui.cleanup.toolscleanup id a second time.
+   -->
    <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
       <cheatsheet
             id="org.sandbox.jdt.tools.gettingStarted"
             name="Converting Iterator Loops to Enhanced For Loops"
             contentFile="cheatsheets/iterator-to-for-getting-started.xml">
-         <description>Learn how to replace verbose Iterator-based while loops with enhanced for loops</description>
+         <description>Use the maintained Eclipse JDT cleanup; Sandbox keeps this guided example as a reference.</description>
       </cheatsheet>
    </extension>
-
 </plugin>

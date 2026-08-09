@@ -4,24 +4,42 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-   <title>Using Iterator to Enhanced For</title>
+   <title>Using the maintained iterator cleanup</title>
    <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
-   <h1>Using Iterator to Enhanced For</h1>
+   <h1>Using the maintained iterator cleanup</h1>
+
    <h2>Entry point</h2>
-   <p>Enable the Sandbox tools cleanup in a JDT cleanup profile, then run <strong>Source &gt; Clean Up...</strong> on the selected Java elements.</p>
-
-   <h2>When it is offered</h2>
-   <p>The iterator must represent one collection traversal and must not be manipulated in ways that an enhanced-for loop cannot express.</p>
-
-   <h2>Recommended workflow</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Open or select Java source containing an explicit iterator loop.</li>
+      <li>Choose <strong>Source &gt; Clean Up...</strong>.</li>
+      <li>Configure a normal Eclipse JDT cleanup profile.</li>
+      <li>Enable the standard JDT option for conversion to enhanced <code>for</code> loops.</li>
+      <li>Review the preview and apply the change.</li>
+   </ol>
+   <p>There is no separate Sandbox cleanup option or Sandbox Tools cleanup tab.</p>
+
+   <h2>Representative result</h2>
+   <h3>Before</h3>
+   <pre>Iterator&lt;String&gt; iterator = values.iterator();
+while (iterator.hasNext()) {
+    String value = iterator.next();
+    consume(value);
+}</pre>
+
+   <h3>After</h3>
+   <pre>for (String value : values) {
+    consume(value);
+}</pre>
+
+   <h2>Review workflow</h2>
+   <ol>
+      <li>Start with a small, version-controlled selection.</li>
+      <li>Inspect the Eclipse cleanup preview or resulting diff.</li>
+      <li>Verify imports, comments, element type, and loop body.</li>
+      <li>Compile and run the relevant tests.</li>
+      <li>Expand the scope only after the behavior is understood.</li>
    </ol>
 
    <p><a href="index.html">Back to overview</a></p>
