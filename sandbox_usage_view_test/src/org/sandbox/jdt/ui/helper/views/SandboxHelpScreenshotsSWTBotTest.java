@@ -138,12 +138,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
         for (CleanupTab tab : CLEANUP_TABS) {
             profileDialog.bot().tabItem(tab.label()).activate();
             if ("Code Patterns (Sandbox)".equals(tab.label())) {
-                var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
-                if (!hintFileCleanup.isChecked()) {
-                    hintFileCleanup.click();
-                }
+                stabilizeHintFileCleanup(profileDialog);
+            } else {
+                bot.sleep(300);
             }
-            bot.sleep(300);
             capture(profileDialog, tab.helpBundle(), tab.fileName());
         }
 
@@ -230,6 +228,37 @@ public class SandboxHelpScreenshotsSWTBotTest {
         capture(hintWizard, "sandbox_triggerpattern_help", "new-hint-rule-wizard.png");
         clickButton(hintWizard, "Cancel");
         projectExplorer.close();
+    }
+
+    private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
+        var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
+        if (!hintFileCleanup.isChecked()) {
+            hintFileCleanup.click();
+        }
+        hintFileCleanup.setFocus();
+
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                return hintFileCleanup.isChecked()
+                        && !profileDialog.bot().button("Apply").isEnabled()
+                        && !profileDialog.bot().button("OK").isEnabled();
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "Code Patterns cleanup profile did not reach its stable built-in-profile state";
+            }
+        }, 5_000);
+
+        UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
+            @Override
+            public void run() {
+                profileDialog.widget.layout(true, true);
+                profileDialog.widget.update();
+            }
+        });
+        bot.sleep(500);
     }
 
     private static IProject createDocumentationProject() throws Exception {
