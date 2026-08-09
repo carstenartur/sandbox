@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +50,9 @@ public class NodeExecutor {
 			if (process != null) {
 				process.destroyForcibly();
 			}
+			if (e instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
 			return false;
 		}
 	}
@@ -71,14 +75,26 @@ public class NodeExecutor {
 			if (process != null) {
 				process.destroyForcibly();
 			}
+			if (e instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
 			return false;
 		}
 	}
 
-	/**
-	 * Execute an npx command and return the output.
-	 */
+	/** Execute an npx command and return stdout/stderr without providing stdin. */
 	public static ExecutionResult executeNpx(String... args) throws IOException, InterruptedException {
+		return executeNpxInternal(null, args);
+	}
+
+	/** Execute an npx command with UTF-8 input supplied on stdin. */
+	public static ExecutionResult executeNpxWithInput(String input, String... args)
+			throws IOException, InterruptedException {
+		return executeNpxInternal(input == null ? "" : input, args); //$NON-NLS-1$
+	}
+
+	private static ExecutionResult executeNpxInternal(String input, String... args)
+			throws IOException, InterruptedException {
 		String[] command = new String[args.length + 1];
 		command[0] = "npx"; //$NON-NLS-1$
 		System.arraycopy(args, 0, command, 1, args.length);
@@ -88,12 +104,24 @@ public class NodeExecutor {
 
 		Process process = pb.start();
 		try (StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());
-			 StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream())) {
-			// Use StreamGobbler to read streams concurrently and avoid deadlock
+				StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream())) {
 			outputGobbler.start();
 			errorGobbler.start();
 
-			boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+			try (OutputStream processInput = process.getOutputStream()) {
+				if (input != null) {
+					processInput.write(input.getBytes(StandardCharsets.UTF_8));
+				}
+			}
+
+			boolean finished;
+			try {
+				finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				process.destroyForcibly();
+				Thread.currentThread().interrupt();
+				throw e;
+			}
 			if (!finished) {
 				process.destroyForcibly();
 				throw new IOException("Process timed out after " + TIMEOUT_SECONDS + " seconds"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -101,7 +129,6 @@ public class NodeExecutor {
 
 			outputGobbler.join(1000);
 			errorGobbler.join(1000);
-
 			return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());
 		} finally {
 			process.destroy();
@@ -119,6 +146,7 @@ public class NodeExecutor {
 
 		StreamGobbler(InputStream inputStream) {
 			this.inputStream = inputStream;
+			setDaemon(true);
 		}
 
 		@Override
@@ -130,19 +158,18 @@ public class NodeExecutor {
 					output.append(line).append("\n"); //$NON-NLS-1$
 				}
 			} catch (IOException e) {
-				LOG.log(new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, 
+				LOG.log(new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING,
 						"sandbox_css_cleanup", "Error reading stream", e)); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 
 		@Override
 		public void close() {
-			// If run() was never called or didn't complete, close the stream explicitly
 			if (!streamConsumed) {
 				try {
 					inputStream.close();
 				} catch (IOException e) {
-					// Ignore close errors - stream will be closed when process is destroyed anyway
+					// Process destruction also closes the stream.
 				}
 			}
 		}
@@ -152,9 +179,7 @@ public class NodeExecutor {
 		}
 	}
 
-	/**
-	 * Result of a command execution.
-	 */
+	/** Result of a command execution. */
 	public static class ExecutionResult {
 		public final int exitCode;
 		public final String stdout;
