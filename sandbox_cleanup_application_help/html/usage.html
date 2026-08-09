@@ -4,29 +4,92 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-   <title>Using Headless Cleanup Application</title>
+   <title>Using the Headless Cleanup Application</title>
    <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
-   <h1>Using Headless Cleanup Application</h1>
-   <h2>Entry point</h2>
-   <p>Launch Eclipse with application id <code>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</code>, a workspace supplied through <code>-data</code>, and one or more workspace files or directories.</p>
+   <h1>Using the Headless Cleanup Application</h1>
 
-   <h2>Command-line example</h2>
-   <pre>eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup -data &lt;workspace&gt; --mode check -config cleanup.properties &lt;files-or-directories&gt;</pre>
-   <p>Use <code>--mode check</code> or <code>--mode diff</code> before enabling
-      write mode in automation.</p>
-   <h2>When it is offered</h2>
-   <p>Inputs must resolve to Java-like files inside the selected Eclipse workspace. The same cleanup bundles that provide the configured options must be installed in the application.</p>
+   <h2>Application id</h2>
+   <pre>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</pre>
 
-   <h2>Recommended workflow</h2>
-   <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
-   </ol>
+   <h2>Recommended check-mode invocation</h2>
+   <p>Use a disposable workspace, import the checked-out Eclipse project, and
+      start with read-only check mode:</p>
+   <pre>eclipse -nosplash \
+  -data /tmp/sandbox-cleanup-workspace \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  --import-project /work/example-project \
+  --mode check \
+  --scope both \
+  --config /work/cleanup.properties \
+  --report /tmp/sandbox-cleanup-report.json \
+  /work/example-project</pre>
+
+   <p>The project directory supplied to <code>--import-project</code> must contain
+      an Eclipse <code>.project</code> file. Cleanup inputs must resolve inside the
+      selected workspace after the import.</p>
+
+   <h2>Expected output</h2>
+   <p>A valid check run that finds two files requiring cleanup writes:</p>
+   <pre>Using configuration file: /work/cleanup.properties
+Starting cleanup...
+Mode: check
+Cleanup done.
+Files changed: 2</pre>
+   <p>The process exits with <code>2</code>. Source files are restored before the
+      application returns.</p>
+
+   <p>An invalid input is reported on stderr. For example:</p>
+   <pre>Skipping file outside workspace: /work/other/Outside.java</pre>
+   <p>The process exits with <code>1</code>, even when another file would require
+      cleanup. <code>--quiet</code> suppresses progress and diff output, not errors.</p>
+
+   <h2>Exit-code contract</h2>
+   <table border="1" cellspacing="0" cellpadding="4">
+      <tr><th>Code</th><th>Meaning</th></tr>
+      <tr><td><code>0</code></td><td>Help was shown; apply completed without errors; or check/diff found no required changes.</td></tr>
+      <tr><td><code>1</code></td><td>A command-line, configuration, workspace, import, source-processing, refactoring, patch, or report error occurred.</td></tr>
+      <tr><td><code>2</code></td><td>Check or diff found required changes and no error occurred.</td></tr>
+   </table>
+   <p>Error code <code>1</code> has precedence over change code <code>2</code>.</p>
+
+   <h2>CI shell pattern</h2>
+   <pre>set +e
+eclipse -nosplash \
+  -data "$RUNNER_TEMP/sandbox-cleanup-workspace" \
+  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  --import-project "$PWD" \
+  --mode check \
+  --config "$PWD/cleanup.properties" \
+  --report "$RUNNER_TEMP/sandbox-cleanup-report.json" \
+  "$PWD"
+status=$?
+set -e
+
+case "$status" in
+  0) echo "Cleanup check passed" ;;
+  2) echo "Cleanup changes are required" >&amp;2; exit 2 ;;
+  *) echo "Cleanup execution failed" >&amp;2; exit "$status" ;;
+esac</pre>
+
+   <h2>Modes</h2>
+   <ul>
+      <li><code>--mode apply</code>: writes cleanup changes. This is the default.</li>
+      <li><code>--mode check</code>: detects changes, restores every source file, and returns 2 when changes are required.</li>
+      <li><code>--mode diff</code>: behaves like check mode and additionally prints a unified diff unless <code>--quiet</code> is active.</li>
+   </ul>
+
+   <h2>Inputs and outputs</h2>
+   <ul>
+      <li><code>--config &lt;file&gt;</code>: required Java properties file containing Eclipse cleanup option keys.</li>
+      <li><code>--source &lt;path&gt;</code>: adds another source file or directory; positional paths are also accepted.</li>
+      <li><code>--scope main|test|both</code>: filters paths by exact directory segments named <code>test</code> or <code>tests</code>.</li>
+      <li><code>--patch &lt;file&gt;</code>: writes the collected unified diff when check/diff finds changes.</li>
+      <li><code>--report &lt;file&gt;</code>: writes JSON evidence including mode, scope, timing, processed/changed files, <code>errorCount</code>, and <code>errors</code>.</li>
+      <li><code>--verbose</code>: prints each processed file and generated output path.</li>
+      <li><code>--quiet</code>: suppresses progress and diff output while retaining stderr diagnostics.</li>
+   </ul>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>

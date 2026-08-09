@@ -9,24 +9,29 @@
 </head>
 <body>
    <h1>Headless Cleanup Application</h1>
-   <p>Runs Eclipse JDT cleanup profiles from an Equinox command line without opening the full IDE.</p>
-   <p class="note">This documentation is installed by <code>sandbox_cleanup_application_feature</code>
-      together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
+   <p>Runs installed Eclipse JDT and Sandbox cleanup implementations from an
+      Equinox command line without opening the workbench.</p>
+   <p class="note">The Help bundle is installed by
+      <code>sandbox_cleanup_application_feature</code> together with the runtime.
+      The runtime plug-in does not depend on the Help bundle.</p>
 
-   <h2>What the feature provides</h2>
+   <h2>Operational contract</h2>
    <ul>
-      <li>Supports <code>apply</code>, <code>check</code>, and <code>diff</code> modes.</li>
-      <li>Reads cleanup options from a Java properties file.</li>
-      <li>Can write a unified patch and a JSON report.</li>
-      <li>Supports main/test/both scope filtering and quiet or verbose output.</li>
-      <li>Uses exit code 2 when check or diff mode detects required changes.</li>
+      <li>Application id: <code>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</code>.</li>
+      <li>Supports <code>apply</code>, read-only <code>check</code>, and read-only <code>diff</code>.</li>
+      <li>Can import one checked-out Eclipse project into a disposable workspace.</li>
+      <li>Resolves <code>main</code>/<code>test</code> scope to concrete Java files before cleanup starts.</li>
+      <li>Can write a unified patch and a JSON report with changed files and errors.</li>
+      <li>Returns 0 for success, 1 for any error, and 2 only for required changes without an error.</li>
    </ul>
 
-   <h2>Where to start</h2>
-   <p>Launch Eclipse with application id <code>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</code>, a workspace supplied through <code>-data</code>, and one or more workspace files or directories.</p>
+   <h2>Safe starting point</h2>
+   <p>Run <code>--mode check</code> with a version-controlled project, a disposable
+      <code>-data</code> workspace, <code>--import-project</code>, and a JSON report.
+      Treat exit code 1 as execution failure and exit code 2 as a cleanup-policy
+      failure.</p>
 
-
-   <p>Continue with <a href="usage.html">Using this feature</a> and
-      <a href="reference.html">Reference, safety, and limitations</a>.</p>
+   <p>Continue with <a href="usage.html">commands, output, and CI integration</a>
+      and <a href="reference.html">scope, safety, and limitations</a>.</p>
 </body>
 </html>
