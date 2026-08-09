@@ -11,6 +11,9 @@
    <h1>Applying a <code>.sandbox-hint</code> rule</h1>
    <p>Rule creation and rule execution are separate steps. A mined or authored rule becomes useful only after it has been reviewed, saved, and exercised against representative source.</p>
 
+   <h2>Project-local rule discovery</h2>
+   <p>Project-local <code>.sandbox-hint</code> and compatible <code>.hint</code> files are watched as workspace resources. Creating, editing, moving, or deleting a rule invalidates the project's TriggerPattern registry, so a saved rule change becomes visible to Quick Assist and cleanup execution in the same Eclipse session without requiring a workbench restart.</p>
+
    <h2 id="local">Apply one matching rule with Quick Assist</h2>
    <ol>
       <li>Keep the reviewed <code>.sandbox-hint</code> file in the Java project that should use it.</li>
@@ -44,7 +47,7 @@ validate and review .sandbox-hint
                                                v
                                       compile and run tests</pre>
 
-   <p class="note">A documentation screenshot for the local Quick Assist round trip is added only when the saved-rule reload path is demonstrably reliable in the same Eclipse session.</p>
+   <p class="note">The local Quick Assist screenshot is added only after the generated image itself has been reproduced and visually reviewed. The same-session saved-rule reload behavior is already protected by a workspace regression test.</p>
 
    <p>See also <a href="authoring.html">authoring rules</a>,
       <a href="mining.html">mining rules</a>, and
