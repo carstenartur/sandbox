@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "012c9806a39ff0fb8061d27dd3dde237962a52700f96983c8d943bacd796ebf6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jdt.internal.ui.javaeditor.codemining.JavaImplementationCodeMining($type, $viewerDocument, $provider, $showAtLeastOne)\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.javaeditor.codemining.JavaImplementationCodeMining($type, (org.eclipse.jdt.internal.ui.javaeditor.JavaEditor) textEditor, $viewerDocument, $provider, $showAtLeastOne)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.AbstractJavaElementLineHeaderCodeMining;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.ICodeMiningProvider;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.JavaImplementationCodeMining;\nimport org.eclipse.jface.text.BadLocationException;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.ui.texteditor.ITextEditor;\n\npublic class MyProvider implements ICodeMiningProvider {\n    ITextEditor textEditor;\n\n    public void someMethod(IType type, ITextViewer viewer, IDocument document, boolean showAtLeastOne) throws BadLocationException {\n        JavaImplementationCodeMining mining \u003d new JavaImplementationCodeMining(type, viewer.getDocument(), this, showAtLeastOne);\n    }\n\n    @Override\n    public AbstractJavaElementLineHeaderCodeMining createCodeMining(IType element, IDocument document, ICodeMiningProvider provider, boolean showImplementationsAtLeastOne) throws BadLocationException {\n        return null;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.internal.ui.javaeditor.JavaEditor;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.AbstractJavaElementLineHeaderCodeMining;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.ICodeMiningProvider;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.JavaImplementationCodeMining;\nimport org.eclipse.jface.text.BadLocationException;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.ui.texteditor.ITextEditor;\n\npublic class MyProvider implements ICodeMiningProvider {\n    ITextEditor textEditor;\n\n    public void someMethod(IType type, ITextViewer viewer, IDocument document, boolean showAtLeastOne) throws BadLocationException {\n        JavaImplementationCodeMining mining \u003d new JavaImplementationCodeMining(type, (JavaEditor) textEditor, viewer.getDocument(), this, showAtLeastOne);\n    }\n\n    @Override\n    public AbstractJavaElementLineHeaderCodeMining createCodeMining(IType element, IDocument document, ICodeMiningProvider provider, boolean showImplementationsAtLeastOne) throws BadLocationException {\n        return null;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IType;\nimport org.eclipse.jdt.internal.ui.javaeditor.JavaEditor;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.AbstractJavaElementLineHeaderCodeMining;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.ICodeMiningProvider;\nimport org.eclipse.jdt.internal.ui.javaeditor.codemining.JavaImplementationCodeMining;\nimport org.eclipse.jface.text.BadLocationException;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.ui.texteditor.ITextEditor;\n\npublic class MyProvider implements ICodeMiningProvider {\n    ITextEditor textEditor;\n\n    public void someMethod(IType type, ITextViewer viewer, IDocument document, boolean showAtLeastOne) throws BadLocationException {\n        // This should not match because it already has the JavaEditor argument\n        JavaImplementationCodeMining mining2 \u003d new JavaImplementationCodeMining(type, (JavaEditor) textEditor, viewer.getDocument(), this, showAtLeastOne);\n        // This should not match because it has a different number of arguments\n        JavaImplementationCodeMining mining3 \u003d new JavaImplementationCodeMining(type, viewer.getDocument(), this, showAtLeastOne, false);\n    }\n\n    @Override\n    public AbstractJavaElementLineHeaderCodeMining createCodeMining(IType element, IDocument document, ICodeMiningProvider provider, boolean showImplementationsAtLeastOne) throws BadLocationException {\n        return null;\n    }\n}",
+  "targetHintFile": "refactorings.sandbox-hint",
+  "sourceCommit": "74a6e74241c0d847a1134492c1572da6baeae788",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constructor Call Refactoring",
+  "summary": "Insert JavaEditor argument into JavaImplementationCodeMining constructor call.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-09T02:54:42.854759122Z",
+  "ruleFingerprint": "sha256:d426156d624a9df7b3e0ca3ff49d7b3c08989f8f8a4c59868fe0983bbf3b7d15",
+  "behaviorFingerprint": "sha256:310d5fbc2b48a7a0aa809c86ddc9152d3bc5ebde16145f5cedaeefd8d19faf4f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-09T02:54:46.277538739Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

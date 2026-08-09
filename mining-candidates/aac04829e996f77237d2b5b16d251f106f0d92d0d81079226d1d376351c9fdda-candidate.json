@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "aac04829e996f77237d2b5b16d251f106f0d92d0d81079226d1d376351c9fdda",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings.CustomBuilderSettings\n\u003d\u003e\norg.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore.CustomBuilderSettings\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettings;\n\npublic class MyClass {\n    public void someMethod() {\n        ToStringGenerationSettings.CustomBuilderSettings settings \u003d null;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.codemanipulation.tostringgeneration.ToStringGenerationSettingsCore;\n\npublic class MyClass {\n    public void someMethod() {\n        ToStringGenerationSettingsCore.CustomBuilderSettings settings \u003d null;\n    }\n}",
+  "negativeExample": "package test;\n\npublic class OtherClass {\n    public void anotherMethod() {\n        String s \u003d \"No change here\";\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "10e319fe8e095a2a3e3f42a9f86c838a1ae0eafa",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Type Modernization",
+  "summary": "Replace reference to old ToStringGenerationSettings.CustomBuilderSettings with new ToStringGenerationSettingsCore.CustomBuilderSettings.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-09T02:54:42.918683794Z",
+  "ruleFingerprint": "sha256:05969e83bfad94631a6f634f03929c2403949b56589bf39bd8bbc60611755af9",
+  "behaviorFingerprint": "sha256:84c8e6b5c06fe67d8cb4b0ef0fc621da0550271eeaf2b3d5f0f40d712e083211",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-08-09T02:54:46.321537447Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "97a73000b721c19ad8b15faf8c1da9326c8c2bcae2787ecc1620120831cf6403",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.refactor.quickassist.changetypetovar\u003e\n\u003c!description: Use specific relevance constant for \u0027change type to var\u0027 quick assist, replacing the generic \u0027CHANGE_VARIABLE\u0027.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.internal.ui.text.correction.IProposalRelevance.CHANGE_VARIABLE :: inMethod(\"org.eclipse.jdt.internal.ui.text.correction.QuickAssistProcessor.convertExplicitTypeToVar\")\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.correction.IProposalRelevance.CHANGE_TYPE_TO_VAR\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.IVariableBinding;\nimport org.eclipse.jdt.core.ITypeRoot;\n\nimport java.util.Collection;\n\n// Dummy classes to make it compile\ninterface IInvocationContext {\n    ICompilationUnit getCompilationUnit();\n}\ninterface ICompilationUnit {}\ninterface IJavaCompletionProposal {}\ninterface IVariableBinding {}\n\nclass TypeChangeCorrectionProposal {\n    public TypeChangeCorrectionProposal(ICompilationUnit unit, IVariableBinding var, CompilationUnit ast, org.eclipse.jdt.core.dom.ITypeBinding type, int relevance) {}\n}\n\nclass QuickAssistProcessor {\n    public static boolean convertExplicitTypeToVar(IInvocationContext context, CompilationUnit astRoot, ASTNode node, Collection\u003cIJavaCompletionProposal\u003e proposals) {\n        IVariableBinding varBinding \u003d null;\n        ITypeRoot typeRoot \u003d null;\n        org.eclipse.jdt.core.dom.ITypeBinding typeBinding \u003d null;\n        if (true) {\n            proposals.add(new TypeChangeCorrectionProposal(context.getCompilationUnit(), varBinding, astRoot, typeBinding, IProposalRelevance.CHANGE_VARIABLE));\n        }\n        return true;\n    }\n}\n\nclass IProposalRelevance {\n    public static final int CHANGE_VARIABLE \u003d 10;\n    public static final int CHANGE_TYPE_TO_VAR \u003d 5;\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.IVariableBinding;\nimport org.eclipse.jdt.core.ITypeRoot;\n\nimport java.util.Collection;\n\n// Dummy classes to make it compile\ninterface IInvocationContext {\n    ICompilationUnit getCompilationUnit();\n}\ninterface ICompilationUnit {}\ninterface IJavaCompletionProposal {}\ninterface IVariableBinding {}\n\nclass TypeChangeCorrectionProposal {\n    public TypeChangeCorrectionProposal(ICompilationUnit unit, IVariableBinding var, CompilationUnit ast, org.eclipse.jdt.core.dom.ITypeBinding type, int relevance) {}\n}\n\nclass QuickAssistProcessor {\n    public static boolean convertExplicitTypeToVar(IInvocationContext context, CompilationUnit astRoot, ASTNode node, Collection\u003cIJavaCompletionProposal\u003e proposals) {\n        IVariableBinding varBinding \u003d null;\n        ITypeRoot typeRoot \u003d null;\n        org.eclipse.jdt.core.dom.ITypeBinding typeBinding \u003d null;\n        if (true) {\n            proposals.add(new TypeChangeCorrectionProposal(context.getCompilationUnit(), varBinding, astRoot, typeBinding, IProposalRelevance.CHANGE_TYPE_TO_VAR));\n        }\n        return true;\n    }\n}\n\nclass IProposalRelevance {\n    public static final int CHANGE_VARIABLE \u003d 10;\n    public static final int CHANGE_TYPE_TO_VAR \u003d 5;\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\nimport java.util.Collection;\n\n// Dummy classes to make it compile\ninterface IInvocationContext {\n    ICompilationUnit getCompilationUnit();\n}\ninterface ICompilationUnit {}\ninterface IJavaCompletionProposal {}\ninterface IVariableBinding {}\n\nclass TypeChangeCorrectionProposal {\n    public TypeChangeCorrectionProposal(ICompilationUnit unit, IVariableBinding var, CompilationUnit ast, org.eclipse.jdt.core.dom.ITypeBinding type, int relevance) {}\n}\n\nclass QuickAssistProcessor {\n    public static boolean someOtherMethod(IInvocationContext context, Collection\u003cIJavaCompletionProposal\u003e proposals) {\n        // This usage of CHANGE_VARIABLE should not be replaced by CHANGE_TYPE_TO_VAR\n        // because it\u0027s not in the target method.\n        proposals.add(new TypeChangeCorrectionProposal(context.getCompilationUnit(), null, null, null, IProposalRelevance.CHANGE_VARIABLE));\n        return true;\n    }\n}\n\nclass IProposalRelevance {\n    public static final int CHANGE_VARIABLE \u003d 10;\n    public static final int CHANGE_TYPE_TO_VAR \u003d 5;\n}\n",
+  "targetHintFile": "eclipse-jdt-ui-refactoring.sandbox-hint",
+  "sourceCommit": "c7f57ac3dd0361c303199994dbc7ab20bd39ef1e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces a generic proposal relevance constant with a more specific one for \u0027change type to var\u0027 quick assist within a particular method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-09T02:54:42.905797465Z",
+  "ruleFingerprint": "sha256:af3cb0f1f17b18b867023d7649429609111f810085fe17e9d687abe031b2b671",
+  "behaviorFingerprint": "sha256:255edc2f677baf51fad94d960c4603cc96bf2ba599ebf513837460385694f5c2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-09T02:54:46.305769739Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

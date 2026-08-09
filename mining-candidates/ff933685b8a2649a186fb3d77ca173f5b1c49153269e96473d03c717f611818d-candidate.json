@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ff933685b8a2649a186fb3d77ca173f5b1c49153269e96473d03c717f611818d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "protected org.eclipse.swt.widgets.Text $name(org.eclipse.swt.widgets.Composite $inner) :: methodNameMatches($name, \"createFilterComposite\") \u0026\u0026 enclosingClassExtends(\"com.example.SourceActionDialogBase\") \u0026\u0026 !hasAnnotation($name, \"java.lang.Override\")\n\u003d\u003e @java.lang.Override protected org.eclipse.swt.widgets.Text $name(org.eclipse.swt.widgets.Composite $inner)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Label;\nimport org.eclipse.swt.widgets.Text;\n\n// A simplified base class for the example\nclass SourceActionDialogBase {\n    protected Text createFilterComposite(Composite inner) {\n        return null; // Default implementation\n    }\n}\n\npublic class MyOverrideMethodDialog extends SourceActionDialogBase {\n\n    public MyOverrideMethodDialog(Composite parent) {\n        // Constructor for compilation\n    }\n\n    protected Text createFilterComposite(Composite inner) {\n        Label filterTextLabel \u003d new Label(inner, SWT.NONE);\n        filterTextLabel.setText(\"Filter:\");\n        Text filterText \u003d new Text(inner, SWT.SEARCH | SWT.BORDER);\n        filterText.setMessage(\"Search methods\");\n        return filterText;\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Label;\nimport org.eclipse.swt.widgets.Text;\nimport java.lang.Override;\n\n// A simplified base class for the example\nclass SourceActionDialogBase {\n    protected Text createFilterComposite(Composite inner) {\n        return null; // Default implementation\n    }\n}\n\npublic class MyOverrideMethodDialog extends SourceActionDialogBase {\n\n    public MyOverrideMethodDialog(Composite parent) {\n        // Constructor for compilation\n    }\n\n    @Override\n    protected Text createFilterComposite(Composite inner) {\n        Label filterTextLabel \u003d new Label(inner, SWT.NONE);\n        filterTextLabel.setText(\"Filter:\");\n        Text filterText \u003d new Text(inner, SWT.SEARCH | SWT.BORDER);\n        filterText.setMessage(\"Search methods\");\n        return filterText;\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Label;\nimport org.eclipse.swt.widgets.Text;\nimport java.lang.Override;\n\n// A simplified base class for the example\nclass SourceActionDialogBase {\n    protected Text createFilterComposite(Composite inner) {\n        return null; // Default implementation\n    }\n}\n\npublic class AnotherDialog { // Does not extend SourceActionDialogBase\n    protected Text createFilterComposite(Composite inner) { // Should not match, as it doesn\u0027t override\n        return null;\n    }\n\n    @Override // Already has @Override (but method name won\u0027t match our specific rule)\n    protected Text createAnotherFilterComposite(Composite inner) { // Method name doesn\u0027t match\n        return null;\n    }\n\n    public class MyOverrideMethodDialogExistingOverride extends SourceActionDialogBase {\n        @Override // Should not match as it already has @Override\n        protected Text createFilterComposite(Composite inner) {\n            return null;\n        }\n    }\n}",
+  "targetHintFile": "java-annotations.sandbox-hint",
+  "sourceCommit": "1dcf440416f027e15a6c27e7c8a9b0c7e905b569",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Annotations",
+  "summary": "Adds @Override annotation to a method that overrides a method in SourceActionDialogBase.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-09T02:54:42.886033884Z",
+  "ruleFingerprint": "sha256:d3a6bcd67bab649351357a924922843bfcc5a99f0c476f8b209b8f3d638300c0",
+  "behaviorFingerprint": "sha256:e9490d4e708b6a152341c2473b6f1d771ef1d45db21bdff99ea918bb06f60dac",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-09T02:54:46.298174331Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
