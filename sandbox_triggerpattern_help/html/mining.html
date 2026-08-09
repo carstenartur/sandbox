@@ -20,6 +20,7 @@
       <li>Select a commit with inferred rules to inspect the proposed DSL and its validation state.</li>
       <li>Check only the candidate rules you want to keep and choose <strong>Export selected as .sandbox-hint</strong>.</li>
    </ol>
+   <p>The analysis uses one bounded, user-visible Eclipse job. The view reports analyzed/total, active, and queued work; <strong>Stop Analysis</strong> cancels the active request and prevents queued commits from starting. When no LLM provider is configured, the history remains inspectable but AI analysis is not scheduled.</p>
    <p class="note">Mining is an analysis aid, not an automatic semantic proof. A green or valid DSL result means that the rule is syntactically accepted by the DSL validator; it does not prove that every future match preserves program behavior.</p>
 
    <h2>What is sent to rule inference?</h2>
@@ -32,22 +33,30 @@
    <h2 id="diff">Mine a selected unified diff</h2>
    <p>If you already have a unified diff, you do not need to scan repository history:</p>
    <ol>
-      <li>Open or paste the diff into an Eclipse text editor.</li>
+      <li>Open or paste the diff into an Eclipse text editor that belongs to the project where the generated rule should live.</li>
       <li>Select the complete diff text.</li>
       <li>Invoke <strong>Sandbox TriggerPattern &gt; Mine DSL rule from diff...</strong>.</li>
-      <li>Sandbox runs inference in a background job.</li>
-      <li>When a rule is produced, a new <code>.sandbox-hint</code> file is created in the workspace and opened for review.</li>
+      <li>Sandbox runs inference in a user-visible background job.</li>
+      <li>When a rule is produced, a new <code>.sandbox-hint</code> file is created in the active editor's project and opened for review.</li>
    </ol>
-   <p class="note">The direct diff command still needs a clearer destination choice when several projects are open. The Refactoring Mining view now has explicit project selection; direct-command destination handling is tracked separately as QA work.</p>
+   <p class="note">The active text editor determines the target project. Sandbox does not silently write the generated rule to the first project in a multi-project workspace. Missing provider configuration, a provider failure, and a successful inference that produces no usable rule are reported explicitly.</p>
+
+   <h2 id="working-tree">Mine the active project's working tree</h2>
+   <p>Use <strong>Mine DSL rules from working tree...</strong> when the before-state is the project's committed <code>HEAD</code> and the after-state is the Java source currently present in the working tree.</p>
+   <ol>
+      <li>Open a file from the Git-backed project you want to analyze.</li>
+      <li>Invoke <strong>Sandbox TriggerPattern &gt; Mine DSL rules from working tree...</strong>.</li>
+      <li>Sandbox compares the committed <code>HEAD</code> tree with the current filesystem working tree and considers changed Java files.</li>
+      <li>Both staged and unstaged filesystem content are therefore represented in the resulting before/after comparison.</li>
+      <li>When one or more rules are inferred, Sandbox creates a <code>.sandbox-hint</code> file in that same project and opens it for review.</li>
+   </ol>
+   <p>If there are no Java working-tree changes, or if the changes produce no reusable rule, Sandbox reports that outcome instead of silently doing nothing.</p>
 
    <h2>Example</h2>
    <p>A commit that repeatedly replaces a charset name with a typed constant could contain a change like this:</p>
    <pre>-new String(bytes, "UTF-8")
 +new String(bytes, StandardCharsets.UTF_8)</pre>
    <p>The useful mining result is not a copy of that one edit. It is a generalized rule that captures the replaceable expression and the conditions under which the replacement is safe.</p>
-
-   <h2>Current QA note: Working Tree command</h2>
-   <p class="note">The command currently named <strong>Mine DSL rules from working tree...</strong> does not yet analyze uncommitted working-tree changes; its implementation reads <code>HEAD</code>. Until that mismatch is fixed, use commit mining or a selected unified diff when you need a documented and reproducible before/after source.</p>
 
    <p><a href="index.html">Back to overview</a> | <a href="authoring.html">Selection and wizard authoring</a> | <a href="apply.html">Apply a reviewed rule</a></p>
 </body>
