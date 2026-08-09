@@ -126,21 +126,28 @@ public class CommitAnalysisSchedulerTest {
 	}
 
 	@Test
-	public void cancellationStopsQueuedCommits() throws Exception {
+	public void cancellationInterruptsActiveCommitAndStopsQueuedCommits() throws Exception {
 		TrackingProvider provider = new TrackingProvider(true, false);
+		List<CommitTableEntry> entries = entries(3);
 		scheduler = createScheduler(provider);
 
-		scheduler.startAnalysis(entries(3));
+		scheduler.startAnalysis(entries);
 		assertTrue(provider.firstEntered.await(5, TimeUnit.SECONDS), "First commit was not started"); //$NON-NLS-1$
-		scheduler.cancelAnalysis();
-		provider.releaseFirst.countDown();
-		await(() -> provider.active.get() == 0);
+		try {
+			scheduler.cancelAnalysis();
+			await(() -> provider.active.get() == 0);
 
-		CommitAnalysisScheduler.Progress progress = scheduler.getProgress();
-		assertEquals(1, provider.calls.get());
-		assertFalse(progress.running());
-		assertTrue(progress.cancelled());
-		assertEquals(0, progress.completed());
+			CommitAnalysisScheduler.Progress progress = scheduler.getProgress();
+			assertEquals(1, provider.calls.get());
+			assertEquals(1, provider.interruptions.get());
+			assertEquals(AnalysisStatus.PENDING, entries.get(0).getStatus());
+			assertFalse(progress.running());
+			assertTrue(progress.cancelled());
+			assertEquals(0, progress.completed());
+		} finally {
+			// Ensures a failing cancellation assertion cannot strand the test worker.
+			provider.releaseFirst.countDown();
+		}
 	}
 
 	@Test
@@ -193,6 +200,7 @@ public class CommitAnalysisSchedulerTest {
 		private final AtomicInteger calls = new AtomicInteger();
 		private final AtomicInteger active = new AtomicInteger();
 		private final AtomicInteger maxActive = new AtomicInteger();
+		private final AtomicInteger interruptions = new AtomicInteger();
 
 		private TrackingProvider(boolean blockFirst, boolean fail) {
 			this.blockFirst = blockFirst;
@@ -218,6 +226,7 @@ public class CommitAnalysisSchedulerTest {
 					try {
 						releaseFirst.await();
 					} catch (InterruptedException e) {
+						interruptions.incrementAndGet();
 						Thread.currentThread().interrupt();
 					}
 				}
