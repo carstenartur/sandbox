@@ -18,6 +18,7 @@ Eclipse-BuddyPolicy: global
 Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.api.condition;version="5.7.1",
  org.junit.jupiter.api.extension;version="5.7.1",
+ org.junit.jupiter.api.io;version="5.7.1",
  org.junit.jupiter.params;version="5.7.1",
  org.junit.jupiter.params.provider;version="5.7.1",
  org.opentest4j;version="1.2.0",
