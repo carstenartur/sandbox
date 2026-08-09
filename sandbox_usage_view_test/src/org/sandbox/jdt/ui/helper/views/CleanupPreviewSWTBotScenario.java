@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
+import org.eclipse.core.resources.ResourcesPlugin;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
@@ -271,7 +272,7 @@ final class CleanupPreviewSWTBotScenario implements AutoCloseable {
 
 	private static CleanupPreviewSWTBotScenario open(SWTWorkbenchBot bot, Path repositoryRoot,
 			String projectName, List<SourceFile> sources) throws Exception {
-		IProject staleProject= PlatformUI.getWorkbench().getWorkspace().getRoot().getProject(projectName);
+		IProject staleProject= ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
 		if (staleProject.exists()) {
 			AbstractEclipseJava.delete(staleProject);
 		}
@@ -369,9 +370,9 @@ final class CleanupPreviewSWTBotScenario implements AutoCloseable {
 	private static void openWizardAsynchronously(PreviewOnlyCleanupWizard wizard,
 			AtomicReference<Throwable> failure) {
 		Display display= PlatformUI.getWorkbench().getDisplay();
-		Shell parent= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 		display.asyncExec(() -> {
 			try {
+				Shell parent= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
 				new RefactoringWizardOpenOperation(wizard).run(parent, "Clean Up"); //$NON-NLS-1$
 			} catch (Throwable throwable) {
 				failure.set(throwable);
