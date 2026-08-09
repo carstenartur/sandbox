@@ -10,6 +10,7 @@ Require-Bundle: org.junit,
  sandbox_test_commons,
  org.eclipse.jdt.core,
  org.eclipse.core.runtime,
+ org.eclipse.jgit;bundle-version="[7.5.0,8.0.0)",
  sandbox_common
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
