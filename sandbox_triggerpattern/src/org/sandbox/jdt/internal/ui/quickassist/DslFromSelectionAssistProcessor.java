@@ -39,6 +39,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
@@ -94,26 +95,35 @@ public class DslFromSelectionAssistProcessor implements IQuickAssistProcessor {
 				Job job = new Job("Generating DSL rule from selection") { //$NON-NLS-1$
 					@Override
 					protected IStatus run(IProgressMonitor monitor) {
-						AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();
-						String[] lines = selectedCode.split("\n", -1); //$NON-NLS-1$
-						StringBuilder sb = new StringBuilder();
-						sb.append("--- a/snippet.java\n+++ b/snippet.java\n"); //$NON-NLS-1$
-						sb.append("@@ -1,0 +1,").append(lines.length).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
-						for (String line : lines) {
-							sb.append('+').append(line).append('\n');
+						try {
+							AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();
+							String[] lines = selectedCode.split("\n", -1); //$NON-NLS-1$
+							StringBuilder sb = new StringBuilder();
+							sb.append("--- a/snippet.java\n+++ b/snippet.java\n"); //$NON-NLS-1$
+							sb.append("@@ -1,0 +1,").append(lines.length).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
+							for (String line : lines) {
+								sb.append('+').append(line).append('\n');
+							}
+							Optional<CommitEvaluation> result = engine.inferRuleFromDiff(sb.toString());
+							if (result.isPresent() && result.get().dslRule() != null
+									&& !result.get().dslRule().isBlank()) {
+								openHintFileOnUi(targetProject, result.get().dslRule());
+								return Status.OK_STATUS;
+							}
+							RuleInferenceUiFeedback.showNoRule("the selected Java code"); //$NON-NLS-1$
+							return Status.OK_STATUS;
+						} catch (RuntimeException e) {
+							LOG.error("Failed to infer a DSL rule from the Java selection", e); //$NON-NLS-1$
+							RuleInferenceUiFeedback.showFailure("the selected Java code", e); //$NON-NLS-1$
+							return Status.error("DSL inference from Java selection failed", e); //$NON-NLS-1$
 						}
-						Optional<CommitEvaluation> result = engine.inferRuleFromDiff(sb.toString());
-						if (result.isPresent() && result.get().dslRule() != null
-								&& !result.get().dslRule().isBlank()) {
-							openHintFileOnUi(targetProject, result.get().dslRule());
-						}
-						return Status.OK_STATUS;
 					}
 				};
 				job.setUser(true);
 				job.schedule();
 			} catch (Exception e) {
 				LOG.error("Failed to infer DSL rule from selection", e); //$NON-NLS-1$
+				RuleInferenceUiFeedback.showFailure("the selected Java code", e); //$NON-NLS-1$
 			}
 		}
 
@@ -159,6 +169,7 @@ public class DslFromSelectionAssistProcessor implements IQuickAssistProcessor {
 					}
 				} catch (Exception e) {
 					LOG.error("Failed to open hint file for inferred rule", e); //$NON-NLS-1$
+					RuleInferenceUiFeedback.showFailure("the generated hint file", e); //$NON-NLS-1$
 				}
 			});
 		}
