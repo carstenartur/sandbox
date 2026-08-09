@@ -14,12 +14,14 @@
 
    <h2>Safety model</h2>
    <p>The cleanup does not replace unrelated methods that merely share a name. Ambiguous overloads and unsupported behavior differences are left for manual review.</p>
+   <p>The real Cleanup preview represents each JFace migration with its own text-edit group. These JFace transformations are local and independent, so a user may deselect an individual step or an independently changed file. This fine-grained behavior must not be assumed for a coordinated migration whose safety proof spans several files.</p>
 
    <h2>Known limitations</h2>
    <ul>
       <li>Coverage is limited to the migrations implemented by this bundle.</li>
       <li>Projects targeting older JFace versions may not provide the replacement API.</li>
       <li>UI behavior should be verified with the application's SWT/JFace tests.</li>
+      <li>The profile preview is a fixed example; use the execution preview to review actual source changes.</li>
    </ul>
 
    <h2>Support information</h2>
