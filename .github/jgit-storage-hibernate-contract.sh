@@ -149,12 +149,9 @@ for forbidden_module in \
     exit 1
   fi
 done
-if ! grep -Fq 'jgit-storage-hibernate-core' "$evidence_dir/dependency-tree.txt"; then
-  echo "The Sandbox contract did not resolve jgit-storage-hibernate-core." >&2
-  exit 1
-fi
-if ! grep -Fq ":$resolved_version" "$evidence_dir/dependency-tree.txt"; then
-  echo "Sandbox did not resolve selected Core version $resolved_version." >&2
+core_coordinate="io.github.carstenartur:jgit-storage-hibernate-core:jar:$resolved_version:"
+if ! grep -Fq "$core_coordinate" "$evidence_dir/dependency-tree.txt"; then
+  echo "Sandbox did not resolve expected Core coordinate $core_coordinate." >&2
   cat "$evidence_dir/dependency-tree.txt" >&2
   exit 1
 fi
