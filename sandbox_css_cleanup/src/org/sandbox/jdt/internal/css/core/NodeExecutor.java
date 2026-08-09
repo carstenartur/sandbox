@@ -127,11 +127,23 @@ public class NodeExecutor {
 				throw new IOException("Process timed out after " + TIMEOUT_SECONDS + " seconds"); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 
-			outputGobbler.join(1000);
-			errorGobbler.join(1000);
+			awaitCompleteOutput(outputGobbler, errorGobbler);
 			return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());
 		} finally {
 			process.destroy();
+		}
+	}
+
+	private static void awaitCompleteOutput(StreamGobbler outputGobbler, StreamGobbler errorGobbler)
+			throws InterruptedException {
+		try {
+			// The process has exited, so both streams will reach EOF. Do not return
+			// partially consumed JSON merely because a fixed join timeout elapsed.
+			outputGobbler.join();
+			errorGobbler.join();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw e;
 		}
 	}
 
