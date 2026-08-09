@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.osgi.framework.Bundle;
 
-/** Public-process contract tests for {@link CodeCleanupApplicationWrapper}. */
+/** Public-process contract tests for the registered cleanup application wrapper. */
 class CodeCleanupApplicationWrapperExitCodeTest {
 
 	@TempDir
@@ -97,7 +97,8 @@ class CodeCleanupApplicationWrapperExitCodeTest {
 	}
 
 	private static Object run(String... arguments) throws Exception {
-		return new CodeCleanupApplicationWrapper().start(new TestApplicationContext(arguments));
+		return new ScopeFilteringCodeCleanupApplicationWrapper()
+				.start(new TestApplicationContext(arguments));
 	}
 
 	private static final class TestApplicationContext implements IApplicationContext {
