@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.widgets.Display;
@@ -50,6 +51,17 @@ public class CommitAnalysisScheduler {
 	private final Consumer<Progress> progressListener;
 	private final AtomicInteger completed = new AtomicInteger();
 	private final Object stateLock = new Object();
+	private final ISchedulingRule analysisRule = new ISchedulingRule() {
+		@Override
+		public boolean contains(ISchedulingRule rule) {
+			return rule == this;
+		}
+
+		@Override
+		public boolean isConflicting(ISchedulingRule rule) {
+			return rule == this;
+		}
+	};
 
 	private volatile boolean running;
 	private volatile boolean cancelled;
@@ -153,6 +165,7 @@ public class CommitAnalysisScheduler {
 					}
 				}
 			};
+			analysisJob.setRule(analysisRule);
 			analysisJob.setUser(true);
 			analysisJob.schedule();
 		}
