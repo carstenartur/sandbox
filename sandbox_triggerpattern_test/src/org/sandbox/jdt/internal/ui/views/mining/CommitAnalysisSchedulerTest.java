@@ -153,6 +153,33 @@ public class CommitAnalysisSchedulerTest {
 	}
 
 	@Test
+	public void replacementWaitsForCancelledWorkerToExit() throws Exception {
+		NonCooperativeProvider provider = new NonCooperativeProvider();
+		List<CommitTableEntry> firstRun = entries(1);
+		List<CommitTableEntry> replacementRun = entries(1);
+		scheduler = createScheduler(provider);
+
+		scheduler.startAnalysis(firstRun);
+		assertTrue(provider.firstEntered.await(5, TimeUnit.SECONDS), "First commit was not started"); //$NON-NLS-1$
+		try {
+			scheduler.startAnalysis(replacementRun);
+			assertTrue(provider.interrupted.await(5, TimeUnit.SECONDS), "First worker was not interrupted"); //$NON-NLS-1$
+			assertFalse(provider.secondEntered.await(250, TimeUnit.MILLISECONDS),
+					"Replacement overlapped the still-running cancelled worker"); //$NON-NLS-1$
+
+			provider.releaseFirst.countDown();
+			assertTrue(provider.secondEntered.await(5, TimeUnit.SECONDS), "Replacement did not start"); //$NON-NLS-1$
+			await(() -> !scheduler.isRunning());
+
+			assertEquals(2, provider.calls.get());
+			assertEquals(AnalysisStatus.PENDING, firstRun.get(0).getStatus());
+			assertEquals(AnalysisStatus.NO_RULES, replacementRun.get(0).getStatus());
+		} finally {
+			provider.releaseFirst.countDown();
+		}
+	}
+
+	@Test
 	public void failedCommitCompletesQueueWithActionableEntryState() throws Exception {
 		TrackingProvider provider = new TrackingProvider(false, true);
 		CommitTableEntry entry = entries(1).get(0);
@@ -236,6 +263,45 @@ public class CommitAnalysisSchedulerTest {
 			} finally {
 				active.decrementAndGet();
 			}
+		}
+
+		@Override
+		public String getFileContent(Path repositoryPath, String commitId, String filePath) {
+			return null;
+		}
+	}
+
+	private static final class NonCooperativeProvider implements GitHistoryProvider {
+		private final CountDownLatch firstEntered = new CountDownLatch(1);
+		private final CountDownLatch interrupted = new CountDownLatch(1);
+		private final CountDownLatch releaseFirst = new CountDownLatch(1);
+		private final CountDownLatch secondEntered = new CountDownLatch(1);
+		private final AtomicInteger calls = new AtomicInteger();
+
+		@Override
+		public List<CommitInfo> getHistory(Path repositoryPath, int maxCommits) {
+			return List.of();
+		}
+
+		@Override
+		public List<FileDiff> getDiffs(Path repositoryPath, String commitId) {
+			int call = calls.incrementAndGet();
+			if (call == 1) {
+				firstEntered.countDown();
+				boolean released = false;
+				while (!released) {
+					try {
+						releaseFirst.await();
+						released = true;
+					} catch (InterruptedException e) {
+						// Deliberately ignore interruption to model a non-cooperative provider.
+						interrupted.countDown();
+					}
+				}
+			} else if (call == 2) {
+				secondEntered.countDown();
+			}
+			return List.of();
 		}
 
 		@Override
