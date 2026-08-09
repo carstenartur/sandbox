@@ -27,9 +27,7 @@ import org.sandbox.jdt.internal.css.core.NodeExecutor;
 import org.sandbox.jdt.internal.css.core.PrettierRunner;
 import org.sandbox.jdt.internal.css.core.StylelintRunner;
 
-/**
- * Preference page for CSS Cleanup settings.
- */
+/** Preference page for CSS Cleanup settings. */
 public class CSSPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
 	/**
@@ -37,6 +35,8 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 	 * profile captures this page. Normal Eclipse launches never set this property.
 	 */
 	public static final String DOCUMENTATION_SCREENSHOT_PROPERTY = "sandbox.help.screenshot.mode"; //$NON-NLS-1$
+
+	private StringFieldEditor prettierOptionsField;
 
 	public CSSPreferencePage() {
 		super(GRID);
@@ -59,10 +59,11 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 				"Enable &Stylelint validation", //$NON-NLS-1$
 				getFieldEditorParent()));
 
-		addField(new StringFieldEditor(
+		prettierOptionsField = new StringFieldEditor(
 				CSSPreferenceConstants.PRETTIER_OPTIONS,
 				"Prettier &options (JSON):", //$NON-NLS-1$
-				getFieldEditorParent()));
+				getFieldEditorParent());
+		addField(prettierOptionsField);
 
 		addField(new FileFieldEditor(
 				CSSPreferenceConstants.STYLELINT_CONFIG,
@@ -73,10 +74,7 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 			return;
 		}
 
-		// Show initial status message only for normal interactive launches.
 		setDescription(getDescription() + "\n\nStatus: Checking tool availability..."); //$NON-NLS-1$
-
-		// Check tool availability asynchronously to avoid blocking UI
 		Job.create("Checking CSS tool availability", monitor -> { //$NON-NLS-1$
 			String statusInfo = "\n\nStatus:\n" + //$NON-NLS-1$
 					"  Node.js: " + (NodeExecutor.isNodeAvailable() ? "Available" : "Not found") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -84,7 +82,6 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 					"  Prettier: " + (PrettierRunner.isPrettierAvailable() ? "Available" : "Not installed") + "\n" + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 					"  Stylelint: " + (StylelintRunner.isStylelintAvailable() ? "Available" : "Not installed"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
-			// Update description on UI thread
 			Display.getDefault().asyncExec(() -> {
 				if (!getControl().isDisposed()) {
 					setDescription("Configure CSS formatting and validation tools." + statusInfo); //$NON-NLS-1$
@@ -95,8 +92,20 @@ public class CSSPreferencePage extends FieldEditorPreferencePage implements IWor
 	}
 
 	@Override
+	public boolean performOk() {
+		try {
+			PrettierRunner.normalizeAndValidateOptions(
+					prettierOptionsField != null ? prettierOptionsField.getStringValue() : "{}"); //$NON-NLS-1$
+			setErrorMessage(null);
+		} catch (IllegalArgumentException e) {
+			setErrorMessage("Prettier options must be a valid JSON object: " + e.getMessage()); //$NON-NLS-1$
+			return false;
+		}
+		return super.performOk();
+	}
+
+	@Override
 	public void init(IWorkbench workbench) {
-		// Initialize default values
 		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_PRETTIER, true);
 		getPreferenceStore().setDefault(CSSPreferenceConstants.ENABLE_STYLELINT, true);
 		getPreferenceStore().setDefault(CSSPreferenceConstants.PRETTIER_OPTIONS, "{}"); //$NON-NLS-1$
