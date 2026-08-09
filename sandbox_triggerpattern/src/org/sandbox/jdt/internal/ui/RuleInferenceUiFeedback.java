@@ -37,11 +37,15 @@ public final class RuleInferenceUiFeedback {
 						+ EclipseLlmService.getInstance().configurationHint()));
 	}
 
+	/** Shows an informational inference outcome that needs no Error Log entry. */
+	public static void showInformation(String message) {
+		show(shell -> MessageDialog.openInformation(shell, TITLE, message));
+	}
+
 	/** Reports a successful provider call that produced no usable DSL rule. */
 	public static void showNoRule(String sourceDescription) {
-		show(shell -> MessageDialog.openInformation(shell, TITLE,
-				"No valid TriggerPattern DSL rule was inferred from " + sourceDescription + ". " //$NON-NLS-1$ //$NON-NLS-2$
-						+ "Try a smaller, self-contained before/after change or author the rule with the Sandbox Hint File wizard.")); //$NON-NLS-1$
+		showInformation("No valid TriggerPattern DSL rule was inferred from " + sourceDescription + ". " //$NON-NLS-1$ //$NON-NLS-2$
+				+ "Try a smaller, self-contained before/after change or author the rule with the Sandbox Hint File wizard."); //$NON-NLS-1$
 	}
 
 	/** Reports a failed provider operation without echoing prompts, credentials, or response bodies. */
