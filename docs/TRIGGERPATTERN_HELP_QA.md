@@ -8,6 +8,7 @@ The goal is not to collect screenshots of configuration pages. A user should be 
 
 ```text
 Git commit history ----> Refactoring Mining -----\
+Working tree ----------> Mine Working Tree --------+\
 Unified diff ----------> Mine DSL Rule from Diff --+--> AiRuleInferenceEngine --> DslValidator --> .sandbox-hint
 Java selection --------> Quick Assist ------------/
 Rule wizard -----------> Generate with AI --------/
@@ -23,7 +24,7 @@ Rule wizard -----------> Generate with AI --------/
 | --- | --- | --- |
 | `index.html` | Explain the whole product story and relationships | Architecture flow + links to all workflows |
 | `usage.html` | Help users choose an entry point from the input they have | Lifecycle from example to reviewed rule |
-| `mining.html` | Commit mining and selected unified-diff mining | Mining view screenshot + concrete before/after diff |
+| `mining.html` | Commit, working-tree and selected unified-diff mining | Mining view screenshot + concrete before/after diff |
 | `authoring.html` | Java-selection quick assist and New Hint File wizard | Quick Assist screenshot + rule-wizard screenshot |
 | `llm.html` | Shared provider configuration, data boundary and fallback | LLM Preferences screenshot |
 | `reference.html` | Safety, applicability, confidence and known limitations | Explicit execution/inference distinction |
@@ -36,17 +37,18 @@ Screenshots are task evidence, not decoration. Each screenshot must be reproduci
 | --- | --- | --- |
 | `code-patterns-cleanup.png` | Relevant Code Patterns option enabled | Configuration has a meaningful enabled preview, not only a disabled tab |
 | `llm-rule-inference-preferences.png` | Stable provider form with no secret | Page labels and security behavior match the documented credential contract |
-| `refactoring-mining-view.png` | Deterministic local Git project with at least two commits loaded | View can discover history; commit/message/files/status columns are usable |
+| `refactoring-mining-view.png` | Deterministic local Git project selected from a workspace containing at least two open projects | Target selection is explicit; the selected repository history is loaded and commit/message/files/status columns are usable |
 | `new-hint-rule-wizard.png` | Rule page with deterministic source/guard/replacement and live validation | Manual authoring works without an LLM and the preview is understandable |
 | `dsl-from-selection-quick-assist.png` | Java selection with the Sandbox AI proposal visible | The discoverable editor entry point matches the Help wording |
 | `mined-hint-result.png` | Generated or deterministic test hint open in an editor | Result handoff is obvious and the user can see what must be reviewed |
 
-The first implementation increment should add `refactoring-mining-view.png` and `new-hint-rule-wizard.png`. Quick Assist and result screenshots can follow once the test workspace setup is reusable.
+The first implementation increment adds `refactoring-mining-view.png` and `new-hint-rule-wizard.png`. Quick Assist and result screenshots can follow once the test workspace setup is reused for those editor states.
 
 ## Screenshot determinism rules
 
 - The screenshot profile must never call an external LLM provider.
 - Mining screenshots must use a small deterministic repository created by the test, never the developer's repository history.
+- The mining screenshot workspace must contain more than one open project so an accidental `projects[0]` target cannot pass unnoticed.
 - Test commit metadata and source contents must be fixed so commit hashes and table text are reproducible.
 - No screenshot may contain an API key or other credential.
 - Dialog/view size and locale remain fixed by the existing screenshot profile.
@@ -61,8 +63,16 @@ Every documented workflow is also a functional inspection checklist.
 1. Can a user identify which project/repository will be analyzed?
 2. Does the view show useful progress and completion state?
 3. Can a user inspect a candidate rule for one commit?
-4. Does export honor the user's selection?
+4. Does export honor the user's visible checkbox selection?
 5. Are failures actionable rather than silently reduced to `FAILED`?
+6. Does an unconfigured LLM leave history inspection usable without scheduling meaningless analysis work?
+
+Current implementation evidence:
+
+- `Analyze Project...` requires an explicit project selection.
+- The scheduler uses one bounded user-visible job, exposes completed/total/active/queued state, supports cancellation, and resets its running state on natural completion.
+- Scheduler tests cover bounded execution, queued-work cancellation, natural completion and a failed commit.
+- The detail panel keeps rule selection scoped to the selected commit; UI tests cover checkbox export and commit switching.
 
 ### Diff mining
 
@@ -70,16 +80,26 @@ Every documented workflow is also a functional inspection checklist.
 2. Does it clearly require a unified diff selection?
 3. Is a background operation visible and cancellable?
 4. Is the generated hint written to an intentional project/location?
+5. Are missing configuration, no-result and failure outcomes visible?
+
+Current implementation derives the target from the active text editor's project and reports the non-success outcomes explicitly instead of falling back to the first workspace project.
 
 ### Working-tree mining
 
-The current command name and implementation disagree: `MineWorkingTreeHandler` analyzes `HEAD`, not uncommitted working-tree changes. This is a QA blocker for documenting that path as working-tree mining. Fix or rename the behavior before adding a task screenshot.
+1. Is the repository derived from the active editor/project?
+2. Is the comparison actually `HEAD` versus current working-tree filesystem content?
+3. Are staged and unstaged content semantics documented consistently with the implementation?
+4. Are modified, added and deleted Java files covered by deterministic JGit tests where applicable?
+5. Are no-change, no-rule and failure outcomes visible?
+
+The earlier QA finding that this command mined `HEAD` as though it were the working tree has been fixed on the current PR branch. `WorkingTreeDiffProvider` now performs the `HEAD`-to-working-tree comparison, and the handler writes inferred rules back to the active project.
 
 ### Selection inference
 
 1. Is the Quick Assist visible only when a useful selection exists and inference is configured?
 2. Is it clear that a source-only selection is weaker evidence than a before/after diff?
 3. Is the generated file location predictable and intentional?
+4. Does a provider failure or empty inference produce user-visible feedback?
 
 ### Rule wizard
 
@@ -94,24 +114,39 @@ The current command name and implementation disagree: `MineWorkingTreeHandler` a
 2. Are credentials handled securely and never rendered in screenshots/logs?
 3. Is it clear what source material may be sent to the provider?
 4. Does environment-variable fallback remain usable without storing a secret in Eclipse preferences?
+5. If a provider is selected explicitly, does availability require that provider's credential rather than an unrelated provider key?
+6. Does every visible non-secret preference affect runtime behavior?
+
+Current implementation stores explicit keys in Eclipse Equinox Secure Storage, masks the field, migrates the legacy ordinary preference, supports provider-specific environment fallback, and forwards the optional model override. Controls that were visible but not consumed by runtime have been removed rather than documented as functional. Provider availability now fails closed when the selected provider does not have a matching credential.
 
 ## QA findings discovered while writing the Help
 
-The following issues are product findings, not documentation polish:
+Documentation-driven inspection produced the following product findings. The status below describes the current PR branch; closure still depends on the normal CI and screenshot gates.
 
-- `#1439`: the explicit LLM API key is currently an ordinary preference and needs secure storage.
-- The command named `Mine DSL rules from working tree...` currently mines `HEAD` instead of the working tree.
-- `RefactoringMiningView` currently chooses the first open workspace project for `Analyze Project`; documentation should not imply a deliberate project selection until the UI makes that choice clear.
-- The mining view should be checked to ensure export semantics match rule selection shown in its detail panel.
+| Issue | Finding | Current PR state |
+| --- | --- | --- |
+| `#1439` | API keys were stored in an ordinary preference | Secure Storage, password rendering and legacy migration implemented; verification still required |
+| `#1441` | Working-tree mining analyzed the wrong source | `HEAD`-to-working-tree provider and deterministic tests implemented |
+| `#1443` | Project target, export selection and failure feedback were ambiguous | explicit project/editor targeting, selected-rule export tests and user-visible direct-inference feedback implemented |
+| `#1444` | commit analysis scheduled hidden/unbounded provider work | one visible bounded queue, progress/cancellation/completion model and scheduler tests implemented |
+| `#1445` | project hint cache could stay stale after file changes | workspace resource invalidation plus create/edit/delete regression test implemented |
+| `#1446` | visible LLM controls did not affect runtime | model is wired; dead max-token/temperature/default-folder controls removed; provider availability contract tightened |
 
 ## Definition of done for the TriggerPattern Help increment
 
 - The installed Help explains the complete inference-to-execution relationship.
-- Commit mining, selected-diff mining, selection authoring, wizard authoring and LLM configuration have separate task-oriented instructions.
+- Commit mining, working-tree mining, selected-diff mining, selection authoring, wizard authoring and LLM configuration have task-oriented instructions.
 - At least the mining view and rule wizard are captured by SWTBot from deterministic state.
 - New screenshots are referenced by Help and covered by structural validation.
 - The screenshot profile performs no network LLM calls.
+- Multi-project target selection is exercised rather than assumed.
 - QA contradictions found while documenting are either fixed or called out as explicit blockers with issues.
+- Code, Help text, issue status and screenshot evidence agree before the PR leaves draft state.
 
 Refs #1437
 Refs #1439
+Refs #1441
+Refs #1443
+Refs #1444
+Refs #1445
+Refs #1446
