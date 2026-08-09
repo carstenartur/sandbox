@@ -42,7 +42,7 @@ Screenshots are task evidence, not decoration. Each screenshot must be reproduci
 | `dsl-from-selection-quick-assist.png` | Java selection with the Sandbox AI proposal visible | The discoverable editor entry point matches the Help wording |
 | `mined-hint-result.png` | Generated or deterministic test hint open in an editor | Result handoff is obvious and the user can see what must be reviewed |
 
-The first implementation increment adds `refactoring-mining-view.png` and `new-hint-rule-wizard.png`. Quick Assist and result screenshots can follow once the test workspace setup is reused for those editor states.
+The first implementation increment generates `refactoring-mining-view.png` and `new-hint-rule-wizard.png`. They must remain unreferenced and uncommitted until the reproduced images have been inspected and accepted. Quick Assist and result screenshots can follow once the test workspace setup is reused for those editor states.
 
 ## Screenshot determinism rules
 
@@ -137,7 +137,7 @@ Documentation-driven inspection produced the following product findings. The sta
 - The installed Help explains the complete inference-to-execution relationship.
 - Commit mining, working-tree mining, selected-diff mining, selection authoring, wizard authoring and LLM configuration have task-oriented instructions.
 - At least the mining view and rule wizard are captured by SWTBot from deterministic state.
-- New screenshots are referenced by Help and covered by structural validation.
+- New screenshots are referenced by Help only after the generated files have been visually reviewed and accepted.
 - The screenshot profile performs no network LLM calls.
 - Multi-project target selection is exercised rather than assumed.
 - QA contradictions found while documenting are either fixed or called out as explicit blockers with issues.
