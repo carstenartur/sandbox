@@ -135,10 +135,12 @@ public class CommitAnalysisSchedulerTest {
 		assertTrue(provider.firstEntered.await(5, TimeUnit.SECONDS), "First commit was not started"); //$NON-NLS-1$
 		try {
 			scheduler.cancelAnalysis();
-			await(() -> provider.active.get() == 0);
+			await(() -> provider.interruptions.get() == 1
+					&& entries.get(0).getStatus() == AnalysisStatus.PENDING);
 
 			CommitAnalysisScheduler.Progress progress = scheduler.getProgress();
 			assertEquals(1, provider.calls.get());
+			assertEquals(0, provider.active.get());
 			assertEquals(1, provider.interruptions.get());
 			assertEquals(AnalysisStatus.PENDING, entries.get(0).getStatus());
 			assertFalse(progress.running());
