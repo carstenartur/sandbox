@@ -4,29 +4,45 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-   <title>Iterator to Enhanced For reference</title>
+   <title>Iterator cleanup reference status</title>
    <link rel="stylesheet" type="text/css" href="style.css"/>
 </head>
 <body>
-   <h1>Iterator to Enhanced For: reference</h1>
-   <h2>Applicability contract</h2>
-   <p>The iterator must represent one collection traversal and must not be manipulated in ways that an enhanced-for loop cannot express.</p>
+   <h1>Iterator cleanup: reference status</h1>
 
-   <h2>Safety model</h2>
-   <p>Patterns that call <code>remove()</code>, advance the iterator more than once, expose the iterator, or depend on iterator identity are rejected.</p>
+   <h2>Runtime contract</h2>
+   <p>The bundle <code>sandbox_tools</code> contains the historical implementation
+      but no longer contributes to <code>org.eclipse.jdt.ui.cleanUps</code>. The id
+      <code>org.eclipse.jdt.ui.cleanup.toolscleanup</code> is owned at runtime by
+      <code>org.eclipse.jdt.ui</code>.</p>
+   <p>This prevents the same standard cleanup option from instantiating both the
+      maintained JDT implementation and an older Sandbox implementation.</p>
 
-   <h2>Known limitations</h2>
+   <h2>Why the feature remains installable</h2>
    <ul>
-      <li>This feature currently has no dedicated cleanup configuration tab.</li>
-      <li>Non-canonical loops and simultaneous iterators are not converted.</li>
-      <li>The transformation does not change the collection or iteration order.</li>
+      <li>Existing installations receive an update of the same feature and bundle identities, neutralizing the former duplicate registration.</li>
+      <li>The cheat sheet and offline Help remain useful for explaining the transformation.</li>
+      <li>Historical source and tests remain available in the repository for contribution research.</li>
    </ul>
 
+   <h2>Historical safety model</h2>
+   <p>The retained implementation accepts only canonical traversals. Patterns
+      that remove through the iterator, advance it more than once, expose it,
+      depend on iterator identity, or otherwise cannot be represented by an
+      enhanced <code>for</code> loop are rejected.</p>
+   <p>These notes describe the archived Sandbox implementation. For current
+      behavior and defects, the Eclipse JDT UI implementation and its tests are
+      authoritative.</p>
+
+   <h2>Maintenance policy</h2>
+   <p>Sandbox does not promise periodic synchronization with JDT. A comparison
+      should be made only for a concrete research, regression, or contribution
+      need. New production fixes belong upstream.</p>
+
    <h2>Support information</h2>
-   <p>The Help content is shipped with the same feature version as the runtime
-      plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+   <p>Report active cleanup behavior to Eclipse JDT UI. Report only Sandbox
+      packaging, Help, cheat-sheet, or duplicate-registration regressions to the
+      Sandbox project.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>

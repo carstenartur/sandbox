@@ -1,150 +1,79 @@
-# Tools Plugin
+# Iterator-to-Enhanced-For Reference
 
-> **Navigation**: [Main README](../README.md) | [Architecture](ARCHITECTURE.md) | [TODO](TODO.md)
-
-## Overview
-
-The **Tools** plugin contains the While-to-For loop converter cleanup. This implementation was **successfully contributed to and merged into the Eclipse JDT project**. The module remains in the sandbox repository for reference, testing, and as a demonstration of successful Eclipse JDT contribution workflow.
+> **Navigation**: [Main README](../README.md) | [Architecture](ARCHITECTURE.md) | [Maintenance status](TODO.md)
 
 ## Status
 
-✅ **SUCCESSFULLY MERGED INTO ECLIPSE JDT**
+The iterator-loop cleanup in this module was contributed to Eclipse JDT UI and is maintained there. The Sandbox implementation remains as historical source and regression-test material, but it is **not registered as an active cleanup**.
 
-This cleanup is now part of the official Eclipse JDT cleanup framework and is available in Eclipse IDE.
+Current runtime contract:
 
-## Key Features
+- `sandbox_tools` does not contribute to `org.eclipse.jdt.ui.cleanUps`;
+- `org.eclipse.jdt.ui` is the sole runtime owner of `org.eclipse.jdt.ui.cleanup.toolscleanup`;
+- installing or updating `sandbox_tools_feature` therefore cannot instantiate a second cleanup implementation;
+- the feature remains installable to update older installations safely and to provide its cheat sheet and offline Help.
 
-- 🔄 **While to For Conversion** - Automatically converts while loops to for loops where applicable
-- ✅ **Production Ready** - Proven through Eclipse JDT contribution and acceptance
-- 📚 **Reference Implementation** - Serves as example for future contributions
-- 🧪 **Comprehensive Tests** - Well-tested patterns used during development
+## What the historical implementation does
 
-## Quick Example
+It recognizes canonical iterator-driven `while` loops and rewrites them as enhanced `for` loops when the iterator has no behavior that the target form cannot preserve.
 
-**Before:**
+**Before**
+
 ```java
-int i = 0;
-while (i < 10) {
-    System.out.println(i);
-    i++;
+Iterator<String> iterator = values.iterator();
+while (iterator.hasNext()) {
+    String value = iterator.next();
+    consume(value);
 }
 ```
 
-**After:**
+**After**
+
 ```java
-for (int i = 0; i < 10; i++) {
-    System.out.println(i);
+for (String value : values) {
+    consume(value);
 }
 ```
 
-## Conversion Criteria
+The retained implementation rejects cases such as iterator removal, multiple advancement, escaped iterator identity, or non-canonical traversal.
 
-A while loop can be converted to a for loop if:
+## Using the maintained cleanup
 
-1. ✅ Loop variable is initialized immediately before while
-2. ✅ Loop variable is incremented at end of loop body
-3. ✅ Loop condition uses the loop variable
-4. ✅ Loop variable is not modified elsewhere in loop body
+Use the standard Eclipse Java cleanup workflow:
 
-## Implementation
+1. Select Java source.
+2. Choose **Source → Clean Up...**.
+3. Configure a normal Eclipse JDT cleanup profile.
+4. Enable the standard option for conversion to enhanced `for` loops.
+5. Review the preview and run the relevant tests.
 
-### Core Component
+There is no separate Sandbox cleanup option or Sandbox Tools cleanup tab.
 
-**WhileToForEach**
+## What remains in Sandbox
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.WhileToForEach`
+- the historical implementation under `org.sandbox.jdt.internal.*`;
+- the original regression tests in `sandbox_tools_test`;
+- a cheat sheet that guides users to the maintained JDT cleanup;
+- offline Help explaining runtime ownership and the retirement decision.
 
-**Key Methods**:
-- `canConvert()` - Checks if while loop is convertible
-- `convert()` - Transforms while to for loop
-- `extractInitializer()` - Extracts loop initialization
-- `extractIncrement()` - Extracts loop increment
+New production fixes belong in Eclipse JDT UI. Sandbox does not promise periodic synchronization; compare implementations only for a concrete research, regression, or contribution need.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design.
+## Verification
 
-## Contribution Story
+The runtime registration test checks that exactly one contribution exists for `org.eclipse.jdt.ui.cleanup.toolscleanup` and that its contributor is `org.eclipse.jdt.ui`.
 
-### Timeline
+Run the module and its dependencies with:
 
-1. **Development** - Implemented and tested in sandbox environment
-2. **Testing** - Comprehensive test cases created and validated
-3. **Refinement** - Improved based on internal feedback
-4. **Submission** - Submitted to Eclipse Gerrit for review
-5. **Review** - Reviewed and approved by Eclipse JDT maintainers
-6. **Merge** - Successfully merged into Eclipse JDT core
-
-### Lessons Learned
-
-This successful contribution demonstrates:
-- ✅ **Value of sandbox environment** for experimentation
-- ✅ **Importance of comprehensive testing** before contribution
-- ✅ **Benefits of following Eclipse conventions** from the start
-- ✅ **Effectiveness of sandbox → Eclipse JDT workflow**
-
-## Using This as a Reference
-
-If you're planning to contribute a cleanup to Eclipse JDT, this module serves as a reference for:
-
-- Code structure and organization
-- Test coverage patterns
-- Eclipse coding conventions
-- Contribution preparation checklist
-- Review process expectations
-
-See [Architecture](ARCHITECTURE.md) for implementation patterns that were accepted by Eclipse JDT.
+```bash
+xvfb-run --auto-servernum mvn --no-transfer-progress -pl sandbox_tools_test -am verify
+```
 
 ## Documentation
 
-- **[Architecture](ARCHITECTURE.md)** - Implementation details and design patterns
-- **[TODO](TODO.md)** - Status and lessons learned
-- **[Main README](../README.md#while-to-for-converter-sandbox_tools)** - Overview and usage
-
-## Testing
-
-### Test Module
-
-`sandbox_tools_test` contains the original test cases used during development and contribution.
-
-Run tests:
-```bash
-xvfb-run --auto-servernum mvn test -pl sandbox_tools_test
-```
-
-These tests served as validation during the Eclipse JDT contribution process.
-
-## Eclipse JDT Status
-
-### Current Location in Eclipse JDT
-
-The while-to-for converter is now available in:
-- **Package**: `org.eclipse.jdt.internal.corext.fix.*`
-- **Module**: Eclipse JDT Core Manipulation
-- **Availability**: Eclipse IDE (all recent versions)
-
-### Using in Eclipse IDE
-
-The cleanup is available in Eclipse through:
-1. **Source** → **Clean Up...**
-2. Navigate to loop conversion options
-3. Enable "Convert while loops to for loops"
-
-## Why This Module Still Exists
-
-This module remains in the sandbox for:
-
-1. **Reference** - Demonstrates successful contribution patterns
-2. **Testing** - Original test cases for validation
-3. **Documentation** - Preserved implementation history
-4. **Learning** - Example for future contributors
-
-The active, maintained code is now in Eclipse JDT.
+- [Architecture and ownership](ARCHITECTURE.md)
+- [Maintenance status](TODO.md)
+- [Installed Eclipse Help](../sandbox_tools_help/html/index.html)
 
 ## License
 
 Eclipse Public License 2.0 (EPL-2.0)
-
----
-
-> **For Contributors**: See this module as a template for successful Eclipse JDT contributions. The patterns and practices used here were accepted by Eclipse JDT maintainers.
-
-> **Related Plugins**: [Functional Converter](../sandbox_functional_converter/) (another loop transformation), [Method Reuse](../sandbox_method_reuse/)

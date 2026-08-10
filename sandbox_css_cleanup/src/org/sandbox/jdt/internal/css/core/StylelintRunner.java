@@ -13,154 +13,140 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.css.core;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.ILog;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
+import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
+import org.sandbox.jdt.internal.css.preferences.CSSPreferenceConstants;
 
-/**
- * Runs Stylelint to validate CSS files.
- */
+/** Runs Stylelint to validate and fix CSS files. */
 public class StylelintRunner {
 
-	private static final ILog LOG = Platform.getLog(StylelintRunner.class);
+	private static final int LINT_PROBLEMS_EXIT_CODE = 2;
 
-	/**
-	 * Validate a CSS file using Stylelint.
-	 * 
-	 * @param file the CSS file to validate
-	 * @return validation results
-	 */
+	/** Validate a CSS file using Stylelint and the configured config file. */
 	public static CSSValidationResult validate(IFile file) throws Exception {
-		if (!NodeExecutor.isNpxAvailable()) {
-			throw new IllegalStateException("npx is not available. Please install Node.js."); //$NON-NLS-1$
-		}
-
-		Path filePath = file.getLocation().toFile().toPath();
-
-		// Run stylelint with JSON output for easier parsing
-		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx(
-				"stylelint", //$NON-NLS-1$
-				filePath.toString(),
-				"--formatter", "json" //$NON-NLS-1$ //$NON-NLS-2$
-		);
-
-		return parseStylelintOutput(result.stdout, result.exitCode);
+		String configPath = configuredStylelintConfig();
+		return validate(file, configPath);
 	}
 
-	/**
-	 * Fix CSS issues automatically using Stylelint --fix.
-	 * 
-	 * @param file the CSS file to fix
-	 * @return the fixed content, or original content if fixing failed
-	 * @throws IOException if an I/O error occurs
-	 * @throws InterruptedException if the thread is interrupted
-	 */
+	static CSSValidationResult validate(IFile file, String configPath) throws Exception {
+		if (!NodeExecutor.isNpxAvailable()) {
+			throw new IllegalStateException("npx is not available. Please install Node.js and npm."); //$NON-NLS-1$
+		}
+
+		Path filePath = localPath(file);
+		List<String> args = buildValidateArguments(filePath.toString(), configPath);
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx(args.toArray(String[]::new));
+		String report = extractJsonReport(result.stderr);
+		if (report == null) {
+			report = extractJsonReport(result.stdout);
+		}
+
+		CSSValidationResult validation;
+		if (report != null) {
+			try {
+				validation = parseStylelintOutput(report);
+			} catch (IllegalArgumentException e) {
+				throw new IOException("Could not parse Stylelint JSON output: " + e.getMessage() //$NON-NLS-1$
+						+ diagnosticSuffix(result), e);
+			}
+		} else {
+			validation = new CSSValidationResult(true, List.of());
+		}
+
+		if (result.exitCode != 0 && result.exitCode != LINT_PROBLEMS_EXIT_CODE) {
+			throw new IOException(toolFailure("Stylelint", result)); //$NON-NLS-1$
+		}
+		if (result.exitCode == LINT_PROBLEMS_EXIT_CODE && validation.getIssues().isEmpty()) {
+			throw new IOException("Stylelint reported lint problems but returned no JSON diagnostics" //$NON-NLS-1$
+					+ diagnosticSuffix(result));
+		}
+		return validation;
+	}
+
+	/** Fix CSS issues using Stylelint --fix and the configured config file. */
 	public static String fix(IFile file) throws IOException, InterruptedException {
+		String configPath = configuredStylelintConfig();
+		return fix(file, configPath);
+	}
+
+	static String fix(IFile file, String configPath) throws IOException, InterruptedException {
 		if (!NodeExecutor.isNpxAvailable()) {
-			throw new IllegalStateException("npx is not available. Please install Node.js."); //$NON-NLS-1$
+			throw new IllegalStateException("npx is not available. Please install Node.js and npm."); //$NON-NLS-1$
 		}
 
-		Path filePath = file.getLocation().toFile().toPath();
+		Path filePath = localPath(file);
 		String originalContent = Files.readString(filePath, StandardCharsets.UTF_8);
+		List<String> args = buildFixArguments(filePath.toString(), configPath);
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpxWithInput(
+				originalContent, args.toArray(String[]::new));
 
-		// Run stylelint with --fix via stdin/stdout
-		ProcessBuilder pb = new ProcessBuilder(
-				"npx", "stylelint", //$NON-NLS-1$ //$NON-NLS-2$
-				"--fix", //$NON-NLS-1$
-				"--stdin-filename", file.getName() //$NON-NLS-1$
-		);
-
-		Process process = pb.start();
-
-		try (OutputStream os = process.getOutputStream()) {
-			os.write(originalContent.getBytes(StandardCharsets.UTF_8));
+		if (result.exitCode != 0 && result.exitCode != LINT_PROBLEMS_EXIT_CODE) {
+			throw new IOException(toolFailure("Stylelint --fix", result)); //$NON-NLS-1$
 		}
-
-		String fixed;
-		try (BufferedReader reader = new BufferedReader(
-				new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line).append("\n"); //$NON-NLS-1$
-			}
-			fixed = sb.toString();
-		}
-
-		String errorOutput;
-		try (BufferedReader errorReader = new BufferedReader(
-				new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
-			StringBuilder errorSb = new StringBuilder();
-			String errorLine;
-			while ((errorLine = errorReader.readLine()) != null) {
-				errorSb.append(errorLine).append("\n"); //$NON-NLS-1$
-			}
-			errorOutput = errorSb.toString();
-		}
-
-		boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-		if (!finished) {
-			process.destroyForcibly();
-			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
-					"stylelint --fix timed out after 30 seconds")); //$NON-NLS-1$
-			return originalContent;
-		}
-
-		int exitCode = process.exitValue();
-
-		if (exitCode != 0) {
-			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
-					"stylelint --fix failed with exit code " + exitCode + " and error output:\n" + errorOutput)); //$NON-NLS-1$ //$NON-NLS-2$
-			return originalContent;
-		}
-
-		return fixed.isEmpty() ? originalContent : fixed;
+		return result.stdout.isEmpty() ? originalContent : result.stdout;
 	}
 
-	private static CSSValidationResult parseStylelintOutput(String jsonOutput, int exitCode) {
+	static List<String> buildValidateArguments(String filePath, String configPath) {
+		List<String> args = new ArrayList<>(List.of(
+				"stylelint", filePath, "--formatter", "json")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		appendConfig(args, configPath);
+		return List.copyOf(args);
+	}
+
+	static List<String> buildFixArguments(String filePath, String configPath) {
+		List<String> args = new ArrayList<>(List.of(
+				"stylelint", "--stdin", "--stdin-filename", filePath, "--fix")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		appendConfig(args, configPath);
+		return List.copyOf(args);
+	}
+
+	static CSSValidationResult parseStylelintOutput(String jsonOutput) {
+		Object parsed = SimpleJsonParser.parse(jsonOutput);
+		if (!(parsed instanceof List<?> results)) {
+			throw new IllegalArgumentException("Expected a Stylelint JSON result array"); //$NON-NLS-1$
+		}
+
 		List<CSSValidationResult.Issue> issues = new ArrayList<>();
-
-		// Simple parsing - in production use proper JSON parser
-		if (exitCode == 0) {
-			return new CSSValidationResult(true, issues);
-		}
-
-		// Parse JSON array of results
-		// Each result has: source, warnings[], errored
-		// Each warning has: line, column, rule, severity, text
-
-		try {
-			// Simplified parsing - extract line/column/message
-			// In real implementation, use Gson or Jackson
-			if (jsonOutput.contains("\"errored\":true")) { //$NON-NLS-1$
-				issues.add(new CSSValidationResult.Issue(
-						1, 1, "error", "stylelint", "CSS validation errors found. Run stylelint for details." //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				));
+		for (Object resultValue : results) {
+			if (!(resultValue instanceof Map<?, ?> result)) {
+				continue;
 			}
-		} catch (Exception e) {
-			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
-					"Failed to parse stylelint output", e)); //$NON-NLS-1$
+			collectWarnings(result.get("warnings"), issues); //$NON-NLS-1$
+			collectSpecialIssues(result.get("parseErrors"), "error", "parse-error", issues); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			collectSpecialIssues(result.get("invalidOptionWarnings"), "error", "invalid-option", issues); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
-
-		return new CSSValidationResult(false, issues);
+		return new CSSValidationResult(issues.isEmpty(), issues);
 	}
 
-	/**
-	 * Check if Stylelint is available.
-	 */
+	static String extractJsonReport(String output) {
+		if (output == null || output.isBlank()) {
+			return null;
+		}
+		for (int start = output.indexOf('['); start >= 0; start = output.indexOf('[', start + 1)) {
+			for (int end = output.lastIndexOf(']'); end > start; end = output.lastIndexOf(']', end - 1)) {
+				String candidate = output.substring(start, end + 1);
+				try {
+					if (SimpleJsonParser.parse(candidate) instanceof List<?>) {
+						return candidate;
+					}
+				} catch (IllegalArgumentException e) {
+					// stderr can contain notices before the formatter payload.
+				}
+			}
+		}
+		return null;
+	}
+
+	/** Check if Stylelint is available. */
 	public static boolean isStylelintAvailable() {
 		try {
 			NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("stylelint", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -168,5 +154,91 @@ public class StylelintRunner {
 		} catch (Exception e) {
 			return false;
 		}
+	}
+
+	private static void collectWarnings(Object warningValue, List<CSSValidationResult.Issue> issues) {
+		if (!(warningValue instanceof List<?> warnings)) {
+			return;
+		}
+		for (Object warningValueEntry : warnings) {
+			if (!(warningValueEntry instanceof Map<?, ?> warning)) {
+				continue;
+			}
+			issues.add(new CSSValidationResult.Issue(
+					integer(warning.get("line"), 1), //$NON-NLS-1$
+					integer(warning.get("column"), 1), //$NON-NLS-1$
+					string(warning.get("severity"), "warning"), //$NON-NLS-1$ //$NON-NLS-2$
+					string(warning.get("rule"), "stylelint"), //$NON-NLS-1$ //$NON-NLS-2$
+					string(warning.get("text"), "Stylelint problem"))); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
+	private static void collectSpecialIssues(Object value, String severity, String rule,
+			List<CSSValidationResult.Issue> issues) {
+		if (!(value instanceof List<?> entries)) {
+			return;
+		}
+		for (Object entryValue : entries) {
+			if (entryValue instanceof String text && !text.isBlank()) {
+				issues.add(new CSSValidationResult.Issue(1, 1, severity, rule, text));
+				continue;
+			}
+			if (!(entryValue instanceof Map<?, ?> entry)) {
+				continue;
+			}
+			issues.add(new CSSValidationResult.Issue(
+					integer(entry.get("line"), 1), //$NON-NLS-1$
+					integer(entry.get("column"), 1), //$NON-NLS-1$
+					severity,
+					rule,
+					string(entry.get("text"), string(entry.get("message"), "Stylelint problem")))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+	}
+
+	private static int integer(Object value, int fallback) {
+		if (value instanceof BigDecimal number) {
+			try {
+				return number.intValueExact();
+			} catch (ArithmeticException e) {
+				return fallback;
+			}
+		}
+		return fallback;
+	}
+
+	private static String string(Object value, String fallback) {
+		return value instanceof String text && !text.isBlank() ? text : fallback;
+	}
+
+	private static void appendConfig(List<String> args, String configPath) {
+		if (configPath != null && !configPath.isBlank()) {
+			args.add("--config"); //$NON-NLS-1$
+			args.add(configPath);
+		}
+	}
+
+	private static String configuredStylelintConfig() {
+		String configured = CSSCleanupPlugin.getDefault().getPreferenceStore()
+				.getString(CSSPreferenceConstants.STYLELINT_CONFIG);
+		return configured == null ? "" : configured.trim(); //$NON-NLS-1$
+	}
+
+	private static Path localPath(IFile file) throws IOException {
+		if (file.getLocation() == null) {
+			throw new IOException("CSS file has no local filesystem location: " + file.getFullPath()); //$NON-NLS-1$
+		}
+		return file.getLocation().toFile().toPath();
+	}
+
+	private static String toolFailure(String tool, NodeExecutor.ExecutionResult result) {
+		String detail = !result.stderr.isBlank() ? result.stderr.trim() : result.stdout.trim();
+		return detail.isBlank()
+				? tool + " failed with exit code " + result.exitCode //$NON-NLS-1$
+				: tool + " failed with exit code " + result.exitCode + ": " + detail; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static String diagnosticSuffix(NodeExecutor.ExecutionResult result) {
+		String detail = !result.stderr.isBlank() ? result.stderr.trim() : result.stdout.trim();
+		return detail.isBlank() ? "" : ". Tool output: " + detail; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }
