@@ -1,0 +1,36 @@
+{
+  "minimumChangedJavaFiles": 2,
+  "requirePlanningDiagnostics": true,
+  "requiredFiles": {
+    "org.eclipse.jdt.apt.tests/src/org/eclipse/jdt/apt/tests/FactoryPathTests.java": {
+      "mustContain": [
+        "import org.junit.jupiter.api.BeforeEach;",
+        "import org.junit.jupiter.api.Test;",
+        "@BeforeEach",
+        "@Test",
+        "Assertions.assert"
+      ],
+      "mustNotContain": [
+        "extends TestCase",
+        "public FactoryPathTests(String name)",
+        "public static Test suite()",
+        "super.setUp();",
+        "junit.framework"
+      ]
+    },
+    "org.eclipse.jdt.apt.tests/src/org/eclipse/jdt/apt/tests/TestAll.java": {
+      "mustContain": [
+        "import org.junit.platform.suite.api.SelectClasses;",
+        "import org.junit.platform.suite.api.Suite;",
+        "@Suite",
+        "@SelectClasses("
+      ],
+      "mustNotContain": [
+        "extends TestCase",
+        "public TestAll(String testName)",
+        "public static Test suite()",
+        "junit.framework"
+      ]
+    }
+  }
+}
