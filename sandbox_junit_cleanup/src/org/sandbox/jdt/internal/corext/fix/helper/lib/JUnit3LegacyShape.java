@@ -20,7 +20,9 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
@@ -33,9 +35,9 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  * Fail-closed recognition of common JUnit 3 compatibility members that become
  * redundant after an ordinary Jupiter migration.
  *
- * <p>The accepted shapes deliberately have no user-visible state or control
- * flow: a constructor may only delegate its optional test name to
- * {@code TestCase}, a self suite may only select its declaring class, and a
+ * <p>The accepted shapes deliberately have no user-visible construction state or
+ * custom control flow: a constructor may only delegate its optional test name
+ * to {@code TestCase}, a self suite may only select its declaring class, and a
  * lifecycle super call may only invoke the empty {@code TestCase} hook from the
  * matching lifecycle method.</p>
  */
@@ -110,19 +112,22 @@ public final class JUnit3LegacyShape {
 		String selected= model.selectedTypes().get(0);
 		ITypeBinding binding= owner.resolveBinding();
 		String qualifiedName= binding == null || binding.isRecovered() ? null : binding.getQualifiedName();
-		String simpleName= owner.getName().getIdentifier();
-		return simpleName.equals(selected) || qualifiedName != null && qualifiedName.equals(selected)
-				|| simpleName.equals(simpleName(selected));
+		String ownerSimpleName= owner.getName().getIdentifier();
+		return ownerSimpleName.equals(selected) || qualifiedName != null && qualifiedName.equals(selected)
+				|| ownerSimpleName.equals(simpleName(selected));
 	}
 
 	/**
 	 * Returns whether a type is a pure suite aggregator, optionally retaining a
-	 * harmless direct {@code TestCase} superclass and delegating constructors.
+	 * harmless direct {@code TestCase} superclass, delegating constructors and one
+	 * static initialization block. The block is migrated to one
+	 * {@code @BeforeSuite} method by the suite cleanup.
 	 */
 	public static boolean isPureSuiteAggregator(TypeDeclaration owner, MethodDeclaration suite) {
 		if (owner == null || suite == null || !(owner.getParent() instanceof CompilationUnit root)
 				|| root.types().size() != 1 || owner.isInterface() || owner.getFields().length != 0
-				|| owner.getTypes().length != 0 || !JUnit3SuiteModel.analyze(suite).supported()) {
+				|| owner.getTypes().length != 0 || !JUnit3SuiteModel.analyze(suite).supported()
+				|| !hasSupportedSuiteInitializer(owner)) {
 			return false;
 		}
 		if (owner.getSuperclassType() != null && !directlyExtendsTestCase(owner)) {
@@ -134,6 +139,18 @@ public final class JUnit3LegacyShape {
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Returns the single static initializer of a pure suite aggregator, or
+	 * {@code null} when none exists or the initializer shape is unsupported.
+	 */
+	public static Initializer suiteInitializer(TypeDeclaration owner) {
+		List<Initializer> initializers= initializers(owner);
+		if (initializers.size() != 1 || !Modifier.isStatic(initializers.get(0).getModifiers())) {
+			return null;
+		}
+		return initializers.get(0);
 	}
 
 	/**
@@ -158,12 +175,27 @@ public final class JUnit3LegacyShape {
 		return declaring != null && JUNIT3_TEST_CASE.equals(declaring.getErasure().getQualifiedName());
 	}
 
+	private static boolean hasSupportedSuiteInitializer(TypeDeclaration owner) {
+		List<Initializer> initializers= initializers(owner);
+		return initializers.size() <= 1
+				&& initializers.stream().allMatch(initializer -> Modifier.isStatic(initializer.getModifiers()));
+	}
+
+	private static List<Initializer> initializers(TypeDeclaration owner) {
+		if (owner == null) {
+			return List.of();
+		}
+		return owner.bodyDeclarations().stream()
+				.filter(Initializer.class::isInstance)
+				.map(Initializer.class::cast)
+				.toList();
+	}
+
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
 		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {
 			if (current instanceof MethodDeclaration method) {
 				return method;
 			}
-		}
 		return null;
 	}
 
