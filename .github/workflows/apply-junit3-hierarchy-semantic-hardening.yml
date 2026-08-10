@@ -1,0 +1,491 @@
+name: Apply JUnit 3 hierarchy semantic hardening
+
+on:
+  push:
+    branches:
+      - feature/junit3-hierarchy-semantic-hardening
+    paths:
+      - '.github/workflows/apply-junit3-hierarchy-semantic-hardening.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Apply fail-closed hierarchy and suite fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one exact replacement, found {count}')
+              file.write_text(text.replace(old, new), encoding='utf-8')
+
+          def regex_once(path: str, pattern: str, replacement: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding='utf-8')
+              updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one regex replacement, found {count}')
+              file.write_text(updated, encoding='utf-8')
+
+          migration = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyMigration.java'
+          replace_once(migration,
+              '\t\tBEFORE_EACH,\n\t\tAFTER_EACH\n',
+              '\t\tBEFORE_EACH,\n\t\tAFTER_EACH,\n\t\tREMOVE_COMPATIBILITY_MEMBER\n')
+
+          harness = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HarnessSemantics.java'
+          replace_once(harness,
+              'import org.eclipse.jdt.core.dom.Type;\n',
+              'import org.eclipse.jdt.core.dom.Type;\nimport org.eclipse.jdt.core.dom.TypeDeclaration;\n')
+          replace_once(harness,
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;\n',
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;\nimport org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;\n')
+          replace_once(harness,
+              '\tstatic Optional<Rejection> rejection(MethodDeclaration method) {\n\t\tObjects.requireNonNull(method);\n',
+              '\tstatic Optional<Rejection> rejection(MethodDeclaration method) {\n'
+              '\t\tTypeDeclaration owner= method != null && method.getParent() instanceof TypeDeclaration type ? type : null;\n'
+              '\t\treturn rejection(method, owner);\n'
+              '\t}\n\n'
+              '\tstatic Optional<Rejection> rejection(MethodDeclaration method, TypeDeclaration owner) {\n'
+              '\t\tObjects.requireNonNull(method);\n')
+          replace_once(harness,
+              '\t\tif (method.isConstructor()) {\n'
+              '\t\t\tif (isNamedTestConstructor(method)) {\n'
+              '\t\t\t\treturn Optional.of(new Rejection("NAMED_JUNIT3_TEST_CONSTRUCTION", //$NON-NLS-1$\n'
+              '\t\t\t\t\t\t"The hierarchy constructs named JUnit 3 test instances through a String constructor; preserving selected method identity requires an explicit framework migration.")); //$NON-NLS-1$\n'
+              '\t\t\t}\n'
+              '\t\t\treturn Optional.of(new Rejection("CUSTOM_JUNIT3_CONSTRUCTOR", //$NON-NLS-1$\n'
+              '\t\t\t\t\t"The hierarchy declares an explicit constructor whose instantiation contract is not represented by ordinary Jupiter test discovery.")); //$NON-NLS-1$\n'
+              '\t\t}\n',
+              '\t\tif (method.isConstructor()) {\n'
+              '\t\t\tif (JUnit3LegacyShape.isRemovableConstructor(method)) {\n'
+              '\t\t\t\treturn Optional.empty();\n'
+              '\t\t\t}\n'
+              '\t\t\tif (isNamedTestConstructor(method)) {\n'
+              '\t\t\t\treturn Optional.of(new Rejection("NAMED_JUNIT3_TEST_CONSTRUCTION", //$NON-NLS-1$\n'
+              '\t\t\t\t\t\t"The named JUnit 3 constructor contains behavior beyond direct super(name) delegation.")); //$NON-NLS-1$\n'
+              '\t\t\t}\n'
+              '\t\t\treturn Optional.of(new Rejection("CUSTOM_JUNIT3_CONSTRUCTOR", //$NON-NLS-1$\n'
+              '\t\t\t\t\t"The hierarchy declares an explicit constructor whose instantiation contract is not represented by ordinary Jupiter discovery.")); //$NON-NLS-1$\n'
+              '\t\t}\n')
+          replace_once(harness,
+              '\t\tif ("suite".equals(name) && isSuiteBuilder(method)) { //$NON-NLS-1$\n'
+              '\t\t\tJUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);\n',
+              '\t\tif ("suite".equals(name) && isSuiteBuilder(method)) { //$NON-NLS-1$\n'
+              '\t\t\tif (owner != null && JUnit3LegacyShape.isSelfSuite(method, owner)) {\n'
+              '\t\t\t\treturn Optional.empty();\n'
+              '\t\t\t}\n'
+              '\t\t\tJUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);\n')
+
+          planner = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyPlanner.java'
+          replace_once(planner,
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;\n',
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;\n'
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;\n'
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;\n')
+          replace_once(planner,
+              '\t\tMap<String, Integer> lifecycleDeclarations= new HashMap<>();\n', '')
+          replace_once(planner,
+              '\t\t\t\tJUnit3HarnessSemantics.Rejection harnessRejection=\n'
+              '\t\t\t\t\t\tJUnit3HarnessSemantics.rejection(method).orElse(null);\n',
+              '\t\t\t\tJUnit3HarnessSemantics.Rejection harnessRejection=\n'
+              '\t\t\t\t\t\tJUnit3HarnessSemantics.rejection(method, type.declaration()).orElse(null);\n')
+          replace_once(planner,
+              '\t\t\t\tString name= method.getName().getIdentifier();\n'
+              '\t\t\t\tString bindingKey= methodKey(method);\n'
+              '\t\t\t\tif (name.startsWith("test")) { //$NON-NLS-1$\n',
+              '\t\t\t\tString name= method.getName().getIdentifier();\n'
+              '\t\t\t\tString bindingKey= methodKey(method);\n'
+              '\t\t\t\tboolean removableCompatibilityMember= method.isConstructor()\n'
+              '\t\t\t\t\t\t&& JUnit3LegacyShape.isRemovableConstructor(method)\n'
+              '\t\t\t\t\t\t|| JUnit3SuiteModel.isSuiteBuilder(method)\n'
+              '\t\t\t\t\t\t\t\t&& JUnit3LegacyShape.isSelfSuite(method, type.declaration());\n'
+              '\t\t\t\tif (removableCompatibilityMember) {\n'
+              '\t\t\t\t\tif (bindingKey == null) {\n'
+              '\t\t\t\t\t\treturn Classification.rejected("UNRESOLVED_JUNIT3_COMPATIBILITY_MEMBER", //$NON-NLS-1$\n'
+              '\t\t\t\t\t\t\t\t"A proven compatibility constructor or self suite has no stable method binding."); //$NON-NLS-1$\n'
+              '\t\t\t\t\t}\n'
+              '\t\t\t\t\tmethods.add(new MethodMigration(bindingKey, MethodKind.REMOVE_COMPATIBILITY_MEMBER));\n'
+              '\t\t\t\t\tcontinue;\n'
+              '\t\t\t\t}\n'
+              '\t\t\t\tif (name.startsWith("test")) { //$NON-NLS-1$\n')
+          replace_once(planner,
+              '\t\t\t\t\tint count= lifecycleDeclarations.merge(name, Integer.valueOf(1), Integer::sum).intValue();\n'
+              '\t\t\t\t\tif (count > 1) {\n'
+              '\t\t\t\t\t\treturn Classification.rejected("JUNIT3_LIFECYCLE_OVERRIDE_CHAIN", //$NON-NLS-1$\n'
+              '\t\t\t\t\t\t\t\t"Lifecycle override chains require explicit semantic migration."); //$NON-NLS-1$\n'
+              '\t\t\t\t\t}\n', '')
+          regex_once(planner,
+              r'\tprivate static OverrideRemoval plannedOverrideRemoval\(MethodDeclaration method\) \{.*?\n\t\}\n\n\tprivate static boolean hasJUnitAnnotation',
+              '\tprivate static OverrideRemoval plannedOverrideRemoval(MethodDeclaration method) {\n'
+              '\t\tboolean overrideFound= false;\n'
+              '\t\tfor (Object modifier : method.modifiers()) {\n'
+              '\t\t\tif (!(modifier instanceof Annotation annotation)) {\n'
+              '\t\t\t\tcontinue;\n'
+              '\t\t\t}\n'
+              '\t\t\tITypeBinding binding= annotation.resolveTypeBinding();\n'
+              '\t\t\tString writtenName= annotation.getTypeName().getFullyQualifiedName();\n'
+              '\t\t\tif (binding != null && !binding.isRecovered()) {\n'
+              '\t\t\t\tif ("java.lang.Override".equals(binding.getQualifiedName())) { //$NON-NLS-1$\n'
+              '\t\t\t\t\toverrideFound= true;\n'
+              '\t\t\t\t}\n'
+              '\t\t\t\tcontinue;\n'
+              '\t\t\t}\n'
+              '\t\t\tif ("java.lang.Override".equals(writtenName)) { //$NON-NLS-1$\n'
+              '\t\t\t\toverrideFound= true;\n'
+              '\t\t\t} else if ("Override".equals(writtenName)) { //$NON-NLS-1$\n'
+              '\t\t\t\treturn OverrideRemoval.UNRESOLVED;\n'
+              '\t\t\t}\n'
+              '\t\t}\n'
+              '\t\tif (!overrideFound) {\n'
+              '\t\t\treturn OverrideRemoval.KEEP;\n'
+              '\t\t}\n'
+              '\t\tIMethodBinding binding= method.resolveBinding();\n'
+              '\t\tITypeBinding declaring= binding == null ? null : binding.getDeclaringClass();\n'
+              '\t\tString name= method.getName().getIdentifier();\n'
+              '\t\tfor (ITypeBinding current= declaring == null ? null : declaring.getSuperclass();\n'
+              '\t\t\t\tcurrent != null; current= current.getSuperclass()) {\n'
+              '\t\t\tfor (IMethodBinding candidate : current.getDeclaredMethods()) {\n'
+              '\t\t\t\tif (name.equals(candidate.getName()) && candidate.getParameterTypes().length == 0) {\n'
+              '\t\t\t\t\treturn JUNIT3_TEST_CASE.equals(current.getErasure().getQualifiedName())\n'
+              '\t\t\t\t\t\t\t? OverrideRemoval.REMOVE : OverrideRemoval.KEEP;\n'
+              '\t\t\t\t}\n'
+              '\t\t\t}\n'
+              '\t\t}\n'
+              '\t\treturn OverrideRemoval.UNRESOLVED;\n'
+              '\t}\n\n'
+              '\tprivate static boolean hasJUnitAnnotation')
+
+          hint = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint'
+          replace_once(hint,
+              '@id: junit3.planned.beforeEach\n'
+              'void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)\n'
+              '=>! addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")\n'
+              ';;\n',
+              '@id: junit3.planned.beforeEach.inheritedOverride\n'
+              'void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", false) && hasOverrideAnnotation($name)\n'
+              '=>! addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")\n'
+              ';;\n\n'
+              '@id: junit3.planned.beforeEach\n'
+              'void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)\n'
+              '=>! addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")\n'
+              ';;\n')
+          replace_once(hint,
+              '@id: junit3.planned.afterEach\n'
+              'void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)\n'
+              '=>! addAnnotation(annotation="org.junit.jupiter.api.AfterEach")\n'
+              ';;\n',
+              '@id: junit3.planned.afterEach.inheritedOverride\n'
+              'void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", false) && hasOverrideAnnotation($name)\n'
+              '=>! addAnnotation(annotation="org.junit.jupiter.api.AfterEach")\n'
+              ';;\n\n'
+              '@id: junit3.planned.afterEach\n'
+              'void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)\n'
+              '=>! addAnnotation(annotation="org.junit.jupiter.api.AfterEach")\n'
+              ';;\n')
+
+          plan = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java'
+          replace_once(plan,
+              'import org.eclipse.jdt.core.dom.FieldDeclaration;\n',
+              'import org.eclipse.jdt.core.dom.ExpressionStatement;\nimport org.eclipse.jdt.core.dom.FieldDeclaration;\n')
+          replace_once(plan,
+              'import org.eclipse.jdt.core.dom.MethodInvocation;\n',
+              'import org.eclipse.jdt.core.dom.MethodInvocation;\nimport org.eclipse.jdt.core.dom.SuperMethodInvocation;\n')
+          replace_once(plan,
+              'import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;\n',
+              'import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;\n'
+              'import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;\n')
+          replace_once(plan,
+              '\t\tSemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$\n',
+              '\t\tSet<MethodDeclaration> compatibilityDeclarations= new LinkedHashSet<>();\n'
+              '\t\tSet<ExpressionStatement> redundantLifecycleCalls= new LinkedHashSet<>();\n'
+              '\t\tfor (TypeMigration planned : plannedTypes) {\n'
+              '\t\t\tfor (MethodMigration method : planned.methods()) {\n'
+              '\t\t\t\tMethodDeclaration resolved= resolvedMethods.get(method.methodBindingKey());\n'
+              '\t\t\t\tif (method.kind() == MethodKind.REMOVE_COMPATIBILITY_MEMBER) {\n'
+              '\t\t\t\t\tcompatibilityDeclarations.add(resolved);\n'
+              '\t\t\t\t\tcontinue;\n'
+              '\t\t\t\t}\n'
+              '\t\t\t\tif (method.kind() == MethodKind.BEFORE_EACH || method.kind() == MethodKind.AFTER_EACH) {\n'
+              '\t\t\t\t\tresolved.accept(new ASTVisitor() {\n'
+              '\t\t\t\t\t\t@Override\n'
+              '\t\t\t\t\t\tpublic boolean visit(SuperMethodInvocation invocation) {\n'
+              '\t\t\t\t\t\t\tif (JUnit3LegacyShape.isRedundantLifecycleSuperCall(invocation)\n'
+              '\t\t\t\t\t\t\t\t\t&& invocation.getParent() instanceof ExpressionStatement statement) {\n'
+              '\t\t\t\t\t\t\t\tredundantLifecycleCalls.add(statement);\n'
+              '\t\t\t\t\t\t\t}\n'
+              '\t\t\t\t\t\t\treturn true;\n'
+              '\t\t\t\t\t\t}\n'
+              '\t\t\t\t\t});\n'
+              '\t\t\t\t}\n'
+              '\t\t\t}\n'
+              '\t\t}\n'
+              '\t\tif (!compatibilityDeclarations.isEmpty() || !redundantLifecycleCalls.isEmpty()) {\n'
+              '\t\t\toperations.add(new JUnit3CompatibilityRewriteOperation(compatibilityDeclarations,\n'
+              '\t\t\t\t\tredundantLifecycleCalls));\n'
+              '\t\t\tnodesProcessed.addAll(compatibilityDeclarations);\n'
+              '\t\t\tnodesProcessed.addAll(redundantLifecycleCalls);\n'
+              '\t\t}\n\n'
+              '\t\tSemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$\n')
+          replace_once(plan,
+              '\t\t\tfor (MethodMigration method : planned.methods()) {\n'
+              '\t\t\t\tNodeKey key= NodeKey.method(method.methodBindingKey());\n'
+              '\t\t\t\tplan.add(key, methodRole(method.kind()));\n',
+              '\t\t\tfor (MethodMigration method : planned.methods()) {\n'
+              '\t\t\t\tif (method.kind() == MethodKind.REMOVE_COMPATIBILITY_MEMBER) {\n'
+              '\t\t\t\t\tcontinue;\n'
+              '\t\t\t\t}\n'
+              '\t\t\t\tNodeKey key= NodeKey.method(method.methodBindingKey());\n'
+              '\t\t\t\tplan.add(key, methodRole(method.kind()));\n')
+          replace_once(plan,
+              '\t\tcase AFTER_EACH -> ROLE_AFTER_EACH;\n',
+              '\t\tcase AFTER_EACH -> ROLE_AFTER_EACH;\n'
+              '\t\tcase REMOVE_COMPATIBILITY_MEMBER -> throw new IllegalArgumentException(\n'
+              '\t\t\t\t"Compatibility members are removed by a dedicated planned AST operation."); //$NON-NLS-1$\n')
+
+          legacy = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/lib/JUnit3LegacyShape.java'
+          regex_once(legacy,
+              r'\tpublic static boolean isSelfSuite\(MethodDeclaration method, TypeDeclaration owner\) \{.*?\n\t\}\n\n\t/\*\*\n\t \* Returns whether a type is a pure suite aggregator',
+              '\tpublic static boolean isSelfSuite(MethodDeclaration method, TypeDeclaration owner) {\n'
+              '\t\tif (method == null || owner == null) {\n'
+              '\t\t\treturn false;\n'
+              '\t\t}\n'
+              '\t\tJUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);\n'
+              '\t\tITypeBinding binding= owner.resolveBinding();\n'
+              '\t\treturn model.supported() && model.selectedTypes().size() == 1\n'
+              '\t\t\t\t&& binding != null && !binding.isRecovered()\n'
+              '\t\t\t\t&& binding.getErasure().getQualifiedName().equals(model.selectedTypes().get(0));\n'
+              '\t}\n\n'
+              '\t/**\n\t * Returns whether a type is a pure suite aggregator')
+          regex_once(legacy,
+              r'\n\t/\*\*\n\t \* Returns the single static initializer.*?\n\t\}\n\n\t/\*\*\n\t \* Returns whether an invocation is a redundant',
+              '\n\t/**\n\t * Returns whether an invocation is a redundant')
+          replace_once(legacy,
+              '\tprivate static boolean hasSupportedSuiteInitializer(TypeDeclaration owner) {\n'
+              '\t\tList<Initializer> initializers= initializers(owner);\n'
+              '\t\treturn initializers.size() <= 1\n'
+              '\t\t\t\t&& initializers.stream().allMatch(initializer -> Modifier.isStatic(initializer.getModifiers()));\n'
+              '\t}\n',
+              '\tprivate static boolean hasSupportedSuiteInitializer(TypeDeclaration owner) {\n'
+              '\t\treturn initializers(owner).stream()\n'
+              '\t\t\t\t.allMatch(initializer -> Modifier.isStatic(initializer.getModifiers()));\n'
+              '\t}\n')
+
+          suite_model = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/lib/JUnit3SuiteModel.java'
+          replace_once(suite_model,
+              'import org.eclipse.jdt.core.dom.ITypeBinding;\n',
+              'import org.eclipse.jdt.core.dom.IMethodBinding;\nimport org.eclipse.jdt.core.dom.ITypeBinding;\n')
+          replace_once(suite_model,
+              '\t\tif (argument instanceof MethodInvocation nested && "suite".equals(nested.getName().getIdentifier()) //$NON-NLS-1$\n'
+              '\t\t\t\t&& nested.arguments().isEmpty() && nested.getExpression() instanceof Name qualifier) {\n'
+              '\t\t\t// A nested aggregator stays selectable by class; the platform resolves it\n'
+              '\t\t\t// through its own @Suite or through the vintage engine.\n'
+              '\t\t\tselected.add(qualifier.getFullyQualifiedName());\n'
+              '\t\t\treturn null;\n'
+              '\t\t}\n',
+              '\t\tif (argument instanceof MethodInvocation nested && "suite".equals(nested.getName().getIdentifier()) //$NON-NLS-1$\n'
+              '\t\t\t\t&& nested.arguments().isEmpty() && nested.getExpression() instanceof Name qualifier) {\n'
+              '\t\t\tIMethodBinding binding= nested.resolveMethodBinding();\n'
+              '\t\t\tITypeBinding declaring= binding == null ? null : binding.getDeclaringClass();\n'
+              '\t\t\tselected.add(declaring != null && !declaring.isRecovered()\n'
+              '\t\t\t\t\t? declaring.getErasure().getQualifiedName() : qualifier.getFullyQualifiedName());\n'
+              '\t\t\treturn null;\n'
+              '\t\t}\n')
+          replace_once(suite_model,
+              '\t\tselected.add(literal.getType().toString());\n',
+              '\t\tITypeBinding binding= literal.getType().resolveBinding();\n'
+              '\t\tselected.add(binding != null && !binding.isRecovered()\n'
+              '\t\t\t\t? binding.getErasure().getQualifiedName() : literal.getType().toString());\n')
+
+          suite = 'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/SuiteMethodJUnitPlugin.java'
+          for unused in (
+              'import org.eclipse.jdt.core.dom.Block;\n',
+              'import org.eclipse.jdt.core.dom.Initializer;\n',
+              'import org.eclipse.jdt.core.dom.Modifier;\n',
+              'import org.eclipse.jdt.core.dom.PrimitiveType;\n',
+          ):
+              replace_once(suite, unused, '')
+          regex_once(suite,
+              r'\n\tprivate static final String ANNOTATION_BEFORE_SUITE=.*?BEFORE_SUITE_METHOD= "beforeSuite"; //\$NON-NLS-1\$\n', '')
+          replace_once(suite,
+              '\t\t\t\tInitializer initializer= JUnit3LegacyShape.suiteInitializer(node);\n'
+              '\t\t\t\tif (initializer != null) {\n'
+              '\t\t\t\t\tnodesprocessed.add(initializer);\n'
+              '\t\t\t\t}\n', '')
+          replace_once(suite,
+              '\t\tmigrateSuiteInitializer(type, rewriter, ast, importRewriter, group);\n\n', '')
+          replace_once(suite,
+              '\t\t\tselectClasses.setValue(newTypeLiteral(ast, String.valueOf(selectedTypes.get(0))));\n',
+              '\t\t\tselectClasses.setValue(newTypeLiteral(ast, importRewriter, String.valueOf(selectedTypes.get(0))));\n')
+          replace_once(suite,
+              '\t\t\t\taddExpression(initializer, newTypeLiteral(ast, String.valueOf(selected)));\n',
+              '\t\t\t\taddExpression(initializer, newTypeLiteral(ast, importRewriter, String.valueOf(selected)));\n')
+          regex_once(suite,
+              r'\n\tprivate static void migrateSuiteInitializer\(.*?\n\t@SuppressWarnings\("unchecked"\)\n\tprivate static void addExpression',
+              '\n\t@SuppressWarnings("unchecked")\n\tprivate static void addExpression')
+          replace_once(suite,
+              '\tprivate static TypeLiteral newTypeLiteral(AST ast, String typeName) {\n'
+              '\t\tTypeLiteral literal= ast.newTypeLiteral();\n'
+              '\t\tliteral.setType(ast.newSimpleType(ast.newName(typeName)));\n'
+              '\t\treturn literal;\n'
+              '\t}\n',
+              '\tprivate static TypeLiteral newTypeLiteral(AST ast, ImportRewrite imports, String typeName) {\n'
+              '\t\tTypeLiteral literal= ast.newTypeLiteral();\n'
+              '\t\tliteral.setType(ast.newSimpleType(ast.newName(imports.addImport(typeName))));\n'
+              '\t\treturn literal;\n'
+              '\t}\n')
+          replace_once(suite,
+              '\t\t\t\t\tpublic class AllTests {\n'
+              '\t\t\t\t\t\t@BeforeSuite\n'
+              '\t\t\t\t\t\tstatic void beforeSuite() {\n'
+              '\t\t\t\t\t\t\tSystem.setProperty("modules", "java.base");\n'
+              '\t\t\t\t\t\t}\n'
+              '\t\t\t\t\t}\n',
+              '\t\t\t\t\tpublic class AllTests {\n'
+              '\t\t\t\t\t\tstatic {\n'
+              '\t\t\t\t\t\t\tSystem.setProperty("modules", "java.base");\n'
+              '\t\t\t\t\t\t}\n'
+              '\t\t\t\t\t}\n')
+
+          test = 'sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationJUnit3RealWorldShapesTest.java'
+          replace_once(test,
+              '\t\t\t\t\t\timport org.junit.platform.suite.api.BeforeSuite;\n', '')
+          replace_once(test,
+              '\t\t\t\t\t\tpublic class TestAll {\n'
+              '\t\t\t\t\t\t\t@BeforeSuite\n'
+              '\t\t\t\t\t\t\tstatic void beforeSuite() {\n'
+              '\t\t\t\t\t\t\t\tSystem.setProperty("modules", "java.base");\n'
+              '\t\t\t\t\t\t\t}\n'
+              '\t\t\t\t\t\t}\n',
+              '\t\t\t\t\t\tpublic class TestAll {\n'
+              '\t\t\t\t\t\t\tstatic {\n'
+              '\t\t\t\t\t\t\t\tSystem.setProperty("modules", "java.base");\n'
+              '\t\t\t\t\t\t\t}\n'
+              '\t\t\t\t\t\t}\n')
+          regex_once(test,
+              r'\n\t@Test\n\tpublic void rejectsMultipleSuiteInitializersInsteadOfReorderingThem\(\) throws CoreException \{.*?\n\t\}\n\n\tprivate void enableRealWorldJUnit3Migration',
+              '\n\t@Test\n'
+              '\tpublic void rejectsInstanceInitializerInsteadOfChangingConstructionTiming() throws CoreException {\n'
+              '\t\tIPackageFragment pack= root.createPackageFragment("unsafe", true, null); //$NON-NLS-1$\n'
+              '\t\tICompilationUnit unit= pack.createCompilationUnit("InstanceInitializer.java", //$NON-NLS-1$\n'
+              '\t\t\t\t"""\n'
+              '\t\t\t\tpackage unsafe;\n\n'
+              '\t\t\t\timport junit.framework.Test;\n'
+              '\t\t\t\timport junit.framework.TestSuite;\n\n'
+              '\t\t\t\tpublic class InstanceInitializer {\n'
+              '\t\t\t\t\t{\n'
+              '\t\t\t\t\t\tSystem.setProperty("instance", "true");\n'
+              '\t\t\t\t\t}\n\n'
+              '\t\t\t\t\tpublic static Test suite() {\n'
+              '\t\t\t\t\t\treturn new TestSuite(StatefulConstructionTest.class);\n'
+              '\t\t\t\t\t}\n'
+              '\t\t\t\t}\n'
+              '\t\t\t\t""", false, null); //$NON-NLS-1$\n\n'
+              '\t\tenableRealWorldJUnit3Migration();\n\n'
+              '\t\tcontext.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });\n'
+              '\t}\n\n'
+              '\tprivate void enableRealWorldJUnit3Migration')
+
+          corpus = Path('qa/upstream-jdt/expected-corpus.json')
+          data = json.loads(corpus.read_text(encoding='utf-8'))
+          test_all = data['requiredFiles']['org.eclipse.jdt.apt.tests/src/org/eclipse/jdt/apt/tests/TestAll.java']
+          test_all['mustContain'] = [item for item in test_all['mustContain']
+              if item not in ('import org.junit.platform.suite.api.BeforeSuite;', '@BeforeSuite', 'static void beforeSuite()')]
+          if 'static {' not in test_all['mustContain']:
+              test_all['mustContain'].insert(3, 'static {')
+          test_all['mustNotContain'] = [item for item in test_all['mustNotContain'] if item != 'static {']
+          test_all['mustNotContain'].extend(['@BeforeSuite', 'static void beforeSuite()'])
+          corpus.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+
+          planner_test = Path('sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyPlannerTest.java')
+          text = planner_test.read_text(encoding='utf-8')
+          marker = '\n\n\t@Test\n\tpublic void leavesStandaloneLeafToLocalFailClosedCleanup()'
+          addition = '''
+
+	@Test
+	public void plansDelegatingConstructorsAndLifecycleOverrideChains() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("chain", true, null); //$NON-NLS-1$
+		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
+				"""
+				package chain;
+				import junit.framework.TestCase;
+
+				public abstract class BaseTest extends TestCase {
+					public BaseTest(String name) {
+						super(name);
+					}
+
+					@Override
+					protected void setUp() throws Exception {
+						super.setUp();
+					}
+
+					public void testInherited() {
+					}
+				}
+				""", false, null);
+		ICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", //$NON-NLS-1$
+				"""
+				package chain;
+
+				public class ConcreteTest extends BaseTest {
+					public ConcreteTest(String name) {
+						super(name);
+					}
+
+					@Override
+					protected void setUp() throws Exception {
+						super.setUp();
+					}
+
+					public void testLocal() {
+					}
+				}
+				""", false, null);
+
+		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= JUnitMultiFilePlanner.createCoordinated(
+				context.getJavaProject(), new ICompilationUnit[] { base, concrete }, false, true, true, null);
+
+		assertFalse(result.status().hasFatalError());
+		assertEquals(1, result.plan().junit3Hierarchies().size());
+		List<MethodMigration> methods= result.plan().junit3Hierarchies().get(0).types().stream()
+				.flatMap(type -> type.methods().stream()).toList();
+		assertEquals(2, methods.stream()
+				.filter(method -> method.kind() == MethodKind.REMOVE_COMPATIBILITY_MEMBER).count());
+		List<MethodMigration> lifecycle= methods.stream()
+				.filter(method -> method.kind() == MethodKind.BEFORE_EACH).toList();
+		assertEquals(2, lifecycle.size());
+		assertTrue(lifecycle.stream().anyMatch(MethodMigration::removeOverride));
+		assertTrue(lifecycle.stream().anyMatch(method -> !method.removeOverride()));
+		assertEquals(MultiFileCandidateOutcome.TRANSFORMED,
+				result.diagnostics().candidates().get(0).outcome());
+	}
+'''
+          if marker not in text:
+              raise SystemExit('planner test insertion marker not found')
+          planner_test.write_text(text.replace(marker, addition + marker), encoding='utf-8')
+
+          Path('.github/workflows/apply-junit3-hierarchy-semantic-hardening.yml').unlink()
+          PY
+
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Complete JUnit 3 hierarchy semantic hardening'
+          git push origin HEAD:feature/junit3-hierarchy-semantic-hardening
