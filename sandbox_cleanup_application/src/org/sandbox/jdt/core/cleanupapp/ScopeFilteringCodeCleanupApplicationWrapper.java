@@ -223,34 +223,33 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 		if (!root.exists()) {
 			return List.of(value);
 		}
+		Path inputPath= root.toPath();
+		Path classificationRoot= root.isDirectory()
+				? inputPath
+				: inputPath.toAbsolutePath().normalize().getParent();
+		CleanupSourceSetClassifier classifier= CleanupSourceSetClassifier.create(
+				classificationRoot == null ? inputPath : classificationRoot);
 		if (root.isFile()) {
-			if (!Util.isJavaLikeFileName(root.getPath()) || accepts(root.toPath(), scope)) {
+			if (!Util.isJavaLikeFileName(root.getPath()) || accepts(classifier, inputPath, scope)) {
 				return List.of(value);
 			}
 			return List.of();
 		}
 
-		try (Stream<Path> paths= Files.walk(root.toPath())) {
+		try (Stream<Path> paths= Files.walk(inputPath)) {
 			return paths
 					.filter(Files::isRegularFile)
 					.filter(path -> Util.isJavaLikeFileName(path.toString()))
-					.filter(path -> accepts(path, scope))
+					.filter(path -> accepts(classifier, path, scope))
 					.map(path -> path.toFile().getPath())
 					.sorted()
 					.toList();
 		}
 	}
 
-	private static boolean accepts(Path path, RequestedScope scope) {
-		boolean testPath= false;
-		for (Path segment : path.toAbsolutePath().normalize()) {
-			String name= segment.toString();
-			if ("test".equals(name) || "tests".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
-				testPath= true;
-				break;
-			}
-		}
-		return scope == RequestedScope.TEST ? testPath : !testPath;
+	private static boolean accepts(CleanupSourceSetClassifier classifier, Path path, RequestedScope scope) {
+		boolean testSource= classifier.isTestSource(path);
+		return scope == RequestedScope.TEST ? testSource : !testSource;
 	}
 
 	private static RequestedScope requestedScope(String[] arguments) {

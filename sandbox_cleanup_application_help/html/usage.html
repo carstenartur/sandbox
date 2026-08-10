@@ -84,7 +84,7 @@ esac</pre>
    <ul>
       <li><code>--config &lt;file&gt;</code>: required Java properties file containing Eclipse cleanup option keys.</li>
       <li><code>--source &lt;path&gt;</code>: adds another source file or directory; positional paths are also accepted.</li>
-      <li><code>--scope main|test|both</code>: filters paths by exact directory segments named <code>test</code> or <code>tests</code>.</li>
+      <li><code>--scope main|test|both</code>: selects conventional <code>src/test</code>, <code>src/tests</code>, or explicit <code>test</code>/<code>tests</code> roots; project-relative classification ignores workspace ancestors and package names.</li>
       <li><code>--patch &lt;file&gt;</code>: writes the collected unified diff when check/diff finds changes.</li>
       <li><code>--report &lt;file&gt;</code>: writes JSON evidence including mode, scope, timing, processed/changed files, <code>errorCount</code>, and <code>errors</code>.</li>
       <li><code>--verbose</code>: prints each processed file and generated output path.</li>

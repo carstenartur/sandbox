@@ -51,7 +51,7 @@ eclipse -nosplash \
 | `-config`, `--config <file>` | Required Java properties file with Eclipse cleanup option keys |
 | `--import-project <dir>` | Imports one checked-out Eclipse project into the selected workspace |
 | `--source <path>` | Adds a source file or directory; positional paths are also accepted |
-| `--scope main\|test\|both` | Selects Java paths by exact directory segments named `test` or `tests`; default `both` |
+| `--scope main\|test\|both` | Selects conventional source sets (`src/test`, `src/tests`, or explicit `test`/`tests` roots); default `both` |
 | `--patch <file>` | Writes collected diff output for changed files |
 | `--report <file>` | Writes JSON execution evidence |
 | `-quiet`, `--quiet` | Suppresses progress/diff output, not errors |
@@ -62,10 +62,10 @@ eclipse -nosplash \
 
 ### Scope behavior
 
-For `main` and `test`, the public application wrapper expands directory roots into a deterministic sorted list of concrete Java files before cleanup begins. This makes a project root, `src`, `src/test`, and individual source files obey the same rule:
+For `main` and `test`, the public application wrapper expands directory roots into a deterministic sorted list of concrete Java files before cleanup begins. When an Eclipse `.project` ancestor is available, classification is relative to that project root; unrelated workspace ancestors and Java package names therefore cannot change the source set.
 
-- `main`: no exact `test`/`tests` path segment;
-- `test`: at least one exact `test`/`tests` path segment;
+- `main`: `src/main` and Java paths without a conventional test-source marker;
+- `test`: `src/test`, `src/tests`, top-level project `test`/`tests` directories, and explicit roots named `test`/`tests`;
 - `both`: caller inputs are left unchanged.
 
 A valid scoped directory with no matching Java files is a successful zero-file run.
@@ -142,7 +142,7 @@ Archive the JSON report and stderr when diagnosing CI failures.
 - Keep source under version control and start with `check` or `diff`.
 - A file outside the workspace is an error, not a successful skip.
 - Cleanup behavior depends on resolved Eclipse projects, classpaths, bindings, and installed cleanup bundles.
-- The scope filter recognizes conventional directories named exactly `test` or `tests`; use explicit roots with `both` for custom source sets.
+- The scope filter recognizes conventional `src/test`, `src/tests`, and explicit `test`/`tests` roots; use explicit roots with `both` for custom source sets.
 - The generated diff is review evidence, not a rename- or binary-aware replacement for Git diff.
 - Patch/report write failures and source restoration failures produce exit `1`.
 

@@ -65,6 +65,34 @@ class ScopeFilteringCodeCleanupApplicationWrapperTest {
 	}
 
 	@Test
+	void ancestorDirectoryNamedTestDoesNotReclassifyMainSources() throws Exception {
+		Path project= createProject(temporaryDirectory.resolve("test/workspace/example-project")); //$NON-NLS-1$
+
+		String[] filtered= ScopeFilteringCodeCleanupApplicationWrapper.filterArgumentsForScope(
+				new String[] { "--scope", "main", "--config", "cleanup.properties", project.toString() }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+
+		assertContains(filtered, project.resolve("src/main/java/Example.java")); //$NON-NLS-1$
+		assertNotContains(filtered, project.resolve("src/test/java/ExampleTest.java")); //$NON-NLS-1$
+	}
+
+	@Test
+	void packageDirectoryNamedTestUnderMainRemainsMainSource() throws Exception {
+		Path project= createProject();
+		Path mainPackageSource= project.resolve("src/main/java/org/example/test/Helper.java"); //$NON-NLS-1$
+		Files.createDirectories(mainPackageSource.getParent());
+		Files.writeString(mainPackageSource, "package org.example.test; class Helper {}", //$NON-NLS-1$
+				StandardCharsets.UTF_8);
+
+		String[] main= ScopeFilteringCodeCleanupApplicationWrapper.filterArgumentsForScope(
+				new String[] { "--scope", "main", "--config", "cleanup.properties", project.toString() }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		String[] tests= ScopeFilteringCodeCleanupApplicationWrapper.filterArgumentsForScope(
+				new String[] { "--scope", "test", "--config", "cleanup.properties", project.toString() }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+
+		assertContains(main, mainPackageSource);
+		assertNotContains(tests, mainPackageSource);
+	}
+
+	@Test
 	void bothScopeLeavesCallerArgumentsUntouched() throws Exception {
 		String[] arguments= { "--scope", "both", "--config", "cleanup.properties", "project" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 
@@ -73,7 +101,10 @@ class ScopeFilteringCodeCleanupApplicationWrapperTest {
 	}
 
 	private Path createProject() throws Exception {
-		Path project= temporaryDirectory.resolve("example-project"); //$NON-NLS-1$
+		return createProject(temporaryDirectory.resolve("example-project")); //$NON-NLS-1$
+	}
+
+	private static Path createProject(Path project) throws Exception {
 		Files.createDirectories(project.resolve("src/main/java")); //$NON-NLS-1$
 		Files.createDirectories(project.resolve("src/test/java")); //$NON-NLS-1$
 		Files.writeString(project.resolve(".project"), "<projectDescription/>", StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$

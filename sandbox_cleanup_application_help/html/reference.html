@@ -37,11 +37,14 @@
       explicit project roots and explicit source subdirectories consistent.</p>
    <ul>
       <li><code>both</code> leaves caller inputs unchanged.</li>
-      <li><code>main</code> includes Java paths without an exact <code>test</code> or <code>tests</code> directory segment.</li>
-      <li><code>test</code> includes Java paths with such a directory segment, including nested <code>src/test/java</code> trees.</li>
+      <li><code>main</code> includes <code>src/main</code> and paths without a conventional test-source marker.</li>
+      <li><code>test</code> includes <code>src/test</code>, <code>src/tests</code>, top-level project <code>test</code>/<code>tests</code> directories, and explicit roots with those names.</li>
    </ul>
-   <p>If a valid scoped directory contains no matching Java files, the run is a
-      successful zero-file run rather than a command-line error.</p>
+   <p>When an Eclipse <code>.project</code> ancestor is available, classification
+      is relative to that project root. A workspace ancestor or Java package named
+      <code>test</code> therefore does not reclassify main sources. If a valid scoped
+      directory contains no matching Java files, the run is a successful zero-file
+      run rather than a command-line error.</p>
 
    <h2>JSON evidence</h2>
    <p>The report contains tool/version, mode, scope, timestamps, duration,
@@ -52,7 +55,7 @@
    <h2>Known limitations</h2>
    <ul>
       <li>Cleanup keys must match the installed Eclipse/JDT and Sandbox cleanup bundles.</li>
-      <li>The scope filter recognizes exact directory names <code>test</code> and <code>tests</code>; pass custom source-set roots explicitly with scope <code>both</code>.</li>
+      <li>The scope filter recognizes conventional <code>src/test</code>, <code>src/tests</code>, and explicit <code>test</code>/<code>tests</code> roots; pass custom source sets explicitly with scope <code>both</code>.</li>
       <li>The generated unified diff is review evidence, not a replacement for Git's rename- and binary-aware diff model.</li>
       <li>The feature has no interactive UI and therefore no SWTBot screenshot.</li>
    </ul>
