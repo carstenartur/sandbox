@@ -80,8 +80,9 @@ class ScopeFilteringCodeCleanupApplicationWrapperTest {
 	@Test
 	void packageDirectoryNamedTestUnderMainRemainsMainSource() throws Exception {
 		Path project= createProject();
-		Path mainPackageSource= project.resolve("src/main/java/org/example/test/Helper.java"); //$NON-NLS-1$
-		Files.createDirectories(mainPackageSource.getParent());
+		Path mainPackageDirectory= project.resolve("src/main/java/org/example/test"); //$NON-NLS-1$
+		Path mainPackageSource= mainPackageDirectory.resolve("Helper.java"); //$NON-NLS-1$
+		Files.createDirectories(mainPackageDirectory);
 		Files.writeString(mainPackageSource, "package org.example.test; class Helper {}", //$NON-NLS-1$
 				StandardCharsets.UTF_8);
 
