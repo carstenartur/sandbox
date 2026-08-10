@@ -379,7 +379,7 @@ def validate_application(root: Path) -> None:
         'case "--project-location"',
         "IMultiFileCleanUpDiagnosticsProvider",
         "restore(sources, monitor, errors)",
-        'report.put',
+        "writeReport(arguments.report()",
     ):
         if required not in source:
             fail(f"Project-wide application is missing contract fragment: {required}")
