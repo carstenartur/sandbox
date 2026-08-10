@@ -419,6 +419,7 @@ public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 			if (current == ancestor) {
 				return true;
 			}
+		}
 		return false;
 	}
 
