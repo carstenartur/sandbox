@@ -90,6 +90,45 @@ def remaining_legacy_files(repository: Path, project: str) -> list[str]:
     return result
 
 
+def observed_test_order(source: str) -> dict[str, int]:
+    matches = re.findall(
+        r"@Order\s*\(\s*(\d+)\s*\)\s*@Test\s+public\s+void\s+(test\w+)\s*\(",
+        source,
+        flags=re.DOTALL,
+    )
+    result: dict[str, int] = {}
+    used_orders: set[int] = set()
+    for raw_order, method in matches:
+        order = int(raw_order)
+        if method in result:
+            fail(f"Migrated source declares duplicate @Order evidence for {method}")
+        if order in used_orders:
+            fail(f"Migrated source reuses @Order({order})")
+        result[method] = order
+        used_orders.add(order)
+    return result
+
+
+def junit3_suite_selection(source: str) -> list[str]:
+    pattern = re.compile(
+        r"suite\.addTestSuite\(\s*([\w.$]+)\.class\s*\)"
+        r"|suite\.addTest\(\s*new\s+TestSuite\(\s*([\w.$]+)\.class\s*\)\s*\)"
+        r"|suite\.addTest\(\s*([\w.$]+)\.suite\(\s*\)\s*\)",
+        flags=re.DOTALL,
+    )
+    selected: list[str] = []
+    for match in pattern.finditer(source):
+        selected.append(next(group for group in match.groups() if group is not None))
+    return selected
+
+
+def platform_suite_selection(source: str) -> list[str]:
+    match = re.search(r"@SelectClasses\s*\(\s*(.*?)\s*\)\s*(?:public\s+)?class\s+", source, re.DOTALL)
+    if match is None:
+        return []
+    return re.findall(r"([\w.$]+)\.class", match.group(1))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repository", required=True, type=Path)
@@ -98,6 +137,8 @@ def main() -> int:
     parser.add_argument("--changed-files", required=True, type=Path)
     parser.add_argument("--check-report", required=True, type=Path)
     parser.add_argument("--apply-report", required=True, type=Path)
+    parser.add_argument("--baseline-corpus", required=True, type=Path)
+    parser.add_argument("--migrated-corpus", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
@@ -151,6 +192,8 @@ def main() -> int:
         if not isinstance(relative, str) or not isinstance(raw_rules, dict):
             fail("Invalid requiredFiles entry")
         source = repository / relative
+        baseline_source = args.baseline_corpus / relative
+        migrated_source = args.migrated_corpus / relative
         result: dict[str, object] = {
             "changed": relative in changed,
             "exists": source.is_file(),
@@ -163,7 +206,17 @@ def main() -> int:
             problems.append(f"Required real corpus file is missing: {relative}")
             file_results[relative] = result
             continue
+        if not baseline_source.is_file() or not migrated_source.is_file():
+            problems.append(f"Baseline or migrated source evidence is missing for {relative}")
+            file_results[relative] = result
+            continue
+
         text = source.read_text(encoding="utf-8", errors="strict")
+        baseline_text = baseline_source.read_text(encoding="utf-8", errors="strict")
+        migrated_text = migrated_source.read_text(encoding="utf-8", errors="strict")
+        if text != migrated_text:
+            problems.append(f"Migrated source snapshot differs from the applied checkout for {relative}")
+
         must_contain = raw_rules.get("mustContain", [])
         must_not_contain = raw_rules.get("mustNotContain", [])
         if not isinstance(must_contain, list) or not isinstance(must_not_contain, list):
@@ -184,6 +237,36 @@ def main() -> int:
             problems.append(f"{relative} lacks required migrated text: {missing}")
         if remaining:
             problems.append(f"{relative} retains forbidden JUnit 3 text: {remaining}")
+
+        expected_order = raw_rules.get("expectedTestOrder")
+        if expected_order is not None:
+            if not isinstance(expected_order, dict) or any(
+                not isinstance(name, str) or not isinstance(order, int)
+                for name, order in expected_order.items()
+            ):
+                fail(f"Invalid expectedTestOrder for {relative}")
+            actual_order = observed_test_order(text)
+            normalized_expected = {str(name): int(order) for name, order in expected_order.items()}
+            result["expectedTestOrder"] = normalized_expected
+            result["observedTestOrder"] = actual_order
+            if actual_order != normalized_expected:
+                problems.append(
+                    f"{relative} has JUnit method order {actual_order}, expected {normalized_expected}"
+                )
+
+        if raw_rules.get("compareSuiteSelectionOrder") is True:
+            baseline_selection = junit3_suite_selection(baseline_text)
+            migrated_selection = platform_suite_selection(migrated_text)
+            result["baselineSuiteSelection"] = baseline_selection
+            result["migratedSuiteSelection"] = migrated_selection
+            if not baseline_selection:
+                problems.append(f"No JUnit 3 suite selection was extracted from {relative}")
+            if baseline_selection != migrated_selection:
+                problems.append(
+                    f"{relative} changed suite selection order: "
+                    f"baseline={baseline_selection}, migrated={migrated_selection}"
+                )
+
         file_results[relative] = result
 
     remaining = remaining_legacy_files(repository, args.project)
