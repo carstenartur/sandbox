@@ -32,6 +32,11 @@ void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue
     addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")
 ;;
 
+@id: junit3.planned.beforeEach.inheritedOverride
+void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", false) && hasOverrideAnnotation($name)
+=>! addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")
+;;
+
 @id: junit3.planned.beforeEach
 void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue($name, "removeOverride", false) && !hasOverrideAnnotation($name)
 =>! addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")
@@ -41,6 +46,11 @@ void $name($params$) :: plannedRole($name, "JUNIT3_BEFORE_EACH") && plannedValue
 void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", true) && hasOverrideAnnotation($name)
 =>! removeAnnotation(annotation="java.lang.Override");
     addAnnotation(annotation="org.junit.jupiter.api.AfterEach")
+;;
+
+@id: junit3.planned.afterEach.inheritedOverride
+void $name($params$) :: plannedRole($name, "JUNIT3_AFTER_EACH") && plannedValue($name, "removeOverride", false) && hasOverrideAnnotation($name)
+=>! addAnnotation(annotation="org.junit.jupiter.api.AfterEach")
 ;;
 
 @id: junit3.planned.afterEach

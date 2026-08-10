@@ -19,7 +19,9 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
 
 /**
@@ -50,18 +52,29 @@ final class JUnit3HarnessSemantics {
 	 * @return a precise rejection, or empty for an ordinary test/helper method
 	 */
 	static Optional<Rejection> rejection(MethodDeclaration method) {
+		TypeDeclaration owner= method != null && method.getParent() instanceof TypeDeclaration type ? type : null;
+		return rejection(method, owner);
+	}
+
+	static Optional<Rejection> rejection(MethodDeclaration method, TypeDeclaration owner) {
 		Objects.requireNonNull(method);
 		if (method.isConstructor()) {
+			if (JUnit3LegacyShape.isRemovableConstructor(method)) {
+				return Optional.empty();
+			}
 			if (isNamedTestConstructor(method)) {
 				return Optional.of(new Rejection("NAMED_JUNIT3_TEST_CONSTRUCTION", //$NON-NLS-1$
-						"The hierarchy constructs named JUnit 3 test instances through a String constructor; preserving selected method identity requires an explicit framework migration.")); //$NON-NLS-1$
+						"The named JUnit 3 constructor contains behavior beyond direct super(name) delegation.")); //$NON-NLS-1$
 			}
 			return Optional.of(new Rejection("CUSTOM_JUNIT3_CONSTRUCTOR", //$NON-NLS-1$
-					"The hierarchy declares an explicit constructor whose instantiation contract is not represented by ordinary Jupiter test discovery.")); //$NON-NLS-1$
+					"The hierarchy declares an explicit constructor whose instantiation contract is not represented by ordinary Jupiter discovery.")); //$NON-NLS-1$
 		}
 
 		String name= method.getName().getIdentifier();
 		if ("suite".equals(name) && isSuiteBuilder(method)) { //$NON-NLS-1$
+			if (owner != null && JUnit3LegacyShape.isSelfSuite(method, owner)) {
+				return Optional.empty();
+			}
 			JUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);
 			if (model.supported()) {
 				return Optional.of(new Rejection("MODELLED_JUNIT3_SUITE_BUILDER", //$NON-NLS-1$

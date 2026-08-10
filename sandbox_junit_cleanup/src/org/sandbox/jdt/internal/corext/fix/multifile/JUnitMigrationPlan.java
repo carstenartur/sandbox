@@ -37,17 +37,20 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationKind;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.InvocationMigration;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
@@ -185,6 +188,36 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 					resolvedTypes.keySet(), resolvedMethods.keySet(), resolvedInvocations.keySet());
 		}
 
+		Set<MethodDeclaration> compatibilityDeclarations= new LinkedHashSet<>();
+		Set<ExpressionStatement> redundantLifecycleCalls= new LinkedHashSet<>();
+		for (TypeMigration planned : plannedTypes) {
+			for (MethodMigration method : planned.methods()) {
+				MethodDeclaration resolved= resolvedMethods.get(method.methodBindingKey());
+				if (method.kind() == MethodKind.REMOVE_COMPATIBILITY_MEMBER) {
+					compatibilityDeclarations.add(resolved);
+					continue;
+				}
+				if (method.kind() == MethodKind.BEFORE_EACH || method.kind() == MethodKind.AFTER_EACH) {
+					resolved.accept(new ASTVisitor() {
+						@Override
+						public boolean visit(SuperMethodInvocation invocation) {
+							if (JUnit3LegacyShape.isRedundantLifecycleSuperCall(invocation)
+									&& invocation.getParent() instanceof ExpressionStatement statement) {
+								redundantLifecycleCalls.add(statement);
+							}
+							return true;
+						}
+					});
+				}
+			}
+		}
+		if (!compatibilityDeclarations.isEmpty() || !redundantLifecycleCalls.isEmpty()) {
+			operations.add(new JUnit3CompatibilityRewriteOperation(compatibilityDeclarations,
+					redundantLifecycleCalls));
+			nodesProcessed.addAll(compatibilityDeclarations);
+			nodesProcessed.addAll(redundantLifecycleCalls);
+		}
+
 		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder("junit3-hierarchy"); //$NON-NLS-1$
 		Set<NodeKey> expectedHintTargets= new LinkedHashSet<>();
 		for (TypeMigration planned : plannedTypes) {
@@ -196,6 +229,9 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				expectedHintTargets.add(typeKey);
 			}
 			for (MethodMigration method : planned.methods()) {
+				if (method.kind() == MethodKind.REMOVE_COMPATIBILITY_MEMBER) {
+					continue;
+				}
 				NodeKey key= NodeKey.method(method.methodBindingKey());
 				plan.add(key, methodRole(method.kind()));
 				if (method.kind() == MethodKind.TEST) {
@@ -239,6 +275,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		case TEST -> ROLE_TEST_METHOD;
 		case BEFORE_EACH -> ROLE_BEFORE_EACH;
 		case AFTER_EACH -> ROLE_AFTER_EACH;
+		case REMOVE_COMPATIBILITY_MEMBER -> throw new IllegalArgumentException(
+				"Compatibility members are removed by a dedicated planned AST operation."); //$NON-NLS-1$
 		};
 	}
 

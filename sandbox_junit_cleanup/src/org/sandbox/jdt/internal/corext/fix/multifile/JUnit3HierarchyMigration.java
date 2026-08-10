@@ -65,7 +65,8 @@ public record JUnit3HierarchyMigration(String rootTypeName, List<TypeMigration> 
 	public enum MethodKind {
 		TEST,
 		BEFORE_EACH,
-		AFTER_EACH
+		AFTER_EACH,
+		REMOVE_COMPATIBILITY_MEMBER
 	}
 
 	public enum InvocationKind {

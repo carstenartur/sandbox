@@ -45,7 +45,9 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SemanticSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodKind;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyMigration.MethodMigration;
@@ -250,7 +252,6 @@ final class JUnit3HierarchyPlanner {
 	private static Classification classify(SourceType root, List<SourceType> hierarchy,
 			JUnitTestTypeInventory inventory) {
 		Map<String, String> testOwners= new HashMap<>();
-		Map<String, Integer> lifecycleDeclarations= new HashMap<>();
 		List<TypeMigration> typeMigrations= new ArrayList<>();
 		List<String> baselineHandles= new ArrayList<>();
 		String rootKey= root.key();
@@ -285,7 +286,7 @@ final class JUnit3HierarchyPlanner {
 			List<MethodMigration> methods= new ArrayList<>();
 			for (MethodDeclaration method : type.declaration().getMethods()) {
 				JUnit3HarnessSemantics.Rejection harnessRejection=
-						JUnit3HarnessSemantics.rejection(method).orElse(null);
+						JUnit3HarnessSemantics.rejection(method, type.declaration()).orElse(null);
 				if (harnessRejection != null) {
 					return Classification.rejected(harnessRejection.reasonCode(),
 							harnessRejection.explanation());
@@ -296,6 +297,18 @@ final class JUnit3HierarchyPlanner {
 				}
 				String name= method.getName().getIdentifier();
 				String bindingKey= methodKey(method);
+				boolean removableCompatibilityMember= method.isConstructor()
+						&& JUnit3LegacyShape.isRemovableConstructor(method)
+						|| JUnit3SuiteModel.isSuiteBuilder(method)
+								&& JUnit3LegacyShape.isSelfSuite(method, type.declaration());
+				if (removableCompatibilityMember) {
+					if (bindingKey == null) {
+						return Classification.rejected("UNRESOLVED_JUNIT3_COMPATIBILITY_MEMBER", //$NON-NLS-1$
+								"A proven compatibility constructor or self suite has no stable method binding."); //$NON-NLS-1$
+					}
+					methods.add(new MethodMigration(bindingKey, MethodKind.REMOVE_COMPATIBILITY_MEMBER));
+					continue;
+				}
 				if (name.startsWith("test")) { //$NON-NLS-1$
 					if (!JUnit3SemanticSupport.isExactTestMethod(method) || bindingKey == null) {
 						return Classification.rejected("INVALID_JUNIT3_TEST_SIGNATURE", //$NON-NLS-1$
@@ -316,11 +329,6 @@ final class JUnit3HierarchyPlanner {
 					if (!JUnit3SemanticSupport.isLifecycleMethod(method, name) || bindingKey == null) {
 						return Classification.rejected("INVALID_JUNIT3_LIFECYCLE", //$NON-NLS-1$
 								"A lifecycle method does not satisfy the supported non-static parameterless void contract."); //$NON-NLS-1$
-					}
-					int count= lifecycleDeclarations.merge(name, Integer.valueOf(1), Integer::sum).intValue();
-					if (count > 1) {
-						return Classification.rejected("JUNIT3_LIFECYCLE_OVERRIDE_CHAIN", //$NON-NLS-1$
-								"Lifecycle override chains require explicit semantic migration."); //$NON-NLS-1$
 					}
 					OverrideRemoval overrideRemoval= plannedOverrideRemoval(method);
 					if (overrideRemoval == OverrideRemoval.UNRESOLVED) {
@@ -380,26 +388,41 @@ final class JUnit3HierarchyPlanner {
 	 * with a user-defined annotation and therefore rejects the candidate.
 	 */
 	private static OverrideRemoval plannedOverrideRemoval(MethodDeclaration method) {
+		boolean overrideFound= false;
 		for (Object modifier : method.modifiers()) {
 			if (!(modifier instanceof Annotation annotation)) {
 				continue;
 			}
-			ITypeBinding binding= annotation.resolveTypeBinding();
+			ITypeBinding annotationBinding= annotation.resolveTypeBinding();
 			String writtenName= annotation.getTypeName().getFullyQualifiedName();
-			if (binding != null && !binding.isRecovered()) {
-				if ("java.lang.Override".equals(binding.getQualifiedName())) { //$NON-NLS-1$
-					return OverrideRemoval.REMOVE;
+			if (annotationBinding != null && !annotationBinding.isRecovered()) {
+				if ("java.lang.Override".equals(annotationBinding.getQualifiedName())) { //$NON-NLS-1$
+					overrideFound= true;
 				}
 				continue;
 			}
 			if ("java.lang.Override".equals(writtenName)) { //$NON-NLS-1$
-				return OverrideRemoval.REMOVE;
-			}
-			if ("Override".equals(writtenName)) { //$NON-NLS-1$
+				overrideFound= true;
+			} else if ("Override".equals(writtenName)) { //$NON-NLS-1$
 				return OverrideRemoval.UNRESOLVED;
 			}
 		}
-		return OverrideRemoval.KEEP;
+		if (!overrideFound) {
+			return OverrideRemoval.KEEP;
+		}
+		IMethodBinding methodBinding= method.resolveBinding();
+		ITypeBinding declaring= methodBinding == null ? null : methodBinding.getDeclaringClass();
+		String name= method.getName().getIdentifier();
+		for (ITypeBinding current= declaring == null ? null : declaring.getSuperclass();
+				current != null; current= current.getSuperclass()) {
+			for (IMethodBinding candidate : current.getDeclaredMethods()) {
+				if (name.equals(candidate.getName()) && candidate.getParameterTypes().length == 0) {
+					return JUNIT3_TEST_CASE.equals(current.getErasure().getQualifiedName())
+							? OverrideRemoval.REMOVE : OverrideRemoval.KEEP;
+				}
+			}
+		}
+		return OverrideRemoval.UNRESOLVED;
 	}
 
 	private static boolean hasJUnitAnnotation(BodyDeclaration declaration) {
