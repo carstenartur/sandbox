@@ -80,6 +80,10 @@ public class MigrationJUnit3RealWorldShapesTest {
 				import junit.framework.TestSuite;
 
 				public class TestAll extends TestCase {
+					static {
+						System.setProperty("modules", "java.base");
+					}
+
 					public TestAll(String testName) {
 						super(testName);
 					}
@@ -120,12 +124,17 @@ public class MigrationJUnit3RealWorldShapesTest {
 						"""
 						package org.eclipse.jdt.apt.tests;
 
+						import org.junit.platform.suite.api.BeforeSuite;
 						import org.junit.platform.suite.api.SelectClasses;
 						import org.junit.platform.suite.api.Suite;
 
 						@Suite
 						@SelectClasses(FactoryPathTests.class)
 						public class TestAll {
+							@BeforeSuite
+							static void beforeSuite() {
+								System.setProperty("modules", "java.base");
+							}
 						}
 						""" //$NON-NLS-1$
 				}, null);
@@ -150,6 +159,36 @@ public class MigrationJUnit3RealWorldShapesTest {
 
 					public void testConfigured() {
 						assertNotNull(configured);
+					}
+				}
+				""", false, null); //$NON-NLS-1$
+
+		enableRealWorldJUnit3Migration();
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
+	}
+
+	@Test
+	public void rejectsMultipleSuiteInitializersInsteadOfReorderingThem() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("unsafe", true, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("MultipleInitializers.java", //$NON-NLS-1$
+				"""
+				package unsafe;
+
+				import junit.framework.Test;
+				import junit.framework.TestSuite;
+
+				public class MultipleInitializers {
+					static {
+						System.setProperty("first", "true");
+					}
+
+					static {
+						System.setProperty("second", "true");
+					}
+
+					public static Test suite() {
+						return new TestSuite(StatefulConstructionTest.class);
 					}
 				}
 				""", false, null); //$NON-NLS-1$
