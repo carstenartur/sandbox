@@ -15,7 +15,6 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.JFACE_CLEANUP;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JFaceCleanUpFix_refactor;
-import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.JFaceCleanUp_description;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,14 +23,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
-import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
@@ -85,9 +82,7 @@ public class JFaceCleanUpCore extends AbstractCleanUp {
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(JFACE_CLEANUP)) {
-			result.add(Messages.format(JFaceCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
-					computeFixSet().stream().map(JfaceCleanUpFixCore::toString)
-					.collect(Collectors.toList())) }));
+			computeFixSet().stream().map(JfaceCleanUpFixCore::getStepDescription).forEach(result::add);
 		}
 		return result.toArray(new String[0]);
 	}

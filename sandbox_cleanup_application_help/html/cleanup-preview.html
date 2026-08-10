@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Cleanup preview model</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Cleanup preview model</h1>
+   <p>The cleanup workflow has two distinct previews:</p>
+   <ul>
+      <li>The profile configuration tab preview, which shows a small static example for the selected options.</li>
+      <li>The real execution preview shown after <strong>Source &gt; Clean Up...</strong>, which lists concrete changes.</li>
+   </ul>
+
+   <h2>Independent local changes</h2>
+   <p>When the proposed edits are local and semantically independent, the execution preview allows selecting or
+      deselecting individual files and individual text-edit groups. The selected subset is applied when finishing.</p>
+
+   <h2>Coordinated multi-file migrations</h2>
+   <p>Some migrations require an atomic all-or-nothing selection across files. That coordinated contract is tracked
+      separately in <a href="https://github.com/carstenartur/sandbox/issues/1451">carstenartur/sandbox#1451</a>.</p>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>

@@ -20,17 +20,33 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.TimeZone;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ltk.core.refactoring.IUndoManager;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
@@ -105,10 +121,17 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final String REFACTORING_MINING_VIEW = "org.sandbox.jdt.views.refactoringMining";
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
     private static final String HINT_FILE_CLEANUP_LABEL = "Apply transformation rules from .sandbox-hint files";
+    private static final String CLEANUP_PREVIEW_PROJECT = "SandboxCleanupPreviewProject";
+    private static final String JFACE_MASTER_LABEL = "Modernize JFace API usage";
+    private static final String JFACE_MONITOR_LABEL = "Replace SubProgressMonitor with SubMonitor";
+    private static final String JFACE_VIEWER_SORTER_LABEL = "Replace ViewerSorter with ViewerComparator";
+    private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =
+            "Modernize Image creation for DPI/zoom (ImageDataProvider)";
     private static SWTWorkbenchBot bot;
     private static Path outputRoot;
     private static IProject otherProject;
     private static IProject documentationProject;
+    private static IProject cleanupPreviewProject;
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -117,11 +140,13 @@ public class SandboxHelpScreenshotsSWTBotTest {
         closeWelcomeView();
         otherProject = createEmptyProject(OTHER_PROJECT);
         documentationProject = createDocumentationProject();
+        cleanupPreviewProject = createCleanupPreviewProject();
     }
 
     @AfterAll
     public static void tearDown() throws Exception {
         closeDialogIfOpen();
+        deleteProject(cleanupPreviewProject);
         deleteProject(documentationProject);
         deleteProject(otherProject);
     }
@@ -148,6 +173,90 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
         clickButton(profileDialog, "Cancel");
         clickButton(preferences, "Cancel");
+    }
+
+    @Test
+    public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
+        configureJFaceCleanupProfile();
+        IFile singleFile = cleanupPreviewProject.getFile("src/demo/single/SingleFileCleanup.java");
+        String singleBefore = readFile(singleFile);
+
+        openProjectExplorer();
+        SWTBotTreeItem singleFileNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.single").expand().getNode("SingleFileCleanup.java");
+        singleFileNode.select();
+        openCleanUpWizard(singleFileNode);
+
+        SWTBotShell wizard = bot.shell("Clean Up").activate();
+        clickButton(wizard, "Next >", "Next >");
+        bot.sleep(500);
+        prepareForScreenshot(wizard);
+
+        SWTBotTree previewTree = wizard.bot().tree();
+        SWTBotTreeItem singlePreviewFile = findTreeItemContaining(previewTree, "SingleFileCleanup.java");
+        assertTrue(singlePreviewFile != null, "Preview must contain the selected file");
+        singlePreviewFile.expand();
+        SWTBotTreeItem monitorStep = findDescendant(singlePreviewFile, "SubProgressMonitor");
+        SWTBotTreeItem viewerSorterStep = findDescendant(singlePreviewFile, "ViewerSorter");
+        assertTrue(monitorStep != null, "Preview must expose a SubProgressMonitor cleanup step");
+        assertTrue(viewerSorterStep != null, "Preview must expose a ViewerSorter cleanup step");
+        assertTrue(findDescendant(singlePreviewFile, "JFACE_CLEANUP_MONITOR") == null,
+                "Preview labels must be user-facing and not option ids");
+
+        monitorStep.select();
+        bot.sleep(300);
+        String monitorDiff = currentDiffText(wizard);
+        viewerSorterStep.select();
+        bot.sleep(300);
+        String sorterDiff = currentDiffText(wizard);
+        assertTrue(monitorDiff.contains("SubProgressMonitor"), "Monitor diff should mention SubProgressMonitor");
+        assertTrue(sorterDiff.contains("ViewerSorter"), "ViewerSorter diff should mention ViewerSorter");
+        assertTrue(!monitorDiff.equals(sorterDiff), "Selecting each cleanup step should update the diff viewer");
+
+        capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-single-file-steps.png");
+        capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-diff-step.png");
+
+        viewerSorterStep.uncheck();
+        clickButton(wizard, "Finish");
+        waitForWizardToClose("Clean Up");
+        String singleAfter = readFile(singleFile);
+        assertTrue(singleAfter.contains("SubMonitor.convert"), "Selected monitor migration must be applied");
+        assertTrue(singleAfter.contains("new ViewerSorter()"), "Deselected viewer sorter migration must not be applied");
+        assertTrue(!singleBefore.equals(singleAfter), "Applying the selected step should change the file");
+
+        IFile monitorFile = cleanupPreviewProject.getFile("src/demo/multi/MonitorOnly.java");
+        IFile sorterFile = cleanupPreviewProject.getFile("src/demo/multi/SorterOnly.java");
+        String monitorBefore = readFile(monitorFile);
+        String sorterBefore = readFile(sorterFile);
+
+        SWTBotTreeItem multiPackage = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.multi");
+        multiPackage.select();
+        openCleanUpWizard(multiPackage);
+        wizard = bot.shell("Clean Up").activate();
+        clickButton(wizard, "Next >", "Next >");
+        bot.sleep(500);
+        prepareForScreenshot(wizard);
+
+        previewTree = wizard.bot().tree();
+        SWTBotTreeItem monitorPreviewFile = findTreeItemContaining(previewTree, "MonitorOnly.java");
+        SWTBotTreeItem sorterPreviewFile = findTreeItemContaining(previewTree, "SorterOnly.java");
+        assertTrue(monitorPreviewFile != null, "Preview must contain MonitorOnly.java");
+        assertTrue(sorterPreviewFile != null, "Preview must contain SorterOnly.java");
+        capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-multi-file-selection.png");
+
+        sorterPreviewFile.uncheck();
+        clickButton(wizard, "Finish");
+        waitForWizardToClose("Clean Up");
+
+        String monitorAfter = readFile(monitorFile);
+        String sorterAfter = readFile(sorterFile);
+        assertTrue(!monitorBefore.equals(monitorAfter), "Selected file must be modified");
+        assertTrue(sorterBefore.equals(sorterAfter), "Deselected file must remain byte-identical");
+
+        undoLastCleanup();
+        assertTrue(monitorBefore.equals(readFile(monitorFile)), "Undo must restore MonitorOnly.java");
+        assertTrue(sorterBefore.equals(readFile(sorterFile)), "Undo must keep SorterOnly.java unchanged");
     }
 
     @Test
@@ -272,6 +381,247 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 profileDialog.widget.update();
             }
         });
+    }
+
+    private static void configureJFaceCleanupProfile() {
+        openPreferences();
+        SWTBotShell preferences = bot.shell("Preferences").activate();
+        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
+        clickButton(preferences, "Edit...", "Edit…");
+        SWTBotShell profileDialog = bot.activeShell();
+        profileDialog.bot().tabItem("JFace Cleanup (Sandbox)").activate();
+
+        ensureChecked(profileDialog, JFACE_MASTER_LABEL, true);
+        ensureChecked(profileDialog, JFACE_MONITOR_LABEL, true);
+        ensureChecked(profileDialog, JFACE_VIEWER_SORTER_LABEL, true);
+        ensureChecked(profileDialog, JFACE_IMAGE_DATA_PROVIDER_LABEL, false);
+
+        clickButton(profileDialog, "OK");
+        clickButton(preferences, "Apply and Close", "OK");
+    }
+
+    private static void ensureChecked(SWTBotShell shell, String label, boolean checked) {
+        var checkBox = shell.bot().checkBox(label);
+        if (checkBox.isChecked() != checked) {
+            checkBox.click();
+        }
+    }
+
+    private static void openProjectExplorer() {
+        SWTBotShell workbench = workbenchShell().activate();
+        showView(workbench, PROJECT_EXPLORER_VIEW);
+        bot.viewByTitle("Project Explorer").setFocus();
+    }
+
+    private static SWTBotTree projectTree() {
+        return bot.viewByTitle("Project Explorer").bot().tree();
+    }
+
+    private static void openCleanUpWizard(SWTBotTreeItem selection) {
+        WidgetNotFoundException failure = null;
+        for (String label : List.of("Clean Up...", "Clean Up…")) {
+            try {
+                selection.contextMenu("Source").menu(label).click();
+                return;
+            } catch (WidgetNotFoundException exception) {
+                failure = exception;
+            }
+        }
+        throw failure;
+    }
+
+    private static SWTBotTreeItem findTreeItemContaining(SWTBotTree tree, String needle) {
+        for (SWTBotTreeItem root : tree.getAllItems()) {
+            SWTBotTreeItem match = findDescendant(root, needle);
+            if (match != null) {
+                return match;
+            }
+        }
+        return null;
+    }
+
+    private static SWTBotTreeItem findDescendant(SWTBotTreeItem item, String needle) {
+        if (item.getText().contains(needle)) {
+            return item;
+        }
+        for (SWTBotTreeItem child : item.getItems()) {
+            SWTBotTreeItem match = findDescendant(child, needle);
+            if (match != null) {
+                return match;
+            }
+        }
+        return null;
+    }
+
+    private static String currentDiffText(SWTBotShell shell) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<String>() {
+            @Override
+            public String run() {
+                return collectStyledText(shell.widget).stream().collect(Collectors.joining("\n---\n"));
+            }
+        });
+    }
+
+    private static List<String> collectStyledText(Control root) {
+        Deque<Control> pending = new ArrayDeque<>();
+        pending.add(root);
+        List<String> texts = new java.util.ArrayList<>();
+        while (!pending.isEmpty()) {
+            Control control = pending.removeFirst();
+            if (control instanceof StyledText styledText) {
+                texts.add(styledText.getText());
+            }
+            if (control instanceof Composite composite) {
+                for (Control child : composite.getChildren()) {
+                    pending.addLast(child);
+                }
+            }
+        }
+        return texts;
+    }
+
+    private static void waitForWizardToClose(String title) {
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                for (SWTBotShell shell : bot.shells()) {
+                    if (title.equals(shell.getText()) && shell.isOpen()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "Wizard did not close: " + title;
+            }
+        }, 10_000);
+    }
+
+    private static void undoLastCleanup() throws Exception {
+        IUndoManager undoManager = RefactoringCore.getUndoManager();
+        assertTrue(undoManager.anythingToUndo(), "Cleanup operation should be undoable");
+        undoManager.performUndo(null, new NullProgressMonitor());
+    }
+
+    private static String readFile(IFile file) throws IOException {
+        return Files.readString(file.getLocation().toFile().toPath(), StandardCharsets.UTF_8);
+    }
+
+    private static IProject createCleanupPreviewProject() throws Exception {
+        IProject project = createEmptyProject(CLEANUP_PREVIEW_PROJECT);
+        IJavaProject javaProject = JavaCore.create(project);
+        var description = project.getDescription();
+        description.setNatureIds(new String[] { JavaCore.NATURE_ID });
+        project.setDescription(description, new NullProgressMonitor());
+
+        IFolder sourceFolder = project.getFolder("src");
+        if (!sourceFolder.exists()) {
+            sourceFolder.create(true, true, new NullProgressMonitor());
+        }
+        IFolder outputFolder = project.getFolder("bin");
+        if (!outputFolder.exists()) {
+            outputFolder.create(true, true, new NullProgressMonitor());
+        }
+
+        IClasspathEntry[] classpath = new IClasspathEntry[] {
+                JavaCore.newSourceEntry(sourceFolder.getFullPath()),
+                JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")) };
+        javaProject.setRawClasspath(classpath, outputFolder.getFullPath(), new NullProgressMonitor());
+        writeCleanupFixtureSources(javaProject);
+        project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
+        return project;
+    }
+
+    private static void writeCleanupFixtureSources(IJavaProject javaProject) throws Exception {
+        IPackageFragmentRoot sourceRoot = javaProject.getPackageFragmentRoot(javaProject.getProject().getFolder("src"));
+
+        createUnit(sourceRoot, "org.eclipse.core.runtime", "IProgressMonitor.java",
+                """
+                        package org.eclipse.core.runtime;
+                        public interface IProgressMonitor {
+                            void beginTask(String name, int totalWork);
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.core.runtime", "SubMonitor.java",
+                """
+                        package org.eclipse.core.runtime;
+                        public class SubMonitor implements IProgressMonitor {
+                            public static SubMonitor convert(IProgressMonitor monitor, int work) { return new SubMonitor(); }
+                            public SubMonitor split(int ticks) { return this; }
+                            @Override
+                            public void beginTask(String name, int totalWork) {
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.core.runtime", "SubProgressMonitor.java",
+                """
+                        package org.eclipse.core.runtime;
+                        public class SubProgressMonitor implements IProgressMonitor {
+                            public SubProgressMonitor(IProgressMonitor monitor, int work) {
+                            }
+                            @Override
+                            public void beginTask(String name, int totalWork) {
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.jface.viewers", "ViewerComparator.java",
+                """
+                        package org.eclipse.jface.viewers;
+                        public class ViewerComparator {
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.jface.viewers", "ViewerSorter.java",
+                """
+                        package org.eclipse.jface.viewers;
+                        public class ViewerSorter extends ViewerComparator {
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.single", "SingleFileCleanup.java",
+                """
+                        package demo.single;
+                        import org.eclipse.core.runtime.IProgressMonitor;
+                        import org.eclipse.core.runtime.SubProgressMonitor;
+                        import org.eclipse.jface.viewers.ViewerSorter;
+                        public class SingleFileCleanup {
+                            public void monitor(IProgressMonitor monitor) {
+                                monitor.beginTask("work", 100);
+                                IProgressMonitor child = new SubProgressMonitor(monitor, 40);
+                            }
+                            public ViewerSorter sorter() {
+                                return new ViewerSorter();
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.multi", "MonitorOnly.java",
+                """
+                        package demo.multi;
+                        import org.eclipse.core.runtime.IProgressMonitor;
+                        import org.eclipse.core.runtime.SubProgressMonitor;
+                        public class MonitorOnly {
+                            public void monitor(IProgressMonitor monitor) {
+                                monitor.beginTask("work", 10);
+                                IProgressMonitor child = new SubProgressMonitor(monitor, 5);
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.multi", "SorterOnly.java",
+                """
+                        package demo.multi;
+                        import org.eclipse.jface.viewers.ViewerSorter;
+                        public class SorterOnly {
+                            public ViewerSorter sorter() {
+                                return new ViewerSorter();
+                            }
+                        }
+                        """);
+    }
+
+    private static void createUnit(IPackageFragmentRoot sourceRoot, String packageName, String unitName, String contents)
+            throws Exception {
+        IPackageFragment fragment = sourceRoot.createPackageFragment(packageName, true, new NullProgressMonitor());
+        fragment.createCompilationUnit(unitName, contents, true, new NullProgressMonitor());
     }
 
     private static IProject createDocumentationProject() throws Exception {
