@@ -1,0 +1,145 @@
+name: Upstream JDT migration QA
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'qa/upstream-jdt/**'
+      - 'sandbox_oomph/jdt-migration-qa.setup'
+      - 'sandbox_oomph/jdt-migration-qa.configuration.setup'
+      - '.github/workflows/upstream-jdt-migration-qa.yml'
+  workflow_dispatch:
+    inputs:
+      run_baseline:
+        description: Check out the pinned JDT repositories and execute the upstream baseline tests
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-contract:
+    name: Validate the pinned Oomph and evidence contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v6
+
+      - name: Validate Oomph, pins, profile, runner and inventory comparator
+        run: python3 qa/upstream-jdt/verify_contract.py
+
+      - name: Verify repository whitespace
+        run: git diff --check
+
+  upstream-baseline:
+    name: Verify pinned JDT checkout and baseline tests
+    if: github.event_name == 'workflow_dispatch' && inputs.run_baseline
+    needs: validate-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v6
+        with:
+          path: sandbox
+
+      - name: Checkout JDT Core R4_40
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.core
+
+      - name: Checkout JDT UI R4_40
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Checkout JDT Core test binaries R4_40
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core.binaries
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.core.binaries
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Verify exact Oomph-equivalent checkouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          source sandbox/qa/upstream-jdt/pins.env
+          test "$(git -C upstream/eclipse.jdt.core rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.core.binaries rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_BINARIES_COMMIT"
+          git -C upstream/eclipse.jdt.core apply --check \
+            "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/overlays/jdt-core-r4_40-jupiter.patch"
+          cat > upstream-baseline-provenance.json <<EOF
+          {
+            "eclipseRelease": "$PIN_ECLIPSE_RELEASE",
+            "eclipsePlatformVersion": "$PIN_ECLIPSE_PLATFORM_VERSION",
+            "jdtCoreRef": "$PIN_JDT_CORE_REF",
+            "jdtCoreCommit": "$PIN_JDT_CORE_COMMIT",
+            "jdtUiRef": "$PIN_JDT_UI_REF",
+            "jdtUiCommit": "$PIN_JDT_UI_COMMIT",
+            "jdtCoreBinariesRef": "$PIN_JDT_CORE_BINARIES_REF",
+            "jdtCoreBinariesCommit": "$PIN_JDT_CORE_BINARIES_COMMIT"
+          }
+          EOF
+
+      - name: Apply the identical Jupiter build overlay
+        run: >-
+          git -C upstream/eclipse.jdt.core apply
+          "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/overlays/jdt-core-r4_40-jupiter.patch"
+
+      - name: Run the pinned upstream baseline tests
+        working-directory: upstream/eclipse.jdt.core
+        run: >-
+          mvn
+          --batch-mode
+          --no-transfer-progress
+          -U
+          -Djava.io.tmpdir="${{ runner.temp }}/jdt-core-qa"
+          -f org.eclipse.jdt.apt.tests/pom.xml
+          clean verify
+
+      - name: Require baseline JUnit XML evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' reports < <(find upstream/eclipse.jdt.core -type f \
+            -path '*/target/surefire-reports/*.xml' -print0)
+          if (( ${#reports[@]} == 0 )); then
+            echo 'The pinned upstream baseline produced no Surefire XML reports.' >&2
+            exit 1
+          fi
+          printf 'Found %d baseline reports.\n' "${#reports[@]}"
+
+      - name: Upload pinned baseline evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-jdt-r4_40-baseline-${{ github.run_number }}
+          path: |
+            upstream-baseline-provenance.json
+            upstream/eclipse.jdt.core/**/target/surefire-reports/*.xml
+            upstream/eclipse.jdt.core/**/target/work/data/.metadata/.log
+          retention-days: 14
+          if-no-files-found: warn
