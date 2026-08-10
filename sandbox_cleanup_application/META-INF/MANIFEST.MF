@@ -8,7 +8,8 @@ Automatic-Module-Name: ui.sandbox.fragment
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
-Require-Bundle: org.eclipse.core.runtime,
+Require-Bundle: sandbox_common_core,
+ org.eclipse.core.runtime,
  org.eclipse.core.filebuffers,
  org.eclipse.core.filesystem,
  org.eclipse.core.resources,

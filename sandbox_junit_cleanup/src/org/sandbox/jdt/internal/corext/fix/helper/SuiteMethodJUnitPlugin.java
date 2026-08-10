@@ -39,6 +39,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -94,44 +95,32 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 
 	private MethodDeclaration findMigratableSuiteMethod(TypeDeclaration node, Set<ASTNode> nodesprocessed) {
 		if (nodesprocessed.contains(node) || !(node.getParent() instanceof CompilationUnit)
-				|| node.getSuperclassType() != null || node.isInterface() || hasJUnitAnnotation(node)
-				|| isExcludedOrTestCase(node)) {
+				|| node.isInterface() || hasJUnitAnnotation(node)
+				|| node.getSuperclassType() != null && !JUnit3LegacyShape.directlyExtendsTestCase(node)
+				|| isExcluded(node)) {
 			return null;
 		}
 		MethodDeclaration suite= null;
 		for (MethodDeclaration method : node.getMethods()) {
 			if (JUnit3SuiteModel.isSuiteBuilder(method)) {
 				suite= method;
-			} else if (!method.isConstructor()) {
+			} else if (!method.isConstructor() || !JUnit3LegacyShape.isRemovableConstructor(method)) {
 				// Any additional behavior in an aggregator is not represented by @Suite.
 				return null;
 			}
 		}
 		if (suite == null || nodesprocessed.contains(suite) || node.getFields().length != 0
-				|| node.getTypes().length != 0) {
+				|| node.getTypes().length != 0 || !JUnit3LegacyShape.isPureSuiteAggregator(node, suite)) {
 			return null;
 		}
 		return suite;
 	}
 
-	/**
-	 * Rejects aggregators that are test cases themselves or derive from a base
-	 * type whose execution contract must not be migrated.
-	 */
-	private boolean isExcludedOrTestCase(TypeDeclaration node) {
+	/** Rejects aggregators that derive from an explicitly excluded harness. */
+	private boolean isExcluded(TypeDeclaration node) {
 		ITypeBinding binding= node.resolveBinding();
-		if (binding == null) {
-			return node.getSuperclassType() != null;
-		}
-		if (JUnit3MigrationExclusions.isExcluded(binding)) {
-			return true;
-		}
-		for (ITypeBinding current= binding.getSuperclass(); current != null; current= current.getSuperclass()) {
-			if ("junit.framework.TestCase".equals(current.getErasure().getQualifiedName())) { //$NON-NLS-1$
-				return true;
-			}
-		}
-		return false;
+		return binding == null ? node.getSuperclassType() != null && !JUnit3LegacyShape.directlyExtendsTestCase(node)
+				: JUnit3MigrationExclusions.isExcluded(binding);
 	}
 
 	private boolean hasJUnitAnnotation(TypeDeclaration node) {
@@ -161,6 +150,15 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		}
 
 		rewriter.remove(suite, group);
+		if (JUnit3LegacyShape.directlyExtendsTestCase(type) && type.getSuperclassType() != null) {
+			rewriter.remove(type.getSuperclassType(), group);
+			importRewriter.removeImport(JUnit3LegacyShape.JUNIT3_TEST_CASE);
+		}
+		for (MethodDeclaration method : type.getMethods()) {
+			if (method != suite && JUnit3LegacyShape.isRemovableConstructor(method)) {
+				rewriter.remove(method, group);
+			}
+		}
 
 		ListRewrite modifiers= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
 		MarkerAnnotation suiteAnnotation= ast.newMarkerAnnotation();
