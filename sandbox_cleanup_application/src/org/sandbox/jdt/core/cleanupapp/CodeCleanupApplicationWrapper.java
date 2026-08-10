@@ -190,9 +190,15 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 	}
 
 	private static Integer fail(String message) {
-		System.err.println(message);
+		System.err.println(failureMessage(message));
 		System.out.println(Messages.bind(Messages.CommandLineUsage));
 		return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);
+	}
+
+	static String failureMessage(String message) {
+		return message == null || message.isBlank()
+				? "Cleanup application failed without a diagnostic message." //$NON-NLS-1$
+				: message;
 	}
 
 	private static ImportRequest parseImportRequest(String[] arguments) {

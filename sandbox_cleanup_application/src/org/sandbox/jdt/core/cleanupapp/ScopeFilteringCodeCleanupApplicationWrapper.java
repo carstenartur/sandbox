@@ -156,6 +156,9 @@ public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeClean
 	}
 
 	static String[] filterArgumentsForScope(String[] arguments) throws IOException {
+		if (arguments == null) {
+			throw new IllegalArgumentException("Application arguments are unavailable."); //$NON-NLS-1$
+		}
 		RequestedScope scope= requestedScope(arguments);
 		if (scope == RequestedScope.BOTH || scope == RequestedScope.INVALID) {
 			return arguments.clone();

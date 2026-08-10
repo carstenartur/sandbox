@@ -11,7 +11,9 @@
 package org.sandbox.jdt.core.cleanupapp;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -90,6 +92,23 @@ class ScopeFilteringCodeCleanupApplicationWrapperTest {
 
 		assertContains(main, mainPackageSource);
 		assertNotContains(tests, mainPackageSource);
+	}
+
+	@Test
+	void missingArgumentsFailWithActionableDiagnostic() {
+		IllegalArgumentException exception= assertThrows(IllegalArgumentException.class,
+				() -> ScopeFilteringCodeCleanupApplicationWrapper.filterArgumentsForScope(null));
+
+		assertEquals("Application arguments are unavailable.", exception.getMessage()); //$NON-NLS-1$
+	}
+
+	@Test
+	void missingFailureMessageUsesActionableDiagnostic() {
+		String expected= "Cleanup application failed without a diagnostic message."; //$NON-NLS-1$
+
+		assertEquals(expected, CodeCleanupApplicationWrapper.failureMessage(null));
+		assertEquals(expected, CodeCleanupApplicationWrapper.failureMessage(" ")); //$NON-NLS-1$
+		assertEquals("details", CodeCleanupApplicationWrapper.failureMessage("details")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Test
