@@ -30,7 +30,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.equinox.app.IApplication;
@@ -292,13 +291,15 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				throw new IOException("Imported .project declares " + description.getName() //$NON-NLS-1$
 						+ " but --project requested " + name); //$NON-NLS-1$
 			}
-			IPath location= org.eclipse.core.runtime.Path.fromOSString(canonicalLocation.toString());
-			IPath defaultLocation= root.getLocation() == null ? null : root.getLocation().append(name);
+			org.eclipse.core.runtime.IPath location=
+					org.eclipse.core.runtime.Path.fromOSString(canonicalLocation.toString());
+			org.eclipse.core.runtime.IPath defaultLocation=
+					root.getLocation() == null ? null : root.getLocation().append(name);
 			description.setLocation(location.equals(defaultLocation) ? null : location);
 			project.create(description, monitor);
 		} else if (requestedLocation != null) {
 			Path canonicalLocation= requestedLocation.toRealPath();
-			IPath actualLocation= project.getLocation();
+			org.eclipse.core.runtime.IPath actualLocation= project.getLocation();
 			if (actualLocation == null || !canonicalLocation.equals(actualLocation.toFile().toPath().toRealPath())) {
 				throw new IOException("Workspace project exists at another location: " + name); //$NON-NLS-1$
 			}
