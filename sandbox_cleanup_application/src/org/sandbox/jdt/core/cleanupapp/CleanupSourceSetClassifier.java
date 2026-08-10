@@ -13,7 +13,12 @@ package org.sandbox.jdt.core.cleanupapp;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Classifies Java files by conventional main/test source-set roots. */
+/**
+ * Classifies Java files by conventional main/test source-set roots.
+ * Classification is relative to the nearest Eclipse project or the explicitly
+ * requested source root, so unrelated workspace ancestors and Java package
+ * names cannot silently change the selected cleanup scope.
+ */
 final class CleanupSourceSetClassifier {
 
 	private enum SourceSet {
