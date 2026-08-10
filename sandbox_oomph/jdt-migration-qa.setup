@@ -23,6 +23,7 @@
       xsi:type="jdt:JRETask"
       version="JavaSE-21"
       location="${jre.location-21}"/>
+
   <setupTask
       xsi:type="setup:VariableTask"
       name="sandbox.qa.sandbox.ref"
@@ -30,10 +31,22 @@
       label="Sandbox branch or tag">
     <description>The Sandbox source revision whose cleanup product is built for this QA run.</description>
   </setupTask>
+
   <setupTask
       xsi:type="setup:VariableTask"
       name="sandbox.qa.eclipse.release"
       value="2026-06"
+      storageURI="scope://Workspace"/>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.eclipse.platform.version"
+      value="4.40"
+      storageURI="scope://Workspace"/>
+
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.jdt.core.repository"
+      value="https://github.com/eclipse-jdt/eclipse.jdt.core.git"
       storageURI="scope://Workspace"/>
   <setupTask
       xsi:type="setup:VariableTask"
@@ -45,6 +58,12 @@
       name="sandbox.qa.jdt.core.commit"
       value="ef3d6f2115df89d7964bc13aa363ab8d6bd21256"
       storageURI="scope://Workspace"/>
+
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.jdt.ui.repository"
+      value="https://github.com/eclipse-jdt/eclipse.jdt.ui.git"
+      storageURI="scope://Workspace"/>
   <setupTask
       xsi:type="setup:VariableTask"
       name="sandbox.qa.jdt.ui.ref"
@@ -54,6 +73,12 @@
       xsi:type="setup:VariableTask"
       name="sandbox.qa.jdt.ui.commit"
       value="c922f757b27b7e2b6215db383cec5f8aafd13227"
+      storageURI="scope://Workspace"/>
+
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.jdt.core.binaries.repository"
+      value="https://github.com/eclipse-jdt/eclipse.jdt.core.binaries.git"
       storageURI="scope://Workspace"/>
   <setupTask
       xsi:type="setup:VariableTask"
@@ -67,6 +92,22 @@
       storageURI="scope://Workspace"/>
 
   <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.primary.project"
+      value="org.eclipse.jdt.apt.tests"
+      storageURI="scope://Workspace"/>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.primary.source"
+      value="org.eclipse.jdt.apt.tests/src"
+      storageURI="scope://Workspace"/>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.primary.test.pom"
+      value="org.eclipse.jdt.apt.tests/pom.xml"
+      storageURI="scope://Workspace"/>
+
+  <setupTask
       xsi:type="git:GitCloneTask"
       id="github.clone.sandbox.qa"
       remoteURI="https://github.com/carstenartur/sandbox.git"
@@ -76,21 +117,21 @@
   <setupTask
       xsi:type="git:GitCloneTask"
       id="github.clone.jdt.core.qa"
-      remoteURI="https://github.com/eclipse-jdt/eclipse.jdt.core.git"
+      remoteURI="${sandbox.qa.jdt.core.repository}"
       checkoutBranch="${sandbox.qa.jdt.core.ref}">
     <description>JDT Core R4_40 source corpus.</description>
   </setupTask>
   <setupTask
       xsi:type="git:GitCloneTask"
       id="github.clone.jdt.ui.qa"
-      remoteURI="https://github.com/eclipse-jdt/eclipse.jdt.ui.git"
+      remoteURI="${sandbox.qa.jdt.ui.repository}"
       checkoutBranch="${sandbox.qa.jdt.ui.ref}">
-    <description>JDT UI R4_40 source corpus for the subsequent JUnit 4 scenarios.</description>
+    <description>JDT UI R4_40 source corpus for subsequent JUnit 4 scenarios.</description>
   </setupTask>
   <setupTask
       xsi:type="git:GitCloneTask"
       id="github.clone.jdt.core.binaries.qa"
-      remoteURI="https://github.com/eclipse-jdt/eclipse.jdt.core.binaries.git"
+      remoteURI="${sandbox.qa.jdt.core.binaries.repository}"
       checkoutBranch="${sandbox.qa.jdt.core.binaries.ref}">
     <description>JDT Core R4_40 test binaries required by the official test projects.</description>
   </setupTask>
@@ -138,9 +179,9 @@
       <repositoryList
           name="Eclipse 2026-06">
         <repository
-            url="https://download.eclipse.org/releases/2026-06/"/>
+            url="https://download.eclipse.org/releases/${sandbox.qa.eclipse.release}/"/>
         <repository
-            url="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-06/"/>
+            url="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/${sandbox.qa.eclipse.release}/"/>
         <repository
             url="https://download.eclipse.org/cbi/updates/license"/>
       </repositoryList>
@@ -154,6 +195,7 @@
         locateNestedProjects="true"/>
     <description>Import Sandbox source projects next to the pinned upstream corpus.</description>
   </setupTask>
+
   <setupTask
       xsi:type="setup.workingsets:WorkingSetTask">
     <workingSet
@@ -169,20 +211,29 @@
           pattern="org.eclipse.jdt.*"/>
     </workingSet>
   </setupTask>
+
   <setupTask
       xsi:type="setup:ResourceCreationTask"
       targetURL="${workspace.location|uri}/.sandbox-jdt-migration-qa-pins.env"
       encoding="UTF-8">
     <content>
-      PIN_ECLIPSE_RELEASE=2026-06
-      PIN_JDT_CORE_REF=R4_40
-      PIN_JDT_CORE_COMMIT=ef3d6f2115df89d7964bc13aa363ab8d6bd21256
-      PIN_JDT_UI_REF=R4_40
-      PIN_JDT_UI_COMMIT=c922f757b27b7e2b6215db383cec5f8aafd13227
-      PIN_JDT_CORE_BINARIES_REF=R4_40
-      PIN_JDT_CORE_BINARIES_COMMIT=0b8255ae33fc91724774ab2b550276191f9db416
+      PIN_ECLIPSE_RELEASE=${sandbox.qa.eclipse.release}
+      PIN_ECLIPSE_PLATFORM_VERSION=${sandbox.qa.eclipse.platform.version}
+      PIN_JDT_CORE_REPOSITORY=${sandbox.qa.jdt.core.repository}
+      PIN_JDT_CORE_REF=${sandbox.qa.jdt.core.ref}
+      PIN_JDT_CORE_COMMIT=${sandbox.qa.jdt.core.commit}
+      PIN_JDT_UI_REPOSITORY=${sandbox.qa.jdt.ui.repository}
+      PIN_JDT_UI_REF=${sandbox.qa.jdt.ui.ref}
+      PIN_JDT_UI_COMMIT=${sandbox.qa.jdt.ui.commit}
+      PIN_JDT_CORE_BINARIES_REPOSITORY=${sandbox.qa.jdt.core.binaries.repository}
+      PIN_JDT_CORE_BINARIES_REF=${sandbox.qa.jdt.core.binaries.ref}
+      PIN_JDT_CORE_BINARIES_COMMIT=${sandbox.qa.jdt.core.binaries.commit}
+      PIN_PRIMARY_PROJECT=${sandbox.qa.primary.project}
+      PIN_PRIMARY_SOURCE=${sandbox.qa.primary.source}
+      PIN_PRIMARY_TEST_POM=${sandbox.qa.primary.test.pom}
     </content>
   </setupTask>
+
   <setupTask
       xsi:type="projects:ProjectsBuildTask">
     <description>Build the imported Sandbox and pinned JDT projects after target resolution.</description>
