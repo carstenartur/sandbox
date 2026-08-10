@@ -1,0 +1,272 @@
+name: Apply JUnit 3 execution-order preservation
+
+on:
+  push:
+    branches:
+      - feature/oomph-upstream-jdt-migration-qa-final
+    paths:
+      - '.github/workflows/apply-junit3-order-preservation.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Preserve the exact collision-free JUnit 3 method order
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          plugin_path = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/TestJUnit3Plugin.java')
+          text = plugin_path.read_text(encoding='utf-8')
+          text = replace_once(text,
+              'import java.util.Set;\n',
+              'import java.util.Arrays;\nimport java.util.Comparator;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n',
+              'collection imports')
+          text = replace_once(text,
+              'import org.eclipse.jdt.core.dom.NodeFinder;\n',
+              'import org.eclipse.jdt.core.dom.NodeFinder;\nimport org.eclipse.jdt.core.dom.NumberLiteral;\n',
+              'number literal import')
+          text = replace_once(text,
+              'import org.eclipse.jdt.core.dom.SimpleName;\n',
+              'import org.eclipse.jdt.core.dom.SimpleName;\nimport org.eclipse.jdt.core.dom.SingleMemberAnnotation;\n',
+              'single member annotation import')
+          text = replace_once(text,
+              'import org.eclipse.jdt.core.dom.TypeDeclaration;\n',
+              'import org.eclipse.jdt.core.dom.TypeDeclaration;\nimport org.eclipse.jdt.core.dom.TypeLiteral;\n',
+              'type literal import')
+          text = replace_once(text,
+              '''\tprivate static final String JUNIT3_ASSERT= "junit.framework.Assert"; //$NON-NLS-1$
+          ''',
+              '''\tprivate static final String JUNIT3_ASSERT= "junit.framework.Assert"; //$NON-NLS-1$
+
+          \tprivate static final String ORG_JUNIT_JUPITER_API_ORDER= "org.junit.jupiter.api.Order"; //$NON-NLS-1$
+          \tprivate static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER=
+          \t\t\t"org.junit.jupiter.api.TestMethodOrder"; //$NON-NLS-1$
+          \tprivate static final String ORG_JUNIT_JUPITER_API_ORDER_ANNOTATION=
+          \t\t\t"org.junit.jupiter.api.MethodOrderer.OrderAnnotation"; //$NON-NLS-1$
+
+          \t/** JUnit 3/JUnit 4 MethodSorter.DEFAULT for collision-free test names. */
+          \tprivate static final Comparator<MethodDeclaration> JUNIT3_METHOD_ORDER=
+          \t\t\tComparator.comparingInt(method -> method.getName().getIdentifier().hashCode());
+          ''',
+              'JUnit order constants')
+          text = replace_once(text,
+              '''\t\treturn testFound;
+          \t}
+
+          \tprivate boolean hasKnownSubtypes''',
+              '''\t\treturn testFound && hasDistinctTestNameHashes(node);
+          \t}
+
+          \tprivate boolean hasDistinctTestNameHashes(TypeDeclaration node) {
+          \t\tSet<Integer> hashes= new HashSet<>();
+          \t\tfor (MethodDeclaration method : node.getMethods()) {
+          \t\t\tif (isTestMethod(method)
+          \t\t\t\t\t&& !hashes.add(Integer.valueOf(method.getName().getIdentifier().hashCode()))) {
+          \t\t\t\treturn false;
+          \t\t\t}
+          \t\t}
+          \t\treturn true;
+          \t}
+
+          \tprivate List<MethodDeclaration> orderedTestMethods(TypeDeclaration node) {
+          \t\treturn Arrays.stream(node.getMethods())
+          \t\t\t\t.filter(this::isTestMethod)
+          \t\t\t\t.sorted(JUNIT3_METHOD_ORDER)
+          \t\t\t\t.toList();
+          \t}
+
+          \tprivate boolean hasKnownSubtypes''',
+              'local collision policy')
+          text = replace_once(text,
+              '''\t\tboolean removedSelfSuite= false;
+          \t\tfor (MethodDeclaration method : node.getMethods()) {
+          ''',
+              '''\t\tList<MethodDeclaration> orderedTests= orderedTestMethods(node);
+          \t\tif (orderedTests.size() > 1) {
+          \t\t\taddTestMethodOrder(node, rewriter, ast, importRewriter, group);
+          \t\t}
+          \t\tboolean removedSelfSuite= false;
+          \t\tfor (MethodDeclaration method : node.getMethods()) {
+          ''',
+              'ordered method preparation')
+          text = replace_once(text,
+              '''\t\t\t} else if (isTestMethod(method)) {
+          \t\t\t\taddAnnotationToMethod(method, "Test", importRewriter, rewriter, ast, group); //$NON-NLS-1$
+          \t\t\t}
+          ''',
+              '''\t\t\t} else if (isTestMethod(method)) {
+          \t\t\t\taddAnnotationToMethod(method, "Test", importRewriter, rewriter, ast, group); //$NON-NLS-1$
+          \t\t\t\tif (orderedTests.size() > 1) {
+          \t\t\t\t\taddOrderAnnotation(method, orderedTests.indexOf(method) + 1,
+          \t\t\t\t\t\t\timportRewriter, rewriter, ast, group);
+          \t\t\t\t}
+          \t\t\t}
+          ''',
+              'test order annotations')
+          marker = '\n\tprivate void removeRedundantLifecycleSuperCalls'
+          insertion = '''
+          \tprivate void addTestMethodOrder(TypeDeclaration type, ASTRewrite rewrite, AST ast,
+          \t\t\tImportRewrite importRewrite, TextEditGroup group) {
+          \t\tSingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();
+          \t\tannotation.setTypeName(ast.newSimpleName("TestMethodOrder")); //$NON-NLS-1$
+          \t\tTypeLiteral orderer= ast.newTypeLiteral();
+          \t\torderer.setType(ast.newSimpleType(ast.newSimpleName("OrderAnnotation"))); //$NON-NLS-1$
+          \t\tannotation.setValue(orderer);
+          \t\tListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+          \t\tmodifiers.insertFirst(annotation, group);
+          \t\timportRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER);
+          \t\timportRewrite.addImport(ORG_JUNIT_JUPITER_API_ORDER_ANNOTATION);
+          \t}
+
+          \tprivate void addOrderAnnotation(MethodDeclaration method, int order, ImportRewrite importRewrite,
+          \t\t\tASTRewrite rewrite, AST ast, TextEditGroup group) {
+          \t\tSingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();
+          \t\tannotation.setTypeName(ast.newSimpleName("Order")); //$NON-NLS-1$
+          \t\tNumberLiteral value= ast.newNumberLiteral(Integer.toString(order));
+          \t\tannotation.setValue(value);
+          \t\tListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+          \t\tmodifiers.insertFirst(annotation, group);
+          \t\timportRewrite.addImport(ORG_JUNIT_JUPITER_API_ORDER);
+          \t}
+          '''
+          if text.count(marker) != 1:
+              raise SystemExit('order helper insertion marker not found exactly once')
+          text = text.replace(marker, '\n' + insertion + marker, 1)
+          plugin_path.write_text(text, encoding='utf-8')
+
+          planner_path = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyPlanner.java')
+          planner = planner_path.read_text(encoding='utf-8')
+          planner = replace_once(planner,
+              '''\t\t\tint depth= hierarchyDepth(type, rootKey);
+          \t\t\tif (depth < 0) {
+          ''',
+              '''\t\t\tif (hasCollidingTestNameHashes(type)) {
+          \t\t\t\treturn Classification.rejected("COLLIDING_JUNIT3_TEST_NAME_HASH", //$NON-NLS-1$
+          \t\t\t\t\t\t"Two JUnit 3 test method names have the same String hash; exact MethodSorter.DEFAULT tie-breaking cannot be represented safely."); //$NON-NLS-1$
+          \t\t\t}
+          \t\t\tint depth= hierarchyDepth(type, rootKey);
+          \t\t\tif (depth < 0) {
+          ''',
+              'hierarchy collision rejection')
+          marker = '\n\tprivate static Map<String, Integer> plannedExecutionOrders'
+          insertion = '''
+          \tprivate static boolean hasCollidingTestNameHashes(SourceType type) {
+          \t\tSet<Integer> hashes= new HashSet<>();
+          \t\tfor (MethodDeclaration method : type.declaration().getMethods()) {
+          \t\t\tif (isTestPrefixed(method)
+          \t\t\t\t\t&& !hashes.add(Integer.valueOf(method.getName().getIdentifier().hashCode()))) {
+          \t\t\t\treturn true;
+          \t\t\t}
+          \t\t}
+          \t\treturn false;
+          \t}
+          '''
+          if planner.count(marker) != 1:
+              raise SystemExit('hierarchy collision helper marker not found exactly once')
+          planner = planner.replace(marker, '\n' + insertion + marker, 1)
+          planner_path.write_text(planner, encoding='utf-8')
+
+          local_test_path = Path('sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationJUnit3RealWorldShapesTest.java')
+          test = local_test_path.read_text(encoding='utf-8')
+          test = replace_once(test,
+              '''\t@Test
+          \tpublic void rejectsMultipleSuiteInitializersInsteadOfReorderingThem() throws CoreException {
+          ''',
+              '''\t@Test
+          \tpublic void rejectsCollidingJUnit3MethodNameHashesInsteadOfGuessingTieOrder() throws CoreException {
+          \t\tIPackageFragment pack= root.createPackageFragment("unsafe", true, null); //$NON-NLS-1$
+          \t\tICompilationUnit unit= pack.createCompilationUnit("CollidingOrderTest.java", //$NON-NLS-1$
+          \t\t\t\t"""
+          \t\t\t\tpackage unsafe;
+
+          \t\t\t\timport junit.framework.TestCase;
+
+          \t\t\t\tpublic class CollidingOrderTest extends TestCase {
+          \t\t\t\t\tpublic void testAa() {
+          \t\t\t\t\t}
+
+          \t\t\t\t\tpublic void testBB() {
+          \t\t\t\t\t}
+          \t\t\t\t}
+          \t\t\t\t""", false, null); //$NON-NLS-1$
+
+          \t\tenableRealWorldJUnit3Migration();
+
+          \t\tcontext.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
+          \t}
+
+          \t@Test
+          \tpublic void rejectsMultipleSuiteInitializersInsteadOfReorderingThem() throws CoreException {
+          ''',
+              'local collision test')
+          local_test_path.write_text(test, encoding='utf-8')
+
+          planner_test_path = Path('sandbox_junit_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnit3HierarchyPlannerTest.java')
+          planner_test = planner_test_path.read_text(encoding='utf-8')
+          insertion_marker = '\n\t@Test\n\tpublic void leavesStandaloneLeafToLocalFailClosedCleanup()'
+          planner_test_addition = '''
+          \t@Test
+          \tpublic void rejectsHierarchyWithCollidingJUnit3MethodNameHashes() throws CoreException {
+          \t\tIPackageFragment pack= root.createPackageFragment("collision", true, null); //$NON-NLS-1$
+          \t\tICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
+          \t\t\t\t"""
+          \t\t\t\tpackage collision;
+          \t\t\t\timport junit.framework.TestCase;
+
+          \t\t\t\tpublic abstract class BaseTest extends TestCase {
+          \t\t\t\t\tpublic void testAa() {
+          \t\t\t\t\t}
+
+          \t\t\t\t\tpublic void testBB() {
+          \t\t\t\t\t}
+          \t\t\t\t}
+          \t\t\t\t""", false, null);
+          \t\tICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", //$NON-NLS-1$
+          \t\t\t\t"""
+          \t\t\t\tpackage collision;
+
+          \t\t\t\tpublic class ConcreteTest extends BaseTest {
+          \t\t\t\t}
+          \t\t\t\t""", false, null);
+
+          \t\tMultiFileCleanUpPlanResult<JUnitMigrationPlan> result= JUnitMultiFilePlanner.createCoordinated(
+          \t\t\t\tcontext.getJavaProject(), new ICompilationUnit[] { base, concrete }, false, true, true, null);
+
+          \t\tassertTrue(result.plan().junit3Hierarchies().isEmpty());
+          \t\tassertEquals(MultiFileCandidateOutcome.REJECTED,
+          \t\t\t\tresult.diagnostics().candidates().get(0).outcome());
+          \t\tassertEquals("COLLIDING_JUNIT3_TEST_NAME_HASH", //$NON-NLS-1$
+          \t\t\t\tresult.diagnostics().candidates().get(0).reasonCode());
+          \t}
+          '''
+          if planner_test.count(insertion_marker) != 1:
+              raise SystemExit('planner test insertion marker not found exactly once')
+          planner_test = planner_test.replace(insertion_marker, '\n' + planner_test_addition + insertion_marker, 1)
+          planner_test_path.write_text(planner_test, encoding='utf-8')
+          PY
+
+          git diff --check
+
+      - name: Commit explicit order preservation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sandbox_junit_cleanup sandbox_junit_cleanup_test
+          git commit -m "Preserve JUnit 3 method order or reject hash collisions"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
