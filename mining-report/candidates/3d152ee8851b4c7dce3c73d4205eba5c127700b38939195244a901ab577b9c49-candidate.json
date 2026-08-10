@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3d152ee8851b4c7dce3c73d4205eba5c127700b38939195244a901ab577b9c49",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: arrayContentProvider.singleton\u003e\n\u003c!description: Replace new ArrayContentProvider() with ArrayContentProvider.getInstance().\u003e\n\u003c!severity: INFO\u003e\nnew org.eclipse.jface.viewers.ArrayContentProvider()\n\u003d\u003e\norg.eclipse.jface.viewers.ArrayContentProvider.getInstance()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class MyClass {\n    void setup(Composite composite) {\n        TableViewer viewer \u003d new TableViewer(composite, SWT.SINGLE | SWT.BORDER);\n        viewer.setContentProvider(new ArrayContentProvider());\n        viewer.setInput(new Object[]{\"item1\", \"item2\"});\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class MyClass {\n    void setup(Composite composite) {\n        TableViewer viewer \u003d new TableViewer(composite, SWT.SINGLE | SWT.BORDER);\n        viewer.setContentProvider(ArrayContentProvider.getInstance());\n        viewer.setInput(new Object[]{\"item1\", \"item2\"});\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider; // Import should not trigger\nimport org.eclipse.jface.viewers.IContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class MyClass2 {\n    void setup(Composite composite) {\n        TableViewer viewer \u003d new TableViewer(composite, SWT.SINGLE | SWT.BORDER);\n        viewer.setContentProvider(new OtherContentProvider()); // Should not match\n        viewer.setInput(new Object[]{\"item1\", \"item2\"});\n    }\n}\n\nclass OtherContentProvider implements IContentProvider {\n    @Override\n    public void dispose() {}\n    @Override\n    public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {}\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "2551b9bc3a4d24c23865b40afa7ef1d698d86131",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Performance",
+  "summary": "Replaced direct instantiation of ArrayContentProvider with its singleton factory method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-10T02:56:58.392400722Z",
+  "ruleFingerprint": "sha256:604cdf5d5a9393decda68a3c895d4db859bb0301e885e73b6852bb0d922459fc",
+  "behaviorFingerprint": "sha256:a14f11ca3695fbb83dedca93422ef4bc0f0476a01ff9e587a9a2c4c6d3fde682",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-10T02:57:01.681946431Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
