@@ -9,17 +9,16 @@ package org.sandbox.jdt.core.cleanupapp;
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
- * 
+ *
  * This Source Code may also be made available under the following Secondary
  * Licenses when the conditions for such availability set forth in the Eclipse
  * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
  * with the GNU Classpath Exception which is
  * available at https://www.gnu.org/software/classpath/license.html.
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  * #L%
  */
-
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -116,6 +115,8 @@ public class CodeCleanupApplication implements IApplication {
 
 	private boolean verbose = false;
 
+	private boolean helpRequested = false;
+
 	CleanupMode cleanupMode = CleanupMode.APPLY;
 
 	CleanupScope cleanupScope = CleanupScope.BOTH;
@@ -142,10 +143,11 @@ public class CodeCleanupApplication implements IApplication {
 
 	private final List<String> changedFiles = new ArrayList<>();
 
+	private final List<String> errors = new ArrayList<>();
+
 	private final StringBuilder patchContent = new StringBuilder();
 
 	private int filesProcessed = 0;
-
 
 	/**
 	 * Clean up the given Java source file. In CHECK/DIFF modes, detects changes
@@ -161,23 +163,18 @@ public class CodeCleanupApplication implements IApplication {
 			IFile iFile = ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(filePath);
 
 			if (iFile == null || !iFile.exists()) {
-				if (!this.quiet) {
-					System.err.println(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));
-				}
+				recordError(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));
 				return;
 			}
 
 			ICompilationUnit cu = JavaCore.createCompilationUnitFrom(iFile);
 			if (cu == null) {
-				if (!this.quiet) {
-					System.err.println(Messages.bind(Messages.CleanupProblem, file.getAbsolutePath()));
-				}
+				recordError(Messages.bind(Messages.CleanupProblem, file.getAbsolutePath()));
 				return;
 			}
 
 			this.filesProcessed++;
 
-			// Snapshot original content for change detection in CHECK/DIFF modes
 			byte[] originalContent = null;
 			if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
 				originalContent = Files.readAllBytes(file.toPath());
@@ -205,77 +202,75 @@ public class CodeCleanupApplication implements IApplication {
 
 			RefactoringStatus status = refactoring.checkAllConditions(new NullProgressMonitor());
 			if (status.hasFatalError()) {
-				if (!this.quiet) {
-					System.err.println(Messages.bind(Messages.CleanupFatalError, file.getAbsolutePath(), status.getMessageMatchingSeverity(RefactoringStatus.FATAL)));
-				}
+				recordError(Messages.bind(Messages.CleanupFatalError, file.getAbsolutePath(),
+						status.getMessageMatchingSeverity(RefactoringStatus.FATAL)));
 				return;
 			}
 
 			Change change = refactoring.createChange(new NullProgressMonitor());
-			if (change != null) {
-				if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
-					// Perform the change, then compare and restore
+			if (change == null) {
+				return;
+			}
+
+			if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
+				try {
 					change.perform(new NullProgressMonitor());
 					cu.save(new NullProgressMonitor(), true);
 					iFile.refreshLocal(1, new NullProgressMonitor());
 
 					byte[] newContent = Files.readAllBytes(file.toPath());
-					boolean changed = !MessageDigest.isEqual(
-							computeHash(originalContent), computeHash(newContent));
+					boolean changed = !MessageDigest.isEqual(computeHash(originalContent), computeHash(newContent));
 
 					if (changed) {
 						this.changedFiles.add(file.getAbsolutePath());
-
 						String origStr = new String(originalContent, StandardCharsets.UTF_8);
 						String newStr = new String(newContent, StandardCharsets.UTF_8);
 
 						if (this.cleanupMode == CleanupMode.DIFF && !this.quiet) {
 							printUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
 						}
-
-						// Capture diff for patch file
 						if (this.patchFile != null) {
 							appendUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
 						}
 					}
-
-					// Restore original content (dry-run)
+				} finally {
 					Files.write(file.toPath(), originalContent);
 					iFile.refreshLocal(1, new NullProgressMonitor());
-				} else {
-					// APPLY mode – snapshot before, apply, compare
-					byte[] beforeContent = Files.readAllBytes(file.toPath());
-					change.perform(new NullProgressMonitor());
-					cu.save(new NullProgressMonitor(), true);
-					iFile.refreshLocal(1, new NullProgressMonitor());
+				}
+			} else {
+				byte[] beforeContent = Files.readAllBytes(file.toPath());
+				change.perform(new NullProgressMonitor());
+				cu.save(new NullProgressMonitor(), true);
+				iFile.refreshLocal(1, new NullProgressMonitor());
 
-					byte[] afterContent = Files.readAllBytes(file.toPath());
-					if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {
-						this.changedFiles.add(file.getAbsolutePath());
-					}
+				byte[] afterContent = Files.readAllBytes(file.toPath());
+				if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {
+					this.changedFiles.add(file.getAbsolutePath());
 				}
 			}
-
 		} catch (CoreException e) {
-			final String errorMessage = Messages.bind(Messages.CaughtException, "CoreException", e.getLocalizedMessage()); //$NON-NLS-1$
+			final String errorMessage = Messages.bind(Messages.CaughtException, "CoreException", //$NON-NLS-1$
+					e.getLocalizedMessage());
 			Util.log(e, errorMessage);
-			System.err.println(Messages.bind(Messages.ExceptionSkip, errorMessage));
+			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));
 		} catch (Exception e) {
-			final String errorMessage = Messages.bind(Messages.CaughtException, e.getClass().getSimpleName(), e.getLocalizedMessage());
+			final String errorMessage = Messages.bind(Messages.CaughtException, e.getClass().getSimpleName(),
+					e.getLocalizedMessage());
 			Util.log(e, errorMessage);
-			System.err.println(Messages.bind(Messages.ExceptionSkip, errorMessage));
+			recordError(Messages.bind(Messages.ExceptionSkip, errorMessage));
 		}
 	}
 
 	File[] processCommandLine(final String[] argsArray) {
+		resetRunState();
+		if (argsArray == null) {
+			return failWithNull(Messages.bind(Messages.CommandLineErrorFileDir));
+		}
 
 		int index = 0;
 		final int argCount = argsArray.length;
-
 		int parseMode = DEFAULT_PARSE_MODE;
-
 		int fileCounter = 0;
-
 		File[] filesToCleanup = new File[INITIALSIZE];
 
 		loop: while (index < argCount) {
@@ -289,6 +284,7 @@ public class CodeCleanupApplication implements IApplication {
 						continue loop;
 					}
 					if (ARG_HELP.equals(currentArg) || "--help".equals(currentArg)) { //$NON-NLS-1$
+						this.helpRequested = true;
 						displayHelp();
 						return FILES;
 					}
@@ -324,11 +320,14 @@ public class CodeCleanupApplication implements IApplication {
 						parseMode = REPORT_PARSE_MODE;
 						continue loop;
 					}
-					// the current arg should be a file or a directory name
+					if (currentArg.startsWith("-")) { //$NON-NLS-1$
+						return failWithEmpty("Unknown option: " + currentArg); //$NON-NLS-1$
+					}
 					final File file = new File(currentArg);
 					if (file.exists()) {
 						if (filesToCleanup.length == fileCounter) {
-							System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter * 2], 0, fileCounter);
+							System.arraycopy(filesToCleanup, 0,
+									filesToCleanup = new File[fileCounter * 2], 0, fileCounter);
 						}
 						filesToCleanup[fileCounter++] = file;
 					} else {
@@ -338,18 +337,18 @@ public class CodeCleanupApplication implements IApplication {
 						} catch (IOException e2) {
 							canonicalPath = file.getAbsolutePath();
 						}
-						final String errorMsg = file.isAbsolute() ?
-								Messages.bind(Messages.CommandLineErrorFile, canonicalPath) :
-								Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);
-						displayHelp(errorMsg);
-						return FILES;
+						final String errorMsg = file.isAbsolute()
+								? Messages.bind(Messages.CommandLineErrorFile, canonicalPath)
+								: Messages.bind(Messages.CommandLineErrorFileTryFullPath, canonicalPath);
+						return failWithEmpty(errorMsg);
 					}
 					break;
 				case CONFIG_PARSE_MODE:
 					this.configName = currentArg;
 					this.options = readConfig(currentArg);
 					if (this.options == null) {
-						displayHelp(Messages.bind(Messages.CommandLineErrorConfig, currentArg));
+						System.out.println();
+						displayHelp();
 						return FILES;
 					}
 					parseMode = DEFAULT_PARSE_MODE;
@@ -358,8 +357,7 @@ public class CodeCleanupApplication implements IApplication {
 					try {
 						this.cleanupMode = CleanupMode.valueOf(currentArg.toUpperCase());
 					} catch (@SuppressWarnings("unused") IllegalArgumentException e) {
-						displayHelp(Messages.bind(Messages.CommandLineErrorInvalidMode, currentArg));
-						return FILES;
+						return failWithEmpty(Messages.bind(Messages.CommandLineErrorInvalidMode, currentArg));
 					}
 					parseMode = DEFAULT_PARSE_MODE;
 					continue loop;
@@ -367,12 +365,12 @@ public class CodeCleanupApplication implements IApplication {
 					final File sourceDir = new File(currentArg);
 					if (sourceDir.exists()) {
 						if (filesToCleanup.length == fileCounter) {
-							System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter * 2], 0, fileCounter);
+							System.arraycopy(filesToCleanup, 0,
+									filesToCleanup = new File[fileCounter * 2], 0, fileCounter);
 						}
 						filesToCleanup[fileCounter++] = sourceDir;
 					} else {
-						displayHelp(Messages.bind(Messages.CommandLineErrorFile, currentArg));
-						return FILES;
+						return failWithEmpty(Messages.bind(Messages.CommandLineErrorFile, currentArg));
 					}
 					parseMode = DEFAULT_PARSE_MODE;
 					continue loop;
@@ -381,8 +379,7 @@ public class CodeCleanupApplication implements IApplication {
 					try {
 						this.cleanupScope = CleanupScope.valueOf(currentArg.toUpperCase());
 					} catch (@SuppressWarnings("unused") IllegalArgumentException e) {
-						displayHelp(Messages.bind(Messages.CommandLineErrorInvalidScope, currentArg));
-						return FILES;
+						return failWithEmpty(Messages.bind(Messages.CommandLineErrorInvalidScope, currentArg));
 					}
 					parseMode = DEFAULT_PARSE_MODE;
 					continue loop;
@@ -397,21 +394,21 @@ public class CodeCleanupApplication implements IApplication {
 			}
 		}
 
-		if (parseMode == CONFIG_PARSE_MODE || this.options == null) {
-			displayHelp(Messages.bind(Messages.CommandLineErrorNoConfigFile));
-			return null;
+		if (parseMode != DEFAULT_PARSE_MODE) {
+			if (parseMode == CONFIG_PARSE_MODE) {
+				return failWithNull(Messages.bind(Messages.CommandLineErrorNoConfigFile));
+			}
+			return failWithNull("Missing value for option " + optionForParseMode(parseMode)); //$NON-NLS-1$
+		}
+		if (this.options == null) {
+			return failWithNull(Messages.bind(Messages.CommandLineErrorNoConfigFile));
 		}
 		if (this.quiet && this.verbose) {
-			displayHelp(
-				Messages.bind(
-					Messages.CommandLineErrorQuietVerbose,
-					new String[] { ARG_QUIET, ARG_VERBOSE }
-				));
-			return null;
+			return failWithNull(Messages.bind(Messages.CommandLineErrorQuietVerbose,
+					new String[] { ARG_QUIET, ARG_VERBOSE }));
 		}
 		if (fileCounter == 0) {
-			displayHelp(Messages.bind(Messages.CommandLineErrorFileDir));
-			return null;
+			return failWithNull(Messages.bind(Messages.CommandLineErrorFileDir));
 		}
 		if (filesToCleanup.length != fileCounter) {
 			System.arraycopy(filesToCleanup, 0, filesToCleanup = new File[fileCounter], 0, fileCounter);
@@ -419,11 +416,52 @@ public class CodeCleanupApplication implements IApplication {
 		return filesToCleanup;
 	}
 
+	private void resetRunState() {
+		this.configName = null;
+		this.options = null;
+		this.quiet = false;
+		this.verbose = false;
+		this.helpRequested = false;
+		this.cleanupMode = CleanupMode.APPLY;
+		this.cleanupScope = CleanupScope.BOTH;
+		this.patchFile = null;
+		this.reportFile = null;
+		this.changedFiles.clear();
+		this.errors.clear();
+		this.patchContent.setLength(0);
+		this.filesProcessed = 0;
+	}
+
+	private File[] failWithEmpty(String message) {
+		recordError(message);
+		System.out.println();
+		displayHelp();
+		return FILES;
+	}
+
+	private File[] failWithNull(String message) {
+		recordError(message);
+		System.out.println();
+		displayHelp();
+		return null;
+	}
+
+	private static String optionForParseMode(int parseMode) {
+		return switch (parseMode) {
+			case MODE_PARSE_MODE -> ARG_MODE;
+			case SOURCE_PARSE_MODE -> ARG_SOURCE;
+			case SCOPE_PARSE_MODE -> ARG_SCOPE;
+			case PATCH_PARSE_MODE -> ARG_PATCH;
+			case REPORT_PARSE_MODE -> ARG_REPORT;
+			default -> ARG_CONFIG;
+		};
+	}
+
 	/**
 	 * Return a Java Properties file representing the options that are in the
 	 * specified configuration file.
 	 */
-	private static Map<String, String> readConfig(final String filename) {
+	private Map<String, String> readConfig(final String filename) {
 		final File configFile = new File(filename);
 		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(configFile))) {
 			final Properties formatterOptions = new Properties();
@@ -434,7 +472,7 @@ public class CodeCleanupApplication implements IApplication {
 			}
 			return optionsMap;
 		} catch (IOException e) {
-			String canonicalPath = null;
+			String canonicalPath;
 			try {
 				canonicalPath = configFile.getCanonicalPath();
 			} catch (IOException e2) {
@@ -443,28 +481,28 @@ public class CodeCleanupApplication implements IApplication {
 			final String errorMessage;
 			if (!configFile.exists() && !configFile.isAbsolute()) {
 				errorMessage = Messages.bind(Messages.ConfigFileNotFoundErrorTryFullPath, new Object[] {
-					canonicalPath,
-					System.getProperty("user.dir") //$NON-NLS-1$
+						canonicalPath,
+						System.getProperty("user.dir") //$NON-NLS-1$
 				});
-
 			} else {
 				errorMessage = Messages.bind(Messages.ConfigFileReadingError, canonicalPath);
 			}
 			Util.log(e, errorMessage);
-			System.err.println(errorMessage);
+			recordError(errorMessage);
 		}
 		return null;
 	}
 
 	/**
-	 * Runs the Java code cleanup application
+	 * Runs the Java code cleanup application.
 	 */
 	@Override
 	public Object start(final IApplicationContext context) throws Exception {
 		Instant startTime = Instant.now();
-		final File[] filesToCleanup = processCommandLine((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
+		final File[] filesToCleanup = processCommandLine(
+				(String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
 
-		if (filesToCleanup == null) {
+		if (filesToCleanup == null || this.helpRequested) {
 			return IApplication.EXIT_OK;
 		}
 
@@ -478,23 +516,21 @@ public class CodeCleanupApplication implements IApplication {
 			}
 		}
 
-		// clean up the list of files and/or directories
 		for (final File file : filesToCleanup) {
 			if (file.isDirectory()) {
 				cleanDirTree(file);
 			} else if (Util.isJavaLikeFileName(file.getPath())) {
 				cleanFile(file);
+			} else {
+				recordError("Not a Java source file: " + file.getAbsolutePath()); //$NON-NLS-1$
 			}
 		}
 
 		Instant endTime = Instant.now();
 
-		// Write patch file if requested
 		if (this.patchFile != null && !this.changedFiles.isEmpty()) {
 			writePatchFile(filesToCleanup);
 		}
-
-		// Write JSON report if requested
 		if (this.reportFile != null) {
 			writeJsonReport(startTime, endTime);
 		}
@@ -505,13 +541,19 @@ public class CodeCleanupApplication implements IApplication {
 				System.out.println(Messages.bind(Messages.CommandLineChangedFiles,
 						String.valueOf(this.changedFiles.size())));
 			}
+			if (!this.errors.isEmpty()) {
+				System.out.println("Errors: " + this.errors.size()); //$NON-NLS-1$
+			}
 		}
 
-		// Determine exit code based on mode
 		if (this.cleanupMode == CleanupMode.CHECK || this.cleanupMode == CleanupMode.DIFF) {
 			return this.changedFiles.isEmpty() ? Integer.valueOf(EXIT_OK) : Integer.valueOf(EXIT_CHANGES);
 		}
 		return IApplication.EXIT_OK;
+	}
+
+	boolean hasErrors() {
+		return !this.errors.isEmpty();
 	}
 
 	@Override
@@ -519,17 +561,13 @@ public class CodeCleanupApplication implements IApplication {
 		// do nothing
 	}
 
-	/**
-	 * Display the command line usage message.
-	 */
 	private static void displayHelp() {
 		System.out.println(Messages.bind(Messages.CommandLineUsage));
 	}
 
-	private static void displayHelp(final String message) {
+	private void recordError(String message) {
+		this.errors.add(message);
 		System.err.println(message);
-		System.out.println();
-		displayHelp();
 	}
 
 	/**
@@ -537,9 +575,9 @@ public class CodeCleanupApplication implements IApplication {
 	 * directory rooted at dir.
 	 */
 	private void cleanDirTree(final File dir) {
-
 		final File[] files = dir.listFiles();
 		if (files == null) {
+			recordError("Cannot read source directory: " + dir.getAbsolutePath()); //$NON-NLS-1$
 			return;
 		}
 
@@ -565,31 +603,22 @@ public class CodeCleanupApplication implements IApplication {
 		if (this.cleanupScope == CleanupScope.MAIN) {
 			return !"test".equals(name) && !"tests".equals(name); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		// TEST scope: only process test directories and their parents
 		return "test".equals(name) || "tests".equals(name); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	/**
-	 * Compute SHA-256 hash for content comparison.
-	 */
 	private static byte[] computeHash(byte[] content) {
 		try {
 			return MessageDigest.getInstance("SHA-256").digest(content); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
-			// SHA-256 is always available in Java
 			throw new AssertionError(e);
 		}
 	}
 
-	/**
-	 * Print a simple unified diff between original and new content.
-	 */
 	private static void printUnifiedDiff(String filePath, String original, String modified) {
 		System.out.println("--- a/" + filePath); //$NON-NLS-1$
 		System.out.println("+++ b/" + filePath); //$NON-NLS-1$
 		String[] origLines = original.split("\n", -1); //$NON-NLS-1$
 		String[] newLines = modified.split("\n", -1); //$NON-NLS-1$
-		// Simple line-by-line diff (hunk-based)
 		int maxLen = Math.max(origLines.length, newLines.length);
 		int hunkStart = -1;
 		List<String> hunkLines = new ArrayList<>();
@@ -606,13 +635,11 @@ public class CodeCleanupApplication implements IApplication {
 				if (i < newLines.length) {
 					hunkLines.add("+" + newLine); //$NON-NLS-1$
 				}
-			} else {
-				if (!hunkLines.isEmpty()) {
-					System.out.println("@@ -" + hunkStart + " @@"); //$NON-NLS-1$ //$NON-NLS-2$
-					hunkLines.forEach(System.out::println);
-					hunkLines.clear();
-					hunkStart = -1;
-				}
+			} else if (!hunkLines.isEmpty()) {
+				System.out.println("@@ -" + hunkStart + " @@"); //$NON-NLS-1$ //$NON-NLS-2$
+				hunkLines.forEach(System.out::println);
+				hunkLines.clear();
+				hunkStart = -1;
 			}
 		}
 		if (!hunkLines.isEmpty()) {
@@ -621,9 +648,6 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 
-	/**
-	 * Append unified diff content to the patchContent buffer.
-	 */
 	private void appendUnifiedDiff(String filePath, String original, String modified) {
 		this.patchContent.append("--- a/").append(filePath).append('\n'); //$NON-NLS-1$
 		this.patchContent.append("+++ b/").append(filePath).append('\n'); //$NON-NLS-1$
@@ -645,15 +669,13 @@ public class CodeCleanupApplication implements IApplication {
 				if (i < newLines.length) {
 					hunkLines.add("+" + newLine); //$NON-NLS-1$
 				}
-			} else {
-				if (!hunkLines.isEmpty()) {
-					this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
-					for (String line : hunkLines) {
-						this.patchContent.append(line).append('\n');
-					}
-					hunkLines.clear();
-					hunkStart = -1;
+			} else if (!hunkLines.isEmpty()) {
+				this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				for (String line : hunkLines) {
+					this.patchContent.append(line).append('\n');
 				}
+				hunkLines.clear();
+				hunkStart = -1;
 			}
 		}
 		if (!hunkLines.isEmpty()) {
@@ -664,29 +686,21 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 
-	/**
-	 * Write unified diff patch file for all changed files.
-	 */
 	private void writePatchFile(final File[] sourceRoots) {
-		try (PrintWriter writer = new PrintWriter(
-				new OutputStreamWriter(Files.newOutputStream(new File(this.patchFile).toPath()),
-						StandardCharsets.UTF_8))) {
+		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+				Files.newOutputStream(new File(this.patchFile).toPath()), StandardCharsets.UTF_8))) {
 			writer.print(this.patchContent.toString());
 			if (this.verbose) {
 				System.out.println(Messages.bind(Messages.CommandLinePatchWritten, this.patchFile));
 			}
 		} catch (IOException e) {
-			System.err.println(Messages.bind(Messages.CommandLinePatchError, this.patchFile));
+			recordError(Messages.bind(Messages.CommandLinePatchError, this.patchFile));
 		}
 	}
 
-	/**
-	 * Write a JSON report file with cleanup results.
-	 */
 	private void writeJsonReport(Instant startTime, Instant endTime) {
-		try (PrintWriter writer = new PrintWriter(
-				new OutputStreamWriter(Files.newOutputStream(new File(this.reportFile).toPath()),
-						StandardCharsets.UTF_8))) {
+		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+				Files.newOutputStream(new File(this.reportFile).toPath()), StandardCharsets.UTF_8))) {
 			Map<String, Object> report = new LinkedHashMap<>();
 			report.put("tool", "sandbox-cleanup"); //$NON-NLS-1$ //$NON-NLS-2$
 			report.put("version", getToolVersion()); //$NON-NLS-1$
@@ -698,8 +712,9 @@ public class CodeCleanupApplication implements IApplication {
 			report.put("filesProcessed", this.filesProcessed); //$NON-NLS-1$
 			report.put("filesChanged", this.changedFiles.size()); //$NON-NLS-1$
 			report.put("changedFiles", this.changedFiles); //$NON-NLS-1$
+			report.put("errorCount", this.errors.size()); //$NON-NLS-1$
+			report.put("errors", this.errors); //$NON-NLS-1$
 
-			// Write JSON manually to avoid adding dependencies
 			writeJsonObject(writer, report, 0);
 			writer.println();
 
@@ -707,13 +722,10 @@ public class CodeCleanupApplication implements IApplication {
 				System.out.println(Messages.bind(Messages.CommandLineReportWritten, this.reportFile));
 			}
 		} catch (IOException e) {
-			System.err.println(Messages.bind(Messages.CommandLineReportError, this.reportFile));
+			recordError(Messages.bind(Messages.CommandLineReportError, this.reportFile));
 		}
 	}
 
-	/**
-	 * Simple JSON writer without external dependencies.
-	 */
 	@SuppressWarnings("unchecked")
 	private static void writeJsonObject(PrintWriter writer, Map<String, Object> map, int indent) {
 		String pad = "  ".repeat(indent); //$NON-NLS-1$
@@ -774,7 +786,6 @@ public class CodeCleanupApplication implements IApplication {
 	}
 
 	private static String getToolVersion() {
-		// Read version from bundle or fallback
 		return System.getProperty("sandbox.cleanup.version", "1.2.6-SNAPSHOT"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }
