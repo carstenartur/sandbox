@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "issue": 1303,
   "baselineCommit": "714bec5cf26e1554520ef063850865ec931a6624",
-  "lastVerifiedCommit": "970fcb81fe46aaa8c535fa29dc962c901f52b640",
+  "lastVerifiedCommit": "5f9e286566da8affcaccd69cc38062014c369bc5",
   "purpose": "Machine-readable baseline and evidence ledger for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": "0.1.18",
-    "selectionState": "selected; Core 0.1.18 adapter lifecycle, restart and deletion policy verified on H2"
+    "selectedVersion": "0.10.0",
+    "selectionState": "selected; Core 0.10.0 candidate verified by the consumer-owned Sandbox contract at immutable commit 5f9e286566da8affcaccd69cc38062014c369bc5 in jgit-storage-hibernate Real Consumer Compatibility run 31357180764; adapter lifecycle, restart and deletion policy verified on H2"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -27,7 +27,7 @@
         "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
         "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.1.18 for guarded external startup",
+      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.10.0 for guarded external startup",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
@@ -47,7 +47,8 @@
         "ExternalHibernateRepositoryServiceTest.shutdownClosesAStorageWhoseOpenWasAlreadyInFlight",
         "ExternalHibernateRepositoryServiceTest.closeDoesNotHoldLifecycleLockWhileClosingStorage",
         "ExternalRepositoryLifecycleH2Test.normalizesIsolatesAndReopensRepositories",
-        "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d"
+        "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d",
+        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate — sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
       ]
     },
     {
@@ -133,8 +134,9 @@
         "ExternalHibernateRepositoryDeletionTest.deletionCannotOvertakeAnInFlightOpen",
         "ExternalHibernateRepositoryDeletionTest.repeatedDeletionIsIdempotent",
         "SandboxRepositoryServiceBoundaryTest.exposesPublicJGitRepositoryContract",
-        "Core 0.1.18 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles",
-        "Deletion policy evidence commit 970fcb81fe46aaa8c535fa29dc962c901f52b640"
+        "Core 0.10.0 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles",
+        "Deletion policy evidence commit 970fcb81fe46aaa8c535fa29dc962c901f52b640",
+        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate — sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
       ]
     },
     {
