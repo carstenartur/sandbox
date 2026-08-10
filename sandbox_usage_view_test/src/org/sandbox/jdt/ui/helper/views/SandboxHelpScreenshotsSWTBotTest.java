@@ -614,7 +614,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         createUnit(sourceRoot, "demo.multi", "SorterOnly.java",
                 """
                         package demo.multi;
-                        import org.eclipse.jface.viewers.ViewSorter;
+                        import org.eclipse.jface.viewers.ViewerSorter;
                         public class SorterOnly {
                             public ViewerSorter sorter() {
                                 return new ViewerSorter();
