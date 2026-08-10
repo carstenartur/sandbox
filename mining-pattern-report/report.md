@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-08-06
+# Refactoring Mining Report — 2026-08-10
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1202 | 53 | 10 |
+| sandbox | 1267 | 55 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -234,6 +234,10 @@
 ### sandbox
 #### Rule: `collection-performance` → `collection-performance.map-values-size.to-map-size`
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/internal/StructuredRewriteActionParserTest.java:85` — `list.values().size()` → `list.size()`
+
+#### Rule: `collection-performance` → `collection-performance.map-values-isempty.to-map-isempty`
+- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:54` — `store.values().isEmpty()` → `store.isEmpty()`
+- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:65` — `store.values().isEmpty()` → `store.isEmpty()`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:152` — `VisitorEnum.stream().forEach(ve -> {   hv.add(ve,(node,holder) -> {     holde...` → `VisitorEnum.forEach(ve -> {   hv.add(ve,(node,holder) -> {     holder.merge(V...`

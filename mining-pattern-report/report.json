@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 229,
+    "totalMatches": 231,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,9 +33,9 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1202,
-        "matches": 53,
-        "rules": 10
+        "files": 1267,
+        "matches": 55,
+        "rules": 11
       }
     }
   },
@@ -1472,6 +1472,24 @@
       "line": 85,
       "matchedCode": "list.values().size()",
       "suggestedReplacement": "list.size()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "collection-performance",
+      "rule": "collection-performance.map-values-isempty.to-map-isempty",
+      "file": "sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java",
+      "line": 54,
+      "matchedCode": "store.values().isEmpty()",
+      "suggestedReplacement": "store.isEmpty()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "collection-performance",
+      "rule": "collection-performance.map-values-isempty.to-map-isempty",
+      "file": "sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java",
+      "line": 65,
+      "matchedCode": "store.values().isEmpty()",
+      "suggestedReplacement": "store.isEmpty()"
     },
     {
       "repository": "sandbox",
