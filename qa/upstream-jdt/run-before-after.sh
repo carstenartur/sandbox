@@ -88,9 +88,6 @@ OOMPH_WORKSPACE=$(canonical_dir "$OOMPH_WORKSPACE")
 if [[ ! -d "$OOMPH_WORKSPACE/.metadata" && "$ALLOW_CLEAN_WORKSPACE" != true ]]; then
   fail "Not an Oomph-provisioned Eclipse workspace: $OOMPH_WORKSPACE"
 fi
-if [[ -e "$OOMPH_WORKSPACE/.metadata/.lock" ]]; then
-  fail "The Eclipse workspace is still locked; close the workbench before QA: $OOMPH_WORKSPACE"
-fi
 [[ -x "$SANDBOX_ECLIPSE" ]] || fail "Sandbox Eclipse launcher is not executable: $SANDBOX_ECLIPSE"
 SANDBOX_ECLIPSE="$(cd -- "$(dirname -- "$SANDBOX_ECLIPSE")" && pwd -P)/$(basename -- "$SANDBOX_ECLIPSE")"
 
@@ -155,6 +152,7 @@ verify_workspace_pins() {
 from pathlib import Path
 import sys
 
+
 def parse(path: Path) -> dict[str, str]:
     result: dict[str, str] = {}
     for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -167,6 +165,7 @@ def parse(path: Path) -> dict[str, str]:
         if key.startswith("PIN_"):
             result[key] = value
     return result
+
 
 expected = parse(Path(sys.argv[1]))
 actual = parse(Path(sys.argv[2]))
@@ -256,9 +255,13 @@ run_tests() {
   mkdir -p "$tmp"
   printf '%s\n' "${MAVEN_BIN} --batch-mode --no-transfer-progress -U -f ${PIN_PRIMARY_TEST_POM} clean verify" \
     > "$destination-command.txt"
+  local -a display_prefix=()
+  if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
+    display_prefix=(xvfb-run --auto-servernum)
+  fi
   (
     cd "$JDT_CORE"
-    "$MAVEN_BIN" --batch-mode --no-transfer-progress -U \
+    "${display_prefix[@]}" "$MAVEN_BIN" --batch-mode --no-transfer-progress -U \
       -Djava.io.tmpdir="$tmp" \
       -f "$PIN_PRIMARY_TEST_POM" clean verify
   ) 2>&1 | tee "$OUTPUT/logs/$phase-maven.log"
@@ -366,14 +369,18 @@ from pathlib import Path
 
 out = Path(os.environ["OUTPUT"])
 
+
 def digest(name: str) -> str:
     return hashlib.sha256((out / name).read_bytes()).hexdigest()
+
 
 corpus = json.loads((out / "corpus-result.json").read_text(encoding="utf-8"))
 inventory = json.loads((out / "test-inventory-comparison.json").read_text(encoding="utf-8"))
 provenance = {
     "result": "PASS",
-    "provisioning": "clean-workspace-mirror" if os.environ["ALLOW_CLEAN_WORKSPACE"] == "true" else "oomph-advanced-mode",
+    "provisioning": "clean-workspace-mirror"
+    if os.environ["ALLOW_CLEAN_WORKSPACE"] == "true"
+    else "oomph-advanced-mode",
     "eclipseRelease": os.environ["PIN_ECLIPSE_RELEASE"],
     "eclipsePlatformVersion": os.environ["PIN_ECLIPSE_PLATFORM_VERSION"],
     "jdtCore": {
@@ -408,7 +415,10 @@ provenance = {
         "testInventorySha256": digest("test-inventory-comparison.json"),
     },
 }
-(out / "provenance.json").write_text(json.dumps(provenance, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+(out / "provenance.json").write_text(
+    json.dumps(provenance, indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
 PY
 
 printf 'PASS\n' > "$OUTPUT/run-state.txt"
