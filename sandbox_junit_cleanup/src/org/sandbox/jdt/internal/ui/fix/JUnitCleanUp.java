@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -25,13 +25,14 @@ import org.eclipse.jdt.core.IJavaProject;
 
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 
 /** Cleanup wrapper for JUnit migration. */
-public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore>
-		implements IMultiFileCleanUpScopeProvider {
+public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<ReportingJUnitCleanUpCore>
+		implements IMultiFileCleanUpScopeProvider, IMultiFileCleanUpDiagnosticsProvider {
 	public JUnitCleanUp(final Map<String, String> options) {
-		super(options, new JUnitCleanUpCore());
+		super(options, new ReportingJUnitCleanUpCore());
 	}
 
 	public JUnitCleanUp() {
@@ -42,5 +43,10 @@ public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore>
 	public Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
 		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
+	}
+
+	@Override
+	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
+		return cleanUpCore.getLastPlanningDiagnosticsJson(project);
 	}
 }
