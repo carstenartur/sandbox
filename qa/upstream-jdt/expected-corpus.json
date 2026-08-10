@@ -20,8 +20,12 @@
     },
     "org.eclipse.jdt.apt.tests/src/org/eclipse/jdt/apt/tests/TestAll.java": {
       "mustContain": [
+        "import org.junit.platform.suite.api.BeforeSuite;",
         "import org.junit.platform.suite.api.SelectClasses;",
         "import org.junit.platform.suite.api.Suite;",
+        "@BeforeSuite",
+        "static void beforeSuite()",
+        "System.setProperty(\"modules\", \"java.base\");",
         "@Suite",
         "@SelectClasses("
       ],
@@ -29,6 +33,7 @@
         "extends TestCase",
         "public TestAll(String testName)",
         "public static Test suite()",
+        "static {",
         "junit.framework"
       ]
     }
