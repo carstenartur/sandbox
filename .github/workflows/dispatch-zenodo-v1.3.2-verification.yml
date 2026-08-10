@@ -1,0 +1,26 @@
+name: Dispatch Zenodo v1.3.2 verification
+
+on:
+  push:
+    branches:
+      - verify/zenodo-v1.3.2
+    paths:
+      - '.github/workflows/dispatch-zenodo-v1.3.2-verification.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch the official verifier on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run verify-zenodo-release.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f tag=v1.3.2
