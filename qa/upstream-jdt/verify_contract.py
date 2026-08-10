@@ -255,6 +255,21 @@ def validate_comparator(root: Path) -> None:
         ])
         if failing.returncode == 0:
             fail("Comparator accepted a disappeared test")
+        write_report(migrated, list(reversed(tests)))
+        reordered = run([
+            sys.executable,
+            str(comparator),
+            "--baseline",
+            str(baseline),
+            "--migrated",
+            str(migrated),
+            "--mapping",
+            str(mapping),
+            "--output",
+            str(temporary_root / "order-fail.json"),
+        ])
+        if reordered.returncode == 0:
+            fail("Comparator accepted a changed per-class execution order")
 
 
 def load_json_object(path: Path) -> dict[str, Any]:
@@ -267,28 +282,41 @@ def load_json_object(path: Path) -> dict[str, Any]:
 def validate_corpus_contract(root: Path, pins: dict[str, str]) -> None:
     contract_path = root / "qa/upstream-jdt/expected-corpus.json"
     verifier = root / "qa/upstream-jdt/verify_corpus_result.py"
-    contract = load_json_object(contract_path)
-    expected_files = {
-        f"{pins['PIN_PRIMARY_PROJECT']}/src/org/eclipse/jdt/apt/tests/FactoryPathTests.java",
-        f"{pins['PIN_PRIMARY_PROJECT']}/src/org/eclipse/jdt/apt/tests/TestAll.java",
-    }
-    required_files = contract.get("requiredFiles")
+    corpus_contract = load_json_object(contract_path)
+    factory_path = f"{pins['PIN_PRIMARY_PROJECT']}/src/org/eclipse/jdt/apt/tests/FactoryPathTests.java"
+    test_all_path = f"{pins['PIN_PRIMARY_PROJECT']}/src/org/eclipse/jdt/apt/tests/TestAll.java"
+    expected_files = {factory_path, test_all_path}
+    required_files = corpus_contract.get("requiredFiles")
     if not isinstance(required_files, dict) or set(required_files) != expected_files:
         fail(f"Real-corpus contract must name exactly {sorted(expected_files)}")
-    if int(contract.get("minimumChangedJavaFiles", 0)) < len(expected_files):
+    if int(corpus_contract.get("minimumChangedJavaFiles", 0)) < len(expected_files):
         fail("Real-corpus contract permits fewer changed Java files than its named examples")
-    if contract.get("requirePlanningDiagnostics") is not True:
+    if corpus_contract.get("requirePlanningDiagnostics") is not True:
         fail("Real-corpus contract does not require structured planning diagnostics")
+
+    factory_order = required_files[factory_path].get("expectedTestOrder")
+    if (
+        not isinstance(factory_order, dict)
+        or not factory_order
+        or any(not isinstance(name, str) or not isinstance(order, int) for name, order in factory_order.items())
+        or sorted(factory_order.values()) != list(range(1, len(factory_order) + 1))
+    ):
+        fail("FactoryPathTests expectedTestOrder is not one complete one-based order")
+    if required_files[test_all_path].get("compareSuiteSelectionOrder") is not True:
+        fail("TestAll does not require before/after suite selection order comparison")
 
     with tempfile.TemporaryDirectory() as temporary:
         temporary_root = Path(temporary)
         repository = temporary_root / "repository"
+        baseline_corpus = temporary_root / "baseline-corpus"
+        migrated_corpus = temporary_root / "migrated-corpus"
         changed = temporary_root / "changed-files.txt"
         check_report = temporary_root / "check.json"
         apply_report = temporary_root / "apply.json"
         output = temporary_root / "result.json"
         changed_entries: list[str] = []
         report_entries: list[str] = []
+
         for relative, rules in sorted(required_files.items()):
             if not isinstance(rules, dict):
                 fail(f"Invalid corpus rules for {relative}")
@@ -303,12 +331,42 @@ def validate_corpus_contract(root: Path, pins: dict[str, str]) -> None:
                 or any(not isinstance(item, str) or not item for item in must_not_contain)
             ):
                 fail(f"Corpus rules for {relative} must contain non-empty string lists")
+
+            evidence_comments = "\n".join(f"// {item}" for item in must_contain)
+            if relative == factory_path:
+                methods = "\n".join(
+                    f"@Order({order})\n@Test\npublic void {name}() {{}}"
+                    for name, order in sorted(factory_order.items(), key=lambda item: item[1])
+                )
+                baseline_text = "public class FactoryPathTests {}\n"
+                migrated_text = evidence_comments + "\n@TestMethodOrder(OrderAnnotation.class)\n" + methods + "\n"
+            else:
+                baseline_text = (
+                    "public static Test suite() {\n"
+                    "  TestSuite suite = new TestSuite();\n"
+                    "  suite.addTestSuite(FirstTest.class);\n"
+                    "  suite.addTest(SecondTest.suite());\n"
+                    "  return suite;\n"
+                    "}\n"
+                )
+                migrated_text = (
+                    evidence_comments
+                    + "\n@SelectClasses({ FirstTest.class, SecondTest.class })\n"
+                    + "public class TestAll {}\n"
+                )
+
             source = repository / relative
-            source.parent.mkdir(parents=True, exist_ok=True)
-            source.write_text("\n".join(must_contain) + "\n", encoding="utf-8")
+            baseline_source = baseline_corpus / relative
+            migrated_source = migrated_corpus / relative
+            for path in (source, baseline_source, migrated_source):
+                path.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(migrated_text, encoding="utf-8")
+            baseline_source.write_text(baseline_text, encoding="utf-8")
+            migrated_source.write_text(migrated_text, encoding="utf-8")
             changed_entries.append(relative)
             prefix = pins["PIN_PRIMARY_PROJECT"] + "/"
             report_entries.append(relative[len(prefix) :] if relative.startswith(prefix) else relative)
+
         changed.write_text("\n".join(changed_entries) + "\n", encoding="utf-8")
         diagnostics = [{"cleanupId": "junit", "candidates": []}]
         common = {
@@ -345,19 +403,46 @@ def validate_corpus_contract(root: Path, pins: dict[str, str]) -> None:
             str(check_report),
             "--apply-report",
             str(apply_report),
+            "--baseline-corpus",
+            str(baseline_corpus),
+            "--migrated-corpus",
+            str(migrated_corpus),
             "--output",
             str(output),
         ]
         passing = run(command)
         if passing.returncode != 0:
             fail(f"Corpus verifier rejected valid evidence:\n{passing.stdout}")
-        first_relative = sorted(required_files)[0]
-        forbidden = required_files[first_relative]["mustNotContain"][0]
-        with (repository / first_relative).open("a", encoding="utf-8") as stream:
-            stream.write(forbidden + "\n")
-        failing = run(command)
-        if failing.returncode == 0:
+
+        forbidden = required_files[factory_path]["mustNotContain"][0]
+        for path in (repository / factory_path, migrated_corpus / factory_path):
+            with path.open("a", encoding="utf-8") as stream:
+                stream.write(forbidden + "\n")
+        forbidden_result = run(command)
+        if forbidden_result.returncode == 0:
             fail("Corpus verifier accepted a required file that retained forbidden JUnit 3 text")
+
+        # Restore the valid FactoryPath evidence, then reverse the
+        # migrated @SelectClasses order. The source-level suite oracle
+        # must reject it independently of the test inventory.
+        valid_factory = "\n".join(
+            f"// {item}" for item in required_files[factory_path]["mustContain"]
+        ) + "\n@TestMethodOrder(OrderAnnotation.class)\n" + "\n".join(
+            f"@Order({order})\n@Test\npublic void {name}() {{}}"
+            for name, order in sorted(factory_order.items(), key=lambda item: item[1])
+        ) + "\n"
+        (repository / factory_path).write_text(valid_factory, encoding="utf-8")
+        (migrated_corpus / factory_path).write_text(valid_factory, encoding="utf-8")
+        reversed_suite = (
+            "\n".join(f"// {item}" for item in required_files[test_all_path]["mustContain"])
+            + "\n@SelectClasses({ SecondTest.class, FirstTest.class })\n"
+            + "public class TestAll {}\n"
+        )
+        (repository / test_all_path).write_text(reversed_suite, encoding="utf-8")
+        (migrated_corpus / test_all_path).write_text(reversed_suite, encoding="utf-8")
+        suite_order_result = run(command)
+        if suite_order_result.returncode == 0:
+            fail("Corpus verifier accepted a changed JUnit suite selection order")
 
 
 def validate_application(root: Path) -> None:

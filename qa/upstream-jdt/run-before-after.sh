@@ -335,6 +335,7 @@ JAVA_CHANGE_COUNT=$(grep -cE '\.java$' "$OUTPUT/changed-files.txt" || true)
 ((JAVA_CHANGE_COUNT > 0)) || fail "Cleanup apply changed no Java source files"
 
 printf 'VERIFYING_REAL_CORPUS\n' > "$OUTPUT/run-state.txt"
+copy_corpus_sources "$OUTPUT/corpus/migrated"
 python3 "$CORPUS_VERIFIER" \
   --repository "$JDT_CORE" \
   --project "$PIN_PRIMARY_PROJECT" \
@@ -342,9 +343,10 @@ python3 "$CORPUS_VERIFIER" \
   --changed-files "$OUTPUT/changed-files.txt" \
   --check-report "$OUTPUT/cleanup-check-report.json" \
   --apply-report "$OUTPUT/cleanup-apply-report.json" \
+  --baseline-corpus "$OUTPUT/corpus/baseline" \
+  --migrated-corpus "$OUTPUT/corpus/migrated" \
   --output "$OUTPUT/corpus-result.json" \
   > "$OUTPUT/logs/corpus-result.log"
-copy_corpus_sources "$OUTPUT/corpus/migrated"
 
 printf 'MIGRATED_TESTS\n' > "$OUTPUT/run-state.txt"
 run_tests migrated "$OUTPUT/migrated"
