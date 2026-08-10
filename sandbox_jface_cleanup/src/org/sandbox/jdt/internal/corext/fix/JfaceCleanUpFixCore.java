@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -36,14 +37,14 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JfaceCleanUpFixCore {
 
-	MONITOR(new JFacePlugin(), MultiFixMessages.JFaceCleanUp_step_monitor),
-	VIEWER_SORTER(new ViewerSorterPlugin(), MultiFixMessages.JFaceCleanUp_step_viewerSorter),
-	IMAGE_DPI(new ImageDataProviderPlugin(), MultiFixMessages.JFaceCleanUp_step_imageDataProvider);
+	MONITOR(new JFacePlugin(), () -> MultiFixMessages.JFaceCleanUp_step_monitor),
+	VIEWER_SORTER(new ViewerSorterPlugin(), () -> MultiFixMessages.JFaceCleanUp_step_viewerSorter),
+	IMAGE_DPI(new ImageDataProviderPlugin(), () -> MultiFixMessages.JFaceCleanUp_step_imageDataProvider);
 
 	AbstractTool<?> jfacefound;
-	private final String stepDescription;
+	private final Supplier<String> stepDescription;
 
-	JfaceCleanUpFixCore(AbstractTool<?> xmlsimplify, String stepDescription) {
+	JfaceCleanUpFixCore(AbstractTool<?> xmlsimplify, Supplier<String> stepDescription) {
 		this.jfacefound= xmlsimplify;
 		this.stepDescription= stepDescription;
 	}
@@ -53,12 +54,12 @@ public enum JfaceCleanUpFixCore {
 	}
 
 	public String getStepDescription() {
-		return stepDescription;
+		return stepDescription.get();
 	}
 
 	@Override
 	public String toString() {
-		return stepDescription;
+		return stepDescription.get();
 	}
 
 	/**

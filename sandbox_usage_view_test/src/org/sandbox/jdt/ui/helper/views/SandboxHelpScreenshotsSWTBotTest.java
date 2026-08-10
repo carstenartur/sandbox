@@ -21,10 +21,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.TimeZone;
 
 import org.eclipse.core.resources.IFile;
@@ -213,7 +213,11 @@ public class SandboxHelpScreenshotsSWTBotTest {
         assertTrue(sorterDiff.contains("ViewerSorter"), "ViewerSorter diff should mention ViewerSorter");
         assertTrue(!monitorDiff.equals(sorterDiff), "Selecting each cleanup step should update the diff viewer");
 
+        monitorStep.select();
+        bot.sleep(300);
         capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-single-file-steps.png");
+        viewerSorterStep.select();
+        bot.sleep(300);
         capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-diff-step.png");
 
         viewerSorterStep.uncheck();
@@ -457,7 +461,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         return UIThreadRunnable.syncExec(shell.display, new Result<String>() {
             @Override
             public String run() {
-                return collectStyledText(shell.widget).stream().collect(Collectors.joining("\n---\n"));
+                return String.join("\n---\n", collectStyledText(shell.widget));
             }
         });
     }
@@ -465,7 +469,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static List<String> collectStyledText(Control root) {
         Deque<Control> pending = new ArrayDeque<>();
         pending.add(root);
-        List<String> texts = new java.util.ArrayList<>();
+        List<String> texts = new ArrayList<>();
         while (!pending.isEmpty()) {
             Control control = pending.removeFirst();
             if (control instanceof StyledText styledText) {
