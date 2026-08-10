@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <contexts>
    <context id="overview">
-      <description>Replaces canonical iterator-driven loops with enhanced &lt;code&gt;for&lt;/code&gt; loops.</description>
-      <topic label="Iterator to Enhanced For" href="html/index.html"/>
+      <description>Historical Sandbox iterator cleanup; the active implementation is maintained by Eclipse JDT UI.</description>
+      <topic label="Iterator cleanup reference" href="html/index.html"/>
    </context>
    <context id="cleanup_configuration">
-      <description>Configure the Iterator to Enhanced For cleanup in an Eclipse JDT cleanup profile.</description>
-      <topic label="Iterator to Enhanced For configuration" href="html/usage.html"/>
-      <topic label="Safety and limitations" href="html/reference.html"/>
+      <description>Use the standard Eclipse JDT cleanup profile; Sandbox no longer registers a second iterator cleanup.</description>
+      <topic label="Using the maintained JDT cleanup" href="html/usage.html"/>
+      <topic label="Reference status and safety" href="html/reference.html"/>
    </context>
    <context id="preferences">
-      <description>Configure Iterator to Enhanced For.</description>
-      <topic label="Iterator to Enhanced For preferences" href="html/usage.html"/>
-      <topic label="Safety and limitations" href="html/reference.html"/>
+      <description>The iterator conversion is configured in the standard Eclipse JDT cleanup profile.</description>
+      <topic label="Using the maintained JDT cleanup" href="html/usage.html"/>
+      <topic label="Reference status and safety" href="html/reference.html"/>
    </context>
 </contexts>
