@@ -1,0 +1,307 @@
+name: Apply JUnit 4 semantic follow-up
+
+on:
+  push:
+    branches:
+      - feature/junit4-real-corpus-hardening
+    paths:
+      - '.github/workflows/apply-junit4-semantic-followup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Apply semantic and regression-test follow-up
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one exact replacement, found {count}")
+              file.write_text(text.replace(old, new), encoding="utf-8")
+
+          def regex_once(path: str, pattern: str, replacement: str) -> None:
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one regex replacement, found {count}")
+              file.write_text(updated, encoding="utf-8")
+
+          temporary = "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleTemporayFolderJUnitPlugin.java"
+          replace_once(
+              temporary,
+              "\tprivate static boolean isDescendantOf(ASTNode node, ASTNode ancestor) {\n"
+              "\t\tfor (ASTNode current= node; current != null; current= current.getParent()) {\n"
+              "\t\t\tif (current == ancestor) {\n"
+              "\t\t\t\treturn true;\n"
+              "\t\t\t}\n"
+              "\t\treturn false;\n"
+              "\t}\n",
+              "\tprivate static boolean isDescendantOf(ASTNode node, ASTNode ancestor) {\n"
+              "\t\tfor (ASTNode current= node; current != null; current= current.getParent()) {\n"
+              "\t\t\tif (current == ancestor) {\n"
+              "\t\t\t\treturn true;\n"
+              "\t\t\t}\n"
+              "\t\t}\n"
+              "\t\treturn false;\n"
+              "\t}\n",
+          )
+
+          external = "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/lib/ExternalResourceRefactorer.java"
+          replace_once(
+              external,
+              "import org.eclipse.jdt.core.dom.ITypeBinding;\n",
+              "import org.eclipse.jdt.core.dom.IMethodBinding;\nimport org.eclipse.jdt.core.dom.ITypeBinding;\n",
+          )
+          replace_once(
+              external,
+              "\tpublic static boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {\n"
+              "\t\tITypeBinding superclass = binding.getSuperclass();\n"
+              "\t\treturn superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());\n"
+              "\t}\n",
+              "\tpublic static boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {\n"
+              "\t\tITypeBinding superclass = binding == null ? null : binding.getSuperclass();\n"
+              "\t\treturn superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE\n"
+              "\t\t\t\t.equals(superclass.getErasure().getQualifiedName());\n"
+              "\t}\n",
+          )
+          replace_once(
+              external,
+              "\t\tif (isDirectlyExtendingExternalResource(node.resolveBinding())) {\n"
+              "\t\t\trefactorToImplementCallbacks(node, rewriter, ast, group, importRewriter, callbackConfig.beforeCallback,\n"
+              "\t\t\t\t\tcallbackConfig.afterCallback, callbackConfig.importBeforeCallback,\n"
+              "\t\t\t\t\tcallbackConfig.importAfterCallback);\n"
+              "\t\t}\n",
+              "\t\tif (isDirectlyExtendingExternalResource(node.resolveBinding())) {\n"
+              "\t\t\trefactorToImplementCallbacks(node, rewriter, ast, group, importRewriter, callbackConfig.beforeCallback,\n"
+              "\t\t\t\t\tcallbackConfig.afterCallback, callbackConfig.importBeforeCallback,\n"
+              "\t\t\t\t\tcallbackConfig.importAfterCallback);\n"
+              "\t\t} else {\n"
+              "\t\t\taddDeclaredCallbackInterfaces(node, rewriter, ast, group, importRewriter, callbackConfig);\n"
+              "\t\t}\n",
+          )
+          replace_once(
+              external,
+              "\t\t\tadaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);\n",
+              "\t\t\tadaptExternalResourceHierarchy(fieldType, ORG_JUNIT_CLASS_RULE.equals(ruleAnnotation),\n"
+              "\t\t\t\t\trewriter, ast, importRewriter, group);\n",
+          )
+          replace_once(
+              external,
+              "\tpublic static void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,\n"
+              "\t\t\tImportRewrite importRewrite, TextEditGroup group) {\n",
+              "\tpublic static void adaptExternalResourceHierarchy(ITypeBinding typeBinding, boolean fieldStatic,\n"
+              "\t\t\tASTRewrite rewrite, AST ast, ImportRewrite importRewrite, TextEditGroup group) {\n",
+          )
+          replace_once(
+              external,
+              "\t\t\t\t\tadaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);\n",
+              "\t\t\t\t\tadaptTypeDeclaration(typeDecl, fieldStatic, rewrite, ast, importRewrite, group);\n",
+          )
+          regex_once(
+              external,
+              r"\tpublic static void adaptTypeDeclaration\(TypeDeclaration typeDecl, ASTRewrite globalRewrite, AST ast,\n"
+              r"\t\t\tImportRewrite importRewrite, TextEditGroup group\) \{.*?\n\t\}\n\n\t/\*\*\n\t \* Refactors an anonymous ExternalResource class",
+              "\tpublic static void adaptTypeDeclaration(TypeDeclaration typeDecl, boolean fieldStatic,\n"
+              "\t\t\tASTRewrite globalRewrite, AST ast, ImportRewrite importRewrite, TextEditGroup group) {\n"
+              "\t\tASTRewrite rewriteToUse= getASTRewrite(typeDecl, ast, globalRewrite);\n"
+              "\t\tImportRewrite importRewriteToUse= getImportRewrite(typeDecl, ast, importRewrite);\n"
+              "\t\tCallbackConfig callbackConfig= determineCallbackConfig(fieldStatic);\n"
+              "\t\tif (isDirectlyExtendingExternalResource(typeDecl.resolveBinding())) {\n"
+              "\t\t\tremoveSuperclassType(typeDecl, rewriteToUse, group);\n"
+              "\t\t\timportRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);\n"
+              "\t\t}\n"
+              "\t\taddDeclaredCallbackInterfacesToRewrite(typeDecl, rewriteToUse, ast, group,\n"
+              "\t\t\t\timportRewriteToUse, callbackConfig);\n"
+              "\t\tLifecycleMethodAdapter.updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group,\n"
+              "\t\t\t\timportRewriteToUse, METHOD_BEFORE, METHOD_AFTER,\n"
+              "\t\t\t\tfieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH,\n"
+              "\t\t\t\tfieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH);\n"
+              "\t\tif (rewriteToUse != globalRewrite) {\n"
+              "\t\t\tDocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(typeDecl), rewriteToUse);\n"
+              "\t\t}\n"
+              "\t}\n\n"
+              "\t/**\n\t * Refactors an anonymous ExternalResource class",
+          )
+          regex_once(
+              external,
+              r"\tprivate static void refactorToImplementCallbacks\(TypeDeclaration node, ASTRewrite rewriter, AST ast,\n"
+              r"\t\t\tTextEditGroup group, ImportRewrite importRewriter, String beforeCallback, String afterCallback,\n"
+              r"\t\t\tString importBeforeCallback, String importAfterCallback\) \{.*?\n\t\}\n\n\t/\*\*\n\t \* Removes the superclass type",
+              "\tprivate static void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast,\n"
+              "\t\t\tTextEditGroup group, ImportRewrite importRewriter, String beforeCallback, String afterCallback,\n"
+              "\t\t\tString importBeforeCallback, String importAfterCallback) {\n"
+              "\t\tif (node == null || rewriter == null || ast == null || importRewriter == null) {\n"
+              "\t\t\treturn;\n"
+              "\t\t}\n"
+              "\t\tASTRewrite rewriteToUse= getASTRewrite(node, ast, rewriter);\n"
+              "\t\tImportRewrite importRewriteToUse= getImportRewrite(node, ast, importRewriter);\n"
+              "\t\tremoveSuperclassType(node, rewriteToUse, group);\n"
+              "\t\timportRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);\n"
+              "\t\taddDeclaredCallbackInterfacesToRewrite(node, rewriteToUse, ast, group, importRewriteToUse,\n"
+              "\t\t\t\tnew CallbackConfig(beforeCallback, afterCallback, importBeforeCallback, importAfterCallback));\n"
+              "\t\tif (rewriteToUse != rewriter) {\n"
+              "\t\t\tDocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);\n"
+              "\t\t}\n"
+              "\t}\n\n"
+              "\tprivate static void addDeclaredCallbackInterfaces(TypeDeclaration node, ASTRewrite rewrite, AST ast,\n"
+              "\t\t\tTextEditGroup group, ImportRewrite imports, CallbackConfig callbackConfig) {\n"
+              "\t\tASTRewrite rewriteToUse= getASTRewrite(node, ast, rewrite);\n"
+              "\t\tImportRewrite importsToUse= getImportRewrite(node, ast, imports);\n"
+              "\t\taddDeclaredCallbackInterfacesToRewrite(node, rewriteToUse, ast, group, importsToUse, callbackConfig);\n"
+              "\t\tif (rewriteToUse != rewrite) {\n"
+              "\t\t\tDocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);\n"
+              "\t\t}\n"
+              "\t}\n\n"
+              "\tprivate static void addDeclaredCallbackInterfacesToRewrite(TypeDeclaration node, ASTRewrite rewrite,\n"
+              "\t\t\tAST ast, TextEditGroup group, ImportRewrite imports, CallbackConfig callbackConfig) {\n"
+              "\t\tListRewrite interfaces= rewrite.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);\n"
+              "\t\tif (needsCallbackInterface(node, METHOD_BEFORE)) {\n"
+              "\t\t\tImportHelper.addInterfaceCallback(interfaces, ast, callbackConfig.beforeCallback, group, imports,\n"
+              "\t\t\t\t\tcallbackConfig.importBeforeCallback);\n"
+              "\t\t}\n"
+              "\t\tif (needsCallbackInterface(node, METHOD_AFTER)) {\n"
+              "\t\t\tImportHelper.addInterfaceCallback(interfaces, ast, callbackConfig.afterCallback, group, imports,\n"
+              "\t\t\t\t\tcallbackConfig.importAfterCallback);\n"
+              "\t\t}\n"
+              "\t}\n\n"
+              "\tprivate static boolean needsCallbackInterface(TypeDeclaration node, String lifecycleMethod) {\n"
+              "\t\tif (!declaresLifecycleMethod(node, lifecycleMethod)) {\n"
+              "\t\t\treturn false;\n"
+              "\t\t}\n"
+              "\t\tITypeBinding binding= node.resolveBinding();\n"
+              "\t\tfor (ITypeBinding current= binding == null ? null : binding.getSuperclass(); current != null;\n"
+              "\t\t\t\tcurrent= current.getSuperclass()) {\n"
+              "\t\t\tif (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {\n"
+              "\t\t\t\treturn true;\n"
+              "\t\t\t}\n"
+              "\t\t\tfor (IMethodBinding method : current.getDeclaredMethods()) {\n"
+              "\t\t\t\tif (lifecycleMethod.equals(method.getName()) && method.getParameterTypes().length == 0) {\n"
+              "\t\t\t\t\treturn false;\n"
+              "\t\t\t\t}\n"
+              "\t\t\t}\n"
+              "\t\t}\n"
+              "\t\treturn true;\n"
+              "\t}\n\n"
+              "\tprivate static boolean declaresLifecycleMethod(TypeDeclaration node, String lifecycleMethod) {\n"
+              "\t\tfor (MethodDeclaration method : node.getMethods()) {\n"
+              "\t\t\tif (!method.isConstructor() && method.parameters().isEmpty()\n"
+              "\t\t\t\t\t&& lifecycleMethod.equals(method.getName().getIdentifier())) {\n"
+              "\t\t\t\treturn true;\n"
+              "\t\t\t}\n"
+              "\t\t}\n"
+              "\t\treturn false;\n"
+              "\t}\n\n"
+              "\t/**\n\t * Removes the superclass type",
+          )
+
+          parameterized = "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/ParameterizedTestJUnitPlugin.java"
+          replace_once(
+              parameterized,
+              "import org.eclipse.jdt.core.dom.rewrite.ListRewrite;\n",
+              "import org.eclipse.jdt.core.dom.rewrite.ListRewrite;\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\n",
+          )
+          regex_once(
+              parameterized,
+              r"\t@Override\n\tprotected JunitHolder createHolder\(Match match\) \{.*?\n\t\}\n\n\t@Override\n\tprotected void process2Rewrite",
+              "\t@Override\n"
+              "\tprotected JunitHolder createHolder(Match match) {\n"
+              "\t\tAnnotation annotation= (Annotation) match.getMatchedNode();\n"
+              "\t\tTypeDeclaration type= ASTNodes.getParent(annotation, TypeDeclaration.class);\n"
+              "\t\tif (type == null\n"
+              "\t\t\t\t|| ParameterizedMigrationEligibility.parameterizedRunnerAnnotation(type) != annotation\n"
+              "\t\t\t\t|| !ParameterizedMigrationEligibility.assess(type).eligible()) {\n"
+              "\t\t\treturn null;\n"
+              "\t\t}\n"
+              "\t\tJunitHolder holder= new JunitHolder();\n"
+              "\t\tholder.setMinv(annotation);\n"
+              "\t\tholder.setMinvname(annotation.getTypeName().getFullyQualifiedName());\n"
+              "\t\tholder.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);\n"
+              "\t\tholder.setAdditionalInfo(type);\n"
+              "\t\treturn holder;\n"
+              "\t}\n\n"
+              "\t@Override\n\tprotected void process2Rewrite",
+          )
+
+          multi = Path("sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceMigrationTest.java")
+          text = multi.read_text(encoding="utf-8")
+          old = "public void beforeEach(ExtensionContext context) {\n\t\t\t\tSystem.setProperty(\"resource\", \"started\");"
+          new = "public void beforeEach(ExtensionContext context) throws Exception {\n\t\t\t\tSystem.setProperty(\"resource\", \"started\");"
+          if text.count(old) != 1:
+              raise SystemExit(f"{multi}: expected one checked callback expectation")
+          text = text.replace(old, new)
+          old = "class SharedResource implements BeforeEachCallback, AfterEachCallback {\n\t\t\t@Override\n\t\t\tpublic void beforeEach(ExtensionContext context) {"
+          new = "class SharedResource implements BeforeEachCallback, AfterEachCallback {\n\t\t\t@Override\n\t\t\tpublic void beforeEach(ExtensionContext context) throws Exception {"
+          if text.count(old) != 1:
+              raise SystemExit(f"{multi}: expected one local checked callback expectation")
+          multi.write_text(text.replace(old, new), encoding="utf-8")
+
+          exceptions = Path("sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationExceptionsTest.java")
+          text = exceptions.read_text(encoding="utf-8")
+          text, imports = re.subn(
+              r"import static org\.junit\.jupiter\.api\.Assertions\.assertEquals;\n"
+              r"import static org\.junit\.jupiter\.api\.Assertions\.assertThrows;",
+              "import static org.junit.jupiter.api.Assertions.assertThrows;\n"
+              "import static org.junit.jupiter.api.Assertions.assertTrue;",
+              text,
+          )
+          if imports != 2:
+              raise SystemExit(f"{exceptions}: expected two message assertion import blocks, found {imports}")
+          text, assertions = re.subn(
+              r'assertEquals\(("(?:Invalid argument|wrapper message)"), exception\.getMessage\(\)\);',
+              r'assertTrue(exception.getMessage() != null && exception.getMessage().contains(\1));',
+              text,
+          )
+          if assertions != 2:
+              raise SystemExit(f"{exceptions}: expected two message assertions, found {assertions}")
+          exceptions.write_text(text, encoding="utf-8")
+
+          for path in (
+              "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationCombinationsTest.java",
+              "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MigrationRulesToExtensionsTest.java",
+          ):
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              display_count = text.count("testInfo.getDisplayName()")
+              if display_count == 0:
+                  raise SystemExit(f"{path}: no TestName display-name expectation found")
+              text = text.replace("testInfo.getDisplayName()",
+                                  "testInfo.getTestMethod().orElseThrow().getName()")
+              text = text.replace("\tprivate String testName;", "\tpublic String testName;")
+              text = text.replace("\tvoid init(TestInfo testInfo) {",
+                                  "\tvoid initializeTestNameFromTestInfo(TestInfo testInfo) {")
+              text = text.replace("\tPath tempFolder;", "\tpublic Path tempFolder;")
+              text = text.replace("Files.createDirectories(tempFolder.resolve(",
+                                  "Files.createDirectory(tempFolder.resolve(")
+              text = text.replace('Files.createTempFile(tempFolder, "", null)',
+                                  'Files.createTempFile(tempFolder, "junit", null)')
+              text = text.replace('Files.createTempDirectory(tempFolder, "")',
+                                  'Files.createTempDirectory(tempFolder, "junit")')
+              file.write_text(text, encoding="utf-8")
+
+          workflow = Path(".github/workflows/apply-junit4-semantic-followup.yml")
+          workflow.unlink()
+          PY
+
+          git diff --check
+          git status --short
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Complete JUnit 4 semantic hardening and regressions'
+          git push origin HEAD:feature/junit4-real-corpus-hardening
