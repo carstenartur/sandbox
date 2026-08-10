@@ -61,7 +61,7 @@ def verify_report(
         files_processed = int(report.get("filesProcessed", 0))
         files_changed = int(report.get("filesChanged", -1))
     except (TypeError, ValueError) as exc:
-        fail(f"Cleanup report counters are invalid: {exc}") from exc
+        raise ValueError(f"Cleanup report counters are invalid: {exc}") from exc
     if error_count != 0:
         problems.append(f"{expected_mode} cleanup report contains errors: {report.get('errors')}")
     if files_processed <= 1:
