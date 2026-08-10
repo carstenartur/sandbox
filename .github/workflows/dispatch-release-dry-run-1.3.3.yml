@@ -1,0 +1,29 @@
+name: Dispatch release dry run 1.3.3
+
+on:
+  push:
+    branches:
+      - verify/release-dry-run-1.3.3
+    paths:
+      - '.github/workflows/dispatch-release-dry-run-1.3.3.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch official release workflow in dry-run mode
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run deploy-release.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f release_version=1.3.3 \
+            -f next_development_version=1.3.4-SNAPSHOT \
+            -f skip_tests=false \
+            -f dry_run=true
