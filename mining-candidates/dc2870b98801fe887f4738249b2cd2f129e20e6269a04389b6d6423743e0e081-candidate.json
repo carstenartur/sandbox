@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dc2870b98801fe887f4738249b2cd2f129e20e6269a04389b6d6423743e0e081",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$e.getStatus().getCode() \u003d\u003d org.eclipse.core.resources.IResourceStatus.MARKER_NOT_FOUND\n\u003d\u003e $e.getStatus().getCode() \u003d\u003d org.eclipse.core.resources.IResourceStatus.MARKER_NOT_FOUND || $e.getStatus().getCode() \u003d\u003d org.eclipse.core.resources.IResourceStatus.RESOURCE_NOT_FOUND\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.core.resources.IResourceStatus;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\n\npublic class ProblemsLabelDecorator {\n    public int getPackageErrorTicksFromMarkers(CoreException e) {\n        // Assuming e.getStatus().getCode() has no side effects\n        if (e.getStatus().getCode() \u003d\u003d IResourceStatus.MARKER_NOT_FOUND) {\n            return 0;\n        }\n        return 1;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.core.resources.IResourceStatus;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\n\npublic class ProblemsLabelDecorator {\n    public int getPackageErrorTicksFromMarkers(CoreException e) {\n        // Assuming e.getStatus().getCode() has no side effects\n        if (e.getStatus().getCode() \u003d\u003d org.eclipse.core.resources.IResourceStatus.MARKER_NOT_FOUND || e.getStatus().getCode() \u003d\u003d org.eclipse.core.resources.IResourceStatus.RESOURCE_NOT_FOUND) {\n            return 0;\n        }\n        return 1;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.core.resources.IResourceStatus;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\n\npublic class ProblemsLabelDecorator {\n    public int getPackageErrorTicksFromMarkers(CoreException e) {\n        // This condition should not match as it\u0027s different\n        if (e.getStatus().getCode() \u003d\u003d IResourceStatus.OTHER_ERROR) {\n            return 0;\n        }\n        // This condition should not match as it already includes RESOURCE_NOT_FOUND\n        if (e.getStatus().getCode() \u003d\u003d IResourceStatus.MARKER_NOT_FOUND || e.getStatus().getCode() \u003d\u003d IResourceStatus.RESOURCE_NOT_FOUND) {\n            return 0;\n        }\n        return 1;\n    }\n}",
+  "targetHintFile": "error-handling.sandbox-hint",
+  "sourceCommit": "a7ab592fc5a967d160c783b36cc8b21414f2cd7d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Error Handling Improvement",
+  "summary": "Expand an `if` condition to also check for `IResourceStatus.RESOURCE_NOT_FOUND` when `IResourceStatus.MARKER_NOT_FOUND` is already checked, improving robustness in error handling.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-10T02:56:58.328238494Z",
+  "ruleFingerprint": "sha256:033d516f9d5f5e22053fe7d3bdb921ff4a19bfac7e0cf31648d999013f80c0ca",
+  "behaviorFingerprint": "sha256:59dd6b85b240e5144d98e58c7d10ecaef91cbda3fdf2d3f90201148edd3572ff",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type ProblemsLabelDecorator must be defined in its own file",
+    "verifiedAt": "2026-08-10T02:57:01.639417139Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

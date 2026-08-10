@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "77f3c34bb880a66eba4b6491d047a2f7b8dcc49fa8e840120a29b4f094ef48a0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.ui.actions.GenerateToStringOperation.createOperation($fTypeBinding$, $selectedBindings$, $fUnit$, $elementPosition$, ($settingsType$)$settings$)\n\u003d\u003e\norg.eclipse.jdt.ui.actions.GenerateToStringOperation.createOperation($fTypeBinding$, $selectedBindings$, $fUnit$, $elementPosition$, ($settingsType$)$settings$, true, false)\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui.actions;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.ITypeBinding;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.core.resources.IWorkspaceRunnable;\n\nclass GenerateToStringOperation {\n    public static IWorkspaceRunnable createOperation(ITypeBinding typeBinding, Object[] selectedBindings, ICompilationUnit unit, IJavaElement elementPosition, ToStringGenerationSettings settings) {\n        return null; // Dummy implementation\n    }\n    // Simulate the new method signature\n    public static IWorkspaceRunnable createOperation(ITypeBinding typeBinding, Object[] selectedBindings, ICompilationUnit unit, IJavaElement elementPosition, ToStringGenerationSettings settings, boolean a, boolean b) {\n        return null; // Dummy implementation\n    }\n}\n\nclass ToStringGenerationSettings {}\n\ninterface CodeGenerationSettings {}\n\npublic class GenerateToStringAction {\n    private ITypeBinding fTypeBinding;\n    private ICompilationUnit fUnit;\n\n    IWorkspaceRunnable operation;\n\n    IWorkspaceRunnable createOperation(Object[] selectedBindings, CodeGenerationSettings settings, boolean regenerate, IJavaElement type, IJavaElement elementPosition) {\n        return operation\u003d GenerateToStringOperation.createOperation(fTypeBinding, selectedBindings, fUnit, elementPosition, (ToStringGenerationSettings)settings);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui.actions;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.ITypeBinding;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.core.resources.IWorkspaceRunnable;\n\nclass GenerateToStringOperation {\n    public static IWorkspaceRunnable createOperation(ITypeBinding typeBinding, Object[] selectedBindings, ICompilationUnit unit, IJavaElement elementPosition, ToStringGenerationSettings settings) {\n        return null; // Dummy implementation\n    }\n    // Simulate the new method signature\n    public static IWorkspaceRunnable createOperation(ITypeBinding typeBinding, Object[] selectedBindings, ICompilationUnit unit, IJavaElement elementPosition, ToStringGenerationSettings settings, boolean a, boolean b) {\n        return null; // Dummy implementation\n    }\n}\n\nclass ToStringGenerationSettings {}\n\ninterface CodeGenerationSettings {}\n\npublic class GenerateToStringAction {\n    private ITypeBinding fTypeBinding;\n    private ICompilationUnit fUnit;\n\n    IWorkspaceRunnable operation;\n\n    IWorkspaceRunnable createOperation(Object[] selectedBindings, CodeGenerationSettings settings, boolean regenerate, IJavaElement type, IJavaElement elementPosition) {\n        return operation\u003d GenerateToStringOperation.createOperation(fTypeBinding, selectedBindings, fUnit, elementPosition, (ToStringGenerationSettings)settings, true, false);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.ui.actions;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.ITypeBinding;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.core.resources.IWorkspaceRunnable;\n\nclass GenerateToStringOperation {\n    public static IWorkspaceRunnable createOperation(ITypeBinding typeBinding, Object[] selectedBindings, ICompilationUnit unit, IJavaElement elementPosition, ToStringGenerationSettings settings) {\n        return null; // Dummy implementation\n    }\n    public static IWorkspaceRunnable createOperation(ITypeBinding typeBinding, Object[] selectedBindings, ICompilationUnit unit, IJavaElement elementPosition, ToStringGenerationSettings settings, boolean a, boolean b) {\n        return null; // Dummy implementation\n    }\n    public static void someOtherMethod(String s) {}\n}\n\nclass ToStringGenerationSettings {}\n\ninterface CodeGenerationSettings {}\n\npublic class GenerateToStringAction {\n    private ITypeBinding fTypeBinding;\n    private ICompilationUnit fUnit;\n\n    IWorkspaceRunnable operation;\n\n    IWorkspaceRunnable createOperation(Object[] selectedBindings, CodeGenerationSettings settings, boolean regenerate, IJavaElement type, IJavaElement elementPosition) {\n        GenerateToStringOperation.someOtherMethod(\"hello\"); // This call should not be matched\n        return operation\u003d GenerateToStringOperation.createOperation(fTypeBinding, selectedBindings, fUnit, elementPosition, (ToStringGenerationSettings)settings);\n    }\n}",
+  "targetHintFile": "api-update.sandbox-hint",
+  "sourceCommit": "c5792e4aa29e15d156f60904ac8cb7698a34d79c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Updates GenerateToStringOperation.createOperation method call to include two new boolean arguments, true and false.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-10T02:56:58.359968149Z",
+  "ruleFingerprint": "sha256:0f7653595fa16bd60b143a17629aa254b7c32b6c5d880680343e2e501836d48f",
+  "behaviorFingerprint": "sha256:c6389093a67b449bb0284b63821fac67c8e0686c2bf645b0501bb1ff4714d119",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.core.ITypeBinding cannot be resolved",
+    "verifiedAt": "2026-08-10T02:57:01.658282397Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "022c0f373b6f59cf3d0e4c0f54fb70a617dd24ed77dfea3a690a641fb7065966",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "private org.eclipse.jdt.internal.ui.wizards.dialogfields.SelectionButtonDialogField fAddCommentButton;\n\u003d\u003e\nprotected org.eclipse.jdt.internal.ui.wizards.dialogfields.SelectionButtonDialogField fAddCommentButton;\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui.wizards;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.SelectionButtonDialogField;\n\npublic class NewTypeWizardPage {\n    // Other fields and methods\n    private SelectionButtonDialogField fAddCommentButton;\n\n    public NewTypeWizardPage() {\n        // Initialize fAddCommentButton\n        fAddCommentButton \u003d new SelectionButtonDialogField(0);\n        fAddCommentButton.setLabelText(\"Generate comments\");\n    }\n\n    // Other methods that might access it if it were protected\n    protected void setupUI() {\n        // fAddCommentButton.getLabelControl(null); // Would be inaccessible to subclasses without change\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.ui.wizards;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.SelectionButtonDialogField;\n\npublic class NewTypeWizardPage {\n    // Other fields and methods\n    protected SelectionButtonDialogField fAddCommentButton;\n\n    public NewTypeWizardPage() {\n        // Initialize fAddCommentButton\n        fAddCommentButton \u003d new SelectionButtonDialogField(0);\n        fAddCommentButton.setLabelText(\"Generate comments\");\n    }\n\n    // Other methods that might access it if it were protected\n    protected void setupUI() {\n        // fAddCommentButton.getLabelControl(null); // Now accessible to subclasses\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.ui.wizards;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.SelectionButtonDialogField;\n\npublic class NewTypeWizardPage {\n    private String someOtherField; // Must not match (different name and type)\n    protected SelectionButtonDialogField alreadyProtectedButton; // Must not match (already protected)\n    public SelectionButtonDialogField publicButton; // Must not match (public)\n\n    private SelectionButtonDialogField anotherPrivateField; // Must not match (different name)\n\n    public NewTypeWizardPage() {\n        someOtherField \u003d \"test\";\n        alreadyProtectedButton \u003d new SelectionButtonDialogField(0);\n        publicButton \u003d new SelectionButtonDialogField(0);\n        anotherPrivateField \u003d new SelectionButtonDialogField(0);\n    }\n}\n",
+  "targetHintFile": "refactorings.sandbox-hint",
+  "sourceCommit": "60dfbe079ef2f0ca2811da5df48c262358f46131",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "refactoring",
+  "summary": "Changes the visibility of the `fAddCommentButton` field from `private` to `protected` in `NewTypeWizardPage`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-10T02:56:58.379112209Z",
+  "ruleFingerprint": "sha256:46594109f9efce92cdf204a04a551dc1b10541203d5f6f4139a5eab62f8e072d",
+  "behaviorFingerprint": "sha256:afb9d764e4ab0008bfe2947b6841f25361af1d1594ba27f8a2ddbc093e261795",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-10T02:57:01.673647031Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
