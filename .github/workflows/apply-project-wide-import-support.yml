@@ -1,0 +1,159 @@
+name: Apply project-wide QA import support
+
+on:
+  push:
+    branches:
+      - feature/oomph-upstream-jdt-migration-qa-final
+    paths:
+      - '.github/workflows/apply-project-wide-import-support.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Add reproducible external-project import
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java')
+          text = path.read_text(encoding='utf-8')
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              'import org.eclipse.core.resources.IProject;\nimport org.eclipse.core.resources.IResource;\n',
+              'import org.eclipse.core.resources.IProject;\nimport org.eclipse.core.resources.IProjectDescription;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.resources.IWorkspaceRoot;\n',
+              'resource imports')
+          replace_once(
+              'import org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n',
+              'import org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n',
+              'runtime imports')
+          replace_once(
+              '''\tprivate record Arguments(String projectName, Path configuration, Path report, Path patch, Mode mode) {
+          \t}
+          ''',
+              '''\tprivate record Arguments(String projectName, Path projectLocation, Path configuration,
+          \t\t\tPath report, Path patch, Mode mode) {
+          \t}
+          ''',
+              'arguments record')
+          replace_once(
+              'IProject project= requireProject(arguments.projectName());',
+              'IProject project= requireProject(arguments.projectName(), arguments.projectLocation());',
+              'project import call')
+          replace_once(
+              '''\t\tString project= null;
+          \t\tPath configuration= null;
+          ''',
+              '''\t\tString project= null;
+          \t\tPath projectLocation= null;
+          \t\tPath configuration= null;
+          ''',
+              'project location state')
+          replace_once(
+              '''\t\t\tcase "--project" -> project= requiredValue(values, ++index, value); //$NON-NLS-1$
+          \t\t\tcase "--config", "-config" -> configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$
+          ''',
+              '''\t\t\tcase "--project" -> project= requiredValue(values, ++index, value); //$NON-NLS-1$
+          \t\t\tcase "--project-location" -> projectLocation= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
+          \t\t\tcase "--config", "-config" -> configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$
+          ''',
+              'project location option')
+          replace_once(
+              '''\t\treturn new Arguments(project, configuration.toAbsolutePath().normalize(),
+          \t\t\t\treport.toAbsolutePath().normalize(), patch == null ? null : patch.toAbsolutePath().normalize(), mode);
+          ''',
+              '''\t\treturn new Arguments(project,
+          \t\t\t\tprojectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),
+          \t\t\t\tconfiguration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),
+          \t\t\t\tpatch == null ? null : patch.toAbsolutePath().normalize(), mode);
+          ''',
+              'arguments construction')
+
+          start = text.index('\tprivate static IProject requireProject(String name) throws CoreException {')
+          end = text.index('\n\tprivate static List<SourceSnapshot> snapshots', start)
+          replacement = '''\tprivate static IProject requireProject(String name, Path requestedLocation) throws CoreException, IOException {
+          \t\tIWorkspaceRoot root= ResourcesPlugin.getWorkspace().getRoot();
+          \t\tIProject project= root.getProject(name);
+          \t\tIProgressMonitor monitor= new NullProgressMonitor();
+          \t\tif (!project.exists()) {
+          \t\t\tif (requestedLocation == null) {
+          \t\t\t\tthrow new IllegalArgumentException("Workspace project does not exist and --project-location was not supplied: " //$NON-NLS-1$
+          \t\t\t\t\t\t+ name);
+          \t\t\t}
+          \t\t\tPath canonicalLocation= requestedLocation.toRealPath();
+          \t\t\tPath descriptionFile= canonicalLocation.resolve(".project"); //$NON-NLS-1$
+          \t\t\tif (!Files.isRegularFile(descriptionFile)) {
+          \t\t\t\tthrow new IOException("Imported project location has no .project file: " + canonicalLocation); //$NON-NLS-1$
+          \t\t\t}
+          \t\t\tIProjectDescription description= ResourcesPlugin.getWorkspace().loadProjectDescription(
+          \t\t\t\t\torg.eclipse.core.runtime.Path.fromOSString(descriptionFile.toString()));
+          \t\t\tif (!name.equals(description.getName())) {
+          \t\t\t\tthrow new IOException("Imported .project declares " + description.getName() //$NON-NLS-1$
+          \t\t\t\t\t\t+ " but --project requested " + name); //$NON-NLS-1$
+          \t\t\t}
+          \t\t\tIPath location= org.eclipse.core.runtime.Path.fromOSString(canonicalLocation.toString());
+          \t\t\tIPath defaultLocation= root.getLocation() == null ? null : root.getLocation().append(name);
+          \t\t\tdescription.setLocation(location.equals(defaultLocation) ? null : location);
+          \t\t\tproject.create(description, monitor);
+          \t\t} else if (requestedLocation != null) {
+          \t\t\tPath canonicalLocation= requestedLocation.toRealPath();
+          \t\t\tIPath actualLocation= project.getLocation();
+          \t\t\tif (actualLocation == null || !canonicalLocation.equals(actualLocation.toFile().toPath().toRealPath())) {
+          \t\t\t\tthrow new IOException("Workspace project exists at another location: " + name); //$NON-NLS-1$
+          \t\t\t}
+          \t\t}
+          \t\tif (!project.isOpen()) {
+          \t\t\tproject.open(monitor);
+          \t\t}
+          \t\tproject.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+          \t\treturn project;
+          \t}
+          '''
+          text = text[:start] + replacement + text[end:]
+          replace_once(
+              '''\t\tproperty(json, "project", arguments.projectName(), 1).append(",\\n"); //$NON-NLS-1$
+          ''',
+              '''\t\tproperty(json, "project", arguments.projectName(), 1).append(",\\n"); //$NON-NLS-1$
+          \t\tproperty(json, "projectLocation", arguments.projectLocation() == null ? "" //$NON-NLS-1$ //$NON-NLS-2$
+          \t\t\t\t: arguments.projectLocation().toString(), 1).append(",\\n"); //$NON-NLS-1$
+          ''',
+              'report project location')
+          replace_once(
+              '''\t\t\t\t  --project <workspace-project>
+          \t\t\t\t  --config <cleanup.properties>
+          ''',
+              '''\t\t\t\t  --project <workspace-project>
+          \t\t\t\t  [--project-location <external-project-directory>]
+          \t\t\t\t  --config <cleanup.properties>
+          ''',
+              'usage')
+
+          path.write_text(text, encoding='utf-8')
+          Path('.github/workflows/apply-project-wide-import-support.yml').unlink()
+          PY
+
+          git diff --check
+
+      - name: Commit import support
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Let project-wide cleanup import the pinned external project"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
