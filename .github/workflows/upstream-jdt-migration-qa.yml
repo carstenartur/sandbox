@@ -3,6 +3,7 @@ name: Upstream JDT migration QA
 on:
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, labeled ]
     paths:
       - 'qa/upstream-jdt/**'
       - 'sandbox_oomph/jdt-migration-qa.setup'
@@ -165,7 +166,9 @@ jobs:
 
   full-migration:
     name: Build Sandbox and verify the real JDT migration before and after
-    if: github.event_name == 'workflow_dispatch' && inputs.run_full_migration == true
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.run_full_migration == true) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'quality'))
     needs: validate-contract
     runs-on: ubuntu-24.04
     timeout-minutes: 240
