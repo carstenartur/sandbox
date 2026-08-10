@@ -25,9 +25,12 @@ import java.util.Properties;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.equinox.app.IApplication;
@@ -73,7 +76,8 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		APPLY
 	}
 
-	private record Arguments(String projectName, Path configuration, Path report, Path patch, Mode mode) {
+	private record Arguments(String projectName, Path projectLocation, Path configuration,
+			Path report, Path patch, Mode mode) {
 	}
 
 	private record SourceSnapshot(ICompilationUnit unit, IFile file, Path path, String relativePath,
@@ -107,7 +111,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		Map<String, String> options= Map.of();
 		try {
 			options= readOptions(arguments.configuration());
-			IProject project= requireProject(arguments.projectName());
+			IProject project= requireProject(arguments.projectName(), arguments.projectLocation());
 			IJavaProject javaProject= JavaCore.create(project);
 			if (!javaProject.exists()) {
 				throw new IllegalArgumentException("Workspace project is not a Java project: " //$NON-NLS-1$
@@ -201,6 +205,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			throw new IllegalArgumentException("Application arguments are unavailable."); //$NON-NLS-1$
 		}
 		String project= null;
+		Path projectLocation= null;
 		Path configuration= null;
 		Path report= null;
 		Path patch= null;
@@ -212,6 +217,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				return null;
 			}
 			case "--project" -> project= requiredValue(values, ++index, value); //$NON-NLS-1$
+			case "--project-location" -> projectLocation= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--config", "-config" -> configuration= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$ //$NON-NLS-2$
 			case "--report" -> report= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
 			case "--patch" -> patch= Path.of(requiredValue(values, ++index, value)); //$NON-NLS-1$
@@ -239,8 +245,10 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		if (report == null) {
 			throw new IllegalArgumentException("--report is required."); //$NON-NLS-1$
 		}
-		return new Arguments(project, configuration.toAbsolutePath().normalize(),
-				report.toAbsolutePath().normalize(), patch == null ? null : patch.toAbsolutePath().normalize(), mode);
+		return new Arguments(project,
+				projectLocation == null ? null : projectLocation.toAbsolutePath().normalize(),
+				configuration.toAbsolutePath().normalize(), report.toAbsolutePath().normalize(),
+				patch == null ? null : patch.toAbsolutePath().normalize(), mode);
 	}
 
 	private static String requiredValue(String[] values, int index, String option) {
@@ -264,15 +272,41 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		return result;
 	}
 
-	private static IProject requireProject(String name) throws CoreException {
-		IProject project= ResourcesPlugin.getWorkspace().getRoot().getProject(name);
+	private static IProject requireProject(String name, Path requestedLocation) throws CoreException, IOException {
+		IWorkspaceRoot root= ResourcesPlugin.getWorkspace().getRoot();
+		IProject project= root.getProject(name);
+		IProgressMonitor monitor= new NullProgressMonitor();
 		if (!project.exists()) {
-			throw new IllegalArgumentException("Workspace project does not exist: " + name); //$NON-NLS-1$
+			if (requestedLocation == null) {
+				throw new IllegalArgumentException("Workspace project does not exist and --project-location was not supplied: " //$NON-NLS-1$
+						+ name);
+			}
+			Path canonicalLocation= requestedLocation.toRealPath();
+			Path descriptionFile= canonicalLocation.resolve(".project"); //$NON-NLS-1$
+			if (!Files.isRegularFile(descriptionFile)) {
+				throw new IOException("Imported project location has no .project file: " + canonicalLocation); //$NON-NLS-1$
+			}
+			IProjectDescription description= ResourcesPlugin.getWorkspace().loadProjectDescription(
+					org.eclipse.core.runtime.Path.fromOSString(descriptionFile.toString()));
+			if (!name.equals(description.getName())) {
+				throw new IOException("Imported .project declares " + description.getName() //$NON-NLS-1$
+						+ " but --project requested " + name); //$NON-NLS-1$
+			}
+			IPath location= org.eclipse.core.runtime.Path.fromOSString(canonicalLocation.toString());
+			IPath defaultLocation= root.getLocation() == null ? null : root.getLocation().append(name);
+			description.setLocation(location.equals(defaultLocation) ? null : location);
+			project.create(description, monitor);
+		} else if (requestedLocation != null) {
+			Path canonicalLocation= requestedLocation.toRealPath();
+			IPath actualLocation= project.getLocation();
+			if (actualLocation == null || !canonicalLocation.equals(actualLocation.toFile().toPath().toRealPath())) {
+				throw new IOException("Workspace project exists at another location: " + name); //$NON-NLS-1$
+			}
 		}
 		if (!project.isOpen()) {
-			project.open(new NullProgressMonitor());
+			project.open(monitor);
 		}
-		project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
+		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
 		return project;
 	}
 
@@ -362,6 +396,8 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		property(json, "tool", "sandbox-project-cleanup", 1).append(",\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		property(json, "mode", arguments.mode().name().toLowerCase(java.util.Locale.ROOT), 1).append(",\n"); //$NON-NLS-1$
 		property(json, "project", arguments.projectName(), 1).append(",\n"); //$NON-NLS-1$
+		property(json, "projectLocation", arguments.projectLocation() == null ? "" //$NON-NLS-1$ //$NON-NLS-2$
+				: arguments.projectLocation().toString(), 1).append(",\n"); //$NON-NLS-1$
 		property(json, "startTime", started.toString(), 1).append(",\n"); //$NON-NLS-1$
 		property(json, "endTime", ended.toString(), 1).append(",\n"); //$NON-NLS-1$
 		number(json, "durationMs", ended.toEpochMilli() - started.toEpochMilli(), 1).append(",\n"); //$NON-NLS-1$
@@ -460,6 +496,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				Usage: eclipse -nosplash -data <workspace>
 				  -application sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup
 				  --project <workspace-project>
+				  [--project-location <external-project-directory>]
 				  --config <cleanup.properties>
 				  --report <result.json>
 				  [--patch <changes.patch>]
