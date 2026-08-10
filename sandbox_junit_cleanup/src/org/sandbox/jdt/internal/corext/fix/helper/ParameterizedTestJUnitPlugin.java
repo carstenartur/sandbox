@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -78,41 +79,19 @@ public class ParameterizedTestJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
-		Annotation node = (Annotation) match.getMatchedNode();
-
-		// Check if this is @RunWith(Parameterized.class)
-		if (node instanceof SingleMemberAnnotation mynode) {
-			Expression value = mynode.getValue();
-			if (value instanceof TypeLiteral myvalue) {
-				Type type = myvalue.getType();
-				if (type != null) {
-					ITypeBinding typeBinding = type.resolveBinding();
-					if (typeBinding != null) {
-						String runnerQualifiedName = typeBinding.getQualifiedName();
-						if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runnerQualifiedName)) {
-							// Found a parameterized test class
-							JunitHolder holder = new JunitHolder();
-							holder.setMinv(node);
-							holder.setMinvname(node.getTypeName().getFullyQualifiedName());
-							holder.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);
-
-							// Get the containing type declaration to store for processing
-							ASTNode parent = node.getParent();
-							while (parent != null && !(parent instanceof TypeDeclaration)) {
-								parent = parent.getParent();
-							}
-							if (parent != null) {
-								holder.setAdditionalInfo(parent);
-							}
-
-							return holder;
-						}
-					}
-				}
-			}
+		Annotation annotation= (Annotation) match.getMatchedNode();
+		TypeDeclaration type= ASTNodes.getParent(annotation, TypeDeclaration.class);
+		if (type == null
+				|| ParameterizedMigrationEligibility.parameterizedRunnerAnnotation(type) != annotation
+				|| !ParameterizedMigrationEligibility.assess(type).eligible()) {
+			return null;
 		}
-		// Not a Parameterized runner, skip
-		return null;
+		JunitHolder holder= new JunitHolder();
+		holder.setMinv(annotation);
+		holder.setMinvname(annotation.getTypeName().getFullyQualifiedName());
+		holder.setValue(ORG_JUNIT_RUNNERS_PARAMETERIZED);
+		holder.setAdditionalInfo(type);
+		return holder;
 	}
 
 	@Override
