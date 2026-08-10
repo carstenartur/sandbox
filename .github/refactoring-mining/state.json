@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "82f4e5e641fe9e1f4161bab38df6c86da200aa04",
-      "lastProcessedDate": "2026-08-09T02:54:41.505576779Z",
-      "totalProcessed": 3740,
+      "lastProcessedCommit": "c4384b32fcfc8babe0aebde3fc80e8cb8d75e0aa",
+      "lastProcessedDate": "2026-08-10T02:56:57.002452074Z",
+      "totalProcessed": 3816,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2762,6 +2762,33 @@
           "deferredAt": "2026-08-09T02:53:08.484094937Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "abb9305a84a7afee79d7a245674bd61ae7e4f14d",
+          "message": "Merge remote-tracking branch \u0027origin/master\u0027 into BETA_JAVA_12",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-10T02:51:30.062502485Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "580f143212d156a2cf6cd27c12cfcaa7f37c6928",
+          "message": "Merge remote-tracking branch \u0027origin/BETA_JAVA_12\u0027",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-10T02:52:41.959018362Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "71e7d3ed753cbba81df7204c8848ca6d035c7e2b",
+          "message": "Bug 529011 - Show parameter name as code mining",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-10T02:54:43.185873681Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2775,7 +2802,7 @@
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
         "Code Simplification": 11,
-        "Performance": 28,
+        "Performance": 29,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
@@ -2904,7 +2931,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 11,
+        "API Migration": 12,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -2961,7 +2988,9 @@
         "Annotations": 1,
         "Type Modernization": 1,
         "ComplexRefactoring": 2,
-        "ArchitecturalChange": 1
+        "ArchitecturalChange": 1,
+        "Error Handling Improvement": 1,
+        "refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -3002,5 +3031,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26399
+  "globalTotalProcessed": 26475
 }
