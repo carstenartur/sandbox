@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-07-27
 - **Issue:** #1303
+- **Implementation note (2026-08-09):** the executable consumer contract is currently Core-only. The selected release is defined by `jgit-storage-hibernate.version` in the consumer POM (currently `0.1.18`), not by the historical version recorded when this ADR was accepted.
 
 ## Context
 
@@ -32,13 +33,17 @@ Sandbox owns:
 - optional embedding/rank-fusion experiments not provided by the generic library;
 - migration adapters required only while copied callers are being removed.
 
-### Released dependency baseline
+### Accepted baseline and current version selection
 
-Both consuming modules pin released version `0.1.15` from the anonymous static Maven repository documented by the external project. This release preserves the public factory API used by the adapter and adds the fully tested Microsoft SQL Server Core provisioning and copied-Sandbox legacy-adoption paths required by the deployed database.
+This decision was accepted against released Core baseline `0.1.15`, which preserved the public factory API used by the adapter and added the Microsoft SQL Server Core provisioning and copied-Sandbox legacy-adoption paths required by the deployed database.
+
+The implementation has since advanced to later compatible Core releases. The authoritative selected version is the `jgit-storage-hibernate.version` property in `sandbox-jgit-storage-hibernate/pom.xml`; `sandbox-jgit-server-webapp/docs/jgit-storage-migration-matrix.json` records the corresponding migration evidence. The real-consumer candidate workflow replaces only this upstream version in POM files and then executes the Sandbox-owned contract.
 
 `JGitStorageLibraryBoundary` exposes the public `RepositoryName` and `CoreEntities` contracts to Sandbox code. New integration code must use this boundary or another explicitly reviewed public-library adapter; it must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation classes.
 
-SQL Server support in this baseline applies to Core storage only. The external Search module does not yet publish SQL Server migrations, so copied or separately isolated search projections remain outside the Core cut-over.
+The current executable consumer scope is deliberately **Core only**. Search and Java Analysis remain later migration slices and are rejected by the contract until their schema, adapter, endpoint and compatibility work is implemented. Resolving those artifacts alone is not integration evidence.
+
+SQL Server support in the accepted baseline applies to Core storage only. The external Search module did not publish the corresponding SQL Server migration contract at the time of this decision, so copied or separately isolated search projections remain outside the Core cut-over.
 
 ### Repository-service boundary slice
 
@@ -60,9 +65,22 @@ This adapter is deliberately not made the production default in the same slice. 
 
 ### Read-only schema-preflight slice
 
-A standalone maintenance entry point uses the released `LegacyCoreSchemaAdoption` validator through plain JDBC. It accepts only database families with published 0.1.15 adoption migrations, including the deployed SQL Server path, marks the connection read-only and starts neither Hibernate, Jetty nor Flyway. Its deterministic JSON report is evidence for the later maintenance operation; it does not mutate or migrate the database.
+A standalone maintenance entry point uses the released `LegacyCoreSchemaAdoption` validator through plain JDBC. It accepts only database families with a published adoption migration for the selected Core line, marks the connection read-only and starts neither Hibernate, Jetty nor Flyway. Its deterministic JSON report is evidence for the later maintenance operation; it does not mutate or migrate the database.
 
 Production wiring changes only after the database-specific adoption stream has run on a restored production-like database, all recorded BLOB checksums and reflog rows have been compared, Hibernate `validate` has passed and rollback by database restore has been exercised.
+
+### Consumer compatibility contract
+
+The Sandbox-owned script `.github/jgit-storage-hibernate-contract.sh` is the executable compatibility boundary. The central library invokes it in baseline and candidate modes. It verifies:
+
+- Java 21 and the selected/candidate Core version;
+- Sandbox boundary, repository-lifecycle and preflight tests;
+- the absence of unadopted upstream modules;
+- generated OSGi exports/imports and bridge JAR contents;
+- standalone shaded-server packaging;
+- machine-readable dependency, manifest, build-log and JUnit evidence.
+
+The detailed protocol is documented in `docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md`.
 
 ### Subsequent slices
 
@@ -78,7 +96,7 @@ Each slice must preserve repository data through the external migration/adoption
 
 ## Consequences
 
-- The released dependency is pinned without immediately deleting the copied implementation.
+- The released Core dependency is pinned without immediately deleting the copied implementation.
 - The repository-service boundary makes the later factory cut-over local instead of requiring simultaneous REST, Smart HTTP and startup rewrites.
 - The public factory adapter completes the application-side cut-over point while leaving persistence migration explicit and independently reversible.
 - The read-only preflight can classify the deployed SQL Server schema without allowing Hibernate `update` or Flyway DDL to run implicitly.
@@ -86,3 +104,4 @@ Each slice must preserve repository data through the external migration/adoption
 - The temporary coexistence and deprecated compatibility method are explicit and bounded by this migration plan.
 - Public external APIs and application-owned interfaces, not implementation packages, define the replacement contract.
 - Database migration and service cut-over remain separate follow-up changes and cannot be represented as a package rename.
+- Search or Java Analysis may enter the consumer matrix only together with their completed Sandbox migration slice.
