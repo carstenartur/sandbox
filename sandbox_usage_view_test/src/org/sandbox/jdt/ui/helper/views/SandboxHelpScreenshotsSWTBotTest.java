@@ -393,6 +393,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
         clickButton(preferences, "Edit...", "Edit…");
         SWTBotShell profileDialog = bot.activeShell();
+        profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Help Preview");
         profileDialog.bot().tabItem("JFace Cleanup (Sandbox)").activate();
 
         ensureChecked(profileDialog, JFACE_MASTER_LABEL, true);
@@ -613,7 +614,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         createUnit(sourceRoot, "demo.multi", "SorterOnly.java",
                 """
                         package demo.multi;
-                        import org.eclipse.jface.viewers.ViewerSorter;
+                        import org.eclipse.jface.viewers.ViewSorter;
                         public class SorterOnly {
                             public ViewerSorter sorter() {
                                 return new ViewerSorter();
