@@ -15,69 +15,47 @@ package org.sandbox.jdt.triggerpattern.llm;
 
 import java.net.http.HttpClient;
 
-/**
- * REST client for the OpenAI Chat Completions API.
- *
- * &lt;p&gt;Sends prompts to the OpenAI API and parses the response into
- * {@link CommitEvaluation} objects.&lt;/p&gt;
- */
+/** REST client for the OpenAI Chat Completions API. */
 public class OpenAiClient extends OpenAiCompatibleClient {
 
 private static final String DEFAULT_MODEL = &quot;gpt-4o-mini&quot;; //$NON-NLS-1$
 private static final String API_URL = &quot;https://api.openai.com/v1/chat/completions&quot;; //$NON-NLS-1$
 private static final String API_KEY_ENV = &quot;OPENAI_API_KEY&quot;; //$NON-NLS-1$
 private static final String MODEL_ENV = &quot;OPENAI_MODEL&quot;; //$NON-NLS-1$
-/** Default maximum duration (in seconds) with no successful API call before aborting. */
 public static final int DEFAULT_MAX_FAILURE_DURATION_SECONDS = 300;
 
-/**
- * Creates a client reading the API key from the OPENAI_API_KEY environment variable.
- */
 public OpenAiClient() {
-<span class="nc" id="L37">this(System.getenv(API_KEY_ENV));</span>
-<span class="nc" id="L38">}</span>
+<span class="nc" id="L28">this(System.getenv(API_KEY_ENV));</span>
+<span class="nc" id="L29">}</span>
 
-/**
- * Creates a client with the given API key.
- *
- * @param apiKey the OpenAI API key
- */
 public OpenAiClient(String apiKey) {
-<span class="fc" id="L46">super(API_URL, apiKey, resolveModel(), &quot;OpenAI&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L47">}</span>
+<span class="fc" id="L32">super(API_URL, apiKey, resolveModel(), &quot;OpenAI&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L33">}</span>
 
-/**
- * Creates a client with the given API key and HTTP client (for testing).
- *
- * @param apiKey     the OpenAI API key
- * @param httpClient the HTTP client to use
- */
 public OpenAiClient(String apiKey, HttpClient httpClient) {
-<span class="nc" id="L56">this(apiKey, httpClient, resolveModel());</span>
-<span class="nc" id="L57">}</span>
+<span class="nc" id="L36">this(apiKey, httpClient, resolveModel());</span>
+<span class="nc" id="L37">}</span>
 
-/**
- * Creates a client with the given API key, HTTP client, and model (for testing).
- *
- * @param apiKey     the OpenAI API key
- * @param httpClient the HTTP client to use
- * @param model      the OpenAI model name to use
- */
 public OpenAiClient(String apiKey, HttpClient httpClient, String model) {
-<span class="nc" id="L67">super(API_URL, apiKey, model, &quot;OpenAI&quot;, httpClient); //$NON-NLS-1$</span>
-<span class="nc" id="L68">}</span>
+<span class="nc" id="L40">super(API_URL, apiKey, model, &quot;OpenAI&quot;, httpClient); //$NON-NLS-1$</span>
+<span class="nc" id="L41">}</span>
 
 private static String resolveModel() {
-<span class="fc" id="L71">String envModel = System.getenv(MODEL_ENV);</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">if (envModel != null) {</span>
-<span class="nc" id="L73">envModel = envModel.trim();</span>
+<span class="fc" id="L44">String envModel = System.getenv(MODEL_ENV);</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">if (envModel != null) {</span>
+<span class="nc" id="L46">envModel = envModel.trim();</span>
 }
-<span class="pc bpc" id="L75" title="3 of 4 branches missed.">return (envModel != null &amp;&amp; !envModel.isBlank()) ? envModel : DEFAULT_MODEL;</span>
+<span class="pc bpc" id="L48" title="3 of 4 branches missed.">return (envModel != null &amp;&amp; !envModel.isBlank()) ? envModel : DEFAULT_MODEL;</span>
 }
 
 @Override
 protected String getApiKeyEnvVar() {
-<span class="fc" id="L80">return API_KEY_ENV;</span>
+<span class="fc" id="L53">return API_KEY_ENV;</span>
+}
+
+@Override
+protected String getMaxTokensParameterName() {
+<span class="nc" id="L58">return &quot;max_completion_tokens&quot;; //$NON-NLS-1$</span>
 }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

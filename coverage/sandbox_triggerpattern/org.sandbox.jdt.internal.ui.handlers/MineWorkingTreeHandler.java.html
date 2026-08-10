@@ -24,7 +24,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -32,113 +31,128 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.internal.ui.views.mining.CommitAnalysisJob;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.FileDiff;
-import org.sandbox.jdt.triggerpattern.mining.git.JGitHistoryProvider;
+import org.sandbox.jdt.triggerpattern.mining.git.WorkingTreeDiffProvider;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
- * Eclipse command handler that mines the most recent commit ({@code HEAD})
- * for TriggerPattern DSL rules using AI-powered inference.
+ * Mines Java source changes between {@code HEAD} and the active project's
+ * current working tree for reusable TriggerPattern DSL rules.
  *
- * &lt;p&gt;The handler uses {@link JGitHistoryProvider} to obtain diffs of the
- * HEAD commit, sends each file diff to
- * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)}, and opens a
- * new {@code .sandbox-hint} file with all inferred rules.&lt;/p&gt;
- *
- * &lt;p&gt;Analysis runs in a background {@link Job} so the UI thread is not
- * blocked.&lt;/p&gt;
- *
- * &lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; A future enhancement could extend this handler to
- * diff the working tree (uncommitted changes) against HEAD using JGit's
- * {@code DiffCommand} with the working tree iterator.&lt;/p&gt;
+ * &lt;p&gt;Both staged and unstaged filesystem content are represented, because the
+ * comparison is made directly from the committed HEAD tree to the working tree.
+ * The target project is derived from the active editor instead of silently using
+ * the first project in the workspace.&lt;/p&gt;
  *
  * @since 1.2.6
  */
-<span class="nc" id="L63">public class MineWorkingTreeHandler extends AbstractHandler {</span>
+<span class="nc" id="L58">public class MineWorkingTreeHandler extends AbstractHandler {</span>
 
-<span class="nc" id="L65">	private static final ILog LOG = Platform.getLog(MineWorkingTreeHandler.class);</span>
-<span class="nc" id="L66">	private static final String HEAD = &quot;HEAD&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L60">	private static final ILog LOG = Platform.getLog(MineWorkingTreeHandler.class);</span>
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-<span class="nc" id="L70">		EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (!llmService.isAvailable()) {</span>
-<span class="nc" id="L72">			return null;</span>
+<span class="nc" id="L64">		IEditorInput input = HandlerUtil.getActiveEditorInput(event);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		IFile activeFile = input != null ? input.getAdapter(IFile.class) : null;</span>
+<span class="nc bnc" id="L66" title="All 4 branches missed.">		if (activeFile == null || activeFile.getProject().getLocation() == null) {</span>
+<span class="nc" id="L67">			return null;</span>
+		}
+<span class="nc" id="L69">		IProject project = activeFile.getProject();</span>
+<span class="nc" id="L70">		Path repositoryPath = project.getLocation().toFile().toPath();</span>
+
+<span class="nc" id="L72">		EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (!llmService.isAvailable()) {</span>
+<span class="nc" id="L74">			RuleInferenceUiFeedback.showConfigurationRequired();</span>
+<span class="nc" id="L75">			return null;</span>
 		}
 
-<span class="nc" id="L75">		IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();</span>
-<span class="nc bnc" id="L76" title="All 2 branches missed.">		if (projects.length == 0) {</span>
-<span class="nc" id="L77">			return null;</span>
-		}
-<span class="nc" id="L79">		IProject project = projects[0];</span>
-<span class="nc" id="L80">		Path repositoryPath = project.getLocation().toFile().toPath();</span>
-
-<span class="nc" id="L82">		Job job = new Job(&quot;Mining working tree for DSL rules&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L78">		Job job = new Job(&quot;Mining working tree for DSL rules&quot;) { //$NON-NLS-1$</span>
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-<span class="nc" id="L85">				return mineWorkingTree(repositoryPath, project, monitor);</span>
+				try {
+<span class="nc" id="L82">					return mineWorkingTree(repositoryPath, project, monitor);</span>
+<span class="nc" id="L83">				} catch (RuntimeException e) {</span>
+<span class="nc" id="L84">					LOG.error(&quot;Failed to infer DSL rules from the working tree&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L85">					RuleInferenceUiFeedback.showFailure(&quot;the Java working-tree changes&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L86">					return Status.error(&quot;Working-tree DSL inference failed&quot;, e); //$NON-NLS-1$</span>
+				}
 			}
 		};
-<span class="nc" id="L88">		job.setUser(true);</span>
-<span class="nc" id="L89">		job.schedule();</span>
-<span class="nc" id="L90">		return null;</span>
+<span class="nc" id="L90">		job.setUser(true);</span>
+<span class="nc" id="L91">		job.schedule();</span>
+<span class="nc" id="L92">		return null;</span>
 	}
 
 	private static IStatus mineWorkingTree(Path repositoryPath, IProject project,
 			IProgressMonitor monitor) {
-<span class="nc" id="L95">		JGitHistoryProvider gitProvider = new JGitHistoryProvider();</span>
-<span class="nc" id="L96">		List&lt;FileDiff&gt; diffs = gitProvider.getDiffs(repositoryPath, HEAD);</span>
-
-<span class="nc bnc" id="L98" title="All 4 branches missed.">		if (diffs.isEmpty() || monitor.isCanceled()) {</span>
-<span class="nc" id="L99">			return Status.OK_STATUS;</span>
+<span class="nc" id="L97">		List&lt;FileDiff&gt; diffs = new WorkingTreeDiffProvider().getDiffs(repositoryPath);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (monitor.isCanceled()) {</span>
+<span class="nc" id="L99">			return Status.CANCEL_STATUS;</span>
+		}
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (diffs.isEmpty()) {</span>
+<span class="nc" id="L102">			RuleInferenceUiFeedback.showInformation(</span>
+<span class="nc" id="L103">					&quot;No Java working-tree changes relative to HEAD were found in the active project.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L104">			return Status.OK_STATUS;</span>
 		}
 
-<span class="nc" id="L102">		AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();</span>
-<span class="nc" id="L103">		List&lt;String&gt; rules = new ArrayList&lt;&gt;();</span>
-
-<span class="nc bnc" id="L105" title="All 2 branches missed.">		for (FileDiff diff : diffs) {</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
-<span class="nc" id="L107">				return Status.CANCEL_STATUS;</span>
+<span class="nc" id="L107">		AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();</span>
+<span class="nc" id="L108">		List&lt;String&gt; rules = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L109">		monitor.beginTask(&quot;Inferring rules from working-tree Java changes&quot;, diffs.size()); //$NON-NLS-1$</span>
+		try {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			for (FileDiff diff : diffs) {</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">				if (monitor.isCanceled()) {</span>
+<span class="nc" id="L113">					return Status.CANCEL_STATUS;</span>
+				}
+<span class="nc" id="L115">				monitor.subTask(diff.filePath());</span>
+<span class="nc" id="L116">				String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);</span>
+<span class="nc" id="L117">				engine.inferRuleFromDiff(unifiedDiff)</span>
+<span class="nc" id="L118">						.map(CommitEvaluation::dslRule)</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">						.filter(rule -&gt; rule != null &amp;&amp; !rule.isBlank())</span>
+<span class="nc" id="L120">						.ifPresent(rules::add);</span>
+<span class="nc" id="L121">				monitor.worked(1);</span>
 			}
-<span class="nc" id="L109">			String unifiedDiff = CommitAnalysisJob.buildUnifiedDiff(diff);</span>
-<span class="nc" id="L110">			engine.inferRuleFromDiff(unifiedDiff)</span>
-<span class="nc" id="L111">					.map(CommitEvaluation::dslRule)</span>
-<span class="nc bnc" id="L112" title="All 4 branches missed.">					.filter(rule -&gt; rule != null &amp;&amp; !rule.isBlank())</span>
-<span class="nc" id="L113">					.ifPresent(rules::add);</span>
+<span class="nc" id="L123">		} finally {</span>
+<span class="nc" id="L124">			monitor.done();</span>
 		}
 
-<span class="nc bnc" id="L116" title="All 2 branches missed.">		if (!rules.isEmpty()) {</span>
-<span class="nc" id="L117">			String content = String.join(&quot;\n\n;;\n\n&quot;, rules); //$NON-NLS-1$</span>
-<span class="nc" id="L118">			openHintFileOnUi(project, content);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (rules.isEmpty()) {</span>
+<span class="nc" id="L128">			RuleInferenceUiFeedback.showNoRule(&quot;the Java working-tree changes&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L129">			return Status.OK_STATUS;</span>
 		}
 
-<span class="nc" id="L121">		return Status.OK_STATUS;</span>
+<span class="nc" id="L132">		String content = String.join(&quot;\n\n;;\n\n&quot;, rules); //$NON-NLS-1$</span>
+<span class="nc" id="L133">		openHintFileOnUi(project, content);</span>
+<span class="nc" id="L134">		return Status.OK_STATUS;</span>
 	}
 
 	private static void openHintFileOnUi(IProject project, String ruleContent) {
-<span class="nc" id="L125">		Display.getDefault().asyncExec(() -&gt; {</span>
+<span class="nc" id="L138">		Display.getDefault().asyncExec(() -&gt; {</span>
 			try {
-<span class="nc" id="L127">				String fileName = &quot;mined-workingtree-&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L128">						+ System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L129">				IFile file = project.getFile(new org.eclipse.core.runtime.Path(fileName));</span>
-<span class="nc" id="L130">				file.create(</span>
-<span class="nc" id="L131">						new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),</span>
-<span class="nc" id="L132">						true, null);</span>
-<span class="nc" id="L133">				IWorkbenchPage page = PlatformUI.getWorkbench()</span>
-<span class="nc" id="L134">						.getActiveWorkbenchWindow().getActivePage();</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">				if (page != null) {</span>
-<span class="nc" id="L136">					IDE.openEditor(page, file);</span>
+<span class="nc" id="L140">				String fileName = &quot;mined-workingtree-&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L141">						+ System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L142">				IFile file = project.getFile(new org.eclipse.core.runtime.Path(fileName));</span>
+<span class="nc" id="L143">				file.create(</span>
+<span class="nc" id="L144">						new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),</span>
+<span class="nc" id="L145">						true, null);</span>
+<span class="nc" id="L146">				IWorkbenchPage page = PlatformUI.getWorkbench()</span>
+<span class="nc" id="L147">						.getActiveWorkbenchWindow().getActivePage();</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">				if (page != null) {</span>
+<span class="nc" id="L149">					IDE.openEditor(page, file);</span>
 				}
-<span class="nc" id="L138">			} catch (Exception e) {</span>
-<span class="nc" id="L139">				LOG.error(&quot;Failed to open hint file for working tree rules&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L151">			} catch (Exception e) {</span>
+<span class="nc" id="L152">				LOG.error(&quot;Failed to open hint file for working tree rules&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L153">				RuleInferenceUiFeedback.showFailure(&quot;the generated working-tree hint file&quot;, e); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L141">		});</span>
-<span class="nc" id="L142">	}</span>
+<span class="nc" id="L155">		});</span>
+<span class="nc" id="L156">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

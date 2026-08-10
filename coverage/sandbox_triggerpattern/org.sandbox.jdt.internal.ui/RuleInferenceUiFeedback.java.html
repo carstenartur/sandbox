@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleInferenceUiFeedback.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui</a> &gt; <span class="el_source">RuleInferenceUiFeedback.java</span></div><h1>RuleInferenceUiFeedback.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Carsten Hammer
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui;
+
+import java.util.function.Consumer;
+
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
+import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
+
+/** User-visible, non-secret feedback for interactive TriggerPattern rule inference. */
+public final class RuleInferenceUiFeedback {
+
+	private static final String TITLE = &quot;TriggerPattern Rule Inference&quot;; //$NON-NLS-1$
+
+	private RuleInferenceUiFeedback() {
+	}
+
+	/** Explains how to configure credentials instead of silently doing nothing. */
+	public static void showConfigurationRequired() {
+<span class="nc" id="L35">		show(shell -&gt; MessageDialog.openWarning(shell, TITLE,</span>
+<span class="nc" id="L36">				&quot;LLM rule inference is not configured. &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L37">						+ EclipseLlmService.getInstance().configurationHint()));</span>
+<span class="nc" id="L38">	}</span>
+
+	/** Shows an informational inference outcome that needs no Error Log entry. */
+	public static void showInformation(String message) {
+<span class="nc" id="L42">		show(shell -&gt; MessageDialog.openInformation(shell, TITLE, message));</span>
+<span class="nc" id="L43">	}</span>
+
+	/** Reports a successful provider call that produced no usable DSL rule. */
+	public static void showNoRule(String sourceDescription) {
+<span class="nc" id="L47">		showInformation(&quot;No valid TriggerPattern DSL rule was inferred from &quot; + sourceDescription + &quot;. &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+				+ &quot;Try a smaller, self-contained before/after change or author the rule with the Sandbox Hint File wizard.&quot;); //$NON-NLS-1$
+<span class="nc" id="L49">	}</span>
+
+	/** Reports a failed provider operation without echoing prompts, credentials, or response bodies. */
+	public static void showFailure(String sourceDescription, Throwable failure) {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		String failureType = failure != null ? failure.getClass().getSimpleName() : &quot;unknown error&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L54">		show(shell -&gt; MessageDialog.openError(shell, TITLE,</span>
+<span class="nc" id="L55">				&quot;Rule inference failed for &quot; + sourceDescription + &quot; (&quot; + failureType + &quot;). &quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L56">						+ &quot;Check the configured provider and Eclipse Error Log for technical details.&quot;)); //$NON-NLS-1$</span>
+<span class="nc" id="L57">	}</span>
+
+	private static void show(Consumer&lt;Shell&gt; dialog) {
+<span class="nc" id="L60">		Display display = Display.getDefault();</span>
+<span class="nc bnc" id="L61" title="All 4 branches missed.">		if (display == null || display.isDisposed()) {</span>
+<span class="nc" id="L62">			return;</span>
+		}
+<span class="nc" id="L64">		display.asyncExec(() -&gt; {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">			if (display.isDisposed()) {</span>
+<span class="nc" id="L66">				return;</span>
+			}
+<span class="nc bnc" id="L68" title="All 2 branches missed.">			IWorkbenchWindow window = PlatformUI.isWorkbenchRunning()</span>
+<span class="nc" id="L69">					? PlatformUI.getWorkbench().getActiveWorkbenchWindow()</span>
+<span class="nc" id="L70">					: null;</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">			Shell shell = window != null ? window.getShell() : display.getActiveShell();</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">			if (shell != null &amp;&amp; !shell.isDisposed()) {</span>
+<span class="nc" id="L73">				dialog.accept(shell);</span>
+			}
+<span class="nc" id="L75">		});</span>
+<span class="nc" id="L76">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

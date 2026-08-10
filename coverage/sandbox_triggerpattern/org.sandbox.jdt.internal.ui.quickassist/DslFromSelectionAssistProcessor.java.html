@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -27,6 +26,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.ui.text.java.IInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.IProblemLocation;
@@ -39,141 +39,140 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
-/**
- * Quick assist processor that generates a TriggerPattern DSL rule from the
- * currently selected Java code using AI-powered inference.
- *
- * &lt;p&gt;When invoked on a text selection, it wraps the selected code as a
- * pseudo-diff and sends it to the LLM in a background {@link Job}. The
- * resulting DSL rule is opened as a new {@code .sandbox-hint} file.&lt;/p&gt;
- *
- * @since 1.2.6
- */
-<span class="nc" id="L56">public class DslFromSelectionAssistProcessor implements IQuickAssistProcessor {</span>
+/** AI-assisted authoring Quick Assist for generating TriggerPattern DSL from a Java selection. */
+<span class="nc" id="L48">public class DslFromSelectionAssistProcessor implements IQuickAssistProcessor {</span>
 
-<span class="nc" id="L58">	private static final ILog LOG = Platform.getLog(DslFromSelectionAssistProcessor.class);</span>
-<span class="nc" id="L59">	private static final String PROPOSAL_LABEL = &quot;Generate DSL rule from selection (AI)&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L50">	private static final ILog LOG = Platform.getLog(DslFromSelectionAssistProcessor.class);</span>
+<span class="nc" id="L51">	private static final String PROPOSAL_LABEL = &quot;Generate DSL rule from selection (AI)&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	public boolean hasAssists(IInvocationContext context) {
-<span class="nc bnc" id="L63" title="All 4 branches missed.">		return EclipseLlmService.getInstance().isAvailable()</span>
-<span class="nc" id="L64">				&amp;&amp; context.getSelectionLength() &gt; 0;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		return EclipseLlmService.getInstance().isAvailable()</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">				&amp;&amp; context.getSelectionLength() &gt; 0</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">				&amp;&amp; targetProject(context) != null;</span>
 	}
 
 	@Override
 	public IJavaCompletionProposal[] getAssists(IInvocationContext context,
 			IProblemLocation[] locations) {
-<span class="nc bnc" id="L70" title="All 2 branches missed.">		if (!hasAssists(context)) {</span>
-<span class="nc" id="L71">			return new IJavaCompletionProposal[0];</span>
+<span class="nc" id="L63">		IProject targetProject = targetProject(context);</span>
+<span class="nc bnc" id="L64" title="All 4 branches missed.">		if (!hasAssists(context) || targetProject == null) {</span>
+<span class="nc" id="L65">			return new IJavaCompletionProposal[0];</span>
 		}
-<span class="nc" id="L73">		int offset = context.getSelectionOffset();</span>
-<span class="nc" id="L74">		int length = context.getSelectionLength();</span>
-<span class="nc" id="L75">		return new IJavaCompletionProposal[] { new DslRuleProposal(offset, length) };</span>
+<span class="nc" id="L67">		return new IJavaCompletionProposal[] {</span>
+<span class="nc" id="L68">				new DslRuleProposal(context.getSelectionOffset(), context.getSelectionLength(), targetProject)</span>
+		};
 	}
 
-	/**
-	 * Completion proposal that infers a DSL rule from the selected code.
-	 * The LLM call runs in a background {@link Job} to avoid blocking the UI.
-	 */
+	private static IProject targetProject(IInvocationContext context) {
+<span class="nc" id="L73">		ICompilationUnit unit = context.getCompilationUnit();</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">		return unit != null &amp;&amp; unit.getJavaProject() != null</span>
+<span class="nc" id="L75">				? unit.getJavaProject().getProject()</span>
+<span class="nc" id="L76">				: null;</span>
+	}
+
 	private static class DslRuleProposal implements IJavaCompletionProposal {
 
 		private final int selectionOffset;
 		private final int selectionLength;
+		private final IProject targetProject;
 
-<span class="nc" id="L87">		DslRuleProposal(int offset, int length) {</span>
-<span class="nc" id="L88">			this.selectionOffset = offset;</span>
-<span class="nc" id="L89">			this.selectionLength = length;</span>
-<span class="nc" id="L90">		}</span>
+<span class="nc" id="L85">		DslRuleProposal(int offset, int length, IProject targetProject) {</span>
+<span class="nc" id="L86">			this.selectionOffset = offset;</span>
+<span class="nc" id="L87">			this.selectionLength = length;</span>
+<span class="nc" id="L88">			this.targetProject = targetProject;</span>
+<span class="nc" id="L89">		}</span>
 
 		@Override
 		public void apply(IDocument document) {
 			try {
-<span class="nc" id="L95">				String selectedCode = document.get(selectionOffset, selectionLength);</span>
-<span class="nc" id="L96">				Job job = new Job(&quot;Generating DSL rule from selection&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L94">				String selectedCode = document.get(selectionOffset, selectionLength);</span>
+<span class="nc" id="L95">				Job job = new Job(&quot;Generating DSL rule from selection&quot;) { //$NON-NLS-1$</span>
 					@Override
 					protected IStatus run(IProgressMonitor monitor) {
-<span class="nc" id="L99">						AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();</span>
-						// Wrap snippet as a pseudo-diff so the LLM can infer a generalized match rule
-<span class="nc" id="L101">						String[] lines = selectedCode.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
-<span class="nc" id="L102">						StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L103">						sb.append(&quot;--- a/snippet.java\n+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L104">						sb.append(&quot;@@ -1,0 +1,&quot;).append(lines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L105" title="All 2 branches missed.">						for (String line : lines) {</span>
-<span class="nc" id="L106">							sb.append('+').append(line).append('\n');</span>
+						try {
+<span class="nc" id="L99">							AiRuleInferenceEngine engine = EclipseLlmService.getInstance().getEngine();</span>
+<span class="nc" id="L100">							String[] lines = selectedCode.split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="nc" id="L101">							StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L102">							sb.append(&quot;--- a/snippet.java\n+++ b/snippet.java\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L103">							sb.append(&quot;@@ -1,0 +1,&quot;).append(lines.length).append(&quot; @@\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">							for (String line : lines) {</span>
+<span class="nc" id="L105">								sb.append('+').append(line).append('\n');</span>
+							}
+<span class="nc" id="L107">							Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(sb.toString());</span>
+<span class="nc bnc" id="L108" title="All 4 branches missed.">							if (result.isPresent() &amp;&amp; result.get().dslRule() != null</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">									&amp;&amp; !result.get().dslRule().isBlank()) {</span>
+<span class="nc" id="L110">								openHintFileOnUi(targetProject, result.get().dslRule());</span>
+<span class="nc" id="L111">								return Status.OK_STATUS;</span>
+							}
+<span class="nc" id="L113">							RuleInferenceUiFeedback.showNoRule(&quot;the selected Java code&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L114">							return Status.OK_STATUS;</span>
+<span class="nc" id="L115">						} catch (RuntimeException e) {</span>
+<span class="nc" id="L116">							LOG.error(&quot;Failed to infer a DSL rule from the Java selection&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L117">							RuleInferenceUiFeedback.showFailure(&quot;the selected Java code&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L118">							return Status.error(&quot;DSL inference from Java selection failed&quot;, e); //$NON-NLS-1$</span>
 						}
-<span class="nc" id="L108">						String pseudoDiff = sb.toString();</span>
-<span class="nc" id="L109">						Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(pseudoDiff);</span>
-<span class="nc bnc" id="L110" title="All 4 branches missed.">						if (result.isPresent() &amp;&amp; result.get().dslRule() != null</span>
-<span class="nc bnc" id="L111" title="All 2 branches missed.">								&amp;&amp; !result.get().dslRule().isBlank()) {</span>
-<span class="nc" id="L112">							openHintFileOnUi(result.get().dslRule());</span>
-						}
-<span class="nc" id="L114">						return Status.OK_STATUS;</span>
 					}
 				};
-<span class="nc" id="L117">				job.setUser(true);</span>
-<span class="nc" id="L118">				job.schedule();</span>
-<span class="nc" id="L119">			} catch (Exception e) {</span>
-<span class="nc" id="L120">				LOG.error(&quot;Failed to infer DSL rule from selection&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L122">				job.setUser(true);</span>
+<span class="nc" id="L123">				job.schedule();</span>
+<span class="nc" id="L124">			} catch (Exception e) {</span>
+<span class="nc" id="L125">				LOG.error(&quot;Failed to infer DSL rule from selection&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L126">				RuleInferenceUiFeedback.showFailure(&quot;the selected Java code&quot;, e); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L122">		}</span>
+<span class="nc" id="L128">		}</span>
 
 		@Override
 		public Point getSelection(IDocument document) {
-<span class="nc" id="L126">			return null;</span>
+<span class="nc" id="L132">			return null;</span>
 		}
 
 		@Override
 		public String getAdditionalProposalInfo() {
-<span class="nc" id="L131">			return &quot;Uses the configured LLM to infer a TriggerPattern DSL rule from the selected code snippet.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L137">			return &quot;Uses the configured LLM to infer a TriggerPattern DSL rule from the selected code snippet.&quot;; //$NON-NLS-1$</span>
 		}
 
 		@Override
 		public String getDisplayString() {
-<span class="nc" id="L136">			return PROPOSAL_LABEL;</span>
+<span class="nc" id="L142">			return PROPOSAL_LABEL;</span>
 		}
 
 		@Override
 		public Image getImage() {
-<span class="nc" id="L141">			return null;</span>
+<span class="nc" id="L147">			return null;</span>
 		}
 
 		@Override
 		public IContextInformation getContextInformation() {
-<span class="nc" id="L146">			return null;</span>
+<span class="nc" id="L152">			return null;</span>
 		}
 
 		@Override
 		public int getRelevance() {
-<span class="nc" id="L151">			return 1;</span>
+<span class="nc" id="L157">			return 1;</span>
 		}
 
-		private static void openHintFileOnUi(String ruleContent) {
-<span class="nc" id="L155">			Display.getDefault().asyncExec(() -&gt; {</span>
+		private static void openHintFileOnUi(IProject project, String ruleContent) {
+<span class="nc" id="L161">			Display.getDefault().asyncExec(() -&gt; {</span>
 				try {
-<span class="nc" id="L157">					IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">					if (projects.length == 0) {</span>
-<span class="nc" id="L159">						return;</span>
+<span class="nc" id="L163">					String fileName = &quot;inferred-rule-&quot; + System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L164">					IFile file = project.getFile(new Path(fileName));</span>
+<span class="nc" id="L165">					file.create(new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)), true, null);</span>
+<span class="nc" id="L166">					IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">					if (page != null) {</span>
+<span class="nc" id="L168">						IDE.openEditor(page, file);</span>
 					}
-<span class="nc" id="L161">					IProject project = projects[0];</span>
-<span class="nc" id="L162">					String fileName = &quot;inferred-rule-&quot; + System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L163">					IFile file = project.getFile(new Path(fileName));</span>
-<span class="nc" id="L164">					file.create(</span>
-<span class="nc" id="L165">							new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),</span>
-<span class="nc" id="L166">							true, null);</span>
-<span class="nc" id="L167">					IWorkbenchPage page = PlatformUI.getWorkbench()</span>
-<span class="nc" id="L168">							.getActiveWorkbenchWindow().getActivePage();</span>
-<span class="nc bnc" id="L169" title="All 2 branches missed.">					if (page != null) {</span>
-<span class="nc" id="L170">						IDE.openEditor(page, file);</span>
-					}
-<span class="nc" id="L172">				} catch (Exception e) {</span>
-<span class="nc" id="L173">					LOG.error(&quot;Failed to open hint file for inferred rule&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L170">				} catch (Exception e) {</span>
+<span class="nc" id="L171">					LOG.error(&quot;Failed to open hint file for inferred rule&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L172">					RuleInferenceUiFeedback.showFailure(&quot;the generated hint file&quot;, e); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L175">			});</span>
-<span class="nc" id="L176">		}</span>
+<span class="nc" id="L174">			});</span>
+<span class="nc" id="L175">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

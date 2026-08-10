@@ -22,7 +22,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -39,88 +38,85 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.sandbox.jdt.internal.ui.RuleInferenceUiFeedback;
 import org.sandbox.jdt.triggerpattern.llm.AiRuleInferenceEngine;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
-/**
- * Eclipse command handler that infers a TriggerPattern DSL rule from a
- * unified diff pasted or selected in the active editor.
- *
- * &lt;p&gt;The handler reads the current text selection, sends it to
- * {@link AiRuleInferenceEngine#inferRuleFromDiff(String)} in a background
- * {@link Job}, and opens the resulting DSL rule as a new
- * {@code .sandbox-hint} file.&lt;/p&gt;
- *
- * @since 1.2.6
- */
-<span class="nc" id="L57">public class MineDiffHandler extends AbstractHandler {</span>
+/** Infers a TriggerPattern DSL rule from a selected unified diff. */
+<span class="nc" id="L47">public class MineDiffHandler extends AbstractHandler {</span>
 
-<span class="nc" id="L59">	private static final ILog LOG = Platform.getLog(MineDiffHandler.class);</span>
+<span class="nc" id="L49">	private static final ILog LOG = Platform.getLog(MineDiffHandler.class);</span>
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-<span class="nc" id="L63">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
-<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (!(editor instanceof ITextEditor textEditor)) {</span>
+<span class="nc" id="L53">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if (!(editor instanceof ITextEditor textEditor)) {</span>
+<span class="nc" id="L55">			return null;</span>
+		}
+<span class="nc" id="L57">		IFile activeFile = editor.getEditorInput().getAdapter(IFile.class);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">		if (activeFile == null) {</span>
+<span class="nc" id="L59">			return null;</span>
+		}
+<span class="nc" id="L61">		IProject targetProject = activeFile.getProject();</span>
+
+<span class="nc" id="L63">		ISelection sel = textEditor.getSelectionProvider().getSelection();</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (!(sel instanceof ITextSelection textSelection)) {</span>
 <span class="nc" id="L65">			return null;</span>
 		}
-
-<span class="nc" id="L68">		ISelection sel = textEditor.getSelectionProvider().getSelection();</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (!(sel instanceof ITextSelection textSelection)) {</span>
-<span class="nc" id="L70">			return null;</span>
+<span class="nc" id="L67">		String diffText = textSelection.getText();</span>
+<span class="nc bnc" id="L68" title="All 4 branches missed.">		if (diffText == null || diffText.isBlank()) {</span>
+<span class="nc" id="L69">			return null;</span>
 		}
 
-<span class="nc" id="L73">		String diffText = textSelection.getText();</span>
-<span class="nc bnc" id="L74" title="All 4 branches missed.">		if (diffText == null || diffText.isBlank()) {</span>
+<span class="nc" id="L72">		EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (!llmService.isAvailable()) {</span>
+<span class="nc" id="L74">			RuleInferenceUiFeedback.showConfigurationRequired();</span>
 <span class="nc" id="L75">			return null;</span>
 		}
 
-<span class="nc" id="L78">		EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
-<span class="nc bnc" id="L79" title="All 2 branches missed.">		if (!llmService.isAvailable()) {</span>
-<span class="nc" id="L80">			return null;</span>
-		}
-
-<span class="nc" id="L83">		Job job = new Job(&quot;Mining DSL rules from diff&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L78">		Job job = new Job(&quot;Mining DSL rules from diff&quot;) { //$NON-NLS-1$</span>
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-<span class="nc" id="L86">				AiRuleInferenceEngine engine = llmService.getEngine();</span>
-<span class="nc" id="L87">				Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(diffText);</span>
-<span class="nc bnc" id="L88" title="All 2 branches missed.">				if (result.isPresent()) {</span>
-<span class="nc" id="L89">					String dslRule = result.get().dslRule();</span>
-<span class="nc bnc" id="L90" title="All 4 branches missed.">					if (dslRule != null &amp;&amp; !dslRule.isBlank()) {</span>
-<span class="nc" id="L91">						openHintFileOnUi(dslRule);</span>
+				try {
+<span class="nc" id="L82">					AiRuleInferenceEngine engine = llmService.getEngine();</span>
+<span class="nc" id="L83">					Optional&lt;CommitEvaluation&gt; result = engine.inferRuleFromDiff(diffText);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">					if (result.isPresent()) {</span>
+<span class="nc" id="L85">						String dslRule = result.get().dslRule();</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">						if (dslRule != null &amp;&amp; !dslRule.isBlank()) {</span>
+<span class="nc" id="L87">							openHintFileOnUi(targetProject, dslRule);</span>
+<span class="nc" id="L88">							return Status.OK_STATUS;</span>
+						}
 					}
+<span class="nc" id="L91">					RuleInferenceUiFeedback.showNoRule(&quot;the selected diff&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L92">					return Status.OK_STATUS;</span>
+<span class="nc" id="L93">				} catch (RuntimeException e) {</span>
+<span class="nc" id="L94">					LOG.error(&quot;Failed to infer a DSL rule from the selected diff&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L95">					RuleInferenceUiFeedback.showFailure(&quot;the selected diff&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L96">					return Status.error(&quot;DSL inference from selected diff failed&quot;, e); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L94">				return Status.OK_STATUS;</span>
 			}
 		};
-<span class="nc" id="L97">		job.setUser(true);</span>
-<span class="nc" id="L98">		job.schedule();</span>
-<span class="nc" id="L99">		return null;</span>
+<span class="nc" id="L100">		job.setUser(true);</span>
+<span class="nc" id="L101">		job.schedule();</span>
+<span class="nc" id="L102">		return null;</span>
 	}
 
-	private static void openHintFileOnUi(String ruleContent) {
-<span class="nc" id="L103">		Display.getDefault().asyncExec(() -&gt; {</span>
+	private static void openHintFileOnUi(IProject project, String ruleContent) {
+<span class="nc" id="L106">		Display.getDefault().asyncExec(() -&gt; {</span>
 			try {
-<span class="nc" id="L105">				IProject[] projects = ResourcesPlugin.getWorkspace().getRoot().getProjects();</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">				if (projects.length == 0) {</span>
-<span class="nc" id="L107">					return;</span>
+<span class="nc" id="L108">				String fileName = &quot;mined-diff-&quot; + System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L109">				IFile file = project.getFile(new Path(fileName));</span>
+<span class="nc" id="L110">				file.create(new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)), true, null);</span>
+<span class="nc" id="L111">				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">				if (page != null) {</span>
+<span class="nc" id="L113">					IDE.openEditor(page, file);</span>
 				}
-<span class="nc" id="L109">				IProject project = projects[0];</span>
-<span class="nc" id="L110">				String fileName = &quot;mined-diff-&quot; + System.currentTimeMillis() + &quot;.sandbox-hint&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L111">				IFile file = project.getFile(new Path(fileName));</span>
-<span class="nc" id="L112">				file.create(</span>
-<span class="nc" id="L113">						new ByteArrayInputStream(ruleContent.getBytes(StandardCharsets.UTF_8)),</span>
-<span class="nc" id="L114">						true, null);</span>
-<span class="nc" id="L115">				IWorkbenchPage page = PlatformUI.getWorkbench()</span>
-<span class="nc" id="L116">						.getActiveWorkbenchWindow().getActivePage();</span>
-<span class="nc bnc" id="L117" title="All 2 branches missed.">				if (page != null) {</span>
-<span class="nc" id="L118">					IDE.openEditor(page, file);</span>
-				}
-<span class="nc" id="L120">			} catch (Exception e) {</span>
-<span class="nc" id="L121">				LOG.error(&quot;Failed to open hint file for mined diff rule&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L115">			} catch (Exception e) {</span>
+<span class="nc" id="L116">				LOG.error(&quot;Failed to open hint file for mined diff rule&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L117">				RuleInferenceUiFeedback.showFailure(&quot;the generated hint file&quot;, e); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L123">		});</span>
-<span class="nc" id="L124">	}</span>
+<span class="nc" id="L119">		});</span>
+<span class="nc" id="L120">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

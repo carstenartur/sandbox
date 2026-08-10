@@ -42,12 +42,11 @@ public abstract class OpenAiCompatibleClient implements LlmClient {
 private static final int MAX_RETRIES = 5;
 private static final int INITIAL_BACKOFF_MS = 5000;
 <span class="fc" id="L44">private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(60);</span>
-/** Default maximum duration (in seconds) with no successful API call before aborting. */
 public static final int DEFAULT_MAX_FAILURE_DURATION_SECONDS = 300;
 
 private final String apiUrl;
 private final String apiKey;
-private final String model;
+private String model;
 private final String providerName;
 private final HttpClient httpClient;
 private final Gson gson;
@@ -55,387 +54,365 @@ private int dailyRequestCount;
 private Instant lastSuccessfulCall;
 private Duration maxFailureDuration;
 private boolean lastResponseTruncated;
+private Integer maxTokens;
+private Double temperature;
 
-/**
- * Creates a client with the given configuration.
- *
- * @param apiUrl       the API endpoint URL
- * @param apiKey       the API key
- * @param model        the model name to use
- * @param providerName display name for log messages (e.g. &quot;OpenAI&quot;, &quot;DeepSeek&quot;)
- */
 protected OpenAiCompatibleClient(String apiUrl, String apiKey, String model, String providerName) {
-<span class="fc" id="L68">this(apiUrl, apiKey, model, providerName, HttpClient.newBuilder()</span>
-<span class="fc" id="L69">.connectTimeout(Duration.ofSeconds(30))</span>
-<span class="fc" id="L70">.build());</span>
-<span class="fc" id="L71">}</span>
+<span class="fc" id="L61">this(apiUrl, apiKey, model, providerName, HttpClient.newBuilder()</span>
+<span class="fc" id="L62">.connectTimeout(Duration.ofSeconds(30))</span>
+<span class="fc" id="L63">.build());</span>
+<span class="fc" id="L64">}</span>
 
-/**
- * Creates a client with the given configuration and HTTP client (for testing).
- *
- * @param apiUrl       the API endpoint URL
- * @param apiKey       the API key
- * @param model        the model name to use
- * @param providerName display name for log messages
- * @param httpClient   the HTTP client to use
- */
 protected OpenAiCompatibleClient(String apiUrl, String apiKey, String model,
-<span class="fc" id="L83">String providerName, HttpClient httpClient) {</span>
-<span class="fc" id="L84">this.apiUrl = apiUrl;</span>
-<span class="fc" id="L85">this.apiKey = apiKey;</span>
-<span class="fc" id="L86">this.model = model;</span>
-<span class="fc" id="L87">this.providerName = providerName;</span>
-<span class="fc" id="L88">this.httpClient = httpClient;</span>
-<span class="fc" id="L89">this.gson = new GsonBuilder().create();</span>
-<span class="fc" id="L90">this.lastSuccessfulCall = Instant.now();</span>
-<span class="fc" id="L91">this.maxFailureDuration = Duration.ofSeconds(DEFAULT_MAX_FAILURE_DURATION_SECONDS);</span>
-<span class="fc" id="L92">}</span>
+<span class="fc" id="L67">String providerName, HttpClient httpClient) {</span>
+<span class="fc" id="L68">this.apiUrl = apiUrl;</span>
+<span class="fc" id="L69">this.apiKey = apiKey;</span>
+<span class="fc" id="L70">this.model = model;</span>
+<span class="fc" id="L71">this.providerName = providerName;</span>
+<span class="fc" id="L72">this.httpClient = httpClient;</span>
+<span class="fc" id="L73">this.gson = new GsonBuilder().create();</span>
+<span class="fc" id="L74">this.lastSuccessfulCall = Instant.now();</span>
+<span class="fc" id="L75">this.maxFailureDuration = Duration.ofSeconds(DEFAULT_MAX_FAILURE_DURATION_SECONDS);</span>
+<span class="fc" id="L76">}</span>
+
+@Override
+public void applyInferenceSettings(LlmInferenceSettings settings) {
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">if (settings == null) {</span>
+<span class="nc" id="L81">return;</span>
+}
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">if (settings.modelName() != null) {</span>
+<span class="fc" id="L84">model = settings.modelName();</span>
+}
+<span class="fc" id="L86">maxTokens = settings.maxTokens();</span>
+<span class="fc" id="L87">temperature = settings.temperature();</span>
+<span class="fc" id="L88">}</span>
 
 @Override
 public String getModel() {
-<span class="fc" id="L96">return model;</span>
+<span class="fc" id="L92">return model;</span>
 }
 
 @Override
 public int getDailyRequestCount() {
-<span class="fc" id="L101">return dailyRequestCount;</span>
+<span class="fc" id="L97">return dailyRequestCount;</span>
 }
 
 @Override
 public boolean hasRemainingQuota() {
-<span class="fc" id="L106">return true;</span>
+<span class="fc" id="L102">return true;</span>
 }
 
 @Override
 public boolean isApiUnavailable() {
-<span class="fc bfc" id="L111" title="All 2 branches covered.">return Duration.between(lastSuccessfulCall, Instant.now()).compareTo(maxFailureDuration) &gt; 0;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">return Duration.between(lastSuccessfulCall, Instant.now()).compareTo(maxFailureDuration) &gt; 0;</span>
 }
 
 @Override
 public void setMaxFailureDuration(Duration maxFailureDuration) {
-<span class="fc" id="L116">this.maxFailureDuration = maxFailureDuration;</span>
-<span class="fc" id="L117">}</span>
+<span class="fc" id="L112">this.maxFailureDuration = maxFailureDuration;</span>
+<span class="fc" id="L113">}</span>
 
 @Override
 public Duration getMaxFailureDuration() {
-<span class="fc" id="L121">return maxFailureDuration;</span>
+<span class="fc" id="L117">return maxFailureDuration;</span>
 }
 
 @Override
 public boolean wasLastResponseTruncated() {
-<span class="fc" id="L126">return lastResponseTruncated;</span>
+<span class="fc" id="L122">return lastResponseTruncated;</span>
 }
 
-/**
- * Returns the name of the environment variable for the API key.
- * Used in &quot;key not set&quot; warning messages.
- *
- * @return the API key environment variable name
- */
 protected abstract String getApiKeyEnvVar();
+
+/** Parameter name used by this provider for the output-token cap. */
+protected String getMaxTokensParameterName() {
+<span class="fc" id="L129">return &quot;max_tokens&quot;; //$NON-NLS-1$</span>
+}
 
 @Override
 public CommitEvaluation evaluate(String prompt, String commitHash,
 String commitMessage, String repoUrl) throws IOException {
-<span class="pc bpc" id="L140" title="3 of 4 branches missed.">if (apiKey == null || apiKey.isBlank()) {</span>
-<span class="fc" id="L141">System.err.println(getApiKeyEnvVar() + &quot; not set, skipping evaluation&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L142">return null;</span>
+<span class="pc bpc" id="L135" title="3 of 4 branches missed.">if (apiKey == null || apiKey.isBlank()) {</span>
+<span class="fc" id="L136">System.err.println(getApiKeyEnvVar() + &quot; not set, skipping evaluation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L137">return null;</span>
 }
 
-<span class="nc" id="L145">String requestBody = buildRequestBody(prompt);</span>
-<span class="nc" id="L146">String responseBody = sendWithRetry(requestBody);</span>
+<span class="nc" id="L140">String requestBody = buildRequestBody(prompt);</span>
+<span class="nc" id="L141">String responseBody = sendWithRetry(requestBody);</span>
 
-<span class="nc bnc" id="L148" title="All 2 branches missed.">if (responseBody == null) {</span>
-<span class="nc" id="L149">return null;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">if (responseBody == null) {</span>
+<span class="nc" id="L144">return null;</span>
 }
 
-<span class="nc" id="L152">dailyRequestCount++;</span>
-<span class="nc" id="L153">return parseResponse(responseBody, commitHash, commitMessage, repoUrl);</span>
+<span class="nc" id="L147">dailyRequestCount++;</span>
+<span class="nc" id="L148">return parseResponse(responseBody, commitHash, commitMessage, repoUrl);</span>
 }
 
 @Override
 public List&lt;CommitEvaluation&gt; evaluateBatch(String prompt, List&lt;String&gt; commitHashes,
 List&lt;String&gt; commitMessages, String repoUrl) throws IOException {
-<span class="fc" id="L159">List&lt;CommitEvaluation&gt; results = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L160" title="3 of 4 branches missed.">if (apiKey == null || apiKey.isBlank()) {</span>
-<span class="fc" id="L161">System.err.println(getApiKeyEnvVar() + &quot; not set, skipping batch evaluation&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L162">return results;</span>
+<span class="fc" id="L154">List&lt;CommitEvaluation&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L155" title="3 of 4 branches missed.">if (apiKey == null || apiKey.isBlank()) {</span>
+<span class="fc" id="L156">System.err.println(getApiKeyEnvVar() + &quot; not set, skipping batch evaluation&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L157">return results;</span>
 }
 
-<span class="nc" id="L165">String requestBody = buildRequestBody(prompt);</span>
-<span class="nc" id="L166">String responseBody = sendWithRetry(requestBody);</span>
+<span class="nc" id="L160">String requestBody = buildRequestBody(prompt);</span>
+<span class="nc" id="L161">String responseBody = sendWithRetry(requestBody);</span>
 
-<span class="nc bnc" id="L168" title="All 2 branches missed.">if (responseBody == null) {</span>
-<span class="nc" id="L169">return results;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">if (responseBody == null) {</span>
+<span class="nc" id="L164">return results;</span>
 }
 
-<span class="nc" id="L172">dailyRequestCount++;</span>
-<span class="nc" id="L173">return parseBatchResponse(responseBody, commitHashes, commitMessages, repoUrl);</span>
+<span class="nc" id="L167">dailyRequestCount++;</span>
+<span class="nc" id="L168">return parseBatchResponse(responseBody, commitHashes, commitMessages, repoUrl);</span>
 }
 
-/**
- * Builds the JSON request body for the chat completions API.
- *
- * @param prompt the prompt text
- * @return the JSON request body
- */
 public String buildRequestBody(String prompt) {
-<span class="fc" id="L183">JsonObject message = new JsonObject();</span>
-<span class="fc" id="L184">message.addProperty(&quot;role&quot;, &quot;user&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L185">message.addProperty(&quot;content&quot;, prompt); //$NON-NLS-1$</span>
+<span class="fc" id="L172">JsonObject message = new JsonObject();</span>
+<span class="fc" id="L173">message.addProperty(&quot;role&quot;, &quot;user&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L174">message.addProperty(&quot;content&quot;, prompt); //$NON-NLS-1$</span>
 
-<span class="fc" id="L187">JsonArray messages = new JsonArray();</span>
-<span class="fc" id="L188">messages.add(message);</span>
+<span class="fc" id="L176">JsonArray messages = new JsonArray();</span>
+<span class="fc" id="L177">messages.add(message);</span>
 
-<span class="fc" id="L190">JsonObject request = new JsonObject();</span>
-<span class="fc" id="L191">request.addProperty(&quot;model&quot;, model); //$NON-NLS-1$</span>
-<span class="fc" id="L192">request.add(&quot;messages&quot;, messages); //$NON-NLS-1$</span>
+<span class="fc" id="L179">JsonObject request = new JsonObject();</span>
+<span class="fc" id="L180">request.addProperty(&quot;model&quot;, model); //$NON-NLS-1$</span>
+<span class="fc" id="L181">request.add(&quot;messages&quot;, messages); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">if (maxTokens != null) {</span>
+<span class="fc" id="L183">request.addProperty(getMaxTokensParameterName(), maxTokens); //$NON-NLS-1$</span>
+}
+<span class="fc bfc" id="L185" title="All 2 branches covered.">if (temperature != null) {</span>
+<span class="fc" id="L186">request.addProperty(&quot;temperature&quot;, temperature); //$NON-NLS-1$</span>
+}
 
-<span class="fc" id="L194">return gson.toJson(request);</span>
+<span class="fc" id="L189">return gson.toJson(request);</span>
 }
 
 private String sendWithRetry(String requestBody) throws IOException {
-<span class="nc" id="L198">int backoffMs = INITIAL_BACKOFF_MS;</span>
+<span class="nc" id="L193">int backoffMs = INITIAL_BACKOFF_MS;</span>
 
-<span class="nc bnc" id="L200" title="All 2 branches missed.">for (int attempt = 0; attempt &lt; MAX_RETRIES; attempt++) {</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">for (int attempt = 0; attempt &lt; MAX_RETRIES; attempt++) {</span>
 try {
-<span class="nc" id="L202">HttpRequest request = HttpRequest.newBuilder()</span>
-<span class="nc" id="L203">.uri(URI.create(apiUrl))</span>
-<span class="nc" id="L204">.header(&quot;Content-Type&quot;, &quot;application/json&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L205">.header(&quot;Authorization&quot;, &quot;Bearer &quot; + apiKey) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L206">.timeout(REQUEST_TIMEOUT)</span>
-<span class="nc" id="L207">.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))</span>
-<span class="nc" id="L208">.build();</span>
+<span class="nc" id="L197">HttpRequest request = HttpRequest.newBuilder()</span>
+<span class="nc" id="L198">.uri(URI.create(apiUrl))</span>
+<span class="nc" id="L199">.header(&quot;Content-Type&quot;, &quot;application/json&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L200">.header(&quot;Authorization&quot;, &quot;Bearer &quot; + apiKey) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L201">.timeout(REQUEST_TIMEOUT)</span>
+<span class="nc" id="L202">.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))</span>
+<span class="nc" id="L203">.build();</span>
 
-<span class="nc" id="L210">HttpResponse&lt;String&gt; response = httpClient.send(request,</span>
-<span class="nc" id="L211">HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L205">HttpResponse&lt;String&gt; response = httpClient.send(request,</span>
+<span class="nc" id="L206">HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));</span>
 
-<span class="nc bnc" id="L213" title="All 2 branches missed.">if (response.statusCode() == 200) {</span>
-<span class="nc" id="L214">lastSuccessfulCall = Instant.now();</span>
-<span class="nc" id="L215">return response.body();</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">if (response.statusCode() == 200) {</span>
+<span class="nc" id="L209">lastSuccessfulCall = Instant.now();</span>
+<span class="nc" id="L210">return response.body();</span>
 }
 
-<span class="nc bnc" id="L218" title="All 2 branches missed.">if (response.statusCode() == 429) {</span>
-<span class="nc" id="L219">String retryAfter = response.headers().firstValue(&quot;Retry-After&quot;).orElse(null); //$NON-NLS-1$</span>
-<span class="nc" id="L220">long waitMs = backoffMs;</span>
-<span class="nc" id="L221">boolean usedRetryAfter = false;</span>
-<span class="nc bnc" id="L222" title="All 2 branches missed.">if (retryAfter != null) {</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">if (response.statusCode() == 429) {</span>
+<span class="nc" id="L214">String retryAfter = response.headers().firstValue(&quot;Retry-After&quot;).orElse(null); //$NON-NLS-1$</span>
+<span class="nc" id="L215">long waitMs = backoffMs;</span>
+<span class="nc" id="L216">boolean usedRetryAfter = false;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">if (retryAfter != null) {</span>
 try {
-<span class="nc" id="L224">long seconds = Long.parseLong(retryAfter.trim());</span>
-<span class="nc bnc" id="L225" title="All 2 branches missed.">if (seconds &gt;= 0) {</span>
-<span class="nc" id="L226">waitMs = seconds * 1000;</span>
-<span class="nc" id="L227">usedRetryAfter = true;</span>
+<span class="nc" id="L219">long seconds = Long.parseLong(retryAfter.trim());</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">if (seconds &gt;= 0) {</span>
+<span class="nc" id="L221">waitMs = seconds * 1000;</span>
+<span class="nc" id="L222">usedRetryAfter = true;</span>
 }
-<span class="nc" id="L229">} catch (NumberFormatException nfe) {</span>
-<span class="nc" id="L230">System.err.println(&quot;Invalid Retry-After header value '&quot; + retryAfter + &quot;', using exponential backoff instead.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L231">}</span>
+<span class="nc" id="L224">} catch (NumberFormatException nfe) {</span>
+<span class="nc" id="L225">System.err.println(&quot;Invalid Retry-After header value '&quot; + retryAfter + &quot;', using exponential backoff instead.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L226">}</span>
 }
-<span class="nc" id="L233">System.err.println(providerName + &quot; rate limited (429), attempt &quot; + (attempt + 1) + &quot;/&quot; + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L228">System.err.println(providerName + &quot; rate limited (429), attempt &quot; + (attempt + 1) + &quot;/&quot; + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$</span>
 + &quot;, waiting &quot; + waitMs + &quot;ms&quot; //$NON-NLS-1$ //$NON-NLS-2$
-<span class="nc bnc" id="L235" title="All 2 branches missed.">+ (usedRetryAfter ? &quot; (from Retry-After header)&quot; : &quot; (exponential backoff)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L236">Thread.sleep(waitMs);</span>
-<span class="nc" id="L237">backoffMs *= 2;</span>
-<span class="nc" id="L238">continue;</span>
+<span class="nc bnc" id="L230" title="All 2 branches missed.">+ (usedRetryAfter ? &quot; (from Retry-After header)&quot; : &quot; (exponential backoff)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L231">Thread.sleep(waitMs);</span>
+<span class="nc" id="L232">backoffMs *= 2;</span>
+<span class="nc" id="L233">continue;</span>
 }
 
-<span class="nc" id="L241">System.err.println(providerName + &quot; API error: &quot; + response.statusCode() //$NON-NLS-1$</span>
-<span class="nc" id="L242">+ &quot; - &quot; + response.body()); //$NON-NLS-1$</span>
-<span class="nc" id="L243">return null;</span>
+<span class="nc" id="L236">System.err.println(providerName + &quot; API error: &quot; + response.statusCode() //$NON-NLS-1$</span>
+<span class="nc" id="L237">+ &quot; - &quot; + response.body()); //$NON-NLS-1$</span>
+<span class="nc" id="L238">return null;</span>
 
-<span class="nc" id="L245">} catch (InterruptedException e) {</span>
-<span class="nc" id="L246">Thread.currentThread().interrupt();</span>
-<span class="nc" id="L247">throw new IOException(&quot;Interrupted during &quot; + providerName + &quot; API call&quot;, e); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L240">} catch (InterruptedException e) {</span>
+<span class="nc" id="L241">Thread.currentThread().interrupt();</span>
+<span class="nc" id="L242">throw new IOException(&quot;Interrupted during &quot; + providerName + &quot; API call&quot;, e); //$NON-NLS-1$ //$NON-NLS-2$</span>
 }
 }
 
-<span class="nc" id="L251">System.err.println(&quot;Max retries exceeded for &quot; + providerName + &quot; API call&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L252">return null;</span>
+<span class="nc" id="L246">System.err.println(&quot;Max retries exceeded for &quot; + providerName + &quot; API call&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L247">return null;</span>
 }
 
-/**
- * Parses the API response JSON into a CommitEvaluation.
- *
- * @param responseBody  the raw API response
- * @param commitHash    the commit hash
- * @param commitMessage the commit message
- * @param repoUrl       the repository URL
- * @return the evaluation result, or null on parse failure
- */
 public CommitEvaluation parseResponse(String responseBody, String commitHash,
 String commitMessage, String repoUrl) {
-<span class="fc" id="L266">lastResponseTruncated = false;</span>
+<span class="fc" id="L252">lastResponseTruncated = false;</span>
 try {
-<span class="fc" id="L268">JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();</span>
-<span class="fc" id="L269">JsonArray choices = root.getAsJsonArray(&quot;choices&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L270" title="1 of 4 branches missed.">if (choices == null || choices.isEmpty()) {</span>
-<span class="fc" id="L271">return null;</span>
+<span class="fc" id="L254">JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();</span>
+<span class="fc" id="L255">JsonArray choices = root.getAsJsonArray(&quot;choices&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L256" title="1 of 4 branches missed.">if (choices == null || choices.isEmpty()) {</span>
+<span class="fc" id="L257">return null;</span>
 }
-<span class="fc" id="L273">JsonObject firstChoice = choices.get(0).getAsJsonObject();</span>
+<span class="fc" id="L259">JsonObject firstChoice = choices.get(0).getAsJsonObject();</span>
 
-<span class="fc" id="L275">String finishReason = getStringOrNull(firstChoice, &quot;finish_reason&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">if (&quot;length&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
-<span class="fc" id="L277">System.err.println(&quot;Warning: &quot; + providerName + &quot; response truncated (finish_reason=length)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L278">lastResponseTruncated = true;</span>
+<span class="fc" id="L261">String finishReason = getStringOrNull(firstChoice, &quot;finish_reason&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">if (&quot;length&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
+<span class="fc" id="L263">System.err.println(&quot;Warning: &quot; + providerName + &quot; response truncated (finish_reason=length)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L264">lastResponseTruncated = true;</span>
 }
-<span class="fc bfc" id="L280" title="All 2 branches covered.">if (&quot;content_filter&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
-<span class="fc" id="L281">System.err.println(&quot;Warning: &quot; + providerName + &quot; refused (finish_reason=content_filter), skipping commit&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">if (&quot;content_filter&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
+<span class="fc" id="L267">System.err.println(&quot;Warning: &quot; + providerName + &quot; refused (finish_reason=content_filter), skipping commit&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L268">return null;</span>
+}
+
+<span class="fc" id="L271">JsonObject message = firstChoice.getAsJsonObject(&quot;message&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">if (message == null) {</span>
+<span class="nc" id="L273">return null;</span>
+}
+<span class="fc" id="L275">String text = message.get(&quot;content&quot;).getAsString(); //$NON-NLS-1$</span>
+<span class="fc" id="L276">String json = GeminiClient.extractJson(text);</span>
+<span class="fc" id="L277">JsonObject eval = JsonParser.parseString(json).getAsJsonObject();</span>
+
+<span class="fc" id="L279">return createEvaluation(eval, commitHash, commitMessage, repoUrl);</span>
+<span class="fc" id="L280">} catch (Exception e) {</span>
+<span class="fc" id="L281">System.err.println(&quot;Failed to parse &quot; + providerName + &quot; response: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L282">return null;</span>
 }
-
-<span class="fc" id="L285">JsonObject message = firstChoice.getAsJsonObject(&quot;message&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L286" title="1 of 2 branches missed.">if (message == null) {</span>
-<span class="nc" id="L287">return null;</span>
-}
-<span class="fc" id="L289">String text = message.get(&quot;content&quot;).getAsString(); //$NON-NLS-1$</span>
-<span class="fc" id="L290">String json = GeminiClient.extractJson(text);</span>
-<span class="fc" id="L291">JsonObject eval = JsonParser.parseString(json).getAsJsonObject();</span>
-
-<span class="fc" id="L293">return createEvaluation(eval, commitHash, commitMessage, repoUrl);</span>
-<span class="fc" id="L294">} catch (Exception e) {</span>
-<span class="fc" id="L295">System.err.println(&quot;Failed to parse &quot; + providerName + &quot; response: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L296">return null;</span>
-}
 }
 
-/**
- * Parses a batch response into a list of CommitEvaluations.
- *
- * @param responseBody   the raw API response
- * @param commitHashes   the commit hashes (in order)
- * @param commitMessages the commit messages (in order)
- * @param repoUrl        the repository URL
- * @return list of evaluations
- */
 public List&lt;CommitEvaluation&gt; parseBatchResponse(String responseBody, List&lt;String&gt; commitHashes,
 List&lt;String&gt; commitMessages, String repoUrl) {
-<span class="fc" id="L311">List&lt;CommitEvaluation&gt; results = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L312">lastResponseTruncated = false;</span>
+<span class="fc" id="L288">List&lt;CommitEvaluation&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L289">lastResponseTruncated = false;</span>
 try {
-<span class="fc" id="L314">JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();</span>
-<span class="fc" id="L315">JsonArray choices = root.getAsJsonArray(&quot;choices&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L316" title="1 of 4 branches missed.">if (choices == null || choices.isEmpty()) {</span>
-<span class="fc" id="L317">return results;</span>
+<span class="fc" id="L291">JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();</span>
+<span class="fc" id="L292">JsonArray choices = root.getAsJsonArray(&quot;choices&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L293" title="1 of 4 branches missed.">if (choices == null || choices.isEmpty()) {</span>
+<span class="fc" id="L294">return results;</span>
 }
-<span class="fc" id="L319">JsonObject firstChoice = choices.get(0).getAsJsonObject();</span>
+<span class="fc" id="L296">JsonObject firstChoice = choices.get(0).getAsJsonObject();</span>
 
-<span class="fc" id="L321">String finishReason = getStringOrNull(firstChoice, &quot;finish_reason&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">if (&quot;length&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
-<span class="nc" id="L323">System.err.println(&quot;Warning: &quot; + providerName + &quot; response truncated (finish_reason=length)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L324">lastResponseTruncated = true;</span>
+<span class="fc" id="L298">String finishReason = getStringOrNull(firstChoice, &quot;finish_reason&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">if (&quot;length&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
+<span class="nc" id="L300">System.err.println(&quot;Warning: &quot; + providerName + &quot; response truncated (finish_reason=length)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L301">lastResponseTruncated = true;</span>
 }
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">if (&quot;content_filter&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
-<span class="nc" id="L327">System.err.println(&quot;Warning: &quot; + providerName + &quot; refused (finish_reason=content_filter), skipping batch&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L328">return results;</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">if (&quot;content_filter&quot;.equals(finishReason)) { //$NON-NLS-1$</span>
+<span class="nc" id="L304">System.err.println(&quot;Warning: &quot; + providerName + &quot; refused (finish_reason=content_filter), skipping batch&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L305">return results;</span>
 }
 
-<span class="fc" id="L331">JsonObject message = firstChoice.getAsJsonObject(&quot;message&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L332" title="1 of 2 branches missed.">if (message == null) {</span>
-<span class="nc" id="L333">return results;</span>
+<span class="fc" id="L308">JsonObject message = firstChoice.getAsJsonObject(&quot;message&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">if (message == null) {</span>
+<span class="nc" id="L310">return results;</span>
 }
-<span class="fc" id="L335">String text = message.get(&quot;content&quot;).getAsString(); //$NON-NLS-1$</span>
-<span class="fc" id="L336">String json = GeminiClient.extractJson(text);</span>
+<span class="fc" id="L312">String text = message.get(&quot;content&quot;).getAsString(); //$NON-NLS-1$</span>
+<span class="fc" id="L313">String json = GeminiClient.extractJson(text);</span>
 JsonArray evalArray;
 try {
-<span class="fc" id="L339">evalArray = JsonParser.parseString(json).getAsJsonArray();</span>
-<span class="nc" id="L340">} catch (Exception parseEx) {</span>
-<span class="nc" id="L341">String repaired = GeminiClient.repairTruncatedJson(json);</span>
+<span class="fc" id="L316">evalArray = JsonParser.parseString(json).getAsJsonArray();</span>
+<span class="nc" id="L317">} catch (Exception parseEx) {</span>
+<span class="nc" id="L318">String repaired = GeminiClient.repairTruncatedJson(json);</span>
 try {
-<span class="nc" id="L343">evalArray = JsonParser.parseString(repaired).getAsJsonArray();</span>
-<span class="nc" id="L344">System.err.println(&quot;Recovered partial batch response after JSON repair&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L345">} catch (Exception e2) {</span>
-<span class="nc" id="L346">throw parseEx;</span>
-<span class="nc" id="L347">}</span>
-<span class="fc" id="L348">}</span>
-<span class="fc" id="L349">int evalCount = evalArray.size();</span>
-<span class="fc" id="L350">int commitCount = Math.min(commitHashes.size(), commitMessages.size());</span>
-<span class="pc bpc" id="L351" title="1 of 2 branches missed.">if (evalCount != commitCount) {</span>
-<span class="nc" id="L352">System.err.println(&quot;Warning: &quot; + providerName + &quot; batch response count (&quot; + evalCount //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L320">evalArray = JsonParser.parseString(repaired).getAsJsonArray();</span>
+<span class="nc" id="L321">System.err.println(&quot;Recovered partial batch response after JSON repair&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L322">} catch (Exception e2) {</span>
+<span class="nc" id="L323">throw parseEx;</span>
+<span class="nc" id="L324">}</span>
+<span class="fc" id="L325">}</span>
+<span class="fc" id="L326">int evalCount = evalArray.size();</span>
+<span class="fc" id="L327">int commitCount = Math.min(commitHashes.size(), commitMessages.size());</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">if (evalCount != commitCount) {</span>
+<span class="nc" id="L329">System.err.println(&quot;Warning: &quot; + providerName + &quot; batch response count (&quot; + evalCount //$NON-NLS-1$ //$NON-NLS-2$</span>
 + &quot;) does not match commit count (&quot; + commitCount + &quot;). Processing min of both.&quot;); //$NON-NLS-1$
 }
-<span class="fc" id="L355">int limit = Math.min(evalCount, commitCount);</span>
-<span class="fc bfc" id="L356" title="All 2 branches covered.">for (int i = 0; i &lt; limit; i++) {</span>
-<span class="fc" id="L357">String commitHash = commitHashes.get(i);</span>
-<span class="fc" id="L358">String commitMessage = commitMessages.get(i);</span>
+<span class="fc" id="L332">int limit = Math.min(evalCount, commitCount);</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">for (int i = 0; i &lt; limit; i++) {</span>
+<span class="fc" id="L334">String commitHash = commitHashes.get(i);</span>
+<span class="fc" id="L335">String commitMessage = commitMessages.get(i);</span>
 try {
-<span class="fc" id="L360">JsonObject eval = evalArray.get(i).getAsJsonObject();</span>
-<span class="fc" id="L361">results.add(createEvaluation(eval, commitHash, commitMessage, repoUrl));</span>
-<span class="nc" id="L362">} catch (Exception e) {</span>
-<span class="nc" id="L363">System.err.println(&quot;Failed to parse &quot; + providerName + &quot; batch evaluation at index &quot; + i + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L364">}</span>
+<span class="fc" id="L337">JsonObject eval = evalArray.get(i).getAsJsonObject();</span>
+<span class="fc" id="L338">results.add(createEvaluation(eval, commitHash, commitMessage, repoUrl));</span>
+<span class="nc" id="L339">} catch (Exception e) {</span>
+<span class="nc" id="L340">System.err.println(&quot;Failed to parse &quot; + providerName + &quot; batch evaluation at index &quot; + i + &quot;: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L341">}</span>
 }
-<span class="nc" id="L366">} catch (Exception e) {</span>
-<span class="nc" id="L367">System.err.println(&quot;Failed to parse batch &quot; + providerName + &quot; response: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L368">}</span>
-<span class="fc" id="L369">return results;</span>
+<span class="nc" id="L343">} catch (Exception e) {</span>
+<span class="nc" id="L344">System.err.println(&quot;Failed to parse batch &quot; + providerName + &quot; response: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L345">}</span>
+<span class="fc" id="L346">return results;</span>
 }
 
 static CommitEvaluation.TrafficLight parseTrafficLight(String value) {
-<span class="pc bpc" id="L373" title="1 of 2 branches missed.">if (value == null) {</span>
-<span class="nc" id="L374">return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
+<span class="pc bpc" id="L350" title="1 of 2 branches missed.">if (value == null) {</span>
+<span class="nc" id="L351">return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
 }
 try {
-<span class="fc" id="L377">return CommitEvaluation.TrafficLight.valueOf(value.toUpperCase());</span>
-<span class="nc" id="L378">} catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L379">return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
+<span class="fc" id="L354">return CommitEvaluation.TrafficLight.valueOf(value.toUpperCase());</span>
+<span class="nc" id="L355">} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L356">return CommitEvaluation.TrafficLight.NOT_APPLICABLE;</span>
 }
 }
 
 static CommitEvaluation createEvaluation(JsonObject eval, String commitHash,
 String commitMessage, String repoUrl) {
-<span class="fc" id="L385">boolean relevant = getBooleanOrDefault(eval, &quot;relevant&quot;, false); //$NON-NLS-1$</span>
-<span class="fc" id="L386">String category = getStringOrNull(eval, &quot;category&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L387" title="2 of 6 branches missed.">if (relevant &amp;&amp; (category == null || category.isBlank())) {</span>
-<span class="fc" id="L388">System.err.println(&quot;Warning: relevant commit &quot; + commitHash //$NON-NLS-1$</span>
+<span class="fc" id="L362">boolean relevant = getBooleanOrDefault(eval, &quot;relevant&quot;, false); //$NON-NLS-1$</span>
+<span class="fc" id="L363">String category = getStringOrNull(eval, &quot;category&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L364" title="2 of 6 branches missed.">if (relevant &amp;&amp; (category == null || category.isBlank())) {</span>
+<span class="fc" id="L365">System.err.println(&quot;Warning: relevant commit &quot; + commitHash //$NON-NLS-1$</span>
 + &quot; has no category, defaulting to 'Uncategorized'&quot;); //$NON-NLS-1$
-<span class="fc" id="L390">category = &quot;Uncategorized&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L367">category = &quot;Uncategorized&quot;; //$NON-NLS-1$</span>
 }
-<span class="fc" id="L392">return new CommitEvaluation(</span>
+<span class="fc" id="L369">return new CommitEvaluation(</span>
 commitHash,
 commitMessage,
 repoUrl,
-<span class="fc" id="L396">Instant.now(),</span>
+<span class="fc" id="L373">Instant.now(),</span>
 null,
 relevant,
-<span class="fc" id="L399">getStringOrNull(eval, &quot;irrelevantReason&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L400">getBooleanOrDefault(eval, &quot;isDuplicate&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L401">getStringOrNull(eval, &quot;duplicateOf&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L402">getIntOrDefault(eval, &quot;reusability&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L403">getIntOrDefault(eval, &quot;codeImprovement&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L404">getIntOrDefault(eval, &quot;implementationEffort&quot;, 0), //$NON-NLS-1$</span>
-<span class="fc" id="L405">parseTrafficLight(getStringOrNull(eval, &quot;trafficLight&quot;)), //$NON-NLS-1$</span>
+<span class="fc" id="L376">getStringOrNull(eval, &quot;irrelevantReason&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L377">getBooleanOrDefault(eval, &quot;isDuplicate&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L378">getStringOrNull(eval, &quot;duplicateOf&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L379">getIntOrDefault(eval, &quot;reusability&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L380">getIntOrDefault(eval, &quot;codeImprovement&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L381">getIntOrDefault(eval, &quot;implementationEffort&quot;, 0), //$NON-NLS-1$</span>
+<span class="fc" id="L382">parseTrafficLight(getStringOrNull(eval, &quot;trafficLight&quot;)), //$NON-NLS-1$</span>
 category,
-<span class="fc" id="L407">getBooleanOrDefault(eval, &quot;isNewCategory&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L408">getStringOrNull(eval, &quot;categoryReason&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L409">getBooleanOrDefault(eval, &quot;canImplementInCurrentDsl&quot;, false), //$NON-NLS-1$</span>
-<span class="fc" id="L410">getStringOrNull(eval, &quot;dslRule&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L411">getStringOrNull(eval, &quot;targetHintFile&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L412">getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L413">getStringOrNull(eval, &quot;dslRuleAfterChange&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L414">getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L384">getBooleanOrDefault(eval, &quot;isNewCategory&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L385">getStringOrNull(eval, &quot;categoryReason&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L386">getBooleanOrDefault(eval, &quot;canImplementInCurrentDsl&quot;, false), //$NON-NLS-1$</span>
+<span class="fc" id="L387">getStringOrNull(eval, &quot;dslRule&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L388">getStringOrNull(eval, &quot;targetHintFile&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L389">getStringOrNull(eval, &quot;languageChangeNeeded&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L390">getStringOrNull(eval, &quot;dslRuleAfterChange&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L391">getStringOrNull(eval, &quot;summary&quot;), //$NON-NLS-1$</span>
 null,
-<span class="fc" id="L416">getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L417">getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L418">getStringOrNull(eval, &quot;negativeExample&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L393">getStringOrNull(eval, &quot;beforeExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L394">getStringOrNull(eval, &quot;afterExample&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L395">getStringOrNull(eval, &quot;negativeExample&quot;)); //$NON-NLS-1$</span>
 }
 
 static String getStringOrNull(JsonObject obj, String key) {
-<span class="fc" id="L422">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L423" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
+<span class="fc" id="L399">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L400" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsString() : null;</span>
 }
 
 static boolean getBooleanOrDefault(JsonObject obj, String key, boolean defaultValue) {
-<span class="fc" id="L427">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L428" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
+<span class="fc" id="L404">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L405" title="1 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsBoolean() : defaultValue;</span>
 }
 
 static int getIntOrDefault(JsonObject obj, String key, int defaultValue) {
-<span class="fc" id="L432">JsonElement element = obj.get(key);</span>
-<span class="pc bpc" id="L433" title="2 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
+<span class="fc" id="L409">JsonElement element = obj.get(key);</span>
+<span class="pc bpc" id="L410" title="2 of 4 branches missed.">return (element != null &amp;&amp; !element.isJsonNull()) ? element.getAsInt() : defaultValue;</span>
 }
 
 @Override
 public void close() {
-<span class="nc" id="L438">httpClient.close();</span>
-<span class="nc" id="L439">}</span>
+<span class="nc" id="L415">httpClient.close();</span>
+<span class="nc" id="L416">}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

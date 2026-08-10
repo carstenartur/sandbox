@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
@@ -26,30 +27,33 @@ import org.eclipse.core.runtime.Platform;
 /**
  * Utility for executing Node.js/npm commands.
  */
-<span class="nc" id="L29">public class NodeExecutor {</span>
+<span class="nc" id="L30">public class NodeExecutor {</span>
 
 	private static final int TIMEOUT_SECONDS = 30;
-<span class="fc" id="L32">	private static final ILog LOG = Platform.getLog(NodeExecutor.class);</span>
+<span class="fc" id="L33">	private static final ILog LOG = Platform.getLog(NodeExecutor.class);</span>
 
 	/**
 	 * Check if Node.js is available on the system.
 	 */
 	public static boolean isNodeAvailable() {
-<span class="fc" id="L38">		Process process = null;</span>
+<span class="fc" id="L39">		Process process = null;</span>
 		try {
-<span class="fc" id="L40">			ProcessBuilder pb = new ProcessBuilder(&quot;node&quot;, &quot;--version&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L41">			process = pb.start();</span>
-<span class="fc" id="L42">			boolean finished = process.waitFor(5, TimeUnit.SECONDS);</span>
-<span class="pc bpc" id="L43" title="1 of 2 branches missed.">			if (!finished) {</span>
-<span class="nc" id="L44">				process.destroyForcibly();</span>
-<span class="nc" id="L45">				return false;</span>
+<span class="fc" id="L41">			ProcessBuilder pb = new ProcessBuilder(&quot;node&quot;, &quot;--version&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L42">			process = pb.start();</span>
+<span class="fc" id="L43">			boolean finished = process.waitFor(5, TimeUnit.SECONDS);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">			if (!finished) {</span>
+<span class="nc" id="L45">				process.destroyForcibly();</span>
+<span class="nc" id="L46">				return false;</span>
 			}
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">			return process.exitValue() == 0;</span>
-<span class="nc" id="L48">		} catch (IOException | InterruptedException e) {</span>
-<span class="nc bnc" id="L49" title="All 2 branches missed.">			if (process != null) {</span>
-<span class="nc" id="L50">				process.destroyForcibly();</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">			return process.exitValue() == 0;</span>
+<span class="nc" id="L49">		} catch (IOException | InterruptedException e) {</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">			if (process != null) {</span>
+<span class="nc" id="L51">				process.destroyForcibly();</span>
 			}
-<span class="nc" id="L52">			return false;</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (e instanceof InterruptedException) {</span>
+<span class="nc" id="L54">				Thread.currentThread().interrupt();</span>
+			}
+<span class="nc" id="L56">			return false;</span>
 		}
 	}
 
@@ -57,56 +61,91 @@ import org.eclipse.core.runtime.Platform;
 	 * Check if npx is available.
 	 */
 	public static boolean isNpxAvailable() {
-<span class="fc" id="L60">		Process process = null;</span>
+<span class="fc" id="L64">		Process process = null;</span>
 		try {
-<span class="fc" id="L62">			ProcessBuilder pb = new ProcessBuilder(&quot;npx&quot;, &quot;--version&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L63">			process = pb.start();</span>
-<span class="fc" id="L64">			boolean finished = process.waitFor(5, TimeUnit.SECONDS);</span>
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (!finished) {</span>
-<span class="nc" id="L66">				process.destroyForcibly();</span>
-<span class="nc" id="L67">				return false;</span>
+<span class="fc" id="L66">			ProcessBuilder pb = new ProcessBuilder(&quot;npx&quot;, &quot;--version&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L67">			process = pb.start();</span>
+<span class="fc" id="L68">			boolean finished = process.waitFor(5, TimeUnit.SECONDS);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (!finished) {</span>
+<span class="nc" id="L70">				process.destroyForcibly();</span>
+<span class="nc" id="L71">				return false;</span>
 			}
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			return process.exitValue() == 0;</span>
-<span class="nc" id="L70">		} catch (IOException | InterruptedException e) {</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">			if (process != null) {</span>
-<span class="nc" id="L72">				process.destroyForcibly();</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">			return process.exitValue() == 0;</span>
+<span class="nc" id="L74">		} catch (IOException | InterruptedException e) {</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">			if (process != null) {</span>
+<span class="nc" id="L76">				process.destroyForcibly();</span>
 			}
-<span class="nc" id="L74">			return false;</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">			if (e instanceof InterruptedException) {</span>
+<span class="nc" id="L79">				Thread.currentThread().interrupt();</span>
+			}
+<span class="nc" id="L81">			return false;</span>
 		}
 	}
 
-	/**
-	 * Execute an npx command and return the output.
-	 */
+	/** Execute an npx command and return stdout/stderr without providing stdin. */
 	public static ExecutionResult executeNpx(String... args) throws IOException, InterruptedException {
-<span class="fc" id="L82">		String[] command = new String[args.length + 1];</span>
-<span class="fc" id="L83">		command[0] = &quot;npx&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L84">		System.arraycopy(args, 0, command, 1, args.length);</span>
+<span class="fc" id="L87">		return executeNpxInternal(null, args);</span>
+	}
 
-<span class="fc" id="L86">		ProcessBuilder pb = new ProcessBuilder(command);</span>
-<span class="fc" id="L87">		pb.redirectErrorStream(false);</span>
+	/** Execute an npx command with UTF-8 input supplied on stdin. */
+	public static ExecutionResult executeNpxWithInput(String input, String... args)
+			throws IOException, InterruptedException {
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		return executeNpxInternal(input == null ? &quot;&quot; : input, args); //$NON-NLS-1$</span>
+	}
 
-<span class="fc" id="L89">		Process process = pb.start();</span>
-<span class="fc" id="L90">		try (StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());</span>
-<span class="fc" id="L91">			 StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream())) {</span>
-			// Use StreamGobbler to read streams concurrently and avoid deadlock
-<span class="fc" id="L93">			outputGobbler.start();</span>
-<span class="fc" id="L94">			errorGobbler.start();</span>
+	private static ExecutionResult executeNpxInternal(String input, String... args)
+			throws IOException, InterruptedException {
+<span class="fc" id="L98">		String[] command = new String[args.length + 1];</span>
+<span class="fc" id="L99">		command[0] = &quot;npx&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L100">		System.arraycopy(args, 0, command, 1, args.length);</span>
 
-<span class="fc" id="L96">			boolean finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (!finished) {</span>
-<span class="nc" id="L98">				process.destroyForcibly();</span>
-<span class="nc" id="L99">				throw new IOException(&quot;Process timed out after &quot; + TIMEOUT_SECONDS + &quot; seconds&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L102">		ProcessBuilder pb = new ProcessBuilder(command);</span>
+<span class="fc" id="L103">		pb.redirectErrorStream(false);</span>
+
+<span class="fc" id="L105">		Process process = pb.start();</span>
+<span class="fc" id="L106">		try (StreamGobbler outputGobbler = new StreamGobbler(process.getInputStream());</span>
+<span class="fc" id="L107">				StreamGobbler errorGobbler = new StreamGobbler(process.getErrorStream())) {</span>
+<span class="fc" id="L108">			outputGobbler.start();</span>
+<span class="fc" id="L109">			errorGobbler.start();</span>
+
+<span class="fc" id="L111">			try (OutputStream processInput = process.getOutputStream()) {</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">				if (input != null) {</span>
+<span class="fc" id="L113">					processInput.write(input.getBytes(StandardCharsets.UTF_8));</span>
+				}
 			}
 
-<span class="fc" id="L102">			outputGobbler.join(1000);</span>
-<span class="fc" id="L103">			errorGobbler.join(1000);</span>
+			boolean finished;
+			try {
+<span class="fc" id="L119">				finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS);</span>
+<span class="pc" id="L120">			} catch (InterruptedException e) {</span>
+<span class="nc" id="L121">				process.destroyForcibly();</span>
+<span class="nc" id="L122">				Thread.currentThread().interrupt();</span>
+<span class="nc" id="L123">				throw e;</span>
+			}
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">			if (!finished) {</span>
+<span class="nc" id="L126">				process.destroyForcibly();</span>
+<span class="nc" id="L127">				throw new IOException(&quot;Process timed out after &quot; + TIMEOUT_SECONDS + &quot; seconds&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
 
-<span class="fc" id="L105">			return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());</span>
+<span class="fc" id="L130">			awaitCompleteOutput(outputGobbler, errorGobbler);</span>
+<span class="fc" id="L131">			return new ExecutionResult(process.exitValue(), outputGobbler.getOutput(), errorGobbler.getOutput());</span>
 		} finally {
-<span class="fc" id="L107">			process.destroy();</span>
+<span class="fc" id="L133">			process.destroy();</span>
 		}
 	}
+
+	private static void awaitCompleteOutput(StreamGobbler outputGobbler, StreamGobbler errorGobbler)
+			throws InterruptedException {
+		try {
+			// The process has exited, so both streams will reach EOF. Do not return
+			// partially consumed JSON merely because a fixed join timeout elapsed.
+<span class="fc" id="L142">			outputGobbler.join();</span>
+<span class="fc" id="L143">			errorGobbler.join();</span>
+<span class="pc" id="L144">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L145">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L146">			throw e;</span>
+		}
+<span class="fc" id="L148">	}</span>
 
 	/**
 	 * Helper class to read stream output in a separate thread to avoid deadlock.
@@ -114,60 +153,58 @@ import org.eclipse.core.runtime.Platform;
 	 */
 	private static class StreamGobbler extends Thread implements AutoCloseable {
 		private final InputStream inputStream;
-<span class="fc" id="L117">		private final StringBuilder output = new StringBuilder();</span>
-<span class="fc" id="L118">		private volatile boolean streamConsumed = false;</span>
+<span class="fc" id="L156">		private final StringBuilder output = new StringBuilder();</span>
+<span class="fc" id="L157">		private volatile boolean streamConsumed = false;</span>
 
-<span class="fc" id="L120">		StreamGobbler(InputStream inputStream) {</span>
-<span class="fc" id="L121">			this.inputStream = inputStream;</span>
-<span class="fc" id="L122">		}</span>
+<span class="fc" id="L159">		StreamGobbler(InputStream inputStream) {</span>
+<span class="fc" id="L160">			this.inputStream = inputStream;</span>
+<span class="fc" id="L161">			setDaemon(true);</span>
+<span class="fc" id="L162">		}</span>
 
 		@Override
 		public void run() {
-<span class="fc" id="L126">			try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {</span>
-<span class="fc" id="L127">				streamConsumed = true;</span>
+<span class="fc" id="L166">			try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {</span>
+<span class="fc" id="L167">				streamConsumed = true;</span>
 				String line;
-<span class="fc bfc" id="L129" title="All 2 branches covered.">				while ((line = reader.readLine()) != null) {</span>
-<span class="fc" id="L130">					output.append(line).append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">				while ((line = reader.readLine()) != null) {</span>
+<span class="fc" id="L170">					output.append(line).append(&quot;\n&quot;); //$NON-NLS-1$</span>
 				}
-<span class="nc" id="L132">			} catch (IOException e) {</span>
-<span class="nc" id="L133">				LOG.log(new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, </span>
-<span class="nc" id="L134">						&quot;sandbox_css_cleanup&quot;, &quot;Error reading stream&quot;, e)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L172">			} catch (IOException e) {</span>
+<span class="nc" id="L173">				LOG.log(new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING,</span>
+<span class="nc" id="L174">						&quot;sandbox_css_cleanup&quot;, &quot;Error reading stream&quot;, e)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
-<span class="fc" id="L136">		}</span>
+<span class="fc" id="L176">		}</span>
 
 		@Override
 		public void close() {
-			// If run() was never called or didn't complete, close the stream explicitly
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">			if (!streamConsumed) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			if (!streamConsumed) {</span>
 				try {
-<span class="nc" id="L143">					inputStream.close();</span>
-<span class="nc" id="L144">				} catch (IOException e) {</span>
-					// Ignore close errors - stream will be closed when process is destroyed anyway
+<span class="nc" id="L182">					inputStream.close();</span>
+<span class="nc" id="L183">				} catch (IOException e) {</span>
+					// Process destruction also closes the stream.
 				}
 			}
-<span class="fc" id="L148">		}</span>
+<span class="fc" id="L187">		}</span>
 
 		String getOutput() {
-<span class="fc" id="L151">			return output.toString();</span>
+<span class="fc" id="L190">			return output.toString();</span>
 		}
 	}
 
-	/**
-	 * Result of a command execution.
-	 */
+	/** Result of a command execution. */
 	public static class ExecutionResult {
 		public final int exitCode;
 		public final String stdout;
 		public final String stderr;
 
-<span class="fc" id="L163">		public ExecutionResult(int exitCode, String stdout, String stderr) {</span>
-<span class="fc" id="L164">			this.exitCode = exitCode;</span>
-<span class="fc" id="L165">			this.stdout = stdout;</span>
-<span class="fc" id="L166">			this.stderr = stderr;</span>
-<span class="fc" id="L167">		}</span>
+<span class="fc" id="L200">		public ExecutionResult(int exitCode, String stdout, String stderr) {</span>
+<span class="fc" id="L201">			this.exitCode = exitCode;</span>
+<span class="fc" id="L202">			this.stdout = stdout;</span>
+<span class="fc" id="L203">			this.stderr = stderr;</span>
+<span class="fc" id="L204">		}</span>
 
 		public boolean isSuccess() {
-<span class="fc bfc" id="L170" title="All 2 branches covered.">			return exitCode == 0;</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">			return exitCode == 0;</span>
 		}
 	}
 }

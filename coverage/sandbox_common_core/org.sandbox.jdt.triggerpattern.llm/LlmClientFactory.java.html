@@ -13,116 +13,84 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.llm;
 
-/**
- * Factory for creating {@link LlmClient} instances.
- */
+import java.net.http.HttpClient;
+import java.time.Duration;
+
+/** Factory for creating {@link LlmClient} instances. */
 public class LlmClientFactory {
 
 private LlmClientFactory() {
-// utility class
 }
 
-/**
- * Creates an {@link LlmClient} for the given provider.
- *
- * @param provider the LLM provider to use
- * @return the configured client
- */
 public static LlmClient create(LlmProvider provider) {
-<span class="nc bnc" id="L32" title="All 6 branches missed.">return switch (provider) {</span>
-<span class="nc" id="L33">case GEMINI -&gt; new GeminiClient();</span>
-<span class="nc" id="L34">case OPENAI -&gt; new OpenAiClient();</span>
-<span class="nc" id="L35">case DEEPSEEK -&gt; new DeepSeekClient();</span>
-<span class="nc" id="L36">case QWEN -&gt; new QwenClient();</span>
-<span class="nc" id="L37">case LLAMA -&gt; new LlamaClient();</span>
-<span class="nc" id="L38">case MISTRAL -&gt; new MistralClient();</span>
-};
+<span class="nc" id="L26">return create(provider, null, LlmInferenceSettings.unspecified());</span>
 }
 
-/**
- * Creates an {@link LlmClient} for the given provider with an explicit API key.
- *
- * &lt;p&gt;Use this overload when the API key is available from Eclipse preferences
- * or another non-environment source. If {@code apiKey} is {@code null} or blank,
- * the client falls back to reading from its provider-specific environment variable.&lt;/p&gt;
- *
- * @param provider the LLM provider to use
- * @param apiKey   explicit API key (may be {@code null} or blank to fall back to env)
- * @return the configured client
- */
 public static LlmClient create(LlmProvider provider, String apiKey) {
-<span class="nc bnc" id="L54" title="All 4 branches missed.">if (apiKey == null || apiKey.isBlank()) {</span>
-<span class="nc" id="L55">return create(provider);</span>
-}
-<span class="nc bnc" id="L57" title="All 6 branches missed.">return switch (provider) {</span>
-<span class="nc" id="L58">case GEMINI -&gt; new GeminiClient(apiKey);</span>
-<span class="nc" id="L59">case OPENAI -&gt; new OpenAiClient(apiKey);</span>
-<span class="nc" id="L60">case DEEPSEEK -&gt; new DeepSeekClient(apiKey);</span>
-<span class="nc" id="L61">case QWEN -&gt; new QwenClient(apiKey);</span>
-<span class="nc" id="L62">case LLAMA -&gt; new LlamaClient(apiKey);</span>
-<span class="nc" id="L63">case MISTRAL -&gt; new MistralClient(apiKey);</span>
-};
+<span class="nc" id="L30">return create(provider, apiKey, LlmInferenceSettings.unspecified());</span>
 }
 
 /**
- * Creates an {@link LlmClient} by auto-detecting the provider.
- *
- * &lt;p&gt;Priority order:
- * &lt;ol&gt;
- *   &lt;li&gt;Explicit CLI argument ({@code explicitProvider} parameter, non-blank)&lt;/li&gt;
- *   &lt;li&gt;Environment variable {@code LLM_PROVIDER}&lt;/li&gt;
- *   &lt;li&gt;Auto-detect from available API keys:
- *     &lt;ul&gt;
- *       &lt;li&gt;If {@code OPENAI_API_KEY} is set → {@link LlmProvider#OPENAI}&lt;/li&gt;
- *       &lt;li&gt;If {@code GEMINI_API_KEY} is set → {@link LlmProvider#GEMINI}&lt;/li&gt;
- *     &lt;/ul&gt;
- *   &lt;/li&gt;
- *   &lt;li&gt;Default: {@link LlmProvider#GEMINI}&lt;/li&gt;
- * &lt;/ol&gt;
- *
- * @param explicitProvider explicit provider name from CLI (may be null or blank)
- * @return the configured client
+ * Creates a provider client and applies the provider-independent inference
+ * settings. A blank API key still falls back to the provider-specific environment
+ * variable.
  */
+public static LlmClient create(LlmProvider provider, String apiKey, LlmInferenceSettings settings) {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">LlmInferenceSettings effectiveSettings = settings != null ? settings : LlmInferenceSettings.unspecified();</span>
+<span class="nc bnc" id="L40" title="All 4 branches missed.">String effectiveApiKey = apiKey == null || apiKey.isBlank() ? environmentApiKey(provider) : apiKey;</span>
+<span class="nc bnc" id="L41" title="All 6 branches missed.">LlmClient client = switch (provider) {</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">case GEMINI -&gt; effectiveSettings.modelName() == null</span>
+<span class="nc" id="L43">		? new GeminiClient(effectiveApiKey)</span>
+<span class="nc" id="L44">		: new GeminiClient(effectiveApiKey, newHttpClient(), effectiveSettings.modelName());</span>
+<span class="nc" id="L45">case OPENAI -&gt; new OpenAiClient(effectiveApiKey);</span>
+<span class="nc" id="L46">case DEEPSEEK -&gt; new DeepSeekClient(effectiveApiKey);</span>
+<span class="nc" id="L47">case QWEN -&gt; new QwenClient(effectiveApiKey);</span>
+<span class="nc" id="L48">case LLAMA -&gt; new LlamaClient(effectiveApiKey);</span>
+<span class="nc" id="L49">case MISTRAL -&gt; new MistralClient(effectiveApiKey);</span>
+};
+<span class="nc" id="L51">client.applyInferenceSettings(effectiveSettings);</span>
+<span class="nc" id="L52">return client;</span>
+}
+
 public static LlmClient createFromEnvironment(String explicitProvider) {
-// 1. Explicit CLI argument
-<span class="nc bnc" id="L88" title="All 4 branches missed.">if (explicitProvider != null &amp;&amp; !explicitProvider.isBlank()) {</span>
-<span class="nc" id="L89">return create(LlmProvider.fromString(explicitProvider));</span>
+<span class="nc" id="L56">return createFromEnvironment(explicitProvider, LlmInferenceSettings.unspecified());</span>
 }
 
-// 2. Environment variable
-<span class="nc" id="L93">String envProvider = System.getenv(&quot;LLM_PROVIDER&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L94" title="All 4 branches missed.">if (envProvider != null &amp;&amp; !envProvider.isBlank()) {</span>
-<span class="nc" id="L95">return create(LlmProvider.fromString(envProvider));</span>
+/** Creates a client by auto-detecting the provider while preserving inference settings. */
+public static LlmClient createFromEnvironment(String explicitProvider, LlmInferenceSettings settings) {
+<span class="nc bnc" id="L61" title="All 4 branches missed.">if (explicitProvider != null &amp;&amp; !explicitProvider.isBlank()) {</span>
+<span class="nc" id="L62">return create(LlmProvider.fromString(explicitProvider), null, settings);</span>
 }
 
-// 3. Auto-detect from available API keys
-<span class="nc" id="L99">String openAiKey = System.getenv(&quot;OPENAI_API_KEY&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L100" title="All 4 branches missed.">if (openAiKey != null &amp;&amp; !openAiKey.isBlank()) {</span>
-<span class="nc" id="L101">return create(LlmProvider.OPENAI);</span>
-}
-<span class="nc" id="L103">String geminiKey = System.getenv(&quot;GEMINI_API_KEY&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L104" title="All 4 branches missed.">if (geminiKey != null &amp;&amp; !geminiKey.isBlank()) {</span>
-<span class="nc" id="L105">return create(LlmProvider.GEMINI);</span>
-}
-<span class="nc" id="L107">String deepSeekKey = System.getenv(&quot;DEEPSEEK_API_KEY&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L108" title="All 4 branches missed.">if (deepSeekKey != null &amp;&amp; !deepSeekKey.isBlank()) {</span>
-<span class="nc" id="L109">return create(LlmProvider.DEEPSEEK);</span>
-}
-<span class="nc" id="L111">String dashScopeKey = System.getenv(&quot;DASHSCOPE_API_KEY&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L112" title="All 4 branches missed.">if (dashScopeKey != null &amp;&amp; !dashScopeKey.isBlank()) {</span>
-<span class="nc" id="L113">return create(LlmProvider.QWEN);</span>
-}
-<span class="nc" id="L115">String llamaKey = System.getenv(&quot;LLAMA_API_KEY&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L116" title="All 4 branches missed.">if (llamaKey != null &amp;&amp; !llamaKey.isBlank()) {</span>
-<span class="nc" id="L117">return create(LlmProvider.LLAMA);</span>
-}
-<span class="nc" id="L119">String mistralKey = System.getenv(&quot;MISTRAL_API_KEY&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L120" title="All 4 branches missed.">if (mistralKey != null &amp;&amp; !mistralKey.isBlank()) {</span>
-<span class="nc" id="L121">return create(LlmProvider.MISTRAL);</span>
+<span class="nc" id="L65">String envProvider = System.getenv(&quot;LLM_PROVIDER&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L66" title="All 4 branches missed.">if (envProvider != null &amp;&amp; !envProvider.isBlank()) {</span>
+<span class="nc" id="L67">return create(LlmProvider.fromString(envProvider), null, settings);</span>
 }
 
-// 4. Default: GEMINI
-<span class="nc" id="L125">return create(LlmProvider.GEMINI);</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">for (LlmProvider provider : new LlmProvider[] {</span>
+		LlmProvider.OPENAI, LlmProvider.GEMINI, LlmProvider.DEEPSEEK,
+		LlmProvider.QWEN, LlmProvider.LLAMA, LlmProvider.MISTRAL }) {
+<span class="nc" id="L73">	String key = environmentApiKey(provider);</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">	if (key != null &amp;&amp; !key.isBlank()) {</span>
+<span class="nc" id="L75">		return create(provider, key, settings);</span>
+	}
+}
+<span class="nc" id="L78">return create(LlmProvider.GEMINI, null, settings);</span>
+}
+
+private static String environmentApiKey(LlmProvider provider) {
+<span class="nc bnc" id="L82" title="All 6 branches missed.">return System.getenv(switch (provider) {</span>
+<span class="nc" id="L83">case GEMINI -&gt; &quot;GEMINI_API_KEY&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L84">case OPENAI -&gt; &quot;OPENAI_API_KEY&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L85">case DEEPSEEK -&gt; &quot;DEEPSEEK_API_KEY&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L86">case QWEN -&gt; &quot;DASHSCOPE_API_KEY&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L87">case LLAMA -&gt; &quot;LLAMA_API_KEY&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L88">case MISTRAL -&gt; &quot;MISTRAL_API_KEY&quot;; //$NON-NLS-1$</span>
+});
+}
+
+private static HttpClient newHttpClient() {
+<span class="nc" id="L93">return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();</span>
 }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

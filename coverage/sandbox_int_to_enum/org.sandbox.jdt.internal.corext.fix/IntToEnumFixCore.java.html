@@ -13,11 +13,21 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -34,75 +44,176 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 /**
  * Enum containing different types of int to enum transformations.
  */
-<span class="fc" id="L37">public enum IntToEnumFixCore {</span>
-<span class="fc" id="L38">	/**</span>
+<span class="fc" id="L47">public enum IntToEnumFixCore {</span>
+<span class="fc" id="L48">	/**</span>
 	 * Convert if-else chains using int constants to switch with enum.
 	 */
-<span class="fc" id="L41">	IF_ELSE_TO_SWITCH(new IntToEnumHelper()),</span>
+<span class="fc" id="L51">	IF_ELSE_TO_SWITCH(new IntToEnumHelper()),</span>
 
-<span class="fc" id="L43">	/**</span>
+<span class="fc" id="L53">	/**</span>
 	 * Convert switch statements using int constants to switch with enum.
 	 */
-<span class="fc" id="L46">	SWITCH_INT_TO_ENUM(new SwitchIntToEnumHelper());</span>
+<span class="fc" id="L56">	SWITCH_INT_TO_ENUM(new SwitchIntToEnumHelper());</span>
 
 	AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; intToEnumHelper;
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L51">	IntToEnumFixCore(AbstractTool&lt;? extends ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; helper) {</span>
-<span class="fc" id="L52">		this.intToEnumHelper = (AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt;) helper;</span>
-<span class="fc" id="L53">	}</span>
+<span class="fc" id="L61">	IntToEnumFixCore(AbstractTool&lt;? extends ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt; helper) {</span>
+<span class="fc" id="L62">		this.intToEnumHelper = (AbstractTool&lt;ReferenceHolder&lt;Integer, IntConstantHolder&gt;&gt;) helper;</span>
+<span class="fc" id="L63">	}</span>
 
 	public String getPreview(boolean enabled) {
-<span class="nc" id="L56">		return intToEnumHelper.getPreview(enabled);</span>
+<span class="nc" id="L66">		return intToEnumHelper.getPreview(enabled);</span>
 	}
 
 	/**
 	 * Find operations for this transformation type.
-	 * 
+	 *
 	 * @param compilationUnit The compilation unit to search
 	 * @param operations Set to add operations to
 	 * @param nodesProcessed Set of already processed nodes
 	 */
 	public void findOperations(final CompilationUnit compilationUnit,
-			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, 
+			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations,
 			final Set&lt;ASTNode&gt; nodesProcessed) {
-<span class="fc" id="L69">		intToEnumHelper.find(this, compilationUnit, operations, nodesProcessed);</span>
-<span class="fc" id="L70">	}</span>
+<span class="fc" id="L79">		intToEnumHelper.find(this, compilationUnit, operations, nodesProcessed);</span>
+<span class="fc" id="L80">	}</span>
 
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder&lt;Integer, IntConstantHolder&gt; hit) {
-<span class="fc" id="L73">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
+<span class="fc" id="L83">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
-<span class="fc" id="L77">				TextEditGroup group = createTextEditGroup(MultiFixMessages.IntToEnumCleanUp_description, cuRewrite);</span>
+<span class="fc" id="L87">				TextEditGroup group = createTextEditGroup(MultiFixMessages.IntToEnumCleanUp_description, cuRewrite);</span>
 				TightSourceRangeComputer rangeComputer;
-<span class="fc" id="L79">				ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
-<span class="nc" id="L81">					rangeComputer = (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
-<span class="nc" id="L82">				} else {</span>
-<span class="fc" id="L83">					rangeComputer = new TightSourceRangeComputer();</span>
+<span class="fc" id="L89">				ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
+<span class="nc" id="L91">					rangeComputer = (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
+<span class="nc" id="L92">				} else {</span>
+<span class="fc" id="L93">					rangeComputer = new TightSourceRangeComputer();</span>
 				}
-				
+
 				// Get the first IntConstantHolder from the hit map
-<span class="fc" id="L87">				IntConstantHolder holder = hit.values().stream().findFirst().orElse(null);</span>
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">				if (holder != null) {</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">					if (holder.switchStatement != null) {</span>
-<span class="fc" id="L90">						rangeComputer.addTightSourceNode(holder.switchStatement);</span>
+<span class="fc" id="L97">				IntConstantHolder holder = hit.values().stream().findFirst().orElse(null);</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">				if (holder != null) {</span>
+<span class="fc" id="L99">					recoverLocalCallSites(holder, cuRewrite.getRoot());</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">					if (holder.switchStatement != null) {</span>
+<span class="fc" id="L101">						rangeComputer.addTightSourceNode(holder.switchStatement);</span>
 					}
-<span class="fc bfc" id="L92" title="All 2 branches covered.">					if (holder.ifStatement != null) {</span>
-<span class="fc" id="L93">						rangeComputer.addTightSourceNode(holder.ifStatement);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">					if (holder.ifStatement != null) {</span>
+<span class="fc" id="L104">						rangeComputer.addTightSourceNode(holder.ifStatement);</span>
 					}
 				}
-				
-<span class="fc" id="L97">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
-<span class="fc" id="L98">				intToEnumHelper.rewrite(IntToEnumFixCore.this, hit, cuRewrite, group);</span>
-<span class="fc" id="L99">			}</span>
+
+<span class="fc" id="L108">				rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L109">				intToEnumHelper.rewrite(IntToEnumFixCore.this, hit, cuRewrite, group);</span>
+<span class="fc" id="L110">			}</span>
 		};
+	}
+
+	/**
+	 * Recovers an unqualified, unambiguous local call site when a save-action AST
+	 * carries a temporarily stale method or constant binding. Candidate discovery
+	 * has already proven the private method and enum-like constants; this final
+	 * structural pass only fills a missing replacement within the same top-level
+	 * type. Qualified calls, overloads, nested types and shadowed constants remain
+	 * fail-closed.
+	 */
+	private static void recoverLocalCallSites(IntConstantHolder holder, CompilationUnit compilationUnit) {
+<span class="pc bpc" id="L123" title="2 of 6 branches missed.">		if (holder.method == null || holder.enclosingType == null || holder.method.parameters().size() != 1) {</span>
+<span class="fc" id="L124">			return;</span>
+		}
+<span class="fc" id="L126">		String methodName = holder.method.getName().getIdentifier();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		for (MethodDeclaration method : holder.enclosingType.getMethods()) {</span>
+<span class="pc bpc" id="L128" title="1 of 4 branches missed.">			if (method != holder.method &amp;&amp; method.getName().getIdentifier().equals(methodName)</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">					&amp;&amp; method.parameters().size() == 1) {</span>
+<span class="nc" id="L130">				return;</span>
+			}
+		}
+
+<span class="fc" id="L134">		Set&lt;String&gt; constantNames = new HashSet&lt;&gt;(holder.constantNames);</span>
+<span class="fc" id="L135">		compilationUnit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+<span class="fc bfc" id="L138" title="All 2 branches covered.">				if (invocation.getExpression() != null</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">						|| !invocation.getName().getIdentifier().equals(methodName)</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">						|| invocation.arguments().size() != 1</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">						|| findEnclosingType(invocation) != holder.enclosingType) {</span>
+<span class="fc" id="L142">					return true;</span>
+				}
+<span class="fc" id="L144">				MethodDeclaration caller = findEnclosingMethod(invocation);</span>
+<span class="pc bpc" id="L145" title="2 of 4 branches missed.">				if (caller == null || caller.getParent() != holder.enclosingType) {</span>
+<span class="nc" id="L146">					return true;</span>
+				}
+<span class="fc" id="L148">				Expression argument = unparenthesize((Expression) invocation.arguments().get(0));</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">				if (!(argument instanceof SimpleName simpleName)</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">						|| !constantNames.contains(simpleName.getIdentifier())</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">						|| hasLocalDeclarationNamed(caller, simpleName.getIdentifier())) {</span>
+<span class="nc" id="L152">					return true;</span>
+				}
+<span class="fc" id="L154">				holder.constantReferences.putIfAbsent(argument, simpleName.getIdentifier());</span>
+<span class="fc" id="L155">				return true;</span>
+			}
+		});
+<span class="fc" id="L158">	}</span>
+
+	private static Expression unparenthesize(Expression expression) {
+<span class="fc" id="L161">		Expression current = expression;</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		while (current instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L163">			current = parenthesized.getExpression();</span>
+		}
+<span class="fc" id="L165">		return current;</span>
+	}
+
+	private static boolean hasLocalDeclarationNamed(MethodDeclaration method, String identifier) {
+<span class="fc" id="L169">		boolean[] found = { false };</span>
+<span class="fc" id="L170">		method.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SingleVariableDeclaration declaration) {
+<span class="nc bnc" id="L173" title="All 2 branches missed.">				if (declaration.getName().getIdentifier().equals(identifier)) {</span>
+<span class="nc" id="L174">					found[0] = true;</span>
+<span class="nc" id="L175">					return false;</span>
+				}
+<span class="nc bnc" id="L177" title="All 2 branches missed.">				return !found[0];</span>
+			}
+
+			@Override
+			public boolean visit(VariableDeclarationFragment declaration) {
+<span class="nc bnc" id="L182" title="All 2 branches missed.">				if (declaration.getName().getIdentifier().equals(identifier)) {</span>
+<span class="nc" id="L183">					found[0] = true;</span>
+<span class="nc" id="L184">					return false;</span>
+				}
+<span class="nc bnc" id="L186" title="All 2 branches missed.">				return !found[0];</span>
+			}
+		});
+<span class="fc" id="L189">		return found[0];</span>
+	}
+
+	private static MethodDeclaration findEnclosingMethod(ASTNode node) {
+<span class="fc" id="L193">		ASTNode current = node.getParent();</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L196">				return method;</span>
+			}
+<span class="fc" id="L198">			current = current.getParent();</span>
+		}
+<span class="nc" id="L200">		return null;</span>
+	}
+
+	private static TypeDeclaration findEnclosingType(ASTNode node) {
+<span class="fc" id="L204">		ASTNode current = node.getParent();</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">			if (current instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L207">				return type;</span>
+			}
+<span class="fc" id="L209">			current = current.getParent();</span>
+		}
+<span class="nc" id="L211">		return null;</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="nc" id="L105">		return name();</span>
+<span class="nc" id="L216">		return name();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

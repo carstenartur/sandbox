@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CommitAnalysisScheduler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.views.mining</a> &gt; <span class="el_source">CommitAnalysisScheduler.java</span></div><h1>CommitAnalysisScheduler.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CommitAnalysisScheduler.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.views.mining</a> &gt; <span class="el_source">CommitAnalysisScheduler.java</span></div><h1>CommitAnalysisScheduler.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -14,95 +14,215 @@
 package org.sandbox.jdt.internal.ui.views.mining;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.swt.widgets.Display;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
 
 /**
- * Orchestrates asynchronous AI-powered analysis of multiple commits using
- * Eclipse {@link org.eclipse.core.runtime.jobs.Job Jobs}.
+ * Orchestrates AI-powered commit analysis through one bounded queue.
  *
- * &lt;p&gt;Strategy:&lt;/p&gt;
- * &lt;ol&gt;
- *   &lt;li&gt;All commits start with status PENDING (⏳)&lt;/li&gt;
- *   &lt;li&gt;Jobs are scheduled (one per commit)&lt;/li&gt;
- *   &lt;li&gt;Each job uses {@link EclipseLlmService} for AI inference&lt;/li&gt;
- *   &lt;li&gt;On completion: {@link TableViewer#update(Object, String[])} is called
- *       via {@link Display#asyncExec(Runnable)}&lt;/li&gt;
- * &lt;/ol&gt;
+ * &lt;p&gt;Only one commit is analyzed at a time. This deliberately trades raw
+ * parallelism for predictable provider usage, cancellation, and rate-limit
+ * behavior. The queue itself is one user-visible Eclipse {@link Job}, while the
+ * commit table continues to expose per-commit state.&lt;/p&gt;
  *
  * @since 1.2.6
  */
 public class CommitAnalysisScheduler {
 
+	/** Aggregate state suitable for a view status line or tests. */
+	public record Progress(int completed, int total, int active, int queued,
+			boolean running, boolean cancelled) {
+	}
+
 	private final GitHistoryProvider gitProvider;
 	private final Path repositoryPath;
 	private final TableViewer tableViewer;
-<span class="nc" id="L44">	private final List&lt;CommitAnalysisJob&gt; runningJobs = new ArrayList&lt;&gt;();</span>
+	private final Display display;
+	private final Consumer&lt;Progress&gt; progressListener;
+<span class="fc" id="L52">	private final AtomicInteger completed = new AtomicInteger();</span>
+<span class="fc" id="L53">	private final Object stateLock = new Object();</span>
+<span class="fc" id="L54">	private final ISchedulingRule analysisRule = new ISchedulingRule() {</span>
+		@Override
+		public boolean contains(ISchedulingRule rule) {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">			return rule == this;</span>
+		}
+
+		@Override
+		public boolean isConflicting(ISchedulingRule rule) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			return rule == this;</span>
+		}
+	};
+
 	private volatile boolean running;
+	private volatile boolean cancelled;
+	private volatile int total;
+	private volatile long generation;
+	private volatile Thread workerThread;
+	private Job analysisJob;
 
-	/**
-	 * Creates a new scheduler.
-	 *
-	 * @param gitProvider    the git history provider
-	 * @param repositoryPath path to the Git repository
-	 * @param tableViewer    the commit table viewer to update
-	 */
-<span class="nc" id="L54">	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,</span>
+	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,
 			TableViewer tableViewer) {
-<span class="nc" id="L56">		this.gitProvider = gitProvider;</span>
-<span class="nc" id="L57">		this.repositoryPath = repositoryPath;</span>
-<span class="nc" id="L58">		this.tableViewer = tableViewer;</span>
-<span class="nc" id="L59">	}</span>
+<span class="fc" id="L75">		this(gitProvider, repositoryPath, tableViewer, progress -&gt; {</span>
+<span class="nc" id="L76">		});</span>
+<span class="fc" id="L77">	}</span>
 
-	/**
-	 * Starts asynchronous analysis of the given commits.
-	 *
-	 * @param entries the commit entries to analyze
-	 */
+<span class="fc" id="L79">	public CommitAnalysisScheduler(GitHistoryProvider gitProvider, Path repositoryPath,</span>
+			TableViewer tableViewer, Consumer&lt;Progress&gt; progressListener) {
+<span class="fc" id="L81">		this.gitProvider = gitProvider;</span>
+<span class="fc" id="L82">		this.repositoryPath = repositoryPath;</span>
+<span class="fc" id="L83">		this.tableViewer = tableViewer;</span>
+<span class="fc" id="L84">		this.display = tableViewer.getTable().getDisplay();</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		this.progressListener = progressListener != null ? progressListener : progress -&gt; {</span>
+<span class="nc" id="L86">		};</span>
+<span class="fc" id="L87">	}</span>
+
+	/** Starts a bounded, user-visible analysis queue. */
 	public void startAnalysis(List&lt;CommitTableEntry&gt; entries) {
-<span class="nc" id="L67">		cancelAnalysis();</span>
-<span class="nc" id="L68">		running = true;</span>
+<span class="fc" id="L91">		synchronized (stateLock) {</span>
+<span class="fc" id="L92">			cancelAnalysisLocked();</span>
+<span class="fc" id="L93">			long runGeneration = ++generation;</span>
+<span class="fc" id="L94">			List&lt;CommitTableEntry&gt; queue = List.copyOf(entries);</span>
+<span class="fc" id="L95">			total = queue.size();</span>
+<span class="fc" id="L96">			completed.set(0);</span>
+<span class="fc" id="L97">			cancelled = false;</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			running = !queue.isEmpty();</span>
 
-<span class="nc bnc" id="L70" title="All 2 branches missed.">		for (CommitTableEntry entry : entries) {</span>
-<span class="nc" id="L71">			CommitAnalysisJob job = new CommitAnalysisJob(</span>
-<span class="nc" id="L72">					entry, gitProvider, repositoryPath,</span>
-<span class="nc" id="L73">					() -&gt; notifyUpdate(entry));</span>
-<span class="nc" id="L74">			runningJobs.add(job);</span>
-<span class="nc" id="L75">			job.schedule();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">			if (queue.isEmpty()) {</span>
+<span class="nc" id="L101">				notifyProgress(new Progress(0, 0, 0, 0, false, false), runGeneration);</span>
+<span class="nc" id="L102">				return;</span>
+			}
+
+<span class="fc" id="L105">			notifyProgress(progress(0), runGeneration);</span>
+<span class="fc" id="L106">			analysisJob = new Job(&quot;Refactoring Mining: &quot; + total + &quot; commits&quot;) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+				@Override
+				protected IStatus run(IProgressMonitor monitor) {
+<span class="fc" id="L109">					workerThread = Thread.currentThread();</span>
+<span class="fc" id="L110">					monitor.beginTask(&quot;Inferring TriggerPattern rules from commit history&quot;, total); //$NON-NLS-1$</span>
+					try {
+<span class="fc bfc" id="L112" title="All 2 branches covered.">						for (int index = 0; index &lt; queue.size(); index++) {</span>
+<span class="pc bpc" id="L113" title="2 of 4 branches missed.">							if (runGeneration != generation || monitor.isCanceled()</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">									|| Thread.currentThread().isInterrupted()) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">								if (runGeneration == generation) {</span>
+<span class="nc" id="L116">									cancelled = true;</span>
+								}
+<span class="nc" id="L118">								return Status.CANCEL_STATUS;</span>
+							}
+
+<span class="fc" id="L121">							CommitTableEntry entry = queue.get(index);</span>
+<span class="fc" id="L122">							monitor.subTask(&quot;Analyzing &quot; + entry.getCommitInfo().shortId() + &quot;: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L123">									+ entry.getCommitInfo().message());</span>
+<span class="fc" id="L124">							notifyProgress(progress(1), runGeneration);</span>
+
+<span class="fc" id="L126">							CommitAnalysisJob commitJob = new CommitAnalysisJob(entry, gitProvider,</span>
+<span class="fc" id="L127">									repositoryPath, () -&gt; notifyUpdate(entry));</span>
+<span class="fc" id="L128">							IStatus status = commitJob.analyze(monitor);</span>
+<span class="pc bpc" id="L129" title="2 of 6 branches missed.">							if (runGeneration != generation || status.matches(IStatus.CANCEL) || monitor.isCanceled()</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">									|| Thread.currentThread().isInterrupted()) {</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">								if (runGeneration == generation) {</span>
+<span class="nc" id="L132">									cancelled = true;</span>
+								}
+<span class="fc" id="L134">								return Status.CANCEL_STATUS;</span>
+							}
+
+<span class="fc" id="L137">							completed.incrementAndGet();</span>
+<span class="fc" id="L138">							monitor.worked(1);</span>
+<span class="fc" id="L139">							notifyProgress(progress(0), runGeneration);</span>
+						}
+<span class="fc" id="L141">						return Status.OK_STATUS;</span>
+					} finally {
+<span class="fc" id="L143">						workerThread = null;</span>
+<span class="fc" id="L144">						monitor.done();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">						if (runGeneration == generation) {</span>
+<span class="fc" id="L146">							synchronized (stateLock) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">								if (runGeneration == generation) {</span>
+<span class="fc" id="L148">									running = false;</span>
+<span class="fc" id="L149">									analysisJob = null;</span>
+								}
+							}
+<span class="fc" id="L152">							notifyProgress(progress(0), runGeneration);</span>
+						}
+						// The job already decided its result; do not leak our cancellation
+						// interrupt into a worker thread that the Eclipse job manager may reuse.
+<span class="fc" id="L156">						Thread.interrupted();</span>
+					}
+				}
+
+				@Override
+				protected void canceling() {
+<span class="fc" id="L162">					Thread thread = workerThread;</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">					if (thread != null) {</span>
+<span class="fc" id="L164">						thread.interrupt();</span>
+					}
+<span class="fc" id="L166">				}</span>
+			};
+<span class="fc" id="L168">			analysisJob.setRule(analysisRule);</span>
+<span class="fc" id="L169">			analysisJob.setUser(true);</span>
+<span class="fc" id="L170">			analysisJob.schedule();</span>
 		}
-<span class="nc" id="L77">	}</span>
+<span class="fc" id="L172">	}</span>
 
-	/**
-	 * Cancels all running analysis jobs.
-	 */
+	/** Cancels the active commit and all queued commits. */
 	public void cancelAnalysis() {
-<span class="nc" id="L83">		running = false;</span>
-<span class="nc bnc" id="L84" title="All 2 branches missed.">		for (CommitAnalysisJob job : runningJobs) {</span>
-<span class="nc" id="L85">			job.cancel();</span>
+<span class="fc" id="L176">		synchronized (stateLock) {</span>
+<span class="fc" id="L177">			cancelAnalysisLocked();</span>
 		}
-<span class="nc" id="L87">		runningJobs.clear();</span>
-<span class="nc" id="L88">	}</span>
+<span class="fc" id="L179">	}</span>
 
-	/**
-	 * @return {@code true} if any analysis is still running
-	 */
+	private void cancelAnalysisLocked() {
+<span class="fc" id="L182">		long cancelledGeneration = ++generation;</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">		if (analysisJob != null) {</span>
+<span class="fc" id="L184">			cancelled = true;</span>
+<span class="fc" id="L185">			analysisJob.cancel();</span>
+<span class="fc" id="L186">			analysisJob = null;</span>
+		}
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		if (running) {</span>
+<span class="fc" id="L189">			running = false;</span>
+<span class="fc" id="L190">			notifyProgress(progress(0), cancelledGeneration);</span>
+		}
+<span class="fc" id="L192">	}</span>
+
 	public boolean isRunning() {
-<span class="nc" id="L94">		return running;</span>
+<span class="fc" id="L195">		return running;</span>
+	}
+
+	public Progress getProgress() {
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		return progress(running ? 1 : 0);</span>
+	}
+
+	private Progress progress(int active) {
+<span class="fc" id="L203">		int boundedCompleted = Math.min(completed.get(), total);</span>
+<span class="fc" id="L204">		int queued = Math.max(0, total - boundedCompleted - active);</span>
+<span class="fc" id="L205">		return new Progress(boundedCompleted, total, active, queued, running, cancelled);</span>
 	}
 
 	private void notifyUpdate(CommitTableEntry entry) {
-<span class="nc" id="L98">		Display display = tableViewer.getTable().getDisplay();</span>
-<span class="nc bnc" id="L99" title="All 4 branches missed.">		if (display != null &amp;&amp; !display.isDisposed()) {</span>
-<span class="nc" id="L100">			display.asyncExec(() -&gt; {</span>
-<span class="nc bnc" id="L101" title="All 2 branches missed.">				if (!tableViewer.getTable().isDisposed()) {</span>
-<span class="nc" id="L102">					tableViewer.update(entry, null);</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (!display.isDisposed()) {</span>
+<span class="fc" id="L210">			display.asyncExec(() -&gt; {</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">				if (!tableViewer.getTable().isDisposed()) {</span>
+<span class="nc" id="L212">					tableViewer.update(entry, null);</span>
 				}
-<span class="nc" id="L104">			});</span>
+<span class="fc" id="L214">			});</span>
 		}
-<span class="nc" id="L106">	}</span>
+<span class="fc" id="L216">	}</span>
+
+	private void notifyProgress(Progress progress, long progressGeneration) {
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (!display.isDisposed()) {</span>
+<span class="fc" id="L220">			display.asyncExec(() -&gt; {</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">				if (progressGeneration == generation) {</span>
+<span class="nc" id="L222">					progressListener.accept(progress);</span>
+				}
+<span class="fc" id="L224">			});</span>
+		}
+<span class="fc" id="L226">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -337,13 +337,13 @@ public final class HintFileRegistry {
 				@Override
 				public boolean visit(IResource resource) throws CoreException {
 <span class="fc bfc" id="L339" title="All 2 branches covered.">					if (resource instanceof IFile file</span>
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">							&amp;&amp; isHintFile(file.getName())) {</span>
-<span class="nc" id="L341">						String id = &quot;project:&quot; + projectKey + &quot;:&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L342">								+ file.getProjectRelativePath().toString();</span>
-<span class="nc" id="L343">						try (InputStream is = file.getContents();</span>
-<span class="nc" id="L344">								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
-<span class="nc" id="L345">							store.loadFromReader(id, reader);</span>
-<span class="nc" id="L346">							loaded.add(id);</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">							&amp;&amp; isHintFile(file.getName())) {</span>
+<span class="fc" id="L341">						String id = &quot;project:&quot; + projectKey + &quot;:&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L342">								+ file.getProjectRelativePath().toString();</span>
+<span class="fc" id="L343">						try (InputStream is = file.getContents();</span>
+<span class="fc" id="L344">								Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L345">							store.loadFromReader(id, reader);</span>
+<span class="fc" id="L346">							loaded.add(id);</span>
 <span class="nc" id="L347">						} catch (HintParseException | IOException e) {</span>
 <span class="nc" id="L348">							ILog log = Platform.getLog(HintFileRegistry.class);</span>
 <span class="nc" id="L349">							log.log(Status.warning(</span>
@@ -379,8 +379,8 @@ public final class HintFileRegistry {
 	 * @since 1.3.6
 	 */
 	public void invalidateProject(IProject project) {
-<span class="pc bpc" id="L382" title="1 of 2 branches missed.">		if (project != null) {</span>
-<span class="nc" id="L383">			loadedProjects.remove(project.getName());</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">		if (project != null) {</span>
+<span class="fc" id="L383">			loadedProjects.remove(project.getName());</span>
 		}
 <span class="fc" id="L385">	}</span>
 
@@ -392,7 +392,7 @@ public final class HintFileRegistry {
 	 * @since 1.3.8
 	 */
 	private static boolean isHintFile(String fileName) {
-<span class="pc bpc" id="L395" title="2 of 4 branches missed.">		return fileName.endsWith(HINT_FILE_EXTENSION) || fileName.endsWith(NETBEANS_HINT_FILE_EXTENSION);</span>
+<span class="pc bpc" id="L395" title="1 of 4 branches missed.">		return fileName.endsWith(HINT_FILE_EXTENSION) || fileName.endsWith(NETBEANS_HINT_FILE_EXTENSION);</span>
 	}
 
 	/**

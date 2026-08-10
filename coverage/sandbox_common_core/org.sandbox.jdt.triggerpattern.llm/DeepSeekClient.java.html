@@ -15,67 +15,41 @@ package org.sandbox.jdt.triggerpattern.llm;
 
 import java.net.http.HttpClient;
 
-/**
- * REST client for the DeepSeek API (OpenAI-compatible format).
- *
- * &lt;p&gt;Uses the DeepSeek chat completions endpoint with the {@code deepseek-reasoner}
- * model by default.&lt;/p&gt;
- */
+/** REST client for the DeepSeek OpenAI-compatible chat API. */
 public class DeepSeekClient extends OpenAiCompatibleClient {
 
-private static final String DEFAULT_MODEL = &quot;deepseek-reasoner&quot;; //$NON-NLS-1$
+private static final String DEFAULT_MODEL = &quot;deepseek-v4-flash&quot;; //$NON-NLS-1$
 private static final String API_URL = &quot;https://api.deepseek.com/v1/chat/completions&quot;; //$NON-NLS-1$
 private static final String API_KEY_ENV = &quot;DEEPSEEK_API_KEY&quot;; //$NON-NLS-1$
 private static final String MODEL_ENV = &quot;DEEPSEEK_MODEL&quot;; //$NON-NLS-1$
 
-/**
- * Creates a client reading the API key from the DEEPSEEK_API_KEY environment variable.
- */
 public DeepSeekClient() {
-<span class="nc" id="L35">this(System.getenv(API_KEY_ENV));</span>
+<span class="nc" id="L27">this(System.getenv(API_KEY_ENV));</span>
+<span class="nc" id="L28">}</span>
+
+public DeepSeekClient(String apiKey) {
+<span class="fc" id="L31">super(API_URL, apiKey, resolveModel(), &quot;DeepSeek&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L32">}</span>
+
+public DeepSeekClient(String apiKey, HttpClient httpClient) {
+<span class="nc" id="L35">this(apiKey, httpClient, resolveModel());</span>
 <span class="nc" id="L36">}</span>
 
-/**
- * Creates a client with the given API key.
- *
- * @param apiKey the DeepSeek API key
- */
-public DeepSeekClient(String apiKey) {
-<span class="fc" id="L44">super(API_URL, apiKey, resolveModel(), &quot;DeepSeek&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L45">}</span>
-
-/**
- * Creates a client with the given API key and HTTP client (for testing).
- *
- * @param apiKey     the DeepSeek API key
- * @param httpClient the HTTP client to use
- */
-public DeepSeekClient(String apiKey, HttpClient httpClient) {
-<span class="nc" id="L54">this(apiKey, httpClient, resolveModel());</span>
-<span class="nc" id="L55">}</span>
-
-/**
- * Creates a client with the given API key, HTTP client, and model (for testing).
- *
- * @param apiKey     the DeepSeek API key
- * @param httpClient the HTTP client to use
- * @param model      the model name to use
- */
 public DeepSeekClient(String apiKey, HttpClient httpClient, String model) {
-<span class="nc" id="L65">super(API_URL, apiKey, model, &quot;DeepSeek&quot;, httpClient); //$NON-NLS-1$</span>
-<span class="nc" id="L66">}</span>
+<span class="nc" id="L39">super(API_URL, apiKey, model, &quot;DeepSeek&quot;, httpClient); //$NON-NLS-1$</span>
+<span class="nc" id="L40">}</span>
 
 private static String resolveModel() {
-<span class="fc" id="L69">String envModel = System.getenv(MODEL_ENV);</span>
-<span class="pc bpc" id="L70" title="1 of 2 branches missed.">if (envModel != null) {</span>
-<span class="nc" id="L71">envModel = envModel.trim();</span>
+<span class="fc" id="L43">String envModel = System.getenv(MODEL_ENV);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">if (envModel != null) {</span>
+<span class="nc" id="L45">envModel = envModel.trim();</span>
 }
-<span class="pc bpc" id="L73" title="3 of 4 branches missed.">return (envModel != null &amp;&amp; !envModel.isBlank()) ? envModel : DEFAULT_MODEL;</span>
+<span class="pc bpc" id="L47" title="3 of 4 branches missed.">return (envModel != null &amp;&amp; !envModel.isBlank()) ? envModel : DEFAULT_MODEL;</span>
 }
 
 @Override
 protected String getApiKeyEnvVar() {
-<span class="fc" id="L78">return API_KEY_ENV;</span>
+<span class="fc" id="L52">return API_KEY_ENV;</span>
 }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
