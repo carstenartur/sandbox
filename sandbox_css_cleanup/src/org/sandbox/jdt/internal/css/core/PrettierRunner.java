@@ -13,110 +13,108 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.css.core;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.ILog;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
+import org.sandbox.jdt.internal.css.CSSCleanupPlugin;
+import org.sandbox.jdt.internal.css.preferences.CSSPreferenceConstants;
 
-/**
- * Runs Prettier to format CSS files.
- */
+/** Runs Prettier to format CSS files. */
 public class PrettierRunner {
 
-	private static final ILog LOG = Platform.getLog(PrettierRunner.class);
-
-	/**
-	 * Format a CSS file using Prettier.
-	 * 
-	 * @param file the CSS file to format
-	 * @return the formatted content, or null if formatting failed
-	 * @throws IOException if an I/O error occurs
-	 * @throws InterruptedException if the thread is interrupted
-	 */
-	public static String format(IFile file) throws IOException, InterruptedException {
-		if (!NodeExecutor.isNpxAvailable()) {
-			throw new IllegalStateException("npx is not available. Please install Node.js."); //$NON-NLS-1$
-		}
-
-		Path filePath = file.getLocation().toFile().toPath();
-		String originalContent = Files.readString(filePath, StandardCharsets.UTF_8);
-
-		// Use prettier with stdin/stdout to avoid file modification during processing
-		ProcessBuilder pb = new ProcessBuilder(
-				"npx", "prettier", //$NON-NLS-1$ //$NON-NLS-2$
-				"--parser", "css", //$NON-NLS-1$ //$NON-NLS-2$
-				"--stdin-filepath", file.getName() //$NON-NLS-1$
-		);
-
-		Process process = pb.start();
-
-		// Write content to stdin
-		try (OutputStream os = process.getOutputStream()) {
-			os.write(originalContent.getBytes(StandardCharsets.UTF_8));
-		}
-
-		// Read formatted output
-		String formatted;
-		try (BufferedReader reader = new BufferedReader(
-				new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line).append("\n"); //$NON-NLS-1$
-			}
-			formatted = sb.toString();
-		}
-
-		// Read any errors
-		String errors;
-		try (BufferedReader reader = new BufferedReader(
-				new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line).append("\n"); //$NON-NLS-1$
-			}
-			errors = sb.toString();
-		}
-
-		boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-		if (!finished) {
-			process.destroyForcibly();
-			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
-					"Prettier timed out after 30 seconds")); //$NON-NLS-1$
-			return null;
-		}
-
-		int exitCode = process.exitValue();
-
-		if (exitCode != 0) {
-			LOG.log(new Status(IStatus.WARNING, "sandbox_css_cleanup", //$NON-NLS-1$
-					"Prettier failed: " + errors)); //$NON-NLS-1$
-			return null;
-		}
-
-		return formatted;
-	}
-
-	/**
-	 * Check if Prettier is available (installed globally or via npx).
-	 */
+	/** Check if Prettier is available via npx. */
 	public static boolean isPrettierAvailable() {
+		if (!NodeExecutor.isNpxAvailable()) {
+			return false;
+		}
 		try {
 			NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("prettier", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
 			return result.isSuccess();
 		} catch (Exception e) {
 			return false;
 		}
+	}
+
+	/** Format a CSS file using Prettier and the configured JSON options. */
+	public static String format(IFile file) throws IOException, InterruptedException {
+		String optionsJson = CSSCleanupPlugin.getDefault().getPreferenceStore()
+				.getString(CSSPreferenceConstants.PRETTIER_OPTIONS);
+		return format(file, optionsJson);
+	}
+
+	static String format(IFile file, String optionsJson) throws IOException, InterruptedException {
+		if (!NodeExecutor.isNpxAvailable()) {
+			throw new IllegalStateException("npx is not available. Please install Node.js and npm."); //$NON-NLS-1$
+		}
+
+		Path sourcePath = localPath(file);
+		String normalizedOptions = normalizeAndValidateOptions(optionsJson);
+		String originalContent = Files.readString(sourcePath, StandardCharsets.UTF_8);
+		Path configFile = null;
+		try {
+			if (!"{}".equals(normalizedOptions)) { //$NON-NLS-1$
+				configFile = createTemporaryConfig(sourcePath, normalizedOptions);
+			}
+			List<String> args = buildArguments(sourcePath.toString(), configFile != null ? configFile.toString() : null);
+			NodeExecutor.ExecutionResult result = NodeExecutor.executeNpxWithInput(
+					originalContent, args.toArray(String[]::new));
+			if (!result.isSuccess()) {
+				throw new IOException(toolFailure("Prettier", result)); //$NON-NLS-1$
+			}
+			if (result.stdout.isBlank()) {
+				throw new IOException("Prettier returned no formatted CSS output"); //$NON-NLS-1$
+			}
+			return result.stdout;
+		} finally {
+			if (configFile != null) {
+				Files.deleteIfExists(configFile);
+			}
+		}
+	}
+
+	/** Validates that the preference is a JSON object and canonicalizes blank/empty input. */
+	public static String normalizeAndValidateOptions(String optionsJson) {
+		String normalized = optionsJson == null || optionsJson.isBlank() ? "{}" : optionsJson.trim(); //$NON-NLS-1$
+		Map<String, Object> parsed = SimpleJsonParser.parseObject(normalized);
+		return parsed.isEmpty() ? "{}" : normalized; //$NON-NLS-1$
+	}
+
+	static List<String> buildArguments(String filePath, String configPath) {
+		List<String> args = new ArrayList<>(List.of(
+				"prettier", "--stdin-filepath", filePath)); //$NON-NLS-1$ //$NON-NLS-2$
+		if (configPath != null && !configPath.isBlank()) {
+			args.add("--config"); //$NON-NLS-1$
+			args.add(configPath);
+		}
+		return List.copyOf(args);
+	}
+
+	private static Path createTemporaryConfig(Path sourcePath, String optionsJson) throws IOException {
+		Path parent = sourcePath.getParent();
+		Path configFile = parent != null
+				? Files.createTempFile(parent, ".sandbox-prettier-", ".json") //$NON-NLS-1$ //$NON-NLS-2$
+				: Files.createTempFile("sandbox-prettier-", ".json"); //$NON-NLS-1$ //$NON-NLS-2$
+		Files.writeString(configFile, optionsJson, StandardCharsets.UTF_8);
+		return configFile;
+	}
+
+	private static Path localPath(IFile file) throws IOException {
+		if (file.getLocation() == null) {
+			throw new IOException("CSS file has no local filesystem location: " + file.getFullPath()); //$NON-NLS-1$
+		}
+		return file.getLocation().toFile().toPath();
+	}
+
+	private static String toolFailure(String tool, NodeExecutor.ExecutionResult result) {
+		String detail = !result.stderr.isBlank() ? result.stderr.trim() : result.stdout.trim();
+		return detail.isBlank()
+				? tool + " failed with exit code " + result.exitCode //$NON-NLS-1$
+				: tool + " failed with exit code " + result.exitCode + ": " + detail; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

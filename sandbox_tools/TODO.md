@@ -1,176 +1,55 @@
-# Sandbox Tools Plugin - TODO
+# Sandbox Tools Reference – Maintenance Status
 
-> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#tools) | [Architecture](ARCHITECTURE.md)
+> **Navigation**: [Main README](../README.md) | [Module README](README.md) | [Architecture](ARCHITECTURE.md)
 
-## Status Summary
+## Current state
 
-**Current State**: Reference implementation - feature merged into Eclipse JDT
+The iterator-loop-to-enhanced-for implementation is archived in Sandbox after being upstreamed to Eclipse JDT UI.
 
-### Completed
-- ✅ While-to-For loop conversion implementation
-- ✅ Comprehensive test coverage
-- ✅ **Successfully contributed to Eclipse JDT**
-- ✅ Code merged into Eclipse JDT core
+Completed:
 
-### In Progress
-- None (active development is in Eclipse JDT repository)
+- the active Sandbox `org.eclipse.jdt.ui.cleanUps` contribution is retired;
+- the standard cleanup id remains owned by `org.eclipse.jdt.ui`;
+- a runtime extension-registry test prevents duplicate registration;
+- the original source and transformation tests remain available;
+- the feature, cheat sheet, and Help are labelled as reference material;
+- existing installations can receive an update that removes the former contribution.
 
-### Pending
-- Periodic sync with Eclipse JDT version to ensure consistency
+## Maintenance policy
 
-## Module Purpose
+This module is not an independently maintained production cleanup. New behavior and defect fixes belong upstream in Eclipse JDT UI.
 
-This module serves as a **reference implementation** demonstrating successful contribution to Eclipse JDT. It is **not actively developed** since the feature now exists in Eclipse JDT.
+Sandbox maintenance is limited to concrete needs:
 
-## Maintenance Tasks
+- repair a build or target-platform regression affecting the reference bundle;
+- prevent accidental reintroduction of the duplicate cleanup extension;
+- preserve tests or documentation that remain useful for contribution research;
+- compare with upstream only when a specific issue, experiment, or contribution requires it.
 
-### 1. Periodic Sync Verification
-**Priority**: Low  
-**Effort**: 2-3 hours annually
+There is no periodic synchronization commitment.
 
-Periodically verify that sandbox version remains consistent with Eclipse JDT version:
-- Compare implementation with Eclipse JDT code
-- Verify tests still pass
-- Update documentation if Eclipse version diverges
-- Note any improvements made in Eclipse that could apply elsewhere
+## Deliberately not planned
 
-**Benefits**:
-- Ensure reference implementation stays accurate
-- Learn from Eclipse maintainer improvements
-- Identify patterns for other sandbox cleanups
+- a dedicated Sandbox cleanup tab;
+- a second user-facing cleanup option;
+- save-action registration for the archived implementation;
+- automatic synchronization with every JDT change;
+- new production features developed only in the Sandbox copy;
+- TriggerPattern DSL replacement for this control-flow and binding-sensitive transformation.
 
-### 2. Documentation Updates
-**Priority**: Low  
-**Effort**: 1-2 hours as needed
+## Verification checklist
 
-Update documentation to reflect:
-- Links to Eclipse JDT implementation
-- Eclipse release version containing the feature
-- Any changes made during Eclipse review process
-- Community feedback on the feature
+When this area changes:
 
-## No Active Development
+- [ ] `sandbox_tools/plugin.xml` contains no `org.eclipse.jdt.ui.cleanUps` contribution.
+- [ ] `ToolsCleanupRegistrationTest` finds exactly one matching cleanup id.
+- [ ] The matching contributor is `org.eclipse.jdt.ui`.
+- [ ] Historical transformation tests remain green.
+- [ ] The feature remains installable and clearly labelled as reference-only.
+- [ ] Help and cheat-sheet text do not mention a Sandbox Tools cleanup tab or active Sandbox implementation.
+- [ ] The distribution build remains green.
 
-**Important**: This module is a reference implementation, not an active project. New features and bug fixes should be contributed directly to Eclipse JDT, not developed here.
+## Where to report problems
 
-## Value as Reference
-
-### For New Contributors
-This module provides:
-- Example of contribution-ready code structure
-- Reference for test coverage standards
-- Template for Eclipse JDT cleanups
-- Demonstration of successful contribution workflow
-
-### For Sandbox Development
-This module demonstrates:
-- Quality standards Eclipse expects
-- How to structure Eclipse plugin code
-- Comprehensive testing approach
-- Documentation requirements
-
-## Eclipse JDT Version
-
-The feature exists in Eclipse JDT as part of the Java cleanup framework. Users should use the Eclipse JDT version, not this sandbox version.
-
-### Where to Find It
-- **Eclipse JDT UI**: Part of Java cleanup preferences
-- **Source**: Eclipse JDT UI repository
-- **Documentation**: Eclipse JDT documentation
-
-## Historical Reference
-
-### Development History
-1. Initial implementation in sandbox
-2. Iterative testing and refinement
-3. Code review preparation
-4. Submission to Eclipse Gerrit
-5. Review and revision based on feedback
-6. Acceptance and merge into Eclipse JDT
-
-### Key Success Factors
-- Comprehensive test coverage from the start
-- Following Eclipse code conventions
-- Clear documentation
-- Responsive to reviewer feedback
-- Well-defined scope and purpose
-
-## Future Contributions
-
-### Using This as Template
-When developing new cleanups for Eclipse contribution:
-1. Study this module's structure
-2. Follow similar testing patterns
-3. Match code organization
-4. Maintain similar documentation
-5. Use as quality benchmark
-
-### Contribution Checklist
-Based on this successful contribution:
-- [ ] Comprehensive test coverage (unit + integration)
-- [ ] Follow Eclipse code conventions
-- [ ] Clear, focused scope
-- [ ] Well-documented architecture
-- [ ] No external dependencies
-- [ ] Compatible with Eclipse license (EPL 2.0)
-- [ ] Responsive to community feedback
-
-## Known Issues
-
-None - module is stable and feature is in Eclipse JDT.
-
-## References
-
-- [Eclipse JDT UI Repository](https://github.com/eclipse-jdt/eclipse.jdt.ui)
-- [Eclipse Contribution Guidelines](https://wiki.eclipse.org/Development_Resources/Contributing_via_Git)
-- [Eclipse Code Conventions](https://wiki.eclipse.org/Coding_Conventions)
-
-## Contact
-
-For questions about:
-- **This reference implementation**: Open issue in sandbox repository
-- **Eclipse JDT version**: Use Eclipse JDT bug tracker
-- **Contributing to Eclipse**: See Eclipse contribution guidelines
-
-## Lessons for Future Contributions
-
-### What Worked Well
-1. Developing in sandbox environment first
-2. Comprehensive testing before submission
-3. Following Eclipse conventions from start
-4. Clear, focused feature scope
-5. Good documentation
-
-### Recommendations
-1. Start with sandbox experimentation
-2. Build comprehensive tests early
-3. Study existing Eclipse code
-4. Engage with Eclipse community early
-5. Be responsive to feedback
-6. Keep scope focused and manageable
-
-## Archive Status
-
-This module is effectively **archived** as a reference. It demonstrates:
-- ✅ A successful sandbox → Eclipse workflow
-- ✅ Quality standards for Eclipse contribution
-- ✅ Comprehensive testing approach
-- ✅ Proper documentation practices
-
-Use it as a **template and reference** for future Eclipse JDT contributions.
-
-## TriggerPattern DSL Integration
-
-### Status: ❌ Not expressible in DSL
-
-The iterator-to-for-loop cleanup requires complex control flow analysis that
-cannot be expressed in the `.sandbox-hint` DSL:
-
-- **Iterator pattern detection**: Recognizing `while(iter.hasNext()) { iter.next() }` sequences
-- **Variable binding analysis**: Tracking loop variable scope and usage
-- **Mutation tracking**: Ensuring no collection/iterator modification during iteration
-- **Control flow analysis**: Detecting break/continue/return within loop body
-
-### Notes
-This plugin has been successfully contributed to Eclipse JDT. It remains here
-as reference implementation. DSL integration is not a priority.
+- Active cleanup behavior: Eclipse JDT UI issue tracker.
+- Sandbox feature packaging, Help, or duplicate-registration regression: Sandbox issue tracker.

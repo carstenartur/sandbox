@@ -1,6 +1,6 @@
 # JGit Server WebApp (`sandbox-jgit-server-webapp`)
 
-> **Navigation**: [Main README](../README.md)
+> **Navigation**: [Main README](../README.md) · [Consumer contract](../docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md)
 
 ## Overview
 
@@ -36,13 +36,21 @@ Additional routes include:
 - Additional `/api/search/*` endpoints such as `annotations`, `docs`, `fqn`, and `filehistory`, plus `migration/*` sub-routes
 - Admin reindex endpoint: `POST /api/admin/reindex` (Bearer-token protected)
 
+## Released-library consumer scope
+
+The server and its storage bridge currently consume `jgit-storage-hibernate-core` only. The selected version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml` (currently `0.1.18`).
+
+The real-consumer contract deliberately rejects upstream Search and Java Analysis modules until their dedicated Sandbox migration slices exist. Current search, Java projection, REST composition, and embedding behavior therefore remains Sandbox-owned or copied transitional code; it is not evidence that the external modules have already been integrated.
+
+See [jgit-storage-hibernate consumer contract](../docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md) for candidate substitution, OSGi/package checks, forbidden-module checks, and retained evidence.
+
 ## Database adoption safety
 
 Do not point the released Core factory at an existing Sandbox database merely by changing Hibernate entity registration. Before any Flyway adoption migration or production-backend switch, run the read-only legacy-schema preflight described in [JGit storage legacy-schema adoption](../docs/jgit-storage-legacy-adoption.md).
 
-The pinned `jgit-storage-hibernate-core:0.1.15` release publishes pre-library migration paths for PostgreSQL, HSQLDB and Microsoft SQL Server. The maintenance command rejects H2 and other unsupported database families before opening them, requires an existing HSQLDB database, marks the JDBC connection read-only, starts neither Hibernate nor Jetty and performs no DDL. A successful report is a prerequisite for the later database-specific migration; it is not itself a migration.
+The accepted Core adoption baseline introduced published pre-library migration paths for PostgreSQL, HSQLDB and Microsoft SQL Server; later selected compatible Core releases retain the consumer contract. The maintenance command rejects unsupported database families before opening them, requires an existing HSQLDB database, marks the JDBC connection read-only, starts neither Hibernate nor Jetty and performs no DDL. A successful report is a prerequisite for the later database-specific migration; it is not itself a migration.
 
-SQL Server support in 0.1.15 applies to Core storage. The generic Search module does not yet publish a SQL Server migration contract, so the production cut-over must keep copied or separately isolated search projections until their own migration slice is verified.
+SQL Server support in the accepted migration baseline applies to Core storage. Search migration support is a separate contract, so the production cut-over must keep copied or separately isolated search projections until their own migration slice is verified.
 
 ## Docker
 
@@ -55,7 +63,7 @@ The `Dockerfile.jgit` and `docker-compose.yml` provide a self-contained deployme
 
 ## Architecture
 
-```
+```text
 JGitServerApplication (Jakarta Servlet container)
   → RepositoryResource, SearchResource, AnalyticsResource, AdminResource, HealthResource
   → SandboxRepositoryService / HibernateRepositoryResolver
@@ -65,4 +73,4 @@ JGitServerApplication (Jakarta Servlet container)
 
 ## Related Modules
 
-- **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — current storage/search integration and staged external-library adoption boundary
+- **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — current Core integration boundary plus transitional search/analysis code
