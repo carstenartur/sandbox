@@ -1,0 +1,79 @@
+name: Apply final full JDT workflow corrections
+
+on:
+  push:
+    branches:
+      - feature/oomph-upstream-jdt-migration-qa-final
+    paths:
+      - '.github/workflows/apply-full-jdt-workflow-fixes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Correct product build and launcher discovery
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one match, found {count}')
+              return text.replace(old, new, 1)
+
+          workflow_path = Path('.github/workflows/upstream-jdt-migration-qa.yml')
+          workflow = workflow_path.read_text(encoding='utf-8')
+          workflow = replace_once(
+              workflow,
+              '''          xvfb-run --auto-servernum mvn
+                        --no-transfer-progress
+          ''',
+              '''          xvfb-run --auto-servernum mvn
+                        -Pproduct
+                        --no-transfer-progress
+          ''',
+              'product profile')
+          workflow = replace_once(
+              workflow,
+              "            -path '*/linux/gtk/x86_64/*/eclipse' -perm -u+x -print0)",
+              "            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)",
+              'Linux product launcher path')
+          workflow_path.write_text(workflow, encoding='utf-8')
+
+          readme_path = Path('qa/upstream-jdt/README.md')
+          readme = readme_path.read_text(encoding='utf-8')
+          readme = replace_once(
+              readme,
+              'For `TestAll`, the result must remove the JUnit 3 superclass,\n'
+              'delegating constructor and suite method and replace them with the JUnit\n'
+              'Platform suite annotations.\n',
+              'For `TestAll`, the result must remove the JUnit 3 superclass,\n'
+              'delegating constructor and suite method, replace them with the JUnit\n'
+              'Platform suite annotations, and move its single static initialization\n'
+              'block into an explicit `@BeforeSuite` method. Multiple or instance\n'
+              'initializers remain fail-closed.\n',
+              'README TestAll contract')
+          readme_path.write_text(readme, encoding='utf-8')
+
+          Path('.github/workflows/apply-full-jdt-workflow-fixes.yml').unlink()
+          PY
+
+          git diff --check
+
+      - name: Commit corrected full-run contract
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Correct full JDT product build and launcher discovery"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
