@@ -7,11 +7,20 @@ on:
       - 'qa/upstream-jdt/**'
       - 'sandbox_oomph/jdt-migration-qa.setup'
       - 'sandbox_oomph/jdt-migration-qa.configuration.setup'
+      - 'sandbox_cleanup_application/**'
+      - 'sandbox_common_core/**'
+      - 'sandbox_junit_cleanup/**'
+      - 'sandbox_junit_cleanup_test/**'
       - '.github/workflows/upstream-jdt-migration-qa.yml'
   workflow_dispatch:
     inputs:
       run_baseline:
-        description: Check out the pinned JDT repositories and execute the upstream baseline tests
+        description: Execute only the pinned upstream baseline tests
+        required: true
+        default: false
+        type: boolean
+      run_full_migration:
+        description: Build Sandbox and produce complete project-wide before/after migration evidence
         required: true
         default: true
         type: boolean
@@ -32,7 +41,9 @@ jobs:
       - name: Checkout Sandbox
         uses: actions/checkout@v6
 
-      - name: Validate Oomph, pins, profile, runner and inventory comparator
+      - name: Validate Oomph, project application, corpus and evidence comparators
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
         run: python3 qa/upstream-jdt/verify_contract.py
 
       - name: Verify repository whitespace
@@ -40,7 +51,7 @@ jobs:
 
   upstream-baseline:
     name: Verify pinned JDT checkout and baseline tests
-    if: github.event_name == 'workflow_dispatch' && inputs.run_baseline
+    if: github.event_name == 'workflow_dispatch' && inputs.run_baseline == true && inputs.run_full_migration != true
     needs: validate-contract
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -81,6 +92,13 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Install headless Eclipse dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
       - name: Verify exact Oomph-equivalent checkouts
         shell: bash
         run: |
@@ -93,6 +111,7 @@ jobs:
             "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/overlays/jdt-core-r4_40-jupiter.patch"
           cat > upstream-baseline-provenance.json <<EOF
           {
+            "evidenceType": "baseline-only-clean-workspace-mirror",
             "eclipseRelease": "$PIN_ECLIPSE_RELEASE",
             "eclipsePlatformVersion": "$PIN_ECLIPSE_PLATFORM_VERSION",
             "jdtCoreRef": "$PIN_JDT_CORE_REF",
@@ -112,7 +131,7 @@ jobs:
       - name: Run the pinned upstream baseline tests
         working-directory: upstream/eclipse.jdt.core
         run: >-
-          mvn
+          xvfb-run --auto-servernum mvn
           --batch-mode
           --no-transfer-progress
           -U
@@ -143,3 +162,134 @@ jobs:
             upstream/eclipse.jdt.core/**/target/work/data/.metadata/.log
           retention-days: 14
           if-no-files-found: warn
+
+  full-migration:
+    name: Build Sandbox and verify the real JDT migration before and after
+    if: github.event_name == 'workflow_dispatch' && inputs.run_full_migration == true
+    needs: validate-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          path: sandbox
+
+      - name: Checkout JDT Core R4_40
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.core
+
+      - name: Checkout JDT UI R4_40
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Checkout JDT Core test binaries R4_40
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core.binaries
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.core.binaries
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js for Sandbox CSS tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and headless Eclipse dependencies
+        run: |
+          npm install --global prettier stylelint stylelint-config-standard
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Verify exact pinned repositories
+        shell: bash
+        run: |
+          set -euo pipefail
+          source sandbox/qa/upstream-jdt/pins.env
+          test "$(git -C upstream/eclipse.jdt.core rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.core.binaries rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_BINARIES_COMMIT"
+
+      - name: Build and test the Sandbox product under test
+        working-directory: sandbox
+        run: >-
+          xvfb-run --auto-servernum mvn
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Locate the materialized Linux product
+        id: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox/sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/*/eclipse' -perm -u+x -print0)
+          if (( ${#launchers[@]} != 1 )); then
+            printf 'Expected one materialized Linux Eclipse launcher, found %d:\n' "${#launchers[@]}" >&2
+            printf '%s\n' "${launchers[@]}" >&2
+            exit 1
+          fi
+          launcher="$(realpath "${launchers[0]}")"
+          echo "launcher=$launcher" >> "$GITHUB_OUTPUT"
+          printf 'Using Sandbox product: %s\n' "$launcher"
+
+      - name: Execute project-wide check, apply and identical upstream tests
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/upstream-jdt-workspace" "$GITHUB_WORKSPACE/evidence"
+          bash sandbox/qa/upstream-jdt/run-before-after.sh \
+            --jdt-core "$GITHUB_WORKSPACE/upstream/eclipse.jdt.core" \
+            --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+            --jdt-core-binaries "$GITHUB_WORKSPACE/upstream/eclipse.jdt.core.binaries" \
+            --workspace "$RUNNER_TEMP/upstream-jdt-workspace" \
+            --sandbox-eclipse "${{ steps.product.outputs.launcher }}" \
+            --output "$GITHUB_WORKSPACE/evidence" \
+            --allow-clean-workspace
+
+      - name: Collect the imported workspace log
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence/eclipse-workspace
+          if [[ -f "$RUNNER_TEMP/upstream-jdt-workspace/.metadata/.log" ]]; then
+            cp "$RUNNER_TEMP/upstream-jdt-workspace/.metadata/.log" evidence/eclipse-workspace/.log
+          fi
+
+      - name: Upload complete upstream JDT migration evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-jdt-migration-evidence-${{ github.run_number }}
+          path: |
+            evidence/**
+            sandbox/**/target/surefire-reports/**
+          retention-days: 30
+          if-no-files-found: error
