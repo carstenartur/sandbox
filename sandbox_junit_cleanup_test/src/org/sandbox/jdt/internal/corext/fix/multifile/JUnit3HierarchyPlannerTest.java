@@ -98,6 +98,41 @@ public class JUnit3HierarchyPlannerTest {
 				result.diagnostics().candidates().get(0).outcome());
 	}
 
+
+	@Test
+	public void rejectsHierarchyWithCollidingJUnit3MethodNameHashes() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("collision", true, null); //$NON-NLS-1$
+		ICompilationUnit base= pack.createCompilationUnit("BaseTest.java", //$NON-NLS-1$
+				"""
+				package collision;
+				import junit.framework.TestCase;
+
+				public abstract class BaseTest extends TestCase {
+					public void testAa() {
+					}
+
+					public void testBB() {
+					}
+				}
+				""", false, null);
+		ICompilationUnit concrete= pack.createCompilationUnit("ConcreteTest.java", //$NON-NLS-1$
+				"""
+				package collision;
+
+				public class ConcreteTest extends BaseTest {
+				}
+				""", false, null);
+
+		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= JUnitMultiFilePlanner.createCoordinated(
+				context.getJavaProject(), new ICompilationUnit[] { base, concrete }, false, true, true, null);
+
+		assertTrue(result.plan().junit3Hierarchies().isEmpty());
+		assertEquals(MultiFileCandidateOutcome.REJECTED,
+				result.diagnostics().candidates().get(0).outcome());
+		assertEquals("COLLIDING_JUNIT3_TEST_NAME_HASH", //$NON-NLS-1$
+				result.diagnostics().candidates().get(0).reasonCode());
+	}
+
 	@Test
 	public void leavesStandaloneLeafToLocalFailClosedCleanup() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("standalone", true, null); //$NON-NLS-1$

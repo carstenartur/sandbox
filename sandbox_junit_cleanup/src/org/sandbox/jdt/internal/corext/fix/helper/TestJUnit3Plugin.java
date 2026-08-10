@@ -12,6 +12,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -34,12 +38,15 @@ import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -72,6 +79,16 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	private static final String JUNIT3_TEST_CASE= "junit.framework.TestCase"; //$NON-NLS-1$
 	private static final String JUNIT3_ASSERT= "junit.framework.Assert"; //$NON-NLS-1$
+
+	private static final String ORG_JUNIT_JUPITER_API_ORDER= "org.junit.jupiter.api.Order"; //$NON-NLS-1$
+	private static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER=
+			"org.junit.jupiter.api.TestMethodOrder"; //$NON-NLS-1$
+	private static final String ORG_JUNIT_JUPITER_API_ORDER_ANNOTATION=
+			"org.junit.jupiter.api.MethodOrderer.OrderAnnotation"; //$NON-NLS-1$
+
+	/** JUnit 3/JUnit 4 MethodSorter.DEFAULT for collision-free test names. */
+	private static final Comparator<MethodDeclaration> JUNIT3_METHOD_ORDER=
+			Comparator.comparingInt(method -> method.getName().getIdentifier().hashCode());
 
 	private static final Set<String> KNOWN_JUNIT3_ASSERTION_METHODS= Set.of(
 			"assertEquals", "assertArrayEquals", "assertTrue", "assertFalse", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -149,7 +166,25 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				return false;
 			}
 		}
-		return testFound;
+		return testFound && hasDistinctTestNameHashes(node);
+	}
+
+	private boolean hasDistinctTestNameHashes(TypeDeclaration node) {
+		Set<Integer> hashes= new HashSet<>();
+		for (MethodDeclaration method : node.getMethods()) {
+			if (isTestMethod(method)
+					&& !hashes.add(Integer.valueOf(method.getName().getIdentifier().hashCode()))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private List<MethodDeclaration> orderedTestMethods(TypeDeclaration node) {
+		return Arrays.stream(node.getMethods())
+				.filter(this::isTestMethod)
+				.sorted(JUNIT3_METHOD_ORDER)
+				.toList();
 	}
 
 	private boolean hasKnownSubtypes(IType type) {
@@ -284,6 +319,10 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			importRewriter.removeImport(JUNIT3_TEST_CASE);
 		}
 
+		List<MethodDeclaration> orderedTests= orderedTestMethods(node);
+		if (orderedTests.size() > 1) {
+			addTestMethodOrder(node, rewriter, ast, importRewriter, group);
+		}
 		boolean removedSelfSuite= false;
 		for (MethodDeclaration method : node.getMethods()) {
 			if (method.isConstructor() && JUnit3LegacyShape.isRemovableConstructor(method)) {
@@ -301,6 +340,10 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				convertToAnnotation(method, "AfterEach", importRewriter, rewriter, ast, group); //$NON-NLS-1$
 			} else if (isTestMethod(method)) {
 				addAnnotationToMethod(method, "Test", importRewriter, rewriter, ast, group); //$NON-NLS-1$
+				if (orderedTests.size() > 1) {
+					addOrderAnnotation(method, orderedTests.indexOf(method) + 1,
+							importRewriter, rewriter, ast, group);
+				}
 			}
 			if (method.getBody() != null) {
 				removeRedundantLifecycleSuperCalls(method, rewriter, group);
@@ -311,6 +354,31 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
 			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
 		}
+	}
+
+
+	private void addTestMethodOrder(TypeDeclaration type, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+		SingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();
+		annotation.setTypeName(ast.newSimpleName("TestMethodOrder")); //$NON-NLS-1$
+		TypeLiteral orderer= ast.newTypeLiteral();
+		orderer.setType(ast.newSimpleType(ast.newSimpleName("OrderAnnotation"))); //$NON-NLS-1$
+		annotation.setValue(orderer);
+		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(annotation, group);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_ORDER_ANNOTATION);
+	}
+
+	private void addOrderAnnotation(MethodDeclaration method, int order, ImportRewrite importRewrite,
+			ASTRewrite rewrite, AST ast, TextEditGroup group) {
+		SingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();
+		annotation.setTypeName(ast.newSimpleName("Order")); //$NON-NLS-1$
+		NumberLiteral value= ast.newNumberLiteral(Integer.toString(order));
+		annotation.setValue(value);
+		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(annotation, group);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_ORDER);
 	}
 
 	private void removeRedundantLifecycleSuperCalls(MethodDeclaration method, ASTRewrite rewriter,
