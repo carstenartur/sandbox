@@ -169,29 +169,6 @@ public class MigrationJUnit3RealWorldShapesTest {
 	}
 
 	@Test
-	public void rejectsCollidingJUnit3MethodNameHashesInsteadOfGuessingTieOrder() throws CoreException {
-		IPackageFragment pack= root.createPackageFragment("unsafe", true, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("CollidingOrderTest.java", //$NON-NLS-1$
-				"""
-				package unsafe;
-
-				import junit.framework.TestCase;
-
-				public class CollidingOrderTest extends TestCase {
-					public void testAa() {
-					}
-
-					public void testBB() {
-					}
-				}
-				""", false, null); //$NON-NLS-1$
-
-		enableRealWorldJUnit3Migration();
-
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
-	}
-
-	@Test
 	public void rejectsMultipleSuiteInitializersInsteadOfReorderingThem() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("unsafe", true, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("MultipleInitializers.java", //$NON-NLS-1$

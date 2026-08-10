@@ -14,7 +14,6 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -88,7 +87,8 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	/** JUnit 3/JUnit 4 MethodSorter.DEFAULT for collision-free test names. */
 	private static final Comparator<MethodDeclaration> JUNIT3_METHOD_ORDER=
-			Comparator.comparingInt(method -> method.getName().getIdentifier().hashCode());
+			Comparator.comparingInt((MethodDeclaration method) -> method.getName().getIdentifier().hashCode())
+					.thenComparing(method -> method.getName().getIdentifier());
 
 	private static final Set<String> KNOWN_JUNIT3_ASSERTION_METHODS= Set.of(
 			"assertEquals", "assertArrayEquals", "assertTrue", "assertFalse", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -166,18 +166,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				return false;
 			}
 		}
-		return testFound && hasDistinctTestNameHashes(node);
-	}
-
-	private boolean hasDistinctTestNameHashes(TypeDeclaration node) {
-		Set<Integer> hashes= new HashSet<>();
-		for (MethodDeclaration method : node.getMethods()) {
-			if (isTestMethod(method)
-					&& !hashes.add(Integer.valueOf(method.getName().getIdentifier().hashCode()))) {
-				return false;
-			}
-		}
-		return true;
+		return testFound;
 	}
 
 	private List<MethodDeclaration> orderedTestMethods(TypeDeclaration node) {

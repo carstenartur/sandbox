@@ -276,10 +276,6 @@ final class JUnit3HierarchyPlanner {
 			if (!Modifier.isAbstract(type.binding().getModifiers()) && inventory.contains(type.javaType())) {
 				baselineHandles.add(type.javaType().getHandleIdentifier());
 			}
-			if (hasCollidingTestNameHashes(type)) {
-				return Classification.rejected("COLLIDING_JUNIT3_TEST_NAME_HASH", //$NON-NLS-1$
-						"Two JUnit 3 test method names have the same String hash; exact MethodSorter.DEFAULT tie-breaking cannot be represented safely."); //$NON-NLS-1$
-			}
 			int depth= hierarchyDepth(type, rootKey);
 			if (depth < 0) {
 				return Classification.rejected("INCOMPLETE_JUNIT3_HIERARCHY", //$NON-NLS-1$
@@ -352,17 +348,6 @@ final class JUnit3HierarchyPlanner {
 		return Classification.supported(typeMigrations, baselineHandles);
 	}
 
-
-	private static boolean hasCollidingTestNameHashes(SourceType type) {
-		Set<Integer> hashes= new HashSet<>();
-		for (MethodDeclaration method : type.declaration().getMethods()) {
-			if (isTestPrefixed(method)
-					&& !hashes.add(Integer.valueOf(method.getName().getIdentifier().hashCode()))) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	private static Map<String, Integer> plannedExecutionOrders(SourceType type, int maxDepth, int depth,
 			int stride) {
