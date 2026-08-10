@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare JUnit XML inventories produced before and after a migration."""
+"""Compare JUnit XML inventories and observed per-class order before and after migration."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from typing import Iterable
 @dataclass(frozen=True)
 class Inventory:
     states: Counter[tuple[str, str]]
+    order_by_owner: dict[str, tuple[str, ...]]
     report_files: int
     parse_errors: tuple[str, ...]
 
@@ -51,6 +52,7 @@ def _testcases(root: ET.Element) -> Iterable[tuple[str, ET.Element]]:
 
 def collect(directory: Path) -> Inventory:
     states: Counter[tuple[str, str]] = Counter()
+    order_lists: dict[str, list[str]] = {}
     parse_errors: list[str] = []
     reports = sorted(directory.rglob("*.xml"))
     for report in reports:
@@ -62,8 +64,15 @@ def collect(directory: Path) -> Inventory:
         for suite_name, testcase in _testcases(root):
             owner = testcase.attrib.get("classname") or suite_name
             name = testcase.attrib.get("name", "<unnamed-test>")
-            states[(f"{owner}#{name}", _state(testcase))] += 1
-    return Inventory(states=states, report_files=len(reports), parse_errors=tuple(parse_errors))
+            identity = f"{owner}#{name}"
+            states[(identity, _state(testcase))] += 1
+            order_lists.setdefault(owner, []).append(identity)
+    return Inventory(
+        states=states,
+        order_by_owner={owner: tuple(sequence) for owner, sequence in sorted(order_lists.items())},
+        report_files=len(reports),
+        parse_errors=tuple(parse_errors),
+    )
 
 
 def _matches_any(value: str, patterns: list[str]) -> bool:
@@ -77,11 +86,45 @@ def _mapped_baseline(inventory: Inventory, renames: dict[str, str]) -> Counter[t
     return mapped
 
 
+def _mapped_order(inventory: Inventory, renames: dict[str, str]) -> dict[str, tuple[str, ...]]:
+    result: dict[str, list[str]] = {}
+    for sequence in inventory.order_by_owner.values():
+        for identity in sequence:
+            mapped = renames.get(identity, identity)
+            owner, separator, _ = mapped.partition("#")
+            if not separator:
+                owner = "<invalid-mapped-identity>"
+            result.setdefault(owner, []).append(mapped)
+    return {owner: tuple(sequence) for owner, sequence in sorted(result.items())}
+
+
 def _render(counter: Counter[tuple[str, str]]) -> list[dict[str, object]]:
     return [
         {"test": identity, "state": state, "count": count}
         for (identity, state), count in sorted(counter.items())
     ]
+
+
+def _order_differences(
+    expected: dict[str, tuple[str, ...]],
+    actual: dict[str, tuple[str, ...]],
+) -> list[dict[str, object]]:
+    differences: list[dict[str, object]] = []
+    for owner in sorted(expected.keys() | actual.keys()):
+        baseline = expected.get(owner, ())
+        migrated = actual.get(owner, ())
+        # Missing/added identities are reported by the inventory comparison. Only
+        # call something an order regression when both runs contain the same
+        # multiset for this owner.
+        if Counter(baseline) == Counter(migrated) and baseline != migrated:
+            differences.append(
+                {
+                    "owner": owner,
+                    "baseline": list(baseline),
+                    "migrated": list(migrated),
+                }
+            )
+    return differences
 
 
 def main() -> int:
@@ -98,10 +141,12 @@ def main() -> int:
     allowed_added = mapping.get("allowedAdded", [])
     if not isinstance(renames, dict) or not isinstance(allowed_missing, list) or not isinstance(allowed_added, list):
         raise ValueError("Invalid mapping document")
+    normalized_renames = {str(key): str(value) for key, value in renames.items()}
 
     baseline = collect(args.baseline)
     migrated = collect(args.migrated)
-    expected = _mapped_baseline(baseline, {str(k): str(v) for k, v in renames.items()})
+    expected = _mapped_baseline(baseline, normalized_renames)
+    expected_order = _mapped_order(baseline, normalized_renames)
 
     missing = expected - migrated.states
     added = migrated.states - expected
@@ -111,6 +156,7 @@ def main() -> int:
     unexpected_added = Counter(
         {key: count for key, count in added.items() if not _matches_any(key[0], allowed_added)}
     )
+    unexpected_order = _order_differences(expected_order, migrated.order_by_owner)
 
     problems: list[str] = []
     if baseline.report_files == 0 or baseline.test_count == 0:
@@ -127,6 +173,8 @@ def main() -> int:
         problems.append("Tests disappeared or changed state after migration")
     if unexpected_added:
         problems.append("Unexpected tests appeared or changed state after migration")
+    if unexpected_order:
+        problems.append("Observed test execution order changed after migration")
 
     summary = {
         "baseline": {
@@ -147,6 +195,7 @@ def main() -> int:
         },
         "unexpectedMissing": _render(unexpected_missing),
         "unexpectedAdded": _render(unexpected_added),
+        "unexpectedOrder": unexpected_order,
         "problems": problems,
         "result": "PASS" if not problems else "FAIL",
     }
