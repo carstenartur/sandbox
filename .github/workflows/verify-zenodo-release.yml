@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/scripts/verify_zenodo_release.py'
       - '.github/scripts/test_verify_zenodo_release.py'
+      - '.github/scripts/test_verify_zenodo_workflow_contract.py'
       - '.github/workflows/verify-zenodo-release.yml'
   release:
     types:
@@ -46,8 +47,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 --version
-          python3 -m py_compile verify_zenodo_release.py test_verify_zenodo_release.py
+          python3 -m py_compile \
+            verify_zenodo_release.py \
+            test_verify_zenodo_release.py \
+            test_verify_zenodo_workflow_contract.py
           python3 test_verify_zenodo_release.py
+          python3 test_verify_zenodo_workflow_contract.py
 
   verify:
     name: Verify stable Zenodo archive
@@ -121,4 +126,5 @@ jobs:
             cat "$report"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          gh release upload "${{ steps.release.outputs.tag }}" "$report" --clobber
+          gh release upload "${{ steps.release.outputs.tag }}" "$report" \
+            --clobber --repo "$GITHUB_REPOSITORY"
