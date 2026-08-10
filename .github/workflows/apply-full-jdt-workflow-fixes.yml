@@ -46,41 +46,23 @@ jobs:
 
           old_locator = "-path '*/linux/gtk/x86_64/*/eclipse'"
           new_locator = "-path '*/linux/gtk/x86_64/eclipse'"
-          locator_matches = [index for index, line in enumerate(lines) if old_locator in line]
-          if len(locator_matches) != 1:
-              if not any(new_locator in line for line in lines):
-                  raise SystemExit(f'Expected one old Linux launcher locator, found {len(locator_matches)}')
-          else:
-              index = locator_matches[0]
+          old_matches = [index for index, line in enumerate(lines) if old_locator in line]
+          new_matches = [index for index, line in enumerate(lines) if new_locator in line]
+          if len(old_matches) == 1:
+              index = old_matches[0]
               lines[index] = lines[index].replace(old_locator, new_locator)
+          elif len(new_matches) != 1:
+              raise SystemExit(
+                  f'Expected one old or new Linux launcher locator, found old={len(old_matches)}, new={len(new_matches)}'
+              )
           workflow_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
-
-          readme_path = Path('qa/upstream-jdt/README.md')
-          readme = readme_path.read_text(encoding='utf-8')
-          old = (
-              'For `TestAll`, the result must remove the JUnit 3 superclass,\n'
-              'delegating constructor and suite method and replace them with the JUnit\n'
-              'Platform suite annotations.\n'
-          )
-          new = (
-              'For `TestAll`, the result must remove the JUnit 3 superclass,\n'
-              'delegating constructor and suite method, replace them with the JUnit\n'
-              'Platform suite annotations, and move its single static initialization\n'
-              'block into an explicit `@BeforeSuite` method. Multiple or instance\n'
-              'initializers remain fail-closed.\n'
-          )
-          if old in readme:
-              readme = readme.replace(old, new, 1)
-          elif new not in readme:
-              raise SystemExit('README TestAll acceptance paragraph was not found')
-          readme_path.write_text(readme, encoding='utf-8')
 
           Path('.github/workflows/apply-full-jdt-workflow-fixes.yml').unlink()
           PY
 
           git diff --check
           grep -A8 -F 'Build and test the Sandbox product under test' .github/workflows/upstream-jdt-migration-qa.yml
-          grep -F "-path '*/linux/gtk/x86_64/eclipse'" .github/workflows/upstream-jdt-migration-qa.yml
+          grep -F -- "-path '*/linux/gtk/x86_64/eclipse'" .github/workflows/upstream-jdt-migration-qa.yml
 
       - name: Commit corrected full-run contract
         shell: bash
