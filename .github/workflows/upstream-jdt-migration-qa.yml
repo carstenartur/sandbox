@@ -131,14 +131,21 @@ jobs:
 
       - name: Run the pinned upstream baseline tests
         working-directory: upstream/eclipse.jdt.core
-        run: >-
-          xvfb-run --auto-servernum mvn
-          --batch-mode
-          --no-transfer-progress
-          -U
-          -Djava.io.tmpdir="${{ runner.temp }}/jdt-core-qa"
-          -f org.eclipse.jdt.apt.tests/pom.xml
-          clean verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/pins.env"
+          primary_module=${PIN_PRIMARY_TEST_POM%/pom.xml}
+          test "$primary_module" != "$PIN_PRIMARY_TEST_POM"
+          xvfb-run --auto-servernum mvn \
+            --batch-mode \
+            --no-transfer-progress \
+            -U \
+            -Djava.io.tmpdir="${{ runner.temp }}/jdt-core-qa" \
+            -f pom.xml \
+            --projects "$primary_module" \
+            --also-make \
+            clean verify
 
       - name: Require baseline JUnit XML evidence
         shell: bash
