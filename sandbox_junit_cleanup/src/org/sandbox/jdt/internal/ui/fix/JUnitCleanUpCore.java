@@ -51,7 +51,10 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
 import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyScopeDetector;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
@@ -63,6 +66,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();
 	private final Map<IJavaProject, Set<String>> verifiedClosedScopes= new HashMap<>();
 	private final Set<IJavaProject> rejectedScopes= new HashSet<>();
+	private final Map<IJavaProject, Analysis> bestEffortAnalyses= new HashMap<>();
 
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
@@ -85,15 +89,28 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
 		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {
+			bestEffortAnalyses.remove(project);
 			return MultiFileCleanUpPlanResult.noPlan();
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
+		boolean bestEffort= isEnabled(JUnitMigrationOptions.BEST_EFFORT) && isEnabled(JUNIT_CLEANUP);
+		Analysis bestEffortAnalysis= bestEffort
+				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, monitor)
+				: Analysis.empty();
+		if (bestEffort) {
+			bestEffortAnalyses.put(project, bestEffortAnalysis);
+		} else {
+			bestEffortAnalyses.remove(project);
+		}
+
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
+		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
+				&& !bestEffortAnalysis.disableCoordinatedExternalResource();
 		JUnitMultiFilePlanner.PlanningOptions planningOptions=
 				new JUnitMultiFilePlanner.PlanningOptions(
-						fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE),
+						migrateExternalResources,
 						fixes.contains(JUnitCleanUpFixCore.TEST3),
 						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED));
 		return closedScope == null
@@ -119,11 +136,23 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
 		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
+		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
+			Analysis analysis= bestEffortAnalyses.get(context.getCompilationUnit().getJavaProject());
+			if (analysis != null) {
+				JUnitBestEffortSupport.addMarkerOperation(compilationUnit,
+						analysis.gapsFor(context.getCompilationUnit()), operations);
+			}
+		}
 		if (operations.isEmpty()) {
 			return null;
 		}
 		return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,
 				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
+	}
+
+	/** Returns best-effort diagnostics captured during the latest project plan. */
+	protected Analysis getBestEffortAnalysis(IJavaProject project) {
+		return bestEffortAnalyses.getOrDefault(project, Analysis.empty());
 	}
 
 	@Override
@@ -223,6 +252,9 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) {
 			result.add(Messages.format(JUnitCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
 					computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())) }));
+			if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
+				result.add("Migrate independently safe JUnit constructs and add @todo scaffolds for manual completion"); //$NON-NLS-1$
+			}
 		}
 		return result.toArray(new String[0]);
 	}
@@ -230,6 +262,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	@Override
 	public String getPreview() {
 		StringBuilder sb= new StringBuilder();
+		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
+			sb.append("// Best-effort mode: unsupported constructs stay in place and receive an @todo scaffold.") //$NON-NLS-1$
+					.append(System.lineSeparator())
+					.append("// The resulting project may require manual completion before its tests run.") //$NON-NLS-1$
+					.append(System.lineSeparator()).append(System.lineSeparator());
+		}
 		EnumSet<JUnitCleanUpFixCore> computeFixSet= computeFixSet();
 		boolean first= true;
 		for (JUnitCleanUpFixCore e : allOfJunit4()) {
