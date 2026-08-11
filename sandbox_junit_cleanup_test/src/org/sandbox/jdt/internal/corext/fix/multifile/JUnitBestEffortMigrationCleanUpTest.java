@@ -97,7 +97,7 @@ public class JUnitBestEffortMigrationCleanUpTest {
 				"""; //$NON-NLS-1$
 
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
-				new ICompilationUnit[] { unit }, new String[] { expected });
+				new ICompilationUnit[] { unit }, new String[] { expected }, null);
 	}
 
 	private ICompilationUnit createSource() throws CoreException {
