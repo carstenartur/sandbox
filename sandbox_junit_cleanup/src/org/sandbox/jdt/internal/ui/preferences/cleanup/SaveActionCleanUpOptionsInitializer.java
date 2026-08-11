@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
+import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsInitializer {
@@ -22,6 +23,7 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(JUnitMigrationOptions.BEST_EFFORT, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, CleanUpOptions.FALSE);
