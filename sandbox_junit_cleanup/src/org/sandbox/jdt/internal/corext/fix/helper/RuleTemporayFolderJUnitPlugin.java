@@ -319,6 +319,7 @@ public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 					rewriter.remove(annotation, group);
 					return;
 				}
+			}
 		}
 	}
 
@@ -327,7 +328,10 @@ public class RuleTemporayFolderJUnitPlugin extends TriggerPatternCleanupPlugin {
 		AtomicBoolean other= new AtomicBoolean();
 		root.accept(new ASTVisitor() {
 			@Override
-			public boolean visit(Annotation annotation) {
+			public boolean preVisit2(ASTNode node) {
+				if (!(node instanceof Annotation annotation)) {
+					return !other.get();
+				}
 				if (ASTNodes.getParent(annotation, FieldDeclaration.class) == migratedField) {
 					return true;
 				}
