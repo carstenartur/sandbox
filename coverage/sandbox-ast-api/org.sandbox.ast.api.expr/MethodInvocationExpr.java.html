@@ -168,7 +168,7 @@ public record MethodInvocationExpr(
 	 * @return true if method has this name
 	 */
 	public boolean isMethodNamed(String name) {
-<span class="fc" id="L171">		return method.map(m -&gt; m.name().equals(name)).orElse(false);</span>
+<span class="nc" id="L171">		return method.map(m -&gt; m.name().equals(name)).orElse(false);</span>
 	}
 	
 	/**

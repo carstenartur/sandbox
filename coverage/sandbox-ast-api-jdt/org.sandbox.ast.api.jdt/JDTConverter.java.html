@@ -126,7 +126,7 @@ public final class JDTConverter {
 <span class="fc" id="L126">				.toList();</span>
 <span class="fc" id="L127">		Optional&lt;MethodInfo&gt; method = convertMethodBinding(node.resolveMethodBinding());</span>
 		// Fallback: create minimal MethodInfo from node name when binding is unresolved
-<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (method.isEmpty()) {</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (method.isEmpty()) {</span>
 <span class="fc" id="L130">			method = createMinimalMethodInfo(node.getName().getIdentifier(), jdtArgs.size());</span>
 		}
 <span class="fc" id="L132">		Optional&lt;TypeInfo&gt; type = convertTypeBinding(node.resolveTypeBinding());</span>
@@ -150,12 +150,12 @@ public final class JDTConverter {
 <span class="fc" id="L150">		Optional&lt;MethodInfo&gt; methodBinding = Optional.empty();</span>
 <span class="fc" id="L151">		Optional&lt;TypeInfo&gt; typeBinding = Optional.empty();</span>
 
-<span class="fc bfc" id="L153" title="All 2 branches covered.">		if (binding instanceof IVariableBinding vb) {</span>
-<span class="fc" id="L154">			variableBinding = convertVariableBinding(vb);</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
+<span class="nc" id="L154">			variableBinding = convertVariableBinding(vb);</span>
 <span class="pc bpc" id="L155" title="1 of 2 branches missed.">		} else if (binding instanceof IMethodBinding mb) {</span>
 <span class="nc" id="L156">			methodBinding = convertMethodBinding(mb);</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">		} else if (binding instanceof ITypeBinding tb) {</span>
-<span class="fc" id="L158">			typeBinding = convertTypeBinding(tb);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		} else if (binding instanceof ITypeBinding tb) {</span>
+<span class="nc" id="L158">			typeBinding = convertTypeBinding(tb);</span>
 		}
 
 <span class="fc" id="L161">		Optional&lt;TypeInfo&gt; type = convertTypeBinding(node.resolveTypeBinding());</span>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CodeCleanupApplicationWrapper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CodeCleanupApplicationWrapper.java</span></div><h1>CodeCleanupApplicationWrapper.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.sandbox.jdt.core.cleanupapp;</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CodeCleanupApplicationWrapper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CodeCleanupApplicationWrapper.java</span></div><h1>CodeCleanupApplicationWrapper.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package org.sandbox.jdt.core.cleanupapp;</span>
 
 /*-
  * #%L
@@ -9,17 +9,16 @@
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
- * 
+ *
  * This Source Code may also be made available under the following Secondary
  * Licenses when the conditions for such availability set forth in the Eclipse
  * Public License, v. 2.0 are satisfied: GNU General Public License, version 2
  * with the GNU Classpath Exception which is
  * available at https://www.gnu.org/software/classpath/license.html.
- * 
+ *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  * #L%
  */
-
 
 import java.io.File;
 import java.io.IOException;
@@ -46,18 +45,18 @@ import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
-<span class="nc" id="L49">public class CodeCleanupApplicationWrapper implements IApplication {</span>
+<span class="fc" id="L48">public class CodeCleanupApplicationWrapper implements IApplication {</span>
 
 	private static final String ARG_IMPORT_PROJECT= &quot;--import-project&quot;; //$NON-NLS-1$
 
 	private record ImportRequest(File projectDirectory, String[] applicationArguments) {
-<span class="nc" id="L54">		ImportRequest {</span>
-<span class="nc" id="L55">			applicationArguments= applicationArguments.clone();</span>
-<span class="nc" id="L56">		}</span>
+<span class="fc" id="L53">		ImportRequest {</span>
+<span class="fc" id="L54">			applicationArguments= applicationArguments.clone();</span>
+<span class="fc" id="L55">		}</span>
 
 		@Override
 		public String[] applicationArguments() {
-<span class="nc" id="L60">			return applicationArguments.clone();</span>
+<span class="fc" id="L59">			return applicationArguments.clone();</span>
 		}
 	}
 
@@ -66,59 +65,59 @@ import org.osgi.framework.BundleException;
 		private final String[] applicationArguments;
 		private final IApplication owner;
 
-<span class="nc" id="L69">		ForwardingApplicationContext(IApplicationContext delegate, String[] applicationArguments, IApplication owner) {</span>
-<span class="nc" id="L70">			this.delegate= delegate;</span>
-<span class="nc" id="L71">			this.applicationArguments= applicationArguments.clone();</span>
-<span class="nc" id="L72">			this.owner= owner;</span>
-<span class="nc" id="L73">		}</span>
+<span class="fc" id="L68">		ForwardingApplicationContext(IApplicationContext delegate, String[] applicationArguments, IApplication owner) {</span>
+<span class="fc" id="L69">			this.delegate= delegate;</span>
+<span class="fc" id="L70">			this.applicationArguments= applicationArguments.clone();</span>
+<span class="fc" id="L71">			this.owner= owner;</span>
+<span class="fc" id="L72">		}</span>
 
 		@Override
 		@SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
 		public Map getArguments() {
-<span class="nc" id="L78">			Map forwarded= new HashMap(delegate.getArguments());</span>
-<span class="nc" id="L79">			forwarded.put(APPLICATION_ARGS, applicationArguments.clone());</span>
-<span class="nc" id="L80">			return forwarded;</span>
+<span class="fc" id="L77">			Map forwarded= new HashMap(delegate.getArguments());</span>
+<span class="fc" id="L78">			forwarded.put(APPLICATION_ARGS, applicationArguments.clone());</span>
+<span class="fc" id="L79">			return forwarded;</span>
 		}
 
 		@Override
 		public void applicationRunning() {
-<span class="nc" id="L85">			delegate.applicationRunning();</span>
-<span class="nc" id="L86">		}</span>
+<span class="nc" id="L84">			delegate.applicationRunning();</span>
+<span class="nc" id="L85">		}</span>
 
 		@Override
 		public String getBrandingApplication() {
-<span class="nc" id="L90">			return delegate.getBrandingApplication();</span>
+<span class="nc" id="L89">			return delegate.getBrandingApplication();</span>
 		}
 
 		@Override
 		public Bundle getBrandingBundle() {
-<span class="nc" id="L95">			return delegate.getBrandingBundle();</span>
+<span class="nc" id="L94">			return delegate.getBrandingBundle();</span>
 		}
 
 		@Override
 		public String getBrandingDescription() {
-<span class="nc" id="L100">			return delegate.getBrandingDescription();</span>
+<span class="nc" id="L99">			return delegate.getBrandingDescription();</span>
 		}
 
 		@Override
 		public String getBrandingId() {
-<span class="nc" id="L105">			return delegate.getBrandingId();</span>
+<span class="nc" id="L104">			return delegate.getBrandingId();</span>
 		}
 
 		@Override
 		public String getBrandingName() {
-<span class="nc" id="L110">			return delegate.getBrandingName();</span>
+<span class="nc" id="L109">			return delegate.getBrandingName();</span>
 		}
 
 		@Override
 		public String getBrandingProperty(String key) {
-<span class="nc" id="L115">			return delegate.getBrandingProperty(key);</span>
+<span class="nc" id="L114">			return delegate.getBrandingProperty(key);</span>
 		}
 
 		@Override
 		public void setResult(Object result, IApplication application) {
-<span class="nc" id="L120">			delegate.setResult(result, owner);</span>
-<span class="nc" id="L121">		}</span>
+<span class="nc" id="L119">			delegate.setResult(result, owner);</span>
+<span class="nc" id="L120">		}</span>
 	}
 
 	/**
@@ -131,157 +130,132 @@ import org.osgi.framework.BundleException;
 		public static String WorkspaceRequired;
 
 		static {
-<span class="nc" id="L134">			NLS.initializeMessages(BUNDLE_NAME, Messages.class);</span>
-<span class="nc" id="L135">		}</span>
+<span class="fc" id="L133">			NLS.initializeMessages(BUNDLE_NAME, Messages.class);</span>
+<span class="fc" id="L134">		}</span>
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message) {
-<span class="nc" id="L145">			return bind(message, null);</span>
+<span class="fc" id="L137">			return bind(message, null);</span>
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param binding
-		 *            the object to be inserted into the message
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message, final Object binding) {
-<span class="nc" id="L158">			return bind(message, new Object[] { binding });</span>
+<span class="nc" id="L141">			return bind(message, new Object[] { binding });</span>
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param binding1
-		 *            An object to be inserted into the message
-		 * @param binding2
-		 *            A second object to be inserted into the message
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message, final Object binding1, final Object binding2) {
-<span class="nc" id="L173">			return bind(message, new Object[] { binding1, binding2 });</span>
+<span class="nc" id="L145">			return bind(message, new Object[] { binding1, binding2 });</span>
 		}
 
-		/**
-		 * Bind the given message's substitution locations with the given string values.
-		 *
-		 * @param message
-		 *            the message to be manipulated
-		 * @param bindings
-		 *            An array of objects to be inserted into the message
-		 * @return the manipulated String
-		 */
 		public static String bind(final String message, final Object[] bindings) {
-<span class="nc" id="L186">			return MessageFormat.format(message, bindings);</span>
+<span class="fc" id="L149">			return MessageFormat.format(message, bindings);</span>
 		}
 	}
 
-<span class="nc" id="L190">	private final CodeCleanupApplication delegate= new CodeCleanupApplication();</span>
+<span class="fc" id="L153">	private final CodeCleanupApplication delegate= new CodeCleanupApplication();</span>
 
 	@Override
 	public Object start(final IApplicationContext context) throws NoClassDefFoundError, Exception {
-<span class="nc" id="L194">		final String[] arguments= (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);</span>
+<span class="fc" id="L157">		final String[] arguments= (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);</span>
 		final ImportRequest request;
 		try {
-<span class="nc" id="L197">			request= parseImportRequest(arguments);</span>
-<span class="nc" id="L198">		} catch (IllegalArgumentException e) {</span>
-<span class="nc" id="L199">			System.err.println(e.getMessage());</span>
-<span class="nc" id="L200">			System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
-<span class="nc" id="L201">			return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);</span>
+<span class="fc" id="L160">			request= parseImportRequest(arguments);</span>
+<span class="fc" id="L161">		} catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L162">			return fail(e.getMessage());</span>
 		}
-<span class="nc" id="L203">		final List&lt;String&gt; args= Arrays.asList(request.applicationArguments());</span>
-<span class="nc bnc" id="L204" title="All 6 branches missed.">		if (args.isEmpty() || args.contains(&quot;-help&quot;) || args.contains(&quot;--help&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L205">			System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
-<span class="nc" id="L206">			return IApplication.EXIT_OK;</span>
+<span class="fc" id="L164">		final List&lt;String&gt; args= Arrays.asList(request.applicationArguments());</span>
+<span class="pc bpc" id="L165" title="2 of 6 branches missed.">		if (args.isEmpty() || args.contains(&quot;-help&quot;) || args.contains(&quot;--help&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L166">			System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
+<span class="fc" id="L167">			return IApplication.EXIT_OK;</span>
 		}
 		try {
-			// Try to see if the workspace is available. If it is not available we'll
-			// get a NoClassDefFoundError wrapping a ClassNotFoundException which
-			// has a BundleException in it, whose cause was the original
-			// IllegalStateException raised by
-			// org.eclipse.core.internal.runtime.DataArea.assertLocationInitialized()
-<span class="nc" id="L214">			ResourcesPlugin.getWorkspace();</span>
-<span class="nc" id="L215">		} catch (NoClassDefFoundError noClassError) {</span>
-<span class="nc bnc" id="L216" title="All 2 branches missed.">			if (noClassError.getCause() instanceof ClassNotFoundException classNotFoundException</span>
-<span class="nc bnc" id="L217" title="All 2 branches missed.">					&amp;&amp; classNotFoundException.getException() instanceof BundleException bundleException</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">					&amp;&amp; bundleException.getCause() instanceof IllegalStateException) {</span>
-<span class="nc" id="L219">				System.err.println(Messages.bind(Messages.WorkspaceRequired));</span>
-<span class="nc" id="L220">				System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
-<span class="nc" id="L221">				return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);</span>
+<span class="fc" id="L170">			ResourcesPlugin.getWorkspace();</span>
+<span class="pc" id="L171">		} catch (NoClassDefFoundError noClassError) {</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">			if (noClassError.getCause() instanceof ClassNotFoundException classNotFoundException</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">					&amp;&amp; classNotFoundException.getException() instanceof BundleException bundleException</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">					&amp;&amp; bundleException.getCause() instanceof IllegalStateException) {</span>
+<span class="nc" id="L175">				return fail(Messages.bind(Messages.WorkspaceRequired));</span>
 			}
-<span class="nc" id="L223">			throw noClassError;</span>
+<span class="nc" id="L177">			throw noClassError;</span>
 		}
 
-<span class="nc bnc" id="L226" title="All 2 branches missed.">		if (request.projectDirectory() != null) {</span>
-<span class="nc" id="L227">			importProject(request.projectDirectory());</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		if (request.projectDirectory() != null) {</span>
+			try {
+<span class="nc" id="L182">				importProject(request.projectDirectory());</span>
+<span class="nc" id="L183">			} catch (CoreException | IOException e) {</span>
+<span class="nc" id="L184">				return fail(e.getMessage());</span>
+			}
 		}
 
-<span class="nc" id="L230">		return delegate.start(new ForwardingApplicationContext(context, request.applicationArguments(), this));</span>
+<span class="fc" id="L188">		Object result= delegate.start(new ForwardingApplicationContext(context, request.applicationArguments(), this));</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">		return delegate.hasErrors() ? Integer.valueOf(CodeCleanupApplication.EXIT_ERROR) : result;</span>
+	}
+
+	private static Integer fail(String message) {
+<span class="fc" id="L193">		System.err.println(failureMessage(message));</span>
+<span class="fc" id="L194">		System.out.println(Messages.bind(Messages.CommandLineUsage));</span>
+<span class="fc" id="L195">		return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);</span>
+	}
+
+	static String failureMessage(String message) {
+<span class="fc bfc" id="L199" title="All 4 branches covered.">		return message == null || message.isBlank()</span>
+<span class="fc" id="L200">				? &quot;Cleanup application failed without a diagnostic message.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L201">				: message;</span>
 	}
 
 	private static ImportRequest parseImportRequest(String[] arguments) {
-<span class="nc" id="L234">		List&lt;String&gt; forwarded= new ArrayList&lt;&gt;(arguments.length);</span>
-<span class="nc" id="L235">		File projectDirectory= null;</span>
-<span class="nc bnc" id="L236" title="All 2 branches missed.">		for (int index= 0; index &lt; arguments.length; index++) {</span>
-<span class="nc" id="L237">			String argument= arguments[index];</span>
-<span class="nc bnc" id="L238" title="All 2 branches missed.">			if (!ARG_IMPORT_PROJECT.equals(argument)) {</span>
-<span class="nc" id="L239">				forwarded.add(argument);</span>
-<span class="nc" id="L240">				continue;</span>
-			}
-<span class="nc bnc" id="L242" title="All 2 branches missed.">			if (projectDirectory != null) {</span>
-<span class="nc" id="L243">				throw new IllegalArgumentException(&quot;The --import-project option may only be specified once.&quot;); //$NON-NLS-1$</span>
-			}
-<span class="nc bnc" id="L245" title="All 2 branches missed.">			if (++index &gt;= arguments.length) {</span>
-<span class="nc" id="L246">				throw new IllegalArgumentException(&quot;The --import-project option requires a project directory.&quot;); //$NON-NLS-1$</span>
-			}
-<span class="nc" id="L248">			projectDirectory= new File(arguments[index]);</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (arguments == null) {</span>
+<span class="nc" id="L206">			throw new IllegalArgumentException(&quot;Application arguments are unavailable.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L250">		return new ImportRequest(projectDirectory, forwarded.toArray(String[]::new));</span>
+<span class="fc" id="L208">		List&lt;String&gt; forwarded= new ArrayList&lt;&gt;(arguments.length);</span>
+<span class="fc" id="L209">		File projectDirectory= null;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">		for (int index= 0; index &lt; arguments.length; index++) {</span>
+<span class="fc" id="L211">			String argument= arguments[index];</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">			if (!ARG_IMPORT_PROJECT.equals(argument)) {</span>
+<span class="fc" id="L213">				forwarded.add(argument);</span>
+<span class="fc" id="L214">				continue;</span>
+			}
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">			if (projectDirectory != null) {</span>
+<span class="nc" id="L217">				throw new IllegalArgumentException(&quot;The --import-project option may only be specified once.&quot;); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">			if (++index &gt;= arguments.length) {</span>
+<span class="fc" id="L220">				throw new IllegalArgumentException(&quot;The --import-project option requires a project directory.&quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L222">			projectDirectory= new File(arguments[index]);</span>
+		}
+<span class="fc" id="L224">		return new ImportRequest(projectDirectory, forwarded.toArray(String[]::new));</span>
 	}
 
 	private static void importProject(File projectDirectory) throws CoreException, IOException {
-<span class="nc" id="L254">		File canonicalDirectory= projectDirectory.getCanonicalFile();</span>
-<span class="nc" id="L255">		File projectDescriptionFile= new File(canonicalDirectory, &quot;.project&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L256" title="All 4 branches missed.">		if (!canonicalDirectory.isDirectory() || !projectDescriptionFile.isFile()) {</span>
-<span class="nc" id="L257">			throw new IOException(&quot;The imported project directory must contain a .project file: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L258">					+ canonicalDirectory);</span>
+<span class="nc" id="L228">		File canonicalDirectory= projectDirectory.getCanonicalFile();</span>
+<span class="nc" id="L229">		File projectDescriptionFile= new File(canonicalDirectory, &quot;.project&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L230" title="All 4 branches missed.">		if (!canonicalDirectory.isDirectory() || !projectDescriptionFile.isFile()) {</span>
+<span class="nc" id="L231">			throw new IOException(&quot;The imported project directory must contain a .project file: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L232">					+ canonicalDirectory);</span>
 		}
 
-<span class="nc" id="L261">		IWorkspace workspace= ResourcesPlugin.getWorkspace();</span>
-<span class="nc" id="L262">		IWorkspaceRoot root= workspace.getRoot();</span>
-<span class="nc" id="L263">		IPath projectLocation= Path.fromOSString(canonicalDirectory.getAbsolutePath());</span>
-<span class="nc" id="L264">		IProjectDescription description= workspace.loadProjectDescription(</span>
-<span class="nc" id="L265">				Path.fromOSString(projectDescriptionFile.getAbsolutePath()));</span>
-<span class="nc" id="L266">		IProject project= root.getProject(description.getName());</span>
-<span class="nc" id="L267">		NullProgressMonitor monitor= new NullProgressMonitor();</span>
-<span class="nc bnc" id="L268" title="All 2 branches missed.">		if (!project.exists()) {</span>
-<span class="nc" id="L269">			IPath workspaceLocation= root.getLocation();</span>
-<span class="nc bnc" id="L270" title="All 2 branches missed.">			IPath defaultLocation= workspaceLocation == null ? null : workspaceLocation.append(description.getName());</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">			description.setLocation(projectLocation.equals(defaultLocation) ? null : projectLocation);</span>
-<span class="nc" id="L272">			project.create(description, monitor);</span>
-<span class="nc bnc" id="L273" title="All 4 branches missed.">		} else if (project.getLocation() != null &amp;&amp; !projectLocation.equals(project.getLocation())) {</span>
-<span class="nc" id="L274">			throw new IOException(&quot;Workspace project already exists at another location: &quot; + description.getName()); //$NON-NLS-1$</span>
+<span class="nc" id="L235">		IWorkspace workspace= ResourcesPlugin.getWorkspace();</span>
+<span class="nc" id="L236">		IWorkspaceRoot root= workspace.getRoot();</span>
+<span class="nc" id="L237">		IPath projectLocation= Path.fromOSString(canonicalDirectory.getAbsolutePath());</span>
+<span class="nc" id="L238">		IProjectDescription description= workspace.loadProjectDescription(</span>
+<span class="nc" id="L239">				Path.fromOSString(projectDescriptionFile.getAbsolutePath()));</span>
+<span class="nc" id="L240">		IProject project= root.getProject(description.getName());</span>
+<span class="nc" id="L241">		NullProgressMonitor monitor= new NullProgressMonitor();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">		if (!project.exists()) {</span>
+<span class="nc" id="L243">			IPath workspaceLocation= root.getLocation();</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">			IPath defaultLocation= workspaceLocation == null ? null : workspaceLocation.append(description.getName());</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">			description.setLocation(projectLocation.equals(defaultLocation) ? null : projectLocation);</span>
+<span class="nc" id="L246">			project.create(description, monitor);</span>
+<span class="nc bnc" id="L247" title="All 4 branches missed.">		} else if (project.getLocation() != null &amp;&amp; !projectLocation.equals(project.getLocation())) {</span>
+<span class="nc" id="L248">			throw new IOException(&quot;Workspace project already exists at another location: &quot; + description.getName()); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L276" title="All 2 branches missed.">		if (!project.isOpen()) {</span>
-<span class="nc" id="L277">			project.open(monitor);</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">		if (!project.isOpen()) {</span>
+<span class="nc" id="L251">			project.open(monitor);</span>
 		}
-<span class="nc" id="L279">		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);</span>
-<span class="nc" id="L280">	}</span>
+<span class="nc" id="L253">		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);</span>
+<span class="nc" id="L254">	}</span>
 
 	@Override
 	public void stop() {
-<span class="nc" id="L284">		delegate.stop();</span>
-<span class="nc" id="L285">	}</span>
+<span class="nc" id="L258">		delegate.stop();</span>
+<span class="nc" id="L259">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

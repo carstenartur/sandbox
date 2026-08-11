@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CleanupSourceSetClassifier.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">CleanupSourceSetClassifier.java</span></div><h1>CleanupSourceSetClassifier.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+/**
+ * Classifies Java files by conventional main/test source-set roots.
+ * Classification is relative to the nearest Eclipse project or the explicitly
+ * requested source root, so unrelated workspace ancestors and Java package
+ * names cannot silently change the selected cleanup scope.
+ */
+final class CleanupSourceSetClassifier {
+
+<span class="fc" id="L24">	private enum SourceSet {</span>
+<span class="fc" id="L25">		MAIN, TEST, UNKNOWN</span>
+	}
+
+	private final Path requestedRoot;
+	private final Path projectRoot;
+	private final SourceSet rootSourceSet;
+
+<span class="fc" id="L32">	private CleanupSourceSetClassifier(Path requestedRoot) {</span>
+<span class="fc" id="L33">		this.requestedRoot= requestedRoot.toAbsolutePath().normalize();</span>
+<span class="fc" id="L34">		this.projectRoot= findProjectRoot(this.requestedRoot);</span>
+<span class="fc" id="L35">		this.rootSourceSet= sourceSetContaining(this.requestedRoot);</span>
+<span class="fc" id="L36">	}</span>
+
+	static CleanupSourceSetClassifier create(Path requestedRoot) {
+<span class="fc" id="L39">		return new CleanupSourceSetClassifier(requestedRoot);</span>
+	}
+
+	boolean isTestSource(Path path) {
+<span class="fc" id="L43">		Path normalizedPath= path.toAbsolutePath().normalize();</span>
+<span class="pc bpc" id="L44" title="2 of 4 branches missed.">		if (projectRoot != null &amp;&amp; normalizedPath.startsWith(projectRoot)) {</span>
+<span class="fc" id="L45">			SourceSet projectSourceSet= sourceSetWithin(projectRoot.relativize(normalizedPath), true);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">			return projectSourceSet == SourceSet.TEST;</span>
+		}
+<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (rootSourceSet != SourceSet.UNKNOWN) {</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">			return rootSourceSet == SourceSet.TEST;</span>
+		}
+<span class="nc bnc" id="L51" title="All 2 branches missed.">		if (isTestSegment(requestedRoot.getFileName())) {</span>
+<span class="nc" id="L52">			return true;</span>
+		}
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if (normalizedPath.startsWith(requestedRoot)) {</span>
+<span class="nc" id="L55">			boolean rootIsSourceContainer= &quot;src&quot;.equals(fileName(requestedRoot)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">			return sourceSetWithin(requestedRoot.relativize(normalizedPath), rootIsSourceContainer)</span>
+<span class="nc" id="L57">					== SourceSet.TEST;</span>
+		}
+<span class="nc" id="L59">		return false;</span>
+	}
+
+	private static Path findProjectRoot(Path start) {
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		for (Path current= start; current != null; current= current.getParent()) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">			if (Files.isRegularFile(current.resolve(&quot;.project&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L65">				return current;</span>
+			}
+		}
+<span class="nc" id="L68">		return null;</span>
+	}
+
+	private static SourceSet sourceSetContaining(Path path) {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		for (int index= path.getNameCount() - 2; index &gt;= 0; index--) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">			if (!&quot;src&quot;.equals(path.getName(index).toString())) { //$NON-NLS-1$</span>
+<span class="fc" id="L74">				continue;</span>
+			}
+<span class="fc" id="L76">			SourceSet sourceSet= sourceSet(path.getName(index + 1).toString());</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			if (sourceSet != SourceSet.UNKNOWN) {</span>
+<span class="fc" id="L78">				return sourceSet;</span>
+			}
+		}
+<span class="fc" id="L81">		return SourceSet.UNKNOWN;</span>
+	}
+
+	private static SourceSet sourceSetWithin(Path path, boolean leadingTestDirectory) {
+<span class="pc bpc" id="L85" title="3 of 6 branches missed.">		if (leadingTestDirectory &amp;&amp; path.getNameCount() &gt; 0 &amp;&amp; isTestSegment(path.getName(0))) {</span>
+<span class="nc" id="L86">			return SourceSet.TEST;</span>
+		}
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		for (int index= 0; index + 1 &lt; path.getNameCount(); index++) {</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (!&quot;src&quot;.equals(path.getName(index).toString())) { //$NON-NLS-1$</span>
+<span class="nc" id="L90">				continue;</span>
+			}
+<span class="fc" id="L92">			SourceSet sourceSet= sourceSet(path.getName(index + 1).toString());</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">			if (sourceSet != SourceSet.UNKNOWN) {</span>
+<span class="fc" id="L94">				return sourceSet;</span>
+			}
+		}
+<span class="nc" id="L97">		return SourceSet.UNKNOWN;</span>
+	}
+
+	private static SourceSet sourceSet(String name) {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		if (&quot;main&quot;.equals(name)) { //$NON-NLS-1$</span>
+<span class="fc" id="L102">			return SourceSet.MAIN;</span>
+		}
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">		return isTestSegment(name) ? SourceSet.TEST : SourceSet.UNKNOWN;</span>
+	}
+
+	private static boolean isTestSegment(Path segment) {
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">		return segment != null &amp;&amp; isTestSegment(segment.toString());</span>
+	}
+
+	private static boolean isTestSegment(String name) {
+<span class="pc bpc" id="L112" title="1 of 4 branches missed.">		return &quot;test&quot;.equals(name) || &quot;tests&quot;.equals(name); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static String fileName(Path path) {
+<span class="nc" id="L116">		Path fileName= path.getFileName();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		return fileName == null ? &quot;&quot; : fileName.toString(); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

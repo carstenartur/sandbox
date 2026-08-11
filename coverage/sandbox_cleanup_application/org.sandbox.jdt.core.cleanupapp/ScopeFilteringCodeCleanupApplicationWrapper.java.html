@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ScopeFilteringCodeCleanupApplicationWrapper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">ScopeFilteringCodeCleanupApplicationWrapper.java</span></div><h1>ScopeFilteringCodeCleanupApplicationWrapper.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Stream;
+
+import org.eclipse.equinox.app.IApplication;
+import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.jdt.internal.core.util.Util;
+import org.osgi.framework.Bundle;
+
+/**
+ * Public application wrapper that resolves {@code main}/{@code test} scope to
+ * concrete Java files before delegating to the cleanup engine.
+ */
+<span class="fc" id="L34">public final class ScopeFilteringCodeCleanupApplicationWrapper extends CodeCleanupApplicationWrapper {</span>
+
+	private static final String ARG_CONFIG= &quot;-config&quot;; //$NON-NLS-1$
+	private static final String ARG_CONFIG_LONG= &quot;--config&quot;; //$NON-NLS-1$
+	private static final String ARG_IMPORT_PROJECT= &quot;--import-project&quot;; //$NON-NLS-1$
+	private static final String ARG_MODE= &quot;--mode&quot;; //$NON-NLS-1$
+	private static final String ARG_PATCH= &quot;--patch&quot;; //$NON-NLS-1$
+	private static final String ARG_REPORT= &quot;--report&quot;; //$NON-NLS-1$
+	private static final String ARG_SCOPE= &quot;--scope&quot;; //$NON-NLS-1$
+	private static final String ARG_SOURCE= &quot;--source&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L45">	private enum RequestedScope {</span>
+<span class="fc" id="L46">		MAIN, TEST, BOTH, INVALID</span>
+	}
+
+	private record FilteredArguments(String[] arguments, boolean hasCleanupInput) {
+<span class="fc" id="L50">		FilteredArguments {</span>
+<span class="fc" id="L51">			arguments= arguments.clone();</span>
+<span class="fc" id="L52">		}</span>
+
+		@Override
+		public String[] arguments() {
+<span class="fc" id="L56">			return arguments.clone();</span>
+		}
+	}
+
+	private static final class ArgumentContext implements IApplicationContext {
+		private final IApplicationContext delegate;
+		private final String[] applicationArguments;
+
+<span class="nc" id="L64">		ArgumentContext(IApplicationContext delegate, String[] applicationArguments) {</span>
+<span class="nc" id="L65">			this.delegate= delegate;</span>
+<span class="nc" id="L66">			this.applicationArguments= applicationArguments.clone();</span>
+<span class="nc" id="L67">		}</span>
+
+		@Override
+		@SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
+		public Map getArguments() {
+<span class="nc" id="L72">			Map forwarded= new HashMap(delegate.getArguments());</span>
+<span class="nc" id="L73">			forwarded.put(APPLICATION_ARGS, applicationArguments.clone());</span>
+<span class="nc" id="L74">			return forwarded;</span>
+		}
+
+		@Override
+		public void applicationRunning() {
+<span class="nc" id="L79">			delegate.applicationRunning();</span>
+<span class="nc" id="L80">		}</span>
+
+		@Override
+		public String getBrandingApplication() {
+<span class="nc" id="L84">			return delegate.getBrandingApplication();</span>
+		}
+
+		@Override
+		public Bundle getBrandingBundle() {
+<span class="nc" id="L89">			return delegate.getBrandingBundle();</span>
+		}
+
+		@Override
+		public String getBrandingDescription() {
+<span class="nc" id="L94">			return delegate.getBrandingDescription();</span>
+		}
+
+		@Override
+		public String getBrandingId() {
+<span class="nc" id="L99">			return delegate.getBrandingId();</span>
+		}
+
+		@Override
+		public String getBrandingName() {
+<span class="nc" id="L104">			return delegate.getBrandingName();</span>
+		}
+
+		@Override
+		public String getBrandingProperty(String key) {
+<span class="nc" id="L109">			return delegate.getBrandingProperty(key);</span>
+		}
+
+		@Override
+		public void setResult(Object result, IApplication application) {
+<span class="nc" id="L114">			delegate.setResult(result, application);</span>
+<span class="nc" id="L115">		}</span>
+	}
+
+	@Override
+	public Object start(IApplicationContext context) throws NoClassDefFoundError, Exception {
+<span class="fc" id="L120">		String[] arguments= (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);</span>
+<span class="fc" id="L121">		RequestedScope scope= requestedScope(arguments);</span>
+<span class="pc bpc" id="L122" title="3 of 4 branches missed.">		if (scope == RequestedScope.BOTH || scope == RequestedScope.INVALID) {</span>
+<span class="fc" id="L123">			return super.start(context);</span>
+		}
+
+<span class="nc" id="L126">		Path emptyInput= null;</span>
+<span class="nc" id="L127">		IOException deletionFailure= null;</span>
+		Object result;
+		try {
+<span class="nc" id="L130">			FilteredArguments filtered= filterArguments(arguments, scope);</span>
+<span class="nc" id="L131">			String[] forwarded= filtered.arguments();</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			if (!filtered.hasCleanupInput()) {</span>
+<span class="nc" id="L133">				emptyInput= Files.createTempDirectory(&quot;sandbox-cleanup-empty-scope-&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L134">				forwarded= Arrays.copyOf(forwarded, forwarded.length + 1);</span>
+<span class="nc" id="L135">				forwarded[forwarded.length - 1]= emptyInput.toString();</span>
+			}
+<span class="nc" id="L137">			result= super.start(new ArgumentContext(context, forwarded));</span>
+<span class="nc" id="L138">		} catch (IOException e) {</span>
+<span class="nc" id="L139">			System.err.println(&quot;Cannot enumerate cleanup source scope: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L140">			return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);</span>
+		} finally {
+<span class="nc bnc" id="L142" title="All 2 branches missed.">			if (emptyInput != null) {</span>
+				try {
+<span class="nc" id="L144">					Files.deleteIfExists(emptyInput);</span>
+<span class="nc" id="L145">				} catch (IOException e) {</span>
+<span class="nc" id="L146">					deletionFailure= e;</span>
+				}
+			}
+		}
+<span class="nc bnc" id="L150" title="All 2 branches missed.">		if (deletionFailure != null) {</span>
+<span class="nc" id="L151">			System.err.println(&quot;Cannot remove temporary cleanup scope directory: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L152">					+ deletionFailure.getMessage());</span>
+<span class="nc" id="L153">			return Integer.valueOf(CodeCleanupApplication.EXIT_ERROR);</span>
+		}
+<span class="nc" id="L155">		return result;</span>
+	}
+
+	static String[] filterArgumentsForScope(String[] arguments) throws IOException {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		if (arguments == null) {</span>
+<span class="fc" id="L160">			throw new IllegalArgumentException(&quot;Application arguments are unavailable.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L162">		RequestedScope scope= requestedScope(arguments);</span>
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">		if (scope == RequestedScope.BOTH || scope == RequestedScope.INVALID) {</span>
+<span class="fc" id="L164">			return arguments.clone();</span>
+		}
+<span class="fc" id="L166">		return filterArguments(arguments, scope).arguments();</span>
+	}
+
+	private static FilteredArguments filterArguments(String[] arguments, RequestedScope scope) throws IOException {
+<span class="fc" id="L170">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L171">		boolean hasCleanupInput= false;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">		for (int index= 0; index &lt; arguments.length; index++) {</span>
+<span class="fc" id="L173">			String argument= arguments[index];</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			if (ARG_SOURCE.equals(argument)) {</span>
+<span class="fc" id="L175">				result.add(argument);</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">				if (++index &gt;= arguments.length) {</span>
+					// Keep the incomplete option intact so the delegate reports a syntax
+					// error instead of receiving the empty-scope fallback as its value.
+<span class="nc" id="L179">					hasCleanupInput= true;</span>
+<span class="nc" id="L180">					break;</span>
+				}
+<span class="fc" id="L182">				List&lt;String&gt; selected= expandRoot(arguments[index], scope);</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				if (selected.isEmpty()) {</span>
+<span class="nc" id="L184">					result.remove(result.size() - 1);</span>
+<span class="nc" id="L185">				} else {</span>
+<span class="fc" id="L186">					result.add(selected.getFirst());</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">					for (int selectedIndex= 1; selectedIndex &lt; selected.size(); selectedIndex++) {</span>
+<span class="nc" id="L188">						result.add(ARG_SOURCE);</span>
+<span class="nc" id="L189">						result.add(selected.get(selectedIndex));</span>
+					}
+<span class="fc" id="L191">					hasCleanupInput= true;</span>
+				}
+<span class="fc" id="L193">				continue;</span>
+			}
+<span class="fc bfc" id="L195" title="All 2 branches covered.">			if (takesValue(argument)) {</span>
+<span class="fc" id="L196">				result.add(argument);</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">				if (++index &lt; arguments.length) {</span>
+<span class="fc" id="L198">					result.add(arguments[index]);</span>
+				}
+<span class="fc" id="L200">				continue;</span>
+			}
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">			if (argument.startsWith(&quot;-&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L203">				result.add(argument);</span>
+<span class="nc" id="L204">				continue;</span>
+			}
+
+<span class="fc" id="L207">			List&lt;String&gt; selected= expandRoot(argument, scope);</span>
+<span class="fc" id="L208">			result.addAll(selected);</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">			hasCleanupInput|= !selected.isEmpty();</span>
+		}
+<span class="fc" id="L211">		return new FilteredArguments(result.toArray(String[]::new), hasCleanupInput);</span>
+	}
+
+	private static boolean takesValue(String argument) {
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		return ARG_CONFIG.equals(argument)</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">				|| ARG_CONFIG_LONG.equals(argument)</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">				|| ARG_IMPORT_PROJECT.equals(argument)</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">				|| ARG_MODE.equals(argument)</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">				|| ARG_PATCH.equals(argument)</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">				|| ARG_REPORT.equals(argument)</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">				|| ARG_SCOPE.equals(argument);</span>
+	}
+
+	private static List&lt;String&gt; expandRoot(String value, RequestedScope scope) throws IOException {
+<span class="fc" id="L225">		File root= new File(value);</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		if (!root.exists()) {</span>
+<span class="nc" id="L227">			return List.of(value);</span>
+		}
+<span class="fc" id="L229">		Path inputPath= root.toPath();</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		Path classificationRoot= root.isDirectory()</span>
+<span class="fc" id="L231">				? inputPath</span>
+<span class="nc" id="L232">				: inputPath.toAbsolutePath().normalize().getParent();</span>
+<span class="fc" id="L233">		CleanupSourceSetClassifier classifier= CleanupSourceSetClassifier.create(</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">				classificationRoot == null ? inputPath : classificationRoot);</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (root.isFile()) {</span>
+<span class="nc bnc" id="L236" title="All 4 branches missed.">			if (!Util.isJavaLikeFileName(root.getPath()) || accepts(classifier, inputPath, scope)) {</span>
+<span class="nc" id="L237">				return List.of(value);</span>
+			}
+<span class="nc" id="L239">			return List.of();</span>
+		}
+
+<span class="fc" id="L242">		try (Stream&lt;Path&gt; paths= Files.walk(inputPath)) {</span>
+<span class="fc" id="L243">			return paths</span>
+<span class="fc" id="L244">					.filter(Files::isRegularFile)</span>
+<span class="fc" id="L245">					.filter(path -&gt; Util.isJavaLikeFileName(path.toString()))</span>
+<span class="fc" id="L246">					.filter(path -&gt; accepts(classifier, path, scope))</span>
+<span class="fc" id="L247">					.map(path -&gt; path.toFile().getPath())</span>
+<span class="fc" id="L248">					.sorted()</span>
+<span class="fc" id="L249">					.toList();</span>
+		}
+	}
+
+	private static boolean accepts(CleanupSourceSetClassifier classifier, Path path, RequestedScope scope) {
+<span class="fc" id="L254">		boolean testSource= classifier.isTestSource(path);</span>
+<span class="fc bfc" id="L255" title="All 4 branches covered.">		return scope == RequestedScope.TEST ? testSource : !testSource;</span>
+	}
+
+	private static RequestedScope requestedScope(String[] arguments) {
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">		if (arguments == null) {</span>
+<span class="nc" id="L260">			return RequestedScope.INVALID;</span>
+		}
+<span class="fc" id="L262">		RequestedScope result= RequestedScope.BOTH;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">		for (int index= 0; index &lt; arguments.length; index++) {</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">			if (!ARG_SCOPE.equals(arguments[index])) {</span>
+<span class="fc" id="L265">				continue;</span>
+			}
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">			if (++index &gt;= arguments.length) {</span>
+<span class="nc" id="L268">				return RequestedScope.INVALID;</span>
+			}
+			try {
+<span class="fc" id="L271">				result= RequestedScope.valueOf(arguments[index].toUpperCase(Locale.ROOT));</span>
+<span class="pc" id="L272">			} catch (@SuppressWarnings(&quot;unused&quot;) IllegalArgumentException e) {</span>
+<span class="nc" id="L273">				return RequestedScope.INVALID;</span>
+			}
+		}
+<span class="fc" id="L276">		return result;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

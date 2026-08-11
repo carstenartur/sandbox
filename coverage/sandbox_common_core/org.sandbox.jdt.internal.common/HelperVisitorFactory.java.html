@@ -1218,10 +1218,10 @@ public class HelperVisitorFactory {
 	public static &lt;V, T&gt; void callMethodInvocationVisitor(ASTNode node, ReferenceHolder&lt;V, T&gt; dataholder, Set&lt;ASTNode&gt; nodesprocessed,
 			BiPredicate&lt;MethodInvocation, ReferenceHolder&lt;V, T&gt;&gt; bs) {
 
-<span class="fc" id="L1221">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="fc" id="L1222">		hv.addMethodInvocation(bs);</span>
-<span class="fc" id="L1223">		hv.build(node);</span>
-<span class="fc" id="L1224">	}</span>
+<span class="nc" id="L1221">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="nc" id="L1222">		hv.addMethodInvocation(bs);</span>
+<span class="nc" id="L1223">		hv.build(node);</span>
+<span class="nc" id="L1224">	}</span>
 
 	/**
 	 *

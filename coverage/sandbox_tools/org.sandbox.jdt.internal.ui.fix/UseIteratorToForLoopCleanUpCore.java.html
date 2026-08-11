@@ -44,50 +44,50 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUp {
 <span class="nc" id="L44">		super(options);</span>
 <span class="nc" id="L45">	}</span>
 
-<span class="fc" id="L47">	public UseIteratorToForLoopCleanUpCore() {</span>
-<span class="fc" id="L48">	}</span>
+<span class="nc" id="L47">	public UseIteratorToForLoopCleanUpCore() {</span>
+<span class="nc" id="L48">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="fc" id="L52">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="nc" id="L52">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="fc" id="L56">		return isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);</span>
+<span class="nc" id="L56">		return isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="fc" id="L61">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="nc" id="L61">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (compilationUnit == null) {</span>
 <span class="nc" id="L63">			return null;</span>
 		}
-<span class="fc" id="L65">		EnumSet&lt;UseIteratorToForLoopFixCore&gt; computeFixSet= computeFixSet();</span>
-<span class="pc bpc" id="L66" title="2 of 4 branches missed.">		if (!isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED) || computeFixSet.isEmpty()</span>
+<span class="nc" id="L65">		EnumSet&lt;UseIteratorToForLoopFixCore&gt; computeFixSet= computeFixSet();</span>
+<span class="nc bnc" id="L66" title="All 4 branches missed.">		if (!isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED) || computeFixSet.isEmpty()</span>
 //				|| !JavaModelUtil.is1d8OrHigher(compilationUnit.getJavaElement().getJavaProject())
 				) {
 <span class="nc" id="L69">			return null;</span>
 		}
-<span class="fc" id="L71">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L72">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
-<span class="fc" id="L73">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesprocessed,</span>
-<span class="fc" id="L74">				isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED)));</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (operations.isEmpty()) {</span>
-<span class="fc" id="L76">			return null;</span>
+<span class="nc" id="L71">		Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L72">		Set&lt;ASTNode&gt; nodesprocessed= new HashSet&lt;&gt;();</span>
+<span class="nc" id="L73">		computeFixSet.forEach(i -&gt; i.findOperations(compilationUnit, operations, nodesprocessed,</span>
+<span class="nc" id="L74">				isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_ONLY_IF_LOOP_VAR_USED)));</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">		if (operations.isEmpty()) {</span>
+<span class="nc" id="L76">			return null;</span>
 		}
-<span class="fc" id="L78">		return new CompilationUnitRewriteOperationsFixCore(ToolsCleanUpFix_refactor, compilationUnit,</span>
-<span class="fc" id="L79">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));</span>
+<span class="nc" id="L78">		return new CompilationUnitRewriteOperationsFixCore(ToolsCleanUpFix_refactor, compilationUnit,</span>
+<span class="nc" id="L79">				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));</span>
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="fc" id="L84">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED)) {</span>
+<span class="nc" id="L84">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">		if (isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED)) {</span>
 <span class="nc" id="L86">			result.add(Messages.format(ToolsCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
 <span class="nc" id="L87">					computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString)</span>
 <span class="nc" id="L88">					.collect(Collectors.toList())) }));</span>
 		}
-<span class="fc" id="L90">		return result.toArray(new String[0]);</span>
+<span class="nc" id="L90">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override
@@ -100,12 +100,12 @@ public class UseIteratorToForLoopCleanUpCore extends AbstractCleanUp {
 	}
 
 	private EnumSet&lt;UseIteratorToForLoopFixCore&gt; computeFixSet() {
-<span class="fc" id="L103">		EnumSet&lt;UseIteratorToForLoopFixCore&gt; fixSet= EnumSet.noneOf(UseIteratorToForLoopFixCore.class);</span>
+<span class="nc" id="L103">		EnumSet&lt;UseIteratorToForLoopFixCore&gt; fixSet= EnumSet.noneOf(UseIteratorToForLoopFixCore.class);</span>
 
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED)) {</span>
-<span class="fc" id="L106">			fixSet= EnumSet.allOf(UseIteratorToForLoopFixCore.class);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (isEnabled(CONTROL_STATEMENTS_CONVERT_FOR_LOOP_TO_ENHANCED)) {</span>
+<span class="nc" id="L106">			fixSet= EnumSet.allOf(UseIteratorToForLoopFixCore.class);</span>
 		}
-<span class="fc" id="L108">		return fixSet;</span>
+<span class="nc" id="L108">		return fixSet;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
