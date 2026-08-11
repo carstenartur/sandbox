@@ -308,11 +308,19 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			importRewriter.removeImport(JUNIT3_TEST_CASE);
 		}
 
+		boolean removesSelfSuite= Arrays.stream(node.getMethods())
+				.anyMatch(method -> JUnit3SuiteModel.isSuiteBuilder(method)
+						&& JUnit3LegacyShape.isSelfSuite(method, node));
+		if (removesSelfSuite) {
+			// Remove the legacy simple-name imports before requesting Jupiter @Test.
+			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
+			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
+		}
+
 		List<MethodDeclaration> orderedTests= orderedTestMethods(node);
 		if (orderedTests.size() > 1) {
 			addTestMethodOrder(node, rewriter, ast, importRewriter, group);
 		}
-		boolean removedSelfSuite= false;
 		for (MethodDeclaration method : node.getMethods()) {
 			if (method.isConstructor() && JUnit3LegacyShape.isRemovableConstructor(method)) {
 				rewriter.remove(method, group);
@@ -320,7 +328,6 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			}
 			if (JUnit3SuiteModel.isSuiteBuilder(method) && JUnit3LegacyShape.isSelfSuite(method, node)) {
 				rewriter.remove(method, group);
-				removedSelfSuite= true;
 				continue;
 			}
 			if (isLifecycleMethod(method, "setUp")) { //$NON-NLS-1$
@@ -339,12 +346,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				rewriteAssertions(method, rewriter, ast, group, importRewriter);
 			}
 		}
-		if (removedSelfSuite) {
-			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
-			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
-		}
 	}
-
 
 	private void addTestMethodOrder(TypeDeclaration type, ASTRewrite rewrite, AST ast,
 			ImportRewrite importRewrite, TextEditGroup group) {
