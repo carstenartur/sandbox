@@ -451,7 +451,10 @@ public class RuleExpectedExceptionJUnitPlugin extends TriggerPatternCleanupPlugi
 		AtomicBoolean result= new AtomicBoolean();
 		root.accept(new ASTVisitor() {
 			@Override
-			public boolean visit(Annotation annotation) {
+			public boolean preVisit2(ASTNode node) {
+				if (!(node instanceof Annotation annotation)) {
+					return !result.get();
+				}
 				if (ASTNodes.getParent(annotation, FieldDeclaration.class) == migratedField) {
 					return true;
 				}
