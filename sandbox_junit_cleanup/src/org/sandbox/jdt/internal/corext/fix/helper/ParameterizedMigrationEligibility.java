@@ -210,6 +210,7 @@ public final class ParameterizedMigrationEligibility {
 						&& isAnnotation(annotation, PARAMETER_ANNOTATION, "Parameter")) { //$NON-NLS-1$
 					return true;
 				}
+			}
 		}
 		return false;
 	}
