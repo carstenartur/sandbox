@@ -93,7 +93,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(OrderAnnotation.class)
-
 public class MyTest {
 
     @BeforeEach
@@ -107,13 +106,11 @@ public class MyTest {
     }
 
     @Order(1)
-
     @Test
     public void testFirst() {
     }
 
     @Order(2)
-
     @Test
     public void testSecond() {
     }
@@ -155,7 +152,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(OrderAnnotation.class)
-
 public class MyTest {
 
     @BeforeEach
@@ -163,7 +159,6 @@ public class MyTest {
     }
 
     @Order(2)
-
     @Test
     public void testAssertions() {
         Assertions.assertEquals(42, 42, "Values should match");
@@ -174,7 +169,6 @@ public class MyTest {
     }
 
     @Order(1)
-
     @Test
     public void testFail() {
         Assertions.fail("This test should fail");
