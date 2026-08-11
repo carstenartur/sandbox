@@ -45,7 +45,7 @@ public final class ReportingJUnitCleanUpCore extends JUnitCleanUpCore {
 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= super.createPlan(project, compilationUnits, monitor);
 		String plannerJson= result.diagnostics().toJson();
 		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
-			Analysis analysis= getBestEffortAnalysis(project);
+			Analysis analysis= getMigrationAnalysis(project);
 			diagnosticsByProject.put(project, analysis.toJson(plannerJson));
 		} else {
 			diagnosticsByProject.put(project, plannerJson);
