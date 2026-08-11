@@ -11,14 +11,16 @@
    <h1>Using JUnit Migration</h1>
    <h2>Entry point</h2>
    <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>JUnit Migration (Sandbox)</strong>.</p>
+   <p>JUnit migration is intentionally not offered under <strong>Java &gt; Editor &gt; Save Actions</strong>.
+      Its project-wide scope discovery, explicit preview, coordinated changes, and runtime verification are not safe as an implicit per-save editor action.</p>
 
    <h2>Choose the execution policy first</h2>
    <ul>
       <li>Leave <strong>Best effort</strong> disabled for a normal fail-closed migration. This is the recommended default.</li>
       <li>Enable <strong>Best effort</strong> only when keeping safe partial progress is useful even though manual completion will be required.</li>
    </ul>
-   <p>Best-effort mode is never enabled implicitly by a quick-select profile and is disabled for save actions.
-      This prevents an incomplete project-wide migration from being introduced as a routine editor action.</p>
+   <p>Best-effort mode is never enabled implicitly by a migration preset. Every preset selects a strict, complete option state;
+      Best Effort remains a separate explicit policy choice.</p>
 
    <h2>When a transformation is offered</h2>
    <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
@@ -26,7 +28,7 @@
 
    <h2>Recommended strict workflow</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
+      <li>Select a strict migration preset or configure the individual transformations.</li>
       <li>Run the cleanup on a version-controlled project or closed source selection.</li>
       <li>Inspect every file in the preview before accepting the change.</li>
       <li>Compile and execute the same relevant tests used for the baseline.</li>
