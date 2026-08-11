@@ -2,5 +2,6 @@
 <toc label="Sandbox – JUnit Migration" topic="html/index.html">
    <topic label="Overview" href="html/index.html"/>
    <topic label="Using this feature" href="html/usage.html"/>
+   <topic label="Best-effort migration and manual completion" href="html/best-effort.html"/>
    <topic label="Reference, safety, and limitations" href="html/reference.html"/>
 </toc>
