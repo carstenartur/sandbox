@@ -20,6 +20,8 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 
 import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 
 /** JUnit cleanup core that retains privacy-preserving planning evidence. */
@@ -41,7 +43,13 @@ public final class ReportingJUnitCleanUpCore extends JUnitCleanUpCore {
 			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
 		diagnosticsByProject.remove(project);
 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= super.createPlan(project, compilationUnits, monitor);
-		diagnosticsByProject.put(project, result.diagnostics().toJson());
+		String plannerJson= result.diagnostics().toJson();
+		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
+			Analysis analysis= getBestEffortAnalysis(project);
+			diagnosticsByProject.put(project, analysis.toJson(plannerJson));
+		} else {
+			diagnosticsByProject.put(project, plannerJson);
+		}
 		return result;
 	}
 
