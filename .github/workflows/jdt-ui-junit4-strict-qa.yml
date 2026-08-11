@@ -78,9 +78,27 @@ jobs:
         run: |
           set -euo pipefail
           source sandbox/qa/upstream-jdt/pins.env
+
+          normalize_repository() {
+            local repository="$1"
+            repository="${repository#https://github.com/}"
+            repository="${repository#http://github.com/}"
+            repository="${repository#git@github.com:}"
+            repository="${repository%.git}"
+            repository="${repository%/}"
+            printf '%s\n' "$repository"
+          }
+
           test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
           test "$(git -C upstream/eclipse.jdt.ui rev-parse "${PIN_JDT_UI_REF}^{commit}")" = "$PIN_JDT_UI_COMMIT"
-          test "$(git -C upstream/eclipse.jdt.ui remote get-url origin)" = "$PIN_JDT_UI_REPOSITORY"
+
+          actual_repository="$(git -C upstream/eclipse.jdt.ui remote get-url origin)"
+          if [[ "$(normalize_repository "$actual_repository")" != \
+                "$(normalize_repository "$PIN_JDT_UI_REPOSITORY")" ]]; then
+            printf 'Unexpected JDT UI origin. Expected %s, got %s.\n' \
+              "$PIN_JDT_UI_REPOSITORY" "$actual_repository" >&2
+            exit 1
+          fi
 
       - name: Validate the dedicated JDT UI corpus contract
         working-directory: sandbox
