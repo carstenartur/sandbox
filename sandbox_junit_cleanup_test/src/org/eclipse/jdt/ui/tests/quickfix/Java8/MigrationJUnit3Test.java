@@ -191,7 +191,6 @@ public class MigrationJUnit3Test {
 				import org.junit.jupiter.api.TestMethodOrder;
 
 				@TestMethodOrder(OrderAnnotation.class)
-
 				public class MyTest {
 				    @Order(1)
 				    @Test
@@ -406,7 +405,6 @@ public class MigrationJUnit3Test {
 				import org.junit.jupiter.api.TestMethodOrder;
 
 				@TestMethodOrder(OrderAnnotation.class)
-
 				public class MyTest {
 				    @BeforeEach
 				    protected void setUp() {
