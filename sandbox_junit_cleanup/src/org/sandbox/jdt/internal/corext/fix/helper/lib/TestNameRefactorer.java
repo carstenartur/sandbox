@@ -25,9 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IField;
 import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -228,7 +228,7 @@ public final class TestNameRefactorer {
 		MethodDeclaration method= ast.newMethodDeclaration();
 		method.setName(ast.newSimpleName(uniqueMethodName(owner,
 				"initialize" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1) //$NON-NLS-1$
-						+ "FromTestInfo")); //$NON-NLS-1$
+						+ "FromTestInfo"))); //$NON-NLS-1$
 		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
 		MarkerAnnotation beforeEach= ast.newMarkerAnnotation();
 		beforeEach.setTypeName(ast.newName(beforeEachName));
@@ -295,7 +295,10 @@ public final class TestNameRefactorer {
 		AtomicBoolean other= new AtomicBoolean();
 		root.accept(new ASTVisitor() {
 			@Override
-			public boolean visit(Annotation annotation) {
+			public boolean preVisit2(ASTNode node) {
+				if (!(node instanceof Annotation annotation)) {
+					return !other.get();
+				}
 				if (ASTNodes.getParent(annotation, FieldDeclaration.class) == migratedField) {
 					return true;
 				}
