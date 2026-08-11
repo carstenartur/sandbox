@@ -135,6 +135,10 @@ if [[ -n "$JDT_CORE_BINARIES" ]]; then
     "$PIN_JDT_CORE_BINARIES_REPOSITORY" "$PIN_JDT_CORE_BINARIES_REF" "$PIN_JDT_CORE_BINARIES_COMMIT"
 fi
 
+PRIMARY_TEST_MODULE=${PIN_PRIMARY_TEST_POM%/pom.xml}
+[[ "$PRIMARY_TEST_MODULE" != "$PIN_PRIMARY_TEST_POM" && -n "$PRIMARY_TEST_MODULE" ]] \
+  || fail "PIN_PRIMARY_TEST_POM must identify a module pom.xml"
+[[ -f "$JDT_CORE/pom.xml" ]] || fail "Missing JDT Core reactor POM"
 [[ -f "$JDT_CORE/$PIN_PRIMARY_TEST_POM" ]] || fail "Missing pinned test POM"
 [[ -d "$JDT_CORE/$PIN_PRIMARY_SOURCE" ]] || fail "Missing pinned source directory"
 [[ -f "$JDT_CORE/$PIN_PRIMARY_PROJECT/.project" ]] || fail "Missing pinned Eclipse project description"
@@ -253,17 +257,25 @@ run_tests() {
   local phase=$1 destination=$2
   local tmp="$OUTPUT/tmp/$phase"
   mkdir -p "$tmp"
-  printf '%s\n' "${MAVEN_BIN} --batch-mode --no-transfer-progress -U -f ${PIN_PRIMARY_TEST_POM} clean verify" \
-    > "$destination-command.txt"
+  local -a maven_args=(
+    --batch-mode
+    --no-transfer-progress
+    -U
+    -Djava.io.tmpdir="$tmp"
+    -f pom.xml
+    --projects "$PRIMARY_TEST_MODULE"
+    --also-make
+    clean verify
+  )
+  printf '%q ' "$MAVEN_BIN" "${maven_args[@]}" > "$destination-command.txt"
+  printf '\n' >> "$destination-command.txt"
   local -a display_prefix=()
   if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
     display_prefix=(xvfb-run --auto-servernum)
   fi
   (
     cd "$JDT_CORE"
-    "${display_prefix[@]}" "$MAVEN_BIN" --batch-mode --no-transfer-progress -U \
-      -Djava.io.tmpdir="$tmp" \
-      -f "$PIN_PRIMARY_TEST_POM" clean verify
+    "${display_prefix[@]}" "$MAVEN_BIN" "${maven_args[@]}"
   ) 2>&1 | tee "$OUTPUT/logs/$phase-maven.log"
   copy_reports "$destination"
 }
