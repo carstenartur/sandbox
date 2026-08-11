@@ -20,10 +20,24 @@ on:
         default: false
         type: boolean
       run_full_migration:
-        description: Build Sandbox and produce complete project-wide before/after migration evidence
+        description: Build Sandbox and produce complete JDT Core/JUnit 3 before/after migration evidence
         required: true
         default: true
         type: boolean
+      run_jdt_ui_migration:
+        description: Build Sandbox and produce dedicated real JDT UI/JUnit 4 migration evidence
+        required: true
+        default: true
+        type: boolean
+      jdt_ui_mode:
+        description: JDT UI migration policy to verify
+        required: true
+        default: strict
+        type: choice
+        options:
+          - strict
+          - best-effort
+          - both
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,10 +55,12 @@ jobs:
       - name: Checkout Sandbox
         uses: actions/checkout@v6
 
-      - name: Validate Oomph, project application, corpus and evidence comparators
+      - name: Validate Oomph, JDT Core, JDT UI, corpus and evidence comparators
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 qa/upstream-jdt/verify_contract.py
+        run: |
+          python3 qa/upstream-jdt/verify_contract.py
+          python3 qa/upstream-jdt/verify_jdt_ui_contract.py
 
       - name: Verify repository whitespace
         run: git diff --check
@@ -164,7 +180,7 @@ jobs:
           if-no-files-found: warn
 
   full-migration:
-    name: Build Sandbox and verify the real JDT migration before and after
+    name: Build Sandbox and verify the real JDT Core/JUnit 3 migration
     if: github.event_name == 'workflow_dispatch' && inputs.run_full_migration == true
     needs: validate-contract
     runs-on: ubuntu-24.04
@@ -284,13 +300,152 @@ jobs:
             cp "$RUNNER_TEMP/upstream-jdt-workspace/.metadata/.log" evidence/eclipse-workspace/.log
           fi
 
-      - name: Upload complete upstream JDT migration evidence
+      - name: Upload complete upstream JDT Core migration evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: upstream-jdt-migration-evidence-${{ github.run_number }}
+          name: upstream-jdt-core-migration-evidence-${{ github.run_number }}
           path: |
             evidence/**
+            sandbox/**/target/surefire-reports/**
+          retention-days: 30
+          if-no-files-found: error
+
+  jdt-ui-junit4-migration:
+    name: Verify real JDT UI/JUnit 4 strict and best-effort migration
+    if: github.event_name == 'workflow_dispatch' && inputs.run_jdt_ui_migration == true
+    needs: validate-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          path: sandbox
+
+      - name: Checkout the pinned JDT UI R4_40 corpus
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js for Sandbox CSS tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and headless Eclipse dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              echo "Disabling unrelated runner APT source: $source"
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Verify the exact pinned JDT UI commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          source sandbox/qa/upstream-jdt/pins.env
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse "${PIN_JDT_UI_REF}^{commit}")" = "$PIN_JDT_UI_COMMIT"
+
+      - name: Build and test the Sandbox product under test
+        working-directory: sandbox
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Locate the materialized Linux product
+        id: jdt_ui_product
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox/sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          if (( ${#launchers[@]} != 1 )); then
+            printf 'Expected one materialized Linux Eclipse launcher, found %d:\n' "${#launchers[@]}" >&2
+            printf '%s\n' "${launchers[@]}" >&2
+            exit 1
+          fi
+          launcher="$(realpath "${launchers[0]}")"
+          echo "launcher=$launcher" >> "$GITHUB_OUTPUT"
+          printf 'Using Sandbox product: %s\n' "$launcher"
+
+      - name: Execute the dedicated pinned JDT UI before/after tracks
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          requested='${{ inputs.jdt_ui_mode }}'
+          if [[ "$requested" == both ]]; then
+            modes=(strict best-effort)
+          else
+            modes=("$requested")
+          fi
+          mkdir -p "$GITHUB_WORKSPACE/jdt-ui-evidence"
+          for mode in "${modes[@]}"; do
+            workspace="$RUNNER_TEMP/jdt-ui-$mode-workspace"
+            output="$GITHUB_WORKSPACE/jdt-ui-evidence/$mode"
+            mkdir -p "$workspace" "$output"
+            bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
+              --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+              --workspace "$workspace" \
+              --sandbox-eclipse "${{ steps.jdt_ui_product.outputs.launcher }}" \
+              --mode "$mode" \
+              --output "$output" \
+              --allow-clean-workspace
+          done
+
+      - name: Collect imported JDT UI workspace logs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p jdt-ui-evidence/workspace-logs
+          for workspace in "$RUNNER_TEMP"/jdt-ui-*-workspace; do
+            [[ -d "$workspace" ]] || continue
+            mode=$(basename "$workspace")
+            if [[ -f "$workspace/.metadata/.log" ]]; then
+              cp "$workspace/.metadata/.log" "jdt-ui-evidence/workspace-logs/$mode.log"
+            fi
+          done
+
+      - name: Upload complete real JDT UI JUnit 4 migration evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-jdt-ui-junit4-evidence-${{ github.run_number }}
+          path: |
+            jdt-ui-evidence/**
             sandbox/**/target/surefire-reports/**
           retention-days: 30
           if-no-files-found: error
