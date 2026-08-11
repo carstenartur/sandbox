@@ -66,7 +66,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();
 	private final Map<IJavaProject, Set<String>> verifiedClosedScopes= new HashMap<>();
 	private final Set<IJavaProject> rejectedScopes= new HashSet<>();
-	private final Map<IJavaProject, Analysis> bestEffortAnalyses= new HashMap<>();
+	private final Map<IJavaProject, Analysis> migrationAnalyses= new HashMap<>();
 
 	public JUnitCleanUpCore(final Map<String, String> options) {
 		super(options);
@@ -89,25 +89,23 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
 		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || fixes.isEmpty()) {
-			bestEffortAnalyses.remove(project);
+			migrationAnalyses.remove(project);
 			return MultiFileCleanUpPlanResult.noPlan();
 		}
 		if (monitor != null && monitor.isCanceled()) {
 			throw new OperationCanceledException();
 		}
-		boolean bestEffort= isEnabled(JUnitMigrationOptions.BEST_EFFORT) && isEnabled(JUNIT_CLEANUP);
-		Analysis bestEffortAnalysis= bestEffort
+
+		boolean junit4Enabled= isEnabled(JUNIT_CLEANUP);
+		boolean bestEffort= junit4Enabled && isEnabled(JUnitMigrationOptions.BEST_EFFORT);
+		Analysis analysis= junit4Enabled
 				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, monitor)
 				: Analysis.empty();
-		if (bestEffort) {
-			bestEffortAnalyses.put(project, bestEffortAnalysis);
-		} else {
-			bestEffortAnalyses.remove(project);
-		}
+		migrationAnalyses.put(project, analysis);
 
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
 		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
-				&& !bestEffortAnalysis.disableCoordinatedExternalResource();
+				&& !(bestEffort && analysis.disableCoordinatedExternalResource());
 		JUnitMultiFilePlanner.PlanningOptions planningOptions=
 				new JUnitMultiFilePlanner.PlanningOptions(
 						migrateExternalResources,
@@ -132,16 +130,24 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (!(isEnabled(JUNIT_CLEANUP) || isEnabled(JUNIT3_CLEANUP)) || computeFixSet.isEmpty()) {
 			return null;
 		}
+
+		boolean bestEffort= isEnabled(JUnitMigrationOptions.BEST_EFFORT) && isEnabled(JUNIT_CLEANUP);
+		Analysis analysis= migrationAnalyses.getOrDefault(
+				context.getCompilationUnit().getJavaProject(), Analysis.empty());
+		List<JUnitBestEffortSupport.Gap> localGaps= analysis.gapsFor(context.getCompilationUnit());
+		if (!bestEffort && !localGaps.isEmpty()) {
+			// Strict mode is atomic at compilation-unit level. This prevents a safe
+			// looking local annotation rewrite from detaching a test class from an
+			// unsupported runner, rule, parameter source, or lifecycle contract.
+			return null;
+		}
+
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
 		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
-		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
-			Analysis analysis= bestEffortAnalyses.get(context.getCompilationUnit().getJavaProject());
-			if (analysis != null) {
-				JUnitBestEffortSupport.addMarkerOperation(compilationUnit,
-						analysis.gapsFor(context.getCompilationUnit()), operations);
-			}
+		if (bestEffort) {
+			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, operations);
 		}
 		if (operations.isEmpty()) {
 			return null;
@@ -150,9 +156,9 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
 	}
 
-	/** Returns best-effort diagnostics captured during the latest project plan. */
-	protected Analysis getBestEffortAnalysis(IJavaProject project) {
-		return bestEffortAnalyses.getOrDefault(project, Analysis.empty());
+	/** Returns difficult-construct analysis captured during the latest project plan. */
+	protected Analysis getMigrationAnalysis(IJavaProject project) {
+		return migrationAnalyses.getOrDefault(project, Analysis.empty());
 	}
 
 	@Override
