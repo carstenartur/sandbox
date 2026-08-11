@@ -196,6 +196,7 @@ public final class JUnit3LegacyShape {
 			if (current instanceof MethodDeclaration method) {
 				return method;
 			}
+		}
 		return null;
 	}
 
