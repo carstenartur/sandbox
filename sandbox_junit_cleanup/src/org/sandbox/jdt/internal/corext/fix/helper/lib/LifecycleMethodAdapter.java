@@ -150,9 +150,8 @@ public final class LifecycleMethodAdapter {
 	private static void replaceThrowsThrowableWithException(MethodDeclaration method, ASTRewrite rewriter,
 			AST ast, TextEditGroup group) {
 		boolean alreadyThrowsException= method.thrownExceptionTypes().stream()
-				.filter(Type.class::isInstance)
-				.map(Type.class::cast)
-				.anyMatch(type -> isType(type, "java.lang.Exception", "Exception")); //$NON-NLS-1$ //$NON-NLS-2$
+				.anyMatch(exception -> exception instanceof Type type
+						&& isType(type, "java.lang.Exception", "Exception")); //$NON-NLS-1$ //$NON-NLS-2$
 		ListRewrite exceptions= rewriter.getListRewrite(method,
 				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
 		for (Object exceptionObject : method.thrownExceptionTypes()) {
