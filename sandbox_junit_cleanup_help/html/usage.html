@@ -12,22 +12,45 @@
    <h2>Entry point</h2>
    <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>JUnit Migration (Sandbox)</strong>.</p>
 
-   <h2>When it is offered</h2>
-   <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.</p>
+   <h2>Choose the execution policy first</h2>
+   <ul>
+      <li>Leave <strong>Best effort</strong> disabled for a normal fail-closed migration. This is the recommended default.</li>
+      <li>Enable <strong>Best effort</strong> only when keeping safe partial progress is useful even though manual completion will be required.</li>
+   </ul>
+   <p>Best-effort mode is never enabled implicitly by a quick-select profile and is disabled for save actions.
+      This prevents an incomplete project-wide migration from being introduced as a routine editor action.</p>
 
-   <h2>Recommended workflow</h2>
+   <h2>When a transformation is offered</h2>
+   <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
+      Coordinated rules and fixtures additionally require the complete source lifecycle scope.</p>
+
+   <h2>Recommended strict workflow</h2>
    <ol>
       <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
+      <li>Run the cleanup on a version-controlled project or closed source selection.</li>
+      <li>Inspect every file in the preview before accepting the change.</li>
+      <li>Compile and execute the same relevant tests used for the baseline.</li>
+      <li>Compare test identities, counts, states, and parameterized invocation multiplicity.</li>
       <li>Expand the scope only after the result is understood.</li>
    </ol>
+
+   <h2>Recommended best-effort workflow</h2>
+   <ol>
+      <li>Create a dedicated migration branch.</li>
+      <li>Enable the desired JUnit transformations and the explicit best-effort switch.</li>
+      <li>Review the preview and the structured diagnostics together.</li>
+      <li>Apply the change and search the project for <code>Sandbox JUnit migration gap</code>.</li>
+      <li>Complete every generated <code>@todo</code> marker using its reason code and remediation.</li>
+      <li>Compile and run the full affected test scope; do not treat a partial source conversion as semantic proof.</li>
+   </ol>
+   <p>See <a href="best-effort.html">Best-effort migration and manual completion</a> for marker examples and supported diagnostics.</p>
 
    <h2>Screenshot regeneration</h2>
    <p>The image in this Help bundle is generated from a real Eclipse workbench by
       <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
       <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+   <p>The screenshot build is an integration test: it must load the cleanup extension, open the real profile
+      dialog, find the JUnit tab, lay out all labels, and package the Help bundle in the product reactor.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>
