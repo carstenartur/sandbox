@@ -489,9 +489,15 @@ def validate_runner(root: Path, pins: dict[str, str]) -> None:
         ".sandbox-jdt-migration-qa-pins.env",
         "--allow-clean-workspace",
         "test-inventory-comparison.json",
+        'PRIMARY_TEST_MODULE=${PIN_PRIMARY_TEST_POM%/pom.xml}',
+        "-f pom.xml",
+        '--projects "$PRIMARY_TEST_MODULE"',
+        "--also-make",
     ):
         if required not in text:
             fail(f"Runner is missing required fail-closed contract: {required}")
+    if re.search(r'-f\s+"?\$PIN_PRIMARY_TEST_POM"?\s+clean\s+verify', text):
+        fail("Runner invokes the primary child POM in isolation instead of the JDT reactor")
 
     properties = parse_properties(root / "qa/upstream-jdt/junit3-to-jupiter.properties")
     expected_properties = {
@@ -519,9 +525,16 @@ def validate_workflow(root: Path) -> None:
         "--allow-clean-workspace",
         "upstream-jdt-migration-evidence",
         "actions/upload-artifact",
+        'source "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/pins.env"',
+        'primary_module=${PIN_PRIMARY_TEST_POM%/pom.xml}',
+        "-f pom.xml",
+        '--projects "$primary_module"',
+        "--also-make",
     ):
         if required not in workflow:
             fail(f"Manual upstream workflow is missing {required}")
+    if "-f org.eclipse.jdt.apt.tests/pom.xml" in workflow:
+        fail("Manual baseline workflow invokes the APT child POM in isolation")
 
 
 def validate_python_syntax(root: Path) -> None:
