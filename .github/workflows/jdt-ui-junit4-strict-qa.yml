@@ -71,7 +71,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
-            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
 
       - name: Verify the exact pinned JDT UI source
         shell: bash
