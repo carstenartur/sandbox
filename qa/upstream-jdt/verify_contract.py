@@ -493,11 +493,28 @@ def validate_runner(root: Path, pins: dict[str, str]) -> None:
         "-f pom.xml",
         '--projects "$PRIMARY_TEST_MODULE"',
         "--also-make",
+        "prepare_test_reactor",
+        "-DskipTests",
+        "PRIMARY_TEST_MODULE/target/surefire-reports",
     ):
         if required not in text:
             fail(f"Runner is missing required fail-closed contract: {required}")
     if re.search(r'-f\s+"?\$PIN_PRIMARY_TEST_POM"?\s+clean\s+verify', text):
         fail("Runner invokes the primary child POM in isolation instead of the JDT reactor")
+
+    prepare_match = re.search(r"(?ms)^prepare_test_reactor\(\) \{\n(.*?)^\}\n", text)
+    if prepare_match is None:
+        fail("Runner has no dependency preparation phase")
+    prepare_body = prepare_match.group(1)
+    for required in ("-DskipTests", "--also-make", "clean install"):
+        if required not in prepare_body:
+            fail(f"Dependency preparation is missing {required}")
+    test_match = re.search(r"(?ms)^run_tests\(\) \{\n(.*?)^\}\n", text)
+    if test_match is None:
+        fail("Runner has no selected-module test phase")
+    test_body = test_match.group(1)
+    if "clean verify" not in test_body or "--also-make" in test_body or "-DskipTests" in test_body:
+        fail("Before/after tests must execute only the pinned primary module")
 
     properties = parse_properties(root / "qa/upstream-jdt/junit3-to-jupiter.properties")
     expected_properties = {
@@ -530,11 +547,23 @@ def validate_workflow(root: Path) -> None:
         "-f pom.xml",
         '--projects "$primary_module"',
         "--also-make",
+        "Prepare pinned JDT reactor dependencies",
+        "Run the pinned APT baseline tests",
+        "-DskipTests",
+        "clean install",
     ):
         if required not in workflow:
             fail(f"Manual upstream workflow is missing {required}")
     if "-f org.eclipse.jdt.apt.tests/pom.xml" in workflow:
         fail("Manual baseline workflow invokes the APT child POM in isolation")
+    prepare_marker = "      - name: Prepare pinned JDT reactor dependencies"
+    baseline_marker = "      - name: Run the pinned APT baseline tests"
+    prepare_step = workflow.split(prepare_marker, 1)[1].split("\n      - name:", 1)[0]
+    baseline_step = workflow.split(baseline_marker, 1)[1].split("\n      - name:", 1)[0]
+    if not all(fragment in prepare_step for fragment in ("-DskipTests", "--also-make", "clean install")):
+        fail("Manual baseline workflow does not prepare dependencies without executing their tests")
+    if "clean verify" not in baseline_step or "--also-make" in baseline_step or "-DskipTests" in baseline_step:
+        fail("Manual baseline workflow does not isolate the pinned APT test module")
 
 
 def validate_python_syntax(root: Path) -> None:
