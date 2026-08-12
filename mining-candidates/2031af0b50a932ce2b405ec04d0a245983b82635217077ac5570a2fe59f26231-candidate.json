@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2031af0b50a932ce2b405ec04d0a245983b82635217077ac5570a2fe59f26231",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "void $name($params$) :: methodNameMatches($name, \"getPackageText\") \u0026\u0026 !isStatic($name) \u0026\u0026 hasReturnType(\"java.lang.String\")\n\u003d\u003e @java.lang.Override void $name($params$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui.wizards;\n\npublic class NewPackageWizardPage {\n    // Assume a superclass defines this method\n    public String getPackageText() {\n        return \"\";\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui.wizards;\n\npublic class NewPackageWizardPage {\n    // Assume a superclass defines this method\n    @Override\n    public String getPackageText() {\n        return \"\";\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.ui.wizards;\n\npublic class NewPackageWizardPage {\n    // This static method should not be annotated with @Override\n    public static String getPackageText() {\n        return \"\";\n    }\n\n    // This method has a different name and should not be annotated\n    public String getOtherText() {\n        return \"\";\n    }\n}",
+  "targetHintFile": "annotations.sandbox-hint",
+  "sourceCommit": "2231ff2f407b52e6c83aced9d5893e055ad028d8",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Annotation",
+  "summary": "Adds @Override annotation to the getPackageText method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.881587961Z",
+  "ruleFingerprint": "sha256:0cbdbaafc1c7659d86c28807eb4291750d794bd918c5edab4604d16eabdf1b55",
+  "behaviorFingerprint": "sha256:40812dc8a0d94fc43c074f55f132bf17277f3c6519e7d2c83290fc2813cb3730",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type NewPackageWizardPage must be defined in its own file",
+    "verifiedAt": "2026-08-12T03:07:10.279435282Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

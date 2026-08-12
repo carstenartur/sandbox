@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 5: The public type MarkerSeverityChecker must be defined in its own file",
-    "verifiedAt": "2026-08-10T02:57:00.083379308Z",
+    "verifiedAt": "2026-08-12T03:07:08.606010398Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

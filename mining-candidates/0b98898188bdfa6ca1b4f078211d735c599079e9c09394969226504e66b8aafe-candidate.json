@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0b98898188bdfa6ca1b4f078211d735c599079e9c09394969226504e66b8aafe",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.PREF_CHAIN_TIMEOUT, 3);\n\u003d\u003e\n$store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.PREF_CHAIN_TIMEOUT, 1);\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyPlugin {\n    public void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.PREF_CHAIN_TIMEOUT, 3);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyPlugin {\n    public void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.PREF_CHAIN_TIMEOUT, 1);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyPlugin {\n    public void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(PreferenceConstants.PREF_MAX_CHAINS, 20); // Different constant\n        store.setDefault(PreferenceConstants.PREF_CHAIN_TIMEOUT, 5); // Different value\n        store.setValue(PreferenceConstants.PREF_CHAIN_TIMEOUT, 3); // Different method\n    }\n}",
+  "targetHintFile": "jdt-ui-preferences.sandbox-hint",
+  "sourceCommit": "dfec28487fa21b5068493fd62405c9ace26d18e9",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Configuration Update",
+  "summary": "Updates the default value for the `PREF_CHAIN_TIMEOUT` preference from 3 to 1.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.849589806Z",
+  "ruleFingerprint": "sha256:595875450f4b08d02884ad27af5a85db97c1e0975720f78ef1e9e9fcba619253",
+  "behaviorFingerprint": "sha256:1b495ec341fa7ecf3ed381be94aaca87eea89dfbf58058b04e0b96b6b526b28a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.preference cannot be resolved",
+    "verifiedAt": "2026-08-12T03:07:10.264723604Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

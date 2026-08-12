@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d473ec27a202876b4ba93bfa648aaa99926ac4e07032287cdafc29004c37e69e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt.compiler.problem.switch.expression.rename.enum\u003e\n\u003c!description: Renames the IProblem constant from SwitchExpressionMissingEnumConstantCase to SwitchExpressionsYieldMissingEnumConstantCase.\nThis is a cleanup for code interacting with the Eclipse JDT compiler API, specifically for problem IDs related to Java 13+ switch expressions, following an internal API change.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!minJavaVersion: 13\u003e\norg.eclipse.jdt.core.compiler.IProblem.SwitchExpressionMissingEnumConstantCase\n\u003d\u003e\norg.eclipse.jdt.core.compiler.IProblem.SwitchExpressionsYieldMissingEnumConstantCase\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.compiler.IProblem;\n\npublic class MyProblemChecker {\n    public boolean isOldSwitchEnumProblem(int problemId) {\n        return problemId \u003d\u003d IProblem.SwitchExpressionMissingEnumConstantCase;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.compiler.IProblem;\n\npublic class MyProblemChecker {\n    public boolean isOldSwitchEnumProblem(int problemId) {\n        return problemId \u003d\u003d IProblem.SwitchExpressionsYieldMissingEnumConstantCase;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.compiler.IProblem;\n\npublic class MyProblemChecker {\n    public boolean isOtherProblem(int problemId) {\n        return problemId \u003d\u003d IProblem.DuplicateAnnotation; // This constant should not be touched\n    }\n}",
+  "targetHintFile": "jdt-api-migrations.sandbox-hint",
+  "sourceCommit": "06ba8d44e016d2cefdbfb9f6446bc81609799d6f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Renames a specific JDT compiler IProblem constant related to Java 13+ switch expressions due to API evolution.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.900057345Z",
+  "ruleFingerprint": "sha256:1ea62e741cc90cc884f64c2fae531a760ac68995e12dc9fb377b071c735ac867",
+  "behaviorFingerprint": "sha256:5a8fc9823bff3537fd5885f2dc6626b050f258812061287405103db32eb15505",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-12T03:07:10.287893523Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

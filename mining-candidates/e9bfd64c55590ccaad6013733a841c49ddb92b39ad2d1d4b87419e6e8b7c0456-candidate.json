@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e9bfd64c55590ccaad6013733a841c49ddb92b39ad2d1d4b87419e6e8b7c0456",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modernize.UnimplementedCodeFix\u003e\n\u003c!description: Replace constructor usage of UnimplementedCodeFix with UnimplementedCodeFixCore due to refactoring.\nThis change is part of a larger refactoring to move core functionalities.\n\u003c!severity: INFO\u003e\nnew org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix($arg1$, $arg2$, $arg3$)\n\u003d\u003e\nnew org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFixCore($arg1$, $arg2$, $arg3$)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFix.CompilationUnitRewriteOperation;\nimport org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix;\nimport org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix.MakeTypeAbstractOperation;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.TypeDeclaration;\n\npublic class TestClass {\n    public void method(String label, ASTNode root, TypeDeclaration typeDecl) {\n        CompilationUnitRewriteOperationsFix.CompilationUnitRewriteOperation op \u003d null; // Placeholder for actual operation\n        UnimplementedCodeFix fix \u003d new UnimplementedCodeFix(label, root, new CompilationUnitRewriteOperationsFix.CompilationUnitRewriteOperation[] { op });\n        MakeTypeAbstractOperation makeAbstractOp \u003d new UnimplementedCodeFix.MakeTypeAbstractOperation(typeDecl);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFix.CompilationUnitRewriteOperation;\n// import org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix; // This import will be removed by the engine\nimport org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix.MakeTypeAbstractOperation;\nimport org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFixCore; // This import will be added by the engine\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.TypeDeclaration;\n\npublic class TestClass {\n    public void method(String label, ASTNode root, TypeDeclaration typeDecl) {\n        CompilationUnitRewriteOperationsFix.CompilationUnitRewriteOperation op \u003d null;\n        UnimplementedCodeFixCore fix \u003d new UnimplementedCodeFixCore(label, root, new CompilationUnitRewriteOperationsFix.CompilationUnitRewriteOperation[] { op });\n        MakeTypeAbstractOperation makeAbstractOp \u003d new org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix.MakeTypeAbstractOperation(typeDecl); // This specific line is not affected by the proposed rule as it targets a different FQN\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.internal.corext.fix.TypeParametersFix;\nimport org.eclipse.jdt.core.dom.ASTNode;\n\npublic class TestClass {\n    public void otherMethod(String label, ASTNode root) {\n        TypeParametersFix otherFix \u003d new TypeParametersFix(label, root); // Should not match TypeParametersFix\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "a88222fc103cb7de7d4568d11b955957d5eaa085",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces constructor invocations of `org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFix` with `org.eclipse.jdt.internal.corext.fix.UnimplementedCodeFixCore` as part of a class refactoring.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.944971912Z",
+  "ruleFingerprint": "sha256:8c6c2ce20e73c13c617c66215e434b1116e1aa91810cc1bc1bb1a9b92453d957",
+  "behaviorFingerprint": "sha256:e3bc5a11907b44f096d5c7ff949995397f2b48dca3a213fcfe0cefa1db495716",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-12T03:07:10.321500795Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

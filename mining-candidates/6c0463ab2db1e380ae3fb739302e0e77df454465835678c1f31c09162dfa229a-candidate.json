@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6c0463ab2db1e380ae3fb739302e0e77df454465835678c1f31c09162dfa229a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jface.structuredviewer.setsorter-to-setcomparator\u003e\n\u003c!description: Replaces deprecated StructuredViewer.setSorter with StructuredViewer.setComparator when the argument is compatible with ViewerComparator. ViewerComparator was introduced in JFace 3.3 as a replacement for ViewerSorter.\u003e\n\u003c!severity: WARNING\u003e\n\norg.eclipse.jface.viewers.StructuredViewer.setSorter($sorter$)\n:: instanceof($sorter$, \"org.eclipse.jface.viewers.ViewerComparator\")\n\u003d\u003e\norg.eclipse.jface.viewers.StructuredViewer.setComparator($sorter$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.viewers.StructuredViewer;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.jface.viewers.ViewerComparator;\n\npublic class TestClass {\n    public void configureViewer(StructuredViewer result) {\n        // This class now extends ViewerComparator, making it compatible\n        final class MyCompatibleSorter extends ViewerComparator {\n            @Override\n            public int compare(Viewer viewer, Object e1, Object e2) {\n                return 0;\n            }\n        }\n        MyCompatibleSorter sorter \u003d new MyCompatibleSorter();\n        result.setSorter(sorter); // This line matches the pattern\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.viewers.StructuredViewer;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.jface.viewers.ViewerComparator;\n\npublic class TestClass {\n    public void configureViewer(StructuredViewer result) {\n        // This class now extends ViewerComparator, making it compatible\n        final class MyCompatibleSorter extends ViewerComparator {\n            @Override\n            public int compare(Viewer viewer, Object e1, Object e2) {\n                return 0;\n            }\n        }\n        MyCompatibleSorter sorter \u003d new MyCompatibleSorter();\n        result.setComparator(sorter); // This line is the replacement\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.viewers.StructuredViewer;\nimport org.eclipse.jface.viewers.Viewer;\nimport org.eclipse.jface.viewers.ViewerSorter;\n\npublic class NegativeTestClass {\n    // This class still extends the deprecated ViewerSorter\n    private final class LegacySorter extends ViewerSorter {\n        @Override\n        public int compare(Viewer viewer, Object e1, Object e2) {\n            return 0;\n        }\n    }\n\n    public void configureViewer(StructuredViewer result) {\n        LegacySorter sorter \u003d new LegacySorter();\n        // This call should NOT be transformed because \u0027sorter\u0027 is not an instance of ViewerComparator\n        result.setSorter(sorter);\n    }\n}\n",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "eb85e44ed5e93f755655e6798807af5d70761e63",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replace `StructuredViewer.setSorter()` with `StructuredViewer.setComparator()` when the provided argument is an instance of `ViewerComparator` or its subtype, as `ViewerSorter` is deprecated.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.936162331Z",
+  "ruleFingerprint": "sha256:a12528ec2c6dce5742f04b6ced42b2b03083fb03903277bed9f2e917340d3b43",
+  "behaviorFingerprint": "sha256:2bcf323ec1fe5cde623b8036882b2b2451c2a81b8be0778637baf4bab5c501f4",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-12T03:07:10.313276452Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
