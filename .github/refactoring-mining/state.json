@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "c4384b32fcfc8babe0aebde3fc80e8cb8d75e0aa",
-      "lastProcessedDate": "2026-08-10T02:56:57.002452074Z",
-      "totalProcessed": 3816,
+      "lastProcessedCommit": "a88222fc103cb7de7d4568d11b955957d5eaa085",
+      "lastProcessedDate": "2026-08-12T03:07:05.455870539Z",
+      "totalProcessed": 3903,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2789,6 +2789,159 @@
           "deferredAt": "2026-08-10T02:54:43.185873681Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "facb46830a9f580c6eb62ba30ecc57bc30d6833b",
+          "message": "Bug 546352 - [9] New comprehensive UI for Modularity Details",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-12T02:57:50.402298085Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "76f42e32105fe40d0b2ed365f66cb99228607691",
+          "message": "Bug 546797 - [9][build path] Polish the new UI for modularity details",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-12T02:58:24.293861462Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cb69d7694335af30dddf5f1a0cf4f2a874816323",
+          "message": "Bug 546797 - [9][build path] Polish the new UI for modularity details",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-12T02:59:26.228268763Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "01d2391c4f95df250b36675d9660720c457233ac",
+          "message": "Bug 544108 - Add Chain Completion Feature",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-12T02:59:51.812601117Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "17ffdb37b4576c52650e4188bd4d3ef3175c9e10",
+          "message": "Bug 530689 - [render] show categories of modules\n\nChange-Id: Id279667aa938ffe79e6299381d7075541f209be8\nSigned-off-by: St",
+          "diffLines": 66,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:00:06.247433680Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a1ad30a03a57e3ee1b548831dda99fd005657f56",
+          "message": "Bug 547420 - Substring match while filtering methods should be lower in\nrelevance\n\nChange-Id: I6ac92f155affa5e57582d79cd",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:00:06.247498722Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "79cf9b81881fac0e5dd969c2a8bcdbf86602b21f",
+          "message": "Bug 545340: [12][quick fix][switch expression] \u0027Add missing case\nstatements\u0027\n\nChange-Id: Id87e09bd1d4d92b18769a05c6f9404",
+          "diffLines": 155,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:00:11.943166124Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aba5d7e4f7fd8b437f2239bc5dceb386565afc54",
+          "message": "Bug 544108 - Disable Chain Completion in content assist cycle list\n\n- By defining the chain completion category ID with ",
+          "diffLines": 65,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:00:11.943213142Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e223d80a20616fdfc17fd324fa2c170fc034d4b5",
+          "message": "Bug 547572: [extract method] Enable all buttons in Extract Method wizard\non opening\n\nChange-Id: Ia3218f7d31ed53720e32062",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:00:27.016790395Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "69239e274d730439bd878a4c30f1a0b6884ace15",
+          "message": "Bug 547120: [12][switch expression] Ctrl+Click or F3 does not work with\ncase, default, break\n\nChange-Id: I3e440c9a931c8e",
+          "diffLines": 65,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:00:27.016876997Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6e22a0c83484be98a654c6481438d5bc716f9cae",
+          "message": "Bug 547387 - Mark \u0027old\u0027 \"Is Modular\" node w/ dialog as \u0027deprecated\u0027\n\nChange-Id: Ice6f1c6a6c052f0a879c0248392ef20cfd61e8e",
+          "diffLines": 244,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:01:07.690945470Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2c33b032e8fc597a6d0fe59928a594ed261771dc",
+          "message": "Bug 547681 - NPE in ModuleDependenciesAdapter on double-clicking an\nexported package\n\nChange-Id: If3978c7dad89c35e76f3ff",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:01:07.691011163Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7bac3c186d92b7885ccc834b271de73c51e8d1ef",
+          "message": "Bug 546790 - [9][build path] synchronize data on different tabs of Java\nBuild Path\n\nChange-Id: I5ff459233512adf0f2a50545",
+          "diffLines": 125,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:01:07.691036391Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3479180c0a471d5e02446ff1c983a7ebff29e54e",
+          "message": "Bug 543470 - Refactor LambdaExpressionsCleanUp to jdt.core.manipulation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-12T03:02:21.332243388Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "50c5291155731d9f8e652a0835b77693c634ef2f",
+          "message": "Bug 549242 - Remove redundant abstract modifier on interface\n\nChange-Id: If8843278d759a21e827f61e87c1e61d2179f96c4\nSigne",
+          "diffLines": 62,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:04:17.066948703Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "de2d9dba586fcaad896b5a53a638b3282659d95d",
+          "message": "Bug 548887 - Refactor PotentialProgrammingProblemsFix/CleanUp for jdt.ls\n\n- create new PotentialProgrammingProblemsFixCo",
+          "diffLines": 277,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:04:17.066999028Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fc8324f39cabbd17beb403453f276fa481692ece",
+          "message": "Use non-deprecated LocalSelectionTransfer.\n\nThe deprecated one merely calls the new one so there can\u0027t be change in\nbeha",
+          "diffLines": 419,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-12T03:04:17.067017232Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2802,7 +2955,7 @@
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
         "Code Simplification": 11,
-        "Performance": 29,
+        "Performance": 30,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
@@ -2931,7 +3084,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 12,
+        "API Migration": 14,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -2942,7 +3095,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 24,
+        "API Modernization": 25,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -2956,7 +3109,7 @@
         "Type Clarity": 1,
         "String Literal Refactoring": 1,
         "Generics Modernization": 2,
-        "Configuration Update": 1,
+        "Configuration Update": 2,
         "Type Mismatch Cleanup": 1,
         "API usage": 1,
         "UI Color Management": 1,
@@ -2990,7 +3143,9 @@
         "ComplexRefactoring": 2,
         "ArchitecturalChange": 1,
         "Error Handling Improvement": 1,
-        "refactoring": 1
+        "refactoring": 1,
+        "Annotation": 1,
+        "Warnings": 1
       },
       "exhaustedCategories": []
     },
@@ -3031,5 +3186,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26475
+  "globalTotalProcessed": 26562
 }
