@@ -1,4 +1,4 @@
-name: Repair PR 1467 upstream gate
+name: Prepare final PR 1467 repair commit
 
 on:
   push:
@@ -8,21 +8,36 @@ on:
       - .github/workflows/repair-pr1467.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  repair:
+  prepare:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout PR branch
+      - name: Checkout current PR head
         uses: actions/checkout@v6
         with:
           ref: feature/oomph-upstream-jdt-migration-qa-final
+          fetch-depth: 0
 
-      - name: Apply the scoped upstream-gate repair
-        run: python3 .github/scripts/repair_pr1467.py
+      - name: Apply only the remaining contract change
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
 
-      - name: Validate the repaired contract
+          script = Path('.github/scripts/repair_pr1467.py').read_text(encoding='utf-8')
+          definitions, separator, _calls = script.rpartition('\npatch_runner()\n')
+          if not separator:
+              raise SystemExit('Could not isolate repair script definitions')
+          namespace = {'__name__': 'repair_pr1467_definitions'}
+          exec(definitions, namespace)
+          namespace['patch_contract']()
+          PY
+
+      - name: Validate the complete repaired contract
+        shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: |
@@ -31,19 +46,63 @@ jobs:
           python3 qa/upstream-jdt/verify_contract.py
           git diff --check
 
-      - name: Package the validated files
+      - name: Create detached final commit object
+        id: commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tar -czf pr1467-repaired-files.tar.gz \
-            .github/workflows/upstream-jdt-migration-qa.yml \
-            qa/upstream-jdt/README.md \
-            qa/upstream-jdt/run-before-after.sh \
-            qa/upstream-jdt/verify_contract.py
+          blob_sha=$(
+            base64 -w0 qa/upstream-jdt/verify_contract.py |
+              jq -Rs '{content: ., encoding: "base64"}' |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha
+          )
+          base_tree=$(git rev-parse 'HEAD^{tree}')
+          tree_sha=$(
+            jq -n \
+              --arg base_tree "$base_tree" \
+              --arg blob_sha "$blob_sha" \
+              '{
+                base_tree: $base_tree,
+                tree: [
+                  {
+                    path: "qa/upstream-jdt/verify_contract.py",
+                    mode: "100644",
+                    type: "blob",
+                    sha: $blob_sha
+                  },
+                  {
+                    path: ".github/scripts/repair_pr1467.py",
+                    mode: "100644",
+                    type: "blob",
+                    sha: null
+                  },
+                  {
+                    path: ".github/workflows/repair-pr1467.yml",
+                    mode: "100644",
+                    type: "blob",
+                    sha: null
+                  }
+                ]
+              }' |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq .sha
+          )
+          commit_sha=$(
+            jq -n \
+              --arg message 'Test only the pinned JDT APT module' \
+              --arg tree "$tree_sha" \
+              --arg parent "$GITHUB_SHA" \
+              '{message: $message, tree: $tree, parents: [$parent]}' |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq .sha
+          )
+          printf '%s\n' "$commit_sha" | tee prepared-commit.txt
+          echo "sha=$commit_sha" >> "$GITHUB_OUTPUT"
 
-      - name: Upload the validated files
+      - name: Upload prepared commit identifier
         uses: actions/upload-artifact@v7
         with:
-          name: pr1467-repaired-files
-          path: pr1467-repaired-files.tar.gz
+          name: pr1467-prepared-commit
+          path: prepared-commit.txt
           retention-days: 1
           if-no-files-found: error
