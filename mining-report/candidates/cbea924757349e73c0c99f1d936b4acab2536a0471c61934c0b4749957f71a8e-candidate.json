@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cbea924757349e73c0c99f1d936b4acab2536a0471c61934c0b4749957f71a8e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-stringbuilder-for-local-vars\u003e\n\u003c!description: Replaces new StringBuffer() with new StringBuilder() when assigned to a local variable.\u003e\n\u003c!severity: INFO\u003e\n\u003c!tags: performance, java-5\u003e\n\nnew java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "class Example {\n    void method() {\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer();\n        buf.append(\"Hello\");\n        java.lang.StringBuffer anotherBuf \u003d new java.lang.StringBuffer(100);\n        java.lang.StringBuffer thirdBuf \u003d new java.lang.StringBuffer(\"World\");\n        System.out.println(buf.toString() + anotherBuf.toString() + thirdBuf.toString());\n    }\n\n    // This should NOT be changed (field, not local)\n    java.lang.StringBuffer fieldBuf \u003d new java.lang.StringBuffer();\n\n    // This should NOT be changed (method parameter, not local)\n    void process(java.lang.StringBuffer paramBuf) {\n        paramBuf.append(\"Processed\");\n    }\n\n    // This should NOT be changed (return value, not local)\n    java.lang.StringBuffer createBuf() {\n        return new java.lang.StringBuffer();\n    }\n}",
+  "afterExample": "class Example {\n    void method() {\n        java.lang.StringBuilder buf \u003d new java.lang.StringBuilder();\n        buf.append(\"Hello\");\n        java.lang.StringBuilder anotherBuf \u003d new java.lang.StringBuilder(100);\n        java.lang.StringBuilder thirdBuf \u003d new java.lang.StringBuilder(\"World\");\n        System.out.println(buf.toString() + anotherBuf.toString() + thirdBuf.toString());\n    }\n\n    // This should NOT be changed (field, not local)\n    java.lang.StringBuffer fieldBuf \u003d new java.lang.StringBuffer();\n\n    // This should NOT be changed (method parameter, not local)\n    void process(java.lang.StringBuffer paramBuf) {\n        paramBuf.append(\"Processed\");\n    }\n\n    // This should NOT be changed (return value, not local)\n    java.lang.StringBuffer createBuf() {\n        return new java.lang.StringBuffer();\n    }\n}",
+  "negativeExample": "class Example {\n    // This should NOT be changed (field, not local)\n    java.lang.StringBuffer fieldBuf \u003d new java.lang.StringBuffer();\n\n    // This should NOT be changed (method parameter, not local)\n    void process(java.lang.StringBuffer paramBuf) {\n        paramBuf.append(\"Processed\");\n    }\n\n    // This should NOT be changed (return value, not local)\n    java.lang.StringBuffer createBuf() {\n        return new java.lang.StringBuffer();\n    }\n\n    // Thread-shared scenario, should not be changed by this rule\n    private static java.lang.StringBuffer sharedBuffer \u003d new java.lang.StringBuffer();\n    void appendToShared(String text) {\n        synchronized (sharedBuffer) {\n            sharedBuffer.append(text);\n        }\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "226e3d7ef79a52edfd6026d6aa76863f37ff367b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Performance",
+  "summary": "Replace new StringBuffer() with new StringBuilder() for local variables to improve performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.913648262Z",
+  "ruleFingerprint": "sha256:c3b6975d9031e5ce8c4ce65820cc0e095c8197796f5100ea94da6efdc1fbe860",
+  "behaviorFingerprint": "sha256:347dd68225c23d350c7f7d3559a08c02e095da3844dd964ef8bb609f8b92b8a1",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-12T03:07:10.296474655Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

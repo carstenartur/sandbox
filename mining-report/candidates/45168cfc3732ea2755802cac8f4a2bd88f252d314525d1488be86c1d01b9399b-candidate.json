@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
-    "verifiedAt": "2026-08-10T02:57:00.791926967Z",
+    "verifiedAt": "2026-08-12T03:07:09.340121351Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

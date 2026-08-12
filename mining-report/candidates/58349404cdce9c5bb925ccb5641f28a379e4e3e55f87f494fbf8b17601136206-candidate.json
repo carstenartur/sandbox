@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "58349404cdce9c5bb925ccb5641f28a379e4e3e55f87f494fbf8b17601136206",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: fix.varargs.array.warning\u003e\n\u003c!description: Explicitly cast an array to Object[] when it is the last argument passed to a varargs method to fix a compiler warning regarding ambiguous varargs usage.\nThis ensures the array itself is treated as the varargs parameter, not that its elements are extracted into individual arguments.\u003e\n\u003c!severity: WARNING\u003e\n\n$receiver.$method($args$, $arrayExpr) :: instanceof($arrayExpr, \"java.lang.Object[]\")\n\u003d\u003e $receiver.$method($args$, (java.lang.Object[]) $arrayExpr)\n;;",
+  "beforeExample": "package test;\n\nimport java.util.Arrays;\n\npublic class Example {\n    public void doSomething(Object[] items) {\n        // This line would trigger a compiler warning in some contexts\n        // where \u0027items\u0027 (an Object[]) is passed to a varargs Object... parameter.\n        Arrays.asList(\"first\", items);\n    }\n\n    public void addElements(MyViewer viewer, MyRoot root, Object[] newElements) {\n        viewer.add(root, newElements); // Example from CallHierarchyViewPart.java\n    }\n}\n\nclass MyViewer {\n    public void add(MyRoot parent, Object... childElements) {}\n}\n\nclass MyRoot {}\n",
+  "afterExample": "package test;\n\nimport java.util.Arrays;\n\npublic class Example {\n    public void doSomething(Object[] items) {\n        // The explicit cast resolves the compiler warning.\n        Arrays.asList(\"first\", (java.lang.Object[]) items);\n    }\n\n    public void addElements(MyViewer viewer, MyRoot root, Object[] newElements) {\n        viewer.add(root, (java.lang.Object[]) newElements);\n    }\n}\n\nclass MyViewer {\n    public void add(MyRoot parent, Object... childElements) {}\n}\n\nclass MyRoot {}\n",
+  "negativeExample": "package test;\n\npublic class NegativeExample {\n    public void doNotMatch(String message) {\n        // Not an array as the last argument, so should not match.\n        System.out.println(message);\n    }\n\n    public void doNotMatchMultipleArgs(int num, String str) {\n        // Neither argument is an array being passed as the last argument to a varargs method.\n        myMethod(num, str);\n    }\n\n    public void myMethod(int a, String b) {}\n\n    public void doNotMatchWhenAlreadyCasted(Object[] data) {\n        // Already explicitly cast, so no change should occur (idempotent).\n        java.util.Arrays.asList((java.lang.Object[]) data);\n    }\n}\n",
+  "targetHintFile": "java-modernization.sandbox-hint",
+  "sourceCommit": "ec6eaccd506ccfb41d57370f1ace4ec6de06ef85",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Warnings",
+  "summary": "Adds an explicit `(Object[])` cast to an array expression when it is the final argument of a method call that uses `Object...` varargs, resolving potential compiler warnings.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-12T03:07:06.926070216Z",
+  "ruleFingerprint": "sha256:f3949a644b1a63cfc416b5fd752a0c76b643d5ed66a0761082ef03cfb1697a54",
+  "behaviorFingerprint": "sha256:023adbcff59a410ea853865dca034a3d0390fc87e013b8d0255df7381cbc82ef",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-12T03:07:10.304866031Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

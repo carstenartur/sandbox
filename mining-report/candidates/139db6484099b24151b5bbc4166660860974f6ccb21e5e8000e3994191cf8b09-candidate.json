@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.resource cannot be resolved",
-    "verifiedAt": "2026-08-10T02:57:00.603585213Z",
+    "verifiedAt": "2026-08-12T03:07:09.142654140Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
