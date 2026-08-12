@@ -1,4 +1,4 @@
-name: Export JUnit 3 integration baseline
+name: Export JUnit branch merge base
 
 on:
   push:
@@ -14,20 +14,20 @@ jobs:
   export:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout the repaired JUnit 3 baseline
+      - name: Checkout the common JUnit branch ancestor
         uses: actions/checkout@v6
         with:
-          ref: 096e233c17bbf3cd5835aceb5185ff9ba7b900e3
+          ref: b373f54309707ccb1175a9cc57965194e2ebf24f
 
-      - name: Package baseline source tree
+      - name: Package merge-base source tree
         run: |
           set -euo pipefail
-          tar --exclude=.git -czf "$RUNNER_TEMP/junit3-baseline-source.tar.gz" .
+          tar --exclude=.git -czf "$RUNNER_TEMP/junit-merge-base-source.tar.gz" .
 
-      - name: Upload baseline source tree
+      - name: Upload merge-base source tree
         uses: actions/upload-artifact@v7
         with:
-          name: junit3-baseline-source
-          path: ${{ runner.temp }}/junit3-baseline-source.tar.gz
+          name: junit-merge-base-source
+          path: ${{ runner.temp }}/junit-merge-base-source.tar.gz
           retention-days: 1
           if-no-files-found: error
