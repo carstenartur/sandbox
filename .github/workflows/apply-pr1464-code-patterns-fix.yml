@@ -23,6 +23,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 <<'PY'
+          import re
           from pathlib import Path
 
           path = Path('sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java')
@@ -33,43 +34,16 @@ jobs:
               raise SystemExit('Expected exactly one obsolete Code Patterns checkbox label constant')
           text = text.replace(constant, '')
 
-          old_prefix = '''    private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
-        var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
-        assertTrue(hintFileCleanup.isChecked(),
-                "Code Patterns screenshot profile must enable .sandbox-hint cleanup");
-
-'''
-          new_prefix = '''    private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
-'''
-          if text.count(old_prefix) != 1:
+          prefix_pattern = re.compile(r'    private static void stabilizeHintFileCleanup\(SWTBotShell profileDialog\) \{\n        var hintFileCleanup = profileDialog\.bot\(\)\.checkBox\(HINT_FILE_CLEANUP_LABEL\);\n        assertTrue\(hintFileCleanup\.isChecked\(\),\n                "Code Patterns screenshot profile must enable \.sandbox-hint cleanup"\);\n\n')
+          text, prefix_count = prefix_pattern.subn('    private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {\n', text, count=1)
+          if prefix_count != 1:
               raise SystemExit('Expected exactly one obsolete Code Patterns checkbox interaction')
-          text = text.replace(old_prefix, new_prefix)
 
-          old_loop = '''        for (CleanupTab tab : CLEANUP_TABS) {
-            profileDialog.bot().tabItem(tab.label()).activate();
-            if ("Code Patterns (Sandbox)".equals(tab.label())) {
-                stabilizeHintFileCleanup(profileDialog);
-            } else {
-                bot.sleep(300);
-            }
-            capture(profileDialog, tab.helpBundle(), tab.fileName());
-        }
-'''
-          new_loop = '''        for (CleanupTab tab : CLEANUP_TABS) {
-            System.out.println("[help-screenshots] Activating cleanup tab: " + tab.label());
-            profileDialog.bot().tabItem(tab.label()).activate();
-            if ("Code Patterns (Sandbox)".equals(tab.label())) {
-                stabilizeHintFileCleanup(profileDialog);
-            } else {
-                bot.sleep(300);
-            }
-            capture(profileDialog, tab.helpBundle(), tab.fileName());
-            System.out.println("[help-screenshots] Captured cleanup tab: " + tab.label());
-        }
-'''
-          if text.count(old_loop) != 1:
+          loop_pattern = re.compile(r'        for \(CleanupTab tab : CLEANUP_TABS\) \{\n            profileDialog\.bot\(\)\.tabItem\(tab\.label\(\)\)\.activate\(\);\n            if \("Code Patterns \(Sandbox\)"\.equals\(tab\.label\(\)\)\) \{\n                stabilizeHintFileCleanup\(profileDialog\);\n            \} else \{\n                bot\.sleep\(300\);\n            \}\n            capture\(profileDialog, tab\.helpBundle\(\), tab\.fileName\(\)\);\n        \}\n')
+          replacement = '        for (CleanupTab tab : CLEANUP_TABS) {\n            System.out.println("[help-screenshots] Activating cleanup tab: " + tab.label());\n            profileDialog.bot().tabItem(tab.label()).activate();\n            if ("Code Patterns (Sandbox)".equals(tab.label())) {\n                stabilizeHintFileCleanup(profileDialog);\n            } else {\n                bot.sleep(300);\n            }\n            capture(profileDialog, tab.helpBundle(), tab.fileName());\n            System.out.println("[help-screenshots] Captured cleanup tab: " + tab.label());\n        }\n'
+          text, loop_count = loop_pattern.subn(replacement, text, count=1)
+          if loop_count != 1:
               raise SystemExit('Expected exactly one cleanup-tab capture loop')
-          text = text.replace(old_loop, new_loop)
 
           path.write_text(text, encoding='utf-8')
           PY
