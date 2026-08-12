@@ -17,7 +17,7 @@ jobs:
       - name: Checkout the common JUnit branch ancestor
         uses: actions/checkout@v6
         with:
-          ref: b373f54309707ccb1175a9cc57965194e2ebf24f
+          ref: b373f543c0de4bdc7ad7a63e90f97311c5068daf
 
       - name: Package merge-base source tree
         run: |
