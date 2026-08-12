@@ -86,10 +86,10 @@ The runner performs these fail-closed steps:
 
 1. verifies every repository URL, ref and full commit ID;
 2. verifies the complete Oomph workspace pin file;
-3. applies and locally commits the identical Jupiter build overlay;
+3. applies and locally commits the identical Jupiter build overlay, then builds and installs the selected reactor dependencies once with upstream tests skipped;
 4. snapshots the named source examples;
-5. runs the pinned `org.eclipse.jdt.apt.tests` Maven test command under Xvfb;
-6. saves every Surefire XML report as the baseline inventory;
+5. runs only the pinned `org.eclipse.jdt.apt.tests` Maven test command under Xvfb;
+6. saves only that module's Surefire XML reports as the baseline inventory;
 7. runs **one project-wide Cleanup refactoring** in `check` mode over every
    source compilation unit and requires exit code `2`;
 8. requires a non-empty check report and patch, structured planning diagnostics,
@@ -100,7 +100,7 @@ The runner performs these fail-closed steps:
 11. verifies the concrete migrated contents of `FactoryPathTests.java` and
     `TestAll.java` according to `expected-corpus.json`;
 12. records every remaining file that still contains a JUnit 3 execution shape;
-13. runs exactly the same Maven test command again;
+13. runs exactly the same selected-module Maven test command again;
 14. compares test identities, multiplicity and passed/skipped/failure/error
     state; and
 15. writes provenance and restores the pinned JDT checkout.
@@ -137,7 +137,8 @@ harness semantics remain fail-closed and are covered by negative Sandbox tests.
 The output directory contains at least:
 
 ```text
-baseline/                         original JUnit XML reports
+dependency-build-command.txt      one-time reactor dependency preparation
+baseline/                         original APT-module JUnit XML reports
 migrated/                         post-migration JUnit XML reports
 corpus/baseline/                  original named source examples
 corpus/migrated/                  migrated named source examples
