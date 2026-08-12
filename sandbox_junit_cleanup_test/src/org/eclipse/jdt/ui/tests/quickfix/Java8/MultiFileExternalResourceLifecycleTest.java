@@ -98,7 +98,7 @@ public class MultiFileExternalResourceLifecycleTest {
 
 						public class SharedResource implements BeforeEachCallback, AfterEachCallback {
 							@Override
-							public void beforeEach(ExtensionContext context) {
+							public void beforeEach(ExtensionContext context) throws Exception {
 								System.setProperty("resource", "started");
 							}
 

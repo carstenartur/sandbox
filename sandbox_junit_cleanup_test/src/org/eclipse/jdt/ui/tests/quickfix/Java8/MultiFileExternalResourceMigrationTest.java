@@ -81,7 +81,7 @@ public class MultiFileExternalResourceMigrationTest {
 
 						public class SharedResource implements BeforeEachCallback, AfterEachCallback {
 							@Override
-							public void beforeEach(ExtensionContext context) {
+							public void beforeEach(ExtensionContext context) throws Exception {
 								System.setProperty("resource", "started");
 							}
 
@@ -210,7 +210,7 @@ public class MultiFileExternalResourceMigrationTest {
 
 						class SharedResource implements BeforeEachCallback, AfterEachCallback {
 							@Override
-							public void beforeEach(ExtensionContext context) {
+							public void beforeEach(ExtensionContext context) throws Exception {
 							}
 
 							@Override

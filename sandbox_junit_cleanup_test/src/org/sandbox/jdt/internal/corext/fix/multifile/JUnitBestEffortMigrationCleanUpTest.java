@@ -86,12 +86,10 @@ public class JUnitBestEffortMigrationCleanUpTest {
 					}
 
 					/**
-					 * @todo Sandbox JUnit migration gap parameterized:test.FieldInjectionTest
-					 *       (PARAMETERIZED_FIELD_INJECTION): @Parameterized.Parameter field injection is not represented by the constructor-based local rewrite. Manual completion: Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.
+					 * @todo Sandbox JUnit migration gap parameterized:test.FieldInjectionTest (PARAMETERIZED_FIELD_INJECTION): @Parameterized.Parameter field injection is not represented by the constructor-based local rewrite. Manual completion: Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.
 					 */
 					private static void sandboxJUnitMigrationTodoParameterizedFieldInjection() {
-						throw new UnsupportedOperationException(
-								"Manual JUnit migration required: PARAMETERIZED_FIELD_INJECTION");
+						throw new UnsupportedOperationException("Manual JUnit migration required: PARAMETERIZED_FIELD_INJECTION");
 					}
 				}
 				"""; //$NON-NLS-1$

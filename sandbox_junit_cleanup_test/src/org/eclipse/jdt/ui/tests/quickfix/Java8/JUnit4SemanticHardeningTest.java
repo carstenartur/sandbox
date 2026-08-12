@@ -348,6 +348,7 @@ public class JUnit4SemanticHardeningTest {
 						""",
 						"""
 						package test;
+
 						import org.junit.jupiter.api.extension.ExtensionContext;
 
 						public class LeakTestSetup extends JUnitSourceSetup {

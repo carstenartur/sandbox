@@ -137,8 +137,8 @@ public class ParameterizedMigrationContractTest {
 	}
 
 	@Test
-	public void leavesExplicitRunWithValueSyntaxUntouched() throws CoreException {
-		assertNoChange("ExplicitRunnerTest.java", //$NON-NLS-1$
+	public void migratesExplicitRunWithValueSyntax() throws CoreException {
+		assertMigration("ExplicitRunnerTest.java", //$NON-NLS-1$
 				"""
 				package test;
 
@@ -166,6 +166,27 @@ public class ParameterizedMigrationContractTest {
 					@Test
 					public void verifiesValue() {
 						System.out.println(value);
+					}
+				}
+				""",
+				"""
+				package test;
+
+				import java.util.stream.Stream;
+
+				import org.junit.jupiter.params.ParameterizedTest;
+				import org.junit.jupiter.params.provider.Arguments;
+				import org.junit.jupiter.params.provider.MethodSource;
+
+				public class ExplicitRunnerTest {
+					@ParameterizedTest
+					@MethodSource("data")
+					public void verifiesValue(int value) {
+						System.out.println(value);
+					}
+
+					static Stream<Arguments> data() {
+						return Stream.of(Arguments.of(1), Arguments.of(2));
 					}
 				}
 				""");
@@ -211,5 +232,14 @@ public class ParameterizedMigrationContractTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
+	}
+
+	private void assertMigration(String fileName, String source, String expected) throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit(fileName, source, false, null);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
+				new ICompilationUnit[] { unit }, new String[] { expected }, null);
 	}
 }

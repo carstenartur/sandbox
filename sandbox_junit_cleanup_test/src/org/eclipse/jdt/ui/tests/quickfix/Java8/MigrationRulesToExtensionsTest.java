@@ -81,7 +81,8 @@ public class MigrationRulesToExtensionsTest {
 				
 				public class MyTest {
 					@TempDir
-					Path tempFolder;
+					public Path tempFolder;
+
 					@Test
 					public void testWithTempFile() throws IOException {
 						File newFile = Files.createFile(tempFolder.resolve("myfile.txt")).toFile();
@@ -124,11 +125,11 @@ public class MigrationRulesToExtensionsTest {
 				import org.junit.jupiter.api.TestInfo;
 				
 				public class MyTest {
-					private String testName;
+					public String testName;
 					
 					@BeforeEach
-					void init(TestInfo testInfo) {
-						this.testName = testInfo.getDisplayName();
+					void initializeTestNameFromTestInfo(TestInfo testInfo) {
+						this.testName = testInfo.getTestMethod().orElseThrow().getName();
 					}
 					
 					@Test
@@ -377,7 +378,8 @@ public class MyTest {
 				
 				public class MyTest {
 					@TempDir
-					Path folder;
+					public Path folder;
+
 					@Test
 					public void test() throws Exception {
 						File file = Files.createFile(folder.resolve("test.txt")).toFile();
@@ -413,10 +415,11 @@ public class MyTest {
 				
 				public class MyTest {
 					@TempDir
-					Path tempFolder;
+					public Path tempFolder;
+
 					@Test
 					public void test() throws Exception {
-						File dir = Files.createDirectories(tempFolder.resolve("subdir")).toFile();
+						File dir = Files.createDirectory(tempFolder.resolve("subdir")).toFile();
 					}
 				}
 				"""),
@@ -448,7 +451,8 @@ public class MyTest {
 				
 				public class MyTest {
 					@TempDir
-					Path tmpDir;
+					public Path tmpDir;
+
 					@Test
 					public void test() {
 						File root = tmpDir.toFile();
@@ -484,10 +488,11 @@ public class MyTest {
 				
 				public class MyTest {
 					@TempDir
-					Path folder;
+					public Path folder;
+
 					@Test
 					public void test() throws Exception {
-						File file = Files.createTempFile(folder, "", null).toFile();
+						File file = Files.createTempFile(folder, "junit", null).toFile();
 					}
 				}
 				"""),
@@ -520,10 +525,11 @@ public class MyTest {
 				
 				public class MyTest {
 					@TempDir
-					Path folder;
+					public Path folder;
+
 					@Test
 					public void test() throws Exception {
-						File dir = Files.createTempDirectory(folder, "").toFile();
+						File dir = Files.createTempDirectory(folder, "junit").toFile();
 					}
 				}
 				"""),

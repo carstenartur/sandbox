@@ -218,8 +218,9 @@ public final class JUnitBestEffortSupport {
 					if (key != null) {
 						sourceTypesByKey.put(key, type);
 					}
-					if (fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)
-							&& ParameterizedMigrationEligibility.hasParameterizedRunner(node)) {
+					boolean handledParameterizedRunner= fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)
+							&& ParameterizedMigrationEligibility.hasParameterizedRunner(node);
+					if (handledParameterizedRunner) {
 						ParameterizedMigrationEligibility.Assessment assessment=
 								ParameterizedMigrationEligibility.assess(node);
 						if (!assessment.eligible()) {
@@ -231,6 +232,7 @@ public final class JUnitBestEffortSupport {
 					if (fixes.contains(JUnitCleanUpFixCore.RUNWITH)) {
 						String runner= runnerType(node);
 						if (runner != null && !runner.isBlank()
+								&& !handledParameterizedRunner
 								&& !RunWithMigrationEligibility.canMigrate(node, runner)) {
 							addGap(gaps, type, "runner:" + type.name(), //$NON-NLS-1$
 									"CUSTOM_JUNIT4_RUNNER", //$NON-NLS-1$
