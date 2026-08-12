@@ -479,7 +479,7 @@ def validate_runner(root: Path, pins: dict[str, str]) -> None:
         fail(f"Runner shell syntax is invalid:\n{syntax.stdout}")
     text = runner.read_text(encoding="utf-8")
     for required in (
-        "sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup",
+        "org.sandbox.jdt.core.ProjectWideJavaCleanup",
         'CHECK_STATUS" -eq 2',
         "--project-location",
         "verify_corpus_result.py",
