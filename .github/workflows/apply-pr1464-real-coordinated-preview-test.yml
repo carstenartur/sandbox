@@ -1,0 +1,203 @@
+name: Apply PR 1464 real coordinated preview test
+
+on:
+  push:
+    branches:
+      - feature/coordinated-cleanup-preview
+    paths:
+      - '.github/workflows/apply-pr1464-real-coordinated-preview-test.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Add real coordinated Int-to-Enum preview coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java')
+          text = path.read_text(encoding='utf-8')
+
+          constants_anchor = '''    private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =
+                  "Modernize Image creation for DPI/zoom (ImageDataProvider)";
+          '''
+          constants_replacement = constants_anchor + '''    private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
+              private static final String INT_TO_ENUM_PROJECT_WIDE_LABEL =
+                      "Analyze all project source files for coordinated migrations";
+              private static final String INT_TO_ENUM_CANDIDATE_FRAGMENT = "nested enum Status";
+          '''
+          if text.count(constants_anchor) != 1:
+              raise SystemExit('Expected one constants anchor')
+          text = text.replace(constants_anchor, constants_replacement)
+
+          test_anchor = '''    @Test
+              public void captureCssCleanupPreferences() throws IOException {
+          '''
+          test_method = '''    @Test
+              public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
+                  configureIntToEnumCleanupProfile();
+                  IFile ownerFile = cleanupPreviewProject.getFile("src/demo/coordinated/StateOwner.java");
+                  IFile callerFile = cleanupPreviewProject.getFile("src/demo/coordinated/StateCaller.java");
+                  String ownerBefore = readFile(ownerFile);
+                  String callerBefore = readFile(callerFile);
+
+                  openProjectExplorer();
+                  SWTBotTreeItem ownerNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                          .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
+                  ownerNode.select();
+                  SWTBotShell wizard = openCleanUpWizard(ownerNode);
+                  clickButton(wizard, "Next >", "Next >");
+                  bot.sleep(800);
+                  prepareForScreenshot(wizard);
+
+                  SWTBotTree previewTree = wizard.bot().tree();
+                  SWTBotTreeItem candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+                  assertTrue(candidate != null, "Preview must expose the coordinated Int-to-Enum candidate");
+                  candidate.select();
+                  bot.sleep(500);
+
+                  assertTrue(findTreeItemContaining(previewTree, "StateOwner.java") == null,
+                          "The atomic candidate must not expose its owner file as a checkbox child");
+                  assertTrue(findTreeItemContaining(previewTree, "StateCaller.java") == null,
+                          "The atomic candidate must not expose its caller file as a checkbox child");
+                  assertTrue(wizard.bot().text().getText().contains("Selection is atomic"),
+                          "The coordinated viewer must explain the atomic selection contract");
+
+                  var affectedFiles = wizard.bot().table();
+                  assertTrue(affectedFiles.rowCount() == 2,
+                          "The coordinated viewer must list exactly the owner and required caller");
+                  String affectedLabels = affectedFiles.cell(0, 0) + "\\n" + affectedFiles.cell(1, 0);
+                  assertTrue(affectedLabels.contains("StateOwner.java"),
+                          "The coordinated viewer must list StateOwner.java");
+                  assertTrue(affectedLabels.contains("StateCaller.java"),
+                          "The coordinated viewer must list StateCaller.java");
+
+                  assertTrue(candidate.isChecked(), "The coordinated candidate must initially be selected");
+                  candidate.uncheck();
+                  assertTrue(!candidate.isChecked(), "The single candidate checkbox must disable the whole migration");
+                  if (wizard.bot().button("Finish").isEnabled()) {
+                      clickButtonAsync(wizard, "Finish");
+                      waitForShellToClose(wizard, "Clean Up wizard");
+                  } else {
+                      clickButton(wizard, "Cancel");
+                  }
+                  assertTrue(ownerBefore.equals(readFile(ownerFile)),
+                          "Disabling the candidate must keep StateOwner.java byte-identical");
+                  assertTrue(callerBefore.equals(readFile(callerFile)),
+                          "Disabling the candidate must keep StateCaller.java byte-identical");
+
+                  ownerNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                          .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
+                  ownerNode.select();
+                  wizard = openCleanUpWizard(ownerNode);
+                  clickButton(wizard, "Next >", "Next >");
+                  bot.sleep(800);
+                  previewTree = wizard.bot().tree();
+                  candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+                  assertTrue(candidate != null && candidate.isChecked(),
+                          "Reopening the preview must present one selected atomic candidate");
+                  clickButtonAsync(wizard, "Finish");
+                  waitForShellToClose(wizard, "Clean Up wizard");
+
+                  String ownerAfter = readFile(ownerFile);
+                  String callerAfter = readFile(callerFile);
+                  assertTrue(ownerAfter.contains("enum Status"),
+                          "Applying the candidate must introduce the enum in StateOwner.java");
+                  assertTrue(callerAfter.contains("Status.PENDING"),
+                          "Applying the candidate must update the required caller in the same operation");
+                  assertTrue(!ownerBefore.equals(ownerAfter) && !callerBefore.equals(callerAfter),
+                          "The selected atomic candidate must modify both required files");
+
+                  undoLastCleanup();
+                  assertTrue(ownerBefore.equals(readFile(ownerFile)),
+                          "Undo must restore StateOwner.java byte-exactly");
+                  assertTrue(callerBefore.equals(readFile(callerFile)),
+                          "Undo must restore StateCaller.java byte-exactly");
+              }
+
+          ''' + test_anchor
+          if text.count(test_anchor) != 1:
+              raise SystemExit('Expected one CSS test anchor')
+          text = text.replace(test_anchor, test_method)
+
+          configure_anchor = '''    private static void configureJFaceCleanupProfile() {
+          '''
+          configure_method = '''    private static void configureIntToEnumCleanupProfile() {
+                  openPreferences();
+                  SWTBotShell preferences = bot.shell("Preferences").activate();
+                  selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
+                  clickButton(preferences, "Edit...", "Edit…");
+                  SWTBotShell profileDialog = bot.activeShell();
+                  profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Coordinated Preview");
+                  profileDialog.bot().tabItem("Int to Enum (Sandbox)").activate();
+
+                  ensureChecked(profileDialog, INT_TO_ENUM_MASTER_LABEL, true);
+                  ensureChecked(profileDialog, INT_TO_ENUM_PROJECT_WIDE_LABEL, true);
+
+                  clickButton(profileDialog, "OK");
+                  clickButton(preferences, "Apply and Close", "OK");
+              }
+
+          ''' + configure_anchor
+          if text.count(configure_anchor) != 1:
+              raise SystemExit('Expected one JFace configuration anchor')
+          text = text.replace(configure_anchor, configure_method)
+
+          method_start = text.index('    private static IProject createCleanupPreviewProject() throws Exception {')
+          return_anchor = '        return project;\n    }\n'
+          return_index = text.index(return_anchor, method_start)
+          fixture = '''        createUnit(sourceRoot, "demo.coordinated", "StateOwner.java",
+                  """
+                          package demo.coordinated;
+
+                          public class StateOwner {
+                              static final int STATUS_PENDING = 0;
+                              static final int STATUS_APPROVED = 1;
+
+                              void process(int status) {
+                                  if (status == STATUS_PENDING) {
+                                      System.out.println("pending");
+                                  } else if (status == STATUS_APPROVED) {
+                                      System.out.println("approved");
+                                  }
+                              }
+                          }
+                          """);
+              createUnit(sourceRoot, "demo.coordinated", "StateCaller.java",
+                  """
+                          package demo.coordinated;
+
+                          public class StateCaller {
+                              void run(StateOwner owner) {
+                                  owner.process(StateOwner.STATUS_PENDING);
+                              }
+                          }
+                          """);
+
+          '''
+          text = text[:return_index] + fixture + text[return_index:]
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          git diff --check
+
+      - name: Commit the real Workbench coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Carsten Hammer'
+          git config user.email 'carsten.hammer@t-online.de'
+          git add sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
+          git commit -m 'Verify atomic coordinated Cleanup selection in the Workbench'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
