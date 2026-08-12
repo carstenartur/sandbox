@@ -1,0 +1,58 @@
+name: Repair PR 1464 preview bootstrap
+
+on:
+  push:
+    branches:
+      - feature/coordinated-cleanup-preview
+    paths:
+      - '.github/workflows/fix-pr1464-preview-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Make the source anchor whitespace tolerant
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/apply-pr1464-real-coordinated-preview-test.yml')
+          text = path.read_text(encoding='utf-8')
+          start_marker = "          constants_anchor = '''"
+          end_marker = "          text = text.replace(constants_anchor, constants_replacement)\n"
+          start = text.index(start_marker)
+          end = text.index(end_marker, start) + len(end_marker)
+          replacement = '''          constants_pattern = __import__('re').compile(
+                        r'(    private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =\\n[ \\t]+"Modernize Image creation for DPI/zoom \\(ImageDataProvider\\)";\\n)')
+                    constants_addition = '''"'''    private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
+                private static final String INT_TO_ENUM_PROJECT_WIDE_LABEL =
+                        "Analyze all project source files for coordinated migrations";
+                private static final String INT_TO_ENUM_CANDIDATE_FRAGMENT = "nested enum Status";
+            '''"'''
+                    text, constants_count = constants_pattern.subn(
+                        lambda match: match.group(1) + constants_addition, text)
+                    if constants_count != 1:
+                        raise SystemExit(f'Expected one constants anchor, found {constants_count}')
+          '''
+          path.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
+          PY
+          git diff --check
+
+      - name: Commit the bootstrap repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Carsten Hammer'
+          git config user.email 'carsten.hammer@t-online.de'
+          git add .github/workflows/apply-pr1464-real-coordinated-preview-test.yml
+          git commit -m 'Make the preview bootstrap source anchor robust'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
