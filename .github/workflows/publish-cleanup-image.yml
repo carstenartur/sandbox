@@ -141,9 +141,9 @@ jobs:
           echo 'fi'
           echo 'WORKSPACE_DIR="${SANDBOX_CLEANUP_WORKSPACE:-/tmp/cleanup-workspace}"'
           echo 'mkdir -p "$WORKSPACE_DIR"'
-          echo 'exec java -jar "$LAUNCHER_JAR" -nosplash '
-          echo '    -application org.sandbox.jdt.core.JavaCleanup '
-          echo '    -data "$WORKSPACE_DIR" '
+          echo 'exec java -jar "$LAUNCHER_JAR" -nosplash \'
+          echo '    -application org.sandbox.jdt.core.JavaCleanup \'
+          echo '    -data "$WORKSPACE_DIR" \'
           echo '    "$@"'
         } > "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
         chmod +x "$DOCKER_CONTEXT/dist/bin/sandbox-cleanup"
