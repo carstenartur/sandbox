@@ -1,0 +1,31 @@
+name: Export JUnit 4 repair staging source
+
+on:
+  push:
+    branches:
+      - automation/junit4-repair-staging
+    paths:
+      - .github/workflows/export-junit4-staging.yml
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout staging source
+        uses: actions/checkout@v6
+
+      - name: Package source tree
+        run: |
+          set -euo pipefail
+          tar --exclude=.git -czf junit4-staging-source.tar.gz .
+
+      - name: Upload source tree
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit4-staging-source
+          path: junit4-staging-source.tar.gz
+          retention-days: 1
+          if-no-files-found: error
