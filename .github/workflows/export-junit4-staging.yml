@@ -1,4 +1,4 @@
-name: Export JUnit 4 repair staging source
+name: Export JUnit 3 integration baseline
 
 on:
   push:
@@ -14,18 +14,20 @@ jobs:
   export:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout staging source
+      - name: Checkout the repaired JUnit 3 baseline
         uses: actions/checkout@v6
+        with:
+          ref: 096e233c17bbf3cd5835aceb5185ff9ba7b900e3
 
-      - name: Package source tree
+      - name: Package baseline source tree
         run: |
           set -euo pipefail
-          tar --exclude=.git -czf "$RUNNER_TEMP/junit4-staging-source.tar.gz" .
+          tar --exclude=.git -czf "$RUNNER_TEMP/junit3-baseline-source.tar.gz" .
 
-      - name: Upload source tree
+      - name: Upload baseline source tree
         uses: actions/upload-artifact@v7
         with:
-          name: junit4-staging-source
-          path: ${{ runner.temp }}/junit4-staging-source.tar.gz
+          name: junit3-baseline-source
+          path: ${{ runner.temp }}/junit3-baseline-source.tar.gz
           retention-days: 1
           if-no-files-found: error
