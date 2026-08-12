@@ -20,12 +20,12 @@ jobs:
       - name: Package source tree
         run: |
           set -euo pipefail
-          tar --exclude=.git -czf junit4-staging-source.tar.gz .
+          tar --exclude=.git -czf "$RUNNER_TEMP/junit4-staging-source.tar.gz" .
 
       - name: Upload source tree
         uses: actions/upload-artifact@v7
         with:
           name: junit4-staging-source
-          path: junit4-staging-source.tar.gz
+          path: ${{ runner.temp }}/junit4-staging-source.tar.gz
           retention-days: 1
           if-no-files-found: error
