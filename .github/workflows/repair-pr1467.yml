@@ -32,13 +32,17 @@ jobs:
           python3 qa/upstream-jdt/verify_contract.py
           git diff --check
 
-      - name: Commit the repair and remove one-shot files
+      - name: Commit the repaired gate
         run: |
           set -euo pipefail
-          rm .github/workflows/repair-pr1467.yml
           rm .github/scripts/repair_pr1467.py
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add \
+            .github/scripts/repair_pr1467.py \
+            .github/workflows/upstream-jdt-migration-qa.yml \
+            qa/upstream-jdt/README.md \
+            qa/upstream-jdt/run-before-after.sh \
+            qa/upstream-jdt/verify_contract.py
           git commit -m 'Test only the pinned JDT APT module'
           git push origin HEAD:feature/oomph-upstream-jdt-migration-qa-final
