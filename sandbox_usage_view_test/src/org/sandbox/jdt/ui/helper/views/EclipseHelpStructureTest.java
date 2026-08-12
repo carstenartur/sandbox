@@ -67,7 +67,10 @@ public class EclipseHelpStructureTest {
 			new Family("sandbox_triggerpattern", List.of("code-patterns-cleanup.png", //$NON-NLS-1$ //$NON-NLS-2$
 					"llm-rule-inference-preferences.png")), //$NON-NLS-1$
 			new Family("sandbox_xml_cleanup", List.of("xml-cleanup.png")), //$NON-NLS-1$ //$NON-NLS-2$
-			new Family("sandbox_jface_cleanup", List.of("jface-cleanup.png")), //$NON-NLS-1$ //$NON-NLS-2$
+			new Family("sandbox_jface_cleanup", List.of("jface-cleanup.png", //$NON-NLS-1$ //$NON-NLS-2$
+					"jface-cleanup-real-preview-single-file-steps.png", //$NON-NLS-1$
+					"jface-cleanup-real-preview-diff-step.png", //$NON-NLS-1$
+					"jface-cleanup-real-preview-multi-file-selection.png")), //$NON-NLS-1$
 			new Family("sandbox_junit_cleanup", List.of("junit-migration-cleanup.png")), //$NON-NLS-1$ //$NON-NLS-2$
 			new Family("sandbox_method_reuse", List.of("method-reuse-cleanup.png")), //$NON-NLS-1$ //$NON-NLS-2$
 			new Family("sandbox_int_to_enum", List.of("int-to-enum-cleanup.png")), //$NON-NLS-1$ //$NON-NLS-2$
@@ -242,6 +245,10 @@ public class EclipseHelpStructureTest {
 		if (reference.isEmpty() || reference.startsWith("#") || URI_SCHEME.matcher(reference).matches()) { //$NON-NLS-1$
 			return;
 		}
+		if (reference.startsWith("/topic/")) { //$NON-NLS-1$
+			validateTopicReference(source, rawReference, reference);
+			return;
+		}
 		int query= reference.indexOf('?');
 		int fragment= reference.indexOf('#');
 		int end= reference.length();
@@ -262,6 +269,19 @@ public class EclipseHelpStructureTest {
 				() -> "Help reference escapes its bundle: " + source + " -> " + rawReference); //$NON-NLS-1$ //$NON-NLS-2$
 		assertTrue(Files.isRegularFile(target),
 				() -> "Broken local Help reference: " + source + " -> " + rawReference); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static void validateTopicReference(Path source, String rawReference, String reference) {
+		String relative= reference.substring("/topic/".length()); //$NON-NLS-1$
+		int slash= relative.indexOf('/');
+		assertTrue(slash > 0,
+				() -> "Invalid /topic/ reference: " + source + " -> " + rawReference); //$NON-NLS-1$ //$NON-NLS-2$
+		String bundle= relative.substring(0, slash);
+		String path= relative.substring(slash + 1);
+		Path repository= repositoryRoot();
+		Path target= repository.resolve(bundle).resolve(path).normalize();
+		assertTrue(Files.isRegularFile(target),
+				() -> "Broken /topic/ Help reference: " + source + " -> " + rawReference); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static Document parseXml(Path xml) throws Exception {

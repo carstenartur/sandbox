@@ -24,6 +24,21 @@
       <li>Expand the scope only after the result is understood.</li>
    </ol>
 
+   <h2>Real execution preview (LTK)</h2>
+   <p>The profile tab preview above is only an example snippet. The actual execution preview appears after
+      <strong>Source &gt; Clean Up...</strong> and lists the concrete file/step changes that will be applied.</p>
+   <p><img class="screenshot" src="../images/jface-cleanup-real-preview-single-file-steps.png"
+      alt="Cleanup preview tree with one file and multiple JFace cleanup step labels"/></p>
+   <p><img class="screenshot" src="../images/jface-cleanup-real-preview-diff-step.png"
+      alt="Cleanup preview diff for the selected JFace cleanup step"/></p>
+   <p><img class="screenshot" src="../images/jface-cleanup-real-preview-multi-file-selection.png"
+      alt="Cleanup preview tree with multiple independently selectable files"/></p>
+   <p>Independent local changes may be deselected per file or per step. Coordinated multi-file migrations keep
+      a separate atomic-selection contract tracked by
+      <a href="https://github.com/carstenartur/sandbox/issues/1451">carstenartur/sandbox#1451</a>.</p>
+   <p>See <a href="/topic/sandbox_cleanup_application_help/html/cleanup-preview.html">Cleanup preview model</a>
+      for the shared behavior details.</p>
+
    <h2>Screenshot regeneration</h2>
    <p>The image in this Help bundle is generated from a real Eclipse workbench by
       <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile

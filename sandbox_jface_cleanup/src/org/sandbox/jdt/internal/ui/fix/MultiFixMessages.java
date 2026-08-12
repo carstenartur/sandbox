@@ -7,6 +7,9 @@ public class MultiFixMessages {
 
 	public static String JFaceCleanUp_description;
 	public static String JFaceCleanUpFix_refactor;
+	public static String JFaceCleanUp_step_monitor;
+	public static String JFaceCleanUp_step_viewerSorter;
+	public static String JFaceCleanUp_step_imageDataProvider;
 
 	static {
 		// initialize resource bundle
