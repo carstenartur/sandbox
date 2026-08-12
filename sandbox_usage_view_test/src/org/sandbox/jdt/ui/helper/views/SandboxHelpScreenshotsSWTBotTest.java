@@ -344,47 +344,30 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
-        var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
-        if (!hintFileCleanup.isChecked()) {
-            hintFileCleanup.click();
+    var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
+    assertTrue(hintFileCleanup.isChecked(),
+            "Code Patterns screenshot profile must enable .sandbox-hint cleanup");
+
+    UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
+        @Override
+        public void run() {
+            profileDialog.widget.layout(true, true);
+            profileDialog.widget.update();
+            // Leave the read-only built-in profile untouched. Clicking or focusing
+            // its checkbox can start a nested GTK event loop while the cleanup
+            // preview is being refreshed. Park the pointer outside the dialog and
+            // let overlay-scrollbar hover state expire before taking the image.
+            profileDialog.widget.getDisplay().setCursorLocation(0, 0);
         }
-        hintFileCleanup.setFocus();
-
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return hintFileCleanup.isChecked()
-                        && !profileDialog.bot().button("Apply").isEnabled()
-                        && !profileDialog.bot().button("OK").isEnabled();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "Code Patterns cleanup profile did not reach its stable built-in-profile state";
-            }
-        }, 5_000);
-
-        UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
-            @Override
-            public void run() {
-                profileDialog.widget.layout(true, true);
-                profileDialog.widget.update();
-                // SWTBot's checkbox click leaves the pointer inside the scrollable
-                // cleanup pane. GTK then paints its overlay scrollbars in a transient
-                // hover/fade state, causing otherwise identical screenshots to differ
-                // by a handful of color values. Park the pointer outside the dialog
-                // and let that state expire before taking the reference image.
-                profileDialog.widget.getDisplay().setCursorLocation(0, 0);
-            }
-        });
-        bot.sleep(GTK_SETTLE_MILLIS);
-        UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
-            @Override
-            public void run() {
-                profileDialog.widget.update();
-            }
-        });
-    }
+    });
+    bot.sleep(GTK_SETTLE_MILLIS);
+    UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
+        @Override
+        public void run() {
+            profileDialog.widget.update();
+        }
+    });
+}
 
     private static void configureJFaceCleanupProfile() {
         openPreferences();
