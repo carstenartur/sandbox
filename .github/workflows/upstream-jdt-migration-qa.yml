@@ -129,7 +129,7 @@ jobs:
           git -C upstream/eclipse.jdt.core apply
           "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/overlays/jdt-core-r4_40-jupiter.patch"
 
-      - name: Run the pinned upstream baseline tests
+      - name: Prepare pinned JDT reactor dependencies
         working-directory: upstream/eclipse.jdt.core
         shell: bash
         run: |
@@ -141,18 +141,39 @@ jobs:
             --batch-mode \
             --no-transfer-progress \
             -U \
-            -Djava.io.tmpdir="${{ runner.temp }}/jdt-core-qa" \
+            -DskipTests \
+            -Djava.io.tmpdir="${{ runner.temp }}/jdt-core-qa/dependencies" \
             -f pom.xml \
             --projects "$primary_module" \
             --also-make \
+            clean install
+
+      - name: Run the pinned APT baseline tests
+        working-directory: upstream/eclipse.jdt.core
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/pins.env"
+          primary_module=${PIN_PRIMARY_TEST_POM%/pom.xml}
+          test "$primary_module" != "$PIN_PRIMARY_TEST_POM"
+          xvfb-run --auto-servernum mvn \
+            --batch-mode \
+            --no-transfer-progress \
+            -U \
+            -Djava.io.tmpdir="${{ runner.temp }}/jdt-core-qa/primary" \
+            -f pom.xml \
+            --projects "$primary_module" \
             clean verify
 
       - name: Require baseline JUnit XML evidence
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -d '' reports < <(find upstream/eclipse.jdt.core -type f \
-            -path '*/target/surefire-reports/*.xml' -print0)
+          source sandbox/qa/upstream-jdt/pins.env
+          primary_module=${PIN_PRIMARY_TEST_POM%/pom.xml}
+          mapfile -d '' reports < <(find \
+            "upstream/eclipse.jdt.core/$primary_module/target/surefire-reports" \
+            -type f -name '*.xml' -print0 2>/dev/null)
           if (( ${#reports[@]} == 0 )); then
             echo 'The pinned upstream baseline produced no Surefire XML reports.' >&2
             exit 1
