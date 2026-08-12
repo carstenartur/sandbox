@@ -95,6 +95,10 @@ jobs:
       # display wrapper added. The workflow is a verifier, not the generator API.
       - name: Reproduce Eclipse Help screenshots
         run: >-
+          timeout
+          --signal=TERM
+          --kill-after=2m
+          50m
           xvfb-run
           --auto-servernum
           --server-args="-screen 0 1600x1200x24"
