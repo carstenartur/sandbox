@@ -344,30 +344,30 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
-    var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
-    assertTrue(hintFileCleanup.isChecked(),
-            "Code Patterns screenshot profile must enable .sandbox-hint cleanup");
+        var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
+        assertTrue(hintFileCleanup.isChecked(),
+                "Code Patterns screenshot profile must enable .sandbox-hint cleanup");
 
-    UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
-        @Override
-        public void run() {
-            profileDialog.widget.layout(true, true);
-            profileDialog.widget.update();
-            // Leave the read-only built-in profile untouched. Clicking or focusing
-            // its checkbox can start a nested GTK event loop while the cleanup
-            // preview is being refreshed. Park the pointer outside the dialog and
-            // let overlay-scrollbar hover state expire before taking the image.
-            profileDialog.widget.getDisplay().setCursorLocation(0, 0);
-        }
-    });
-    bot.sleep(GTK_SETTLE_MILLIS);
-    UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
-        @Override
-        public void run() {
-            profileDialog.widget.update();
-        }
-    });
-}
+        UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
+            @Override
+            public void run() {
+                profileDialog.widget.layout(true, true);
+                profileDialog.widget.update();
+                // Leave the read-only built-in profile untouched. Clicking or focusing
+                // its checkbox can start a nested GTK event loop while the cleanup
+                // preview is being refreshed. Park the pointer outside the dialog and
+                // let overlay-scrollbar hover state expire before taking the image.
+                profileDialog.widget.getDisplay().setCursorLocation(0, 0);
+            }
+        });
+        bot.sleep(GTK_SETTLE_MILLIS);
+        UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
+            @Override
+            public void run() {
+                profileDialog.widget.update();
+            }
+        });
+    }
 
     private static void configureJFaceCleanupProfile() {
         openPreferences();
