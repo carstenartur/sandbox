@@ -228,8 +228,9 @@ copy_reports() {
     mkdir -p "$(dirname -- "$target")"
     cp "$file" "$target"
     count=$((count + 1))
-  done < <(find "$JDT_CORE" -type f -path '*/target/surefire-reports/*.xml' -print0)
-  ((count > 0)) || fail "No Surefire XML reports were produced"
+  done < <(find "$JDT_CORE/$PRIMARY_TEST_MODULE/target/surefire-reports" \
+    -type f -name '*.xml' -print0 2>/dev/null)
+  ((count > 0)) || fail "The pinned primary test module produced no Surefire XML reports"
 }
 
 copy_corpus_sources() {
@@ -253,6 +254,32 @@ for relative in sorted(contract["requiredFiles"]):
 PY
 }
 
+prepare_test_reactor() {
+  local tmp="$OUTPUT/tmp/dependencies"
+  mkdir -p "$tmp"
+  local -a maven_args=(
+    --batch-mode
+    --no-transfer-progress
+    -U
+    -DskipTests
+    -Djava.io.tmpdir="$tmp"
+    -f pom.xml
+    --projects "$PRIMARY_TEST_MODULE"
+    --also-make
+    clean install
+  )
+  printf '%q ' "$MAVEN_BIN" "${maven_args[@]}" > "$OUTPUT/dependency-build-command.txt"
+  printf '\n' >> "$OUTPUT/dependency-build-command.txt"
+  local -a display_prefix=()
+  if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
+    display_prefix=(xvfb-run --auto-servernum)
+  fi
+  (
+    cd "$JDT_CORE"
+    "${display_prefix[@]}" "$MAVEN_BIN" "${maven_args[@]}"
+  ) 2>&1 | tee "$OUTPUT/logs/dependency-build-maven.log"
+}
+
 run_tests() {
   local phase=$1 destination=$2
   local tmp="$OUTPUT/tmp/$phase"
@@ -264,7 +291,6 @@ run_tests() {
     -Djava.io.tmpdir="$tmp"
     -f pom.xml
     --projects "$PRIMARY_TEST_MODULE"
-    --also-make
     clean verify
   )
   printf '%q ' "$MAVEN_BIN" "${maven_args[@]}" > "$destination-command.txt"
@@ -309,6 +335,9 @@ run_cleanup() {
   "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" \
     2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
 }
+
+printf 'PREPARING_TEST_REACTOR\n' > "$OUTPUT/run-state.txt"
+prepare_test_reactor
 
 printf 'BASELINE_TESTS\n' > "$OUTPUT/run-state.txt"
 copy_corpus_sources "$OUTPUT/corpus/baseline"
