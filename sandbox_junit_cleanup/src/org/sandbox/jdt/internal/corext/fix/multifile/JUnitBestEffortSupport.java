@@ -15,7 +15,6 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXPECTED_EXCEPTION;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNNERS_PARAMETERIZED;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
 
 import java.nio.charset.StandardCharsets;
@@ -74,6 +73,7 @@ import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithMigrationEligibility;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 
 /**
@@ -90,7 +90,6 @@ public final class JUnitBestEffortSupport {
 	private static final String TEST_NAME= "org.junit.rules.TestName"; //$NON-NLS-1$
 	private static final String TIMEOUT= "org.junit.rules.Timeout"; //$NON-NLS-1$
 	private static final String ERROR_COLLECTOR= "org.junit.rules.ErrorCollector"; //$NON-NLS-1$
-	private static final String SUITE_RUNNER= "org.junit.runners.Suite"; //$NON-NLS-1$
 	private static final String MARKER_PREFIX= "Sandbox JUnit migration gap "; //$NON-NLS-1$
 
 	/** One unresolved construct and the exact source type where it must be completed. */
@@ -232,8 +231,7 @@ public final class JUnitBestEffortSupport {
 					if (fixes.contains(JUnitCleanUpFixCore.RUNWITH)) {
 						String runner= runnerType(node);
 						if (runner != null && !runner.isBlank()
-								&& !ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(runner)
-								&& !SUITE_RUNNER.equals(runner)) {
+								&& !RunWithMigrationEligibility.canMigrate(node, runner)) {
 							addGap(gaps, type, "runner:" + type.name(), //$NON-NLS-1$
 									"CUSTOM_JUNIT4_RUNNER", //$NON-NLS-1$
 									"The JUnit 4 runner " + runner //$NON-NLS-1$

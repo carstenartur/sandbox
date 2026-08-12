@@ -52,6 +52,7 @@ import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
 import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleImportCleanupSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyScopeDetector;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
@@ -146,6 +147,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
 		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
 		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
+		RuleImportCleanupSupport.addIfSafe(compilationUnit, computeFixSet, operations);
 		if (bestEffort) {
 			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, operations);
 		}

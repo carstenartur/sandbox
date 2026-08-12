@@ -12,6 +12,8 @@ package org.sandbox.jdt.internal.corext.fix;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
 
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
@@ -19,6 +21,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
@@ -30,6 +33,15 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		description = "Migrate @RunWith(Parameterized.class) to @ParameterizedTest",
 		displayName = "JUnit 4 @RunWith(Parameterized) → JUnit 5 @ParameterizedTest")
 final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlugin {
+
+	@Override
+	protected List<Pattern> getPatterns() {
+		return List.of(
+				new Pattern("@RunWith($runner)", PatternKind.ANNOTATION, null, null, //$NON-NLS-1$
+						ORG_JUNIT_RUNWITH, null, null),
+				new Pattern("@RunWith(value = $runner)", PatternKind.ANNOTATION, null, null, //$NON-NLS-1$
+						ORG_JUNIT_RUNWITH, null, null));
+	}
 
 	@Override
 	protected JunitHolder createHolder(Match match) {

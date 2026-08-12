@@ -188,7 +188,7 @@ public class MigrationJUnit3RealWorldShapesTest {
 					}
 
 					public static Test suite() {
-						return new TestSuite(StatefulConstructionTest.class);
+						return new TestSuite(MultipleInitializers.class);
 					}
 				}
 				""", false, null); //$NON-NLS-1$

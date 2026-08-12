@@ -286,13 +286,25 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 		boolean removedSelfSuite= false;
 		for (MethodDeclaration method : node.getMethods()) {
+			if (JUnit3SuiteModel.isSuiteBuilder(method) && JUnit3LegacyShape.isSelfSuite(method, node)) {
+				removedSelfSuite= true;
+				break;
+			}
+		}
+		if (removedSelfSuite) {
+			// Remove the legacy simple-name import before addAnnotationToMethod()
+			// adds org.junit.jupiter.api.Test. Reversing this order caused the
+			// later removal to discard the newly added Jupiter import as well.
+			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
+			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
+		}
+		for (MethodDeclaration method : node.getMethods()) {
 			if (method.isConstructor() && JUnit3LegacyShape.isRemovableConstructor(method)) {
 				rewriter.remove(method, group);
 				continue;
 			}
 			if (JUnit3SuiteModel.isSuiteBuilder(method) && JUnit3LegacyShape.isSelfSuite(method, node)) {
 				rewriter.remove(method, group);
-				removedSelfSuite= true;
 				continue;
 			}
 			if (isLifecycleMethod(method, "setUp")) { //$NON-NLS-1$
@@ -306,10 +318,6 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 				removeRedundantLifecycleSuperCalls(method, rewriter, group);
 				rewriteAssertions(method, rewriter, ast, group, importRewriter);
 			}
-		}
-		if (removedSelfSuite) {
-			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
-			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
 		}
 	}
 

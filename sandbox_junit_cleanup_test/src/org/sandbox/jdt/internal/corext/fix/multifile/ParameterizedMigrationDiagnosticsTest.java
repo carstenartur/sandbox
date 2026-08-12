@@ -152,7 +152,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 	}
 
 	@Test
-	public void reportsUnsupportedExplicitRunWithValueSyntax() throws CoreException {
+	public void acceptsExplicitRunWithValueSyntax() throws CoreException {
 		ICompilationUnit unit= compilationUnit("explicitrunner", //$NON-NLS-1$
 				"ExplicitRunnerTest", //$NON-NLS-1$
 				"""
@@ -182,8 +182,10 @@ public class ParameterizedMigrationDiagnosticsTest {
 				}
 				"""); //$NON-NLS-1$
 
-		assertReason(planClosed(unit),
-				"PARAMETERIZED_RUNNER_SYNTAX_UNSUPPORTED"); //$NON-NLS-1$
+		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= planClosed(unit);
+
+		assertFalse(result.status().hasFatalError());
+		assertTrue(result.diagnostics().candidates().isEmpty());
 	}
 
 	@Test
