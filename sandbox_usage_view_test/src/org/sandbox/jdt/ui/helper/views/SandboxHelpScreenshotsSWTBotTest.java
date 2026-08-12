@@ -299,8 +299,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         var affectedFiles = wizard.bot().table();
         assertTrue(affectedFiles.rowCount() == 2,
                 "The coordinated viewer must list exactly the owner and required caller");
-        String affectedLabels = affectedFiles.cell(0, 0) + "
-" + affectedFiles.cell(1, 0);
+        String affectedLabels = affectedFiles.cell(0, 0) + "\n" + affectedFiles.cell(1, 0);
         assertTrue(affectedLabels.contains("StateOwner.java"),
                 "The coordinated viewer must list StateOwner.java");
         assertTrue(affectedLabels.contains("StateCaller.java"),
@@ -574,9 +573,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         return UIThreadRunnable.syncExec(shell.display, new Result<String>() {
             @Override
             public String run() {
-                return String.join("
----
-", collectText(shell.widget));
+                return String.join("\n---\n", collectText(shell.widget));
             }
         });
     }
