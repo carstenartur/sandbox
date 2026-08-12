@@ -224,6 +224,9 @@ def main() -> int:
     runner = (QA / "run-jdt-ui-before-after.sh").read_text(encoding="utf-8")
     for marker in (
         "org.eclipse.jdt.ui.tests",
+        "org.eclipse.jdt.bcoview",
+        "REACTOR_PROJECTS",
+        "verify_reactor_bcoview_runtime",
         "jdt-ui-junit4-corpus.json",
         "verify_jdt_ui_corpus.py",
         "compare_test_inventory.py",

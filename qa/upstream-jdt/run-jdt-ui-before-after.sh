@@ -13,7 +13,9 @@ CORPUS_VERIFIER="$SCRIPT_DIR/verify_jdt_ui_corpus.py"
 COMPARATOR="$SCRIPT_DIR/compare_test_inventory.py"
 MAPPING="$SCRIPT_DIR/expected-test-mapping.json"
 PROJECT="org.eclipse.jdt.ui.tests"
-PROJECT_POM="$PROJECT/pom.xml"
+BCOVIEW_PROJECT="org.eclipse.jdt.bcoview"
+REACTOR_PROJECTS="$PROJECT,$BCOVIEW_PROJECT"
+ROOT_POM="pom.xml"
 
 JDT_UI=""
 OOMPH_WORKSPACE=""
@@ -96,7 +98,9 @@ fi
 [[ -f "$PROFILE" ]] || fail "Missing cleanup profile: $PROFILE"
 [[ -f "$CORPUS_CONTRACT" ]] || fail "Missing JDT UI corpus contract"
 [[ -f "$JDT_UI/$PROJECT/.project" ]] || fail "Missing pinned Eclipse project description"
-[[ -f "$JDT_UI/$PROJECT_POM" ]] || fail "Missing pinned JDT UI test POM"
+[[ -f "$JDT_UI/$ROOT_POM" ]] || fail "Missing pinned JDT UI reactor POM"
+[[ -f "$JDT_UI/$PROJECT/pom.xml" ]] || fail "Missing pinned JDT UI test POM"
+[[ -f "$JDT_UI/$BCOVIEW_PROJECT/pom.xml" ]] || fail "Missing pinned bytecode-view POM"
 
 if [[ -z "$OUTPUT" ]]; then
   OUTPUT="$SCRIPT_DIR/../../target/upstream-jdt-ui-qa/$MODE-$(date -u +%Y%m%dT%H%M%SZ)"
@@ -243,6 +247,43 @@ copy_reports() {
   fi
 }
 
+verify_reactor_bcoview_runtime() {
+  local destination=$1
+  local report_root="$JDT_UI/$PROJECT/target/surefire-reports"
+  local evidence="$destination-bcoview-runtime.txt"
+  python3 - "$report_root" "$JDT_UI/$BCOVIEW_PROJECT" "$evidence" <<'PYRUNTIME'
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+report_root = Path(sys.argv[1])
+expected = f"reference:file:{Path(sys.argv[2]).resolve()}"
+evidence = Path(sys.argv[3])
+
+entries: set[str] = set()
+for report in sorted(report_root.glob("*.xml")):
+    try:
+        root = ET.parse(report).getroot()
+    except ET.ParseError:
+        continue
+    for prop in root.findall("./properties/property"):
+        if prop.get("name") != "osgi.bundles":
+            continue
+        for entry in (prop.get("value") or "").split(","):
+            if "org.eclipse.jdt.bcoview" in entry:
+                entries.add(entry.strip())
+
+lines = sorted(entries)
+evidence.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+if not any(line.startswith(expected) for line in lines):
+    actual = "\n  ".join(lines) if lines else "<no org.eclipse.jdt.bcoview runtime entry>"
+    raise SystemExit(
+        "JDT UI tests did not use the pinned reactor bytecode-view bundle. "
+        f"Expected an entry starting with {expected!r}; found:\n  {actual}"
+    )
+PYRUNTIME
+}
+
 run_tests() {
   local phase=$1 destination=$2 require_reports=$3
   local tmp="$OUTPUT/tmp/$phase"
@@ -255,7 +296,9 @@ run_tests() {
     -DskipTests=false
     -Djava.io.tmpdir="$tmp"
     -Pbuild-individual-bundles
-    -f "$PROJECT_POM"
+    -f "$ROOT_POM"
+    -pl "$REACTOR_PROJECTS"
+    -am
     clean verify
   )
   printf '%q ' "${command[@]}" > "$destination-command.txt"
@@ -273,6 +316,9 @@ run_tests() {
   set -e
   printf '%s\n' "$status" > "$destination-maven-exit-code.txt"
   copy_reports "$destination" "$require_reports"
+  if [[ "$(cat "$destination-report-count.txt")" -gt 0 ]]; then
+    verify_reactor_bcoview_runtime "$destination"
+  fi
   return "$status"
 }
 
