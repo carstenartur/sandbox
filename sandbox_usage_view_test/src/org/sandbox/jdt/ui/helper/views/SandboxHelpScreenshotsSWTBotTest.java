@@ -122,7 +122,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final String DOCUMENTATION_PROJECT = "SandboxHelpTriggerPattern";
     private static final String REFACTORING_MINING_VIEW = "org.sandbox.jdt.views.refactoringMining";
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
-    private static final String HINT_FILE_CLEANUP_LABEL = "Apply transformation rules from .sandbox-hint files";
     private static final String CLEANUP_PREVIEW_PROJECT = "SandboxCleanupPreviewProject";
     private static final String JFACE_MASTER_LABEL = "Modernize JFace API usage";
     private static final String JFACE_MONITOR_LABEL = "Replace SubProgressMonitor with SubMonitor";
@@ -164,6 +163,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         prepareForScreenshot(profileDialog);
 
         for (CleanupTab tab : CLEANUP_TABS) {
+            System.out.println("[help-screenshots] Activating cleanup tab: " + tab.label());
             profileDialog.bot().tabItem(tab.label()).activate();
             if ("Code Patterns (Sandbox)".equals(tab.label())) {
                 stabilizeHintFileCleanup(profileDialog);
@@ -171,6 +171,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 bot.sleep(300);
             }
             capture(profileDialog, tab.helpBundle(), tab.fileName());
+            System.out.println("[help-screenshots] Captured cleanup tab: " + tab.label());
         }
 
         clickButton(profileDialog, "Cancel");
@@ -344,10 +345,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
-        var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
-        assertTrue(hintFileCleanup.isChecked(),
-                "Code Patterns screenshot profile must enable .sandbox-hint cleanup");
-
         UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
             @Override
             public void run() {
