@@ -1,0 +1,69 @@
+name: Apply cleanup application ID fix
+
+on:
+  push:
+    branches:
+      - fix/equinox-cleanup-application-id
+    paths:
+      - '.github/workflows/apply-cleanup-application-id-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Replace the invalid doubly-prefixed Equinox application ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          old='sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup'
+          new='org.sandbox.jdt.core.JavaCleanup'
+          mapfile -t files < <(git grep -l -F "$old")
+          if (( ${#files[@]} != 7 )); then
+            printf 'Expected exactly 7 stale application-ID files, found %d:\n' "${#files[@]}" >&2
+            printf '%s\n' "${files[@]}" >&2
+            exit 1
+          fi
+          OLD="$old" NEW="$new" python3 <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          old = os.environ['OLD']
+          new = os.environ['NEW']
+          files = subprocess.check_output(
+              ['git', 'grep', '-l', '-F', old], text=True
+          ).splitlines()
+          for name in files:
+              path = Path(name)
+              text = path.read_text(encoding='utf-8')
+              path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          if git grep -n -F "$old"; then
+            echo 'Stale application ID remains' >&2
+            exit 1
+          fi
+          git diff --check
+
+      - name: Replace the bootstrap commit with the focused fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Carsten Hammer'
+          git config user.email 'carsten.hammer@t-online.de'
+          git add .github/actions/cleanup-action/action.yml \
+            .github/scripts/smoke_test_distribution.sh \
+            .github/workflows/publish-cleanup-image.yml \
+            sandbox_cleanup_application/ARCHITECTURE.md \
+            sandbox_cleanup_application/README.md \
+            sandbox_cleanup_application_help/html/index.html \
+            sandbox_cleanup_application_help/html/usage.html
+          git rm .github/workflows/apply-cleanup-application-id-fix.yml
+          git commit --amend -m 'Use the registered Equinox cleanup application ID'
+          git push --force-with-lease origin "HEAD:${GITHUB_REF_NAME}"
