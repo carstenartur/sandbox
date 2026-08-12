@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=pins.env
 source "$SCRIPT_DIR/pins.env"
 
-APPLICATION_ID="sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup"
+APPLICATION_ID="org.sandbox.jdt.core.ProjectWideJavaCleanup"
 PROFILE="$SCRIPT_DIR/junit3-to-jupiter.properties"
 OVERLAY="$SCRIPT_DIR/overlays/jdt-core-r4_40-jupiter.patch"
 MAPPING="$SCRIPT_DIR/expected-test-mapping.json"
