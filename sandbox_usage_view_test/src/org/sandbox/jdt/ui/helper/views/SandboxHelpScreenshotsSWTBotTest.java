@@ -40,11 +40,13 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -185,9 +187,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem singleFileNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode("demo.single").expand().getNode("SingleFileCleanup.java");
         singleFileNode.select();
-        openCleanUpWizard(singleFileNode);
-
-        SWTBotShell wizard = bot.shell("Clean Up").activate();
+        SWTBotShell wizard = openCleanUpWizard(singleFileNode);
         clickButton(wizard, "Next >", "Next >");
         bot.sleep(500);
         prepareForScreenshot(wizard);
@@ -221,8 +221,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-diff-step.png");
 
         viewerSorterStep.uncheck();
-        clickButton(wizard, "Finish");
-        waitForWizardToClose("Clean Up");
+        clickButtonAsync(wizard, "Finish");
+        waitForShellToClose(wizard, "Clean Up wizard");
         String singleAfter = readFile(singleFile);
         assertTrue(singleAfter.contains("SubMonitor.convert"), "Selected monitor migration must be applied");
         assertTrue(singleAfter.contains("new ViewerSorter()"), "Deselected viewer sorter migration must not be applied");
@@ -236,8 +236,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem multiPackage = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
                 .getNode("src").expand().getNode("demo.multi");
         multiPackage.select();
-        openCleanUpWizard(multiPackage);
-        wizard = bot.shell("Clean Up").activate();
+        wizard = openCleanUpWizard(multiPackage);
         clickButton(wizard, "Next >", "Next >");
         bot.sleep(500);
         prepareForScreenshot(wizard);
@@ -250,8 +249,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         capture(wizard, "sandbox_jface_cleanup_help", "jface-cleanup-real-preview-multi-file-selection.png");
 
         sorterPreviewFile.uncheck();
-        clickButton(wizard, "Finish");
-        waitForWizardToClose("Clean Up");
+        clickButtonAsync(wizard, "Finish");
+        waitForShellToClose(wizard, "Clean Up wizard");
 
         String monitorAfter = readFile(monitorFile);
         String sorterAfter = readFile(sorterFile);
@@ -403,6 +402,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
         clickButton(profileDialog, "OK");
         clickButton(preferences, "Apply and Close", "OK");
+        waitForShellToClose(preferences, "Preferences");
     }
 
     private static void ensureChecked(SWTBotShell shell, String label, boolean checked) {
@@ -422,17 +422,46 @@ public class SandboxHelpScreenshotsSWTBotTest {
         return bot.viewByTitle("Project Explorer").bot().tree();
     }
 
-    private static void openCleanUpWizard(SWTBotTreeItem selection) {
+    private static SWTBotShell openCleanUpWizard(SWTBotTreeItem selection) {
         WidgetNotFoundException failure = null;
         for (String label : List.of("Clean Up...", "Clean Up…")) {
             try {
                 selection.contextMenu("Source").menu(label).click();
-                return;
+                return waitForCleanUpWizard();
             } catch (WidgetNotFoundException exception) {
                 failure = exception;
             }
         }
         throw failure;
+    }
+
+    private static SWTBotShell waitForCleanUpWizard() {
+        SWTBotShell[] result = new SWTBotShell[1];
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                for (SWTBotShell shell : bot.shells()) {
+                    if (!"Clean Up".equals(shell.getText()) || !shell.isOpen()) {
+                        continue;
+                    }
+                    try {
+                        shell.bot().button("Next >");
+                        shell.bot().button("Cancel");
+                        result[0] = shell;
+                        return true;
+                    } catch (WidgetNotFoundException exception) {
+                        // A cleanup profile or preferences shell can share the title.
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The real Clean Up wizard did not open";
+            }
+        }, 30_000);
+        return result[0].activate();
     }
 
     private static SWTBotTreeItem findTreeItemContaining(SWTBotTree tree, String needle) {
@@ -485,23 +514,18 @@ public class SandboxHelpScreenshotsSWTBotTest {
         return texts;
     }
 
-    private static void waitForWizardToClose(String title) {
+    private static void waitForShellToClose(SWTBotShell shell, String description) {
         bot.waitUntil(new DefaultCondition() {
             @Override
             public boolean test() {
-                for (SWTBotShell shell : bot.shells()) {
-                    if (title.equals(shell.getText()) && shell.isOpen()) {
-                        return false;
-                    }
-                }
-                return true;
+                return shell.widget.isDisposed();
             }
 
             @Override
             public String getFailureMessage() {
-                return "Wizard did not close: " + title;
+                return description + " did not close";
             }
-        }, 10_000);
+        }, 30_000);
     }
 
     private static void undoLastCleanup() throws Exception {
@@ -726,6 +750,26 @@ public class SandboxHelpScreenshotsSWTBotTest {
         for (String label : labels) {
             try {
                 shell.bot().button(label).click();
+                return;
+            } catch (WidgetNotFoundException exception) {
+                failure = exception;
+            }
+        }
+        throw failure;
+    }
+
+    private static void clickButtonAsync(SWTBotShell shell, String... labels) {
+        WidgetNotFoundException failure = null;
+        for (String label : labels) {
+            try {
+                var button = shell.bot().button(label);
+                shell.display.asyncExec(() -> {
+                    if (!button.widget.isDisposed() && button.widget.isEnabled()) {
+                        Event event = new Event();
+                        event.widget = button.widget;
+                        button.widget.notifyListeners(SWT.Selection, event);
+                    }
+                });
                 return;
             } catch (WidgetNotFoundException exception) {
                 failure = exception;
