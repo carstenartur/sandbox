@@ -1,0 +1,106 @@
+name: Repair PR 1464 SWTBot shell lifecycle
+
+on:
+  push:
+    branches:
+      - feature/coordinated-cleanup-preview
+    paths:
+      - '.github/workflows/repair-pr1464-shell-lifecycle.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Synchronize modal Cleanup shells
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java')
+          text = path.read_text(encoding='utf-8')
+
+          old_tabs = '''        clickButton(profileDialog, "Cancel");
+                  clickButton(preferences, "Cancel");
+          '''
+          new_tabs = '''        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "Cancel");
+                  preferences.activate();
+                  clickButtonAndWaitForShellToClose(preferences, "Preferences", "Cancel");
+          '''
+          if text.count(old_tabs) != 1:
+              raise SystemExit(f'Expected one profile screenshot close sequence, found {text.count(old_tabs)}')
+          text = text.replace(old_tabs, new_tabs)
+
+          old_config = '''        clickButton(profileDialog, "OK");
+                  clickButton(preferences, "Apply and Close", "OK");
+                  waitForShellToClose(preferences, "Preferences");
+          '''
+          new_config = '''        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
+                  preferences.activate();
+                  clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
+          '''
+          if text.count(old_config) != 2:
+              raise SystemExit(f'Expected two profile apply sequences, found {text.count(old_config)}')
+          text = text.replace(old_config, new_config)
+
+          helper_anchor = '''    private static void clickButtonAsync(SWTBotShell shell, String... labels) {
+          '''
+          helper = '''    private static void clickButtonAndWaitForShellToClose(SWTBotShell shell, String description,
+                      String... labels) {
+                  clickButton(shell, labels);
+                  waitForShellToClose(shell, description);
+              }
+
+              private static void clickButtonAsync(SWTBotShell shell, String... labels) {
+          '''
+          if text.count(helper_anchor) != 1:
+              raise SystemExit(f'Expected one clickButtonAsync anchor, found {text.count(helper_anchor)}')
+          text = text.replace(helper_anchor, helper)
+
+          independent_start = '''    public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
+                  configureJFaceCleanupProfile();
+          '''
+          independent_replacement = '''    public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
+                  System.out.println("[help-screenshots] Starting independent real Cleanup preview");
+                  configureJFaceCleanupProfile();
+                  System.out.println("[help-screenshots] Configured JFace Cleanup profile");
+          '''
+          if text.count(independent_start) != 1:
+              raise SystemExit('Could not locate the independent preview test start')
+          text = text.replace(independent_start, independent_replacement)
+
+          coordinated_start = '''    public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
+                  configureIntToEnumCleanupProfile();
+          '''
+          coordinated_replacement = '''    public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
+                  System.out.println("[help-screenshots] Starting coordinated Int-to-Enum Cleanup preview");
+                  configureIntToEnumCleanupProfile();
+                  System.out.println("[help-screenshots] Configured Int-to-Enum Cleanup profile");
+          '''
+          if text.count(coordinated_start) != 1:
+              raise SystemExit('Could not locate the coordinated preview test start')
+          text = text.replace(coordinated_start, coordinated_replacement)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          git rm .github/workflows/repair-pr1464-shell-lifecycle.yml
+          git diff --check
+
+      - name: Commit the SWTBot repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
+          git commit -m 'Synchronize modal shells in Cleanup SWTBot tests'
+          git push
