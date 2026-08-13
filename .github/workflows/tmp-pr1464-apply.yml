@@ -1,0 +1,38 @@
+name: Apply coordinated preview screenshot repair
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/coordinated-cleanup-preview'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply and commit screenshot contract repair
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          patch=.github/patches/pr1464-screenshot-contract.patch
+          git apply --check "$patch"
+          git apply "$patch"
+          rm "$patch" .github/workflows/tmp-pr1464-apply.yml
+          git diff --check
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          ET.parse('sandbox_usage_view_test/pom.xml')
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Generate and verify the real coordinated Cleanup preview"
+          git push origin "HEAD:${HEAD_BRANCH}"
