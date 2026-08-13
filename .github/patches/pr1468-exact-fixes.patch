@@ -1,0 +1,285 @@
+--- a/qa/upstream-jdt/verify_contract.py
++++ b/qa/upstream-jdt/verify_contract.py
+@@ -366,10 +366,14 @@
+         root
+         / "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java"
+     ).read_text(encoding="utf-8")
++    wrapper = (
++        root
++        / "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/HeadlessProjectWideCodeCleanupApplication.java"
++    ).read_text(encoding="utf-8")
+     manifest = (root / "sandbox_cleanup_application/META-INF/MANIFEST.MF").read_text(encoding="utf-8")
+     for required in (
+         'id="org.sandbox.jdt.core.ProjectWideJavaCleanup"',
+-        'class="org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication"',
++        'class="org.sandbox.jdt.core.cleanupapp.HeadlessProjectWideCodeCleanupApplication"',
+     ):
+         if required not in plugin:
+             fail(f"Project-wide application registration is missing {required}")
+@@ -383,8 +387,17 @@
+     ):
+         if required not in source:
+             fail(f"Project-wide application is missing contract fragment: {required}")
+-    if "sandbox_common_core" not in manifest:
+-        fail("Cleanup application does not require the diagnostics API bundle")
++    for required in (
++        "new ProjectWideCodeCleanupApplication()",
++        "delegate.start(context)",
++        "disposeDisplay()",
++        "Display.getDefault()",
++        "display.dispose()",
++    ):
++        if required not in wrapper:
++            fail(f"Headless project-wide application is missing lifecycle fragment: {required}")
++    if "sandbox_common_core" not in manifest or "org.eclipse.swt" not in manifest:
++        fail("Cleanup application does not require the diagnostics and SWT lifecycle bundles")
+ 
+ 
+ def validate_runner(root: Path, pins: dict[str, str]) -> None:
+--- a/sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java
++++ b/sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java
+@@ -170,9 +170,8 @@
+ 				}
+ 			}
+ 		} catch (CoreException | IOException | RuntimeException e) {
+-			String message= e.getMessage();
+-			errors.add(message == null || message.isBlank() ? e.getClass().getName() : message);
+-			System.err.println(errors.get(errors.size() - 1));
++			errors.add(describeException(e));
++			e.printStackTrace(System.err);
+ 		}
+ 
+ 		if (arguments.patch() != null && !changed.isEmpty()) {
+@@ -485,6 +484,24 @@
+ 		return escaped.toString();
+ 	}
+ 
++	private static String describeException(Throwable throwable) {
++		StringBuilder description= new StringBuilder();
++		Set<Throwable> visited= java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
++		Throwable current= throwable;
++		while (current != null && visited.add(current)) {
++			if (!description.isEmpty()) {
++				description.append(" <- caused by: "); //$NON-NLS-1$
++			}
++			description.append(current.getClass().getName());
++			String message= current.getMessage();
++			if (message != null && !message.isBlank()) {
++				description.append(": ").append(message); //$NON-NLS-1$
++			}
++			current= current.getCause();
++		}
++		return description.toString();
++	}
++
+ 	private static void createParent(Path path) throws IOException {
+ 		Path parent= path.getParent();
+ 		if (parent != null) {
+--- a/sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java
++++ b/sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java
+@@ -40,6 +40,7 @@
+ import org.eclipse.jdt.core.dom.FieldDeclaration;
+ import org.eclipse.jdt.core.dom.ITypeBinding;
+ import org.eclipse.jdt.core.dom.IVariableBinding;
++import org.eclipse.jdt.core.dom.MethodDeclaration;
+ import org.eclipse.jdt.core.dom.Modifier;
+ import org.eclipse.jdt.core.dom.TypeDeclaration;
+ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+@@ -74,7 +75,8 @@
+ 		}
+ 	}
+ 
+-	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName) {
++	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName,
++			boolean requiresLocalRewrite) {
+ 	}
+ 
+ 	/**
+@@ -362,7 +364,8 @@
+ 					ITypeBinding binding= node.resolveBinding();
+ 					String typeKey= JUnitMigrationPlan.typeKey(binding);
+ 					if (typeKey != null) {
+-						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName()));
++						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName(),
++								requiresLocalExternalResourceRewrite(node, binding)));
+ 						bindings.put(typeKey, binding);
+ 					}
+ 					return true;
+@@ -453,12 +456,17 @@
+ 
+ 	private static MigrationResult createMigrations(List<RuleField> fields,
+ 			Map<String, ResourceChain> chainsByTypeKey, RefactoringStatus status, IProgressMonitor monitor) {
+-		// Every type between the rule field type and ExternalResource takes part in the
+-		// same migration, because its inherited callbacks are renamed as well.
++		// Keep the complete inheritance chain for scope validation, but retain rewrite
++		// entries only for source types that actually change. A callback-free indirect
++		// subclass inherits the migrated callback implementation and must not produce an
++		// empty JDT cleanup change.
+ 		Map<String, List<RuleField>> fieldsByResourceType= new LinkedHashMap<>();
+ 		Map<String, ResourceType> resourcesByTypeKey= new LinkedHashMap<>();
+ 		for (RuleField field : fields) {
+ 			for (ResourceType resource : chainsByTypeKey.get(field.resourceTypeKey()).types()) {
++				if (!resource.requiresLocalRewrite()) {
++					continue;
++				}
+ 				resourcesByTypeKey.putIfAbsent(resource.typeBindingKey(), resource);
+ 				fieldsByResourceType.computeIfAbsent(resource.typeBindingKey(), ignored -> new ArrayList<>())
+ 						.add(field);
+@@ -496,6 +504,23 @@
+ 		return new MigrationResult(migrations, diagnostics);
+ 	}
+ 
++	private static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
++		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
++		if (superclass != null
++				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {
++			return true;
++		}
++		for (MethodDeclaration method : node.getMethods()) {
++			if (!method.isConstructor() && method.parameters().isEmpty()) {
++				String name= method.getName().getIdentifier();
++				if ("before".equals(name) || "after".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
++					return true;
++				}
++			}
++		}
++		return false;
++	}
++
+ 	private static RuleKind ruleKind(FieldDeclaration field) {
+ 		for (Object modifier : field.modifiers()) {
+ 			if (modifier instanceof Annotation annotation) {
+--- a/sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/ReportingJUnitCleanUpCore.java
++++ b/sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/ReportingJUnitCleanUpCore.java
+@@ -10,34 +10,17 @@
+  *******************************************************************************/
+ package org.sandbox.jdt.internal.ui.fix;
+ 
+-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_AFTER;
+-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_BEFORE;
+-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
+-
+ import java.util.HashMap;
+-import java.util.LinkedHashSet;
+-import java.util.List;
+ import java.util.Map;
+-import java.util.Set;
+ 
+ import org.eclipse.core.runtime.CoreException;
+ import org.eclipse.core.runtime.IProgressMonitor;
+ 
+ import org.eclipse.jdt.core.ICompilationUnit;
+ import org.eclipse.jdt.core.IJavaProject;
+-import org.eclipse.jdt.core.dom.ASTParser;
+-import org.eclipse.jdt.core.dom.ASTRequestor;
+-import org.eclipse.jdt.core.dom.ASTVisitor;
+-import org.eclipse.jdt.core.dom.CompilationUnit;
+-import org.eclipse.jdt.core.dom.ITypeBinding;
+-import org.eclipse.jdt.core.dom.MethodDeclaration;
+-import org.eclipse.jdt.core.dom.TypeDeclaration;
+-import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+-import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+ 
+ import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+ import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
+-import org.sandbox.jdt.internal.corext.fix.multifile.ExternalResourceRuleMigration;
+ import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
+ import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
+ 
+@@ -60,7 +43,6 @@
+ 			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+ 		diagnosticsByProject.remove(project);
+ 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= super.createPlan(project, compilationUnits, monitor);
+-		result= removeNoOpExternalResourceMigrations(project, compilationUnits, result, monitor);
+ 		String plannerJson= result.diagnostics().toJson();
+ 		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {
+ 			Analysis analysis= getMigrationAnalysis(project);
+@@ -71,88 +53,6 @@
+ 		return result;
+ 	}
+ 
+-	private static MultiFileCleanUpPlanResult<JUnitMigrationPlan> removeNoOpExternalResourceMigrations(
+-			IJavaProject project, ICompilationUnit[] compilationUnits,
+-			MultiFileCleanUpPlanResult<JUnitMigrationPlan> result, IProgressMonitor monitor) {
+-		JUnitMigrationPlan plan= result.plan();
+-		if (plan == null || plan.externalResourceRules().isEmpty()) {
+-			return result;
+-		}
+-
+-		Set<String> plannedTypeKeys= new LinkedHashSet<>();
+-		for (ExternalResourceRuleMigration migration : plan.externalResourceRules()) {
+-			plannedTypeKeys.add(migration.resourceTypeBindingKey());
+-		}
+-		Set<String> locallyRewrittenTypeKeys= locallyRewrittenResourceTypes(project, compilationUnits,
+-				plannedTypeKeys, monitor);
+-		List<ExternalResourceRuleMigration> filtered= plan.externalResourceRules().stream()
+-				.filter(migration -> locallyRewrittenTypeKeys.contains(migration.resourceTypeBindingKey()))
+-				.toList();
+-		if (filtered.size() == plan.externalResourceRules().size()) {
+-			return result;
+-		}
+-
+-		JUnitMigrationPlan normalized= new JUnitMigrationPlan(plan.selectedScope(), filtered,
+-				plan.junit3Hierarchies(), plan.testTypeInventory());
+-		int retainedEntries= filtered.size() + plan.junit3Hierarchies().size();
+-		return new MultiFileCleanUpPlanResult<>(normalized, result.status(),
+-				result.metrics().withRetainedPlanEntries(retainedEntries), result.diagnostics());
+-	}
+-
+-	private static Set<String> locallyRewrittenResourceTypes(IJavaProject project,
+-			ICompilationUnit[] compilationUnits, Set<String> plannedTypeKeys, IProgressMonitor monitor) {
+-		Set<String> result= new LinkedHashSet<>();
+-		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
+-		parser.setProject(project);
+-		parser.setResolveBindings(true);
+-		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);
+-		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);
+-		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));
+-		parser.createASTs(compilationUnits, new String[0], new ASTRequestor() {
+-			@Override
+-			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+-				ast.accept(new ASTVisitor() {
+-					@Override
+-					public boolean visit(TypeDeclaration node) {
+-						ITypeBinding binding= node.resolveBinding();
+-						String key= typeKey(binding);
+-						if (key != null && plannedTypeKeys.contains(key)
+-								&& requiresLocalExternalResourceRewrite(node, binding)) {
+-							result.add(key);
+-						}
+-						return true;
+-					}
+-				});
+-			}
+-		}, monitor);
+-		return result;
+-	}
+-
+-	private static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
+-		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
+-		if (superclass != null
+-				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {
+-			return true;
+-		}
+-		for (MethodDeclaration method : node.getMethods()) {
+-			if (!method.isConstructor() && method.parameters().isEmpty()) {
+-				String name= method.getName().getIdentifier();
+-				if (METHOD_BEFORE.equals(name) || METHOD_AFTER.equals(name)) {
+-					return true;
+-				}
+-			}
+-		}
+-		return false;
+-	}
+-
+-	private static String typeKey(ITypeBinding binding) {
+-		if (binding == null) {
+-			return null;
+-		}
+-		ITypeBinding declaration= binding.getErasure().getTypeDeclaration();
+-		return declaration == null ? null : declaration.getKey();
+-	}
+-
+ 	/** Returns the most recent structured diagnostics for a project. */
+ 	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
+ 		return diagnosticsByProject.getOrDefault(project, ""); //$NON-NLS-1$
