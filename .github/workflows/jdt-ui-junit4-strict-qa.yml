@@ -139,15 +139,23 @@ jobs:
         shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
+          SANDBOX_PRODUCT_ECLIPSE: ${{ steps.product.outputs.launcher }}
         run: |
           set -euo pipefail
           workspace="$RUNNER_TEMP/jdt-ui-strict-workspace"
           output="$GITHUB_WORKSPACE/jdt-ui-strict-evidence"
+          launcher="$RUNNER_TEMP/sandbox-eclipse-suppress-errors"
           mkdir -p "$workspace" "$output"
+          cat > "$launcher" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec "${SANDBOX_PRODUCT_ECLIPSE:?}" --launcher.suppressErrors "$@"
+          EOF
+          chmod +x "$launcher"
           bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
             --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
             --workspace "$workspace" \
-            --sandbox-eclipse "${{ steps.product.outputs.launcher }}" \
+            --sandbox-eclipse "$launcher" \
             --mode strict \
             --output "$output" \
             --allow-clean-workspace
