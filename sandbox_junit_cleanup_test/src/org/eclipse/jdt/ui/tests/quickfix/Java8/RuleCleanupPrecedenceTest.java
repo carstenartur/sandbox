@@ -70,7 +70,8 @@ public class RuleCleanupPrecedenceTest {
 
 				public class MyTest {
 					@TempDir
-					Path folder;
+					public Path folder;
+
 					@Test
 					public void createsFile() throws Exception {
 						File file = Files.createFile(folder.resolve("test.txt")).toFile();

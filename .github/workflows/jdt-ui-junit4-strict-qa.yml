@@ -1,0 +1,182 @@
+name: JDT UI JUnit 4 Strict Migration QA
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'qa/upstream-jdt/**'
+      - 'sandbox_cleanup_application/**'
+      - 'sandbox_common/**'
+      - 'sandbox_common_core/**'
+      - 'sandbox_junit_cleanup/**'
+      - 'sandbox_junit_cleanup_test/**'
+      - 'sandbox_product/**'
+      - 'sandbox_target/**'
+      - '.github/workflows/jdt-ui-junit4-strict-qa.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  strict-real-jdt-ui:
+    name: Pinned JDT UI before/after migration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          path: sandbox
+
+      - name: Checkout the pinned JDT UI R4_40 corpus
+        uses: actions/checkout@v6
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js for Sandbox CSS tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and headless Eclipse dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              echo "Disabling unrelated runner APT source: $source"
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
+
+      - name: Verify the exact pinned JDT UI source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source sandbox/qa/upstream-jdt/pins.env
+
+          normalize_repository() {
+            local repository="$1"
+            repository="${repository#https://github.com/}"
+            repository="${repository#http://github.com/}"
+            repository="${repository#git@github.com:}"
+            repository="${repository%.git}"
+            repository="${repository%/}"
+            printf '%s\n' "$repository"
+          }
+
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse "${PIN_JDT_UI_REF}^{commit}")" = "$PIN_JDT_UI_COMMIT"
+
+          actual_repository="$(git -C upstream/eclipse.jdt.ui remote get-url origin)"
+          if [[ "$(normalize_repository "$actual_repository")" != \
+                "$(normalize_repository "$PIN_JDT_UI_REPOSITORY")" ]]; then
+            printf 'Unexpected JDT UI origin. Expected %s, got %s.\n' \
+              "$PIN_JDT_UI_REPOSITORY" "$actual_repository" >&2
+            exit 1
+          fi
+
+      - name: Validate the dedicated JDT UI corpus contract
+        working-directory: sandbox
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+
+      - name: Build and test the Sandbox product under test
+        working-directory: sandbox
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Locate the materialized Linux product
+        id: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox/sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          if (( ${#launchers[@]} != 1 )); then
+            printf 'Expected one materialized Linux Eclipse launcher, found %d:\n' "${#launchers[@]}" >&2
+            printf '%s\n' "${launchers[@]}" >&2
+            exit 1
+          fi
+          launcher="$(realpath "${launchers[0]}")"
+          echo "launcher=$launcher" >> "$GITHUB_OUTPUT"
+          printf 'Using Sandbox product: %s\n' "$launcher"
+
+      - name: Execute strict project-wide check, apply and identical JDT UI tests
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          SANDBOX_PRODUCT_ECLIPSE: ${{ steps.product.outputs.launcher }}
+        run: |
+          set -euo pipefail
+          workspace="$RUNNER_TEMP/jdt-ui-strict-workspace"
+          output="$GITHUB_WORKSPACE/jdt-ui-strict-evidence"
+          launcher="$RUNNER_TEMP/sandbox-eclipse-suppress-errors"
+          mkdir -p "$workspace" "$output"
+          cat > "$launcher" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec "${SANDBOX_PRODUCT_ECLIPSE:?}" --launcher.suppressErrors "$@"
+          EOF
+          chmod +x "$launcher"
+          bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
+            --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+            --workspace "$workspace" \
+            --sandbox-eclipse "$launcher" \
+            --mode strict \
+            --output "$output" \
+            --allow-clean-workspace
+
+      - name: Collect the imported workspace log
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p jdt-ui-strict-evidence/eclipse-workspace
+          if [[ -f "$RUNNER_TEMP/jdt-ui-strict-workspace/.metadata/.log" ]]; then
+            cp "$RUNNER_TEMP/jdt-ui-strict-workspace/.metadata/.log" \
+              jdt-ui-strict-evidence/eclipse-workspace/.log
+          fi
+
+      - name: Upload complete real JDT UI JUnit 4 evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jdt-ui-junit4-strict-evidence-${{ github.run_number }}
+          path: |
+            jdt-ui-strict-evidence/**
+            sandbox/**/target/surefire-reports/**
+          retention-days: 30
+          if-no-files-found: error

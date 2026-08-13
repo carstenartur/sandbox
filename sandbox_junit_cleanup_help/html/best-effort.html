@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+   <title>Best-effort JUnit migration</title>
+   <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+   <h1>Best-effort migration and manual completion</h1>
+
+   <p>Enable <strong>Best effort: migrate every proven construct and add @todo scaffolds for unresolved gaps</strong>
+      only when a partial migration is more useful than an all-or-nothing result. The option is disabled by
+      default and is also disabled for save actions.</p>
+
+   <h2>What the mode guarantees</h2>
+   <ul>
+      <li>Independently proven rewrites are still planned and shown in the normal Eclipse preview.</li>
+      <li>An unsupported construct is not replaced by a guessed Jupiter implementation.</li>
+      <li>The original unsupported source remains available for the developer who completes the migration.</li>
+      <li>Each known gap has a stable candidate identifier, reason code, explanation, and concrete remediation.</li>
+      <li>A deterministic marker method is added to the source type that contains or owns the gap.</li>
+   </ul>
+
+   <h2>What the mode does not guarantee</h2>
+   <p class="warning">The resulting project is deliberately allowed to be incomplete. It may fail to compile
+      or its tests may fail until every generated marker is resolved. Selecting this mode is not an assertion
+      that the complete test suite has already been migrated.</p>
+
+   <h2>Generated source marker</h2>
+   <p>A marker is a compilable method body. It intentionally throws when called and contains the exact
+      candidate and reason in Javadoc. For example:</p>
+   <pre>/**
+ * @todo Sandbox JUnit migration gap runner:LegacyTest
+ *       (CUSTOM_JUNIT4_RUNNER): The runner has no generally equivalent
+ *       automatic Jupiter rewrite. Manual completion: port the runner
+ *       behavior to one or more Jupiter extensions, or retain Vintage.
+ */
+private static void sandboxJUnitMigrationTodoCustomJunit4Runner() {
+    throw new UnsupportedOperationException(
+        "Manual JUnit migration required: CUSTOM_JUNIT4_RUNNER");
+}</pre>
+   <p>The method is a work item, not a substitute for the missing extension, argument source, lifecycle
+      split, or assertion logic. Remove it only after the corresponding construct has been completed and
+      the relevant tests have passed.</p>
+
+   <h2>Structured diagnostics</h2>
+   <p>The project-wide cleanup application records the same evidence in JSON. Unit locations are represented
+      by opaque identifiers; source paths are not exposed unnecessarily. A gap entry contains:</p>
+   <pre>{
+  "candidateId": "parameterized:ConvertLoopOperationTest",
+  "reasonCode": "PARAMETERIZED_FIELD_INJECTION",
+  "explanation": "@Parameterized.Parameter field injection is not represented...",
+  "remediation": "Replace field injection ... with explicit Jupiter method arguments..."
+}</pre>
+
+   <h2>Typical difficult constructs</h2>
+   <table>
+      <thead>
+         <tr><th>Construct</th><th>Why automatic conversion may stop</th><th>Expected manual action</th></tr>
+      </thead>
+      <tbody>
+         <tr><td>Custom <code>@RunWith</code> runner</td><td>The runner may combine discovery, lifecycle, filtering, and execution semantics.</td><td>Port the behavior to explicit Jupiter extensions or retain Vintage for the type.</td></tr>
+         <tr><td>Parameterized field injection</td><td>Constructor or method arguments are not equivalent to mutable field injection in every hierarchy.</td><td>Create an explicit argument source and pass values to the test method or constructor.</td></tr>
+         <tr><td>Custom Rule</td><td>An arbitrary Rule can wrap statements, alter errors, or control shared resources.</td><td>Implement the contract as one or more Jupiter callbacks, parameter resolvers, or interceptors.</td></tr>
+         <tr><td>Fixture used as both <code>@Rule</code> and <code>@ClassRule</code></td><td>One callback lifecycle cannot be both per-test and per-class.</td><td>Split the fixture into separate instance and class extensions.</td></tr>
+         <tr><td>Complex <code>ExpectedException</code> matcher</td><td>The throwing range and matcher semantics may not map exactly to one <code>assertThrows</code>.</td><td>Choose the throwing statements explicitly and add Jupiter assertions for message, cause, and state.</td></tr>
+      </tbody>
+   </table>
+
+   <h2>Completion checklist</h2>
+   <ol>
+      <li>Review every file in the cleanup preview, including unchanged constructs next to transformed code.</li>
+      <li>Search for <code>Sandbox JUnit migration gap</code> and resolve every generated marker.</li>
+      <li>Compile the complete affected source scope, not just the changed file.</li>
+      <li>Run the same test selection before and after the migration and compare test identities, counts, states, and parameter multiplicity.</li>
+      <li>Regenerate the Eclipse Help screenshot after changing the cleanup UI.</li>
+   </ol>
+
+   <p><a href="index.html">Back to overview</a></p>
+</body>
+</html>

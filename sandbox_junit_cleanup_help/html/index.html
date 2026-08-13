@@ -13,12 +13,25 @@
    <p class="note">This documentation is installed by <code>sandbox_junit_cleanup_feature</code>
       together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
 
+   <h2>Two execution modes</h2>
+   <dl>
+      <dt><strong>Strict migration</strong> (default)</dt>
+      <dd>Applies only transformations whose complete source scope and Jupiter equivalent have been proven.
+         A construct that cannot be migrated safely is left unchanged.</dd>
+      <dt><strong>Best-effort migration</strong> (explicit opt-in)</dt>
+      <dd>Keeps every independently proven transformation even when another construct cannot be migrated.
+         Each unresolved gap remains in the source, is reported with a stable reason code and remediation,
+         and receives a compilable <code>@todo</code> method scaffold. The resulting project may require
+         manual repair before it compiles or its tests run.</dd>
+   </dl>
+
    <h2>What the feature provides</h2>
    <ul>
       <li>Migrates supported JUnit 3 inheritance and JUnit 4 annotations to Jupiter.</li>
-      <li>Converts supported assertions, assumptions, expected-exception forms, lifecycle annotations, and imports.</li>
-      <li>Uses bundled hint rules for common JUnit 5, assumption, and annotation migrations.</li>
+      <li>Converts supported assertions, assumptions, expected-exception forms, lifecycle annotations, rules, runners, and imports.</li>
+      <li>Coordinates source fixtures and their rule users when the complete lifecycle contract is available.</li>
       <li>Provides a standard JDT cleanup preview before changes are applied.</li>
+      <li>Provides structured planning diagnostics for transformed and rejected candidates.</li>
    </ul>
 
    <h2>Where to start</h2>
@@ -26,9 +39,13 @@
 
    <h2>Configuration in Eclipse</h2>
    <p><img class="screenshot" src="../images/junit-migration-cleanup.png"
-      alt="JUnit Migration configuration in Eclipse"/></p>
+      alt="JUnit Migration configuration in Eclipse, including the best-effort migration switch"/></p>
+   <p class="note">The image is generated from the real cleanup profile dialog by an SWTBot integration test.
+      Regenerating it is part of the Help build, so missing options, clipped labels, dependency problems, and
+      product-composition errors fail the documentation QA path.</p>
 
-   <p>Continue with <a href="usage.html">Using this feature</a> and
+   <p>Continue with <a href="usage.html">Using this feature</a>,
+      <a href="best-effort.html">Best-effort migration and manual completion</a>, and
       <a href="reference.html">Reference, safety, and limitations</a>.</p>
 </body>
 </html>

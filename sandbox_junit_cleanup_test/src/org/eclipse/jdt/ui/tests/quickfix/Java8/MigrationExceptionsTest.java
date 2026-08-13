@@ -200,8 +200,8 @@ public class MyTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 """
 package test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -211,7 +211,7 @@ public class MyTest {
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
 			doSomethingThatThrows();
 		});
-		assertEquals("Invalid argument", exception.getMessage());
+		assertTrue(exception.getMessage() != null && exception.getMessage().contains("Invalid argument"));
 	}
 
 	private void doSomethingThatThrows() {
@@ -301,9 +301,9 @@ public class MyTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import static org.junit.jupiter.api.Assertions.assertEquals;
 				import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 				import static org.junit.jupiter.api.Assertions.assertThrows;
+				import static org.junit.jupiter.api.Assertions.assertTrue;
 				
 				import org.junit.jupiter.api.Test;
 				
@@ -313,7 +313,7 @@ public class MyTest {
 						RuntimeException exception = assertThrows(RuntimeException.class, () -> {
 							throw new RuntimeException("wrapper message", new IllegalArgumentException());
 						});
-						assertEquals("wrapper message", exception.getMessage());
+						assertTrue(exception.getMessage() != null && exception.getMessage().contains("wrapper message"));
 						assertInstanceOf(IllegalArgumentException.class, exception.getCause());
 					}
 				}

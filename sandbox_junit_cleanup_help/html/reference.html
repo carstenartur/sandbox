@@ -10,23 +10,51 @@
 <body>
    <h1>JUnit Migration: reference</h1>
    <h2>Applicability contract</h2>
-   <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.</p>
+   <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
+      Project-wide constructs are planned before per-file edits so a fixture, its hierarchy, and all rule users can be evaluated together.</p>
 
-   <h2>Safety model</h2>
-   <p>Tests with custom runners, rules, parameterization, ordering, or lifecycle assumptions are treated conservatively and require review.</p>
+   <h2>Strict safety model</h2>
+   <p>Strict mode is fail closed. A missing source type, unresolved binding, custom runner, unsupported matcher, external reference,
+      or incompatible lifecycle prevents the affected coordinated migration. The cleanup does not manufacture an extension whose behavior
+      has not been proven.</p>
+
+   <h2>Best-effort safety model</h2>
+   <p>Best-effort mode changes the atomicity policy, not the semantic standard for individual rewrites. Proven candidates may be transformed;
+      rejected candidates remain unchanged and receive an explicit manual-completion marker. Diagnostics state that manual completion is
+      required and explain the exact gap. This mode does not promise a compilable or runnable intermediate tree.</p>
+
+   <h2>Real-source validation</h2>
+   <p>JUnit 3 and JUnit 4 are validated against different upstream corpora:</p>
+   <ul>
+      <li>JUnit 3 migration uses pinned Eclipse JDT Core test sources, which contain the relevant legacy <code>TestCase</code> and suite structures.</li>
+      <li>JUnit 4 migration uses pinned Eclipse JDT UI test sources, which contain Rules, runners, lifecycle annotations, suites, assertions, and parameterization.</li>
+   </ul>
+   <p>A JDT Core run is not accepted as evidence for JUnit 4 migration coverage.</p>
+
+   <h2>Evidence produced by project-wide QA</h2>
+   <ul>
+      <li>Exact repository URL, ref, commit, target platform, Java version, and cleanup profile.</li>
+      <li>Baseline and migrated source snapshots for named corpus files.</li>
+      <li>Cleanup check report, apply report, patch, and structured planning diagnostics.</li>
+      <li>Baseline and after-test commands plus the complete JUnit XML inventory.</li>
+      <li>Comparison of test identities, states, counts, and parameterized multiplicity.</li>
+      <li>For best-effort runs, the expected compile/test outcome and every remaining marker reason.</li>
+   </ul>
 
    <h2>Known limitations</h2>
    <ul>
       <li>Adding or updating the JUnit Jupiter dependency is a build-system task and is not inferred blindly.</li>
-      <li>Custom JUnit 4 runners and rules may need dedicated migrations.</li>
+      <li>Custom JUnit 4 runners and arbitrary Rules may need dedicated migrations.</li>
+      <li>Parameterized field injection and custom providers require an explicit argument-source design.</li>
+      <li>A fixture used as both <code>@Rule</code> and <code>@ClassRule</code> must be split into separate lifecycle extensions.</li>
       <li>The migrated test suite must be executed; source-level conversion alone cannot validate test semantics.</li>
    </ul>
 
    <h2>Support information</h2>
    <p>The Help content is shipped with the same feature version as the runtime
       plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+      Eclipse version, Java version, the smallest reproducing source, whether
+      bindings were available, the cleanup mode, and the structured reason code.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>

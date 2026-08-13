@@ -39,6 +39,7 @@ public final class CleanUpMessages {
 	private static final String BUNDLE_NAME= "org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages"; //$NON-NLS-1$
 	public static String JavaFeatureTabPage_GroupName_JUnit;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP;
+	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEST_EFFORT;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSERT_OPTIMIZATION;
 	public static String JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_ASSUME;
@@ -75,14 +76,11 @@ public final class CleanUpMessages {
 	public static String JavaFeatureTabPage_QuickSelect_LifecycleOnly;
 	public static String JavaFeatureTabPage_QuickSelect_AssertionsOnly;
 	public static String JavaFeatureTabPage_QuickSelect_RulesOnly;
-	
 
 	static {
-		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, CleanUpMessages.class);
 	}
-	
+
 	private CleanUpMessages() {
-		// Utility class - prevent instantiation
 	}
 }

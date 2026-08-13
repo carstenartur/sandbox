@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
@@ -147,8 +148,9 @@ public final class ExternalResourceRefactorer {
 	 * @return true if the type's superclass is ExternalResource
 	 */
 	public static boolean isDirectlyExtendingExternalResource(ITypeBinding binding) {
-		ITypeBinding superclass = binding.getSuperclass();
-		return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getQualifiedName());
+		ITypeBinding superclass = binding == null ? null : binding.getSuperclass();
+		return superclass != null && ORG_JUNIT_RULES_EXTERNAL_RESOURCE
+				.equals(superclass.getErasure().getQualifiedName());
 	}
 
 	/**
@@ -178,6 +180,8 @@ public final class ExternalResourceRefactorer {
 			refactorToImplementCallbacks(node, rewriter, ast, group, importRewriter, callbackConfig.beforeCallback,
 					callbackConfig.afterCallback, callbackConfig.importBeforeCallback,
 					callbackConfig.importAfterCallback);
+		} else {
+			addDeclaredCallbackInterfaces(node, rewriter, ast, group, importRewriter, callbackConfig);
 		}
 
 		LifecycleMethodAdapter.updateLifecycleMethodsInClass(node, rewriter, ast, group, importRewriter, METHOD_BEFORE,
@@ -211,7 +215,8 @@ public final class ExternalResourceRefactorer {
 			addRegisterExtensionAnnotation(field, rewriter, ast, importRewriter, group);
 			ITypeBinding fieldType = ((VariableDeclarationFragment) field.fragments().get(0)).resolveBinding()
 					.getType();
-			adaptExternalResourceHierarchy(fieldType, rewriter, ast, importRewriter, group);
+			adaptExternalResourceHierarchy(fieldType, ORG_JUNIT_CLASS_RULE.equals(ruleAnnotation),
+					rewriter, ast, importRewriter, group);
 		}
 	}
 
@@ -226,8 +231,8 @@ public final class ExternalResourceRefactorer {
 	 * @param importRewrite the import rewriter
 	 * @param group the text edit group
 	 */
-	public static void adaptExternalResourceHierarchy(ITypeBinding typeBinding, ASTRewrite rewrite, AST ast,
-			ImportRewrite importRewrite, TextEditGroup group) {
+	public static void adaptExternalResourceHierarchy(ITypeBinding typeBinding, boolean fieldStatic,
+			ASTRewrite rewrite, AST ast, ImportRewrite importRewrite, TextEditGroup group) {
 		while (typeBinding != null) {
 			// Stop when we reach ExternalResource itself
 			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(typeBinding.getQualifiedName())) {
@@ -238,7 +243,7 @@ public final class ExternalResourceRefactorer {
 			if (isExternalResource(typeBinding, ORG_JUNIT_RULES_EXTERNAL_RESOURCE)) {
 				TypeDeclaration typeDecl = ASTNavigationUtils.findTypeDeclarationInProject(typeBinding);
 				if (typeDecl != null) {
-					adaptTypeDeclaration(typeDecl, rewrite, ast, importRewrite, group);
+					adaptTypeDeclaration(typeDecl, fieldStatic, rewrite, ast, importRewrite, group);
 				}
 			}
 
@@ -256,24 +261,21 @@ public final class ExternalResourceRefactorer {
 	 * @param importRewrite the import rewriter
 	 * @param group the text edit group
 	 */
-	public static void adaptTypeDeclaration(TypeDeclaration typeDecl, ASTRewrite globalRewrite, AST ast,
-			ImportRewrite importRewrite, TextEditGroup group) {
-		// Create separate rewriters if the type declaration is in a different compilation unit
-		ASTRewrite rewriteToUse = getASTRewrite(typeDecl, ast, globalRewrite);
-		ImportRewrite importRewriteToUse = getImportRewrite(typeDecl, ast, importRewrite);
-
-		// Remove ExternalResource superclass
-		removeSuperclassType(typeDecl, rewriteToUse, group);
-
-		// Update lifecycle methods: before() -> beforeEach(), after() -> afterEach()
-		LifecycleMethodAdapter.updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group, importRewriteToUse,
-				METHOD_BEFORE, METHOD_AFTER, METHOD_BEFORE_EACH, METHOD_AFTER_EACH);
-
-		// Add required JUnit 5 callback imports
-		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK);
-		importRewriteToUse.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK);
-
-		// If we created a separate rewriter, commit the change
+	public static void adaptTypeDeclaration(TypeDeclaration typeDecl, boolean fieldStatic,
+			ASTRewrite globalRewrite, AST ast, ImportRewrite importRewrite, TextEditGroup group) {
+		ASTRewrite rewriteToUse= getASTRewrite(typeDecl, ast, globalRewrite);
+		ImportRewrite importRewriteToUse= getImportRewrite(typeDecl, ast, importRewrite);
+		CallbackConfig callbackConfig= determineCallbackConfig(fieldStatic);
+		if (isDirectlyExtendingExternalResource(typeDecl.resolveBinding())) {
+			removeSuperclassType(typeDecl, rewriteToUse, group);
+			importRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
+		}
+		addDeclaredCallbackInterfacesToRewrite(typeDecl, rewriteToUse, ast, group,
+				importRewriteToUse, callbackConfig);
+		LifecycleMethodAdapter.updateLifecycleMethodsInClass(typeDecl, rewriteToUse, ast, group,
+				importRewriteToUse, METHOD_BEFORE, METHOD_AFTER,
+				fieldStatic ? METHOD_BEFORE_ALL : METHOD_BEFORE_EACH,
+				fieldStatic ? METHOD_AFTER_ALL : METHOD_AFTER_EACH);
 		if (rewriteToUse != globalRewrite) {
 			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(typeDecl), rewriteToUse);
 		}
@@ -458,26 +460,70 @@ public final class ExternalResourceRefactorer {
 	private static void refactorToImplementCallbacks(TypeDeclaration node, ASTRewrite rewriter, AST ast,
 			TextEditGroup group, ImportRewrite importRewriter, String beforeCallback, String afterCallback,
 			String importBeforeCallback, String importAfterCallback) {
-
 		if (node == null || rewriter == null || ast == null || importRewriter == null) {
 			return;
 		}
-
-		ASTRewrite rewriteToUse = getASTRewrite(node, ast, rewriter);
-		ImportRewrite importRewriteToUse = getImportRewrite(node, ast, importRewriter);
-
-		rewriteToUse.remove(node.getSuperclassType(), group);
+		ASTRewrite rewriteToUse= getASTRewrite(node, ast, rewriter);
+		ImportRewrite importRewriteToUse= getImportRewrite(node, ast, importRewriter);
+		removeSuperclassType(node, rewriteToUse, group);
 		importRewriteToUse.removeImport(ORG_JUNIT_RULES_EXTERNAL_RESOURCE);
-
-		ListRewrite listRewrite = rewriteToUse.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
-		ImportHelper.addInterfaceCallback(listRewrite, ast, beforeCallback, group, importRewriteToUse,
-				importBeforeCallback);
-		ImportHelper.addInterfaceCallback(listRewrite, ast, afterCallback, group, importRewriteToUse,
-				importAfterCallback);
-
+		addDeclaredCallbackInterfacesToRewrite(node, rewriteToUse, ast, group, importRewriteToUse,
+				new CallbackConfig(beforeCallback, afterCallback, importBeforeCallback, importAfterCallback));
 		if (rewriteToUse != rewriter) {
 			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);
 		}
+	}
+
+	private static void addDeclaredCallbackInterfaces(TypeDeclaration node, ASTRewrite rewrite, AST ast,
+			TextEditGroup group, ImportRewrite imports, CallbackConfig callbackConfig) {
+		ASTRewrite rewriteToUse= getASTRewrite(node, ast, rewrite);
+		ImportRewrite importsToUse= getImportRewrite(node, ast, imports);
+		addDeclaredCallbackInterfacesToRewrite(node, rewriteToUse, ast, group, importsToUse, callbackConfig);
+		if (rewriteToUse != rewrite) {
+			DocumentHelper.createChangeForRewrite(ASTNavigationUtils.findCompilationUnit(node), rewriteToUse);
+		}
+	}
+
+	private static void addDeclaredCallbackInterfacesToRewrite(TypeDeclaration node, ASTRewrite rewrite,
+			AST ast, TextEditGroup group, ImportRewrite imports, CallbackConfig callbackConfig) {
+		ListRewrite interfaces= rewrite.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY);
+		if (needsCallbackInterface(node, METHOD_BEFORE)) {
+			ImportHelper.addInterfaceCallback(interfaces, ast, callbackConfig.beforeCallback, group, imports,
+					callbackConfig.importBeforeCallback);
+		}
+		if (needsCallbackInterface(node, METHOD_AFTER)) {
+			ImportHelper.addInterfaceCallback(interfaces, ast, callbackConfig.afterCallback, group, imports,
+					callbackConfig.importAfterCallback);
+		}
+	}
+
+	private static boolean needsCallbackInterface(TypeDeclaration node, String lifecycleMethod) {
+		if (!declaresLifecycleMethod(node, lifecycleMethod)) {
+			return false;
+		}
+		ITypeBinding binding= node.resolveBinding();
+		for (ITypeBinding current= binding == null ? null : binding.getSuperclass(); current != null;
+				current= current.getSuperclass()) {
+			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getErasure().getQualifiedName())) {
+				return true;
+			}
+			for (IMethodBinding method : current.getDeclaredMethods()) {
+				if (lifecycleMethod.equals(method.getName()) && method.getParameterTypes().length == 0) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private static boolean declaresLifecycleMethod(TypeDeclaration node, String lifecycleMethod) {
+		for (MethodDeclaration method : node.getMethods()) {
+			if (!method.isConstructor() && method.parameters().isEmpty()
+					&& lifecycleMethod.equals(method.getName().getIdentifier())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

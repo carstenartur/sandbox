@@ -23,10 +23,14 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -39,6 +43,7 @@ import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -49,21 +54,16 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
  *
  * <p>The aggregator pattern is dominant in {@code org.eclipse.jdt.ui.tests*}
  * ({@code AllTests}, {@code *TestSuite}). Only aggregators whose selected
- * classes are provable from the source are migrated; everything else is left
- * untouched, matching the fail-closed contract of the JUnit 3 hierarchy planner.
- *
- * <pre>
- * public class AllTests {                     &#64;Suite
- *     public static Test suite() {      →     &#64;SelectClasses({ FooTest.class, BarTest.class })
- *         TestSuite suite= new TestSuite();   public class AllTests {
- *         suite.addTestSuite(FooTest.class);  }
- *         suite.addTestSuite(BarTest.class);
- *         return suite;
- *     }
- * }
- * </pre>
+ * classes and optional initialization are provable from the source are
+ * migrated; everything else is left untouched, matching the fail-closed
+ * contract of the JUnit 3 hierarchy planner.
  */
 public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer, JunitHolder>> {
+
+	private static final String ANNOTATION_BEFORE_SUITE= "BeforeSuite"; //$NON-NLS-1$
+	private static final String ORG_JUNIT_PLATFORM_SUITE_API_BEFORE_SUITE=
+			"org.junit.platform.suite.api.BeforeSuite"; //$NON-NLS-1$
+	private static final String BEFORE_SUITE_METHOD= "beforeSuite"; //$NON-NLS-1$
 
 	@Override
 	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
@@ -81,6 +81,10 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 				}
 				nodesprocessed.add(node);
 				nodesprocessed.add(suite);
+				Initializer initializer= JUnit3LegacyShape.suiteInitializer(node);
+				if (initializer != null) {
+					nodesprocessed.add(initializer);
+				}
 				ReferenceHolder<Integer, JunitHolder> dataHolder= ReferenceHolder.createIndexed();
 				JunitHolder holder= new JunitHolder();
 				holder.setMinv(suite);
@@ -94,44 +98,32 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 
 	private MethodDeclaration findMigratableSuiteMethod(TypeDeclaration node, Set<ASTNode> nodesprocessed) {
 		if (nodesprocessed.contains(node) || !(node.getParent() instanceof CompilationUnit)
-				|| node.getSuperclassType() != null || node.isInterface() || hasJUnitAnnotation(node)
-				|| isExcludedOrTestCase(node)) {
+				|| node.isInterface() || hasJUnitAnnotation(node)
+				|| node.getSuperclassType() != null && !JUnit3LegacyShape.directlyExtendsTestCase(node)
+				|| isExcluded(node)) {
 			return null;
 		}
 		MethodDeclaration suite= null;
 		for (MethodDeclaration method : node.getMethods()) {
 			if (JUnit3SuiteModel.isSuiteBuilder(method)) {
 				suite= method;
-			} else if (!method.isConstructor()) {
+			} else if (!method.isConstructor() || !JUnit3LegacyShape.isRemovableConstructor(method)) {
 				// Any additional behavior in an aggregator is not represented by @Suite.
 				return null;
 			}
 		}
 		if (suite == null || nodesprocessed.contains(suite) || node.getFields().length != 0
-				|| node.getTypes().length != 0) {
+				|| node.getTypes().length != 0 || !JUnit3LegacyShape.isPureSuiteAggregator(node, suite)) {
 			return null;
 		}
 		return suite;
 	}
 
-	/**
-	 * Rejects aggregators that are test cases themselves or derive from a base
-	 * type whose execution contract must not be migrated.
-	 */
-	private boolean isExcludedOrTestCase(TypeDeclaration node) {
+	/** Rejects aggregators that derive from an explicitly excluded harness. */
+	private boolean isExcluded(TypeDeclaration node) {
 		ITypeBinding binding= node.resolveBinding();
-		if (binding == null) {
-			return node.getSuperclassType() != null;
-		}
-		if (JUnit3MigrationExclusions.isExcluded(binding)) {
-			return true;
-		}
-		for (ITypeBinding current= binding.getSuperclass(); current != null; current= current.getSuperclass()) {
-			if ("junit.framework.TestCase".equals(current.getErasure().getQualifiedName())) { //$NON-NLS-1$
-				return true;
-			}
-		}
-		return false;
+		return binding == null ? node.getSuperclassType() != null && !JUnit3LegacyShape.directlyExtendsTestCase(node)
+				: JUnit3MigrationExclusions.isExcluded(binding);
 	}
 
 	private boolean hasJUnitAnnotation(TypeDeclaration node) {
@@ -161,6 +153,16 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		}
 
 		rewriter.remove(suite, group);
+		if (JUnit3LegacyShape.directlyExtendsTestCase(type) && type.getSuperclassType() != null) {
+			rewriter.remove(type.getSuperclassType(), group);
+			importRewriter.removeImport(JUnit3LegacyShape.JUNIT3_TEST_CASE);
+		}
+		for (MethodDeclaration method : type.getMethods()) {
+			if (method != suite && JUnit3LegacyShape.isRemovableConstructor(method)) {
+				rewriter.remove(method, group);
+			}
+		}
+		migrateSuiteInitializer(type, rewriter, ast, importRewriter, group);
 
 		ListRewrite modifiers= rewriter.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
 		MarkerAnnotation suiteAnnotation= ast.newMarkerAnnotation();
@@ -186,6 +188,32 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 		importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
 	}
 
+	private static void migrateSuiteInitializer(TypeDeclaration type, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, TextEditGroup group) {
+		Initializer initializer= JUnit3LegacyShape.suiteInitializer(type);
+		if (initializer == null) {
+			return;
+		}
+		MethodDeclaration beforeSuite= ast.newMethodDeclaration();
+		beforeSuite.setName(ast.newSimpleName(BEFORE_SUITE_METHOD));
+		beforeSuite.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));
+		MarkerAnnotation annotation= ast.newMarkerAnnotation();
+		annotation.setTypeName(ast.newSimpleName(ANNOTATION_BEFORE_SUITE));
+		addModifier(beforeSuite, annotation);
+		addModifier(beforeSuite, ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
+		beforeSuite.setBody((Block) ASTNode.copySubtree(ast, initializer.getBody()));
+
+		ListRewrite bodyDeclarations= rewriter.getListRewrite(type, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+		bodyDeclarations.insertFirst(beforeSuite, group);
+		rewriter.remove(initializer, group);
+		importRewriter.addImport(ORG_JUNIT_PLATFORM_SUITE_API_BEFORE_SUITE);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void addModifier(MethodDeclaration method, Object modifier) {
+		method.modifiers().add(modifier);
+	}
+
 	@SuppressWarnings("unchecked")
 	private static void addExpression(ArrayInitializer initializer, TypeLiteral literal) {
 		initializer.expressions().add(literal);
@@ -204,11 +232,18 @@ public class SuiteMethodJUnitPlugin extends AbstractTool<ReferenceHolder<Integer
 					@Suite
 					@SelectClasses({ FooTest.class, BarTest.class })
 					public class AllTests {
+						@BeforeSuite
+						static void beforeSuite() {
+							System.setProperty("modules", "java.base");
+						}
 					}
 					"""; //$NON-NLS-1$
 		}
 		return """
 				public class AllTests {
+					static {
+						System.setProperty("modules", "java.base");
+					}
 					public static Test suite() {
 						TestSuite suite= new TestSuite();
 						suite.addTestSuite(FooTest.class);

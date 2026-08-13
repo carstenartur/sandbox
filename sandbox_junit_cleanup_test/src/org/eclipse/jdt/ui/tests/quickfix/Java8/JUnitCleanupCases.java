@@ -198,14 +198,12 @@ public class MyTest {
     // Final abgeleitete Klasse
     final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
         @Override
-        public void beforeEach(ExtensionContext context) {
-            super.beforeEach(context);
+        public void beforeEach(ExtensionContext context) throws Exception {
             int i = 4;
         }
 
         @Override
         public void afterEach(ExtensionContext context) {
-            super.afterEach(context);
         }
     }
 
@@ -219,7 +217,7 @@ public class MyTest {
     // Statische Klasse für ClassRule
     static class StaticExternalResource implements BeforeAllCallback, AfterAllCallback {
         @Override
-        public void beforeAll(ExtensionContext context) {
+        public void beforeAll(ExtensionContext context) throws Exception {
             System.out.println("Static resource before");
         }
 
@@ -241,7 +239,7 @@ public class MyTest {
         }
 
         @Override
-        public void beforeEach(ExtensionContext context) {
+        public void beforeEach(ExtensionContext context) throws Exception {
             System.out.println("Resource setup: " + resourceName);
         }
 
