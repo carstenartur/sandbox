@@ -19,6 +19,11 @@ import org.eclipse.equinox.app.IApplicationContext;
  * Runs the project-wide cleanup with an SWT display owned by the application
  * thread and disposes that display before the dedicated headless process
  * returns to Equinox.
+ *
+ * <p>The wrapper deliberately does not obtain a potentially foreign display
+ * with {@code Display.getDefault()} after the delegate returns and does not use
+ * a cross-thread {@code disposeDisplay()} helper. Both patterns can block in
+ * {@code syncExec} when the owning SWT thread has no event loop.</p>
  */
 public final class HeadlessProjectWideCodeCleanupApplication implements IApplication {
 
