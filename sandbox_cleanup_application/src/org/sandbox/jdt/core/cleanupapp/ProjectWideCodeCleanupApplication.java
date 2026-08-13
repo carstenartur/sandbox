@@ -495,7 +495,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	private static void printUsage() {
 		System.out.println("""
 				Usage: eclipse -nosplash -data <workspace>
-				  -application sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup
+				  -application org.sandbox.jdt.core.ProjectWideJavaCleanup
 				  --project <workspace-project>
 				  [--project-location <external-project-directory>]
 				  --config <cleanup.properties>

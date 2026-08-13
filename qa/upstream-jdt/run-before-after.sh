@@ -313,7 +313,6 @@ run_cleanup() {
     -nosplash
     -consoleLog
     -clean
-    -refresh
     -data "$OOMPH_WORKSPACE"
     -application "$APPLICATION_ID"
     --mode "$mode"
@@ -332,9 +331,26 @@ run_cleanup() {
   if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
     display_prefix=(xvfb-run --auto-servernum)
   fi
-  "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" \
-    2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
+  timeout --signal=TERM --kill-after=1m 30m "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" 2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
 }
+
+verify_cleanup_application() {
+  local stdout="$OUTPUT/logs/cleanup-application-preflight.stdout.log"
+  local stderr="$OUTPUT/logs/cleanup-application-preflight.stderr.log"
+  local -a display_prefix=()
+  if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
+    display_prefix=(xvfb-run --auto-servernum)
+  fi
+  if ! timeout --signal=TERM --kill-after=30s 3m "${display_prefix[@]}" "$SANDBOX_ECLIPSE" -nosplash -consoleLog -clean -data "$OOMPH_WORKSPACE" -application "$APPLICATION_ID" --help >"$stdout" 2>"$stderr"; then
+    cat "$stdout" >&2 || true
+    cat "$stderr" >&2 || true
+    fail "The registered project-wide Cleanup application could not be started: $APPLICATION_ID"
+  fi
+  grep -F -- "-application $APPLICATION_ID" "$stdout" >/dev/null || fail "Cleanup application preflight returned an unexpected usage contract"
+}
+
+printf 'CLEANUP_APPLICATION_PREFLIGHT\n' > "$OUTPUT/run-state.txt"
+verify_cleanup_application
 
 printf 'PREPARING_TEST_REACTOR\n' > "$OUTPUT/run-state.txt"
 prepare_test_reactor
