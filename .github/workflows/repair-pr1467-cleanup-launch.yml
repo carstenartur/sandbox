@@ -1,0 +1,123 @@
+name: Repair PR 1467 cleanup launcher
+
+on:
+  push:
+    branches:
+      - feature/oomph-upstream-jdt-migration-qa-final
+    paths:
+      - '.github/workflows/repair-pr1467-cleanup-launch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Repair and harden the project-wide cleanup launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          script = Path('qa/upstream-jdt/run-before-after.sh')
+          text = script.read_text(encoding='utf-8')
+
+          expected_id = 'APPLICATION_ID="org.sandbox.jdt.core.ProjectWideJavaCleanup"'
+          if text.count(expected_id) != 1:
+              raise SystemExit(f'Expected one registered application id, found {text.count(expected_id)}')
+
+          refresh = '    -refresh\n'
+          if text.count(refresh) != 1:
+              raise SystemExit(f'Expected one invalid -refresh argument, found {text.count(refresh)}')
+          text = text.replace(refresh, '', 1)
+
+          invocation = '''  "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" \\
+    2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
+          '''
+          bounded_invocation = '''  timeout --signal=TERM --kill-after=1m 30m \\
+    "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" \\
+    2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
+          '''
+          if text.count(invocation) != 1:
+              raise SystemExit(f'Expected one cleanup invocation, found {text.count(invocation)}')
+          text = text.replace(invocation, bounded_invocation)
+
+          anchor = '''printf 'PREPARING_TEST_REACTOR\\n' > "$OUTPUT/run-state.txt"
+          prepare_test_reactor
+          '''
+          preflight = '''verify_cleanup_application() {
+            local stdout="$OUTPUT/logs/cleanup-application-preflight.stdout.log"
+            local stderr="$OUTPUT/logs/cleanup-application-preflight.stderr.log"
+            local -a display_prefix=()
+            if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
+              display_prefix=(xvfb-run --auto-servernum)
+            fi
+            if ! timeout --signal=TERM --kill-after=30s 3m \\
+                "${display_prefix[@]}" "$SANDBOX_ECLIPSE" \\
+                -nosplash -consoleLog -clean -data "$OOMPH_WORKSPACE" \\
+                -application "$APPLICATION_ID" --help >"$stdout" 2>"$stderr"; then
+              cat "$stdout" >&2 || true
+              cat "$stderr" >&2 || true
+              fail "The registered project-wide Cleanup application could not be started: $APPLICATION_ID"
+            fi
+            grep -F -- "-application $APPLICATION_ID" "$stdout" >/dev/null \\
+              || fail "Cleanup application preflight returned an unexpected usage contract"
+          }
+
+          printf 'CLEANUP_APPLICATION_PREFLIGHT\\n' > "$OUTPUT/run-state.txt"
+          verify_cleanup_application
+
+          printf 'PREPARING_TEST_REACTOR\\n' > "$OUTPUT/run-state.txt"
+          prepare_test_reactor
+          '''
+          if text.count(anchor) != 1:
+              raise SystemExit(f'Expected one dependency-build anchor, found {text.count(anchor)}')
+          text = text.replace(anchor, preflight)
+          script.write_text(text, encoding='utf-8')
+
+          old_id = 'sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup'
+          roots = [Path('sandbox_cleanup_application'), Path('qa/upstream-jdt')]
+          changed = []
+          for root in roots:
+              for path in root.rglob('*'):
+                  if not path.is_file():
+                      continue
+                  try:
+                      source = path.read_text(encoding='utf-8')
+                  except UnicodeDecodeError:
+                      continue
+                  if old_id in source:
+                      path.write_text(source.replace(old_id, 'org.sandbox.jdt.core.ProjectWideJavaCleanup'),
+                                      encoding='utf-8')
+                      changed.append(str(path))
+          if not changed:
+              raise SystemExit('Expected at least the stale Java usage application id')
+          print('Corrected stale application-id references:')
+          print('\n'.join(changed))
+          PY
+
+          bash -n qa/upstream-jdt/run-before-after.sh
+          if grep -R --line-number --fixed-strings \
+              'sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup' \
+              qa/upstream-jdt sandbox_cleanup_application; then
+            echo 'A stale prefixed application id remains.' >&2
+            exit 1
+          fi
+          git rm .github/workflows/repair-pr1467-cleanup-launch.yml
+          git diff --check
+
+      - name: Commit the launcher repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add qa/upstream-jdt/run-before-after.sh sandbox_cleanup_application
+          git commit -m 'Fail fast when the project-wide cleanup app cannot start'
+          git push
