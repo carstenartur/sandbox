@@ -7,7 +7,7 @@ Runs the cleanup implementations installed in an Eclipse/Equinox distribution wi
 ## Application ID
 
 ```text
-sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup
+org.sandbox.jdt.core.JavaCleanup
 ```
 
 ## Recommended first run
@@ -17,7 +17,7 @@ Use a disposable workspace and check mode before allowing writes:
 ```bash
 eclipse -nosplash \
   -data /tmp/sandbox-cleanup-workspace \
-  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  -application org.sandbox.jdt.core.JavaCleanup \
   --import-project "$PWD" \
   --mode check \
   --scope both \
@@ -119,7 +119,7 @@ Handle `2` separately from execution errors:
 set +e
 eclipse -nosplash \
   -data "$RUNNER_TEMP/sandbox-cleanup-workspace" \
-  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  -application org.sandbox.jdt.core.JavaCleanup \
   --import-project "$PWD" \
   --mode check \
   --config "$PWD/cleanup.properties" \

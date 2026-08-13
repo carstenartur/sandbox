@@ -11,14 +11,14 @@
    <h1>Using the Headless Cleanup Application</h1>
 
    <h2>Application id</h2>
-   <pre>sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup</pre>
+   <pre>org.sandbox.jdt.core.JavaCleanup</pre>
 
    <h2>Recommended check-mode invocation</h2>
    <p>Use a disposable workspace, import the checked-out Eclipse project, and
       start with read-only check mode:</p>
    <pre>eclipse -nosplash \
   -data /tmp/sandbox-cleanup-workspace \
-  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  -application org.sandbox.jdt.core.JavaCleanup \
   --import-project /work/example-project \
   --mode check \
   --scope both \
@@ -58,7 +58,7 @@ Files changed: 2</pre>
    <pre>set +e
 eclipse -nosplash \
   -data "$RUNNER_TEMP/sandbox-cleanup-workspace" \
-  -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+  -application org.sandbox.jdt.core.JavaCleanup \
   --import-project "$PWD" \
   --mode check \
   --config "$PWD/cleanup.properties" \

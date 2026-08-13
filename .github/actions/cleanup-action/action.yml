@@ -195,7 +195,7 @@ runs:
         
         # Use java to run the Equinox launcher JAR since includeLaunchers="false"
         java -jar "$LAUNCHER_JAR" -nosplash \
-          -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+          -application org.sandbox.jdt.core.JavaCleanup \
           "${CLEANUP_ARGS[@]}"
         
         EXIT_CODE=$?

@@ -351,7 +351,7 @@ Required Eclipse plugins:
 The application is executed via Eclipse launcher:
 
 ```bash
-eclipse -nosplash -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+eclipse -nosplash -application org.sandbox.jdt.core.JavaCleanup \
     -data <workspace> -config <properties> <files>
 ```
 
@@ -398,7 +398,7 @@ echo "public class Test {}" > test-workspace/project/src/Test.java
 
 # Run application
 eclipse -nosplash \
-    -application sandbox_cleanup_application.org.sandbox.jdt.core.JavaCleanup \
+    -application org.sandbox.jdt.core.JavaCleanup \
     -data test-workspace \
     -config test-config.properties \
     test-workspace/project/src/Test.java
