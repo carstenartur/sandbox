@@ -185,12 +185,18 @@ public class MigrationJUnit3Test {
 				"""
 				package test;
 				import org.junit.jupiter.api.BeforeEach;
+				import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+				import org.junit.jupiter.api.Order;
 				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.TestMethodOrder;
 
+				@TestMethodOrder(OrderAnnotation.class)
 				public class MyTest {
+				    @Order(1)
 				    @Test
 				    public void testFirst() {
 				    }
+				    @Order(2)
 				    @Test
 				    public void testSecond() {
 				    }
@@ -393,8 +399,12 @@ public class MigrationJUnit3Test {
 				import org.junit.jupiter.api.AfterEach;
 				import org.junit.jupiter.api.Assertions;
 				import org.junit.jupiter.api.BeforeEach;
+				import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+				import org.junit.jupiter.api.Order;
 				import org.junit.jupiter.api.Test;
+				import org.junit.jupiter.api.TestMethodOrder;
 
+				@TestMethodOrder(OrderAnnotation.class)
 				public class MyTest {
 				    @BeforeEach
 				    protected void setUp() {
@@ -402,11 +412,13 @@ public class MigrationJUnit3Test {
 				    @AfterEach
 				    protected void tearDown() {
 				    }
+				    @Order(1)
 				    @Test
 				    public void testFirst() {
 				        Assertions.assertEquals(1, 1, "msg");
 				        Assertions.assertTrue(true, "cond");
 				    }
+				    @Order(2)
 				    @Test
 				    public void testSecond() {
 				        Assertions.assertNull(null, "null check");

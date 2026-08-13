@@ -87,8 +87,12 @@ package test;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(OrderAnnotation.class)
 public class MyTest {
 
     @BeforeEach
@@ -101,10 +105,12 @@ public class MyTest {
         // Cleanup
     }
 
+    @Order(1)
     @Test
     public void testFirst() {
     }
 
+    @Order(2)
     @Test
     public void testSecond() {
     }
@@ -140,14 +146,19 @@ package test;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(OrderAnnotation.class)
 public class MyTest {
 
     @BeforeEach
     protected void setUp() {
     }
 
+    @Order(2)
     @Test
     public void testAssertions() {
         Assertions.assertEquals(42, 42, "Values should match");
@@ -157,6 +168,7 @@ public class MyTest {
         Assertions.assertNotNull(new Object(), "Should not be null");
     }
 
+    @Order(1)
     @Test
     public void testFail() {
         Assertions.fail("This test should fail");
