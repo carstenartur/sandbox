@@ -272,6 +272,7 @@ run_cleanup() {
   local mode=$1 report=$2 patch=${3:-}
   local -a command=(
     "$SANDBOX_ECLIPSE"
+    --launcher.suppressErrors
     -nosplash
     -consoleLog
     -clean
