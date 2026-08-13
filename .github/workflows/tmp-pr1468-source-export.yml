@@ -1,0 +1,25 @@
+name: Temporary PR 1468 source export
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr1468-exact-sources
+          retention-days: 1
+          path: |
+            qa/upstream-jdt/verify_contract.py
+            sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/ReportingJUnitCleanUpCore.java
+            sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceNoOpSubclassTest.java
