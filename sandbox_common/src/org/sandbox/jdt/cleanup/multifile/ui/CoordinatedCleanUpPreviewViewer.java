@@ -275,6 +275,12 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 
 	private record CandidatePreview(String name, String description, List<String> details,
 			List<FilePreview> files) {
+		CandidatePreview {
+			name= name == null ? "" : name; //$NON-NLS-1$
+			description= description == null ? "" : description; //$NON-NLS-1$
+			details= details == null ? List.of() : details;
+			files= files == null ? List.of() : files;
+		}
 	}
 
 	private record FilePreview(String label, String originalContent, String refactoredContent,
