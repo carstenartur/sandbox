@@ -27,7 +27,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Set up Python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: '3.11'
 
@@ -64,7 +64,7 @@ jobs:
 
     - name: Comment PR with static inventory
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         script: |
           try {

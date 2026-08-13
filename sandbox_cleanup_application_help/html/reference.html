@@ -9,24 +9,61 @@
 </head>
 <body>
    <h1>Headless Cleanup Application: reference</h1>
-   <h2>Applicability contract</h2>
-   <p>Inputs must resolve to Java-like files inside the selected Eclipse workspace. The same cleanup bundles that provide the configured options must be installed in the application.</p>
 
-   <h2>Safety model</h2>
-   <p>Use <code>--mode check</code> or <code>--mode diff</code> in CI before enabling write mode. Keep the workspace and source tree under version control.</p>
+   <h2>Applicability contract</h2>
+   <p>Cleanup inputs must be Java-like files in the selected Eclipse workspace.
+      Use <code>--import-project</code> when a checked-out Eclipse project is not
+      already present in that workspace. The cleanup bundles that own the
+      configured option keys must be installed in the application.</p>
+
+   <h2>Result precedence</h2>
+   <ol>
+      <li>Any invocation, configuration, workspace, import, processing, refactoring, patch, or report error produces exit code <code>1</code>.</li>
+      <li>Otherwise, required changes in check/diff mode produce exit code <code>2</code>.</li>
+      <li>Otherwise the result is exit code <code>0</code>.</li>
+   </ol>
+   <p>This order prevents a partial failure from being misreported merely as
+      “changes required.” Diagnostics remain on stderr under <code>--quiet</code>.</p>
+
+   <h2>Dry-run safety</h2>
+   <p>Check and diff modes apply the Eclipse refactoring inside the running
+      workspace, inspect the result, and restore the original bytes in a
+      <code>finally</code> path. A restore or refresh failure is recorded as an
+      execution error.</p>
+
+   <h2>Scope semantics</h2>
+   <p>Before cleanup starts, the public application wrapper resolves scoped
+      directory roots to deterministic, sorted Java-file arguments. This keeps
+      explicit project roots and explicit source subdirectories consistent.</p>
+   <ul>
+      <li><code>both</code> leaves caller inputs unchanged.</li>
+      <li><code>main</code> includes <code>src/main</code> and paths without a conventional test-source marker.</li>
+      <li><code>test</code> includes <code>src/test</code>, <code>src/tests</code>, top-level project <code>test</code>/<code>tests</code> directories, and explicit roots with those names.</li>
+   </ul>
+   <p>When an Eclipse <code>.project</code> ancestor is available, classification
+      is relative to that project root. A workspace ancestor or Java package named
+      <code>test</code> therefore does not reclassify main sources. If a valid scoped
+      directory contains no matching Java files, the run is a successful zero-file
+      run rather than a command-line error.</p>
+
+   <h2>JSON evidence</h2>
+   <p>The report contains tool/version, mode, scope, timestamps, duration,
+      processed and changed-file counts, the changed paths, <code>errorCount</code>,
+      and collected error messages. A failure to write the report produces exit
+      code 1 but naturally cannot be represented inside that missing report.</p>
 
    <h2>Known limitations</h2>
    <ul>
-      <li>Files outside the selected workspace are skipped.</li>
-      <li>Cleanup keys are Eclipse JDT cleanup option keys and must match the installed platform and cleanup bundles.</li>
+      <li>Cleanup keys must match the installed Eclipse/JDT and Sandbox cleanup bundles.</li>
+      <li>The scope filter recognizes conventional <code>src/test</code>, <code>src/tests</code>, and explicit <code>test</code>/<code>tests</code> roots; pass custom source sets explicitly with scope <code>both</code>.</li>
+      <li>The generated unified diff is review evidence, not a replacement for Git's rename- and binary-aware diff model.</li>
       <li>The feature has no interactive UI and therefore no SWTBot screenshot.</li>
    </ul>
 
    <h2>Support information</h2>
-   <p>The Help content is shipped with the same feature version as the runtime
-      plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+   <p>Include the Sandbox feature version, Eclipse and Java versions, full
+      application arguments, exit code, stderr, JSON report when available, and
+      the smallest reproducing Eclipse project.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>
