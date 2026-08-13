@@ -16,7 +16,7 @@
       id="org.sandbox.jdt.core.ProjectWideJavaCleanup"
       point="org.eclipse.core.runtime.applications">
         <application>
-          <run class="org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication" />
+          <run class="org.sandbox.jdt.core.cleanupapp.HeadlessProjectWideCodeCleanupApplication" />
         </application>
 </extension>
 </plugin>
