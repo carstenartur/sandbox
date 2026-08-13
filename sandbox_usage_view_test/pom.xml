@@ -158,6 +158,7 @@
 							<useUIThread>false</useUIThread>
 							<showEclipseLog>true</showEclipseLog>
 							<failIfNoTests>true</failIfNoTests>
+							<forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
 							<appArgLine>-nl en</appArgLine>
 							<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.output="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.mode=true -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
 							<excludes combine.self="override" />
