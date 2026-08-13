@@ -62,7 +62,7 @@ jobs:
       MAVEN_OPTS: -Djava.awt.headless=true
     steps:
       - name: Checkout main
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
@@ -286,7 +286,7 @@ jobs:
 
       - name: Checkout current gh-pages revision
         if: env.DRY_RUN != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: gh-pages
           path: gh-pages-release

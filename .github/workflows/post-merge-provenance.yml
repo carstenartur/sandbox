@@ -29,7 +29,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
@@ -61,7 +61,7 @@ jobs:
       SOURCE_JAVA_CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
     steps:
       - name: Checkout validated main commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - uses: actions/setup-python@v7
