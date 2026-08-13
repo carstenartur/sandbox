@@ -109,9 +109,26 @@ jobs:
           --batch-mode
           -Dtycho.localArtifacts=ignore
           -DtestClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest
+          -DfailIfNoTests=false
           -f sandbox_help_build/pom.xml
           -Phelp-screenshots
           clean verify
+
+      # testClass is a Tycho-wide user property, so dependency test modules
+      # legitimately find no matching class. The dedicated module must still
+      # prove that the explicitly selected JUnit class really executed.
+      - name: Verify the temporary merge-gate test executed
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$(grep -R -l --include='TEST-*.xml' \
+            'SandboxHelpScreenshotsMergeGateSWTBotTest' \
+            sandbox_usage_view_test/target/surefire-reports | head -n 1 || true)"
+          if [[ -z "$report" ]]; then
+            echo 'The selected Help screenshot JUnit merge gate did not execute.' >&2
+            exit 1
+          fi
+          printf 'Verified JUnit report: %s\n' "$report"
 
       # The two real Cleanup preview methods remain executable in
       # SandboxHelpScreenshotsSWTBotTest and are tracked by #1437. Their three
