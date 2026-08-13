@@ -22,6 +22,10 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
+          if [[ ! -f .github/patches/pr1464-screenshot-contract.patch ]]; then
+            echo "Screenshot contract repair is already applied."
+            exit 0
+          fi
           python3 - <<'PY'
           from pathlib import Path
           import xml.etree.ElementTree as ET
@@ -178,11 +182,8 @@ jobs:
               "\t\t\t\t\t\t\t<appArgLine>-nl en</appArgLine>",
           )
           ET.parse(pom)
-
-          workflow = Path(".github/workflows/eclipse-help-screenshots.yml")
-          replace_once(workflow, "          50m\n", "          70m\n")
           PY
-          rm .github/patches/pr1464-screenshot-contract.patch .github/workflows/tmp-pr1464-apply.yml
+          rm .github/patches/pr1464-screenshot-contract.patch
           git diff --check
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
