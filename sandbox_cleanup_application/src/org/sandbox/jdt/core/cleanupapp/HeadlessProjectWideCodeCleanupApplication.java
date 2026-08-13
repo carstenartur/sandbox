@@ -16,8 +16,8 @@ import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 
 /**
- * Runs the project-wide cleanup and disposes the SWT display created internally
- * by JDT's cleanup change implementation before the dedicated headless process
+ * Runs the project-wide cleanup with an SWT display owned by the application
+ * thread and disposes that display before the dedicated headless process
  * returns to Equinox.
  */
 public final class HeadlessProjectWideCodeCleanupApplication implements IApplication {
@@ -26,32 +26,23 @@ public final class HeadlessProjectWideCodeCleanupApplication implements IApplica
 
 	@Override
 	public Object start(IApplicationContext context) {
+		Display current= Display.getCurrent();
+		if (current != null) {
+			return delegate.start(context);
+		}
+
+		Display display= new Display();
 		try {
 			return delegate.start(context);
 		} finally {
-			disposeDisplay();
+			if (!display.isDisposed()) {
+				display.dispose();
+			}
 		}
 	}
 
 	@Override
 	public void stop() {
 		delegate.stop();
-		disposeDisplay();
-	}
-
-	private static void disposeDisplay() {
-		Display display= Display.getDefault();
-		if (display.isDisposed()) {
-			return;
-		}
-		if (Display.getCurrent() == display) {
-			display.dispose();
-			return;
-		}
-		display.syncExec(() -> {
-			if (!display.isDisposed()) {
-				display.dispose();
-			}
-		});
 	}
 }
