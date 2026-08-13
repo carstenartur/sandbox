@@ -183,8 +183,12 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 		List<String> safetyDetails= stringList(invoke(change, "getSafetyDetails", List.class)); //$NON-NLS-1$
 		Change[] changes= invoke(change, "getChanges", Change[].class); //$NON-NLS-1$
 		List<FilePreview> filePreviews= new ArrayList<>();
-		for (Change child : changes) {
-			collectFilePreviews(child, filePreviews);
+		if (changes != null) {
+			for (Change child : changes) {
+				if (child != null) {
+					collectFilePreviews(child, filePreviews);
+				}
+			}
 		}
 		List<String> allDetails= new ArrayList<>();
 		allDetails.add(ATOMIC_SELECTION);
