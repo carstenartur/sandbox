@@ -28,6 +28,12 @@ mvn test -pl sandbox-functional-converter-core
 5. **Use shared cleanup base classes only for established lifecycle contracts** — ordinary cleanups extend `AbstractCleanUp`; coordinated multi-file cleanups may extend `AbstractPlannedMultiFileCleanUp`
 6. **Remove unused imports** — Tycho treats them as errors
 7. **Add `//$NON-NLS-1$`** to user-facing string literals
+8. **Keep every review PR small** — target about 1,500 changed source lines and stop/split at about 2,000 unless an exception was documented before further implementation
+9. **Maven/JUnit are the test authority** — do not add Python automation, Python tests, `setup-python`, or script-owned semantic assertions without explicit owner approval
+10. **Use JGit from JUnit for upstream repositories** — reusable JUnit 5 extension by default; JUnit 4 rule only where genuinely required
+11. **Large integration branches are reference branches only** — keep them draft and extract independently reviewable slices instead of merging them
+12. **Do not add trigger-only commits** — re-run the existing workflow or failed job
+13. **Quarantine only exact named tests** — preserve the test source, link an open issue, keep normal Maven gates active, and never claim quarantined behavior as passing
 
 ## Build Commands
 
@@ -40,6 +46,7 @@ mvn -Pproduct,repo -T 1C verify     # Full build
 
 | File | When to read |
 |------|-------------|
+| `.github/copilot-ref-delivery-policy.md` | Before opening, enlarging, splitting, quarantining, or merging a pull request |
 | `.github/copilot-ref-guardrails.md` | Before refactoring or restructuring code |
 | `.github/copilot-ref-architecture.md` | To understand modules, packages, plugin patterns |
 | `.github/copilot-ref-build.md` | For build profiles, CI, coverage, troubleshooting |
