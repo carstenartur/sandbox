@@ -179,13 +179,16 @@ public class SandboxHelpScreenshotsSWTBotTest {
             System.out.println("[help-screenshots] Captured cleanup tab: " + tab.label());
         }
 
-        clickButton(profileDialog, "Cancel");
-        clickButton(preferences, "Cancel");
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "Cancel");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Cancel");
     }
 
     @Test
     public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
+        System.out.println("[help-screenshots] Starting independent real Cleanup preview");
         configureJFaceCleanupProfile();
+        System.out.println("[help-screenshots] Configured JFace Cleanup profile");
         IFile singleFile = cleanupPreviewProject.getFile("src/demo/single/SingleFileCleanup.java");
         String singleBefore = readFile(singleFile);
 
@@ -270,7 +273,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     @Test
     public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
+        System.out.println("[help-screenshots] Starting coordinated Int-to-Enum Cleanup preview");
         configureIntToEnumCleanupProfile();
+        System.out.println("[help-screenshots] Configured Int-to-Enum Cleanup profile");
         IFile ownerFile = cleanupPreviewProject.getFile("src/demo/coordinated/StateOwner.java");
         IFile callerFile = cleanupPreviewProject.getFile("src/demo/coordinated/StateCaller.java");
         String ownerBefore = readFile(ownerFile);
@@ -463,9 +468,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ensureChecked(profileDialog, INT_TO_ENUM_MASTER_LABEL, true);
         ensureChecked(profileDialog, INT_TO_ENUM_PROJECT_WIDE_LABEL, true);
 
-        clickButton(profileDialog, "OK");
-        clickButton(preferences, "Apply and Close", "OK");
-        waitForShellToClose(preferences, "Preferences");
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
     }
 
     private static void configureJFaceCleanupProfile() {
@@ -482,9 +487,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ensureChecked(profileDialog, JFACE_VIEWER_SORTER_LABEL, true);
         ensureChecked(profileDialog, JFACE_IMAGE_DATA_PROVIDER_LABEL, false);
 
-        clickButton(profileDialog, "OK");
-        clickButton(preferences, "Apply and Close", "OK");
-        waitForShellToClose(preferences, "Preferences");
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
     }
 
     private static void ensureChecked(SWTBotShell shell, String label, boolean checked) {
@@ -892,6 +897,12 @@ public class SandboxHelpScreenshotsSWTBotTest {
             }
         }
         throw failure;
+    }
+
+    private static void clickButtonAndWaitForShellToClose(SWTBotShell shell, String description,
+            String... labels) {
+        clickButton(shell, labels);
+        waitForShellToClose(shell, description);
     }
 
     private static void clickButtonAsync(SWTBotShell shell, String... labels) {
