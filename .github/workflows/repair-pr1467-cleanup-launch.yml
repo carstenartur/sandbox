@@ -37,54 +37,44 @@ jobs:
               raise SystemExit(f'Expected one invalid -refresh argument, found {text.count(refresh)}')
           text = text.replace(refresh, '', 1)
 
-          invocation = '''  "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" \\
-    2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
-          '''
-          bounded_invocation = '''  timeout --signal=TERM --kill-after=1m 30m \\
-    "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" \\
-    2>"$OUTPUT/logs/$mode-cleanup.stderr.log"
-          '''
+          invocation = '  "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" ' + chr(92) + '\n' + '    2>"$OUTPUT/logs/$mode-cleanup.stderr.log"\n'
+          bounded = '  timeout --signal=TERM --kill-after=1m 30m "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$mode-cleanup.stdout.log" 2>"$OUTPUT/logs/$mode-cleanup.stderr.log"\n'
           if text.count(invocation) != 1:
               raise SystemExit(f'Expected one cleanup invocation, found {text.count(invocation)}')
-          text = text.replace(invocation, bounded_invocation)
+          text = text.replace(invocation, bounded)
 
-          anchor = '''printf 'PREPARING_TEST_REACTOR\\n' > "$OUTPUT/run-state.txt"
-          prepare_test_reactor
-          '''
-          preflight = '''verify_cleanup_application() {
-            local stdout="$OUTPUT/logs/cleanup-application-preflight.stdout.log"
-            local stderr="$OUTPUT/logs/cleanup-application-preflight.stderr.log"
-            local -a display_prefix=()
-            if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
-              display_prefix=(xvfb-run --auto-servernum)
-            fi
-            if ! timeout --signal=TERM --kill-after=30s 3m \\
-                "${display_prefix[@]}" "$SANDBOX_ECLIPSE" \\
-                -nosplash -consoleLog -clean -data "$OOMPH_WORKSPACE" \\
-                -application "$APPLICATION_ID" --help >"$stdout" 2>"$stderr"; then
-              cat "$stdout" >&2 || true
-              cat "$stderr" >&2 || true
-              fail "The registered project-wide Cleanup application could not be started: $APPLICATION_ID"
-            fi
-            grep -F -- "-application $APPLICATION_ID" "$stdout" >/dev/null \\
-              || fail "Cleanup application preflight returned an unexpected usage contract"
-          }
-
-          printf 'CLEANUP_APPLICATION_PREFLIGHT\\n' > "$OUTPUT/run-state.txt"
-          verify_cleanup_application
-
-          printf 'PREPARING_TEST_REACTOR\\n' > "$OUTPUT/run-state.txt"
-          prepare_test_reactor
-          '''
+          anchor = "printf 'PREPARING_TEST_REACTOR\\n' > \"$OUTPUT/run-state.txt\"\nprepare_test_reactor\n"
+          preflight_lines = [
+              'verify_cleanup_application() {',
+              '  local stdout="$OUTPUT/logs/cleanup-application-preflight.stdout.log"',
+              '  local stderr="$OUTPUT/logs/cleanup-application-preflight.stderr.log"',
+              '  local -a display_prefix=()',
+              '  if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then',
+              '    display_prefix=(xvfb-run --auto-servernum)',
+              '  fi',
+              '  if ! timeout --signal=TERM --kill-after=30s 3m "${display_prefix[@]}" "$SANDBOX_ECLIPSE" -nosplash -consoleLog -clean -data "$OOMPH_WORKSPACE" -application "$APPLICATION_ID" --help >"$stdout" 2>"$stderr"; then',
+              '    cat "$stdout" >&2 || true',
+              '    cat "$stderr" >&2 || true',
+              '    fail "The registered project-wide Cleanup application could not be started: $APPLICATION_ID"',
+              '  fi',
+              '  grep -F -- "-application $APPLICATION_ID" "$stdout" >/dev/null || fail "Cleanup application preflight returned an unexpected usage contract"',
+              '}',
+              '',
+              "printf 'CLEANUP_APPLICATION_PREFLIGHT\\n' > \"$OUTPUT/run-state.txt\"",
+              'verify_cleanup_application',
+              '',
+              "printf 'PREPARING_TEST_REACTOR\\n' > \"$OUTPUT/run-state.txt\"",
+              'prepare_test_reactor',
+          ]
+          preflight = '\n'.join(preflight_lines) + '\n'
           if text.count(anchor) != 1:
               raise SystemExit(f'Expected one dependency-build anchor, found {text.count(anchor)}')
           text = text.replace(anchor, preflight)
           script.write_text(text, encoding='utf-8')
 
           old_id = 'sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup'
-          roots = [Path('sandbox_cleanup_application'), Path('qa/upstream-jdt')]
           changed = []
-          for root in roots:
+          for root in (Path('sandbox_cleanup_application'), Path('qa/upstream-jdt')):
               for path in root.rglob('*'):
                   if not path.is_file():
                       continue
@@ -93,8 +83,7 @@ jobs:
                   except UnicodeDecodeError:
                       continue
                   if old_id in source:
-                      path.write_text(source.replace(old_id, 'org.sandbox.jdt.core.ProjectWideJavaCleanup'),
-                                      encoding='utf-8')
+                      path.write_text(source.replace(old_id, 'org.sandbox.jdt.core.ProjectWideJavaCleanup'), encoding='utf-8')
                       changed.append(str(path))
           if not changed:
               raise SystemExit('Expected at least the stale Java usage application id')
@@ -103,9 +92,7 @@ jobs:
           PY
 
           bash -n qa/upstream-jdt/run-before-after.sh
-          if grep -R --line-number --fixed-strings \
-              'sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup' \
-              qa/upstream-jdt sandbox_cleanup_application; then
+          if grep -R --line-number --fixed-strings 'sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup' qa/upstream-jdt sandbox_cleanup_application; then
             echo 'A stale prefixed application id remains.' >&2
             exit 1
           fi
