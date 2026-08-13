@@ -1,4 +1,4 @@
-name: Temporary PR 1468 source export
+name: Apply exact PR 1468 repair patch
 
 on:
   pull_request:
@@ -6,20 +6,30 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/junit4-real-corpus-hardening'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/upload-artifact@v7
         with:
-          name: pr1468-exact-sources
-          retention-days: 1
-          path: |
-            qa/upstream-jdt/verify_contract.py
-            sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java
-            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java
-            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/ReportingJUnitCleanUpCore.java
-            sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceNoOpSubclassTest.java
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Apply, validate and commit the exact repair
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          patch=.github/patches/pr1468-exact-fixes.patch
+          git apply --check "$patch"
+          git apply "$patch"
+          rm "$patch" .github/workflows/tmp-pr1468-source-export.yml
+          python3 -m py_compile qa/upstream-jdt/verify_contract.py
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Fix no-op JUnit migration changes and cleanup lifecycle"
+          git push origin "HEAD:${HEAD_BRANCH}"
