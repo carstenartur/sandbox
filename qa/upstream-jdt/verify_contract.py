@@ -58,16 +58,24 @@ def validate_application(root: Path) -> None:
 
     for required in (
         "new ProjectWideCodeCleanupApplication()",
+        "Display.getCurrent()",
+        "new Display()",
         "delegate.start(context)",
         "delegate.stop()",
         "finally",
-        "disposeDisplay()",
-        "Display.getDefault()",
+        "display.isDisposed()",
         "display.dispose()",
     ):
         if required not in wrapper:
             core.fail(
                 f"Headless project-wide application is missing lifecycle fragment: {required}"
+            )
+
+    for forbidden in ("Display.getDefault()", "syncExec("):
+        if forbidden in wrapper:
+            core.fail(
+                "Headless project-wide application must own and dispose its SWT "
+                f"display on the application thread; forbidden fragment: {forbidden}"
             )
 
     if "sandbox_common_core" not in manifest or "org.eclipse.swt" not in manifest:
