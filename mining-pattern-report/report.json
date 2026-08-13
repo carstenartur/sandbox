@@ -83,265 +83,6 @@
     {
       "repository": "eclipse.jdt.ui",
       "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/wizards/NewJavaProjectWizardPage.java",
-      "line": 168,
-      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/AddToClasspathAction.java",
-      "line": 136,
-      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/CustomFiltersActionGroup.java",
-      "line": 557,
-      "matchedCode": "patterns.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ClasspathContainerPreferencePage.java",
-      "line": 104,
-      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ComplianceConfigurationBlock.java",
-      "line": 222,
-      "matchedCode": "System.arraycopy(keys,0,allKeys,0,keys.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/DefaultPhoneticHashProvider.java",
-      "line": 167,
-      "matchedCode": "Arrays.asList(candidates).contains(token)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-stream.to-arrays-stream",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewJUnitTestCaseProposal.java",
-      "line": 46,
-      "matchedCode": "Arrays.asList(actions).stream()",
-      "suggestedReplacement": "java.util.Arrays.stream(actions)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-stream.to-arrays-stream",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewImplementationProposal.java",
-      "line": 46,
-      "matchedCode": "Arrays.asList(actions).stream()",
-      "suggestedReplacement": "java.util.Arrays.stream(actions)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-stream.to-arrays-stream",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/NewInterfaceImplementationProposal.java",
-      "line": 46,
-      "matchedCode": "Arrays.asList(actions).stream()",
-      "suggestedReplacement": "java.util.Arrays.stream(actions)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/CombinedWordRule.java",
-      "line": 144,
-      "matchedCode": "System.arraycopy(old,0,fContent,0,old.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuesser.java",
-      "line": 318,
-      "matchedCode": "System.arraycopy(v.triggerChars,0,triggers,0,v.triggerChars.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java",
-      "line": 789,
-      "matchedCode": "range.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java",
-      "line": 827,
-      "matchedCode": "styleRange.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/JavaSourceHover.java",
-      "line": 200,
-      "matchedCode": "sourceLines.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UnboxingCleanUp.java",
-      "line": 190,
-      "matchedCode": "binding.getParameterTypes().clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/JavaOutlinePage.java",
-      "line": 685,
-      "matchedCode": "System.arraycopy(sortedObjects,0,sortedRegions,0,sortedObjects.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/CompoundEditExitStrategy.java",
-      "line": 164,
-      "matchedCode": "System.arraycopy(commandIds,0,fCommandIds,0,commandIds.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/SelectionUtil.java",
-      "line": 85,
-      "matchedCode": "Arrays.asList(resources).contains(null)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/RowLayouter.java",
-      "line": 143,
-      "matchedCode": "System.arraycopy(fDefaultGridDatas,0,newDatas,0,fDefaultGridDatas.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
-      "line": 134,
-      "matchedCode": "fields.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
-      "line": 137,
-      "matchedCode": "inheritedFields.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
-      "line": 140,
-      "matchedCode": "methods.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
-      "line": 143,
-      "matchedCode": "inheritedMethods.clone()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/AbstractNewFolderWizardPage.java",
-      "line": 483,
-      "matchedCode": "System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java",
-      "line": 30,
-      "matchedCode": "System.arraycopy(inc,0,fOrginalInclusion,0,inc.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java",
-      "line": 34,
-      "matchedCode": "System.arraycopy(excl,0,fOriginalExclusion,0,excl.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListElement.java",
-      "line": 398,
-      "matchedCode": "System.arraycopy(filters,0,newFilters,0,filters.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/LibrariesWorkbookPage.java",
-      "line": 373,
-      "matchedCode": "Arrays.asList(segments).contains(JavaRuntime.JRE_CONTAINER)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/BuildPathBasePage.java",
-      "line": 253,
-      "matchedCode": "System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/ConfigureContainerAction.java",
-      "line": 90,
-      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/CompositeActionGroup.java",
-      "line": 46,
-      "matchedCode": "System.arraycopy(fGroups,0,newGroups,0,fGroups.length)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/typehierarchy/HierarchyLabelProvider.java",
-      "line": 107,
-      "matchedCode": "Arrays.asList(elements).contains(element)"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/workingsets/WorkingSetModel.java",
       "line": 653,
@@ -382,10 +123,287 @@
     {
       "repository": "eclipse.jdt.ui",
       "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/JavaOutlinePage.java",
+      "line": 685,
+      "matchedCode": "System.arraycopy(sortedObjects,0,sortedRegions,0,sortedObjects.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/CompoundEditExitStrategy.java",
+      "line": 164,
+      "matchedCode": "System.arraycopy(commandIds,0,fCommandIds,0,commandIds.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 134,
+      "matchedCode": "fields.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 137,
+      "matchedCode": "inheritedFields.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 140,
+      "matchedCode": "methods.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/GenerateToStringDialog.java",
+      "line": 143,
+      "matchedCode": "inheritedMethods.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/ConfigureContainerAction.java",
+      "line": 90,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/CompositeActionGroup.java",
+      "line": 46,
+      "matchedCode": "System.arraycopy(fGroups,0,newGroups,0,fGroups.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/UnboxingCleanUp.java",
+      "line": 190,
+      "matchedCode": "binding.getParameterTypes().clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/LibrariesWorkbookPage.java",
+      "line": 373,
+      "matchedCode": "Arrays.asList(segments).contains(JavaRuntime.JRE_CONTAINER)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java",
+      "line": 30,
+      "matchedCode": "System.arraycopy(inc,0,fOrginalInclusion,0,inc.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/EditFilterWizard.java",
+      "line": 34,
+      "matchedCode": "System.arraycopy(excl,0,fOriginalExclusion,0,excl.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/BuildPathBasePage.java",
+      "line": 253,
+      "matchedCode": "System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListElement.java",
+      "line": 398,
+      "matchedCode": "System.arraycopy(filters,0,newFilters,0,filters.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/AbstractNewFolderWizardPage.java",
+      "line": 483,
+      "matchedCode": "System.arraycopy(exclusionFilters,0,newExclusionFilters,0,exclusionFilters.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ClasspathContainerPreferencePage.java",
+      "line": 104,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/ComplianceConfigurationBlock.java",
+      "line": 222,
+      "matchedCode": "System.arraycopy(keys,0,allKeys,0,keys.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javadocexport/ContributedJavadocWizardPage.java",
       "line": 130,
       "matchedCode": "sourceElements.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/typehierarchy/HierarchyLabelProvider.java",
+      "line": 107,
+      "matchedCode": "Arrays.asList(elements).contains(element)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/ParameterGuesser.java",
+      "line": 318,
+      "matchedCode": "System.arraycopy(v.triggerChars,0,triggers,0,v.triggerChars.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/JavaSourceHover.java",
+      "line": 200,
+      "matchedCode": "sourceLines.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java",
+      "line": 789,
+      "matchedCode": "range.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/java/hover/AnnotationExpansionControl.java",
+      "line": 827,
+      "matchedCode": "styleRange.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/DefaultPhoneticHashProvider.java",
+      "line": 167,
+      "matchedCode": "Arrays.asList(candidates).contains(token)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/CombinedWordRule.java",
+      "line": 144,
+      "matchedCode": "System.arraycopy(old,0,fContent,0,old.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewImplementationProposal.java",
+      "line": 46,
+      "matchedCode": "Arrays.asList(actions).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(actions)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/NewInterfaceImplementationProposal.java",
+      "line": 46,
+      "matchedCode": "Arrays.asList(actions).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(actions)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewJUnitTestCaseProposal.java",
+      "line": 46,
+      "matchedCode": "Arrays.asList(actions).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(actions)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/RowLayouter.java",
+      "line": 143,
+      "matchedCode": "System.arraycopy(fDefaultGridDatas,0,newDatas,0,fDefaultGridDatas.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/SelectionUtil.java",
+      "line": 85,
+      "matchedCode": "Arrays.asList(resources).contains(null)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/AddToClasspathAction.java",
+      "line": 136,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/CustomFiltersActionGroup.java",
+      "line": 557,
+      "matchedCode": "patterns.clone()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/wizards/NewJavaProjectWizardPage.java",
+      "line": 168,
+      "matchedCode": "System.arraycopy(entries,0,newEntries,0,entries.length)"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/OverrideMethodDialog.java",
+      "line": 450,
+      "matchedCode": "searchText.trim().isEmpty()",
+      "suggestedReplacement": "searchText.isBlank()"
+    },
+    {
+      "repository": "eclipse.jdt.ui",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/IndentAction.java",
+      "line": 936,
+      "matchedCode": "prevLineString.trim().isEmpty()",
+      "suggestedReplacement": "prevLineString.isBlank()"
     },
     {
       "repository": "eclipse.jdt.ui",
@@ -409,28 +427,10 @@
       "repository": "eclipse.jdt.ui",
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/OverrideMethodDialog.java",
-      "line": 450,
-      "matchedCode": "searchText.trim().isEmpty()",
-      "suggestedReplacement": "searchText.isBlank()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
       "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackagerfat/FatJarManifestProvider.java",
       "line": 105,
       "matchedCode": "manifestClasspath.trim().isEmpty()",
       "suggestedReplacement": "manifestClasspath.isBlank()"
-    },
-    {
-      "repository": "eclipse.jdt.ui",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
-      "file": "org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/IndentAction.java",
-      "line": 936,
-      "matchedCode": "prevLineString.trim().isEmpty()",
-      "suggestedReplacement": "prevLineString.isBlank()"
     },
     {
       "repository": "eclipse.jdt.ui",
@@ -542,6 +542,30 @@
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/WorkingSetConfigurationBlock.java",
+      "line": 78,
+      "matchedCode": "System.arraycopy(workingSetIds,0,workingSetIdsCopy,0,workingSetIds.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/FilteredList.java",
+      "line": 255,
+      "matchedCode": "System.arraycopy(elements,0,fElements,0,elements.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/EditorSelectionDialog.java",
+      "line": 511,
+      "matchedCode": "System.arraycopy(externalEditors,0,newEditors,0,externalEditors.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AbstractWorkingSetManager.java",
       "line": 868,
       "matchedCode": "System.arraycopy(elements,0,newElements,0,elements.length)"
@@ -550,41 +574,49 @@
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/KeysPreferencePage.java",
-      "line": 191,
-      "matchedCode": "System.arraycopy(sortOrder,0,newSortOrder,0,sortOrder.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/NewWizardNewPage.java",
+      "line": 398,
+      "matchedCode": "System.arraycopy(currentExpanded,0,expanded,0,currentExpanded.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/FileEditorsPreferencePage.java",
+      "line": 382,
+      "matchedCode": "mapping.clone()"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/LightweightDecoratorManager.java",
-      "line": 165,
-      "matchedCode": "System.arraycopy(oldDefs,0,lightweightDefinitions,0,oldDefs.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/WorkingSetSelectionDialog.java",
+      "line": 313,
+      "matchedCode": "System.arraycopy(untypedResult,0,typedResult,0,untypedResult.length)"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java",
-      "line": 276,
-      "matchedCode": "System.arraycopy(oldDefs,0,fullDefinitions,0,oldDefs.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/SimpleWorkingSetSelectionDialog.java",
+      "line": 156,
+      "matchedCode": "System.arraycopy(checked,0,workingSets,0,checked.length)"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java",
-      "line": 639,
-      "matchedCode": "System.arraycopy(fullDefinitions,0,returnValue,0,fullDefinitions.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/DecoratorsPreferencePage.java",
+      "line": 147,
+      "matchedCode": "System.arraycopy(elements,0,results,0,elements.length)"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/commands/CommandImageManagerEvent.java",
-      "line": 95,
-      "matchedCode": "System.arraycopy(changedCommandIds,0,copy,0,changedCommandIds.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/ModifyWorkingSetDelegate.java",
+      "line": 231,
+      "matchedCode": "System.arraycopy(selectedElements,0,adaptables,0,selectedElements.length)"
     },
     {
       "repository": "eclipse.platform.ui",
@@ -614,110 +646,6 @@
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java",
-      "line": 49,
-      "matchedCode": "System.arraycopy(components,0,componentCopy,0,components.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java",
-      "line": 199,
-      "matchedCode": "System.arraycopy(localComponents,0,copiedArray,0,localComponents.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/about/AboutFeaturesPage.java",
-      "line": 165,
-      "matchedCode": "System.arraycopy(clientArray,0,bundleGroupInfos,0,clientArray.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/FileEditorsPreferencePage.java",
-      "line": 382,
-      "matchedCode": "mapping.clone()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/SimpleWorkingSetSelectionDialog.java",
-      "line": 156,
-      "matchedCode": "System.arraycopy(checked,0,workingSets,0,checked.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/DecoratorsPreferencePage.java",
-      "line": 147,
-      "matchedCode": "System.arraycopy(elements,0,results,0,elements.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/WorkingSetSelectionDialog.java",
-      "line": 313,
-      "matchedCode": "System.arraycopy(untypedResult,0,typedResult,0,untypedResult.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/NewWizardNewPage.java",
-      "line": 398,
-      "matchedCode": "System.arraycopy(currentExpanded,0,expanded,0,currentExpanded.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java",
-      "line": 1487,
-      "matchedCode": "System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java",
-      "line": 1532,
-      "matchedCode": "System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
-      "line": 65,
-      "matchedCode": "System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
-      "line": 177,
-      "matchedCode": "System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
-      "line": 239,
-      "matchedCode": "System.arraycopy(allDefs,0,copy,0,allDefs.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/wizards/AbstractExtensionWizardRegistry.java",
       "line": 69,
       "matchedCode": "System.arraycopy(localPrimaryWizards,0,newPrimary,0,localPrimaryWizards.length)"
@@ -729,78 +657,6 @@
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/wizards/preferences/WizardPreferencesPage.java",
       "line": 590,
       "matchedCode": "System.arraycopy(checkedElements,0,transferElements,0,checkedElements.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 2298,
-      "matchedCode": "System.arraycopy(parts,0,editors,0,parts.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 3777,
-      "matchedCode": "Arrays.asList(models).contains(model)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 3787,
-      "matchedCode": "Arrays.asList(models).contains(model)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/actions/ModifyWorkingSetDelegate.java",
-      "line": 231,
-      "matchedCode": "System.arraycopy(selectedElements,0,adaptables,0,selectedElements.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ws/WorkbenchActivitySupport.java",
-      "line": 397,
-      "matchedCode": "mutableActivityManager.clone()"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java",
-      "line": 417,
-      "matchedCode": "Arrays.asList(disabled).contains(fileExtension)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java",
-      "line": 56,
-      "matchedCode": "Arrays.asList(memento.getAttributeKeys()).contains(attribute)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java",
-      "line": 288,
-      "matchedCode": "System.arraycopy(editorArray,0,newArray,0,editorArray.length)"
-    },
-    {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java",
-      "line": 1166,
-      "matchedCode": "defaultMap.clone()"
     },
     {
       "repository": "eclipse.platform.ui",
@@ -830,33 +686,169 @@
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/FilteredList.java",
-      "line": 255,
-      "matchedCode": "System.arraycopy(elements,0,fElements,0,elements.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java",
+      "line": 288,
+      "matchedCode": "System.arraycopy(editorArray,0,newArray,0,editorArray.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java",
+      "line": 1166,
+      "matchedCode": "defaultMap.clone()"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/WorkingSetConfigurationBlock.java",
-      "line": 78,
-      "matchedCode": "System.arraycopy(workingSetIds,0,workingSetIdsCopy,0,workingSetIds.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java",
+      "line": 276,
+      "matchedCode": "System.arraycopy(oldDefs,0,fullDefinitions,0,oldDefs.length)"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/EditorSelectionDialog.java",
-      "line": 511,
-      "matchedCode": "System.arraycopy(externalEditors,0,newEditors,0,externalEditors.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java",
+      "line": 639,
+      "matchedCode": "System.arraycopy(fullDefinitions,0,returnValue,0,fullDefinitions.length)"
     },
     {
       "repository": "eclipse.platform.ui",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/activities/ActivityCategoryPreferencePage.java",
-      "line": 401,
-      "matchedCode": "System.arraycopy(enabledCategories,0,allChecked,0,enabledCategories.length)"
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/LightweightDecoratorManager.java",
+      "line": 165,
+      "matchedCode": "System.arraycopy(oldDefs,0,lightweightDefinitions,0,oldDefs.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java",
+      "line": 417,
+      "matchedCode": "Arrays.asList(disabled).contains(fileExtension)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/about/AboutFeaturesPage.java",
+      "line": 165,
+      "matchedCode": "System.arraycopy(clientArray,0,bundleGroupInfos,0,clientArray.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/ws/WorkbenchActivitySupport.java",
+      "line": 397,
+      "matchedCode": "mutableActivityManager.clone()"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
+      "line": 65,
+      "matchedCode": "System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
+      "line": 177,
+      "matchedCode": "System.arraycopy(definitions,0,copyOfDefinitions,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java",
+      "line": 239,
+      "matchedCode": "System.arraycopy(allDefs,0,copy,0,allDefs.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java",
+      "line": 1487,
+      "matchedCode": "System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java",
+      "line": 1532,
+      "matchedCode": "System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
+      "line": 2298,
+      "matchedCode": "System.arraycopy(parts,0,editors,0,parts.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
+      "line": 3777,
+      "matchedCode": "Arrays.asList(models).contains(model)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
+      "line": 3787,
+      "matchedCode": "Arrays.asList(models).contains(model)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/commands/CommandImageManagerEvent.java",
+      "line": 95,
+      "matchedCode": "System.arraycopy(changedCommandIds,0,copy,0,changedCommandIds.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/KeysPreferencePage.java",
+      "line": 191,
+      "matchedCode": "System.arraycopy(sortOrder,0,newSortOrder,0,sortOrder.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java",
+      "line": 56,
+      "matchedCode": "Arrays.asList(memento.getAttributeKeys()).contains(attribute)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java",
+      "line": 49,
+      "matchedCode": "System.arraycopy(components,0,componentCopy,0,components.length)"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java",
+      "line": 199,
+      "matchedCode": "System.arraycopy(localComponents,0,copiedArray,0,localComponents.length)"
     },
     {
       "repository": "eclipse.platform.ui",
@@ -868,12 +860,11 @@
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/menus/CommandContributionItem.java",
-      "line": 569,
-      "matchedCode": "tooltip.trim().isEmpty()",
-      "suggestedReplacement": "tooltip.isBlank()"
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/activities/ActivityCategoryPreferencePage.java",
+      "line": 401,
+      "matchedCode": "System.arraycopy(enabledCategories,0,allChecked,0,enabledCategories.length)"
     },
     {
       "repository": "eclipse.platform.ui",
@@ -922,11 +913,12 @@
     },
     {
       "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
-      "line": 356,
-      "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/menus/CommandContributionItem.java",
+      "line": 569,
+      "matchedCode": "tooltip.trim().isEmpty()",
+      "suggestedReplacement": "tooltip.isBlank()"
     },
     {
       "repository": "eclipse.platform.ui",
@@ -935,6 +927,22 @@
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CoolBarToTrimManager.java",
       "line": 313,
       "matchedCode": "workbenchTrimElements.stream().filter(e -> e instanceof MToolBar).map(e -> (MToolBar)e).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CycleViewHandler.java",
+      "line": 56,
+      "matchedCode": "modelService.findElements(currentPerspective,null,MPart.class,null,EModelService.PRESENTATION).stream().filter(p -> !(p.getObject() instanceof SplitHost)).collect(Collectors.toList())"
+    },
+    {
+      "repository": "eclipse.platform.ui",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
+      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
+      "line": 356,
+      "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
     },
     {
       "repository": "eclipse.platform.ui",
@@ -961,44 +969,12 @@
       "matchedCode": "Arrays.stream(Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)).filter(element -> COMPUTER_TAG.equals(element.getName())).map(element -> new QuickAccessProviderExtensionProxy(element,onActivate)).collect(Collectors.toList())"
     },
     {
-      "repository": "eclipse.platform.ui",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CycleViewHandler.java",
-      "line": 56,
-      "matchedCode": "modelService.findElements(currentPerspective,null,MPart.class,null,EModelService.PRESENTATION).stream().filter(p -> !(p.getObject() instanceof SplitHost)).collect(Collectors.toList())"
-    },
-    {
       "repository": "eclipse.platform",
       "hintFile": "stream-performance",
       "rule": "stream-performance.sorted-before-collect.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ContentDescriptionManager.java",
       "line": 505,
       "matchedCode": "Arrays.stream(bundleContext.getBundles()).map(bundle -> String.format(\"%d %s %s\",bundle.getBundleId(),bundle.getSymbolicName(),bundle.getVersion())).sorted().collect(Collectors.joining(System.lineSeparator()))"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/ObjectMap.java",
-      "line": 172,
-      "matchedCode": "System.arraycopy(elements,0,expanded,0,elements.length)"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/UniversalUniqueIdentifier.java",
-      "line": 292,
-      "matchedCode": "System.arraycopy(fBits,0,result,0,fBits.length)"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/NoDataDeltaNode.java",
-      "line": 90,
-      "matchedCode": "System.arraycopy(children,0,childrenCopy,0,children.length)"
     },
     {
       "repository": "eclipse.platform",
@@ -1015,6 +991,206 @@
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/DataDeltaNode.java",
       "line": 82,
       "matchedCode": "System.arraycopy(children,0,childrenCopy,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/NoDataDeltaNode.java",
+      "line": 90,
+      "matchedCode": "System.arraycopy(children,0,childrenCopy,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTreeReaderImpl_1.java",
+      "line": 59,
+      "matchedCode": "data.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
+      "line": 167,
+      "matchedCode": "data.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
+      "line": 694,
+      "matchedCode": "oldData.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildContext.java",
+      "line": 68,
+      "matchedCode": "requestedBuilt.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java",
+      "line": 1157,
+      "matchedCode": "prereqs.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildCommand.java",
+      "line": 151,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/ResourceDelta.java",
+      "line": 242,
+      "matchedCode": "System.arraycopy(children,0,result,0,children.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/InternalBuilder.java",
+      "line": 108,
+      "matchedCode": "((BuildCommand)command).clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
+      "line": 278,
+      "matchedCode": "markerInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
+      "line": 319,
+      "matchedCode": "markerInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
+      "line": 350,
+      "matchedCode": "markerInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java",
+      "line": 68,
+      "matchedCode": "buildOrder.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java",
+      "line": 160,
+      "matchedCode": "value.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java",
+      "line": 130,
+      "matchedCode": "natures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java",
+      "line": 142,
+      "matchedCode": "natures.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/MarkerSet.java",
+      "line": 83,
+      "matchedCode": "elements.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceRoot.java",
+      "line": 192,
+      "matchedCode": "System.arraycopy(roots,0,result,0,roots.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 199,
+      "matchedCode": "markers.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 228,
+      "matchedCode": "sessionProperties.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 255,
+      "matchedCode": "syncInfo.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 265,
+      "matchedCode": "b.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 426,
+      "matchedCode": "sessionProperties.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 438,
+      "matchedCode": "sessionProperties.clone()"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
+      "line": 469,
+      "matchedCode": "value.clone()"
     },
     {
       "repository": "eclipse.platform",
@@ -1156,110 +1332,6 @@
       "repository": "eclipse.platform",
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 199,
-      "matchedCode": "markers.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 228,
-      "matchedCode": "sessionProperties.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 255,
-      "matchedCode": "syncInfo.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 265,
-      "matchedCode": "b.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 426,
-      "matchedCode": "sessionProperties.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 438,
-      "matchedCode": "sessionProperties.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ResourceInfo.java",
-      "line": 469,
-      "matchedCode": "value.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
-      "line": 278,
-      "matchedCode": "markerInfo.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
-      "line": 319,
-      "matchedCode": "markerInfo.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Marker.java",
-      "line": 350,
-      "matchedCode": "markerInfo.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/MarkerSet.java",
-      "line": 83,
-      "matchedCode": "elements.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java",
-      "line": 68,
-      "matchedCode": "buildOrder.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java",
-      "line": 160,
-      "matchedCode": "value.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java",
       "line": 324,
       "matchedCode": "((ProjectDescription)description).clone()"
@@ -1271,38 +1343,6 @@
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java",
       "line": 451,
       "matchedCode": "description.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java",
-      "line": 130,
-      "matchedCode": "natures.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectInfo.java",
-      "line": 142,
-      "matchedCode": "natures.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java",
-      "line": 189,
-      "matchedCode": "oldNatures.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java",
-      "line": 190,
-      "matchedCode": "newNatures.clone()"
     },
     {
       "repository": "eclipse.platform",
@@ -1371,42 +1411,18 @@
     {
       "repository": "eclipse.platform",
       "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceRoot.java",
-      "line": 192,
-      "matchedCode": "System.arraycopy(roots,0,result,0,roots.length)"
+      "rule": "arrays.clone.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java",
+      "line": 189,
+      "matchedCode": "oldNatures.clone()"
     },
     {
       "repository": "eclipse.platform",
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTreeReaderImpl_1.java",
-      "line": 59,
-      "matchedCode": "data.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
-      "line": 167,
-      "matchedCode": "data.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
-      "line": 694,
-      "matchedCode": "oldData.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/HistoryBucket.java",
-      "line": 73,
-      "matchedCode": "System.arraycopy(uuidBytes,0,state,0,uuidBytes.length)"
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java",
+      "line": 190,
+      "matchedCode": "newNatures.clone()"
     },
     {
       "repository": "eclipse.platform",
@@ -1427,42 +1443,26 @@
     {
       "repository": "eclipse.platform",
       "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildContext.java",
-      "line": 68,
-      "matchedCode": "requestedBuilt.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/InternalBuilder.java",
-      "line": 108,
-      "matchedCode": "((BuildCommand)command).clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildCommand.java",
-      "line": 151,
-      "matchedCode": "arguments.clone()"
-    },
-    {
-      "repository": "eclipse.platform",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java",
-      "line": 1157,
-      "matchedCode": "prereqs.clone()"
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/HistoryBucket.java",
+      "line": 73,
+      "matchedCode": "System.arraycopy(uuidBytes,0,state,0,uuidBytes.length)"
     },
     {
       "repository": "eclipse.platform",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
-      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/ResourceDelta.java",
-      "line": 242,
-      "matchedCode": "System.arraycopy(children,0,result,0,children.length)"
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/UniversalUniqueIdentifier.java",
+      "line": 292,
+      "matchedCode": "System.arraycopy(fBits,0,result,0,fBits.length)"
+    },
+    {
+      "repository": "eclipse.platform",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/utils/ObjectMap.java",
+      "line": 172,
+      "matchedCode": "System.arraycopy(elements,0,expanded,0,elements.length)"
     },
     {
       "repository": "sandbox",
@@ -1490,6 +1490,22 @@
       "line": 65,
       "matchedCode": "store.values().isEmpty()",
       "suggestedReplacement": "store.isEmpty()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.nested-flatmap.review",
+      "file": "sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java",
+      "line": 258,
+      "matchedCode": "miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(SimpleNameExpr::resolveVariable)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
+      "rule": "stream-performance.sorted-before-collect.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java",
+      "line": 205,
+      "matchedCode": "group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candidateId.equals(request.requestId())).sorted().collect(Collectors.joining(\", \"))"
     },
     {
       "repository": "sandbox",
@@ -1548,22 +1564,6 @@
     {
       "repository": "sandbox",
       "hintFile": "stream-performance",
-      "rule": "stream-performance.sorted-before-collect.review",
-      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java",
-      "line": 205,
-      "matchedCode": "group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candidateId.equals(request.requestId())).sorted().collect(Collectors.joining(\", \"))"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "stream-performance",
-      "rule": "stream-performance.nested-flatmap.review",
-      "file": "sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java",
-      "line": 258,
-      "matchedCode": "miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(SimpleNameExpr::resolveVariable)"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
       "line": 103,
@@ -1573,10 +1573,75 @@
     {
       "repository": "sandbox",
       "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java",
+      "line": 122,
+      "matchedCode": "System.arraycopy(defaults,0,result,0,defaults.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
       "rule": "arrays.clone.review",
-      "file": ".github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java",
-      "line": 312,
+      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java",
+      "line": 75,
+      "matchedCode": "TEMPLATES.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java",
+      "line": 163,
       "matchedCode": "compilationUnits.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-stream.to-arrays-stream",
+      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
+      "line": 103,
+      "matchedCode": "Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()",
+      "suggestedReplacement": "java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
+      "line": 51,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
+      "line": 56,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
+      "line": 66,
+      "matchedCode": "applicationArguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
+      "line": 73,
+      "matchedCode": "applicationArguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
+      "line": 164,
+      "matchedCode": "arguments.clone()"
     },
     {
       "repository": "sandbox",
@@ -1625,182 +1690,6 @@
       "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectSnapshot.java",
       "line": 44,
       "matchedCode": "content.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
-      "line": 51,
-      "matchedCode": "arguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
-      "line": 56,
-      "matchedCode": "arguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
-      "line": 66,
-      "matchedCode": "applicationArguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
-      "line": 73,
-      "matchedCode": "applicationArguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java",
-      "line": 164,
-      "matchedCode": "arguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "org/eclipse/jdt/internal/corext/dom/ASTNodes.java",
-      "line": 1591,
-      "matchedCode": "Arrays.asList(additionalExpectedOperators).contains(actualOperator)"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "org/eclipse/jdt/internal/corext/dom/ASTNodes.java",
-      "line": 3301,
-      "matchedCode": "Arrays.asList(fieldNames).contains(node.getName().getIdentifier())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
-      "line": 343,
-      "matchedCode": "BUNDLED_LIBRARIES.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
-      "line": 352,
-      "matchedCode": "DISABLED_BUNDLED_LIBRARIES.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
-      "line": 366,
-      "matchedCode": "System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java",
-      "line": 73,
-      "matchedCode": "constraints.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java",
-      "line": 149,
-      "matchedCode": "constraints.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
-      "line": 42,
-      "matchedCode": "Arrays.asList(filtered).contains(\"test\")"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
-      "line": 66,
-      "matchedCode": "Arrays.asList(filtered).contains(\"--source\")"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
-      "line": 139,
-      "matchedCode": "Arrays.asList(values).contains(expected.toFile().getPath())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.aslist-contains.review",
-      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
-      "line": 144,
-      "matchedCode": "Arrays.asList(values).contains(unexpected.toFile().getPath())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java",
-      "line": 108,
-      "matchedCode": "arguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java",
-      "line": 115,
-      "matchedCode": "arguments.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
-      "line": 396,
-      "matchedCode": "System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.arraycopy-full-copy.review",
-      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintSourceViewerConfiguration.java",
-      "line": 122,
-      "matchedCode": "System.arraycopy(defaults,0,result,0,defaults.length)"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java",
-      "line": 75,
-      "matchedCode": "TEMPLATES.clone()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "arrays",
-      "rule": "arrays.clone.review",
-      "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java",
-      "line": 163,
-      "matchedCode": "compilationUnits.clone()"
     },
     {
       "repository": "sandbox",
@@ -1869,11 +1758,149 @@
     {
       "repository": "sandbox",
       "hintFile": "arrays",
-      "rule": "arrays.aslist-stream.to-arrays-stream",
-      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
-      "line": 103,
-      "matchedCode": "Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()",
-      "suggestedReplacement": "java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())"
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
+      "line": 343,
+      "matchedCode": "BUNDLED_LIBRARIES.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
+      "line": 352,
+      "matchedCode": "DISABLED_BUNDLED_LIBRARIES.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java",
+      "line": 366,
+      "matchedCode": "System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java",
+      "line": 73,
+      "matchedCode": "constraints.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java",
+      "line": 149,
+      "matchedCode": "constraints.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": ".github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java",
+      "line": 312,
+      "matchedCode": "compilationUnits.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org/eclipse/jdt/internal/corext/dom/ASTNodes.java",
+      "line": 1591,
+      "matchedCode": "Arrays.asList(additionalExpectedOperators).contains(actualOperator)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "org/eclipse/jdt/internal/corext/dom/ASTNodes.java",
+      "line": 3301,
+      "matchedCode": "Arrays.asList(fieldNames).contains(node.getName().getIdentifier())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java",
+      "line": 108,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java",
+      "line": 115,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
+      "line": 42,
+      "matchedCode": "Arrays.asList(filtered).contains(\"test\")"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
+      "line": 66,
+      "matchedCode": "Arrays.asList(filtered).contains(\"--source\")"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
+      "line": 139,
+      "matchedCode": "Arrays.asList(values).contains(expected.toFile().getPath())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
+      "line": 144,
+      "matchedCode": "Arrays.asList(values).contains(unexpected.toFile().getPath())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
+      "line": 396,
+      "matchedCode": "System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java",
+      "line": 329,
+      "matchedCode": "newText.trim().isEmpty()",
+      "suggestedReplacement": "newText.isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
+      "line": 101,
+      "matchedCode": "parts[0].trim().isEmpty()",
+      "suggestedReplacement": "parts[0].isBlank()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "string-isblank",
+      "rule": "string-isblank1",
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
+      "line": 101,
+      "matchedCode": "parts[1].trim().isEmpty()",
+      "suggestedReplacement": "parts[1].isBlank()"
     },
     {
       "repository": "sandbox",
@@ -1913,54 +1940,27 @@
     },
     {
       "repository": "sandbox",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
-      "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java",
-      "line": 329,
-      "matchedCode": "newText.trim().isEmpty()",
-      "suggestedReplacement": "newText.isBlank()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
-      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 101,
-      "matchedCode": "parts[0].trim().isEmpty()",
-      "suggestedReplacement": "parts[0].isBlank()"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "string-isblank",
-      "rule": "string-isblank1",
-      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 101,
-      "matchedCode": "parts[1].trim().isEmpty()",
-      "suggestedReplacement": "parts[1].isBlank()"
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/ui/fix/JFaceCleanUpCore.java",
+      "line": 89,
+      "matchedCode": "computeFixSet().stream().map(JfaceCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
       "repository": "sandbox",
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
-      "line": 179,
-      "matchedCode": "computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.toList())"
+      "file": "sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java",
+      "line": 87,
+      "matchedCode": "computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(Collectors.toList())"
     },
     {
       "repository": "sandbox",
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 225,
-      "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java",
-      "line": 83,
-      "matchedCode": "computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collectors.toList())"
+      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java",
+      "line": 107,
+      "matchedCode": "computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())"
     },
     {
       "repository": "sandbox",
@@ -1982,6 +1982,22 @@
       "repository": "sandbox",
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
+      "line": 225,
+      "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
+      "file": "sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java",
+      "line": 83,
+      "matchedCode": "computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collectors.toList())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "modernize-java9",
+      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java",
       "line": 92,
       "matchedCode": "computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())"
@@ -1990,25 +2006,9 @@
       "repository": "sandbox",
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java",
-      "line": 87,
-      "matchedCode": "computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(Collectors.toList())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/ui/fix/JFaceCleanUpCore.java",
-      "line": 89,
-      "matchedCode": "computeFixSet().stream().map(JfaceCleanUpFixCore::toString).collect(Collectors.toList())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java",
-      "line": 107,
-      "matchedCode": "computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())"
+      "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
+      "line": 179,
+      "matchedCode": "computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.toList())"
     }
   ],
   "errors": {
