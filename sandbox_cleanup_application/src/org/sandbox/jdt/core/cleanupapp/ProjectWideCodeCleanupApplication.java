@@ -170,9 +170,8 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 				}
 			}
 		} catch (CoreException | IOException | RuntimeException e) {
-			String message= e.getMessage();
-			errors.add(message == null || message.isBlank() ? e.getClass().getName() : message);
-			System.err.println(errors.get(errors.size() - 1));
+			errors.add(describeException(e));
+			e.printStackTrace(System.err);
 		}
 
 		if (arguments.patch() != null && !changed.isEmpty()) {
@@ -483,6 +482,24 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			}
 		}
 		return escaped.toString();
+	}
+
+	private static String describeException(Throwable throwable) {
+		StringBuilder description= new StringBuilder();
+		Set<Throwable> visited= java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+		Throwable current= throwable;
+		while (current != null && visited.add(current)) {
+			if (!description.isEmpty()) {
+				description.append(" <- caused by: "); //$NON-NLS-1$
+			}
+			description.append(current.getClass().getName());
+			String message= current.getMessage();
+			if (message != null && !message.isBlank()) {
+				description.append(": ").append(message); //$NON-NLS-1$
+			}
+			current= current.getCause();
+		}
+		return description.toString();
 	}
 
 	private static void createParent(Path path) throws IOException {

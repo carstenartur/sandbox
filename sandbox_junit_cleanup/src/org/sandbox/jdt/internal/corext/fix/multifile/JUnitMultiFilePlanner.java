@@ -40,6 +40,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -74,7 +75,8 @@ public final class JUnitMultiFilePlanner {
 		}
 	}
 
-	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName) {
+	private record ResourceType(String compilationUnitHandle, String typeBindingKey, String typeName,
+			boolean requiresLocalRewrite) {
 	}
 
 	/**
@@ -362,7 +364,8 @@ public final class JUnitMultiFilePlanner {
 					ITypeBinding binding= node.resolveBinding();
 					String typeKey= JUnitMigrationPlan.typeKey(binding);
 					if (typeKey != null) {
-						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName()));
+						sourceTypes.put(typeKey, new ResourceType(unitHandle, typeKey, binding.getQualifiedName(),
+								requiresLocalExternalResourceRewrite(node, binding)));
 						bindings.put(typeKey, binding);
 					}
 					return true;
@@ -453,12 +456,17 @@ public final class JUnitMultiFilePlanner {
 
 	private static MigrationResult createMigrations(List<RuleField> fields,
 			Map<String, ResourceChain> chainsByTypeKey, RefactoringStatus status, IProgressMonitor monitor) {
-		// Every type between the rule field type and ExternalResource takes part in the
-		// same migration, because its inherited callbacks are renamed as well.
+		// Keep the complete inheritance chain for scope validation, but retain rewrite
+		// entries only for source types that actually change. A callback-free indirect
+		// subclass inherits the migrated callback implementation and must not produce an
+		// empty JDT cleanup change.
 		Map<String, List<RuleField>> fieldsByResourceType= new LinkedHashMap<>();
 		Map<String, ResourceType> resourcesByTypeKey= new LinkedHashMap<>();
 		for (RuleField field : fields) {
 			for (ResourceType resource : chainsByTypeKey.get(field.resourceTypeKey()).types()) {
+				if (!resource.requiresLocalRewrite()) {
+					continue;
+				}
 				resourcesByTypeKey.putIfAbsent(resource.typeBindingKey(), resource);
 				fieldsByResourceType.computeIfAbsent(resource.typeBindingKey(), ignored -> new ArrayList<>())
 						.add(field);
@@ -494,6 +502,23 @@ public final class JUnitMultiFilePlanner {
 							+ " rule field(s) together with " + resource.typeName() + ".", relatedHandles)); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return new MigrationResult(migrations, diagnostics);
+	}
+
+	private static boolean requiresLocalExternalResourceRewrite(TypeDeclaration node, ITypeBinding binding) {
+		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
+		if (superclass != null
+				&& ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(superclass.getErasure().getQualifiedName())) {
+			return true;
+		}
+		for (MethodDeclaration method : node.getMethods()) {
+			if (!method.isConstructor() && method.parameters().isEmpty()) {
+				String name= method.getName().getIdentifier();
+				if ("before".equals(name) || "after".equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private static RuleKind ruleKind(FieldDeclaration field) {

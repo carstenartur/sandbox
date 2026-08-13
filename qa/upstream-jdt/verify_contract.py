@@ -366,10 +366,14 @@ def validate_application(root: Path) -> None:
         root
         / "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java"
     ).read_text(encoding="utf-8")
+    wrapper = (
+        root
+        / "sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/HeadlessProjectWideCodeCleanupApplication.java"
+    ).read_text(encoding="utf-8")
     manifest = (root / "sandbox_cleanup_application/META-INF/MANIFEST.MF").read_text(encoding="utf-8")
     for required in (
         'id="org.sandbox.jdt.core.ProjectWideJavaCleanup"',
-        'class="org.sandbox.jdt.core.cleanupapp.ProjectWideCodeCleanupApplication"',
+        'class="org.sandbox.jdt.core.cleanupapp.HeadlessProjectWideCodeCleanupApplication"',
     ):
         if required not in plugin:
             fail(f"Project-wide application registration is missing {required}")
@@ -383,8 +387,17 @@ def validate_application(root: Path) -> None:
     ):
         if required not in source:
             fail(f"Project-wide application is missing contract fragment: {required}")
-    if "sandbox_common_core" not in manifest:
-        fail("Cleanup application does not require the diagnostics API bundle")
+    for required in (
+        "new ProjectWideCodeCleanupApplication()",
+        "delegate.start(context)",
+        "disposeDisplay()",
+        "Display.getDefault()",
+        "display.dispose()",
+    ):
+        if required not in wrapper:
+            fail(f"Headless project-wide application is missing lifecycle fragment: {required}")
+    if "sandbox_common_core" not in manifest or "org.eclipse.swt" not in manifest:
+        fail("Cleanup application does not require the diagnostics and SWT lifecycle bundles")
 
 
 def validate_runner(root: Path, pins: dict[str, str]) -> None:
