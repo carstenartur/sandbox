@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=pins.env
 source "$SCRIPT_DIR/pins.env"
 
-APPLICATION_ID="sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup"
+APPLICATION_ID="org.sandbox.jdt.core.ProjectWideJavaCleanup"
 STRICT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter.properties"
 BEST_EFFORT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter-best-effort.properties"
 CORPUS_CONTRACT="$SCRIPT_DIR/jdt-ui-junit4-corpus.json"
@@ -329,7 +329,6 @@ run_cleanup() {
     -nosplash
     -consoleLog
     -clean
-    -refresh
     -data "$OOMPH_WORKSPACE"
     -application "$APPLICATION_ID"
     --mode "$cleanup_mode"
@@ -347,9 +346,26 @@ run_cleanup() {
   if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
     display_prefix=(xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24")
   fi
-  "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$cleanup_mode-cleanup.stdout.log" \
-    2>"$OUTPUT/logs/$cleanup_mode-cleanup.stderr.log"
+  timeout --signal=TERM --kill-after=1m 30m "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$cleanup_mode-cleanup.stdout.log" 2>"$OUTPUT/logs/$cleanup_mode-cleanup.stderr.log"
 }
+
+verify_cleanup_application() {
+  local stdout="$OUTPUT/logs/cleanup-application-preflight.stdout.log"
+  local stderr="$OUTPUT/logs/cleanup-application-preflight.stderr.log"
+  local -a display_prefix=()
+  if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null; then
+    display_prefix=(xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24")
+  fi
+  if ! timeout --signal=TERM --kill-after=30s 3m "${display_prefix[@]}" "$SANDBOX_ECLIPSE" -nosplash -consoleLog -clean -data "$OOMPH_WORKSPACE" -application "$APPLICATION_ID" --help >"$stdout" 2>"$stderr"; then
+    cat "$stdout" >&2 || true
+    cat "$stderr" >&2 || true
+    fail "The registered project-wide Cleanup application could not be started: $APPLICATION_ID"
+  fi
+  grep -F -- "-application $APPLICATION_ID" "$stdout" >/dev/null || fail "Cleanup application preflight returned an unexpected usage contract"
+}
+
+printf 'CLEANUP_APPLICATION_PREFLIGHT\n' > "$OUTPUT/run-state.txt"
+verify_cleanup_application
 
 printf 'BASELINE_TESTS\n' > "$OUTPUT/run-state.txt"
 copy_corpus_sources "$OUTPUT/corpus/baseline"
