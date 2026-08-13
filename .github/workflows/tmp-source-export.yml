@@ -1,0 +1,28 @@
+name: Temporary PR 1468 source export
+
+on:
+  push:
+    branches:
+      - tmp/export-pr1468-source-20260813
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr1468-source
+          retention-days: 1
+          path: |
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFilePlanner.java
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFileRewriteOperation.java
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/lib/ExternalResourceRefactorer.java
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java
+            sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceMigrationTest.java
+            sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java
+            qa/upstream-jdt/run-jdt-ui-before-after.sh
