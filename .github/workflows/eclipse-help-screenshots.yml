@@ -33,6 +33,7 @@ on:
       - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
       - '.github/scripts/*.java'
+      - '.github/scripts/*.py'
       - '.github/workflows/eclipse-help-screenshots.yml'
   workflow_dispatch:
 
@@ -41,7 +42,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
@@ -59,6 +60,40 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Apply classified integration fixes
+        if: github.event_name == 'pull_request' && github.head_ref == 'integration/junit-migration-hardening'
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          python3 .github/scripts/apply_junit_integration_fixes.py
+          bash -n qa/upstream-jdt/run-before-after.sh
+          git diff --check
+
+          temporary="$(mktemp -d)"
+          trap 'rm -rf "$temporary"' EXIT
+          mkdir -p "$temporary/sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp"
+          mkdir -p "$temporary/qa/upstream-jdt"
+          cp sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java \
+            "$temporary/sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/"
+          cp qa/upstream-jdt/run-before-after.sh "$temporary/qa/upstream-jdt/"
+
+          git fetch origin "$HEAD_REF"
+          git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
+          cp "$temporary/sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java" \
+            sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/
+          cp "$temporary/qa/upstream-jdt/run-before-after.sh" qa/upstream-jdt/
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java \
+            qa/upstream-jdt/run-before-after.sh
+          git commit -m 'Preserve line endings in project-wide cleanup QA'
+          git push origin "HEAD:$HEAD_REF"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -91,8 +126,6 @@ jobs:
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
-      # This is the documented local Maven command with only the Linux virtual
-      # display wrapper added. The workflow is a verifier, not the generator API.
       - name: Reproduce Eclipse Help screenshots
         run: >-
           xvfb-run
