@@ -130,6 +130,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,
 							closedScope.booleanValue(), monitor);
 		}
+		if (!bestEffort && result.plan() != null && !analysis.gaps().isEmpty()) {
+			Set<String> blockedRuleUnits= analysis.gaps().stream()
+					.map(JUnitBestEffortSupport.Gap::ownerCompilationUnitHandle)
+					.collect(Collectors.toCollection(LinkedHashSet::new));
+			JUnitMigrationPlan compatiblePlan=
+					result.plan().withJUnit4CompatibilityForBlockedRuleUnits(blockedRuleUnits);
+			if (compatiblePlan != result.plan()) {
+				result= new MultiFileCleanUpPlanResult<>(compatiblePlan, result.status(),
+						result.metrics(), result.diagnostics());
+			}
+		}
 		migrationAnalyses.put(project, analysis);
 		return result;
 	}
