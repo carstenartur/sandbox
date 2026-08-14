@@ -259,6 +259,10 @@ public class MultiFileExternalResourceMigrationTest {
 					public SharedResource resource = new SharedResource();
 					@Rule
 					public TestName testName = new TestName();
+
+					String currentTestName() {
+						return testName.getMethodName();
+					}
 				}
 				""", false, null);
 
@@ -292,6 +296,10 @@ public class MultiFileExternalResourceMigrationTest {
 							@BeforeEach
 							void initializeTestNameFromTestInfo(TestInfo testInfo) {
 								this.testName = testInfo.getTestMethod().orElseThrow().getName();
+							}
+
+							String currentTestName() {
+								return testName;
 							}
 						}
 						""" }, null);
