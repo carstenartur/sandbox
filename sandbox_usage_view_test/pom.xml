@@ -88,6 +88,9 @@
 		-->
 		<profile>
 			<id>help-screenshots</id>
+			<properties>
+				<help.screenshot.testClass>org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsSWTBotTest</help.screenshot.testClass>
+			</properties>
 			<dependencies>
 				<dependency>
 					<groupId>org.sandbox</groupId>
@@ -158,10 +161,12 @@
 							<useUIThread>false</useUIThread>
 							<showEclipseLog>true</showEclipseLog>
 							<failIfNoTests>true</failIfNoTests>
+							<!-- Preview planning is asynchronous and can be slow on a cold CI workbench. -->
+							<forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
 							<appArgLine>-nl en</appArgLine>
-							<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.output="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.mode=true -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
+							<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.output="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.mode=true -Dorg.eclipse.swtbot.search.timeout=120000 -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
 							<excludes combine.self="override" />
-							<testClass>org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsSWTBotTest</testClass>
+							<testClass>${help.screenshot.testClass}</testClass>
 							<dependencies>
 								<dependency>
 									<type>eclipse-plugin</type>

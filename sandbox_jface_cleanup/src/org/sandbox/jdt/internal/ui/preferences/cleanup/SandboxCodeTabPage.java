@@ -43,6 +43,10 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,
 				"sandbox_jface_cleanup.cleanup_configuration"); //$NON-NLS-1$
 		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);
+		final CheckboxPreference jfaceCleanupPref= createCheckboxPref(java1d8Group, numColumns,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP, MYCleanUpConstants.JFACE_CLEANUP,
+				FALSE_TRUE);
+		intent(java1d8Group);
 		final CheckboxPreference monitorPref = createCheckboxPref(java1d8Group, numColumns,
 			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_MONITOR,
 			MYCleanUpConstants.JFACE_CLEANUP_MONITOR, FALSE_TRUE);
@@ -55,6 +59,8 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_IMAGE_DPI,
 			MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI, FALSE_TRUE);
 		intent(java1d8Group);
+		registerSlavePreference(jfaceCleanupPref, new CheckboxPreference[] { monitorPref, viewerSorterPref, imageDpiPref });
+		registerPreference(jfaceCleanupPref);
 		registerPreference(monitorPref);
 		registerPreference(viewerSorterPref);
 		registerPreference(imageDpiPref);
