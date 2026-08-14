@@ -1,0 +1,170 @@
+name: Apply mixed Rule import cleanup fix
+
+on:
+  push:
+    branches:
+      - integration/junit-migration-hardening
+    paths:
+      - '.github/workflows/apply-junit-rule-import-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: integration/junit-migration-hardening
+
+      - name: Patch eligibility, import cleanup and regression coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          plugin = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleExternalResourceJUnitPlugin.java')
+          text = plugin.read_text(encoding='utf-8')
+          old = '''\t@Override
+\tprotected JunitHolder createHolder(Match match) {
+\t\tFieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+\t\tVariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
+\t\tif (fragment.resolveBinding() == null) {
+\t\t\treturn null;
+\t\t}
+\t\tITypeBinding binding = fragment.resolveBinding().getType();
+\t\tif (binding == null) {
+\t\t\treturn null;
+\t\t}
+\t\tString qualifiedName= binding.getErasure().getQualifiedName();
+\t\tif (DEDICATED_RULE_TYPES.contains(qualifiedName) || !isExternalResourceHierarchy(binding)) {
+\t\t\treturn null;
+\t\t}
+\t\tJunitHolder holder = new JunitHolder();
+\t\tholder.setMinv(fieldDecl);
+\t\treturn holder;
+\t}
+
+\tprivate static boolean isExternalResourceHierarchy(ITypeBinding binding) {'''
+          new = '''\t@Override
+\tprotected JunitHolder createHolder(Match match) {
+\t\tFieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
+\t\tif (!isEligibleRuleField(fieldDecl)) {
+\t\t\treturn null;
+\t\t}
+\t\tJunitHolder holder = new JunitHolder();
+\t\tholder.setMinv(fieldDecl);
+\t\treturn holder;
+\t}
+
+\t/** Returns whether the generic ExternalResource rewrite owns this rule field. */
+\tstatic boolean isEligibleRuleField(FieldDeclaration field) {
+\t\tif (field == null || field.fragments().isEmpty()) {
+\t\t\treturn false;
+\t\t}
+\t\tVariableDeclarationFragment fragment = (VariableDeclarationFragment) field.fragments().get(0);
+\t\tITypeBinding binding = fragment.resolveBinding() == null ? null : fragment.resolveBinding().getType();
+\t\tif (binding == null) {
+\t\t\treturn false;
+\t\t}
+\t\tString qualifiedName= binding.getErasure().getQualifiedName();
+\t\treturn !DEDICATED_RULE_TYPES.contains(qualifiedName) && isExternalResourceHierarchy(binding);
+\t}
+
+\tprivate static boolean isExternalResourceHierarchy(ITypeBinding binding) {'''
+          if text.count(old) != 1:
+              raise SystemExit('Unexpected RuleExternalResourceJUnitPlugin createHolder shape')
+          plugin.write_text(text.replace(old, new), encoding='utf-8')
+
+          support = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleImportCleanupSupport.java')
+          text = support.read_text(encoding='utf-8')
+          old = '''\t\tif (ORG_JUNIT_RULES_TEST_NAME.equals(qualifiedType)) {
+\t\t\treturn fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)
+\t\t\t\t\t&& TestNameRefactorer.assess(field).eligible();
+\t\t}
+\t\treturn false;'''
+          new = '''\t\tif (ORG_JUNIT_RULES_TEST_NAME.equals(qualifiedType)) {
+\t\t\treturn fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)
+\t\t\t\t\t&& TestNameRefactorer.assess(field).eligible();
+\t\t}
+\t\tif (fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
+\t\t\t\t&& RuleExternalResourceJUnitPlugin.isEligibleRuleField(field)) {
+\t\t\treturn true;
+\t\t}
+\t\treturn false;'''
+          if text.count(old) != 1:
+              raise SystemExit('Unexpected RuleImportCleanupSupport eligibility shape')
+          support.write_text(text.replace(old, new), encoding='utf-8')
+
+          test = Path('sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/MultiFileExternalResourceNoOpSubclassTest.java')
+          text = test.read_text(encoding='utf-8')
+          old = '''\t\t\t\tpackage test;
+\t\t\t\timport org.junit.Rule;
+
+\t\t\t\tpublic class MyTest {
+\t\t\t\t\t@Rule
+\t\t\t\t\tpublic JUnit4WorkspaceTestSetup workspace = new JUnit4WorkspaceTestSetup();
+\t\t\t\t}'''
+          new = '''\t\t\t\tpackage test;
+\t\t\t\timport org.junit.Rule;
+\t\t\t\timport org.junit.rules.TestName;
+
+\t\t\t\tpublic class MyTest {
+\t\t\t\t\t@Rule
+\t\t\t\t\tpublic JUnit4WorkspaceTestSetup workspace = new JUnit4WorkspaceTestSetup();
+
+\t\t\t\t\t@Rule
+\t\t\t\t\tpublic TestName testName = new TestName();
+\t\t\t\t}'''
+          if text.count(old) != 1:
+              raise SystemExit('Unexpected mixed-rule source fixture shape')
+          text = text.replace(old, new)
+
+          old = '''\t\tcontext.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+\t\tcontext.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);'''
+          new = '''\t\tcontext.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+\t\tcontext.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
+\t\tcontext.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);'''
+          if text.count(old) != 1:
+              raise SystemExit('Unexpected mixed-rule option fixture shape')
+          text = text.replace(old, new)
+
+          old = '''\t\t\t\t\t\tpackage test;
+\t\t\t\t\t\timport org.junit.jupiter.api.extension.RegisterExtension;
+
+\t\t\t\t\t\tpublic class MyTest {
+\t\t\t\t\t\t\t@RegisterExtension
+\t\t\t\t\t\t\tpublic JUnit4WorkspaceTestSetup workspace = new JUnit4WorkspaceTestSetup();
+\t\t\t\t\t\t}'''
+          new = '''\t\t\t\t\t\tpackage test;
+\t\t\t\t\t\timport org.junit.jupiter.api.BeforeEach;
+\t\t\t\t\t\timport org.junit.jupiter.api.TestInfo;
+\t\t\t\t\t\timport org.junit.jupiter.api.extension.RegisterExtension;
+
+\t\t\t\t\t\tpublic class MyTest {
+\t\t\t\t\t\t\t@RegisterExtension
+\t\t\t\t\t\t\tpublic JUnit4WorkspaceTestSetup workspace = new JUnit4WorkspaceTestSetup();
+
+\t\t\t\t\t\t\tpublic String testName;
+
+\t\t\t\t\t\t\t@BeforeEach
+\t\t\t\t\t\t\tvoid initializeTestNameFromTestInfo(TestInfo testInfo) {
+\t\t\t\t\t\t\t\tthis.testName = testInfo.getTestMethod().orElseThrow().getName();
+\t\t\t\t\t\t\t}
+\t\t\t\t\t\t}'''
+          if text.count(old) != 1:
+              raise SystemExit('Unexpected mixed-rule expected fixture shape')
+          test.write_text(text.replace(old, new), encoding='utf-8')
+
+          Path('.github/workflows/apply-junit-rule-import-fix.yml').unlink()
+          PY
+
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Remove shared Rule imports after mixed rule migration'
+          git push origin HEAD:integration/junit-migration-hardening
