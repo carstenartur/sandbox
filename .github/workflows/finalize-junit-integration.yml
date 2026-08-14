@@ -1,0 +1,670 @@
+name: Finalize JUnit migration integration
+
+on:
+  push:
+    branches:
+      - automation/finalize-junit-integration-20260814
+
+concurrency:
+  group: finalize-junit-migration-integration
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  prepare:
+    name: Finalize PR branches
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    outputs:
+      integration_sha: ${{ steps.push_1474.outputs.head }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MAVEN_OPTS: -Djava.awt.headless=false
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    steps:
+      - name: Checkout temporary automation sources
+        uses: actions/checkout@v7
+        with:
+          path: automation
+          fetch-depth: 0
+
+      - name: Checkout repository for PR 1472
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: pr1472
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Checkout integration branch
+        uses: actions/checkout@v7
+        with:
+          ref: integration/junit-migration-hardening
+          path: integration
+          fetch-depth: 0
+          token: ${{ github.token }}
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and Eclipse desktop dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
+
+      - name: Prepare read-only PR 1472 state
+        id: prepare_1472
+        run: >-
+          python3 automation/.github/automation/prepare_integration.py
+          prepare-1472 pr1472 --artifact 9195395470
+
+      - name: Build and test PR 1472 product
+        if: steps.prepare_1472.outputs.open == 'true'
+        working-directory: pr1472
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Reproduce PR 1472 Help screenshots
+        if: steps.prepare_1472.outputs.open == 'true'
+        working-directory: pr1472
+        run: >-
+          xvfb-run
+          --auto-servernum
+          --server-args="-screen 0 1600x1200x24"
+          mvn
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          -f sandbox_help_build/pom.xml
+          -Phelp-screenshots
+          clean verify
+
+      - name: Commit canonical generated JUnit image when artifact differed
+        if: steps.prepare_1472.outputs.open == 'true'
+        id: regenerated_1472
+        run: >-
+          python3 automation/.github/automation/prepare_integration.py
+          commit-regenerated-1472 pr1472
+
+      - name: Prove PR 1472 Help reproduction is stable
+        if: steps.prepare_1472.outputs.open == 'true'
+        working-directory: pr1472
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24" \
+            mvn --no-transfer-progress -e -V --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            -f sandbox_help_build/pom.xml -Phelp-screenshots clean verify
+
+          code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
+          mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
+            ':(glob)sandbox*_help/images/*.png')
+          unexpected=()
+          code_patterns_changed=false
+          for change in "${changes[@]}"; do
+            path="${change:3}"
+            if [[ "$path" == "$code_patterns" ]]; then
+              code_patterns_changed=true
+            else
+              unexpected+=("$change")
+            fi
+          done
+          if (( ${#unexpected[@]} > 0 )); then
+            printf 'Unstable regenerated Help screenshots:\n' >&2
+            printf '%s\n' "${unexpected[@]}" >&2
+            exit 1
+          fi
+          if [[ "$code_patterns_changed" == true ]]; then
+            baseline="$(mktemp --suffix=.png)"
+            trap 'rm -f "$baseline"' EXIT
+            git show "HEAD:$code_patterns" > "$baseline"
+            java .github/scripts/VerifyHelpScreenshotDiff.java "$baseline" "$code_patterns"
+          fi
+
+      - name: Merge PR 1472 after direct acceptance
+        if: steps.prepare_1472.outputs.open == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(gh api repos/carstenartur/sandbox/pulls/1472 --jq .head.sha)"
+          test "$head" = "${{ steps.regenerated_1472.outputs.head }}"
+          if ! gh api --method PUT repos/carstenartur/sandbox/pulls/1472/merge \
+              -f sha="$head" -f merge_method=squash --jq '.merged' | grep -qx true; then
+            gh pr merge 1472 --repo carstenartur/sandbox --squash --admin
+          fi
+          test "$(gh api repos/carstenartur/sandbox/pulls/1472 --jq .merged)" = true
+
+      - name: Reconcile PR 1474 with current main
+        id: reconcile_1474
+        run: >-
+          python3 automation/.github/automation/prepare_integration.py
+          reconcile-1474 integration automation
+
+      - name: Verify charset-safe delimiter tests
+        working-directory: integration
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -pl sandbox_common_core
+          -Dtest=LineDelimiterPreserverTest
+          test
+
+      - name: Verify owning cleanup application build
+        working-directory: integration
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -pl sandbox_cleanup_application
+          -am
+          -DskipTests
+          package
+
+      - name: Verify integrated source whitespace
+        working-directory: integration
+        run: git diff --check HEAD
+
+      - name: Push tested integration head
+        id: push_1474
+        run: >-
+          python3 automation/.github/automation/prepare_integration.py
+          push-1474 integration
+
+  normal-gates:
+    name: Maven, distribution and Help gates
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=false
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    steps:
+      - name: Checkout exact integrated product state
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.integration_sha }}
+          fetch-depth: 0
+
+      - name: Assert exact integration commit
+        run: test "$(git rev-parse HEAD)" = "${{ needs.prepare.outputs.integration_sha }}"
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and Eclipse desktop dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
+
+      - name: Validate pinned corpus contracts and whitespace
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          git diff --check
+          python3 qa/upstream-jdt/verify_contract.py
+          python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+
+      - name: Build and test complete product
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Reproduce integrated Help screenshots
+        run: >-
+          xvfb-run
+          --auto-servernum
+          --server-args="-screen 0 1600x1200x24"
+          mvn
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          -f sandbox_help_build/pom.xml
+          -Phelp-screenshots
+          clean verify
+
+      - name: Require reproducible integrated Help images
+        shell: bash
+        run: |
+          set -euo pipefail
+          code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
+          mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
+            ':(glob)sandbox*_help/images/*.png')
+          unexpected=()
+          code_patterns_changed=false
+          for change in "${changes[@]}"; do
+            path="${change:3}"
+            if [[ "$path" == "$code_patterns" ]]; then
+              code_patterns_changed=true
+            else
+              unexpected+=("$change")
+            fi
+          done
+          if (( ${#unexpected[@]} > 0 )); then
+            printf 'Regenerated Help screenshots differ from the integrated head:\n' >&2
+            printf '%s\n' "${unexpected[@]}" >&2
+            exit 1
+          fi
+          if [[ "$code_patterns_changed" == true ]]; then
+            baseline="$(mktemp --suffix=.png)"
+            trap 'rm -f "$baseline"' EXIT
+            git show "HEAD:$code_patterns" > "$baseline"
+            java .github/scripts/VerifyHelpScreenshotDiff.java "$baseline" "$code_patterns"
+          fi
+
+      - name: Smoke-start materialized distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          test "${#launchers[@]}" -eq 1
+          launcher="$(realpath "${launchers[0]}")"
+          mkdir -p "$RUNNER_TEMP/distribution-smoke-workspace"
+          success=false
+          for application in \
+            sandbox_cleanup_application.org.sandbox.jdt.core.ProjectWideJavaCleanup \
+            org.sandbox.jdt.core.ProjectWideJavaCleanup; do
+            if timeout --signal=TERM --kill-after=30s 3m \
+                xvfb-run --auto-servernum "$launcher" --launcher.suppressErrors \
+                -nosplash -consoleLog -clean \
+                -data "$RUNNER_TEMP/distribution-smoke-workspace" \
+                -application "$application" --help \
+                >"$RUNNER_TEMP/distribution-$application.out" 2>&1; then
+              if grep -F 'Usage: eclipse' "$RUNNER_TEMP/distribution-$application.out" >/dev/null; then
+                success=true
+                break
+              fi
+            fi
+          done
+          test "$success" = true
+
+      - name: Publish normal gate status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api --method POST
+          repos/carstenartur/sandbox/statuses/${{ needs.prepare.outputs.integration_sha }}
+          -f state=success
+          -f context='integration/normal-product-gates'
+          -f description='Maven, distribution and Help gates passed'
+
+  jdt-core:
+    name: Pinned JDT Core JUnit 3 before and after
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout exact integrated product state
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.integration_sha }}
+          fetch-depth: 0
+          path: sandbox
+
+      - name: Checkout JDT Core R4_40
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.core
+
+      - name: Checkout JDT UI R4_40
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Checkout JDT Core binaries R4_40
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core.binaries
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.core.binaries
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and headless Eclipse dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then sudo mv "$source" "$source.disabled"; fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
+
+      - name: Verify exact product and corpus pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C sandbox rev-parse HEAD)" = "${{ needs.prepare.outputs.integration_sha }}"
+          source sandbox/qa/upstream-jdt/pins.env
+          test "$(git -C upstream/eclipse.jdt.core rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.core.binaries rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_BINARIES_COMMIT"
+
+      - name: Build exact Sandbox product
+        working-directory: sandbox
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Run complete pinned JDT Core gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox/sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          test "${#launchers[@]}" -eq 1
+          product="$(realpath "${launchers[0]}")"
+          wrapper="$RUNNER_TEMP/sandbox-eclipse"
+          cat > "$wrapper" <<EOF
+          #!/usr/bin/env bash
+          exec "$product" --launcher.suppressErrors "\$@"
+          EOF
+          chmod +x "$wrapper"
+          mkdir -p "$RUNNER_TEMP/jdt-core-workspace" "$GITHUB_WORKSPACE/jdt-core-evidence"
+          bash sandbox/qa/upstream-jdt/run-before-after.sh \
+            --jdt-core "$GITHUB_WORKSPACE/upstream/eclipse.jdt.core" \
+            --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+            --jdt-core-binaries "$GITHUB_WORKSPACE/upstream/eclipse.jdt.core.binaries" \
+            --workspace "$RUNNER_TEMP/jdt-core-workspace" \
+            --sandbox-eclipse "$wrapper" \
+            --output "$GITHUB_WORKSPACE/jdt-core-evidence" \
+            --allow-clean-workspace
+
+      - name: Upload complete JDT Core evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: final-jdt-core-evidence-${{ needs.prepare.outputs.integration_sha }}
+          path: |
+            jdt-core-evidence/**
+            sandbox/**/target/surefire-reports/**
+          retention-days: 9
+          if-no-files-found: error
+
+      - name: Publish JDT Core status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api --method POST
+          repos/carstenartur/sandbox/statuses/${{ needs.prepare.outputs.integration_sha }}
+          -f state=success
+          -f context='integration/jdt-core-before-after'
+          -f description='Pinned JDT Core JUnit 3 gate passed'
+
+  jdt-ui:
+    name: Pinned JDT UI JUnit 4 strict before and after
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout exact integrated product state
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.integration_sha }}
+          fetch-depth: 0
+          path: sandbox
+
+      - name: Checkout JDT UI R4_40
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and headless Eclipse dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then sudo mv "$source" "$source.disabled"; fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
+
+      - name: Verify exact product and JDT UI pin
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          test "$(git -C sandbox rev-parse HEAD)" = "${{ needs.prepare.outputs.integration_sha }}"
+          source sandbox/qa/upstream-jdt/pins.env
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          (cd sandbox && python3 qa/upstream-jdt/verify_jdt_ui_contract.py)
+
+      - name: Build exact Sandbox product
+        working-directory: sandbox
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Run complete pinned JDT UI strict gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox/sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          test "${#launchers[@]}" -eq 1
+          product="$(realpath "${launchers[0]}")"
+          wrapper="$RUNNER_TEMP/sandbox-eclipse"
+          cat > "$wrapper" <<EOF
+          #!/usr/bin/env bash
+          exec "$product" --launcher.suppressErrors "\$@"
+          EOF
+          chmod +x "$wrapper"
+          mkdir -p "$RUNNER_TEMP/jdt-ui-workspace" "$GITHUB_WORKSPACE/jdt-ui-evidence"
+          bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
+            --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+            --workspace "$RUNNER_TEMP/jdt-ui-workspace" \
+            --sandbox-eclipse "$wrapper" \
+            --mode strict \
+            --output "$GITHUB_WORKSPACE/jdt-ui-evidence" \
+            --allow-clean-workspace
+
+      - name: Upload complete JDT UI evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: final-jdt-ui-evidence-${{ needs.prepare.outputs.integration_sha }}
+          path: |
+            jdt-ui-evidence/**
+            sandbox/**/target/surefire-reports/**
+          retention-days: 9
+          if-no-files-found: error
+
+      - name: Publish JDT UI status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api --method POST
+          repos/carstenartur/sandbox/statuses/${{ needs.prepare.outputs.integration_sha }}
+          -f state=success
+          -f context='integration/jdt-ui-strict-before-after'
+          -f description='Pinned JDT UI JUnit 4 strict gate passed'
+
+  merge:
+    name: Merge accepted integration
+    needs:
+      - prepare
+      - normal-gates
+      - jdt-core
+      - jdt-ui
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      INTEGRATION_SHA: ${{ needs.prepare.outputs.integration_sha }}
+    steps:
+      - name: Verify immutable accepted PR head
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(gh api repos/carstenartur/sandbox/pulls/1474 --jq .head.sha)"
+          test "$actual" = "$INTEGRATION_SHA"
+          main="$(gh api repos/carstenartur/sandbox/git/ref/heads/main --jq .object.sha)"
+          status="$(gh api "repos/carstenartur/sandbox/compare/$main...$INTEGRATION_SHA" --jq .status)"
+          test "$status" = ahead || test "$status" = identical
+
+      - name: Mark integration PR ready
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$(gh api repos/carstenartur/sandbox/pulls/1474 --jq .draft)" == true ]]; then
+            gh pr ready 1474 --repo carstenartur/sandbox
+          fi
+
+      - name: Merge PR 1474
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh api --method PUT repos/carstenartur/sandbox/pulls/1474/merge \
+              -f sha="$INTEGRATION_SHA" -f merge_method=squash --jq '.merged' | grep -qx true; then
+            gh pr merge 1474 --repo carstenartur/sandbox --squash --admin
+          fi
+          test "$(gh api repos/carstenartur/sandbox/pulls/1474 --jq .merged)" = true
+
+      - name: Remove temporary automation and QA branches
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          for branch in \
+            qa/junit-integration-final-1474 \
+            qa/junit-integration-final-1474-connector \
+            qa/junit-integration-final-1474-connector-2 \
+            qa/junit-integration-jdt-core-1474; do
+            encoded="${branch//\//%2F}"
+            gh api --method DELETE "repos/carstenartur/sandbox/git/refs/heads/$encoded" >/dev/null 2>&1 || true
+          done
+          gh api --method DELETE \
+            repos/carstenartur/sandbox/git/refs/heads/automation%2Ffinalize-junit-integration-20260814 \
+            >/dev/null 2>&1 || true
