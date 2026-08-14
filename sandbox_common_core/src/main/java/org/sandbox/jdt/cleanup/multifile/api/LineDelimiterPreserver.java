@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer and others.
+ * Copyright (c) 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile.api;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -20,16 +21,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
-/**
- * Restores a source file's uniform line-delimiter convention without making
- * assumptions about the byte representation of newline characters.
- * <p>
- * The original charset and byte-order mark are preserved. Decoding and encoding
- * are strict: malformed input is reported instead of being replaced silently.
- * Files with mixed or no original line delimiters are left unchanged because no
- * single convention can be inferred safely.
- * </p>
- */
+/** Restores a rewritten text file's original line delimiter without changing its encoding. */
 public final class LineDelimiterPreserver {
 
 	private static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };
@@ -43,32 +35,48 @@ public final class LineDelimiterPreserver {
 		CRLF("\r\n"), //$NON-NLS-1$
 		CR("\r"); //$NON-NLS-1$
 
-		private final String value;
+		private final String text;
 
-		LineDelimiter(String value) {
-			this.value= value;
+		LineDelimiter(String text) {
+			this.text= text;
+		}
+
+		private static LineDelimiter detect(String content) {
+			boolean foundLf= false;
+			boolean foundCrLf= false;
+			boolean foundCr= false;
+			for (int index= 0; index < content.length(); index++) {
+				char current= content.charAt(index);
+				if (current == '\r') {
+					if (index + 1 < content.length() && content.charAt(index + 1) == '\n') {
+						foundCrLf= true;
+						index++;
+					} else {
+						foundCr= true;
+					}
+				} else if (current == '\n') {
+					foundLf= true;
+				}
+			}
+			int styleCount= (foundLf ? 1 : 0) + (foundCrLf ? 1 : 0) + (foundCr ? 1 : 0);
+			if (styleCount != 1) {
+				return null;
+			}
+			if (foundCrLf) {
+				return CRLF;
+			}
+			return foundLf ? LF : CR;
 		}
 	}
 
-	private record Encoding(Charset charset, byte[] bom) {
-
-		private String decode(byte[] content) throws CharacterCodingException {
-			int offset= startsWith(content, bom) ? bom.length : 0;
-			return charset.newDecoder()
-					.onMalformedInput(CodingErrorAction.REPORT)
-					.onUnmappableCharacter(CodingErrorAction.REPORT)
-					.decode(ByteBuffer.wrap(content, offset, content.length - offset))
-					.toString();
+	private record Encoding(Charset charset, byte[] byteOrderMark) {
+		private Encoding {
+			byteOrderMark= byteOrderMark.clone();
 		}
 
-		private byte[] encode(String content) throws CharacterCodingException {
-			ByteBuffer encoded= charset.newEncoder()
-					.onMalformedInput(CodingErrorAction.REPORT)
-					.onUnmappableCharacter(CodingErrorAction.REPORT)
-					.encode(CharBuffer.wrap(content));
-			byte[] result= Arrays.copyOf(bom, bom.length + encoded.remaining());
-			encoded.get(result, bom.length, encoded.remaining());
-			return result;
+		@Override
+		public byte[] byteOrderMark() {
+			return byteOrderMark.clone();
 		}
 	}
 
@@ -76,112 +84,160 @@ public final class LineDelimiterPreserver {
 	}
 
 	/**
-	 * Converts all line delimiters in {@code transformed} to the single delimiter
-	 * convention detected in {@code original}, while preserving charset and BOM.
+	 * Returns rewritten bytes with the original file's single line-delimiter style,
+	 * declared character set and byte-order mark. Files without one unambiguous
+	 * original delimiter are returned unchanged.
 	 *
-	 * @param original original source bytes
-	 * @param transformed transformed source bytes
-	 * @param declaredCharset charset declared by the Eclipse resource
-	 * @return normalized bytes, or {@code transformed} unchanged when the original
-	 *         delimiter convention is not unambiguous
-	 * @throws CharacterCodingException if either byte sequence cannot be decoded or
-	 *         the normalized text cannot be encoded losslessly
+	 * @param original original file bytes
+	 * @param rewritten bytes produced by the rewrite
+	 * @param declaredCharset Eclipse file character set
+	 * @return rewritten bytes with original text representation preserved
+	 * @throws IOException if either byte sequence cannot be decoded or encoded safely
 	 */
-	public static byte[] preserve(byte[] original, byte[] transformed, String declaredCharset)
-			throws CharacterCodingException {
+	public static byte[] preserve(byte[] original, byte[] rewritten, String declaredCharset) throws IOException {
 		Objects.requireNonNull(original, "original"); //$NON-NLS-1$
-		Objects.requireNonNull(transformed, "transformed"); //$NON-NLS-1$
+		Objects.requireNonNull(rewritten, "rewritten"); //$NON-NLS-1$
 		Objects.requireNonNull(declaredCharset, "declaredCharset"); //$NON-NLS-1$
 
-		Encoding encoding= detectEncoding(original, declaredCharset);
-		LineDelimiter delimiter= detectLineDelimiter(encoding.decode(original));
+		Charset declared;
+		try {
+			declared= Charset.forName(declaredCharset);
+		} catch (IllegalArgumentException e) {
+			throw new IOException("Unsupported source character set: " + declaredCharset, e); //$NON-NLS-1$
+		}
+		Encoding encoding= encodingOf(original, declared);
+		String originalText= decode(original, encoding, "original"); //$NON-NLS-1$
+		LineDelimiter delimiter= LineDelimiter.detect(originalText);
 		if (delimiter == null) {
-			return transformed;
+			return rewritten;
 		}
 
-		String transformedText= encoding.decode(transformed);
-		String normalized= normalize(transformedText, delimiter.value);
-		if (normalized.equals(transformedText) && startsWith(transformed, encoding.bom)) {
-			return transformed;
-		}
-		return encoding.encode(normalized);
+		String rewrittenText= decode(rewritten, encoding, "rewritten"); //$NON-NLS-1$
+		String normalized= normalize(rewrittenText, delimiter.text);
+		byte[] encoded= encode(normalized, encoding);
+		return Arrays.equals(encoded, rewritten) ? rewritten : encoded;
 	}
 
-	private static Encoding detectEncoding(byte[] original, String declaredCharset) {
-		if (startsWith(original, UTF_32_BE_BOM)) {
-			return new Encoding(Charset.forName("UTF-32BE"), UTF_32_BE_BOM); //$NON-NLS-1$
-		}
-		if (startsWith(original, UTF_32_LE_BOM)) {
-			return new Encoding(Charset.forName("UTF-32LE"), UTF_32_LE_BOM); //$NON-NLS-1$
-		}
-		if (startsWith(original, UTF_8_BOM)) {
-			return new Encoding(StandardCharsets.UTF_8, UTF_8_BOM);
-		}
-		if (startsWith(original, UTF_16_BE_BOM)) {
-			return new Encoding(StandardCharsets.UTF_16BE, UTF_16_BE_BOM);
-		}
-		if (startsWith(original, UTF_16_LE_BOM)) {
-			return new Encoding(StandardCharsets.UTF_16LE, UTF_16_LE_BOM);
-		}
-
-		Charset charset= Charset.forName(declaredCharset);
-		String canonical= charset.name().toUpperCase(Locale.ROOT);
-		if ("UTF-16".equals(canonical)) { //$NON-NLS-1$
-			charset= StandardCharsets.UTF_16BE;
-		} else if ("UTF-32".equals(canonical)) { //$NON-NLS-1$
-			charset= Charset.forName("UTF-32BE"); //$NON-NLS-1$
-		}
-		return new Encoding(charset, new byte[0]);
-	}
-
-	private static LineDelimiter detectLineDelimiter(String content) {
-		boolean lf= false;
-		boolean crlf= false;
-		boolean cr= false;
-		for (int index= 0; index < content.length(); index++) {
-			char character= content.charAt(index);
-			if (character == '\r') {
-				if (index + 1 < content.length() && content.charAt(index + 1) == '\n') {
-					crlf= true;
-					index++;
-				} else {
-					cr= true;
-				}
-			} else if (character == '\n') {
-				lf= true;
+	private static Encoding encodingOf(byte[] content, Charset declared) throws IOException {
+		Bom bom= Bom.detect(content);
+		if (bom != null) {
+			if (!compatible(declared, bom.charset())) {
+				throw new IOException("Source byte-order mark " + bom.charset().name() //$NON-NLS-1$
+						+ " conflicts with declared character set " + declared.name()); //$NON-NLS-1$
 			}
+			return new Encoding(bom.charset(), bom.bytes());
 		}
-		int count= (lf ? 1 : 0) + (crlf ? 1 : 0) + (cr ? 1 : 0);
-		if (count != 1) {
-			return null;
+		String name= declared.name().toUpperCase(Locale.ROOT);
+		if ("UTF-16".equals(name)) { //$NON-NLS-1$
+			return new Encoding(StandardCharsets.UTF_16BE, new byte[0]);
 		}
-		if (crlf) {
-			return LineDelimiter.CRLF;
+		if ("UTF-32".equals(name)) { //$NON-NLS-1$
+			return new Encoding(Charset.forName("UTF-32BE"), new byte[0]); //$NON-NLS-1$
 		}
-		return lf ? LineDelimiter.LF : LineDelimiter.CR;
+		return new Encoding(declared, new byte[0]);
+	}
+
+	private static boolean compatible(Charset declared, Charset encoded) {
+		String declaredName= declared.name().toUpperCase(Locale.ROOT);
+		String encodedName= encoded.name().toUpperCase(Locale.ROOT);
+		return declaredName.equals(encodedName)
+				|| "UTF-16".equals(declaredName) && encodedName.startsWith("UTF-16") //$NON-NLS-1$ //$NON-NLS-2$
+				|| "UTF-32".equals(declaredName) && encodedName.startsWith("UTF-32"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static String decode(byte[] content, Encoding encoding, String label) throws IOException {
+		int offset= bomOffset(content, encoding);
+		try {
+			return encoding.charset().newDecoder()
+					.onMalformedInput(CodingErrorAction.REPORT)
+					.onUnmappableCharacter(CodingErrorAction.REPORT)
+					.decode(ByteBuffer.wrap(content, offset, content.length - offset))
+					.toString();
+		} catch (CharacterCodingException e) {
+			throw new IOException("Cannot decode " + label + " source as " + encoding.charset().name(), e); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
+	private static int bomOffset(byte[] content, Encoding encoding) throws IOException {
+		Bom actual= Bom.detect(content);
+		if (actual == null) {
+			return 0;
+		}
+		if (!actual.charset().equals(encoding.charset())) {
+			throw new IOException("Rewritten source changed byte-order mark from " //$NON-NLS-1$
+					+ encoding.charset().name() + " to " + actual.charset().name()); //$NON-NLS-1$
+		}
+		return actual.bytes().length;
+	}
+
+	private static byte[] encode(String content, Encoding encoding) throws IOException {
+		try {
+			ByteBuffer bytes= encoding.charset().newEncoder()
+					.onMalformedInput(CodingErrorAction.REPORT)
+					.onUnmappableCharacter(CodingErrorAction.REPORT)
+					.encode(CharBuffer.wrap(content));
+			byte[] bom= encoding.byteOrderMark();
+			int encodedLength= bytes.remaining();
+			byte[] result= new byte[bom.length + encodedLength];
+			System.arraycopy(bom, 0, result, 0, bom.length);
+			bytes.get(result, bom.length, encodedLength);
+			return result;
+		} catch (CharacterCodingException e) {
+			throw new IOException("Cannot encode rewritten source as " + encoding.charset().name(), e); //$NON-NLS-1$
+		}
 	}
 
 	private static String normalize(String content, String delimiter) {
-		StringBuilder normalized= new StringBuilder(content.length() + 32);
+		StringBuilder normalized= new StringBuilder(content.length() + 64);
 		for (int index= 0; index < content.length(); index++) {
-			char character= content.charAt(index);
-			if (character == '\r') {
+			char current= content.charAt(index);
+			if (current == '\r') {
 				if (index + 1 < content.length() && content.charAt(index + 1) == '\n') {
 					index++;
 				}
 				normalized.append(delimiter);
-			} else if (character == '\n') {
+			} else if (current == '\n') {
 				normalized.append(delimiter);
 			} else {
-				normalized.append(character);
+				normalized.append(current);
 			}
 		}
 		return normalized.toString();
 	}
 
+	private record Bom(Charset charset, byte[] bytes) {
+		private Bom {
+			bytes= bytes.clone();
+		}
+
+		@Override
+		public byte[] bytes() {
+			return bytes.clone();
+		}
+
+		private static Bom detect(byte[] content) {
+			if (startsWith(content, UTF_32_BE_BOM)) {
+				return new Bom(Charset.forName("UTF-32BE"), UTF_32_BE_BOM); //$NON-NLS-1$
+			}
+			if (startsWith(content, UTF_32_LE_BOM)) {
+				return new Bom(Charset.forName("UTF-32LE"), UTF_32_LE_BOM); //$NON-NLS-1$
+			}
+			if (startsWith(content, UTF_8_BOM)) {
+				return new Bom(StandardCharsets.UTF_8, UTF_8_BOM);
+			}
+			if (startsWith(content, UTF_16_BE_BOM)) {
+				return new Bom(StandardCharsets.UTF_16BE, UTF_16_BE_BOM);
+			}
+			if (startsWith(content, UTF_16_LE_BOM)) {
+				return new Bom(StandardCharsets.UTF_16LE, UTF_16_LE_BOM);
+			}
+			return null;
+		}
+	}
+
 	private static boolean startsWith(byte[] content, byte[] prefix) {
-		if (prefix.length == 0 || content.length < prefix.length) {
-			return prefix.length == 0;
+		if (content.length < prefix.length) {
+			return false;
 		}
 		for (int index= 0; index < prefix.length; index++) {
 			if (content[index] != prefix[index]) {

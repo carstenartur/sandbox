@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.nio.charset.CharacterCodingException;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,7 @@ class LineDelimiterPreserverTest {
 		byte[] original= "first\r\nsecond\r\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
 		byte[] malformed= { (byte) 0xc3, 0x28 };
 
-		assertThrows(CharacterCodingException.class,
+		assertThrows(IOException.class,
 				() -> LineDelimiterPreserver.preserve(original, malformed, StandardCharsets.UTF_8.name()));
 	}
 

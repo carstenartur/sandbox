@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.sandbox.jdt.cleanup.io;
+package org.sandbox.jdt.cleanup.multifile.api;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
-class EncodedLineDelimiterPreserverTest {
+class LineDelimiterPreserverCompatibilityTest {
 
 	private static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };
 	private static final byte[] UTF_16_LE_BOM= { (byte) 0xff, (byte) 0xfe };
@@ -31,7 +31,7 @@ class EncodedLineDelimiterPreserverTest {
 		byte[] expected= "Größe\r\nnachher\r\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
 
 		assertArrayEquals(expected,
-				EncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
+				LineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -41,7 +41,7 @@ class EncodedLineDelimiterPreserverTest {
 		byte[] expected= withPrefix(UTF_8_BOM, "first\r\nchanged\r\n".getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
 
 		assertArrayEquals(expected,
-				EncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
+				LineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -54,7 +54,7 @@ class EncodedLineDelimiterPreserverTest {
 		byte[] expected= withPrefix(UTF_16_LE_BOM, expectedText.getBytes(StandardCharsets.UTF_16LE));
 
 		assertArrayEquals(expected,
-				EncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-16")); //$NON-NLS-1$
+				LineDelimiterPreserver.preserve(original, rewritten, "UTF-16")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class EncodedLineDelimiterPreserverTest {
 		byte[] expected= expectedText.getBytes(StandardCharsets.UTF_16BE);
 
 		assertArrayEquals(expected,
-				EncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-16BE")); //$NON-NLS-1$
+				LineDelimiterPreserver.preserve(original, rewritten, "UTF-16BE")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -76,7 +76,7 @@ class EncodedLineDelimiterPreserverTest {
 		byte[] rewritten= "first\nchanged\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
 
 		assertSame(rewritten,
-				EncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
+				LineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -84,7 +84,7 @@ class EncodedLineDelimiterPreserverTest {
 		byte[] original= withPrefix(UTF_16_LE_BOM, "first\r\n".getBytes(StandardCharsets.UTF_16LE)); //$NON-NLS-1$
 
 		assertThrows(IOException.class,
-				() -> EncodedLineDelimiterPreserver.preserve(original, original, "UTF-8")); //$NON-NLS-1$
+				() -> LineDelimiterPreserver.preserve(original, original, "UTF-8")); //$NON-NLS-1$
 	}
 
 	private static byte[] withPrefix(byte[] prefix, byte[] content) {

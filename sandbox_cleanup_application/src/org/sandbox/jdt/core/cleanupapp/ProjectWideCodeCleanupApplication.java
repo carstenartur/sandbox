@@ -53,7 +53,7 @@ import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.RefactoringStatusEntry;
 
-import org.sandbox.jdt.cleanup.io.EncodedLineDelimiterPreserver;
+import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
 
 /**
@@ -511,7 +511,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			throws IOException, CoreException {
 		for (SourceSnapshot source : sources) {
 			byte[] current= Files.readAllBytes(source.path());
-			byte[] normalized= EncodedLineDelimiterPreserver.preserve(
+			byte[] normalized= LineDelimiterPreserver.preserve(
 					source.before(), current, source.file().getCharset());
 			if (!Arrays.equals(current, normalized)) {
 				Files.write(source.path(), normalized);
