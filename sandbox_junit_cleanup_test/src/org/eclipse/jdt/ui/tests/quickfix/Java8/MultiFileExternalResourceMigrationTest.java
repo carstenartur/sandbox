@@ -234,6 +234,69 @@ public class MultiFileExternalResourceMigrationTest {
 						""" }, null);
 	}
 
+	@Test
+	public void removesSharedRuleImportForExternalResourceAndTestName() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit resource= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.rules.ExternalResource;
+
+				public class SharedResource extends ExternalResource {
+					@Override
+					protected void before() {
+					}
+				}
+				""", false, null);
+		ICompilationUnit test= pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.rules.TestName;
+
+				public class MyTest {
+					@Rule
+					public SharedResource resource = new SharedResource();
+					@Rule
+					public TestName testName = new TestName();
+				}
+				""", false, null);
+
+		enableExternalResourceRuleMigration();
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME);
+
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { resource, test },
+				new String[] {
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.BeforeEachCallback;
+						import org.junit.jupiter.api.extension.ExtensionContext;
+
+						public class SharedResource implements BeforeEachCallback {
+							@Override
+							public void beforeEach(ExtensionContext context) {
+							}
+						}
+						""",
+						"""
+						package test;
+						import org.junit.jupiter.api.BeforeEach;
+						import org.junit.jupiter.api.TestInfo;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+
+						public class MyTest {
+							@RegisterExtension
+							public SharedResource resource = new SharedResource();
+							public String testName;
+
+							@BeforeEach
+							void initializeTestNameFromTestInfo(TestInfo testInfo) {
+								this.testName = testInfo.getTestMethod().orElseThrow().getName();
+							}
+						}
+						""" }, null);
+	}
+
 	private void enableExternalResourceRuleMigration() throws CoreException {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE);
