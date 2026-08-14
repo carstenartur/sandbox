@@ -3,6 +3,19 @@
 <plugin>
    <extension-point id="org.sandbox.jdt.triggerpattern.hints" name="Trigger Pattern Hints" schema="schema/org.sandbox.jdt.triggerpattern.hints.exsd"/>
    <extension-point id="org.sandbox.jdt.triggerpattern.guards" name="Trigger Pattern Guards" schema="schema/org.sandbox.jdt.triggerpattern.guards.exsd"/>
+
+   <extension
+         point="org.eclipse.ltk.ui.refactoring.changePreviewViewers">
+      <changePreviewViewer
+            class="org.sandbox.jdt.cleanup.multifile.ui.CoordinatedCleanUpPreviewViewer"
+            id="org.sandbox.jdt.cleanup.multifile.coordinatedPreviewViewer">
+         <enablement>
+            <instanceof
+                  value="org.eclipse.jdt.internal.corext.fix.CoordinatedCleanUpChange">
+            </instanceof>
+         </enablement>
+      </changePreviewViewer>
+   </extension>
    
    <extension
          point="org.eclipse.jdt.ui.quickAssistProcessors">

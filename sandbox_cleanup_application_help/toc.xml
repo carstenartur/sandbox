@@ -2,5 +2,6 @@
 <toc label="Sandbox – Headless Cleanup Application" topic="html/index.html">
    <topic label="Overview" href="html/index.html"/>
    <topic label="Using this feature" href="html/usage.html"/>
+   <topic label="Cleanup preview model" href="html/cleanup-preview.html"/>
    <topic label="Reference, safety, and limitations" href="html/reference.html"/>
 </toc>

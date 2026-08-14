@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   generate:
@@ -95,6 +95,10 @@ jobs:
       # display wrapper added. The workflow is a verifier, not the generator API.
       - name: Reproduce Eclipse Help screenshots
         run: >-
+          timeout
+          --signal=TERM
+          --kill-after=2m
+          70m
           xvfb-run
           --auto-servernum
           --server-args="-screen 0 1600x1200x24"
@@ -104,36 +108,38 @@ jobs:
           -V
           --batch-mode
           -Dtycho.localArtifacts=ignore
+          -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest
+          -DfailIfNoTests=false
           -f sandbox_help_build/pom.xml
           -Phelp-screenshots
           clean verify
 
-      - name: Commit regenerated JUnit screenshot on the extraction branch
-        if: github.event_name == 'pull_request' && github.head_ref == 'feature/junit4-preset-model'
+      # The POM interpolates help.screenshot.testClass only in the dedicated
+      # screenshot module. Dependency test modules may therefore legitimately
+      # find no matching class, while this report proves the merge gate ran.
+      - name: Verify the temporary merge-gate test executed
         shell: bash
-        env:
-          HEAD_REF: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-
-          target='sandbox_junit_cleanup_help/images/junit-migration-cleanup.png'
-          if git diff --quiet -- "$target"; then
-            echo 'Committed JUnit Help screenshot already matches.'
-            exit 0
+          report="$(grep -R -l --include='TEST-*.xml' \
+            'SandboxHelpScreenshotsMergeGateSWTBotTest' \
+            sandbox_usage_view_test/target/surefire-reports | head -n 1 || true)"
+          if [[ -z "$report" ]]; then
+            echo 'The selected Help screenshot JUnit merge gate did not execute.' >&2
+            exit 1
           fi
+          printf 'Verified JUnit report: %s\n' "$report"
 
-          generated="$(mktemp --suffix=.png)"
-          cp "$target" "$generated"
-          git fetch origin "$HEAD_REF"
-          git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
-          install -m 0644 "$generated" "$target"
-          rm -f "$generated"
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$target"
-          git commit -m 'Update reproducible JUnit Help screenshot'
-          git push origin "HEAD:$HEAD_REF"
+      # The two real Cleanup preview methods remain executable in
+      # SandboxHelpScreenshotsSWTBotTest and are tracked by #1437. Their three
+      # committed images stay unchanged while those methods are outside this
+      # temporary merge gate.
+      - name: Restore deferred real-preview images
+        run: >-
+          git restore --source=HEAD --
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
 
       - name: Verify committed screenshots are reproducible
         shell: bash

@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -36,18 +37,29 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
 public enum JfaceCleanUpFixCore {
 
-	MONITOR(new JFacePlugin()),
-	VIEWER_SORTER(new ViewerSorterPlugin()),
-	IMAGE_DPI(new ImageDataProviderPlugin());
+	MONITOR(new JFacePlugin(), () -> MultiFixMessages.JFaceCleanUp_step_monitor),
+	VIEWER_SORTER(new ViewerSorterPlugin(), () -> MultiFixMessages.JFaceCleanUp_step_viewerSorter),
+	IMAGE_DPI(new ImageDataProviderPlugin(), () -> MultiFixMessages.JFaceCleanUp_step_imageDataProvider);
 
 	AbstractTool<?> jfacefound;
+	private final Supplier<String> stepDescription;
 
-	JfaceCleanUpFixCore(AbstractTool<?> xmlsimplify) {
+	JfaceCleanUpFixCore(AbstractTool<?> xmlsimplify, Supplier<String> stepDescription) {
 		this.jfacefound= xmlsimplify;
+		this.stepDescription= stepDescription;
 	}
 
 	public String getPreview(boolean i) {
 		return jfacefound.getPreview(i);
+	}
+
+	public String getStepDescription() {
+		return stepDescription.get();
+	}
+
+	@Override
+	public String toString() {
+		return stepDescription.get();
 	}
 
 	/**
@@ -73,7 +85,7 @@ public enum JfaceCleanUpFixCore {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
-				TextEditGroup group= createTextEditGroup(MultiFixMessages.JFaceCleanUp_description, cuRewrite);
+				TextEditGroup group= createTextEditGroup(JfaceCleanUpFixCore.this.getStepDescription(), cuRewrite);
 				TightSourceRangeComputer rangeComputer;
 				ASTRewrite rewrite= cuRewrite.getASTRewrite();
 				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {

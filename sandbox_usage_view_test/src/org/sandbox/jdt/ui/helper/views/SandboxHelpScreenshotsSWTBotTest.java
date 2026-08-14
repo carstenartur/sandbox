@@ -20,17 +20,36 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.ltk.core.refactoring.IUndoManager;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
@@ -45,6 +64,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -104,24 +124,49 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final String DOCUMENTATION_PROJECT = "SandboxHelpTriggerPattern";
     private static final String REFACTORING_MINING_VIEW = "org.sandbox.jdt.views.refactoringMining";
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
-    private static final String HINT_FILE_CLEANUP_LABEL = "Apply transformation rules from .sandbox-hint files";
+    private static final String CLEANUP_PREVIEW_PROJECT = "SandboxCleanupPreviewProject";
+    private static final String JFACE_MASTER_LABEL = "Modernize JFace API usage";
+    private static final String JFACE_MONITOR_LABEL = "Replace SubProgressMonitor with SubMonitor";
+    private static final String JFACE_VIEWER_SORTER_LABEL = "Replace ViewerSorter with ViewerComparator";
+    private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =
+            "Modernize Image creation for DPI/zoom (ImageDataProvider)";
+    private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
+    private static final String INT_TO_ENUM_PROJECT_WIDE_LABEL =
+            "Analyze all project source files for coordinated migrations";
+    private static final String INT_TO_ENUM_CANDIDATE_FRAGMENT = "nested enum Status";
     private static SWTWorkbenchBot bot;
     private static Path outputRoot;
     private static IProject otherProject;
     private static IProject documentationProject;
+    private static IProject cleanupPreviewProject;
 
     @BeforeAll
     public static void setUp() throws Exception {
         bot = new SWTWorkbenchBot();
         outputRoot = SandboxCheckout.locate(OUTPUT_PROPERTY);
+        deleteGeneratedScreenshot("sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-single-file-steps.png");
+        deleteGeneratedScreenshot("sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-diff-step.png");
+        deleteGeneratedScreenshot("sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-multi-file-selection.png");
+        deleteGeneratedScreenshot("sandbox_int_to_enum_help",
+                "int-to-enum-coordinated-preview.png");
         closeWelcomeView();
         otherProject = createEmptyProject(OTHER_PROJECT);
         documentationProject = createDocumentationProject();
+        cleanupPreviewProject = createCleanupPreviewProject();
+    }
+
+    @AfterEach
+    public void closeTransientDialogs() {
+        closeAllDialogs();
     }
 
     @AfterAll
     public static void tearDown() throws Exception {
-        closeDialogIfOpen();
+        closeAllDialogs();
+        deleteProject(cleanupPreviewProject);
         deleteProject(documentationProject);
         deleteProject(otherProject);
     }
@@ -137,6 +182,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         prepareForScreenshot(profileDialog);
 
         for (CleanupTab tab : CLEANUP_TABS) {
+            System.out.println("[help-screenshots] Activating cleanup tab: " + tab.label());
             profileDialog.bot().tabItem(tab.label()).activate();
             if ("Code Patterns (Sandbox)".equals(tab.label())) {
                 stabilizeHintFileCleanup(profileDialog);
@@ -144,10 +190,187 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 bot.sleep(300);
             }
             capture(profileDialog, tab.helpBundle(), tab.fileName());
+            System.out.println("[help-screenshots] Captured cleanup tab: " + tab.label());
         }
 
-        clickButton(profileDialog, "Cancel");
-        clickButton(preferences, "Cancel");
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "Cancel");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Cancel");
+    }
+
+    @Test
+    public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
+        System.out.println("[help-screenshots] Starting independent real Cleanup preview");
+        configureJFaceCleanupProfile();
+        System.out.println("[help-screenshots] Configured JFace Cleanup profile");
+        IFile singleFile = cleanupPreviewProject.getFile("src/demo/single/SingleFileCleanup.java");
+        String singleBefore = readFile(singleFile);
+
+        openProjectExplorer();
+        SWTBotTreeItem singleFileNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.single").expand().getNode("SingleFileCleanup.java");
+        singleFileNode.select();
+        SWTBotShell wizard = openCleanUpWizard(singleFileNode);
+        clickButton(wizard, "Next >", "Next >");
+        bot.sleep(500);
+        prepareForScreenshot(wizard);
+
+        SWTBotTree previewTree = wizard.bot().tree();
+        SWTBotTreeItem singlePreviewFile = findTreeItemContaining(previewTree, "SingleFileCleanup.java");
+        assertTrue(singlePreviewFile != null, "Preview must contain the selected file");
+        singlePreviewFile.expand();
+        SWTBotTreeItem monitorStep = findDescendant(singlePreviewFile, "SubProgressMonitor");
+        SWTBotTreeItem viewerSorterStep = findDescendant(singlePreviewFile, "ViewerSorter");
+        assertTrue(monitorStep != null, "Preview must expose a SubProgressMonitor cleanup step");
+        assertTrue(viewerSorterStep != null, "Preview must expose a ViewerSorter cleanup step");
+        assertTrue(findDescendant(singlePreviewFile, "JFACE_CLEANUP_MONITOR") == null,
+                "Preview labels must be user-facing and not option ids");
+
+        monitorStep.select();
+        bot.sleep(300);
+        String monitorDiff = currentDiffText(wizard);
+        viewerSorterStep.select();
+        bot.sleep(300);
+        String sorterDiff = currentDiffText(wizard);
+        assertTrue(monitorDiff.contains("SubProgressMonitor"), "Monitor diff should mention SubProgressMonitor");
+        assertTrue(sorterDiff.contains("ViewerSorter"), "ViewerSorter diff should mention ViewerSorter");
+        assertTrue(!monitorDiff.equals(sorterDiff), "Selecting each cleanup step should update the diff viewer");
+
+        monitorStep.select();
+        bot.sleep(300);
+        captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-single-file-steps.png");
+        viewerSorterStep.select();
+        bot.sleep(300);
+        captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-diff-step.png");
+
+        viewerSorterStep.uncheck();
+        clickButtonAsync(wizard, "Finish");
+        waitForShellToClose(wizard, "Clean Up wizard");
+        String singleAfter = readFile(singleFile);
+        assertTrue(singleAfter.contains("SubMonitor.convert"), "Selected monitor migration must be applied");
+        assertTrue(singleAfter.contains("new ViewerSorter()"), "Deselected viewer sorter migration must not be applied");
+        assertTrue(!singleBefore.equals(singleAfter), "Applying the selected step should change the file");
+
+        IFile monitorFile = cleanupPreviewProject.getFile("src/demo/multi/MonitorOnly.java");
+        IFile sorterFile = cleanupPreviewProject.getFile("src/demo/multi/SorterOnly.java");
+        String monitorBefore = readFile(monitorFile);
+        String sorterBefore = readFile(sorterFile);
+
+        SWTBotTreeItem multiPackage = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.multi");
+        multiPackage.select();
+        wizard = openCleanUpWizard(multiPackage);
+        clickButton(wizard, "Next >", "Next >");
+        bot.sleep(500);
+        prepareForScreenshot(wizard);
+
+        previewTree = wizard.bot().tree();
+        SWTBotTreeItem monitorPreviewFile = findTreeItemContaining(previewTree, "MonitorOnly.java");
+        SWTBotTreeItem sorterPreviewFile = findTreeItemContaining(previewTree, "SorterOnly.java");
+        assertTrue(monitorPreviewFile != null, "Preview must contain MonitorOnly.java");
+        assertTrue(sorterPreviewFile != null, "Preview must contain SorterOnly.java");
+        captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-multi-file-selection.png");
+
+        sorterPreviewFile.uncheck();
+        clickButtonAsync(wizard, "Finish");
+        waitForShellToClose(wizard, "Clean Up wizard");
+
+        String monitorAfter = readFile(monitorFile);
+        String sorterAfter = readFile(sorterFile);
+        assertTrue(!monitorBefore.equals(monitorAfter), "Selected file must be modified");
+        assertTrue(sorterBefore.equals(sorterAfter), "Deselected file must remain byte-identical");
+
+        undoLastCleanup();
+        assertTrue(monitorBefore.equals(readFile(monitorFile)), "Undo must restore MonitorOnly.java");
+        assertTrue(sorterBefore.equals(readFile(sorterFile)), "Undo must keep SorterOnly.java unchanged");
+    }
+
+    @Test
+    public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
+        System.out.println("[help-screenshots] Starting coordinated Int-to-Enum Cleanup preview");
+        configureIntToEnumCleanupProfile();
+        System.out.println("[help-screenshots] Configured Int-to-Enum Cleanup profile");
+        IFile ownerFile = cleanupPreviewProject.getFile("src/demo/coordinated/StateOwner.java");
+        IFile callerFile = cleanupPreviewProject.getFile("src/demo/coordinated/StateCaller.java");
+        String ownerBefore = readFile(ownerFile);
+        String callerBefore = readFile(callerFile);
+
+        openProjectExplorer();
+        SWTBotTreeItem ownerNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
+        ownerNode.select();
+        SWTBotShell wizard = openCleanUpWizard(ownerNode);
+        clickButton(wizard, "Next >", "Next >");
+        bot.sleep(800);
+        prepareForScreenshot(wizard);
+
+        SWTBotTree previewTree = wizard.bot().tree();
+        SWTBotTreeItem candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        assertTrue(candidate != null, "Preview must expose the coordinated Int-to-Enum candidate");
+        candidate.select();
+        bot.sleep(500);
+
+        assertTrue(candidate.getItems().length == 0,
+                "The atomic candidate must be a leaf without per-file or per-edit checkboxes");
+        assertTrue(currentPlainText(wizard).contains("Selection is atomic"),
+                "The coordinated viewer must explain the atomic selection contract");
+
+        var affectedFiles = wizard.bot().table();
+        assertTrue(affectedFiles.rowCount() == 2,
+                "The coordinated viewer must list exactly the owner and required caller");
+        String affectedLabels = affectedFiles.cell(0, 0) + "\n" + affectedFiles.cell(1, 0);
+        assertTrue(affectedLabels.contains("StateOwner.java"),
+                "The coordinated viewer must list StateOwner.java");
+        assertTrue(affectedLabels.contains("StateCaller.java"),
+                "The coordinated viewer must list StateCaller.java");
+
+        captureCleanUpPreview(wizard, "sandbox_int_to_enum_help",
+                "int-to-enum-coordinated-preview.png");
+
+        assertTrue(candidate.isChecked(), "The coordinated candidate must initially be selected");
+        candidate.uncheck();
+        assertTrue(!candidate.isChecked(), "The single candidate checkbox must disable the whole migration");
+        if (wizard.bot().button("Finish").isEnabled()) {
+            clickButtonAsync(wizard, "Finish");
+        } else {
+            clickButton(wizard, "Cancel");
+        }
+        waitForShellToClose(wizard, "Clean Up wizard");
+        assertTrue(ownerBefore.equals(readFile(ownerFile)),
+                "Disabling the candidate must keep StateOwner.java byte-identical");
+        assertTrue(callerBefore.equals(readFile(callerFile)),
+                "Disabling the candidate must keep StateCaller.java byte-identical");
+
+        ownerNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
+        ownerNode.select();
+        wizard = openCleanUpWizard(ownerNode);
+        clickButton(wizard, "Next >", "Next >");
+        bot.sleep(800);
+        previewTree = wizard.bot().tree();
+        candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        assertTrue(candidate != null && candidate.isChecked(),
+                "Reopening the preview must present one selected atomic candidate");
+        clickButtonAsync(wizard, "Finish");
+        waitForShellToClose(wizard, "Clean Up wizard");
+
+        String ownerAfter = readFile(ownerFile);
+        String callerAfter = readFile(callerFile);
+        assertTrue(ownerAfter.contains("enum Status"),
+                "Applying the candidate must introduce the enum in StateOwner.java");
+        assertTrue(callerAfter.contains("Status.PENDING"),
+                "Applying the candidate must update the required caller in the same operation");
+        assertTrue(!ownerBefore.equals(ownerAfter) && !callerBefore.equals(callerAfter),
+                "The selected atomic candidate must modify both required files");
+
+        undoLastCleanup();
+        assertTrue(ownerBefore.equals(readFile(ownerFile)),
+                "Undo must restore StateOwner.java byte-exactly");
+        assertTrue(callerBefore.equals(readFile(callerFile)),
+                "Undo must restore StateCaller.java byte-exactly");
     }
 
     @Test
@@ -232,36 +455,15 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     private static void stabilizeHintFileCleanup(SWTBotShell profileDialog) {
-        var hintFileCleanup = profileDialog.bot().checkBox(HINT_FILE_CLEANUP_LABEL);
-        if (!hintFileCleanup.isChecked()) {
-            hintFileCleanup.click();
-        }
-        hintFileCleanup.setFocus();
-
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return hintFileCleanup.isChecked()
-                        && !profileDialog.bot().button("Apply").isEnabled()
-                        && !profileDialog.bot().button("OK").isEnabled();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "Code Patterns cleanup profile did not reach its stable built-in-profile state";
-            }
-        }, 5_000);
-
         UIThreadRunnable.syncExec(profileDialog.display, new VoidResult() {
             @Override
             public void run() {
                 profileDialog.widget.layout(true, true);
                 profileDialog.widget.update();
-                // SWTBot's checkbox click leaves the pointer inside the scrollable
-                // cleanup pane. GTK then paints its overlay scrollbars in a transient
-                // hover/fade state, causing otherwise identical screenshots to differ
-                // by a handful of color values. Park the pointer outside the dialog
-                // and let that state expire before taking the reference image.
+                // Leave the read-only built-in profile untouched. Clicking or focusing
+                // its checkbox can start a nested GTK event loop while the cleanup
+                // preview is being refreshed. Park the pointer outside the dialog and
+                // let overlay-scrollbar hover state expire before taking the image.
                 profileDialog.widget.getDisplay().setCursorLocation(0, 0);
             }
         });
@@ -272,6 +474,344 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 profileDialog.widget.update();
             }
         });
+    }
+
+    private static void configureIntToEnumCleanupProfile() {
+        openPreferences();
+        SWTBotShell preferences = bot.shell("Preferences").activate();
+        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
+        clickButton(preferences, "Edit...", "Edit…");
+        SWTBotShell profileDialog = bot.activeShell();
+        profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Coordinated Preview");
+        profileDialog.bot().tabItem("Int to Enum (Sandbox)").activate();
+
+        ensureChecked(profileDialog, INT_TO_ENUM_MASTER_LABEL, true);
+        ensureChecked(profileDialog, INT_TO_ENUM_PROJECT_WIDE_LABEL, true);
+
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
+    }
+
+    private static void configureJFaceCleanupProfile() {
+        openPreferences();
+        SWTBotShell preferences = bot.shell("Preferences").activate();
+        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
+        clickButton(preferences, "Edit...", "Edit…");
+        SWTBotShell profileDialog = bot.activeShell();
+        profileDialog.bot().textWithLabel("Profile name:").setText("Sandbox Help Preview");
+        profileDialog.bot().tabItem("JFace Cleanup (Sandbox)").activate();
+
+        ensureChecked(profileDialog, JFACE_MASTER_LABEL, true);
+        ensureChecked(profileDialog, JFACE_MONITOR_LABEL, true);
+        ensureChecked(profileDialog, JFACE_VIEWER_SORTER_LABEL, true);
+        ensureChecked(profileDialog, JFACE_IMAGE_DATA_PROVIDER_LABEL, false);
+
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
+    }
+
+    private static void ensureChecked(SWTBotShell shell, String label, boolean checked) {
+        var checkBox = shell.bot().checkBox(label);
+        if (checkBox.isChecked() != checked) {
+            checkBox.click();
+        }
+    }
+
+    private static void openProjectExplorer() {
+        SWTBotShell workbench = workbenchShell().activate();
+        showView(workbench, PROJECT_EXPLORER_VIEW);
+        bot.viewByTitle("Project Explorer").setFocus();
+    }
+
+    private static SWTBotTree projectTree() {
+        return bot.viewByTitle("Project Explorer").bot().tree();
+    }
+
+    private static SWTBotShell openCleanUpWizard(SWTBotTreeItem selection) {
+        WidgetNotFoundException failure = null;
+        for (String label : List.of("Clean Up...", "Clean Up…")) {
+            try {
+                selection.contextMenu("Source").menu(label).click();
+                return waitForCleanUpWizard();
+            } catch (WidgetNotFoundException exception) {
+                failure = exception;
+            }
+        }
+        throw failure;
+    }
+
+    private static SWTBotShell waitForCleanUpWizard() {
+        SWTBotShell[] result = new SWTBotShell[1];
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                for (SWTBotShell shell : bot.shells()) {
+                    if (!shell.getText().startsWith("Clean Up") || !shell.isOpen()) {
+                        continue;
+                    }
+                    try {
+                        shell.bot().button("Next >");
+                        shell.bot().button("Cancel");
+                        result[0] = shell;
+                        return true;
+                    } catch (WidgetNotFoundException exception) {
+                        // A cleanup profile or preferences shell can share the title.
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The real Clean Up wizard did not open; visible shells: " + visibleShells();
+            }
+        }, 30_000);
+        return result[0].activate();
+    }
+
+    private static SWTBotTreeItem findTreeItemContaining(SWTBotTree tree, String needle) {
+        for (SWTBotTreeItem root : tree.getAllItems()) {
+            SWTBotTreeItem match = findDescendant(root, needle);
+            if (match != null) {
+                return match;
+            }
+        }
+        return null;
+    }
+
+    private static SWTBotTreeItem findDescendant(SWTBotTreeItem item, String needle) {
+        if (item.getText().contains(needle)) {
+            return item;
+        }
+        for (SWTBotTreeItem child : item.getItems()) {
+            SWTBotTreeItem match = findDescendant(child, needle);
+            if (match != null) {
+                return match;
+            }
+        }
+        return null;
+    }
+
+    private static String currentPlainText(SWTBotShell shell) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<String>() {
+            @Override
+            public String run() {
+                return String.join("\n---\n", collectText(shell.widget));
+            }
+        });
+    }
+
+    private static String currentDiffText(SWTBotShell shell) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<String>() {
+            @Override
+            public String run() {
+                return String.join("\n---\n", collectStyledText(shell.widget));
+            }
+        });
+    }
+
+    private static List<String> collectStyledText(Control root) {
+        Deque<Control> pending = new ArrayDeque<>();
+        pending.add(root);
+        List<String> texts = new ArrayList<>();
+        while (!pending.isEmpty()) {
+            Control control = pending.removeFirst();
+            if (control instanceof StyledText styledText) {
+                texts.add(styledText.getText());
+            }
+            if (control instanceof Composite composite) {
+                for (Control child : composite.getChildren()) {
+                    pending.addLast(child);
+                }
+            }
+        }
+        return texts;
+    }
+
+    private static List<String> collectText(Control root) {
+        Deque<Control> pending = new ArrayDeque<>();
+        pending.add(root);
+        List<String> texts = new ArrayList<>();
+        while (!pending.isEmpty()) {
+            Control control = pending.removeFirst();
+            if (control instanceof Text text) {
+                texts.add(text.getText());
+            }
+            if (control instanceof Composite composite) {
+                for (Control child : composite.getChildren()) {
+                    pending.addLast(child);
+                }
+            }
+        }
+        return texts;
+    }
+
+    private static void waitForShellToClose(SWTBotShell shell, String description) {
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                return shell.widget.isDisposed();
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return description + " did not close";
+            }
+        }, 30_000);
+    }
+
+    private static void undoLastCleanup() throws Exception {
+        IUndoManager undoManager = RefactoringCore.getUndoManager();
+        assertTrue(undoManager.anythingToUndo(), "Cleanup operation should be undoable");
+        undoManager.performUndo(null, new NullProgressMonitor());
+    }
+
+    private static String readFile(IFile file) throws IOException {
+        return Files.readString(file.getLocation().toFile().toPath(), StandardCharsets.UTF_8);
+    }
+
+    private static IProject createCleanupPreviewProject() throws Exception {
+        IProject project = createEmptyProject(CLEANUP_PREVIEW_PROJECT);
+        IJavaProject javaProject = JavaCore.create(project);
+        var description = project.getDescription();
+        description.setNatureIds(new String[] { JavaCore.NATURE_ID });
+        project.setDescription(description, new NullProgressMonitor());
+
+        IFolder sourceFolder = project.getFolder("src");
+        if (!sourceFolder.exists()) {
+            sourceFolder.create(true, true, new NullProgressMonitor());
+        }
+        IFolder outputFolder = project.getFolder("bin");
+        if (!outputFolder.exists()) {
+            outputFolder.create(true, true, new NullProgressMonitor());
+        }
+
+        IClasspathEntry[] classpath = new IClasspathEntry[] {
+                JavaCore.newSourceEntry(sourceFolder.getFullPath()),
+                JavaCore.newContainerEntry(new org.eclipse.core.runtime.Path("org.eclipse.jdt.launching.JRE_CONTAINER")) };
+        javaProject.setRawClasspath(classpath, outputFolder.getFullPath(), new NullProgressMonitor());
+        writeCleanupFixtureSources(javaProject);
+        project.refreshLocal(IResource.DEPTH_INFINITE, new NullProgressMonitor());
+        return project;
+    }
+
+    private static void writeCleanupFixtureSources(IJavaProject javaProject) throws Exception {
+        IPackageFragmentRoot sourceRoot = javaProject.getPackageFragmentRoot(javaProject.getProject().getFolder("src"));
+
+        createUnit(sourceRoot, "org.eclipse.core.runtime", "IProgressMonitor.java",
+                """
+                        package org.eclipse.core.runtime;
+                        public interface IProgressMonitor {
+                            void beginTask(String name, int totalWork);
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.core.runtime", "SubMonitor.java",
+                """
+                        package org.eclipse.core.runtime;
+                        public class SubMonitor implements IProgressMonitor {
+                            public static SubMonitor convert(IProgressMonitor monitor, int work) { return new SubMonitor(); }
+                            public SubMonitor split(int ticks) { return this; }
+                            @Override
+                            public void beginTask(String name, int totalWork) {
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.core.runtime", "SubProgressMonitor.java",
+                """
+                        package org.eclipse.core.runtime;
+                        public class SubProgressMonitor implements IProgressMonitor {
+                            public SubProgressMonitor(IProgressMonitor monitor, int work) {
+                            }
+                            @Override
+                            public void beginTask(String name, int totalWork) {
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.jface.viewers", "ViewerComparator.java",
+                """
+                        package org.eclipse.jface.viewers;
+                        public class ViewerComparator {
+                        }
+                        """);
+        createUnit(sourceRoot, "org.eclipse.jface.viewers", "ViewerSorter.java",
+                """
+                        package org.eclipse.jface.viewers;
+                        public class ViewerSorter extends ViewerComparator {
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.single", "SingleFileCleanup.java",
+                """
+                        package demo.single;
+                        import org.eclipse.core.runtime.IProgressMonitor;
+                        import org.eclipse.core.runtime.SubProgressMonitor;
+                        import org.eclipse.jface.viewers.ViewerSorter;
+                        public class SingleFileCleanup {
+                            public void monitor(IProgressMonitor monitor) {
+                                monitor.beginTask("work", 100);
+                                IProgressMonitor child = new SubProgressMonitor(monitor, 40);
+                            }
+                            public ViewerSorter sorter() {
+                                return new ViewerSorter();
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.multi", "MonitorOnly.java",
+                """
+                        package demo.multi;
+                        import org.eclipse.core.runtime.IProgressMonitor;
+                        import org.eclipse.core.runtime.SubProgressMonitor;
+                        public class MonitorOnly {
+                            public void monitor(IProgressMonitor monitor) {
+                                monitor.beginTask("work", 10);
+                                IProgressMonitor child = new SubProgressMonitor(monitor, 5);
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.multi", "SorterOnly.java",
+                """
+                        package demo.multi;
+                        import org.eclipse.jface.viewers.ViewerSorter;
+                        public class SorterOnly {
+                            public ViewerSorter sorter() {
+                                return new ViewerSorter();
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.coordinated", "StateOwner.java",
+                """
+                        package demo.coordinated;
+
+                        public class StateOwner {
+                            static final int STATUS_PENDING = 0;
+                            static final int STATUS_APPROVED = 1;
+
+                            void process(int status) {
+                                if (status == STATUS_PENDING) {
+                                    System.out.println("pending");
+                                } else if (status == STATUS_APPROVED) {
+                                    System.out.println("approved");
+                                }
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.coordinated", "StateCaller.java",
+                """
+                        package demo.coordinated;
+
+                        public class StateCaller {
+                            void run(StateOwner owner) {
+                                owner.process(StateOwner.STATUS_PENDING);
+                            }
+                        }
+                        """);
+    }
+
+    private static void createUnit(IPackageFragmentRoot sourceRoot, String packageName, String unitName, String contents)
+            throws Exception {
+        IPackageFragment fragment = sourceRoot.createPackageFragment(packageName, true, new NullProgressMonitor());
+        fragment.createCompilationUnit(unitName, contents, true, new NullProgressMonitor());
     }
 
     private static IProject createDocumentationProject() throws Exception {
@@ -379,6 +919,32 @@ public class SandboxHelpScreenshotsSWTBotTest {
         throw failure;
     }
 
+    private static void clickButtonAndWaitForShellToClose(SWTBotShell shell, String description,
+            String... labels) {
+        clickButton(shell, labels);
+        waitForShellToClose(shell, description);
+    }
+
+    private static void clickButtonAsync(SWTBotShell shell, String... labels) {
+        WidgetNotFoundException failure = null;
+        for (String label : labels) {
+            try {
+                var button = shell.bot().button(label);
+                shell.display.asyncExec(() -> {
+                    if (!button.widget.isDisposed() && button.widget.isEnabled()) {
+                        Event event = new Event();
+                        event.widget = button.widget;
+                        button.widget.notifyListeners(SWT.Selection, event);
+                    }
+                });
+                return;
+            } catch (WidgetNotFoundException exception) {
+                failure = exception;
+            }
+        }
+        throw failure;
+    }
+
     private static void prepareForScreenshot(SWTBotShell shell) {
         UIThreadRunnable.syncExec(shell.display, new VoidResult() {
             @Override
@@ -391,6 +957,26 @@ public class SandboxHelpScreenshotsSWTBotTest {
         });
         shell.activate();
         bot.sleep(500);
+    }
+
+    private static void captureCleanUpPreview(SWTBotShell shell, String helpBundle, String fileName)
+            throws IOException {
+        assertTrue(shell.isOpen(), "The Clean Up preview shell must still be open");
+        assertTrue(bot.activeShell().widget == shell.widget,
+                "The requested Clean Up preview shell must be active before capture");
+        shell.bot().button("Finish");
+        shell.bot().button("Cancel");
+        capture(shell, helpBundle, fileName);
+        System.out.println("[help-screenshots] Captured real Clean Up preview: " + fileName);
+    }
+
+    private static void deleteGeneratedScreenshot(String helpBundle, String fileName) throws IOException {
+        Files.deleteIfExists(outputRoot.resolve(helpBundle).resolve("images").resolve(fileName));
+    }
+
+    private static String visibleShells() {
+        return java.util.Arrays.stream(bot.shells()).filter(SWTBotShell::isOpen)
+                .map(SWTBotShell::getText).toList().toString();
     }
 
     private static void capture(SWTBotShell shell, String helpBundle, String fileName)
@@ -420,13 +1006,24 @@ public class SandboxHelpScreenshotsSWTBotTest {
         }
     }
 
-    private static void closeDialogIfOpen() {
+    private static void closeAllDialogs() {
         try {
-            SWTBotShell active = bot.activeShell();
             SWTBotShell workbench = workbenchShell();
-            if (active.widget != workbench.widget) {
-                active.close();
+            for (SWTBotShell shell : bot.shells()) {
+                if (shell.widget == workbench.widget || shell.widget.isDisposed()) {
+                    continue;
+                }
+                UIThreadRunnable.syncExec(shell.display, new VoidResult() {
+                    @Override
+                    public void run() {
+                        if (!shell.widget.isDisposed()) {
+                            shell.widget.close();
+                        }
+                    }
+                });
             }
+            workbench.activate();
+            bot.sleep(200);
         } catch (WidgetNotFoundException exception) {
             // Workbench already closed.
         }

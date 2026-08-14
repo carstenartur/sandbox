@@ -10,9 +10,11 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
@@ -68,6 +71,13 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		implements IMultiFileCleanUpScopeProvider {
 
 	private static final String UNKNOWN_CLEANUP_ID= "unknown"; //$NON-NLS-1$
+	private static final String PREVIEW_ID= "id"; //$NON-NLS-1$
+	private static final String PREVIEW_NAME= "name"; //$NON-NLS-1$
+	private static final String PREVIEW_DESCRIPTION= "description"; //$NON-NLS-1$
+	private static final String PREVIEW_COMPILATION_UNITS= "compilationUnits"; //$NON-NLS-1$
+	private static final String PREVIEW_DETAILS= "details"; //$NON-NLS-1$
+	private static final String ATOMIC_SELECTION_DETAIL=
+			"Selection is atomic: all required source changes are applied together or not at all."; //$NON-NLS-1$
 
 	private static final class ScopeAccumulator {
 		private final Set<String> selectedHandles= new LinkedHashSet<>();
@@ -120,6 +130,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 	private final Map<IJavaProject, MultiFilePlanningMetrics> metricsByProject= new HashMap<>();
 	private final Map<IJavaProject, MultiFileCleanUpDiagnostics> diagnosticsByProject= new HashMap<>();
 	private final Map<IJavaProject, ScopeAccumulator> scopesByProject= new HashMap<>();
+	private final Map<IJavaProject, Map<String, ICompilationUnit>> compilationUnitsByProject= new HashMap<>();
 
 	/** Creates a base class without options. */
 	protected AbstractPlannedMultiFileCleanUp() {
@@ -179,6 +190,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			diagnostics.appendSummary(result.status());
 			if (!result.status().hasFatalError() && result.plan() != null) {
 				plansByProject.put(project, result.plan());
+				compilationUnitsByProject.put(project, indexCompilationUnits(compilationUnits));
 			}
 			return result.status();
 		}
@@ -215,6 +227,7 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 				metricsByProject.clear();
 				diagnosticsByProject.clear();
 				scopesByProject.clear();
+				compilationUnitsByProject.clear();
 			}
 		}
 	}
@@ -239,6 +252,73 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 			Collection<ICompilationUnit> normalized= result == null ? Collections.emptyList() : result;
 			scopesByProject.computeIfAbsent(project, ignored -> new ScopeAccumulator()).record(currentScope, normalized);
 			return normalized;
+		}
+	}
+
+	/**
+	 * Returns the optional dependency-free metadata consumed by the patched JDT
+	 * Cleanup preview. Every transformed diagnostic becomes one candidate-level
+	 * atomic selection unit. Rejected candidates are deliberately omitted.
+	 *
+	 * <p>The method is public and uses only JDT model objects plus JDK collection
+	 * types so an unpatched Eclipse product can continue loading this cleanup; it
+	 * simply never invokes the optional contract.</p>
+	 *
+	 * @param project current Java project
+	 * @return immutable collection of candidate metadata maps
+	 * @throws CoreException if a transformed candidate refers to a unit outside the
+	 *                       proven execution scope
+	 */
+	public final Collection<Map<String, Object>> getCoordinatedCleanUpPreview(IJavaProject project)
+			throws CoreException {
+		synchronized (lifecycleLock) {
+			if (!plansByProject.containsKey(project)) {
+				return List.of();
+			}
+			MultiFileCleanUpDiagnostics diagnostics= diagnosticsByProject.get(project);
+			Map<String, ICompilationUnit> unitsByHandle= compilationUnitsByProject.get(project);
+			if (diagnostics == null || unitsByHandle == null) {
+				return List.of();
+			}
+			String cleanupId= diagnostics.cleanupId();
+			if (cleanupId.isBlank() || UNKNOWN_CLEANUP_ID.equals(cleanupId)) {
+				cleanupId= getClass().getName();
+			}
+			List<Map<String, Object>> result= new ArrayList<>();
+			for (MultiFileCandidateDiagnostic candidate : diagnostics.candidates()) {
+				if (candidate.outcome() != MultiFileCandidateOutcome.TRANSFORMED) {
+					continue;
+				}
+				if (candidate.candidateId().isBlank()) {
+					throw invalidPreviewCandidate(cleanupId, "has a blank candidate id"); //$NON-NLS-1$
+				}
+				Set<ICompilationUnit> units= new LinkedHashSet<>();
+				addPreviewCompilationUnit(units, unitsByHandle, candidate.ownerCompilationUnitHandle(),
+						cleanupId, candidate.candidateId());
+				for (String relatedHandle : candidate.relatedCompilationUnitHandles()) {
+					addPreviewCompilationUnit(units, unitsByHandle, relatedHandle, cleanupId,
+							candidate.candidateId());
+				}
+				String candidateName= candidate.message().isBlank()
+						? "Coordinated cleanup candidate" //$NON-NLS-1$
+						: candidate.message();
+				List<String> details= new ArrayList<>();
+				details.add(ATOMIC_SELECTION_DETAIL);
+				if (!diagnostics.scope().explanation().isBlank()) {
+					details.add(diagnostics.scope().explanation());
+				}
+				details.add("Affected source files: " + units.size()); //$NON-NLS-1$
+				details.add(diagnostics.impact().compatibilityStatement());
+
+				Map<String, Object> preview= new LinkedHashMap<>();
+				preview.put(PREVIEW_ID, cleanupId + ':' + candidate.candidateId());
+				preview.put(PREVIEW_NAME, candidateName);
+				preview.put(PREVIEW_DESCRIPTION, diagnostics.impact().compatibilityStatement());
+				preview.put(PREVIEW_COMPILATION_UNITS, List.copyOf(units));
+				preview.put(PREVIEW_DETAILS, List.copyOf(new LinkedHashSet<>(details)));
+				result.add(Collections.unmodifiableMap(preview));
+			}
+			return List.copyOf(result);
 		}
 	}
 
@@ -297,10 +377,47 @@ public abstract class AbstractPlannedMultiFileCleanUp<P> extends AbstractCleanUp
 		}
 	}
 
+	private static Map<String, ICompilationUnit> indexCompilationUnits(ICompilationUnit[] compilationUnits) {
+		Map<String, ICompilationUnit> result= new LinkedHashMap<>();
+		for (ICompilationUnit unit : compilationUnits) {
+			if (unit == null) {
+				continue;
+			}
+			ICompilationUnit primary= unit.getPrimary();
+			ICompilationUnit normalized= primary == null ? unit : primary;
+			String handle= normalized.getHandleIdentifier();
+			if (handle != null && !handle.isBlank()) {
+				result.put(handle, normalized);
+			}
+		}
+		return Collections.unmodifiableMap(result);
+	}
+
+	private static void addPreviewCompilationUnit(Set<ICompilationUnit> result,
+			Map<String, ICompilationUnit> unitsByHandle, String handle, String cleanupId,
+			String candidateId) throws CoreException {
+		if (handle == null || handle.isBlank()) {
+			throw invalidPreviewCandidate(cleanupId,
+					"candidate " + candidateId + " contains a blank compilation-unit handle"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		ICompilationUnit unit= unitsByHandle.get(handle);
+		if (unit == null) {
+			throw invalidPreviewCandidate(cleanupId,
+					"candidate " + candidateId + " refers to a compilation unit outside the proven execution scope"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		result.add(unit);
+	}
+
+	private static CoreException invalidPreviewCandidate(String cleanupId, String detail) {
+		return new CoreException(Status.error("Invalid coordinated cleanup preview for " //$NON-NLS-1$
+				+ cleanupId + ": " + detail)); //$NON-NLS-1$
+	}
+
 	private void clearPlanningState(IJavaProject project) {
 		plansByProject.remove(project);
 		metricsByProject.remove(project);
 		diagnosticsByProject.remove(project);
+		compilationUnitsByProject.remove(project);
 	}
 
 	private void clearProjectState(IJavaProject project) {
