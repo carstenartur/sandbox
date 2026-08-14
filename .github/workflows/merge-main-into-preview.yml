@@ -1,0 +1,44 @@
+name: Merge current main into preview branch
+
+on:
+  push:
+    branches:
+      - feature/coordinated-cleanup-preview
+    paths:
+      - '.github/workflows/merge-main-into-preview.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: feature/coordinated-cleanup-preview
+
+      - name: Merge current main and report any real conflicts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          set +e
+          git merge --no-commit --no-ff origin/main
+          status=$?
+          set -e
+          if ((status != 0)); then
+            echo 'Merge conflicts:' >&2
+            git status --short >&2
+            echo 'Combined conflict diff:' >&2
+            git diff --cc >&2 || true
+            exit "$status"
+          fi
+          rm .github/workflows/merge-main-into-preview.yml
+          git add -A
+          git diff --cached --check
+          git commit -m 'Merge current main into coordinated Cleanup preview'
+          git push origin HEAD:feature/coordinated-cleanup-preview
