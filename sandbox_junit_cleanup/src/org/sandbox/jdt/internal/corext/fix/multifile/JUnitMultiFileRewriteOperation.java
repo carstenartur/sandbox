@@ -39,6 +39,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 import org.eclipse.text.edits.TextEditGroup;
 
+import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceCompatibilityRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer;
 
 /** Applies the local part of a coordinated JUnit migration plan. */
@@ -47,7 +48,7 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 	record FieldEdit(String bindingKey, boolean classRule, Annotation ruleAnnotation) {
 	}
 
-	record ResourceTypeEdit(String bindingKey, boolean classRule) {
+	record ResourceTypeEdit(String bindingKey, boolean classRule, boolean preserveJUnit4Compatibility) {
 	}
 
 	record ResolvedEdits(CompilationUnit root, Map<FieldDeclaration, FieldEdit> fields,
@@ -75,8 +76,10 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 				}
 			}
 
-			void addResourceType(TypeDeclaration type, String bindingKey, boolean classRule) {
-				resourceTypes.put(type, new ResourceTypeEdit(bindingKey, classRule));
+			void addResourceType(TypeDeclaration type, String bindingKey, boolean classRule,
+					boolean preserveJUnit4Compatibility) {
+				resourceTypes.put(type,
+						new ResourceTypeEdit(bindingKey, classRule, preserveJUnit4Compatibility));
 				typeKeys.add(bindingKey);
 			}
 
@@ -107,8 +110,14 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 		removeUnusedRuleImports(imports);
 
 		for (Map.Entry<TypeDeclaration, ResourceTypeEdit> entry : edits.resourceTypes().entrySet()) {
-			ExternalResourceRefactorer.modifyExternalResourceClass(entry.getKey(), null, entry.getValue().classRule(),
-					rewrite, ast, group, imports);
+			ResourceTypeEdit edit= entry.getValue();
+			if (edit.preserveJUnit4Compatibility()) {
+				ExternalResourceCompatibilityRefactorer.addJupiterCallbacks(entry.getKey(), edit.classRule(),
+						rewrite, ast, group, imports);
+			} else {
+				ExternalResourceRefactorer.modifyExternalResourceClass(entry.getKey(), null, edit.classRule(),
+						rewrite, ast, group, imports);
+			}
 		}
 	}
 
@@ -135,7 +144,6 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 				if (binding == null && ANNOTATION_REGISTER_EXTENSION.equals(annotation.getTypeName().getFullyQualifiedName())) {
 					return true;
 				}
-			}
 		}
 		return false;
 	}
