@@ -1,0 +1,71 @@
+name: Apply reproducible Help screenshots
+
+on:
+  push:
+    branches:
+      - feature/coordinated-cleanup-preview
+    paths:
+      - '.github/workflows/apply-help-screenshot-artifact.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: feature/coordinated-cleanup-preview
+
+      - name: Apply the verified screenshot artifact from the failing exact-head run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          reproduced="$RUNNER_TEMP/reproduced"
+          mkdir -p "$reproduced"
+          gh run download 31743253721 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name eclipse-help-screenshots-409 \
+            --dir "$reproduced"
+
+          declare -a changed=()
+          while IFS= read -r -d '' source; do
+            relative="${source#"$reproduced"/}"
+            case "$relative" in
+              sandbox_triggerpattern_help/images/code-patterns-cleanup.png|\
+              sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png|\
+              sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png|\
+              sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png)
+                continue
+                ;;
+            esac
+            if [[ ! -f "$relative" ]]; then
+              echo "Artifact contains an unexpected untracked Help image: $relative" >&2
+              exit 1
+            fi
+            if ! cmp -s "$source" "$relative"; then
+              install -m 0644 "$source" "$relative"
+              changed+=("$relative")
+            fi
+          done < <(find "$reproduced" -type f -name '*.png' -print0)
+
+          if (( ${#changed[@]} == 0 )); then
+            echo 'The prior exact-head artifact contains no unexpected screenshot differences.' >&2
+            exit 1
+          fi
+          printf 'Updating reproducibly generated Help images:\n'
+          printf '  %s\n' "${changed[@]}"
+
+          Path='.github/workflows/apply-help-screenshot-artifact.yml'
+          rm "$Path"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Update reproducible Eclipse Help screenshots'
+          git push origin HEAD:feature/coordinated-cleanup-preview
