@@ -26,29 +26,29 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
+          valid_url = 'https://www.eclipse.org/legal/epl-2.0/'
+
           messages = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/preferences/cleanup/CleanUpMessages.properties')
           text = messages.read_text(encoding='utf-8')
-          old_url = 'http://www.eclipse.org/legal/epl-2.0.'
-          if text.count(old_url) != 1:
+          old_properties_url = 'http://www.eclipse.org/legal/epl-2.0.'
+          if text.count(old_properties_url) != 1:
               raise SystemExit('Unexpected EPL URL count in CleanUpMessages.properties')
           if text.count('\n# \n') != 2:
               raise SystemExit('Unexpected trailing-space comment count in CleanUpMessages.properties')
-          text = text.replace(old_url, 'https://www.eclipse.org/legal/epl-2.0/')
+          text = text.replace(old_properties_url, valid_url)
           text = text.replace('\n# \n', '\n#\n')
           messages.write_text(text, encoding='utf-8')
 
+          old_java_url = 'https://www.eclipse.org/legal/epl-2.0.'
           for filename in (
               'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUp.java',
               'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RuleImportCleanupSupport.java',
           ):
               path = Path(filename)
               text = path.read_text(encoding='utf-8')
-              if text.count(old_url) != 1:
+              if text.count(old_java_url) != 1:
                   raise SystemExit(f'Unexpected EPL URL count in {filename}')
-              path.write_text(
-                  text.replace(old_url, 'https://www.eclipse.org/legal/epl-2.0/'),
-                  encoding='utf-8',
-              )
+              path.write_text(text.replace(old_java_url, valid_url), encoding='utf-8')
 
           presets = Path('sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/JUnit4MigrationPresets.java')
           text = presets.read_text(encoding='utf-8')
@@ -71,7 +71,7 @@ jobs:
           Path('.github/workflows/apply-pr1474-review-cleanup.yml').unlink()
           PY
 
-          if grep -R --line-number --fixed-strings 'http://www.eclipse.org/legal/epl-2.0.' \
+          if grep -R --line-number --fixed-strings 'https://www.eclipse.org/legal/epl-2.0.' \
               sandbox_junit_cleanup/src; then
             echo 'Invalid EPL URL remains in JUnit cleanup sources.' >&2
             exit 1
