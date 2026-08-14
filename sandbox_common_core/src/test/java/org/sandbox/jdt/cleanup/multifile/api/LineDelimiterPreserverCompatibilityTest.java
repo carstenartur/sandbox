@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 
+/** Verifies the exported API against the charset and BOM cases from its former internal implementation. */
 class LineDelimiterPreserverCompatibilityTest {
 
 	private static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };
