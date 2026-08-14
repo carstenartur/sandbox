@@ -19,24 +19,26 @@ jobs:
           fetch-depth: 0
           ref: integration/junit-migration-hardening
 
-      - name: Apply tested encoding-aware implementation
+      - name: Wire the tested common-core implementation
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          application = Path('sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java')
-          text = application.read_text(encoding='utf-8')
+          path = Path('sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectWideCodeCleanupApplication.java')
+          text = path.read_text(encoding='utf-8')
+          if text.count('import java.io.ByteArrayOutputStream;\n') != 1:
+              raise SystemExit('Unexpected ByteArrayOutputStream import count')
           text = text.replace('import java.io.ByteArrayOutputStream;\n', '')
-          provider_import = 'import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;\n'
-          replacement_imports = (
-              'import org.sandbox.jdt.cleanup.io.EncodedLineDelimiterPreserver;\n'
-              + provider_import
-          )
-          if text.count(provider_import) != 1:
+
+          provider = 'import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;\n'
+          if text.count(provider) != 1:
               raise SystemExit('Unexpected diagnostics-provider import count')
-          text = text.replace(provider_import, replacement_imports)
+          text = text.replace(
+              provider,
+              'import org.sandbox.jdt.cleanup.io.EncodedLineDelimiterPreserver;\n' + provider,
+          )
 
           start_marker = '\n\n\tprivate enum OriginalLineDelimiter {'
           end_marker = '\n\tprivate static void createParent'
@@ -44,376 +46,21 @@ jobs:
           end = text.find(end_marker, start)
           if start < 0 or end < 0:
               raise SystemExit('Cannot locate byte-oriented delimiter implementation')
-          replacement = '''
-
-\tprivate static void preserveOriginalLineDelimiters(List<SourceSnapshot> sources)
-\t\t\tthrows IOException, CoreException {
-\t\tfor (SourceSnapshot source : sources) {
-\t\t\tbyte[] current= Files.readAllBytes(source.path());
-\t\t\tbyte[] normalized= EncodedLineDelimiterPreserver.preserve(
-\t\t\t\t\tsource.before(), current, source.file().getCharset());
-\t\t\tif (!Arrays.equals(current, normalized)) {
-\t\t\t\tFiles.write(source.path(), normalized);
-\t\t\t}
-\t\t}
-\t}
-'''
-          text = text[:start] + replacement + text[end:]
-          application.write_text(text, encoding='utf-8')
-
-          manifest = Path('sandbox_common_core/META-INF/MANIFEST.MF')
-          manifest_text = manifest.read_text(encoding='utf-8')
-          export = 'Export-Package: org.sandbox.jdt.cleanup.multifile.api,\n'
-          if manifest_text.count(export) != 1:
-              raise SystemExit('Unexpected common-core Export-Package header')
-          manifest.write_text(
-              manifest_text.replace(
-                  export,
-                  'Export-Package: org.sandbox.jdt.cleanup.io,\n org.sandbox.jdt.cleanup.multifile.api,\n',
-              ),
-              encoding='utf-8',
+          replacement = (
+              '\n\n\tprivate static void preserveOriginalLineDelimiters(List<SourceSnapshot> sources)\n'
+              '\t\t\tthrows IOException, CoreException {\n'
+              '\t\tfor (SourceSnapshot source : sources) {\n'
+              '\t\t\tbyte[] current= Files.readAllBytes(source.path());\n'
+              '\t\t\tbyte[] normalized= EncodedLineDelimiterPreserver.preserve(\n'
+              '\t\t\t\t\tsource.before(), current, source.file().getCharset());\n'
+              '\t\t\tif (!Arrays.equals(current, normalized)) {\n'
+              '\t\t\t\tFiles.write(source.path(), normalized);\n'
+              '\t\t\t}\n'
+              '\t\t}\n'
+              '\t}\n'
           )
-
-          utility = Path('sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/io/EncodedLineDelimiterPreserver.java')
-          utility.parent.mkdir(parents=True, exist_ok=True)
-          utility.write_text(r'''/*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
- *
- * SPDX-License-Identifier: EPL-2.0
- *******************************************************************************/
-package org.sandbox.jdt.cleanup.io;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Objects;
-
-/** Restores a rewritten text file's original line delimiter without changing its encoding. */
-public final class EncodedLineDelimiterPreserver {
-
-\tprivate static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };
-\tprivate static final byte[] UTF_16_BE_BOM= { (byte) 0xfe, (byte) 0xff };
-\tprivate static final byte[] UTF_16_LE_BOM= { (byte) 0xff, (byte) 0xfe };
-\tprivate static final byte[] UTF_32_BE_BOM= { 0, 0, (byte) 0xfe, (byte) 0xff };
-\tprivate static final byte[] UTF_32_LE_BOM= { (byte) 0xff, (byte) 0xfe, 0, 0 };
-
-\tprivate enum LineDelimiter {
-\t\tLF("\\n"), //$NON-NLS-1$
-\t\tCRLF("\\r\\n"), //$NON-NLS-1$
-\t\tCR("\\r"); //$NON-NLS-1$
-
-\t\tprivate final String text;
-
-\t\tLineDelimiter(String text) {
-\t\t\tthis.text= text;
-\t\t}
-
-\t\tprivate static LineDelimiter detect(String content) {
-\t\t\tboolean foundLf= false;
-\t\t\tboolean foundCrLf= false;
-\t\t\tboolean foundCr= false;
-\t\t\tfor (int index= 0; index < content.length(); index++) {
-\t\t\t\tchar current= content.charAt(index);
-\t\t\t\tif (current == '\\r') {
-\t\t\t\t\tif (index + 1 < content.length() && content.charAt(index + 1) == '\\n') {
-\t\t\t\t\t\tfoundCrLf= true;
-\t\t\t\t\t\tindex++;
-\t\t\t\t\t} else {
-\t\t\t\t\t\tfoundCr= true;
-\t\t\t\t\t}
-\t\t\t\t} else if (current == '\\n') {
-\t\t\t\t\tfoundLf= true;
-\t\t\t\t}
-\t\t\t}
-\t\t\tint styleCount= (foundLf ? 1 : 0) + (foundCrLf ? 1 : 0) + (foundCr ? 1 : 0);
-\t\t\tif (styleCount != 1) {
-\t\t\t\treturn null;
-\t\t\t}
-\t\t\tif (foundCrLf) {
-\t\t\t\treturn CRLF;
-\t\t\t}
-\t\t\treturn foundLf ? LF : CR;
-\t\t}
-\t}
-
-\tprivate record Encoding(Charset charset, byte[] byteOrderMark) {
-\t\tprivate Encoding {
-\t\t\tbyteOrderMark= byteOrderMark.clone();
-\t\t}
-
-\t\t@Override
-\t\tpublic byte[] byteOrderMark() {
-\t\t\treturn byteOrderMark.clone();
-\t\t}
-\t}
-
-\tprivate EncodedLineDelimiterPreserver() {
-\t}
-
-\t/**
-\t * Returns rewritten bytes with the original file's single line-delimiter style,
-\t * declared character set and byte-order mark. Files without one unambiguous
-\t * original delimiter are returned unchanged.
-\t *
-\t * @param original original file bytes
-\t * @param rewritten bytes produced by the rewrite
-\t * @param declaredCharset Eclipse file character set
-\t * @return rewritten bytes with original text representation preserved
-\t * @throws IOException if either byte sequence cannot be decoded or encoded safely
-\t */
-\tpublic static byte[] preserve(byte[] original, byte[] rewritten, String declaredCharset) throws IOException {
-\t\tObjects.requireNonNull(original, "original"); //$NON-NLS-1$
-\t\tObjects.requireNonNull(rewritten, "rewritten"); //$NON-NLS-1$
-\t\tObjects.requireNonNull(declaredCharset, "declaredCharset"); //$NON-NLS-1$
-
-\t\tCharset declared;
-\t\ttry {
-\t\t\tdeclared= Charset.forName(declaredCharset);
-\t\t} catch (IllegalArgumentException e) {
-\t\t\tthrow new IOException("Unsupported source character set: " + declaredCharset, e); //$NON-NLS-1$
-\t\t}
-\t\tEncoding encoding= encodingOf(original, declared);
-\t\tString originalText= decode(original, encoding, "original"); //$NON-NLS-1$
-\t\tLineDelimiter delimiter= LineDelimiter.detect(originalText);
-\t\tif (delimiter == null) {
-\t\t\treturn rewritten;
-\t\t}
-
-\t\tString rewrittenText= decode(rewritten, encoding, "rewritten"); //$NON-NLS-1$
-\t\tString normalized= normalize(rewrittenText, delimiter.text);
-\t\tbyte[] encoded= encode(normalized, encoding);
-\t\treturn Arrays.equals(encoded, rewritten) ? rewritten : encoded;
-\t}
-
-\tprivate static Encoding encodingOf(byte[] content, Charset declared) throws IOException {
-\t\tBom bom= Bom.detect(content);
-\t\tif (bom != null) {
-\t\t\tif (!compatible(declared, bom.charset())) {
-\t\t\t\tthrow new IOException("Source byte-order mark " + bom.charset().name() //$NON-NLS-1$
-\t\t\t\t\t\t+ " conflicts with declared character set " + declared.name()); //$NON-NLS-1$
-\t\t\t}
-\t\t\treturn new Encoding(bom.charset(), bom.bytes());
-\t\t}
-\t\tString name= declared.name().toUpperCase(Locale.ROOT);
-\t\tif ("UTF-16".equals(name)) { //$NON-NLS-1$
-\t\t\treturn new Encoding(StandardCharsets.UTF_16BE, new byte[0]);
-\t\t}
-\t\tif ("UTF-32".equals(name)) { //$NON-NLS-1$
-\t\t\treturn new Encoding(Charset.forName("UTF-32BE"), new byte[0]); //$NON-NLS-1$
-\t\t}
-\t\treturn new Encoding(declared, new byte[0]);
-\t}
-
-\tprivate static boolean compatible(Charset declared, Charset encoded) {
-\t\tString declaredName= declared.name().toUpperCase(Locale.ROOT);
-\t\tString encodedName= encoded.name().toUpperCase(Locale.ROOT);
-\t\treturn declaredName.equals(encodedName)
-\t\t\t\t|| "UTF-16".equals(declaredName) && encodedName.startsWith("UTF-16") //$NON-NLS-1$ //$NON-NLS-2$
-\t\t\t\t|| "UTF-32".equals(declaredName) && encodedName.startsWith("UTF-32"); //$NON-NLS-1$ //$NON-NLS-2$
-\t}
-
-\tprivate static String decode(byte[] content, Encoding encoding, String label) throws IOException {
-\t\tint offset= bomOffset(content, encoding);
-\t\ttry {
-\t\t\treturn encoding.charset().newDecoder()
-\t\t\t\t\t.onMalformedInput(CodingErrorAction.REPORT)
-\t\t\t\t\t.onUnmappableCharacter(CodingErrorAction.REPORT)
-\t\t\t\t\t.decode(ByteBuffer.wrap(content, offset, content.length - offset))
-\t\t\t\t\t.toString();
-\t\t} catch (CharacterCodingException e) {
-\t\t\tthrow new IOException("Cannot decode " + label + " source as " + encoding.charset().name(), e); //$NON-NLS-1$ //$NON-NLS-2$
-\t\t}
-\t}
-
-\tprivate static int bomOffset(byte[] content, Encoding encoding) throws IOException {
-\t\tBom actual= Bom.detect(content);
-\t\tif (actual == null) {
-\t\t\treturn 0;
-\t\t}
-\t\tif (!actual.charset().equals(encoding.charset())) {
-\t\t\tthrow new IOException("Rewritten source changed byte-order mark from " //$NON-NLS-1$
-\t\t\t\t\t+ encoding.charset().name() + " to " + actual.charset().name()); //$NON-NLS-1$
-\t\t}
-\t\treturn actual.bytes().length;
-\t}
-
-\tprivate static byte[] encode(String content, Encoding encoding) throws IOException {
-\t\ttry {
-\t\t\tByteBuffer bytes= encoding.charset().newEncoder()
-\t\t\t\t\t.onMalformedInput(CodingErrorAction.REPORT)
-\t\t\t\t\t.onUnmappableCharacter(CodingErrorAction.REPORT)
-\t\t\t\t\t.encode(CharBuffer.wrap(content));
-\t\t\tbyte[] bom= encoding.byteOrderMark();
-\t\t\tint encodedLength= bytes.remaining();
-\t\t\tbyte[] result= new byte[bom.length + encodedLength];
-\t\t\tSystem.arraycopy(bom, 0, result, 0, bom.length);
-\t\t\tbytes.get(result, bom.length, encodedLength);
-\t\t\treturn result;
-\t\t} catch (CharacterCodingException e) {
-\t\t\tthrow new IOException("Cannot encode rewritten source as " + encoding.charset().name(), e); //$NON-NLS-1$
-\t\t}
-\t}
-
-\tprivate static String normalize(String content, String delimiter) {
-\t\tStringBuilder normalized= new StringBuilder(content.length() + 64);
-\t\tfor (int index= 0; index < content.length(); index++) {
-\t\t\tchar current= content.charAt(index);
-\t\t\tif (current == '\\r') {
-\t\t\t\tif (index + 1 < content.length() && content.charAt(index + 1) == '\\n') {
-\t\t\t\t\tindex++;
-\t\t\t\t}
-\t\t\t\tnormalized.append(delimiter);
-\t\t\t} else if (current == '\\n') {
-\t\t\t\tnormalized.append(delimiter);
-\t\t\t} else {
-\t\t\t\tnormalized.append(current);
-\t\t\t}
-\t\t}
-\t\treturn normalized.toString();
-\t}
-
-\tprivate record Bom(Charset charset, byte[] bytes) {
-\t\tprivate Bom {
-\t\t\tbytes= bytes.clone();
-\t\t}
-
-\t\t@Override
-\t\tpublic byte[] bytes() {
-\t\t\treturn bytes.clone();
-\t\t}
-
-\t\tprivate static Bom detect(byte[] content) {
-\t\t\tif (startsWith(content, UTF_32_BE_BOM)) {
-\t\t\t\treturn new Bom(Charset.forName("UTF-32BE"), UTF_32_BE_BOM); //$NON-NLS-1$
-\t\t\t}
-\t\t\tif (startsWith(content, UTF_32_LE_BOM)) {
-\t\t\t\treturn new Bom(Charset.forName("UTF-32LE"), UTF_32_LE_BOM); //$NON-NLS-1$
-\t\t\t}
-\t\t\tif (startsWith(content, UTF_8_BOM)) {
-\t\t\t\treturn new Bom(StandardCharsets.UTF_8, UTF_8_BOM);
-\t\t\t}
-\t\t\tif (startsWith(content, UTF_16_BE_BOM)) {
-\t\t\t\treturn new Bom(StandardCharsets.UTF_16BE, UTF_16_BE_BOM);
-\t\t\t}
-\t\t\tif (startsWith(content, UTF_16_LE_BOM)) {
-\t\t\t\treturn new Bom(StandardCharsets.UTF_16LE, UTF_16_LE_BOM);
-\t\t\t}
-\t\t\treturn null;
-\t\t}
-\t}
-
-\tprivate static boolean startsWith(byte[] content, byte[] prefix) {
-\t\tif (content.length < prefix.length) {
-\t\t\treturn false;
-\t\t}
-\t\tfor (int index= 0; index < prefix.length; index++) {
-\t\t\tif (content[index] != prefix[index]) {
-\t\t\t\treturn false;
-\t\t\t}
-\t\t}
-\t\treturn true;
-\t}
-}
-''', encoding='utf-8')
-
-          test = Path('sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/io/EncodedLineDelimiterPreserverTest.java')
-          test.parent.mkdir(parents=True, exist_ok=True)
-          test.write_text(r'''/*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
- *
- * SPDX-License-Identifier: EPL-2.0
- *******************************************************************************/
-package org.sandbox.jdt.cleanup.io;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import org.junit.jupiter.api.Test;
-
-class EncodedLineDelimiterPreserverTest {
-
-\tprivate static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };
-\tprivate static final byte[] UTF_16_LE_BOM= { (byte) 0xff, (byte) 0xfe };
-
-\t@Test
-\tvoid restoresCrlfWithoutChangingUtf8Text() throws IOException {
-\t\tbyte[] original= "Größe\\r\\nvorher\\r\\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
-\t\tbyte[] rewritten= "Größe\\nnachher\\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
-\t\tbyte[] expected= "Größe\\r\\nnachher\\r\\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
-
-\t\tassertArrayEquals(expected,
-\t\t\t\tEncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
-\t}
-
-\t@Test
-\tvoid preservesUtf8ByteOrderMark() throws IOException {
-\t\tbyte[] original= withPrefix(UTF_8_BOM, "first\\r\\nsecond\\r\\n".getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
-\t\tbyte[] rewritten= "first\\nchanged\\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
-\t\tbyte[] expected= withPrefix(UTF_8_BOM, "first\\r\\nchanged\\r\\n".getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
-
-\t\tassertArrayEquals(expected,
-\t\t\t\tEncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
-\t}
-
-\t@Test
-\tvoid preservesUtf16EncodingBomAndCharactersContainingNewlineBytes() throws IOException {
-\t\tString originalText= "\\u0a00\\r\\nbefore\\r\\n"; //$NON-NLS-1$
-\t\tString rewrittenText= "\\u0a00\\nafter\\n"; //$NON-NLS-1$
-\t\tString expectedText= "\\u0a00\\r\\nafter\\r\\n"; //$NON-NLS-1$
-\t\tbyte[] original= withPrefix(UTF_16_LE_BOM, originalText.getBytes(StandardCharsets.UTF_16LE));
-\t\tbyte[] rewritten= withPrefix(UTF_16_LE_BOM, rewrittenText.getBytes(StandardCharsets.UTF_16LE));
-\t\tbyte[] expected= withPrefix(UTF_16_LE_BOM, expectedText.getBytes(StandardCharsets.UTF_16LE));
-
-\t\tassertArrayEquals(expected,
-\t\t\t\tEncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-16")); //$NON-NLS-1$
-\t}
-
-\t@Test
-\tvoid keepsRewrittenBytesWhenOriginalUsesMixedDelimiters() throws IOException {
-\t\tbyte[] original= "first\\r\\nsecond\\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
-\t\tbyte[] rewritten= "first\\nchanged\\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
-
-\t\tassertSame(rewritten,
-\t\t\t\tEncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-8")); //$NON-NLS-1$
-\t}
-
-\t@Test
-\tvoid rejectsBomThatConflictsWithDeclaredEncoding() {
-\t\tbyte[] original= withPrefix(UTF_16_LE_BOM, "first\\r\\n".getBytes(StandardCharsets.UTF_16LE)); //$NON-NLS-1$
-
-\t\tassertThrows(IOException.class,
-\t\t\t\t() -> EncodedLineDelimiterPreserver.preserve(original, original, "UTF-8")); //$NON-NLS-1$
-\t}
-
-\tprivate static byte[] withPrefix(byte[] prefix, byte[] content) {
-\t\tbyte[] result= new byte[prefix.length + content.length];
-\t\tSystem.arraycopy(prefix, 0, result, 0, prefix.length);
-\t\tSystem.arraycopy(content, 0, result, prefix.length, content.length);
-\t\treturn result;
-\t}
-}
-''', encoding='utf-8')
-
+          text = text[:start] + replacement + text[end:]
+          path.write_text(text, encoding='utf-8')
           Path('.github/workflows/apply-encoded-line-delimiter-fix.yml').unlink()
           PY
 
@@ -421,5 +68,5 @@ class EncodedLineDelimiterPreserverTest {
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'Preserve source line delimiters with the declared encoding'
+          git commit -m 'Use declared encodings when preserving line delimiters'
           git push origin HEAD:integration/junit-migration-hardening
