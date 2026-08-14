@@ -287,6 +287,7 @@ public final class TestNameRefactorer {
 					rewriter.remove(annotation, group);
 					return;
 				}
+			}
 		}
 	}
 
