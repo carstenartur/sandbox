@@ -31,13 +31,13 @@ jobs:
       MAVEN_OPTS: -Djava.awt.headless=true
     steps:
       - name: Checkout Sandbox
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: sandbox
 
       - name: Checkout the pinned JDT UI R4_40 corpus
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.ui
           ref: R4_40
@@ -135,40 +135,141 @@ jobs:
           echo "launcher=$launcher" >> "$GITHUB_OUTPUT"
           printf 'Using Sandbox product: %s\n' "$launcher"
 
-      - name: Execute strict project-wide check, apply and identical JDT UI tests
+      - name: Execute isolated check/apply, tests and whitespace regression QA
         shell: bash
         env:
           PYTHONDONTWRITEBYTECODE: '1'
           SANDBOX_PRODUCT_ECLIPSE: ${{ steps.product.outputs.launcher }}
+          SANDBOX_WORKSPACE_ROOT: ${{ runner.temp }}/jdt-ui-strict-workspaces
         run: |
           set -euo pipefail
-          workspace="$RUNNER_TEMP/jdt-ui-strict-workspace"
+          source sandbox/qa/upstream-jdt/pins.env
+
+          repository="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
+          workspace_template="$RUNNER_TEMP/jdt-ui-strict-workspace-template"
           output="$GITHUB_WORKSPACE/jdt-ui-strict-evidence"
-          launcher="$RUNNER_TEMP/sandbox-eclipse-suppress-errors"
-          mkdir -p "$workspace" "$output"
-          cat > "$launcher" <<'EOF'
+          launcher="$RUNNER_TEMP/sandbox-eclipse-isolated-workspace"
+          mkdir -p "$workspace_template" "$output" "$SANDBOX_WORKSPACE_ROOT"
+
+          cleanup_source() {
+            local status=$?
+            if ((status != 0)); then
+              printf 'FAIL\n' > "$output/run-state.txt"
+            fi
+            git -C "$repository" reset --hard "$PIN_JDT_UI_COMMIT" >/dev/null 2>&1 || true
+            git -C "$repository" clean -fd -- org.eclipse.jdt.ui.tests >/dev/null 2>&1 || true
+          }
+          trap cleanup_source EXIT
+
+          # Give the preflight, check and apply launcher invocations independent
+          # Eclipse workspaces. The source checkout remains shared intentionally;
+          # check mode must restore it byte-for-byte before apply starts.
+          cat > "$launcher" <<'EOF_LAUNCHER'
           #!/usr/bin/env bash
           set -euo pipefail
-          exec "${SANDBOX_PRODUCT_ECLIPSE:?}" --launcher.suppressErrors "$@"
-          EOF
+
+          phase=preflight
+          arguments=("$@")
+          for ((index=0; index < ${#arguments[@]}; index++)); do
+            if [[ "${arguments[index]}" == --mode ]] && ((index + 1 < ${#arguments[@]})); then
+              phase="${arguments[index + 1]}"
+              break
+            fi
+          done
+          case "$phase" in
+            preflight|check|apply) ;;
+            *) printf 'Unsupported cleanup phase: %s\n' "$phase" >&2; exit 2 ;;
+          esac
+
+          workspace="${SANDBOX_WORKSPACE_ROOT:?}/$phase"
+          rm -rf "$workspace"
+          mkdir -p "$workspace"
+
+          rewritten=()
+          index=0
+          while ((index < ${#arguments[@]})); do
+            if [[ "${arguments[index]}" == -data ]] && ((index + 1 < ${#arguments[@]})); then
+              rewritten+=("-data" "$workspace")
+              index=$((index + 2))
+            else
+              rewritten+=("${arguments[index]}")
+              index=$((index + 1))
+            fi
+          done
+          exec "${SANDBOX_PRODUCT_ECLIPSE:?}" --launcher.suppressErrors "${rewritten[@]}"
+          EOF_LAUNCHER
           chmod +x "$launcher"
+
+          # The legacy inline diff check treats an unchanged pre-existing mixed
+          # indentation as newly introduced whenever the semantic line changes.
+          # Disable only that coarse check while the full runner executes. The
+          # baseline-aware verifier below immediately applies the repository's
+          # real Git whitespace rules to complete baseline and migrated trees.
+          GIT_CONFIG_COUNT=1 \
+          GIT_CONFIG_KEY_0=core.whitespace \
+          GIT_CONFIG_VALUE_0=-trailing-space,-space-before-tab \
           bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
-            --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
-            --workspace "$workspace" \
+            --jdt-ui "$repository" \
+            --workspace "$workspace_template" \
             --sandbox-eclipse "$launcher" \
             --mode strict \
             --output "$output" \
-            --allow-clean-workspace
+            --allow-clean-workspace \
+            --keep-changes
 
-      - name: Collect the imported workspace log
+          printf 'VERIFYING_WHITESPACE_REGRESSIONS\n' > "$output/run-state.txt"
+          set +e
+          git -C "$repository" diff --check "$PIN_JDT_UI_COMMIT" -- \
+            > "$output/logs/git-diff-check.log" 2>&1
+          diff_check_status=$?
+          set -e
+          printf '%s\n' "$diff_check_status" > "$output/git-diff-check-exit-code.txt"
+          if ((diff_check_status != 0 && diff_check_status != 2)); then
+            cat "$output/logs/git-diff-check.log" >&2
+            printf 'git diff --check failed unexpectedly with exit code %d.\n' "$diff_check_status" >&2
+            exit "$diff_check_status"
+          fi
+
+          java sandbox/qa/upstream-jdt/VerifyWhitespaceRegression.java \
+            --repository "$repository" \
+            --baseline "$PIN_JDT_UI_COMMIT" \
+            --paths "$output/changed-files.txt" \
+            --output "$output/whitespace-regression.json" \
+            | tee "$output/logs/whitespace-regression.log"
+
+          python3 - "$output/provenance.json" "$output/whitespace-regression.json" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          provenance_path = Path(sys.argv[1])
+          whitespace_path = Path(sys.argv[2])
+          provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+          whitespace = json.loads(whitespace_path.read_text(encoding="utf-8"))
+          provenance["whitespaceRegression"] = whitespace
+          provenance.setdefault("artifacts", {})["whitespaceRegressionSha256"] = hashlib.sha256(
+              whitespace_path.read_bytes()
+          ).hexdigest()
+          provenance_path.write_text(
+              json.dumps(provenance, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          printf 'PASS\n' > "$output/run-state.txt"
+
+      - name: Collect isolated Eclipse workspace logs
         if: always()
         shell: bash
         run: |
-          mkdir -p jdt-ui-strict-evidence/eclipse-workspace
-          if [[ -f "$RUNNER_TEMP/jdt-ui-strict-workspace/.metadata/.log" ]]; then
-            cp "$RUNNER_TEMP/jdt-ui-strict-workspace/.metadata/.log" \
-              jdt-ui-strict-evidence/eclipse-workspace/.log
-          fi
+          destination=jdt-ui-strict-evidence/eclipse-workspace
+          mkdir -p "$destination"
+          for phase in preflight check apply; do
+            log="$RUNNER_TEMP/jdt-ui-strict-workspaces/$phase/.metadata/.log"
+            if [[ -f "$log" ]]; then
+              cp "$log" "$destination/$phase.log"
+            fi
+          done
 
       - name: Upload complete real JDT UI JUnit 4 evidence
         if: always()
@@ -178,5 +279,5 @@ jobs:
           path: |
             jdt-ui-strict-evidence/**
             sandbox/**/target/surefire-reports/**
-          retention-days: 30
+          retention-days: 9
           if-no-files-found: error
