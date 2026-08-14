@@ -1,0 +1,307 @@
+name: Finalize integration PR 1474
+
+on:
+  push:
+    branches:
+      - automation/finalize-pr-1474
+  workflow_dispatch:
+
+concurrency:
+  group: finalize-pr-1474
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  pull-requests: write
+  statuses: read
+
+jobs:
+  finalize:
+    name: Verify every current check and squash-merge the pinned head
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      PR_NUMBER: '1474'
+      EXPECTED_HEAD: 633d2852c6808159a67684839d334283ec958728
+    steps:
+      - name: Wait for current checks, rerun transient workflow failures, and merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import os
+          import subprocess
+          import sys
+          import time
+          from collections import defaultdict
+          from typing import Any
+
+          repository = os.environ["REPOSITORY"]
+          pr_number = int(os.environ["PR_NUMBER"])
+          expected_head = os.environ["EXPECTED_HEAD"]
+          accepted_conclusions = {"success", "neutral", "skipped"}
+          failed_conclusions = {
+              "failure",
+              "cancelled",
+              "timed_out",
+              "action_required",
+              "startup_failure",
+              "stale",
+          }
+          rerun_requested: set[int] = set()
+          minimum_observed_checks = 5
+          max_polls = 300
+
+          def gh_json(endpoint: str, *, method: str = "GET", payload: Any | None = None) -> Any:
+              command = ["gh", "api", "--method", method, endpoint]
+              input_text = None
+              if payload is not None:
+                  command.extend(["--input", "-"])
+                  input_text = json.dumps(payload)
+              completed = subprocess.run(
+                  command,
+                  input=input_text,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=False,
+              )
+              if completed.returncode != 0:
+                  raise RuntimeError(
+                      f"gh api {method} {endpoint} failed ({completed.returncode}): "
+                      f"{completed.stderr.strip()}"
+                  )
+              output = completed.stdout.strip()
+              return json.loads(output) if output else None
+
+          def graphql(query: str, variables: dict[str, str]) -> Any:
+              command = ["gh", "api", "graphql", "-f", f"query={query}"]
+              for key, value in variables.items():
+                  command.extend(["-F", f"{key}={value}"])
+              completed = subprocess.run(
+                  command,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  check=False,
+              )
+              if completed.returncode != 0:
+                  raise RuntimeError(f"GraphQL request failed: {completed.stderr.strip()}")
+              return json.loads(completed.stdout)
+
+          def pull_request() -> dict[str, Any]:
+              return gh_json(f"repos/{repository}/pulls/{pr_number}")
+
+          def ensure_ready(pr: dict[str, Any]) -> None:
+              if not pr.get("draft"):
+                  return
+              mutation = """
+              mutation($id: ID!) {
+                markPullRequestReadyForReview(input: {pullRequestId: $id}) {
+                  pullRequest { isDraft }
+                }
+              }
+              """
+              graphql(mutation, {"id": pr["node_id"]})
+              print("Marked PR ready for review.", flush=True)
+
+          def latest_check_runs() -> list[dict[str, Any]]:
+              response = gh_json(
+                  f"repos/{repository}/commits/{expected_head}/check-runs?filter=latest&per_page=100"
+              )
+              runs = response.get("check_runs", [])
+              latest: dict[tuple[str, str], dict[str, Any]] = {}
+              for run in runs:
+                  key = ((run.get("app") or {}).get("slug", ""), run.get("name", ""))
+                  previous = latest.get(key)
+                  if previous is None or int(run.get("id", 0)) > int(previous.get("id", 0)):
+                      latest[key] = run
+              return sorted(latest.values(), key=lambda item: item.get("name", ""))
+
+          def legacy_statuses() -> list[dict[str, Any]]:
+              response = gh_json(f"repos/{repository}/commits/{expected_head}/status")
+              latest: dict[str, dict[str, Any]] = {}
+              for status in response.get("statuses", []):
+                  context = status.get("context", "")
+                  if context not in latest:
+                      latest[context] = status
+              return sorted(latest.values(), key=lambda item: item.get("context", ""))
+
+          def request_failed_action_reruns() -> int:
+              response = gh_json(
+                  f"repos/{repository}/actions/runs?head_sha={expected_head}&per_page=100"
+              )
+              latest_by_workflow: dict[int, dict[str, Any]] = {}
+              for run in response.get("workflow_runs", []):
+                  workflow_id = int(run["workflow_id"])
+                  if workflow_id not in latest_by_workflow:
+                      latest_by_workflow[workflow_id] = run
+              requested = 0
+              for run in latest_by_workflow.values():
+                  run_id = int(run["id"])
+                  conclusion = run.get("conclusion")
+                  if (
+                      run.get("status") == "completed"
+                      and conclusion in failed_conclusions
+                      and run_id not in rerun_requested
+                  ):
+                      try:
+                          gh_json(
+                              f"repos/{repository}/actions/runs/{run_id}/rerun-failed-jobs",
+                              method="POST",
+                          )
+                      except RuntimeError as error:
+                          print(f"Could not rerun workflow {run.get('name')}: {error}", flush=True)
+                      else:
+                          rerun_requested.add(run_id)
+                          requested += 1
+                          print(
+                              f"Requested rerun of failed jobs in {run.get('name')} ({run_id}).",
+                              flush=True,
+                          )
+              return requested
+
+          observed_check_count = 0
+          for poll in range(1, max_polls + 1):
+              pr = pull_request()
+              if pr.get("merged"):
+                  print(f"PR #{pr_number} is already merged at {pr.get('merge_commit_sha')}.", flush=True)
+                  break
+              if pr.get("state") != "open":
+                  raise SystemExit(f"PR #{pr_number} is {pr.get('state')} but not merged.")
+              actual_head = ((pr.get("head") or {}).get("sha"))
+              if actual_head != expected_head:
+                  raise SystemExit(
+                      f"Refusing to merge changed head {actual_head}; expected {expected_head}."
+                  )
+              ensure_ready(pr)
+
+              checks = latest_check_runs()
+              statuses = legacy_statuses()
+              observed_check_count = max(observed_check_count, len(checks) + len(statuses))
+
+              pending_checks = [
+                  run for run in checks if run.get("status") != "completed"
+              ]
+              failed_checks = [
+                  run
+                  for run in checks
+                  if run.get("status") == "completed"
+                  and run.get("conclusion") not in accepted_conclusions
+              ]
+              pending_statuses = [status for status in statuses if status.get("state") == "pending"]
+              failed_statuses = [
+                  status
+                  for status in statuses
+                  if status.get("state") not in {"success", "pending"}
+              ]
+
+              print(
+                  f"Poll {poll}: checks={len(checks)}, pending={len(pending_checks)}, "
+                  f"failed={len(failed_checks)}, legacy_pending={len(pending_statuses)}, "
+                  f"legacy_failed={len(failed_statuses)}",
+                  flush=True,
+              )
+              if failed_checks:
+                  for run in failed_checks:
+                      print(
+                          f"  failed check: {run.get('name')} -> {run.get('conclusion')}",
+                          flush=True,
+                      )
+                  request_failed_action_reruns()
+              if failed_statuses:
+                  for status in failed_statuses:
+                      print(
+                          f"  failed status: {status.get('context')} -> {status.get('state')}",
+                          flush=True,
+                      )
+
+              all_finished = not pending_checks and not pending_statuses
+              all_accepted = not failed_checks and not failed_statuses
+              enough_evidence = observed_check_count >= minimum_observed_checks
+              if all_finished and all_accepted and enough_evidence:
+                  merge_payload = {
+                      "merge_method": "squash",
+                      "sha": expected_head,
+                      "commit_title": "Integrate JUnit migration hardening from #1467 and #1468 (#1474)",
+                      "commit_message": (
+                          "Integrate the coherent JUnit 3 and JUnit 4 migration hardening from "
+                          "#1467 and #1468, including project-wide planning, fail-closed semantics, "
+                          "deterministic presets, pinned JDT Core/JDT UI evidence, reproducible Help, "
+                          "and encoding-aware line-delimiter/BOM preservation.\n\n"
+                          "Refs #1367\nRefs #1437\nIncludes #1472"
+                      ),
+                  }
+                  for attempt in range(1, 11):
+                      result = gh_json(
+                          f"repos/{repository}/pulls/{pr_number}/merge",
+                          method="PUT",
+                          payload=merge_payload,
+                      )
+                      if result.get("merged"):
+                          print(f"Merged PR #{pr_number}: {result.get('sha')}", flush=True)
+                          break
+                      print(
+                          f"Merge attempt {attempt} not accepted yet: {result.get('message')}",
+                          flush=True,
+                      )
+                      time.sleep(15)
+                  else:
+                      raise SystemExit("All checks passed, but GitHub did not accept the merge.")
+                  break
+
+              if poll == max_polls:
+                  details = {
+                      "pendingChecks": [run.get("name") for run in pending_checks],
+                      "failedChecks": [
+                          [run.get("name"), run.get("conclusion")] for run in failed_checks
+                      ],
+                      "pendingStatuses": [status.get("context") for status in pending_statuses],
+                      "failedStatuses": [
+                          [status.get("context"), status.get("state")] for status in failed_statuses
+                      ],
+                  }
+                  raise SystemExit(
+                      "Timed out before a clean merge state: " + json.dumps(details, sort_keys=True)
+                  )
+              time.sleep(30)
+          else:
+              raise SystemExit("Polling loop ended unexpectedly.")
+
+          final_pr = pull_request()
+          if not final_pr.get("merged"):
+              raise SystemExit("PR is not merged after the finalization step.")
+          merge_sha = final_pr.get("merge_commit_sha")
+          comparison = gh_json(f"repos/{repository}/compare/{merge_sha}...main")
+          if comparison.get("status") not in {"identical", "ahead"}:
+              raise SystemExit(
+                  f"Merge commit {merge_sha} is not an ancestor of main: {comparison.get('status')}"
+              )
+          print(f"Verified merge commit {merge_sha} on main.", flush=True)
+
+          try:
+              gh_json(
+                  f"repos/{repository}/git/refs/heads/automation/finalize-pr-1474",
+                  method="DELETE",
+              )
+          except RuntimeError as error:
+              print(f"Finalizer branch cleanup will be handled separately: {error}", flush=True)
+          PY
+
+      - name: Publish final result
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## PR #1474 finalization'
+            echo
+            echo 'The job validates the pinned head, all latest check runs and legacy statuses.'
+            echo 'It merges only when every observed result is successful, neutral or skipped.'
+          } >> "$GITHUB_STEP_SUMMARY"
