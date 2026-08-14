@@ -99,23 +99,39 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 
 		boolean junit4Enabled= isEnabled(JUNIT_CLEANUP);
 		boolean bestEffort= junit4Enabled && isEnabled(JUnitMigrationOptions.BEST_EFFORT);
-		Analysis analysis= junit4Enabled
-				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, monitor)
-				: Analysis.empty();
-		migrationAnalyses.put(project, analysis);
-
 		Boolean closedScope= consumeClosedScopeDecision(project, compilationUnits);
-		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
-				&& !(bestEffort && analysis.disableCoordinatedExternalResource());
+		boolean migrateExternalResources= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
 		JUnitMultiFilePlanner.PlanningOptions planningOptions=
 				new JUnitMultiFilePlanner.PlanningOptions(
 						migrateExternalResources,
 						fixes.contains(JUnitCleanUpFixCore.TEST3),
 						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED));
-		return closedScope == null
+
+		// Parse and classify the complete project scope before the strict per-file gap
+		// analysis. On a newly imported Eclipse project this first coordinated parse
+		// materializes the Java model and bindings. Running the gap analysis before it
+		// made check and apply race against classpath initialization and could therefore
+		// disagree about whether an unsupported runner or rule must keep a file atomic.
+		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= closedScope == null
 				? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)
 				: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,
 						closedScope.booleanValue(), monitor);
+
+		Analysis analysis= junit4Enabled
+				? JUnitBestEffortSupport.analyze(project, compilationUnits, fixes, monitor)
+				: Analysis.empty();
+		if (bestEffort && migrateExternalResources && analysis.disableCoordinatedExternalResource()) {
+			planningOptions= new JUnitMultiFilePlanner.PlanningOptions(
+					false,
+					fixes.contains(JUnitCleanUpFixCore.TEST3),
+					fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED));
+			result= closedScope == null
+					? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)
+					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,
+							closedScope.booleanValue(), monitor);
+		}
+		migrationAnalyses.put(project, analysis);
+		return result;
 	}
 
 	@Override
