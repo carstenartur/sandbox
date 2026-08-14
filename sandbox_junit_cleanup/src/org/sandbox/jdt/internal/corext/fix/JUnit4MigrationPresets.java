@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
@@ -113,7 +114,7 @@ public final class JUnit4MigrationPresets {
 	 * @return option-to-enabled mapping
 	 */
 	public static Map<String, Boolean> selectionFor(Preset preset) {
-		return SELECTIONS.get(preset);
+		return SELECTIONS.get(Objects.requireNonNull(preset));
 	}
 
 	private static Map<Preset, Map<String, Boolean>> createSelections() {
