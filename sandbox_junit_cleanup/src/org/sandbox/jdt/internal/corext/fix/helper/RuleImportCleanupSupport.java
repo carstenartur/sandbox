@@ -39,8 +39,8 @@ public final class RuleImportCleanupSupport {
 
 	/**
 	 * Adds one final import edit when every {@code @Rule} field in this compilation
-	 * unit is a selected and eligibility-proven TemporaryFolder or TestName rewrite.
-	 * Other rule kinds remain fail-closed and retain their import.
+	 * unit is selected and eligibility-proven for a dedicated or generic rule
+	 * rewrite. Other rule kinds remain fail-closed and retain their import.
 	 */
 	public static void addIfSafe(CompilationUnit root, EnumSet<JUnitCleanUpFixCore> fixes,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations) {
@@ -77,7 +77,8 @@ public final class RuleImportCleanupSupport {
 			return fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)
 					&& TestNameRefactorer.assess(field).eligible();
 		}
-		return false;
+		return fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)
+				&& RuleExternalResourceJUnitPlugin.isEligibleExternalResourceType(binding);
 	}
 
 	private static boolean hasRuleAnnotation(FieldDeclaration field) {
