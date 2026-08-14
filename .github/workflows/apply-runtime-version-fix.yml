@@ -26,96 +26,96 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          app = Path('sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplication.java')
-          text = app.read_text(encoding='utf-8')
-          import_anchor = (
-              'import org.eclipse.ltk.core.refactoring.RefactoringStatus;\n\n'
-              'public class CodeCleanupApplication implements IApplication {'
-          )
-          import_replacement = (
-              'import org.eclipse.ltk.core.refactoring.RefactoringStatus;\n'
-              'import org.osgi.framework.Bundle;\n'
-              'import org.osgi.framework.FrameworkUtil;\n'
-              'import org.osgi.framework.Version;\n\n'
-              'public class CodeCleanupApplication implements IApplication {'
-          )
+          app = Path("sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplication.java")
+          text = app.read_text(encoding="utf-8")
+          import_anchor = "import org.eclipse.ltk.core.refactoring.RefactoringStatus;\n\npublic class CodeCleanupApplication implements IApplication {"
+          import_replacement = "\n".join([
+              "import org.eclipse.ltk.core.refactoring.RefactoringStatus;",
+              "import org.osgi.framework.Bundle;",
+              "import org.osgi.framework.FrameworkUtil;",
+              "import org.osgi.framework.Version;",
+              "",
+              "public class CodeCleanupApplication implements IApplication {",
+          ])
           if text.count(import_anchor) != 1:
-              raise SystemExit('Unexpected CodeCleanupApplication import anchor count')
+              raise SystemExit("Unexpected CodeCleanupApplication import anchor count")
           text = text.replace(import_anchor, import_replacement)
 
-          old_method = '''\tprivate static String getToolVersion() {
-\t\treturn System.getProperty("sandbox.cleanup.version", "1.2.6-SNAPSHOT"); //$NON-NLS-1$ //$NON-NLS-2$
-\t}'''
-          new_method = '''\tstatic String getToolVersion() {
-\t\tString configuredVersion = System.getProperty("sandbox.cleanup.version"); //$NON-NLS-1$
-\t\tif (configuredVersion != null && !configuredVersion.isBlank()) {
-\t\t\treturn configuredVersion;
-\t\t}
-\t\tBundle bundle = FrameworkUtil.getBundle(CodeCleanupApplication.class);
-\t\tif (bundle == null) {
-\t\t\treturn "unknown"; //$NON-NLS-1$
-\t\t}
-\t\tVersion version = bundle.getVersion();
-\t\treturn "%d.%d.%d".formatted(version.getMajor(), version.getMinor(), version.getMicro()); //$NON-NLS-1$
-\t}'''
+          old_method = "\n".join([
+              "\tprivate static String getToolVersion() {",
+              "\t\treturn System.getProperty(\"sandbox.cleanup.version\", \"1.2.6-SNAPSHOT\"); //$NON-NLS-1$ //$NON-NLS-2$",
+              "\t}",
+          ])
+          new_method = "\n".join([
+              "\tstatic String getToolVersion() {",
+              "\t\tString configuredVersion = System.getProperty(\"sandbox.cleanup.version\"); //$NON-NLS-1$",
+              "\t\tif (configuredVersion != null && !configuredVersion.isBlank()) {",
+              "\t\t\treturn configuredVersion;",
+              "\t\t}",
+              "\t\tBundle bundle = FrameworkUtil.getBundle(CodeCleanupApplication.class);",
+              "\t\tif (bundle == null) {",
+              "\t\t\treturn \"unknown\"; //$NON-NLS-1$",
+              "\t\t}",
+              "\t\tVersion version = bundle.getVersion();",
+              "\t\treturn \"%d.%d.%d\".formatted(version.getMajor(), version.getMinor(), version.getMicro()); //$NON-NLS-1$",
+              "\t}",
+          ])
           if text.count(old_method) != 1:
-              raise SystemExit('Unexpected stale getToolVersion implementation count')
-          text = text.replace(old_method, new_method)
-          app.write_text(text, encoding='utf-8')
+              raise SystemExit("Unexpected stale getToolVersion implementation count")
+          app.write_text(text.replace(old_method, new_method), encoding="utf-8")
 
-          smoke = Path('.github/scripts/smoke_test_distribution.sh')
-          smoke_text = smoke.read_text(encoding='utf-8')
-          old_invocation = 'python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" "$CLEANUP_BEFORE" <<\'PY\''
-          new_invocation = 'python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" "$CLEANUP_BEFORE" "$VERIFY_JSON" <<\'PY\''
+          smoke = Path(".github/scripts/smoke_test_distribution.sh")
+          smoke_text = smoke.read_text(encoding="utf-8")
+          old_invocation = "python3 - \"$CLEANUP_REPORT\" \"$CLEANUP_SOURCE\" \"$CLEANUP_BEFORE\" <<'PY'"
+          new_invocation = "python3 - \"$CLEANUP_REPORT\" \"$CLEANUP_SOURCE\" \"$CLEANUP_BEFORE\" \"$VERIFY_JSON\" <<'PY'"
           if smoke_text.count(old_invocation) != 1:
-              raise SystemExit('Unexpected cleanup report validator invocation count')
+              raise SystemExit("Unexpected cleanup report validator invocation count")
           smoke_text = smoke_text.replace(old_invocation, new_invocation)
 
-          old_validation = '''with report_path.open(encoding='utf-8') as stream:
-    report = json.load(stream)
-if report.get('filesProcessed') != 1:'''
-          new_validation = '''with report_path.open(encoding='utf-8') as stream:
-    report = json.load(stream)
-with Path(sys.argv[4]).open(encoding='utf-8') as stream:
-    distribution = json.load(stream)
-published_features = distribution.get('repository', {}).get('publishedFeatures', [])
-feature_versions = {
-    entry.get('version')
-    for entry in published_features
-    if isinstance(entry, dict) and isinstance(entry.get('version'), str)
-}
-base_versions = {
-    '.'.join(version.split('.')[:3])
-    for version in feature_versions
-    if len(version.split('.')) >= 3
-}
-if len(base_versions) != 1:
-    raise SystemExit(f'Expected one published Sandbox base version, got {sorted(base_versions)!r}')
-expected_version = next(iter(base_versions))
-actual_version = report.get('version')
-if actual_version != expected_version:
-    raise SystemExit(
-        f'Cleanup runtime version {actual_version!r} does not match published feature version {expected_version!r}'
-    )
-if 'SNAPSHOT' in actual_version.upper():
-    raise SystemExit(f'Cleanup runtime report contains a snapshot version: {actual_version!r}')
-if report.get('filesProcessed') != 1:'''
-          if smoke_text.count(old_validation) != 1:
-              raise SystemExit('Unexpected cleanup report validation anchor count')
-          smoke_text = smoke_text.replace(old_validation, new_validation)
+          old_anchor = "\n".join([
+              "with report_path.open(encoding='utf-8') as stream:",
+              "    report = json.load(stream)",
+              "if report.get('filesProcessed') != 1:",
+          ])
+          new_anchor = "\n".join([
+              "with report_path.open(encoding='utf-8') as stream:",
+              "    report = json.load(stream)",
+              "with Path(sys.argv[4]).open(encoding='utf-8') as stream:",
+              "    distribution = json.load(stream)",
+              "published_features = distribution.get('repository', {}).get('publishedFeatures', [])",
+              "feature_versions = {",
+              "    entry.get('version')",
+              "    for entry in published_features",
+              "    if isinstance(entry, dict) and isinstance(entry.get('version'), str)",
+              "}",
+              "base_versions = {",
+              "    '.'.join(version.split('.')[:3])",
+              "    for version in feature_versions",
+              "    if len(version.split('.')) >= 3",
+              "}",
+              "if len(base_versions) != 1:",
+              "    raise SystemExit(f'Expected one published Sandbox base version, got {sorted(base_versions)!r}')",
+              "expected_version = next(iter(base_versions))",
+              "actual_version = report.get('version')",
+              "if actual_version != expected_version:",
+              "    raise SystemExit(",
+              "        f'Cleanup runtime version {actual_version!r} does not match published feature version {expected_version!r}'",
+              "    )",
+              "if not isinstance(actual_version, str) or 'SNAPSHOT' in actual_version.upper():",
+              "    raise SystemExit(f'Cleanup runtime report contains an invalid release version: {actual_version!r}')",
+              "if report.get('filesProcessed') != 1:",
+          ])
+          if smoke_text.count(old_anchor) != 1:
+              raise SystemExit("Unexpected cleanup report validation anchor count")
+          smoke_text = smoke_text.replace(old_anchor, new_anchor)
 
-          old_bullet = '- Installed cleanup application imported a Java project and formatted one source file: **PASS**\n'
-          new_bullet = (
-              old_bullet
-              + '- Installed cleanup application reported the published Sandbox base version: **PASS**\n'
-          )
+          old_bullet = "- Installed cleanup application imported a Java project and formatted one source file: **PASS**\n"
+          new_bullet = old_bullet + "- Installed cleanup application reported the published Sandbox base version: **PASS**\n"
           if smoke_text.count(old_bullet) != 1:
-              raise SystemExit('Unexpected runtime verification summary bullet count')
-          smoke_text = smoke_text.replace(old_bullet, new_bullet)
-          smoke.write_text(smoke_text, encoding='utf-8')
+              raise SystemExit("Unexpected runtime verification summary bullet count")
+          smoke.write_text(smoke_text.replace(old_bullet, new_bullet), encoding="utf-8")
 
-          workflow = Path('.github/workflows/apply-runtime-version-fix.yml')
-          workflow.unlink()
+          Path(".github/workflows/apply-runtime-version-fix.yml").unlink()
           PY
 
           if grep -R --line-number --fixed-strings '1.2.6-SNAPSHOT' \
