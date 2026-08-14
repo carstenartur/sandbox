@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.core.cleanupapp;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -54,6 +53,7 @@ import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.RefactoringStatusEntry;
 
+import org.sandbox.jdt.cleanup.io.EncodedLineDelimiterPreserver;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
 
 /**
@@ -507,74 +507,16 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 
-	private enum OriginalLineDelimiter {
-		LF(new byte[] { '\n' }),
-		CRLF(new byte[] { '\r', '\n' }),
-		CR(new byte[] { '\r' });
-
-		private final byte[] bytes;
-
-		OriginalLineDelimiter(byte[] bytes) {
-			this.bytes= bytes;
-		}
-
-		private static OriginalLineDelimiter detect(byte[] content) {
-			boolean foundLf= false;
-			boolean foundCrLf= false;
-			boolean foundCr= false;
-			for (int index= 0; index < content.length; index++) {
-				if (content[index] == '\r') {
-					if (index + 1 < content.length && content[index + 1] == '\n') {
-						foundCrLf= true;
-						index++;
-					} else {
-						foundCr= true;
-					}
-				} else if (content[index] == '\n') {
-					foundLf= true;
-				}
-			}
-			int styleCount= (foundLf ? 1 : 0) + (foundCrLf ? 1 : 0) + (foundCr ? 1 : 0);
-			if (styleCount != 1) {
-				return null;
-			}
-			if (foundCrLf) {
-				return CRLF;
-			}
-			return foundLf ? LF : CR;
-		}
-	}
-
-	private static void preserveOriginalLineDelimiters(List<SourceSnapshot> sources) throws IOException {
+	private static void preserveOriginalLineDelimiters(List<SourceSnapshot> sources)
+			throws IOException, CoreException {
 		for (SourceSnapshot source : sources) {
-			OriginalLineDelimiter delimiter= OriginalLineDelimiter.detect(source.before());
-			if (delimiter == null) {
-				continue;
-			}
 			byte[] current= Files.readAllBytes(source.path());
-			byte[] normalized= normalizeLineDelimiters(current, delimiter);
+			byte[] normalized= EncodedLineDelimiterPreserver.preserve(
+					source.before(), current, source.file().getCharset());
 			if (!Arrays.equals(current, normalized)) {
 				Files.write(source.path(), normalized);
 			}
 		}
-	}
-
-	private static byte[] normalizeLineDelimiters(byte[] content, OriginalLineDelimiter delimiter) {
-		ByteArrayOutputStream normalized= new ByteArrayOutputStream(content.length + 64);
-		for (int index= 0; index < content.length; index++) {
-			byte current= content[index];
-			if (current == '\r') {
-				if (index + 1 < content.length && content[index + 1] == '\n') {
-					index++;
-				}
-				normalized.writeBytes(delimiter.bytes);
-			} else if (current == '\n') {
-				normalized.writeBytes(delimiter.bytes);
-			} else {
-				normalized.write(current);
-			}
-		}
-		return normalized.toByteArray();
 	}
 
 	private static void createParent(Path path) throws IOException {
