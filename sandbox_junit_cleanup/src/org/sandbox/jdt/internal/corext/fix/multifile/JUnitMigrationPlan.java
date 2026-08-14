@@ -61,7 +61,8 @@ import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		List<ExternalResourceRuleMigration> externalResourceRules,
 		List<JUnit3HierarchyMigration> junit3Hierarchies,
-		JUnitTestTypeInventory testTypeInventory) {
+		JUnitTestTypeInventory testTypeInventory,
+		Set<String> junit4CompatibleExternalResourceTypes) {
 
 	private static final String JUNIT3_HINT_RESOURCE=
 			"org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint"; //$NON-NLS-1$
@@ -74,6 +75,14 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		externalResourceRules= List.copyOf(externalResourceRules);
 		junit3Hierarchies= List.copyOf(junit3Hierarchies);
 		testTypeInventory= Objects.requireNonNull(testTypeInventory);
+		junit4CompatibleExternalResourceTypes= Set.copyOf(junit4CompatibleExternalResourceTypes);
+	}
+
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules,
+			List<JUnit3HierarchyMigration> junit3Hierarchies,
+			JUnitTestTypeInventory testTypeInventory) {
+		this(selectedScope, externalResourceRules, junit3Hierarchies, testTypeInventory, Set.of());
 	}
 
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
@@ -87,6 +96,30 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 
 	public boolean hasCoordinatedChanges() {
 		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty();
+	}
+
+	/**
+	 * Retains the JUnit 4 {@code ExternalResource} contract for every fixture used
+	 * by a strict-mode compilation unit that cannot be migrated atomically.
+	 */
+	public JUnitMigrationPlan withJUnit4CompatibilityForBlockedRuleUnits(Set<String> blockedRuleUnitHandles) {
+		if (blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()
+				|| externalResourceRules.isEmpty()) {
+			return this;
+		}
+		Set<String> compatibleTypes= externalResourceRules.stream()
+				.filter(migration -> blockedRuleUnitHandles.contains(migration.ruleCompilationUnitHandle()))
+				.map(ExternalResourceRuleMigration::resourceTypeBindingKey)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+		if (compatibleTypes.isEmpty()) {
+			return this;
+		}
+		compatibleTypes.addAll(junit4CompatibleExternalResourceTypes);
+		if (compatibleTypes.equals(junit4CompatibleExternalResourceTypes)) {
+			return this;
+		}
+		return new JUnitMigrationPlan(selectedScope, externalResourceRules, junit3Hierarchies,
+				testTypeInventory, compatibleTypes);
 	}
 
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
@@ -113,7 +146,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		Set<String> expectedTypeKeys= typeMigrations.stream().map(ExternalResourceRuleMigration::resourceTypeBindingKey)
 				.collect(Collectors.toSet());
 		JUnitMultiFileRewriteOperation.ResolvedEdits resolved= resolveExternalResources(root, fieldMigrations,
-				typeMigrations, expectedFieldKeys, expectedTypeKeys);
+				typeMigrations, expectedFieldKeys, expectedTypeKeys,
+				junit4CompatibleExternalResourceTypes);
 		if (!resolved.fieldKeys().equals(expectedFieldKeys) || !resolved.typeKeys().equals(expectedTypeKeys)) {
 			throw staleExternalResourcePlan(unit, expectedFieldKeys, expectedTypeKeys, resolved);
 		}
@@ -257,7 +291,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	private static JUnitMultiFileRewriteOperation.ResolvedEdits resolveExternalResources(CompilationUnit root,
 			List<ExternalResourceRuleMigration> fieldMigrations,
 			List<ExternalResourceRuleMigration> typeMigrations, Set<String> expectedFieldKeys,
-			Set<String> expectedTypeKeys) {
+			Set<String> expectedTypeKeys, Set<String> junit4CompatibleResourceTypes) {
 		JUnitMultiFileRewriteOperation.ResolvedEdits.Builder builder= JUnitMultiFileRewriteOperation.ResolvedEdits.builder(root);
 		root.accept(new ASTVisitor() {
 			@Override
@@ -282,7 +316,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				if (key != null && expectedTypeKeys.contains(key)) {
 					ExternalResourceRuleMigration migration= typeMigrations.stream()
 							.filter(candidate -> key.equals(candidate.resourceTypeBindingKey())).findFirst().orElseThrow();
-					builder.addResourceType(node, key, migration.classRule());
+					builder.addResourceType(node, key, migration.classRule(),
+							junit4CompatibleResourceTypes.contains(key));
 				}
 				return true;
 			}
@@ -298,7 +333,6 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				if (binding != null && expected.equals(binding.getQualifiedName())) {
 					return annotation;
 				}
-			}
 		}
 		return null;
 	}
