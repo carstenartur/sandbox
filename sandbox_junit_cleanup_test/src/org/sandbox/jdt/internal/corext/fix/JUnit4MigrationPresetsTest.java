@@ -58,16 +58,18 @@ public class JUnit4MigrationPresetsTest {
 				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS), enabledOptions(state));
+		assertFalse(state.get(JUnitMigrationOptions.BEST_EFFORT).booleanValue());
 		assertFalse(state.get(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED).booleanValue());
 		assertFalse(state.get(MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS).booleanValue());
 		assertFalse(state.get(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE).booleanValue());
 	}
 
 	@Test
-	public void allSupportedPresetEnablesEveryManagedTransformation() {
-		Map<String, Boolean> selection= JUnit4MigrationPresets.selectionFor(Preset.ALL_SUPPORTED);
+	public void allSupportedPresetIsStrictAndEnablesEveryTransformation() {
+		Map<String, Boolean> selection= JUnit4MigrationPresets.selectionFor(Preset.ALL_SUPPORTED_STRICT);
 
-		assertEquals(JUnit4MigrationPresets.managedOptions().size(), enabledOptions(selection).size());
+		assertFalse(selection.get(JUnitMigrationOptions.BEST_EFFORT).booleanValue());
+		assertEquals(JUnit4MigrationPresets.managedOptions().size() - 1, enabledOptions(selection).size());
 	}
 
 	@Test
@@ -116,6 +118,7 @@ public class JUnit4MigrationPresetsTest {
 					MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, preset);
 			assertDependency(selection, MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED,
 					MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, preset);
+			assertFalse(selection.get(JUnitMigrationOptions.BEST_EFFORT).booleanValue(), preset.name());
 		}
 	}
 
@@ -126,9 +129,8 @@ public class JUnit4MigrationPresetsTest {
 	}
 
 	@Test
-	public void selectionsAreImmutable() {
-		assertThrows(UnsupportedOperationException.class,
-				() -> JUnit4MigrationPresets.selectionFor(Preset.ALL_SUPPORTED).put("unsupported", Boolean.TRUE)); //$NON-NLS-1$
+	public void rejectsNullPreset() {
+		assertThrows(NullPointerException.class, () -> JUnit4MigrationPresets.selectionFor(null));
 	}
 
 	private static void assertDependency(Map<String, Boolean> selection, String child, String parent, Preset preset) {

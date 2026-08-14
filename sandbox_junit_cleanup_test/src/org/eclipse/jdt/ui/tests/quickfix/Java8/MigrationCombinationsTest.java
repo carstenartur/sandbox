@@ -191,13 +191,13 @@ import org.junit.jupiter.api.io.TempDir;
 
 public class MyTest {
 	@TempDir
-	Path tempFolder;
+	public Path tempFolder;
 
-	private String testName;
+	public String testName;
 
 	@BeforeEach
-	void init(TestInfo testInfo) {
-		this.testName = testInfo.getDisplayName();
+	void initializeTestNameFromTestInfo(TestInfo testInfo) {
+		this.testName = testInfo.getTestMethod().orElseThrow().getName();
 	}
 
 	@Test
@@ -264,13 +264,13 @@ public class MyTest {
 				@Timeout(value = 10, unit = TimeUnit.SECONDS)
 				public class MyTest {
 					@TempDir
-					Path tempFolder;
+					public Path tempFolder;
 
-					private String testName;
+					public String testName;
 
 					@BeforeEach
-					void init(TestInfo testInfo) {
-						this.testName = testInfo.getDisplayName();
+					void initializeTestNameFromTestInfo(TestInfo testInfo) {
+						this.testName = testInfo.getTestMethod().orElseThrow().getName();
 					}
 					
 					@Test
@@ -345,11 +345,11 @@ public class MyTest {
 				import org.junit.jupiter.api.TestInfo;
 				
 				public class MyTest {
-					private String testName;
+					public String testName;
 
 					@BeforeEach
-					void init(TestInfo testInfo) {
-						this.testName = testInfo.getDisplayName();
+					void initializeTestNameFromTestInfo(TestInfo testInfo) {
+						this.testName = testInfo.getTestMethod().orElseThrow().getName();
 					}
 					
 					@BeforeEach

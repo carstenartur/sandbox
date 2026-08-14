@@ -1,0 +1,96 @@
+{
+  "repository": "https://github.com/eclipse-jdt/eclipse.jdt.ui.git",
+  "ref": "R4_40",
+  "commit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
+  "project": "org.eclipse.jdt.ui.tests",
+  "minimumChangedJavaFiles": 4,
+  "requiredFiles": {
+    "org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/core/rules/JUnitSourceSetup.java": {
+      "baselineMustContain": [
+        "extends ExternalResource",
+        "public void before() throws Throwable",
+        "public void after()"
+      ],
+      "migratedMustContain": [
+        "BeforeEachCallback",
+        "AfterEachCallback",
+        "ExtensionContext",
+        "beforeEach(",
+        "afterEach("
+      ],
+      "migratedMustNotContain": [
+        "extends ExternalResource",
+        "public void before()",
+        "public void after()"
+      ]
+    },
+    "org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/core/rules/LeakTestSetup.java": {
+      "baselineMustContain": [
+        "extends JUnitSourceSetup",
+        "super.before()",
+        "super.after()"
+      ],
+      "migratedMustContain": [
+        "beforeEach(",
+        "afterEach(",
+        "super.beforeEach(",
+        "super.afterEach("
+      ],
+      "migratedMustNotContain": [
+        "super.before()",
+        "super.after()"
+      ]
+    },
+    "org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/search/FileAdapterTest.java": {
+      "baselineMustContain": [
+        "import org.junit.Rule;",
+        "@Rule",
+        "JUnitSourceSetup"
+      ],
+      "migratedMustContain": [
+        "RegisterExtension",
+        "JUnitSourceSetup"
+      ],
+      "migratedMustNotContain": [
+        "import org.junit.Rule;",
+        "@Rule"
+      ]
+    },
+    "org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/search/SearchLeakTestWrapper.java": {
+      "baselineMustContain": [
+        "import org.junit.After;",
+        "import org.junit.Before;",
+        "import org.junit.Rule;",
+        "@Before",
+        "@After",
+        "@Rule"
+      ],
+      "migratedMustContain": [
+        "BeforeEach",
+        "AfterEach",
+        "RegisterExtension"
+      ],
+      "migratedMustNotContain": [
+        "import org.junit.After;",
+        "import org.junit.Before;",
+        "import org.junit.Rule;",
+        "@Rule"
+      ]
+    },
+    "org.eclipse.jdt.ui.tests/ui/org/eclipse/jdt/ui/tests/quickfix/ConvertLoopOperationTest.java": {
+      "baselineMustContain": [
+        "@RunWith(Parameterized.class)",
+        "@Parameter",
+        "@Parameters"
+      ],
+      "strictUnchanged": true,
+      "strictReasonCode": "PARAMETERIZED_FIELD_INJECTION",
+      "bestEffortMustContain": [
+        "Sandbox JUnit migration gap parameterized:",
+        "PARAMETERIZED_FIELD_INJECTION",
+        "sandboxJUnitMigrationTodoParameterizedFieldInjection",
+        "Manual JUnit migration required: PARAMETERIZED_FIELD_INJECTION"
+      ]
+    }
+  }
+}

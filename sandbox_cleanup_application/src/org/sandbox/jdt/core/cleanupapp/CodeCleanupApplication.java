@@ -55,6 +55,9 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.Version;
 
 public class CodeCleanupApplication implements IApplication {
 	private static final File[] FILES = new File[0];
@@ -785,7 +788,16 @@ public class CodeCleanupApplication implements IApplication {
 				.replace("\t", "\\t"); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	private static String getToolVersion() {
-		return System.getProperty("sandbox.cleanup.version", "1.2.6-SNAPSHOT"); //$NON-NLS-1$ //$NON-NLS-2$
+	static String getToolVersion() {
+		String configuredVersion = System.getProperty("sandbox.cleanup.version"); //$NON-NLS-1$
+		if (configuredVersion != null && !configuredVersion.isBlank()) {
+			return configuredVersion;
+		}
+		Bundle bundle = FrameworkUtil.getBundle(CodeCleanupApplication.class);
+		if (bundle == null) {
+			return "unknown"; //$NON-NLS-1$
+		}
+		Version version = bundle.getVersion();
+		return "%d.%d.%d".formatted(version.getMajor(), version.getMinor(), version.getMicro()); //$NON-NLS-1$
 	}
 }

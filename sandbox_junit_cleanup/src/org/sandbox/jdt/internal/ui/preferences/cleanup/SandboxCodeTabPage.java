@@ -49,6 +49,7 @@ import org.eclipse.swt.widgets.Label;
 
 import org.sandbox.jdt.internal.corext.fix.JUnit4MigrationPresets;
 import org.sandbox.jdt.internal.corext.fix.JUnit4MigrationPresets.Preset;
+import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUp;
 
@@ -70,6 +71,11 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		CheckboxPreference junit= createCheckboxPref(junitGroup, numColumns,
 				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP, MYCleanUpConstants.JUNIT_CLEANUP,
 				FALSE_TRUE);
+
+		intent(junitGroup);
+		CheckboxPreference bestEffort= createCheckboxPref(junitGroup, numColumns - 1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT_CLEANUP_BEST_EFFORT,
+				JUnitMigrationOptions.BEST_EFFORT, FALSE_TRUE);
 
 		intent(junitGroup);
 		Label quickSelectLabel= new Label(junitGroup, SWT.NONE);
@@ -214,6 +220,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE, FALSE_TRUE);
 
 		registerSlavePreference(junit, new CheckboxPreference[] {
+				bestEffort,
 				junitAssert,
 				junitAssume,
 				junitIgnore,
@@ -243,6 +250,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		registerSlavePreference(junitRunWith, new CheckboxPreference[] { junitSuite, junitParameterized });
 
 		Map<String, CheckboxPreference> junit4Preferences= Map.ofEntries(
+				Map.entry(JUnitMigrationOptions.BEST_EFFORT, bestEffort),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, junitAssert),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, junitAssertOptimization),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, junitAssume),

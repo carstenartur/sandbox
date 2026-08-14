@@ -25,13 +25,14 @@ import org.eclipse.jdt.core.IJavaProject;
 
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 
 /** Cleanup wrapper for JUnit migration. */
-public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore>
-		implements IMultiFileCleanUpScopeProvider {
+public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<ReportingJUnitCleanUpCore>
+		implements IMultiFileCleanUpScopeProvider, IMultiFileCleanUpDiagnosticsProvider {
 	public JUnitCleanUp(final Map<String, String> options) {
-		super(options, new JUnitCleanUpCore());
+		super(options, new ReportingJUnitCleanUpCore());
 	}
 
 	public JUnitCleanUp() {
@@ -42,5 +43,10 @@ public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<JUnitCleanUpCore>
 	public Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project,
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
 		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
+	}
+
+	@Override
+	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
+		return cleanUpCore.getLastPlanningDiagnosticsJson(project);
 	}
 }

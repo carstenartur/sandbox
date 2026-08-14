@@ -22,19 +22,18 @@ import java.util.Set;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /**
- * Complete, deterministic option sets for the JUnit 4 migration presets.
+ * Complete, deterministic option sets used by the JUnit 4 migration presets.
  * <p>
  * Every non-custom preset contains an explicit value for every managed option.
- * Applying one preset therefore cannot retain hidden values from a previously
- * selected preset or from a manually configured cleanup profile.
- * </p>
+ * Applying a preset therefore cannot retain hidden values from a previously
+ * selected preset or from a manually configured profile.
  */
 public final class JUnit4MigrationPresets {
 
 	/** Presets in the same order in which they are displayed by the cleanup UI. */
 	public enum Preset {
 		CUSTOM,
-		ALL_SUPPORTED,
+		ALL_SUPPORTED_STRICT,
 		ANNOTATIONS_ONLY,
 		LIFECYCLE_ONLY,
 		ASSERTIONS_AND_ASSUMPTIONS_ONLY,
@@ -43,13 +42,14 @@ public final class JUnit4MigrationPresets {
 
 	private static final List<Preset> SELECTION_ORDER= List.of(
 			Preset.CUSTOM,
-			Preset.ALL_SUPPORTED,
+			Preset.ALL_SUPPORTED_STRICT,
 			Preset.ANNOTATIONS_ONLY,
 			Preset.LIFECYCLE_ONLY,
 			Preset.ASSERTIONS_AND_ASSUMPTIONS_ONLY,
 			Preset.RULES_ONLY);
 
 	private static final List<String> MANAGED_OPTIONS= List.of(
+			JUnitMigrationOptions.BEST_EFFORT,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME,
@@ -83,7 +83,7 @@ public final class JUnit4MigrationPresets {
 	}
 
 	/**
-	 * Resolves the preset represented by a cleanup UI combo-box index.
+	 * Returns the preset represented by a cleanup UI combo-box index.
 	 *
 	 * @param selectionIndex zero-based combo-box selection
 	 * @return corresponding preset
@@ -107,8 +107,8 @@ public final class JUnit4MigrationPresets {
 
 	/**
 	 * Returns the complete immutable selection for a preset. The custom preset
-	 * intentionally returns an empty map because selecting it must preserve the
-	 * user's manually configured values.
+	 * intentionally returns an empty map because selecting it must not overwrite
+	 * manually configured values.
 	 *
 	 * @param preset preset to resolve
 	 * @return option-to-enabled mapping
@@ -120,7 +120,7 @@ public final class JUnit4MigrationPresets {
 	private static Map<Preset, Map<String, Boolean>> createSelections() {
 		EnumMap<Preset, Map<String, Boolean>> selections= new EnumMap<>(Preset.class);
 		selections.put(Preset.CUSTOM, Map.of());
-		selections.put(Preset.ALL_SUPPORTED, completeSelection(new LinkedHashSet<>(MANAGED_OPTIONS)));
+		selections.put(Preset.ALL_SUPPORTED_STRICT, completeSelection(allSupportedTransformations()));
 		selections.put(Preset.ANNOTATIONS_ONLY, completeSelection(Set.of(
 				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT,
@@ -149,6 +149,12 @@ public final class JUnit4MigrationPresets {
 				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION,
 				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR)));
 		return Collections.unmodifiableMap(selections);
+	}
+
+	private static Set<String> allSupportedTransformations() {
+		LinkedHashSet<String> enabled= new LinkedHashSet<>(MANAGED_OPTIONS);
+		enabled.remove(JUnitMigrationOptions.BEST_EFFORT);
+		return Collections.unmodifiableSet(enabled);
 	}
 
 	private static Map<String, Boolean> completeSelection(Set<String> enabledOptions) {

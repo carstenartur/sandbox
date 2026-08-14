@@ -263,11 +263,8 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 					return false;
 				}
 				IMethodBinding binding = node.resolveMethodBinding();
-				if (binding != null) {
-					if (!candidate.methodBinding.isEqualTo(binding.getMethodDeclaration())) {
-						return true;
-					}
-				} else if (!isSafelyRecoverableLocalInvocation(node, candidate)) {
+				if ((binding == null || !candidate.methodBinding.isEqualTo(binding.getMethodDeclaration()))
+						&& !isSafelyRecoverableLocalInvocation(node, candidate)) {
 					return true;
 				}
 				if (candidate.parameterIndex >= node.arguments().size()) {
@@ -291,11 +288,11 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	}
 
 	/**
-	 * Returns whether an invocation whose JDT binding is temporarily unavailable can
-	 * still be identified without ambiguity as the private local method being
-	 * migrated. The recovery is intentionally limited to the one-parameter form
-	 * from a method or constructor declared directly in the same type. More complex
-	 * signatures, nested/anonymous types and overloads stay fail-closed.
+	 * Returns whether an invocation whose JDT binding is temporarily unavailable or
+	 * stale can still be identified without ambiguity as the private local method
+	 * being migrated. The recovery is intentionally limited to the one-parameter
+	 * form from a method or constructor declared directly in the same type. More
+	 * complex signatures, nested/anonymous types and overloads stay fail-closed.
 	 */
 	private static boolean isSafelyRecoverableLocalInvocation(MethodInvocation invocation, Candidate candidate) {
 		if (candidate.holder.method.parameters().size() != 1

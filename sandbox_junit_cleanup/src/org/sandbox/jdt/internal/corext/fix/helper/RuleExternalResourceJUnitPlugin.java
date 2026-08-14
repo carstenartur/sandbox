@@ -71,16 +71,20 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 			return null;
 		}
 		ITypeBinding binding = fragment.resolveBinding().getType();
-		if (binding == null) {
-			return null;
-		}
-		String qualifiedName= binding.getErasure().getQualifiedName();
-		if (DEDICATED_RULE_TYPES.contains(qualifiedName) || !isExternalResourceHierarchy(binding)) {
+		if (!isEligibleExternalResourceType(binding)) {
 			return null;
 		}
 		JunitHolder holder = new JunitHolder();
 		holder.setMinv(fieldDecl);
 		return holder;
+	}
+
+	static boolean isEligibleExternalResourceType(ITypeBinding binding) {
+		if (binding == null) {
+			return false;
+		}
+		String qualifiedName= binding.getErasure().getQualifiedName();
+		return !DEDICATED_RULE_TYPES.contains(qualifiedName) && isExternalResourceHierarchy(binding);
 	}
 
 	private static boolean isExternalResourceHierarchy(ITypeBinding binding) {

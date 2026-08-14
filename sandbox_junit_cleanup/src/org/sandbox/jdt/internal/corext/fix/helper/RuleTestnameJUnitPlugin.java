@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEST_NAME;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -23,56 +23,59 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
-/**
- * Plugin to migrate JUnit 4 TestName rule to JUnit 5 TestInfo parameter.
- *
- * @since 1.3.0
- */
-@CleanupPattern(value = "@Rule public TestName $name", kind = PatternKind.FIELD, qualifiedType = ORG_JUNIT_RULES_TEST_NAME, cleanupId = "cleanup.junit.ruletestname", description = "Migrate @Rule TestName to TestInfo parameter", displayName = "JUnit 4 @Rule TestName \u2192 JUnit 5 TestInfo")
+/** Migrates a binding-proven local JUnit 4 TestName rule to TestInfo. */
+@CleanupPattern(value = "@Rule public TestName $name", kind = PatternKind.FIELD,
+		qualifiedType = ORG_JUNIT_RULES_TEST_NAME, cleanupId = "cleanup.junit.ruletestname",
+		description = "Migrate @Rule TestName to exact TestInfo method-name semantics",
+		displayName = "JUnit 4 @Rule TestName → JUnit 5 TestInfo")
 public class RuleTestnameJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
-		FieldDeclaration fieldDecl = (FieldDeclaration) match.getMatchedNode();
-		VariableDeclarationFragment fragment = (VariableDeclarationFragment) fieldDecl.fragments().get(0);
-		if (fragment.resolveBinding() == null) {
+		FieldDeclaration field= (FieldDeclaration) match.getMatchedNode();
+		if (field.fragments().size() != 1
+				|| !(field.fragments().get(0) instanceof VariableDeclarationFragment fragment)
+				|| fragment.resolveBinding() == null) {
 			return null;
 		}
-		ITypeBinding binding = fragment.resolveBinding().getType();
-		if (binding == null || !ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())) {
+		ITypeBinding binding= fragment.resolveBinding().getType();
+		if (binding == null || !ORG_JUNIT_RULES_TEST_NAME.equals(binding.getQualifiedName())
+				|| !TestNameRefactorer.assess(field).eligible()) {
 			return null;
 		}
-		JunitHolder holder = new JunitHolder();
-		holder.setMinv(fieldDecl);
+		JunitHolder holder= new JunitHolder();
+		holder.setMinv(field);
 		return holder;
 	}
 
 	@Override
-	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
-			JunitHolder junitHolder) {
-		FieldDeclaration node = junitHolder.getFieldDeclaration();
-		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter, node);
+	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
+			ImportRewrite importRewriter, JunitHolder junitHolder) {
+		refactorTestnameInClassAndSubclasses(group, rewriter, ast, importRewriter,
+				junitHolder.getFieldDeclaration());
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-						private String testName;
+					public String tn;
 
-						@BeforeEach
-						void init(TestInfo testInfo) {
-							this.testName = testInfo.getDisplayName();
-						}
-						@Test
-						public void test(){
-							System.out.println("Test name: " + testName);
-						}
+					@BeforeEach
+					void initializeTnFromTestInfo(TestInfo testInfo) {
+						this.tn = testInfo.getTestMethod().orElseThrow().getName();
+					}
+
+					@Test
+					public void testExample() {
+						System.out.println("Test method: " + tn);
+					}
 					"""; //$NON-NLS-1$
 		}
 		return """
@@ -80,14 +83,14 @@ public class RuleTestnameJUnitPlugin extends TriggerPatternCleanupPlugin {
 					public TestName tn = new TestName();
 
 					@Test
-					public void test(){
-						System.out.println("Test name: " + tn.getMethodName());
+					public void testExample() {
+						System.out.println("Test method: " + tn.getMethodName());
 					}
-				"""; //$NON-NLS-1$
+					"""; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-		return "RuleTestname"; //$NON-NLS-1$
+		return "RuleTestName"; //$NON-NLS-1$
 	}
 }

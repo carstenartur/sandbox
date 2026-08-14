@@ -257,7 +257,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 	@Override
-	public void beforeEach(ExtensionContext context) {
+	public void beforeEach(ExtensionContext context) throws Exception {
 		int i=4;
 	}
 
@@ -344,7 +344,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		public void beforeEach(ExtensionContext context) {
+		public void beforeEach(ExtensionContext context) throws Exception {
 			int i=4;
 		}
 
@@ -456,7 +456,7 @@ import test.MyExternalResource2;
 
 public class MyExternalResource extends MyExternalResource2 {
 		@Override
-		public void beforeEach(ExtensionContext context) {
+		public void beforeEach(ExtensionContext context) throws Exception {
 			super.beforeEach(context);
 			int i=4;
 		}
@@ -474,8 +474,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class MyExternalResource2 implements BeforeEachCallback, AfterEachCallback {
 		@Override
-		public void beforeEach(ExtensionContext context) {
-			super.beforeEach(context);
+		public void beforeEach(ExtensionContext context) throws Exception {
 			int i=4;
 		}
 
@@ -582,14 +581,12 @@ public class MyTest {
 	// Final abgeleitete Klasse
     final class MyExternalResource implements BeforeEachCallback, AfterEachCallback {
         @Override
-        public void beforeEach(ExtensionContext context) {
-            super.beforeEach(context);
+        public void beforeEach(ExtensionContext context) throws Exception {
             int i = 4;
         }
 
         @Override
         public void afterEach(ExtensionContext context) {
-            super.afterEach(context);
         }
     }
 
@@ -680,14 +677,12 @@ public class MyTest {
 	// Final abgeleitete Klasse
     final class MyExternalResource implements BeforeAllCallback, AfterAllCallback {
         @Override
-        public void beforeAll(ExtensionContext context) {
-            super.beforeAll(context);
+        public void beforeAll(ExtensionContext context) throws Exception {
             int i = 4;
         }
 
         @Override
         public void afterAll(ExtensionContext context) {
-            super.afterAll(context);
         }
     }
 

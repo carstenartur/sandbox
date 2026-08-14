@@ -12,15 +12,21 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeHierarchy;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.BodyDeclaration;
@@ -30,12 +36,16 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -53,7 +63,9 @@ import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractTool;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3LegacyShape;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3MigrationExclusions;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnit3SuiteModel;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.internal.corext.util.AnnotationUtils;
 
@@ -66,6 +78,17 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 
 	private static final String JUNIT3_TEST_CASE= "junit.framework.TestCase"; //$NON-NLS-1$
 	private static final String JUNIT3_ASSERT= "junit.framework.Assert"; //$NON-NLS-1$
+
+	private static final String ORG_JUNIT_JUPITER_API_ORDER= "org.junit.jupiter.api.Order"; //$NON-NLS-1$
+	private static final String ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER=
+			"org.junit.jupiter.api.TestMethodOrder"; //$NON-NLS-1$
+	private static final String ORG_JUNIT_JUPITER_API_ORDER_ANNOTATION=
+			"org.junit.jupiter.api.MethodOrderer.OrderAnnotation"; //$NON-NLS-1$
+
+	/** JUnit 3/JUnit 4 MethodSorter.DEFAULT for collision-free test names. */
+	private static final Comparator<MethodDeclaration> JUNIT3_METHOD_ORDER=
+			Comparator.comparingInt((MethodDeclaration method) -> method.getName().getIdentifier().hashCode())
+					.thenComparing(method -> method.getName().getIdentifier());
 
 	private static final Set<String> KNOWN_JUNIT3_ASSERTION_METHODS= Set.of(
 			"assertEquals", "assertArrayEquals", "assertTrue", "assertFalse", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -101,20 +124,33 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 		ITypeBinding binding= node.resolveBinding();
 		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();
 		if (binding == null || superclass == null || !node.isPackageMemberTypeDeclaration()
+				|| !(node.getRoot() instanceof CompilationUnit root) || root.types().size() != 1
 				|| !Modifier.isPublic(node.getModifiers()) || Modifier.isAbstract(node.getModifiers())
 				|| !JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName())
 				|| hasJUnitAnnotation(node) || !(binding.getJavaElement() instanceof IType type)) {
 			return false;
 		}
 		if (JUnit3MigrationExclusions.isExcluded(binding)
-				|| hasKnownSubtypes(type) || hasAnyReferences(type) || hasUnsupportedTestCaseUsage(node)) {
+				|| hasKnownSubtypes(type) || hasUnsafeReferences(type) || hasUnsupportedTestCaseUsage(node)) {
 			return false;
 		}
 
 		boolean testFound= false;
 		for (MethodDeclaration method : node.getMethods()) {
-			if (method.isConstructor() || hasJUnitAnnotation(method)) {
+			if (method.isConstructor()) {
+				if (!JUnit3LegacyShape.isRemovableConstructor(method)) {
+					return false;
+				}
+				continue;
+			}
+			if (hasJUnitAnnotation(method)) {
 				return false;
+			}
+			if (JUnit3SuiteModel.isSuiteBuilder(method)) {
+				if (!JUnit3LegacyShape.isSelfSuite(method, node)) {
+					return false;
+				}
+				continue;
 			}
 			String name= method.getName().getIdentifier();
 			if (CUSTOM_EXECUTION_METHODS.contains(name)) {
@@ -133,6 +169,13 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 		return testFound;
 	}
 
+	private List<MethodDeclaration> orderedTestMethods(TypeDeclaration node) {
+		return Arrays.stream(node.getMethods())
+				.filter(this::isTestMethod)
+				.sorted(JUNIT3_METHOD_ORDER)
+				.toList();
+	}
+
 	private boolean hasKnownSubtypes(IType type) {
 		try {
 			ITypeHierarchy hierarchy= type.newTypeHierarchy(null);
@@ -142,25 +185,60 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 		}
 	}
 
-	private boolean hasAnyReferences(IType type) {
+	private boolean hasUnsafeReferences(IType type) {
 		SearchPattern pattern= SearchPattern.createPattern(type, IJavaSearchConstants.REFERENCES);
 		if (pattern == null) {
 			return true;
 		}
-		boolean[] referenced= { false };
+		boolean[] unsafe= { false };
+		ICompilationUnit declarationUnit= type.getCompilationUnit();
 		try {
 			new SearchEngine().search(pattern,
 					new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },
 					SearchEngine.createWorkspaceScope(), new SearchRequestor() {
 						@Override
 						public void acceptSearchMatch(SearchMatch match) {
-							referenced[0]= true;
+							if (unsafe[0]) {
+								return;
+							}
+							if (match.getAccuracy() != SearchMatch.A_ACCURATE
+									|| !(match.getElement() instanceof IJavaElement element)
+									|| !(element.getAncestor(IJavaElement.COMPILATION_UNIT) instanceof ICompilationUnit unit)) {
+								unsafe[0]= true;
+								return;
+							}
+							if (declarationUnit != null && declarationUnit.equals(unit)) {
+								return;
+							}
+							unsafe[0]= !isPureSuiteReference(unit, match.getOffset(), match.getLength());
 						}
 					}, null);
 		} catch (CoreException e) {
 			return true;
 		}
-		return referenced[0];
+		return unsafe[0];
+	}
+
+	private boolean isPureSuiteReference(ICompilationUnit unit, int offset, int length) {
+		ASTParser parser= ASTParser.newParser(AST.JLS21);
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(true);
+		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		ASTNode node= NodeFinder.perform(root, offset, Math.max(0, length));
+		MethodDeclaration method= null;
+		TypeDeclaration owner= null;
+		for (ASTNode current= node; current != null; current= current.getParent()) {
+			if (method == null && current instanceof MethodDeclaration declaration) {
+				method= declaration;
+			}
+			if (current instanceof TypeDeclaration declaration) {
+				owner= declaration;
+				break;
+			}
+		}
+		return method != null && owner != null && JUnit3SuiteModel.isSuiteBuilder(method)
+				&& JUnit3LegacyShape.isPureSuiteAggregator(owner, method);
 	}
 
 	private boolean hasUnsupportedTestCaseUsage(TypeDeclaration node) {
@@ -168,7 +246,7 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 		node.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(SuperMethodInvocation invocation) {
-				unsupported[0]= true;
+				unsupported[0]|= !JUnit3LegacyShape.isRedundantLifecycleSuperCall(invocation);
 				return false;
 			}
 
@@ -230,18 +308,82 @@ public class TestJUnit3Plugin extends AbstractTool<ReferenceHolder<Integer, Juni
 			importRewriter.removeImport(JUNIT3_TEST_CASE);
 		}
 
+		boolean removesSelfSuite= Arrays.stream(node.getMethods())
+				.anyMatch(method -> JUnit3SuiteModel.isSuiteBuilder(method)
+						&& JUnit3LegacyShape.isSelfSuite(method, node));
+		if (removesSelfSuite) {
+			// Remove the legacy simple-name imports before requesting Jupiter @Test.
+			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST);
+			importRewriter.removeImport(JUnit3SuiteModel.JUNIT3_TEST_SUITE);
+		}
+
+		List<MethodDeclaration> orderedTests= orderedTestMethods(node);
+		if (orderedTests.size() > 1) {
+			addTestMethodOrder(node, rewriter, ast, importRewriter, group);
+		}
 		for (MethodDeclaration method : node.getMethods()) {
+			if (method.isConstructor() && JUnit3LegacyShape.isRemovableConstructor(method)) {
+				rewriter.remove(method, group);
+				continue;
+			}
+			if (JUnit3SuiteModel.isSuiteBuilder(method) && JUnit3LegacyShape.isSelfSuite(method, node)) {
+				rewriter.remove(method, group);
+				continue;
+			}
 			if (isLifecycleMethod(method, "setUp")) { //$NON-NLS-1$
 				convertToAnnotation(method, "BeforeEach", importRewriter, rewriter, ast, group); //$NON-NLS-1$
 			} else if (isLifecycleMethod(method, "tearDown")) { //$NON-NLS-1$
 				convertToAnnotation(method, "AfterEach", importRewriter, rewriter, ast, group); //$NON-NLS-1$
 			} else if (isTestMethod(method)) {
 				addAnnotationToMethod(method, "Test", importRewriter, rewriter, ast, group); //$NON-NLS-1$
+				if (orderedTests.size() > 1) {
+					addOrderAnnotation(method, orderedTests.indexOf(method) + 1,
+							importRewriter, rewriter, ast, group);
+				}
 			}
 			if (method.getBody() != null) {
+				removeRedundantLifecycleSuperCalls(method, rewriter, group);
 				rewriteAssertions(method, rewriter, ast, group, importRewriter);
 			}
 		}
+	}
+
+	private void addTestMethodOrder(TypeDeclaration type, ASTRewrite rewrite, AST ast,
+			ImportRewrite importRewrite, TextEditGroup group) {
+		SingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();
+		annotation.setTypeName(ast.newSimpleName("TestMethodOrder")); //$NON-NLS-1$
+		TypeLiteral orderer= ast.newTypeLiteral();
+		orderer.setType(ast.newSimpleType(ast.newSimpleName("OrderAnnotation"))); //$NON-NLS-1$
+		annotation.setValue(orderer);
+		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(annotation, group);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_ORDER_ANNOTATION);
+	}
+
+	private void addOrderAnnotation(MethodDeclaration method, int order, ImportRewrite importRewrite,
+			ASTRewrite rewrite, AST ast, TextEditGroup group) {
+		SingleMemberAnnotation annotation= ast.newSingleMemberAnnotation();
+		annotation.setTypeName(ast.newSimpleName("Order")); //$NON-NLS-1$
+		NumberLiteral value= ast.newNumberLiteral(Integer.toString(order));
+		annotation.setValue(value);
+		ListRewrite modifiers= rewrite.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(annotation, group);
+		importRewrite.addImport(ORG_JUNIT_JUPITER_API_ORDER);
+	}
+
+	private void removeRedundantLifecycleSuperCalls(MethodDeclaration method, ASTRewrite rewriter,
+			TextEditGroup group) {
+		method.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SuperMethodInvocation invocation) {
+				if (JUnit3LegacyShape.isRedundantLifecycleSuperCall(invocation)
+						&& invocation.getParent() instanceof org.eclipse.jdt.core.dom.ExpressionStatement statement) {
+					rewriter.remove(statement, group);
+				}
+				return false;
+			}
+		});
 	}
 
 	private void rewriteAssertions(MethodDeclaration method, ASTRewrite rewriter, AST ast,

@@ -1,0 +1,283 @@
+name: JDT UI JUnit 4 Strict Migration QA
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'qa/upstream-jdt/**'
+      - 'sandbox_cleanup_application/**'
+      - 'sandbox_common/**'
+      - 'sandbox_common_core/**'
+      - 'sandbox_junit_cleanup/**'
+      - 'sandbox_junit_cleanup_test/**'
+      - 'sandbox_product/**'
+      - 'sandbox_target/**'
+      - '.github/workflows/jdt-ui-junit4-strict-qa.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  strict-real-jdt-ui:
+    name: Pinned JDT UI before/after migration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          path: sandbox
+
+      - name: Checkout the pinned JDT UI R4_40 corpus
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.ui
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Node.js for Sandbox CSS tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install build and headless Eclipse dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global prettier stylelint stylelint-config-standard
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              echo "Disabling unrelated runner APT source: $source"
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1 \
+            libwebkit2gtk-4.1-0
+
+      - name: Verify the exact pinned JDT UI source
+        shell: bash
+        run: |
+          set -euo pipefail
+          source sandbox/qa/upstream-jdt/pins.env
+
+          normalize_repository() {
+            local repository="$1"
+            repository="${repository#https://github.com/}"
+            repository="${repository#http://github.com/}"
+            repository="${repository#git@github.com:}"
+            repository="${repository%.git}"
+            repository="${repository%/}"
+            printf '%s\n' "$repository"
+          }
+
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse "${PIN_JDT_UI_REF}^{commit}")" = "$PIN_JDT_UI_COMMIT"
+
+          actual_repository="$(git -C upstream/eclipse.jdt.ui remote get-url origin)"
+          if [[ "$(normalize_repository "$actual_repository")" != \
+                "$(normalize_repository "$PIN_JDT_UI_REPOSITORY")" ]]; then
+            printf 'Unexpected JDT UI origin. Expected %s, got %s.\n' \
+              "$PIN_JDT_UI_REPOSITORY" "$actual_repository" >&2
+            exit 1
+          fi
+
+      - name: Validate the dedicated JDT UI corpus contract
+        working-directory: sandbox
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+
+      - name: Build and test the Sandbox product under test
+        working-directory: sandbox
+        run: >-
+          xvfb-run --auto-servernum mvn
+          -Pproduct
+          --no-transfer-progress
+          -e
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          clean verify
+
+      - name: Locate the materialized Linux product
+        id: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' launchers < <(find sandbox/sandbox_product/target/products -type f \
+            -path '*/linux/gtk/x86_64/eclipse' -perm -u+x -print0)
+          if (( ${#launchers[@]} != 1 )); then
+            printf 'Expected one materialized Linux Eclipse launcher, found %d:\n' "${#launchers[@]}" >&2
+            printf '%s\n' "${launchers[@]}" >&2
+            exit 1
+          fi
+          launcher="$(realpath "${launchers[0]}")"
+          echo "launcher=$launcher" >> "$GITHUB_OUTPUT"
+          printf 'Using Sandbox product: %s\n' "$launcher"
+
+      - name: Execute isolated check/apply, tests and whitespace regression QA
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          SANDBOX_PRODUCT_ECLIPSE: ${{ steps.product.outputs.launcher }}
+          SANDBOX_WORKSPACE_ROOT: ${{ runner.temp }}/jdt-ui-strict-workspaces
+        run: |
+          set -euo pipefail
+          source sandbox/qa/upstream-jdt/pins.env
+
+          repository="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
+          workspace_template="$RUNNER_TEMP/jdt-ui-strict-workspace-template"
+          output="$GITHUB_WORKSPACE/jdt-ui-strict-evidence"
+          launcher="$RUNNER_TEMP/sandbox-eclipse-isolated-workspace"
+          mkdir -p "$workspace_template" "$output" "$SANDBOX_WORKSPACE_ROOT"
+
+          cleanup_source() {
+            local status=$?
+            if ((status != 0)); then
+              printf 'FAIL\n' > "$output/run-state.txt"
+            fi
+            git -C "$repository" reset --hard "$PIN_JDT_UI_COMMIT" >/dev/null 2>&1 || true
+            git -C "$repository" clean -fd -- org.eclipse.jdt.ui.tests >/dev/null 2>&1 || true
+          }
+          trap cleanup_source EXIT
+
+          # Give the preflight, check and apply launcher invocations independent
+          # Eclipse workspaces. The source checkout remains shared intentionally;
+          # check mode must restore it byte-for-byte before apply starts.
+          cat > "$launcher" <<'EOF_LAUNCHER'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          phase=preflight
+          arguments=("$@")
+          for ((index=0; index < ${#arguments[@]}; index++)); do
+            if [[ "${arguments[index]}" == --mode ]] && ((index + 1 < ${#arguments[@]})); then
+              phase="${arguments[index + 1]}"
+              break
+            fi
+          done
+          case "$phase" in
+            preflight|check|apply) ;;
+            *) printf 'Unsupported cleanup phase: %s\n' "$phase" >&2; exit 2 ;;
+          esac
+
+          workspace="${SANDBOX_WORKSPACE_ROOT:?}/$phase"
+          rm -rf "$workspace"
+          mkdir -p "$workspace"
+
+          rewritten=()
+          index=0
+          while ((index < ${#arguments[@]})); do
+            if [[ "${arguments[index]}" == -data ]] && ((index + 1 < ${#arguments[@]})); then
+              rewritten+=("-data" "$workspace")
+              index=$((index + 2))
+            else
+              rewritten+=("${arguments[index]}")
+              index=$((index + 1))
+            fi
+          done
+          exec "${SANDBOX_PRODUCT_ECLIPSE:?}" --launcher.suppressErrors "${rewritten[@]}"
+          EOF_LAUNCHER
+          chmod +x "$launcher"
+
+          # The legacy inline diff check treats an unchanged pre-existing mixed
+          # indentation as newly introduced whenever the semantic line changes.
+          # Disable only that coarse check while the full runner executes. The
+          # baseline-aware verifier below immediately applies the repository's
+          # real Git whitespace rules to complete baseline and migrated trees.
+          GIT_CONFIG_COUNT=1 \
+          GIT_CONFIG_KEY_0=core.whitespace \
+          GIT_CONFIG_VALUE_0=-trailing-space,-space-before-tab \
+          bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
+            --jdt-ui "$repository" \
+            --workspace "$workspace_template" \
+            --sandbox-eclipse "$launcher" \
+            --mode strict \
+            --output "$output" \
+            --allow-clean-workspace \
+            --keep-changes
+
+          printf 'VERIFYING_WHITESPACE_REGRESSIONS\n' > "$output/run-state.txt"
+          set +e
+          git -C "$repository" diff --check "$PIN_JDT_UI_COMMIT" -- \
+            > "$output/logs/git-diff-check.log" 2>&1
+          diff_check_status=$?
+          set -e
+          printf '%s\n' "$diff_check_status" > "$output/git-diff-check-exit-code.txt"
+          if ((diff_check_status != 0 && diff_check_status != 2)); then
+            cat "$output/logs/git-diff-check.log" >&2
+            printf 'git diff --check failed unexpectedly with exit code %d.\n' "$diff_check_status" >&2
+            exit "$diff_check_status"
+          fi
+
+          java sandbox/qa/upstream-jdt/VerifyWhitespaceRegression.java \
+            --repository "$repository" \
+            --baseline "$PIN_JDT_UI_COMMIT" \
+            --paths "$output/changed-files.txt" \
+            --output "$output/whitespace-regression.json" \
+            | tee "$output/logs/whitespace-regression.log"
+
+          python3 - "$output/provenance.json" "$output/whitespace-regression.json" <<'PY'
+          import hashlib
+          import json
+          import sys
+          from pathlib import Path
+
+          provenance_path = Path(sys.argv[1])
+          whitespace_path = Path(sys.argv[2])
+          provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+          whitespace = json.loads(whitespace_path.read_text(encoding="utf-8"))
+          provenance["whitespaceRegression"] = whitespace
+          provenance.setdefault("artifacts", {})["whitespaceRegressionSha256"] = hashlib.sha256(
+              whitespace_path.read_bytes()
+          ).hexdigest()
+          provenance_path.write_text(
+              json.dumps(provenance, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          printf 'PASS\n' > "$output/run-state.txt"
+
+      - name: Collect isolated Eclipse workspace logs
+        if: always()
+        shell: bash
+        run: |
+          destination=jdt-ui-strict-evidence/eclipse-workspace
+          mkdir -p "$destination"
+          for phase in preflight check apply; do
+            log="$RUNNER_TEMP/jdt-ui-strict-workspaces/$phase/.metadata/.log"
+            if [[ -f "$log" ]]; then
+              cp "$log" "$destination/$phase.log"
+            fi
+          done
+
+      - name: Upload complete real JDT UI JUnit 4 evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: jdt-ui-junit4-strict-evidence-${{ github.run_number }}
+          path: |
+            jdt-ui-strict-evidence/**
+            sandbox/**/target/surefire-reports/**
+          retention-days: 9
+          if-no-files-found: error

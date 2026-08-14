@@ -11,4 +11,12 @@
           <run class="org.sandbox.jdt.core.cleanupapp.ScopeFilteringCodeCleanupApplicationWrapper" />
         </application>
 </extension>
+
+<extension
+      id="org.sandbox.jdt.core.ProjectWideJavaCleanup"
+      point="org.eclipse.core.runtime.applications">
+        <application>
+          <run class="org.sandbox.jdt.core.cleanupapp.HeadlessProjectWideCodeCleanupApplication" />
+        </application>
+</extension>
 </plugin>

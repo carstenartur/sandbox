@@ -172,7 +172,7 @@ run_equinox "$FRESH_INSTALL" "$FRESH_LAUNCHER" \
   "$CLEANUP_SOURCE" \
   > "$EVIDENCE_DIR/cleanup-application.log" 2>&1
 
-python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" "$CLEANUP_BEFORE" <<'PY'
+python3 - "$CLEANUP_REPORT" "$CLEANUP_SOURCE" "$CLEANUP_BEFORE" "$VERIFY_JSON" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -182,6 +182,29 @@ source_path = Path(sys.argv[2])
 before_path = Path(sys.argv[3])
 with report_path.open(encoding='utf-8') as stream:
     report = json.load(stream)
+with Path(sys.argv[4]).open(encoding='utf-8') as stream:
+    distribution = json.load(stream)
+published_features = distribution.get('repository', {}).get('publishedFeatures', [])
+feature_versions = {
+    entry.get('version')
+    for entry in published_features
+    if isinstance(entry, dict) and isinstance(entry.get('version'), str)
+}
+base_versions = {
+    '.'.join(version.split('.')[:3])
+    for version in feature_versions
+    if len(version.split('.')) >= 3
+}
+if len(base_versions) != 1:
+    raise SystemExit(f'Expected one published Sandbox base version, got {sorted(base_versions)!r}')
+expected_version = next(iter(base_versions))
+actual_version = report.get('version')
+if actual_version != expected_version:
+    raise SystemExit(
+        f'Cleanup runtime version {actual_version!r} does not match published feature version {expected_version!r}'
+    )
+if not isinstance(actual_version, str) or 'SNAPSHOT' in actual_version.upper():
+    raise SystemExit(f'Cleanup runtime report contains an invalid release version: {actual_version!r}')
 if report.get('filesProcessed') != 1:
     raise SystemExit(f"Expected one processed file, got {report.get('filesProcessed')!r}")
 if report.get('filesChanged') != 1:
@@ -207,5 +230,6 @@ cat >> "$EVIDENCE_DIR/verification.md" <<'EOF'
 - Every published Sandbox feature provisioned into a fresh p2 destination: **PASS**
 - Fresh installation started and reported all published roots: **PASS**
 - Installed cleanup application imported a Java project and formatted one source file: **PASS**
+- Installed cleanup application reported the published Sandbox base version: **PASS**
 - Transformed source still compiled with Java 21: **PASS**
 EOF
