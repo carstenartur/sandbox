@@ -58,6 +58,19 @@ class EncodedLineDelimiterPreserverTest {
 	}
 
 	@Test
+	void preservesUtf16BigEndianWithoutByteOrderMark() throws IOException {
+		String originalText= "\u0d00\r\nbefore\r\n"; //$NON-NLS-1$
+		String rewrittenText= "\u0d00\nafter\n"; //$NON-NLS-1$
+		String expectedText= "\u0d00\r\nafter\r\n"; //$NON-NLS-1$
+		byte[] original= originalText.getBytes(StandardCharsets.UTF_16BE);
+		byte[] rewritten= rewrittenText.getBytes(StandardCharsets.UTF_16BE);
+		byte[] expected= expectedText.getBytes(StandardCharsets.UTF_16BE);
+
+		assertArrayEquals(expected,
+				EncodedLineDelimiterPreserver.preserve(original, rewritten, "UTF-16BE")); //$NON-NLS-1$
+	}
+
+	@Test
 	void keepsRewrittenBytesWhenOriginalUsesMixedDelimiters() throws IOException {
 		byte[] original= "first\r\nsecond\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
 		byte[] rewritten= "first\nchanged\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
