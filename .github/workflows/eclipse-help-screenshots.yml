@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
@@ -107,6 +107,33 @@ jobs:
           -f sandbox_help_build/pom.xml
           -Phelp-screenshots
           clean verify
+
+      - name: Commit regenerated JUnit screenshot on the extraction branch
+        if: github.event_name == 'pull_request' && github.head_ref == 'feature/junit4-preset-model'
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          target='sandbox_junit_cleanup_help/images/junit-migration-cleanup.png'
+          if git diff --quiet -- "$target"; then
+            echo 'Committed JUnit Help screenshot already matches.'
+            exit 0
+          fi
+
+          generated="$(mktemp --suffix=.png)"
+          cp "$target" "$generated"
+          git fetch origin "$HEAD_REF"
+          git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
+          install -m 0644 "$generated" "$target"
+          rm -f "$generated"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$target"
+          git commit -m 'Update reproducible JUnit Help screenshot'
+          git push origin "HEAD:$HEAD_REF"
 
       - name: Verify committed screenshots are reproducible
         shell: bash
