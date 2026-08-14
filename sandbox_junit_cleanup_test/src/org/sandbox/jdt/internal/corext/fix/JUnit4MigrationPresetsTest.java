@@ -128,6 +128,11 @@ public class JUnit4MigrationPresetsTest {
 		assertThrows(IllegalArgumentException.class, () -> JUnit4MigrationPresets.fromSelectionIndex(Preset.values().length));
 	}
 
+	@Test
+	public void rejectsNullPreset() {
+		assertThrows(NullPointerException.class, () -> JUnit4MigrationPresets.selectionFor(null));
+	}
+
 	private static void assertDependency(Map<String, Boolean> selection, String child, String parent, Preset preset) {
 		if (selection.get(child).booleanValue()) {
 			assertTrue(selection.get(parent).booleanValue(), preset + ": " + child + " requires " + parent); //$NON-NLS-1$ //$NON-NLS-2$
