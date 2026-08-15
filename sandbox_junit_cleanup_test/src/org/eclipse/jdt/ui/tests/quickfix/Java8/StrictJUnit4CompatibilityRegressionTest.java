@@ -274,6 +274,128 @@ public class StrictJUnit4CompatibilityRegressionTest {
 						""" });
 	}
 
+
+	@Test
+	public void stagedMigratedBaseKeepsBlockedJUnit4OverrideLifecycle() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit base= pack.createCompilationUnit("LifecycleBase.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import org.junit.jupiter.api.AfterEach;
+				import org.junit.jupiter.api.BeforeEach;
+
+				public class LifecycleBase {
+					protected String state;
+
+					@BeforeEach
+					public void setUp() {
+						state = "ready";
+					}
+
+					@AfterEach
+					public void tearDown() {
+						state = null;
+					}
+				}
+				""", false, null);
+		ICompilationUnit blocked= pack.createCompilationUnit("LegacyParameterizedLifecycleTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				import org.junit.Test;
+				import org.junit.runner.RunWith;
+				import org.junit.runners.Parameterized;
+				import org.junit.runners.Parameterized.Parameters;
+
+				@RunWith(Parameterized.class)
+				public class LegacyParameterizedLifecycleTest extends LifecycleBase {
+					@Parameters
+					public static Object[][] data() {
+						return new Object[2][0];
+					}
+
+					@Override
+					public void setUp() {
+						super.setUp();
+					}
+
+					@Override
+					public void tearDown() {
+						super.tearDown();
+					}
+
+					@Test
+					public void testLifecycle() {
+						System.out.println(state);
+					}
+				}
+				""", false, null);
+
+		enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
+
+		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+				new ICompilationUnit[] { base, blocked }, new String[] {
+						"""
+						package test;
+
+						import org.junit.jupiter.api.AfterEach;
+						import org.junit.jupiter.api.BeforeEach;
+
+						public class LifecycleBase {
+							protected String state;
+
+							@BeforeEach
+							public void setUp() {
+								state = "ready";
+							}
+
+							@AfterEach
+							public void tearDown() {
+								state = null;
+							}
+						}
+						""",
+						"""
+						package test;
+
+						import org.junit.After;
+						import org.junit.Before;
+						import org.junit.Test;
+						import org.junit.runner.RunWith;
+						import org.junit.runners.Parameterized;
+						import org.junit.runners.Parameterized.Parameters;
+
+						@RunWith(Parameterized.class)
+						public class LegacyParameterizedLifecycleTest extends LifecycleBase {
+							@Parameters
+							public static Object[][] data() {
+								return new Object[2][0];
+							}
+
+							@Override
+							@Before
+							public void setUp() {
+								super.setUp();
+							}
+
+							@Override
+							@After
+							public void tearDown() {
+								super.tearDown();
+							}
+
+							@Test
+							public void testLifecycle() {
+								System.out.println(state);
+							}
+						}
+						""" });
+	}
+
 	private void enable(String... options) throws CoreException {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		for (String option : options) {

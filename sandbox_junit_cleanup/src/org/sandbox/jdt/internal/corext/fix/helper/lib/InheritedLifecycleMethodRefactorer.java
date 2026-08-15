@@ -56,15 +56,30 @@ public final class InheritedLifecycleMethodRefactorer {
 	public static void addInheritedLifecycleOverrides(CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations,
 			Set<ASTNode> nodesProcessed, String sourceAnnotation, String targetAnnotation) {
+		addInheritedLifecycleOverrides(compilationUnit, operations, nodesProcessed,
+				Set.of(sourceAnnotation), targetAnnotation);
+	}
+
+	/**
+	 * Adds {@code targetAnnotation} when an override inherits any accepted source
+	 * lifecycle annotation. Accepting both the JUnit 4 and Jupiter forms keeps
+	 * the operation correct while a coordinated rewrite still exposes the old
+	 * bindings and when a later cleanup starts from already migrated sources.
+	 */
+	public static void addInheritedLifecycleOverrides(CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations,
+			Set<ASTNode> nodesProcessed, Set<String> sourceAnnotations, String targetAnnotation) {
+		Set<String> acceptedSourceAnnotations= Set.copyOf(sourceAnnotations);
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodDeclaration node) {
 				if (node.isConstructor() || nodesProcessed.contains(node)
-						|| hasAnnotation(node, sourceAnnotation) || hasAnnotation(node, targetAnnotation)) {
+						|| hasAnyAnnotation(node, acceptedSourceAnnotations)
+						|| hasAnnotation(node, targetAnnotation)) {
 					return true;
 				}
 				IMethodBinding binding= node.resolveBinding();
-				if (binding == null || !overridesAnnotatedLifecycle(binding, sourceAnnotation)) {
+				if (binding == null || !overridesAnnotatedLifecycle(binding, acceptedSourceAnnotations)) {
 					return true;
 				}
 				nodesProcessed.add(node);
@@ -74,7 +89,8 @@ public final class InheritedLifecycleMethodRefactorer {
 		});
 	}
 
-	private static boolean overridesAnnotatedLifecycle(IMethodBinding binding, String sourceAnnotation) {
+	private static boolean overridesAnnotatedLifecycle(IMethodBinding binding,
+			Set<String> sourceAnnotations) {
 		IMethodBinding declaration= binding.getMethodDeclaration();
 		ITypeBinding declaringType= declaration.getDeclaringClass();
 		for (ITypeBinding superType= declaringType == null ? null : declaringType.getSuperclass();
@@ -82,9 +98,27 @@ public final class InheritedLifecycleMethodRefactorer {
 			for (IMethodBinding candidate : superType.getDeclaredMethods()) {
 				IMethodBinding candidateDeclaration= candidate.getMethodDeclaration();
 				if (declaration.overrides(candidateDeclaration)
-						&& hasAnnotation(candidateDeclaration, sourceAnnotation)) {
+						&& hasAnyAnnotation(candidateDeclaration, sourceAnnotations)) {
 					return true;
 				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasAnyAnnotation(MethodDeclaration method, Set<String> qualifiedNames) {
+		for (String qualifiedName : qualifiedNames) {
+			if (hasAnnotation(method, qualifiedName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasAnyAnnotation(IMethodBinding method, Set<String> qualifiedNames) {
+		for (String qualifiedName : qualifiedNames) {
+			if (hasAnnotation(method, qualifiedName)) {
+				return true;
 			}
 		}
 		return false;
