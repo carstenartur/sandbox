@@ -53,7 +53,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout Sandbox
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Validate Oomph, JDT Core, JDT UI, corpus and evidence comparators
         env:
@@ -73,12 +73,12 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout Sandbox
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: sandbox
 
       - name: Checkout JDT Core R4_40
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.core
           ref: R4_40
@@ -86,7 +86,7 @@ jobs:
           path: upstream/eclipse.jdt.core
 
       - name: Checkout JDT UI R4_40
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.ui
           ref: R4_40
@@ -94,7 +94,7 @@ jobs:
           path: upstream/eclipse.jdt.ui
 
       - name: Checkout JDT Core test binaries R4_40
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.core.binaries
           ref: R4_40
@@ -189,13 +189,13 @@ jobs:
       MAVEN_OPTS: -Djava.awt.headless=true
     steps:
       - name: Checkout Sandbox
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: sandbox
 
       - name: Checkout JDT Core R4_40
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.core
           ref: R4_40
@@ -203,7 +203,7 @@ jobs:
           path: upstream/eclipse.jdt.core
 
       - name: Checkout JDT UI R4_40
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.ui
           ref: R4_40
@@ -211,7 +211,7 @@ jobs:
           path: upstream/eclipse.jdt.ui
 
       - name: Checkout JDT Core test binaries R4_40
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.core.binaries
           ref: R4_40
@@ -321,13 +321,13 @@ jobs:
       MAVEN_OPTS: -Djava.awt.headless=true
     steps:
       - name: Checkout Sandbox
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: sandbox
 
       - name: Checkout the pinned JDT UI R4_40 corpus
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: eclipse-jdt/eclipse.jdt.ui
           ref: R4_40
