@@ -53,6 +53,8 @@ import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
 import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleImportCleanupSupport;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.InheritedLifecycleMethodRefactorer;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyScopeDetector;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
@@ -164,10 +166,28 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				context.getCompilationUnit().getJavaProject(), Analysis.empty());
 		List<JUnitBestEffortSupport.Gap> localGaps= analysis.gapsFor(context.getCompilationUnit());
 		if (!bestEffort && !localGaps.isEmpty()) {
-			// Strict mode is atomic at compilation-unit level. This prevents a safe
-			// looking local annotation rewrite from detaching a test class from an
-			// unsupported runner, rule, parameter source, or lifecycle contract.
-			return null;
+			// Strict mode remains atomic for migration edits. The only permitted
+			// compatibility change makes inherited JUnit 4 virtual lifecycle dispatch
+			// explicit when this compilation unit must stay on JUnit 4.
+			Set<CompilationUnitRewriteOperationWithSourceRange> compatibilityOperations=
+					new LinkedHashSet<>();
+			Set<ASTNode> compatibilityNodes= new HashSet<>();
+			if (computeFixSet.contains(JUnitCleanUpFixCore.BEFORE)) {
+				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+						compatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_BEFORE,
+						JUnitConstants.ORG_JUNIT_BEFORE);
+			}
+			if (computeFixSet.contains(JUnitCleanUpFixCore.AFTER)) {
+				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+						compatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_AFTER,
+						JUnitConstants.ORG_JUNIT_AFTER);
+			}
+			if (compatibilityOperations.isEmpty()) {
+				return null;
+			}
+			return new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,
+					compatibilityOperations.toArray(
+							new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
 		}
 
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
