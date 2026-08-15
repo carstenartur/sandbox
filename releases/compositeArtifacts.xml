@@ -1,12 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <?compositeArtifactRepository version='1.0.0'?>
-<repository name='Sandbox Releases'
-            type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository'
-            version='1.0.0'>
-  <properties size='1'>
-    <property name='p2.timestamp' value='1784932362000'/>
-  </properties>
-  <children size='8'>
+<repository name='Sandbox Releases' type='org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository' version='1.0.0'>
+  <properties size='1'><property name='p2.timestamp' value='1786812401000'/></properties>
+  <children size='9'>
     <child location='1.2.2'/>
     <child location='1.2.3'/>
     <child location='1.2.4'/>
@@ -14,5 +10,7 @@
     <child location='1.2.6'/>
     <child location='1.3.0'/>
     <child location='1.3.1'/>
-    <child location='1.3.2'/>  </children>
+    <child location='1.3.2'/>
+    <child location='1.3.3'/>
+  </children>
 </repository>

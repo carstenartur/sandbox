@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 3,
+  "result": "PASS",
+  "platform": "linux/gtk/x86_64",
+  "eclipseRelease": "2026-06",
+  "orbitRelease": "2026-06",
+  "bouncyCastleVersion": "1.84",
+  "publishedFeatureCount": 15,
+  "p2MetadataUnits": 65,
+  "p2ArtifactKeys": 49,
+  "p2ArtifactFilesChecked": 49,
+  "p2ChecksumsChecked": 49,
+  "productPluginCount": 373,
+  "productSingletonBundleCount": 205,
+  "productRoot": "/home/runner/work/sandbox/sandbox/sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64",
+  "repository": {
+    "metadataUnits": 65,
+    "artifactKeys": 49,
+    "artifactFilesChecked": 49,
+    "checksumsChecked": 49,
+    "publishedFeatures": [
+{
+  "id": "sandbox_encoding_quickfix_feature",
+  "iu": "sandbox_encoding_quickfix_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7871,
+  "artifactSha256": "f703bff048a5448046ce0e52c28506569181605bf6ae27ca349ee041769b59d4"
+},
+{
+  "id": "sandbox_platform_helper_feature",
+  "iu": "sandbox_platform_helper_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7795,
+  "artifactSha256": "54b0a96dfcd964c55fb2e811ba4a94b45622866df6f383401165fe661b274479"
+},
+{
+  "id": "sandbox_functional_converter_feature",
+  "iu": "sandbox_functional_converter_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7987,
+  "artifactSha256": "3a5c46d40b769a193aeb9ab925ee00983227306e1e4da969eb6e0276106604ed"
+},
+{
+  "id": "sandbox_tools_feature",
+  "iu": "sandbox_tools_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7808,
+  "artifactSha256": "d5f6ef71c6f59997f3e2511546eadd8e6b049eca62abf518b1cb7f218e44c4f9"
+},
+{
+  "id": "sandbox_triggerpattern_feature",
+  "iu": "sandbox_triggerpattern_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7943,
+  "artifactSha256": "ca3a73c5502ad04f70af71594030fd2e688f5471d5e2d71ed4c5a6323dd9445b"
+},
+{
+  "id": "sandbox_xml_cleanup_feature",
+  "iu": "sandbox_xml_cleanup_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 8084,
+  "artifactSha256": "99439061f95d8fb4b9adcf091635f9c825a40ab445b60c377ffff3fb3b9f99f1"
+},
+{
+  "id": "sandbox_jface_cleanup_feature",
+  "iu": "sandbox_jface_cleanup_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7850,
+  "artifactSha256": "3069a9e407e549320b3a3894a837e067726da193ff55a84ddb0a3ad8abaa7271"
+},
+{
+  "id": "sandbox_junit_cleanup_feature",
+  "iu": "sandbox_junit_cleanup_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7864,
+  "artifactSha256": "78e6a7adb6b2a834b7e8633d745b6f18bd54d384dc63a51372ca1bf8c2c6d2b7"
+},
+{
+  "id": "sandbox_method_reuse_feature",
+  "iu": "sandbox_method_reuse_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 2677,
+  "artifactSha256": "11f460c200f830ee771420b3b787df2d5b1059f29b1ca157a1b7dfb7f0921bfb"
+},
+{
+  "id": "sandbox_usage_view_feature",
+  "iu": "sandbox_usage_view_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 2823,
+  "artifactSha256": "3522f5fc9939fa4fea907cad352fc4c8b050046e34696b0507032af50251e83d"
+},
+{
+  "id": "sandbox_cleanup_application_feature",
+  "iu": "sandbox_cleanup_application_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 7859,
+  "artifactSha256": "db3c5fedff4016c13ba7814f9ea1fb4a21eb9c54ca7edbfa7726249e85eb3358"
+},
+{
+  "id": "sandbox_css_cleanup_feature",
+  "iu": "sandbox_css_cleanup_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 2701,
+  "artifactSha256": "88c8f20d42faaf9563cd5526f47bdbb75bb04a3818f29a4339aba6a28de087c5"
+},
+{
+  "id": "sandbox_extra_search_feature",
+  "iu": "sandbox_extra_search_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 8274,
+  "artifactSha256": "0dbe5bc8a3fb5f7ee8262971ae76bb935f14bfa652af3ed26b291163bca8d88d"
+},
+{
+  "id": "sandbox_int_to_enum_feature",
+  "iu": "sandbox_int_to_enum_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 12046,
+  "artifactSha256": "81355c83a93bead3a62eaecf1a5d5f496b371de2e6d4b7f8fda1b71aed8df9bb"
+},
+{
+  "id": "sandbox_use_general_type_feature",
+  "iu": "sandbox_use_general_type_feature.feature.group",
+  "version": "1.3.3",
+  "artifactSize": 8137,
+  "artifactSha256": "146a4d21400e3488d443830d3d9f509c21fccf5c2fbd36ac293e5077aeab35ce"
+}
+    ]
+  }
+}
