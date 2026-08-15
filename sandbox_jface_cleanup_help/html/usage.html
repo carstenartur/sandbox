@@ -20,12 +20,10 @@
 
    <h3>Before</h3>
    <pre>monitor.beginTask("Import", 100);
-IProgressMonitor child =
-    new SubProgressMonitor(monitor, 40);</pre>
+IProgressMonitor child = new SubProgressMonitor(monitor, 40);</pre>
 
    <h3>After</h3>
-   <pre>SubMonitor subMonitor =
-    SubMonitor.convert(monitor, "Import", 100);
+   <pre>SubMonitor subMonitor = SubMonitor.convert(monitor, "Import", 100);
 IProgressMonitor child = subMonitor.split(40);</pre>
 
    <p>Several children sharing the same parent task use the same generated
@@ -40,13 +38,11 @@ IProgressMonitor child = subMonitor.split(40);</pre>
 
    <h3>Before</h3>
    <pre>import org.eclipse.jface.viewers.ViewerSorter;
-
 class NameSorter extends ViewerSorter {
 }</pre>
 
    <h3>After</h3>
    <pre>import org.eclipse.jface.viewers.ViewerComparator;
-
 class NameSorter extends ViewerComparator {
 }</pre>
 
@@ -67,10 +63,9 @@ Image image = new Image(device, imageData);</pre>
 
    <h3>After</h3>
    <pre>PaletteData palette = new PaletteData(new RGB(0, 0, 0));
-Image image = new Image(device,
-    (ImageDataProvider) zoom -&gt; {
-        return new ImageData(1, 1, 1, palette);
-    });</pre>
+Image image = new Image(device, (ImageDataProvider) zoom -&gt; {
+return new ImageData(1, 1, 1, palette);
+});</pre>
 
    <p>The source <code>ImageData</code> must be a removable local value whose
       construction can be reproduced safely inside the provider. Parameters,
