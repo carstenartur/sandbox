@@ -144,6 +144,7 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 				if (binding == null && ANNOTATION_REGISTER_EXTENSION.equals(annotation.getTypeName().getFullyQualifiedName())) {
 					return true;
 				}
+			}
 		}
 		return false;
 	}

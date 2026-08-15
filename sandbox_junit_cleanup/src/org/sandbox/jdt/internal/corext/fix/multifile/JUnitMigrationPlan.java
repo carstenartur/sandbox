@@ -333,6 +333,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 				if (binding != null && expected.equals(binding.getQualifiedName())) {
 					return annotation;
 				}
+			}
 		}
 		return null;
 	}
