@@ -192,6 +192,21 @@ public final class JUnitBestEffortSupport {
 	private JUnitBestEffortSupport() {
 	}
 
+	/**
+	 * Returns rewrites that do not change test discovery, lifecycle, runners or
+	 * extension contracts and may therefore proceed beside a quarantined gap.
+	 */
+	public static EnumSet<JUnitCleanUpFixCore> independentlySafeFixes(
+			EnumSet<JUnitCleanUpFixCore> fixes) {
+		EnumSet<JUnitCleanUpFixCore> result= fixes.clone();
+		result.retainAll(EnumSet.of(
+				JUnitCleanUpFixCore.ASSERT,
+				JUnitCleanUpFixCore.ASSERT_OPTIMIZATION,
+				JUnitCleanUpFixCore.ASSUME,
+				JUnitCleanUpFixCore.ASSUME_OPTIMIZATION));
+		return result;
+	}
+
 	/** Analyzes all enabled difficult JUnit 4 constructs before cleanup planning. */
 	public static Analysis analyze(IJavaProject project, ICompilationUnit[] units,
 			EnumSet<JUnitCleanUpFixCore> fixes, IProgressMonitor monitor) {
@@ -218,9 +233,9 @@ public final class JUnitBestEffortSupport {
 					if (key != null) {
 						sourceTypesByKey.put(key, type);
 					}
-					boolean handledParameterizedRunner= fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)
-							&& ParameterizedMigrationEligibility.hasParameterizedRunner(node);
-					if (handledParameterizedRunner) {
+					boolean parameterizedRunner=
+							ParameterizedMigrationEligibility.hasParameterizedRunner(node);
+					if (parameterizedRunner && fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)) {
 						ParameterizedMigrationEligibility.Assessment assessment=
 								ParameterizedMigrationEligibility.assess(node);
 						if (!assessment.eligible()) {
@@ -228,11 +243,17 @@ public final class JUnitBestEffortSupport {
 									assessment.reasonCode(), assessment.explanation(),
 									remediationFor(assessment.reasonCode()));
 						}
+					} else if (parameterizedRunner && requiresParameterizedClosure(fixes)) {
+						String reasonCode= "PARAMETERIZED_COMPONENT_NOT_SELECTED"; //$NON-NLS-1$
+						addGap(gaps, type, "parameterized:" + type.name(), //$NON-NLS-1$
+								reasonCode,
+								"A selected rewrite would change JUnit discovery, lifecycle or Rule semantics while the JUnit 4 Parameterized runner remains.", //$NON-NLS-1$
+								remediationFor(reasonCode));
 					}
 					if (fixes.contains(JUnitCleanUpFixCore.RUNWITH)) {
 						String runner= runnerType(node);
 						if (runner != null && !runner.isBlank()
-								&& !handledParameterizedRunner
+								&& !parameterizedRunner
 								&& !RunWithMigrationEligibility.canMigrate(node, runner)) {
 							addGap(gaps, type, "runner:" + type.name(), //$NON-NLS-1$
 									"CUSTOM_JUNIT4_RUNNER", //$NON-NLS-1$
@@ -597,6 +618,13 @@ public final class JUnitBestEffortSupport {
 		return null;
 	}
 
+
+	private static boolean requiresParameterizedClosure(EnumSet<JUnitCleanUpFixCore> fixes) {
+		EnumSet<JUnitCleanUpFixCore> structural= fixes.clone();
+		structural.removeAll(independentlySafeFixes(fixes));
+		return !structural.isEmpty();
+	}
+
 	private static boolean rulesEnabled(EnumSet<JUnitCleanUpFixCore> fixes) {
 		return fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)
 				|| fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)
@@ -626,6 +654,9 @@ public final class JUnitBestEffortSupport {
 	}
 
 	private static String remediationFor(String reasonCode) {
+		if ("PARAMETERIZED_COMPONENT_NOT_SELECTED".equals(reasonCode)) { //$NON-NLS-1$
+			return "Enable the Parameterized migration for the same source component, or leave its JUnit 4 test, lifecycle and Rule annotations unchanged until that coordinated migration can run."; //$NON-NLS-1$
+		}
 		if (reasonCode.startsWith("PARAMETERIZED_")) { //$NON-NLS-1$
 			return "Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling."; //$NON-NLS-1$
 		}

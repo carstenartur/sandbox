@@ -56,6 +56,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.RuleImportCleanupSupport;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.InheritedLifecycleMethodRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnit3HierarchyScopeDetector;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitLifecycleScopeDetector;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
@@ -194,11 +195,17 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 							new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
 		}
 
+		boolean preserveExecutionContract= bestEffort && !localGaps.isEmpty();
+		EnumSet<JUnitCleanUpFixCore> effectiveFixSet= preserveExecutionContract
+				? JUnitBestEffortSupport.independentlySafeFixes(computeFixSet)
+				: computeFixSet;
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> sharedNodesProcessed= new HashSet<>();
-		plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
-		RuleImportCleanupSupport.addIfSafe(compilationUnit, computeFixSet, operations);
+		if (!preserveExecutionContract) {
+			plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, sharedNodesProcessed);
+		}
+		effectiveFixSet.forEach(i -> i.findOperations(compilationUnit, operations, sharedNodesProcessed));
+		RuleImportCleanupSupport.addIfSafe(compilationUnit, effectiveFixSet, operations);
 		if (bestEffort) {
 			JUnitBestEffortSupport.addMarkerOperation(compilationUnit, localGaps, operations);
 		}
@@ -219,9 +226,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
 		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
-		boolean migrateSuites= fixes.contains(JUnitCleanUpFixCore.RUNWITH);
+		boolean followSuiteMembership= isEnabled(JUNIT_CLEANUP) && !fixes.isEmpty();
 		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);
-		if (!migrateExternalResourceRules && !migrateSuites && !migrateJUnit3Hierarchies) {
+		Set<String> lifecycleAnnotations= lifecycleAnnotations(fixes);
+		boolean migrateLifecycleHierarchies= !lifecycleAnnotations.isEmpty();
+		if (!migrateExternalResourceRules && !followSuiteMembership && !migrateJUnit3Hierarchies
+				&& !migrateLifecycleHierarchies) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
@@ -236,11 +246,16 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 		rejectedScopes.remove(project);
 		JUnitScopeCandidateDetector.SearchSeeds standardSeeds= JUnitScopeCandidateDetector.findSearchSeeds(project,
-				currentScope, migrateExternalResourceRules, migrateSuites, monitor);
+				currentScope, migrateExternalResourceRules, followSuiteMembership, monitor);
 		JUnitScopeCandidateDetector.SearchSeeds junit3Seeds= migrateJUnit3Hierarchies
 				? JUnit3HierarchyScopeDetector.findSearchSeeds(project, currentScope, monitor)
 				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
-		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(standardSeeds, junit3Seeds);
+		JUnitScopeCandidateDetector.SearchSeeds lifecycleSeeds= migrateLifecycleHierarchies
+				? JUnitLifecycleScopeDetector.findSearchSeeds(project, currentScope,
+						lifecycleAnnotations, monitor)
+				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
+		JUnitScopeCandidateDetector.SearchSeeds seeds=
+				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds);
 		if (!seeds.candidateFound()) {
 			clearScopeDecision(project);
 			return List.of();
@@ -291,6 +306,28 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		}
 		declaring.addAll(JavaProjectCompilationUnits.owningProjects(seeds.directCompilationUnits()));
 		return JavaProjectCompilationUnits.withReferencingProjects(declaring);
+	}
+
+
+	private static Set<String> lifecycleAnnotations(EnumSet<JUnitCleanUpFixCore> fixes) {
+		Set<String> result= new LinkedHashSet<>();
+		if (fixes.contains(JUnitCleanUpFixCore.BEFORE)) {
+			result.add(JUnitConstants.ORG_JUNIT_BEFORE);
+			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+		}
+		if (fixes.contains(JUnitCleanUpFixCore.AFTER)) {
+			result.add(JUnitConstants.ORG_JUNIT_AFTER);
+			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH);
+		}
+		if (fixes.contains(JUnitCleanUpFixCore.BEFORECLASS)) {
+			result.add(JUnitConstants.ORG_JUNIT_BEFORECLASS);
+			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_ALL);
+		}
+		if (fixes.contains(JUnitCleanUpFixCore.AFTERCLASS)) {
+			result.add(JUnitConstants.ORG_JUNIT_AFTERCLASS);
+			result.add(JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_ALL);
+		}
+		return Set.copyOf(result);
 	}
 
 	private static JUnitScopeCandidateDetector.SearchSeeds mergeSeeds(
@@ -386,6 +423,11 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED)
 				&& isEnabled(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT)) {
 			fixSetCombined.add(JUnitCleanUpFixCore.TEST_EXPECTED_TIMEOUT);
+		}
+		if (fixSetCombined.contains(JUnitCleanUpFixCore.EXTERNALRESOURCE)
+				|| fixSetCombined.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)) {
+			fixSetCombined.add(JUnitCleanUpFixCore.EXTERNALRESOURCE);
+			fixSetCombined.add(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
 		}
 		return fixSetCombined;
 	}

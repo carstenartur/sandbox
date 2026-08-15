@@ -373,15 +373,22 @@ public class ParameterizedTestJUnitPlugin extends TriggerPatternCleanupPlugin {
 	 */
 	private boolean isTestMethod(MethodDeclaration method) {
 		for (Object modifier : method.modifiers()) {
-			if (modifier instanceof Annotation) {
-				Annotation annot = (Annotation) modifier;
-				String annotName = annot.getTypeName().getFullyQualifiedName();
-				if ("Test".equals(annotName) || ORG_JUNIT_TEST.equals(annotName)) {
-					return true;
-				}
+			if (modifier instanceof Annotation annotation && isTestAnnotation(annotation)) {
+				return true;
 			}
 		}
 		return false;
+	}
+
+	private static boolean isTestAnnotation(Annotation annotation) {
+		ITypeBinding binding= annotation.resolveTypeBinding();
+		if (binding != null) {
+			String qualifiedName= binding.getQualifiedName();
+			return ORG_JUNIT_TEST.equals(qualifiedName) || ORG_JUNIT_JUPITER_TEST.equals(qualifiedName);
+		}
+		String sourceName= annotation.getTypeName().getFullyQualifiedName();
+		return "Test".equals(sourceName) || ORG_JUNIT_TEST.equals(sourceName) //$NON-NLS-1$
+				|| ORG_JUNIT_JUPITER_TEST.equals(sourceName);
 	}
 
 	/**
@@ -395,13 +402,9 @@ public class ParameterizedTestJUnitPlugin extends TriggerPatternCleanupPlugin {
 		ListRewrite modifiersRewrite = rewriter.getListRewrite(method, MethodDeclaration.MODIFIERS2_PROPERTY);
 		Annotation testAnnotation = null;
 		for (Object modifier : method.modifiers()) {
-			if (modifier instanceof Annotation) {
-				Annotation annot = (Annotation) modifier;
-				String annotName = annot.getTypeName().getFullyQualifiedName();
-				if ("Test".equals(annotName) || ORG_JUNIT_TEST.equals(annotName)) {
-					testAnnotation = annot;
-					break;
-				}
+			if (modifier instanceof Annotation annotation && isTestAnnotation(annotation)) {
+				testAnnotation= annotation;
+				break;
 			}
 		}
 
@@ -433,6 +436,7 @@ public class ParameterizedTestJUnitPlugin extends TriggerPatternCleanupPlugin {
 
 		// Update imports
 		importRewriter.removeImport(ORG_JUNIT_TEST);
+		importRewriter.removeImport(ORG_JUNIT_JUPITER_TEST);
 	}
 
 	@Override

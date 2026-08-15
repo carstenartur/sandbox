@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_SUITE_SUITECLASSES;
 
@@ -172,7 +173,7 @@ public final class JUnitScopeCandidateDetector {
 
 					@Override
 					public boolean visit(SingleMemberAnnotation node) {
-						if (migrateSuites && isSuiteClasses(node)) {
+						if (migrateSuites && isSuiteMembership(node)) {
 							candidateFound[0]= true;
 							complete[0]&= collectSuiteTargets(node.getValue(), directUnits);
 						}
@@ -181,7 +182,7 @@ public final class JUnitScopeCandidateDetector {
 
 					@Override
 					public boolean visit(NormalAnnotation node) {
-						if (!migrateSuites || !isSuiteClasses(node)) {
+						if (!migrateSuites || !isSuiteMembership(node)) {
 							return true;
 						}
 						candidateFound[0]= true;
@@ -204,12 +205,15 @@ public final class JUnitScopeCandidateDetector {
 				new ArrayList<>(directUnits));
 	}
 
-	private static boolean isSuiteClasses(Annotation annotation) {
+	private static boolean isSuiteMembership(Annotation annotation) {
 		ITypeBinding binding= annotation.resolveTypeBinding();
 		if (binding != null) {
-			return ORG_JUNIT_SUITE_SUITECLASSES.equals(binding.getQualifiedName());
+			String qualifiedName= binding.getQualifiedName();
+			return ORG_JUNIT_SUITE_SUITECLASSES.equals(qualifiedName)
+					|| ORG_JUNIT_PLATFORM_SUITE_API_SELECT_CLASSES.equals(qualifiedName);
 		}
-		return "SuiteClasses".equals(simpleName(annotation.getTypeName().getFullyQualifiedName())); //$NON-NLS-1$
+		String annotationName= simpleName(annotation.getTypeName().getFullyQualifiedName());
+		return "SuiteClasses".equals(annotationName) || "SelectClasses".equals(annotationName); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static boolean collectSuiteTargets(Expression expression, Set<ICompilationUnit> units) {
