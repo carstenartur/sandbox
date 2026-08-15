@@ -1,0 +1,266 @@
+name: Finalize dual-state lifecycle compatibility
+
+on:
+  push:
+    branches:
+      - fix/strict-junit-lifecycle-compatibility
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: fix/strict-junit-lifecycle-compatibility
+
+      - name: Preserve lifecycle detection before and after an earlier migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          helper_path = Path("sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/lib/InheritedLifecycleMethodRefactorer.java")
+          helper = helper_path.read_text(encoding="utf-8")
+          start = helper.index("\tpublic static void addInheritedLifecycleOverrides(")
+          end = helper.index("\n\tprivate static boolean hasAnnotation(MethodDeclaration method", start)
+          replacement = '''\tpublic static void addInheritedLifecycleOverrides(CompilationUnit compilationUnit,
+          \t\t\tSet<CompilationUnitRewriteOperationWithSourceRange> operations,
+          \t\t\tSet<ASTNode> nodesProcessed, String sourceAnnotation, String targetAnnotation) {
+          \t\taddInheritedLifecycleOverrides(compilationUnit, operations, nodesProcessed,
+          \t\t\t\tSet.of(sourceAnnotation), targetAnnotation);
+          \t}
+
+          \t/**
+          \t * Adds {@code targetAnnotation} when an override inherits any accepted source
+          \t * lifecycle annotation. Accepting both the JUnit 4 and Jupiter forms keeps
+          \t * the operation correct while a coordinated rewrite still exposes the old
+          \t * bindings and when a later cleanup starts from already migrated sources.
+          \t */
+          \tpublic static void addInheritedLifecycleOverrides(CompilationUnit compilationUnit,
+          \t\t\tSet<CompilationUnitRewriteOperationWithSourceRange> operations,
+          \t\t\tSet<ASTNode> nodesProcessed, Set<String> sourceAnnotations, String targetAnnotation) {
+          \t\tSet<String> acceptedSourceAnnotations= Set.copyOf(sourceAnnotations);
+          \t\tcompilationUnit.accept(new ASTVisitor() {
+          \t\t\t@Override
+          \t\t\tpublic boolean visit(MethodDeclaration node) {
+          \t\t\t\tif (node.isConstructor() || nodesProcessed.contains(node)
+          \t\t\t\t\t\t|| hasAnyAnnotation(node, acceptedSourceAnnotations)
+          \t\t\t\t\t\t|| hasAnnotation(node, targetAnnotation)) {
+          \t\t\t\t\treturn true;
+          \t\t\t\t}
+          \t\t\t\tIMethodBinding binding= node.resolveBinding();
+          \t\t\t\tif (binding == null || !overridesAnnotatedLifecycle(binding, acceptedSourceAnnotations)) {
+          \t\t\t\t\treturn true;
+          \t\t\t\t}
+          \t\t\t\tnodesProcessed.add(node);
+          \t\t\t\toperations.add(addAnnotation(node, targetAnnotation));
+          \t\t\t\treturn true;
+          \t\t\t}
+          \t\t});
+          \t}
+
+          \tprivate static boolean overridesAnnotatedLifecycle(IMethodBinding binding,
+          \t\t\tSet<String> sourceAnnotations) {
+          \t\tIMethodBinding declaration= binding.getMethodDeclaration();
+          \t\tITypeBinding declaringType= declaration.getDeclaringClass();
+          \t\tfor (ITypeBinding superType= declaringType == null ? null : declaringType.getSuperclass();
+          \t\t\t\tsuperType != null; superType= superType.getSuperclass()) {
+          \t\t\tfor (IMethodBinding candidate : superType.getDeclaredMethods()) {
+          \t\t\t\tIMethodBinding candidateDeclaration= candidate.getMethodDeclaration();
+          \t\t\t\tif (declaration.overrides(candidateDeclaration)
+          \t\t\t\t\t\t&& hasAnyAnnotation(candidateDeclaration, sourceAnnotations)) {
+          \t\t\t\t\treturn true;
+          \t\t\t\t}
+          \t\t\t}
+          \t\t}
+          \t\treturn false;
+          \t}
+
+          \tprivate static boolean hasAnyAnnotation(MethodDeclaration method, Set<String> qualifiedNames) {
+          \t\tfor (String qualifiedName : qualifiedNames) {
+          \t\t\tif (hasAnnotation(method, qualifiedName)) {
+          \t\t\t\treturn true;
+          \t\t\t}
+          \t\t}
+          \t\treturn false;
+          \t}
+
+          \tprivate static boolean hasAnyAnnotation(IMethodBinding method, Set<String> qualifiedNames) {
+          \t\tfor (String qualifiedName : qualifiedNames) {
+          \t\t\tif (hasAnnotation(method, qualifiedName)) {
+          \t\t\t\treturn true;
+          \t\t\t}
+          \t\t}
+          \t\treturn false;
+          \t}
+          '''
+          helper_path.write_text(helper[:start] + replacement + helper[end:], encoding="utf-8")
+
+          core_path = Path("sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java")
+          core = core_path.read_text(encoding="utf-8")
+          before_old = '''\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+          \t\t\t\t\t\tcompatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH,
+          \t\t\t\t\t\tJUnitConstants.ORG_JUNIT_BEFORE);'''
+          before_new = '''\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+          \t\t\t\t\t\tcompatibilityOperations, compatibilityNodes,
+          \t\t\t\t\t\tSet.of(JUnitConstants.ORG_JUNIT_BEFORE,
+          \t\t\t\t\t\t\t\tJUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH),
+          \t\t\t\t\t\tJUnitConstants.ORG_JUNIT_BEFORE);'''
+          after_old = '''\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+          \t\t\t\t\t\tcompatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH,
+          \t\t\t\t\t\tJUnitConstants.ORG_JUNIT_AFTER);'''
+          after_new = '''\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+          \t\t\t\t\t\tcompatibilityOperations, compatibilityNodes,
+          \t\t\t\t\t\tSet.of(JUnitConstants.ORG_JUNIT_AFTER,
+          \t\t\t\t\t\t\t\tJUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH),
+          \t\t\t\t\t\tJUnitConstants.ORG_JUNIT_AFTER);'''
+          if core.count(before_old) != 1 or core.count(after_old) != 1:
+              raise SystemExit("Unexpected strict lifecycle compatibility calls")
+          core = core.replace(before_old, before_new, 1).replace(after_old, after_new, 1)
+          core_path.write_text(core, encoding="utf-8")
+
+          test_path = Path("sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/StrictJUnit4CompatibilityRegressionTest.java")
+          test = test_path.read_text(encoding="utf-8")
+          marker = "\n\tprivate void enable(String... options) throws CoreException {"
+          if marker not in test or "stagedMigratedBaseKeepsBlockedJUnit4OverrideLifecycle" in test:
+              raise SystemExit("Unexpected strict regression test context")
+          staged_test = r'''
+
+          	@Test
+          	public void stagedMigratedBaseKeepsBlockedJUnit4OverrideLifecycle() throws CoreException {
+          		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+          		ICompilationUnit base= pack.createCompilationUnit("LifecycleBase.java", //$NON-NLS-1$
+          				"""
+          				package test;
+
+          				import org.junit.jupiter.api.AfterEach;
+          				import org.junit.jupiter.api.BeforeEach;
+
+          				public class LifecycleBase {
+          					protected String state;
+
+          					@BeforeEach
+          					public void setUp() {
+          						state = "ready";
+          					}
+
+          					@AfterEach
+          					public void tearDown() {
+          						state = null;
+          					}
+          				}
+          				""", false, null);
+          		ICompilationUnit blocked= pack.createCompilationUnit("LegacyParameterizedLifecycleTest.java", //$NON-NLS-1$
+          				"""
+          				package test;
+
+          				import org.junit.Test;
+          				import org.junit.runner.RunWith;
+          				import org.junit.runners.Parameterized;
+          				import org.junit.runners.Parameterized.Parameters;
+
+          				@RunWith(Parameterized.class)
+          				public class LegacyParameterizedLifecycleTest extends LifecycleBase {
+          					@Parameters
+          					public static Object[][] data() {
+          						return new Object[2][0];
+          					}
+
+          					@Override
+          					public void setUp() {
+          						super.setUp();
+          					}
+
+          					@Override
+          					public void tearDown() {
+          						super.tearDown();
+          					}
+
+          					@Test
+          					public void testLifecycle() {
+          						System.out.println(state);
+          					}
+          				}
+          				""", false, null);
+
+          		enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,
+          				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,
+          				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
+          				MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
+
+          		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+          				new ICompilationUnit[] { base, blocked }, new String[] {
+          						"""
+          						package test;
+
+          						import org.junit.jupiter.api.AfterEach;
+          						import org.junit.jupiter.api.BeforeEach;
+
+          						public class LifecycleBase {
+          							protected String state;
+
+          							@BeforeEach
+          							public void setUp() {
+          								state = "ready";
+          							}
+
+          							@AfterEach
+          							public void tearDown() {
+          								state = null;
+          							}
+          						}
+          						""",
+          						"""
+          						package test;
+
+          						import org.junit.After;
+          						import org.junit.Before;
+          						import org.junit.Test;
+          						import org.junit.runner.RunWith;
+          						import org.junit.runners.Parameterized;
+          						import org.junit.runners.Parameterized.Parameters;
+
+          						@RunWith(Parameterized.class)
+          						public class LegacyParameterizedLifecycleTest extends LifecycleBase {
+          							@Parameters
+          							public static Object[][] data() {
+          								return new Object[2][0];
+          							}
+
+          							@Override
+          							@Before
+          							public void setUp() {
+          								super.setUp();
+          							}
+
+          							@Override
+          							@After
+          							public void tearDown() {
+          								super.tearDown();
+          							}
+
+          							@Test
+          							public void testLifecycle() {
+          								System.out.println(state);
+          							}
+          						}
+          						""" });
+          	}
+          '''.replace("          ", "")
+          test_path.write_text(test.replace(marker, staged_test + marker, 1), encoding="utf-8")
+          PY
+
+          rm .github/workflows/agent-pr1477-dual-lifecycle-source.yml
+          git diff --check
+          git status --short
+          git config user.name "Carsten Hammer"
+          git config user.email "carsten.hammer@t-online.de"
+          git add -A
+          git commit -m "Recognize lifecycle sources before and after migration"
+          git push origin HEAD:fix/strict-junit-lifecycle-compatibility
