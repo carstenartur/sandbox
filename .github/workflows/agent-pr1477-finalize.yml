@@ -1,0 +1,263 @@
+name: Finalize PR 1477 fixes
+
+on:
+  push:
+    branches:
+      - fix/strict-junit-lifecycle-compatibility
+    paths:
+      - .github/workflows/agent-pr1477-finalize.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: fix/strict-junit-lifecycle-compatibility
+
+      - name: Apply strict lifecycle compatibility and refresh generated Help images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          core_path = Path("sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java")
+          core = core_path.read_text(encoding="utf-8")
+
+          import_anchor = "import org.sandbox.jdt.internal.corext.fix.helper.RuleImportCleanupSupport;\n"
+          import_replacement = import_anchor + (
+              "import org.sandbox.jdt.internal.corext.fix.helper.lib.InheritedLifecycleMethodRefactorer;\n"
+              "import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants;\n"
+          )
+          if core.count(import_anchor) != 1:
+              raise SystemExit("Unexpected JUnitCleanUpCore import context")
+          core = core.replace(import_anchor, import_replacement, 1)
+
+          old_block = """\t\tif (!bestEffort && !localGaps.isEmpty()) {\n\t\t\t// Strict mode is atomic at compilation-unit level. This prevents a safe\n\t\t\t// looking local annotation rewrite from detaching a test class from an\n\t\t\t// unsupported runner, rule, parameter source, or lifecycle contract.\n\t\t\treturn null;\n\t\t}\n"""
+          new_block = """\t\tif (!bestEffort && !localGaps.isEmpty()) {\n\t\t\t// Strict mode remains atomic for migration edits. The only permitted\n\t\t\t// compatibility change is to make the existing JUnit 4 virtual lifecycle\n\t\t\t// dispatch explicit on an unannotated override. This is required when a\n\t\t\t// shared superclass migrates to Jupiter but this compilation unit must stay\n\t\t\t// on JUnit 4 because of an unsupported runner or parameter contract.\n\t\t\tSet<CompilationUnitRewriteOperationWithSourceRange> compatibilityOperations=\n\t\t\t\t\tnew LinkedHashSet<>();\n\t\t\tSet<ASTNode> compatibilityNodes= new HashSet<>();\n\t\t\tif (computeFixSet.contains(JUnitCleanUpFixCore.BEFORE)) {\n\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,\n\t\t\t\t\t\tcompatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_BEFORE,\n\t\t\t\t\t\tJUnitConstants.ORG_JUNIT_BEFORE);\n\t\t\t}\n\t\t\tif (computeFixSet.contains(JUnitCleanUpFixCore.AFTER)) {\n\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,\n\t\t\t\t\t\tcompatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_AFTER,\n\t\t\t\t\t\tJUnitConstants.ORG_JUNIT_AFTER);\n\t\t\t}\n\t\t\tif (compatibilityOperations.isEmpty()) {\n\t\t\t\treturn null;\n\t\t\t}\n\t\t\treturn new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,\n\t\t\t\t\tcompatibilityOperations.toArray(\n\t\t\t\t\t\t\tnew CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));\n\t\t}\n"""
+          if core.count(old_block) != 1:
+              raise SystemExit("Unexpected strict-mode block in JUnitCleanUpCore")
+          core_path.write_text(core.replace(old_block, new_block, 1), encoding="utf-8")
+
+          test_path = Path(
+              "sandbox_junit_cleanup_test/src/org/eclipse/jdt/ui/tests/quickfix/Java8/"
+              "BlockedInheritedLifecycleCompatibilityRegressionTest.java"
+          )
+          test_path.write_text(r'''/*******************************************************************************
+           * Copyright (c) 2026 Carsten Hammer and others.
+           *
+           * This program and the accompanying materials
+           * are made available under the terms of the Eclipse Public License 2.0
+           * which accompanies this distribution, and is available at
+           * https://www.eclipse.org/legal/epl-2.0/
+           *
+           * SPDX-License-Identifier: EPL-2.0
+           *******************************************************************************/
+          package org.eclipse.jdt.ui.tests.quickfix.Java8;
+
+          import org.junit.jupiter.api.BeforeEach;
+          import org.junit.jupiter.api.Test;
+          import org.junit.jupiter.api.extension.RegisterExtension;
+
+          import org.eclipse.core.runtime.CoreException;
+
+          import org.eclipse.jdt.core.ICompilationUnit;
+          import org.eclipse.jdt.core.IPackageFragment;
+          import org.eclipse.jdt.core.IPackageFragmentRoot;
+          import org.eclipse.jdt.core.JavaCore;
+          import org.eclipse.jdt.junit.JUnitCore;
+
+          import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+          import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+          import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+          import org.sandbox.jdt.ui.tests.quickfix.rules.MultiFileCleanUpLifecycleAssertions;
+
+          /** Regression for a strict-blocked JUnit 4 subclass of a migrated lifecycle base. */
+          public class BlockedInheritedLifecycleCompatibilityRegressionTest {
+
+          	@RegisterExtension
+          	AbstractEclipseJava context= new EclipseJava17();
+
+          	private IPackageFragmentRoot root;
+
+          	@BeforeEach
+          	public void setup() throws CoreException {
+          		root= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+          		AbstractEclipseJava.addToClasspath(context.getJavaProject(),
+          				JavaCore.newContainerEntry(JUnitCore.JUNIT5_CONTAINER_PATH));
+          	}
+
+          	@Test
+          	public void blockedSubclassKeepsJUnit4LifecycleDispatch() throws CoreException {
+          		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+          		ICompilationUnit base= pack.createCompilationUnit("LifecycleBase.java", //$NON-NLS-1$
+          				"""
+          				package test;
+
+          				import org.junit.After;
+          				import org.junit.Before;
+
+          				public class LifecycleBase {
+          					protected String state;
+
+          					@Before
+          					public void setUp() {
+          						state = "ready";
+          					}
+
+          					@After
+          					public void tearDown() {
+          						state = null;
+          					}
+          				}
+          				""", false, null);
+          		ICompilationUnit blocked= pack.createCompilationUnit("BlockedLifecycleTest.java", //$NON-NLS-1$
+          				"""
+          				package test;
+
+          				import java.util.List;
+
+          				import org.junit.Test;
+          				import org.junit.runner.RunWith;
+          				import org.junit.runners.Parameterized;
+          				import org.junit.runners.Parameterized.Parameter;
+          				import org.junit.runners.Parameterized.Parameters;
+
+          				@RunWith(Parameterized.class)
+          				public class BlockedLifecycleTest extends LifecycleBase {
+          					@Parameter
+          					public int value;
+
+          					@Parameters
+          					public static List<Object[]> data() {
+          						return List.<Object[]>of(new Object[] { 1 });
+          					}
+
+          					@Override
+          					public void setUp() {
+          						super.setUp();
+          					}
+
+          					@Override
+          					public void tearDown() {
+          						super.tearDown();
+          					}
+
+          					@Test
+          					public void testLifecycle() {
+          						System.out.println(state + value);
+          					}
+          				}
+          				""", false, null);
+
+          		enable(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,
+          				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,
+          				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,
+          				MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
+
+          		MultiFileCleanUpLifecycleAssertions.assertApplyCompileAndUndo(
+          				new ICompilationUnit[] { base, blocked }, new String[] {
+          						"""
+          						package test;
+
+          						import org.junit.jupiter.api.AfterEach;
+          						import org.junit.jupiter.api.BeforeEach;
+
+          						public class LifecycleBase {
+          							protected String state;
+
+          							@BeforeEach
+          							public void setUp() {
+          								state = "ready";
+          							}
+
+          							@AfterEach
+          							public void tearDown() {
+          								state = null;
+          							}
+          						}
+          						""",
+          						"""
+          						package test;
+
+          						import java.util.List;
+
+          						import org.junit.After;
+          						import org.junit.Before;
+          						import org.junit.Test;
+          						import org.junit.runner.RunWith;
+          						import org.junit.runners.Parameterized;
+          						import org.junit.runners.Parameterized.Parameter;
+          						import org.junit.runners.Parameterized.Parameters;
+
+          						@RunWith(Parameterized.class)
+          						public class BlockedLifecycleTest extends LifecycleBase {
+          							@Parameter
+          							public int value;
+
+          							@Parameters
+          							public static List<Object[]> data() {
+          								return List.<Object[]>of(new Object[] { 1 });
+          							}
+
+          							@Override
+          							@Before
+          							public void setUp() {
+          								super.setUp();
+          							}
+
+          							@Override
+          							@After
+          							public void tearDown() {
+          								super.tearDown();
+          							}
+
+          							@Test
+          							public void testLifecycle() {
+          								System.out.println(state + value);
+          							}
+          						}
+          						""" });
+          	}
+
+          	private void enable(String... options) throws CoreException {
+          		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+          		for (String option : options) {
+          			context.enable(option);
+          		}
+          	}
+          }
+          '''.replace("          ", ""), encoding="utf-8")
+          PY
+
+          rm -rf /tmp/help-455
+          gh run download 31872523928 \
+            --repo carstenartur/sandbox \
+            --name eclipse-help-screenshots-455 \
+            --dir /tmp/help-455
+          screenshots=/tmp/help-455/sandbox-screenshots
+          test -d "$screenshots"
+          while IFS= read -r -d '' source; do
+            relative="${source#${screenshots}/}"
+            install -D -m 0644 "$source" "$relative"
+          done < <(find "$screenshots" -type f -name '*.png' -print0)
+
+          rm .github/workflows/agent-pr1477-finalize.yml
+
+          git diff --check
+          git status --short
+          git config user.name "Carsten Hammer"
+          git config user.email "carsten.hammer@t-online.de"
+          git add -A
+          git commit -m "Preserve blocked JUnit lifecycle compatibility"
+          git push origin HEAD:fix/strict-junit-lifecycle-compatibility
