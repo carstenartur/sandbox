@@ -1,0 +1,34 @@
+# Existing tracked Python files. Remove entries when legacy automation is deleted.
+# New Python automation is rejected even when this file is edited in the same PR.
+.github/scripts/add_p2_sha256_checksums.py
+.github/scripts/collect_commit_workflows.py
+.github/scripts/extract_test_failures.py
+.github/scripts/generate_build_manifest.py
+.github/scripts/generate_test_report.py
+.github/scripts/generate_test_report_lexical.py
+.github/scripts/release-version-plan.py
+.github/scripts/test-release-version-plan.py
+.github/scripts/test_build_provenance.py
+.github/scripts/test_generate_test_report_lexical.py
+.github/scripts/test_verify_published_repository.py
+.github/scripts/test_verify_release_identity.py
+.github/scripts/test_verify_zenodo_release.py
+.github/scripts/test_verify_zenodo_workflow_contract.py
+.github/scripts/test_wait_for_pages_build.py
+.github/scripts/validate_capability_inventory.py
+.github/scripts/validate_distribution_evidence.py
+.github/scripts/validate_patched_jdt_ui_probe_inputs.py
+.github/scripts/verify_distribution_artifacts.py
+.github/scripts/verify_minimal_patched_jdt_ui_units.py
+.github/scripts/verify_patched_jdt_ui_repository.py
+.github/scripts/verify_published_repository.py
+.github/scripts/verify_release_identity.py
+.github/scripts/verify_zenodo_release.py
+.github/scripts/wait_for_pages_build.py
+fix_legacy_hint_directives.py
+qa/upstream-jdt/compare_test_inventory.py
+qa/upstream-jdt/verify_contract.py
+qa/upstream-jdt/verify_corpus_result.py
+qa/upstream-jdt/verify_jdt_ui_contract.py
+qa/upstream-jdt/verify_jdt_ui_corpus.py
+scan_hints.py
