@@ -154,13 +154,13 @@ public final class TestNameRefactorer {
 			return rejected("TEST_NAME_UNSUPPORTED_USE", //$NON-NLS-1$
 					"The rule field is used for something other than getMethodName()."); //$NON-NLS-1$
 		}
-		if (supportedInvocations[0] == 0) {
-			return rejected("TEST_NAME_UNUSED_RULE", //$NON-NLS-1$
-					"No bound getMethodName() call was found for the TestName field."); //$NON-NLS-1$
-		}
 		if (hasReferencesOutsideCompilationUnit(binding, root)) {
 			return rejected("TEST_NAME_EXTERNAL_REFERENCE", //$NON-NLS-1$
 					"The TestName field is referenced outside its compilation unit."); //$NON-NLS-1$
+		}
+		if (supportedInvocations[0] == 0) {
+			return new Assessment(true, "TEST_NAME_UNUSED_RULE", //$NON-NLS-1$
+					"The TestName field has no workspace references and can be migrated without blocking the surrounding lifecycle."); //$NON-NLS-1$
 		}
 		return new Assessment(true, "TEST_NAME_LOCAL_GET_METHOD_NAME", //$NON-NLS-1$
 				"Every workspace reference is a local bound getMethodName() call."); //$NON-NLS-1$
