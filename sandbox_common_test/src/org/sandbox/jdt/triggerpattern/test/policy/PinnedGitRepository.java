@@ -101,8 +101,11 @@ public final class PinnedGitRepository implements AutoCloseable {
 					.setTagOpt(TagOpt.NO_TAGS)
 					.call();
 
-			ObjectId expected = repository.resolve(expectedCommit + "^{commit}"); //$NON-NLS-1$
-			if (expected == null) {
+			if (!ObjectId.isId(expectedCommit)) {
+				throw new IllegalArgumentException("Expected commit must be a full object ID: " + expectedCommit); //$NON-NLS-1$
+			}
+			ObjectId expected = ObjectId.fromString(expectedCommit);
+			if (!repository.getObjectDatabase().has(expected)) {
 				throw new IllegalArgumentException(
 						"Expected commit is unavailable after fetching the pinned ref: " + expectedCommit); //$NON-NLS-1$
 			}
