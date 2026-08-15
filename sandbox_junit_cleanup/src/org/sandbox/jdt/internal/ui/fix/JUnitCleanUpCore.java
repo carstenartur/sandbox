@@ -174,12 +174,12 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			Set<ASTNode> compatibilityNodes= new HashSet<>();
 			if (computeFixSet.contains(JUnitCleanUpFixCore.BEFORE)) {
 				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
-						compatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_BEFORE,
+						compatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_JUPITER_API_BEFORE_EACH,
 						JUnitConstants.ORG_JUNIT_BEFORE);
 			}
 			if (computeFixSet.contains(JUnitCleanUpFixCore.AFTER)) {
 				InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
-						compatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_AFTER,
+						compatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_JUPITER_API_AFTER_EACH,
 						JUnitConstants.ORG_JUNIT_AFTER);
 			}
 			if (compatibilityOperations.isEmpty()) {

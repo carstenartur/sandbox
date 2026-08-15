@@ -42,13 +42,16 @@ public final class InheritedLifecycleMethodRefactorer {
 	}
 
 	/**
-	 * Adds the Jupiter lifecycle annotation to methods that override an inherited
-	 * JUnit 4 lifecycle method without declaring a lifecycle annotation themselves.
+	 * Adds a lifecycle annotation to methods that override an inherited lifecycle
+	 * method without declaring a lifecycle annotation themselves.
 	 *
 	 * <p>JUnit 4 invokes the reflected superclass method virtually, so an
 	 * unannotated override is executed. Jupiter suppresses an overridden lifecycle
-	 * method unless the override is itself annotated. Binding-proven propagation is
-	 * therefore required to retain the original dispatch semantics.</p>
+	 * method unless the override is itself annotated. This method is used both to
+	 * propagate Jupiter annotations when migrating a class and to add JUnit 4
+	 * compatibility annotations when a strict-blocked class must remain on JUnit 4
+	 * while its superclass has been migrated to Jupiter. Binding-proven propagation
+	 * is therefore required to retain the original dispatch semantics.</p>
 	 */
 	public static void addInheritedLifecycleOverrides(CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations,
