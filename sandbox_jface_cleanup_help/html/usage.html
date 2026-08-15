@@ -10,39 +10,112 @@
 <body>
    <h1>Using JFace API Modernization</h1>
    <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>JFace Cleanup (Sandbox)</strong>.</p>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile,
+      select <strong>JFace Cleanup (Sandbox)</strong>, and enable only the
+      independent migrations you intend to review.</p>
 
-   <h2>When it is offered</h2>
-   <p>A migration is offered only when the source invocation resolves to a known JFace API signature and an equivalent replacement is available.</p>
+   <h2>SubProgressMonitor to SubMonitor</h2>
+   <p>The cleanup joins the parent task declaration and its child-monitor
+      allocations into the modern <code>SubMonitor</code> protocol.</p>
+
+   <h3>Before</h3>
+   <pre>monitor.beginTask("Import", 100);
+IProgressMonitor child =
+    new SubProgressMonitor(monitor, 40);</pre>
+
+   <h3>After</h3>
+   <pre>SubMonitor subMonitor =
+    SubMonitor.convert(monitor, "Import", 100);
+IProgressMonitor child = subMonitor.split(40);</pre>
+
+   <p>Several children sharing the same parent task use the same generated
+      <code>SubMonitor</code>. Existing local names are respected. Supported style
+      flags are mapped where an equivalent <code>SubMonitor</code> flag exists;
+      review label-related legacy flags because the old and new APIs do not expose
+      an identical presentation contract.</p>
+
+   <h2>ViewerSorter to ViewerComparator</h2>
+   <p>Binding-resolved uses of the deprecated sorter family are migrated to the
+      corresponding comparator family.</p>
+
+   <h3>Before</h3>
+   <pre>import org.eclipse.jface.viewers.ViewerSorter;
+
+class NameSorter extends ViewerSorter {
+}</pre>
+
+   <h3>After</h3>
+   <pre>import org.eclipse.jface.viewers.ViewerComparator;
+
+class NameSorter extends ViewerComparator {
+}</pre>
+
+   <p>The cleanup also handles supported declarations, constructor calls,
+      parameters, return types, and casts. JFace, Common Navigator, and tree-path
+      variants are mapped only when the exact source type has a known replacement.
+      Unresolved or custom sorter types remain unchanged.</p>
+
+   <h2>ImageData to ImageDataProvider</h2>
+   <p>A locally constructed <code>ImageData</code> used by one image creation can
+      be moved into an SWT <code>ImageDataProvider</code>. This gives SWT a
+      zoom-aware provider boundary rather than one eagerly created data object.</p>
+
+   <h3>Before</h3>
+   <pre>PaletteData palette = new PaletteData(new RGB(0, 0, 0));
+ImageData imageData = new ImageData(1, 1, 1, palette);
+Image image = new Image(device, imageData);</pre>
+
+   <h3>After</h3>
+   <pre>PaletteData palette = new PaletteData(new RGB(0, 0, 0));
+Image image = new Image(device,
+    (ImageDataProvider) zoom -&gt; {
+        return new ImageData(1, 1, 1, palette);
+    });</pre>
+
+   <p>The source <code>ImageData</code> must be a removable local value whose
+      construction can be reproduced safely inside the provider. Parameters,
+      values used more than once, multi-fragment declarations, escaping values,
+      and unresolved constructor bindings are deliberately left unchanged.</p>
+
+   <h2>When a migration is offered</h2>
+   <p>Each migration is independent. It is offered only when the relevant source
+      types and invocations resolve to supported Eclipse APIs and the complete
+      local rewrite can be produced without guessing.</p>
 
    <h2>Recommended workflow</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Enable one or more of the three migrations in a dedicated cleanup
+          profile.</li>
+      <li>Run <strong>Source &gt; Clean Up...</strong> on a small,
+          version-controlled selection.</li>
+      <li>Use the execution preview to inspect each labelled JFace step and its
+          concrete diff.</li>
+      <li>Deselect an independent file or step when it is not appropriate for the
+          current change.</li>
+      <li>Compile and run progress-reporting, viewer-ordering, and SWT image tests
+          before expanding the scope.</li>
    </ol>
 
    <h2>Real execution preview (LTK)</h2>
-   <p>The profile tab preview above is only an example snippet. The actual execution preview appears after
-      <strong>Source &gt; Clean Up...</strong> and lists the concrete file/step changes that will be applied.</p>
+   <p>The profile tab preview is an example snippet. The actual execution preview
+      appears after <strong>Source &gt; Clean Up...</strong> and lists the concrete
+      file and step changes that will be applied.</p>
    <p><img class="screenshot" src="../images/jface-cleanup-real-preview-single-file-steps.png"
       alt="Cleanup preview tree with one file and multiple JFace cleanup step labels"/></p>
    <p><img class="screenshot" src="../images/jface-cleanup-real-preview-diff-step.png"
       alt="Cleanup preview diff for the selected JFace cleanup step"/></p>
    <p><img class="screenshot" src="../images/jface-cleanup-real-preview-multi-file-selection.png"
       alt="Cleanup preview tree with multiple independently selectable files"/></p>
-   <p>Independent local changes may be deselected per file or per step. Coordinated multi-file migrations keep
-      a separate atomic-selection contract tracked by
+   <p>Independent local changes may be deselected per file or per step. Coordinated
+      multi-file migrations use a separate atomic-selection contract tracked by
       <a href="https://github.com/carstenartur/sandbox/issues/1451">carstenartur/sandbox#1451</a>.</p>
    <p>See <a href="/topic/sandbox_cleanup_application_help/html/cleanup-preview.html">Cleanup preview model</a>
       for the shared behavior details.</p>
 
    <h2>Screenshot regeneration</h2>
-   <p>The image in this Help bundle is generated from a real Eclipse workbench by
-      <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
-      <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+   <p>The images in this Help bundle are generated from a real Eclipse workbench
+      by <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
+      <code>help-screenshots</code> under Xvfb to regenerate them after UI changes.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>
