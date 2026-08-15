@@ -32,7 +32,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 
 import org.eclipse.text.edits.TextEditGroup;
 
-/** Preserves JUnit 4 lifecycle dispatch through unannotated source overrides. */
+/** Preserves inherited JUnit lifecycle semantics through unannotated source overrides. */
 public final class InheritedLifecycleMethodRefactorer {
 
 	private static final String DESCRIPTION= "Preserve inherited JUnit lifecycle semantics"; //$NON-NLS-1$
