@@ -1,0 +1,91 @@
+name: Verify Zenodo 1.3.3 Once
+
+on:
+  push:
+    branches:
+      - 'verify/zenodo-v1.3.3'
+    paths:
+      - '.github/workflows/verify-zenodo-v1.3.3-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-zenodo-v1.3.3-once
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  verify:
+    name: Verify stable Zenodo archive for v1.3.3
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download current verifier
+        run: |
+          set -euo pipefail
+          mkdir -p verifier-source
+          gh api "repos/${GITHUB_REPOSITORY}/tarball/main" > verifier-source.tar.gz
+          tar -xzf verifier-source.tar.gz --strip-components=1 -C verifier-source
+
+      - name: Test verifier
+        working-directory: verifier-source/.github/scripts
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            verify_zenodo_release.py \
+            test_verify_zenodo_release.py \
+            test_verify_zenodo_workflow_contract.py
+          python3 test_verify_zenodo_release.py
+          python3 test_verify_zenodo_workflow_contract.py
+
+      - name: Verify published Zenodo record
+        id: verify
+        env:
+          EXPECTED_CONCEPT_DOI: ${{ vars.ZENODO_CONCEPT_DOI }}
+        run: |
+          set -uo pipefail
+          arguments=(
+            --repository-url "https://github.com/${GITHUB_REPOSITORY}"
+            --expected-version 1.3.3
+            --expected-tag v1.3.3
+            --max-attempts 5
+            --interval-seconds 15
+            --timeout-seconds 30
+            --output target/zenodo-release-verification.json
+          )
+          if [[ -n "$EXPECTED_CONCEPT_DOI" ]]; then
+            arguments+=(--expected-concept-doi "$EXPECTED_CONCEPT_DOI")
+          fi
+          python3 verifier-source/.github/scripts/verify_zenodo_release.py "${arguments[@]}"
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Preserve DOI evidence on GitHub Release v1.3.3
+        if: always()
+        run: |
+          set -euo pipefail
+          report=target/zenodo-release-verification.json
+          test -f "$report"
+          {
+            echo '## Zenodo verification evidence for v1.3.3'
+            echo '```json'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          gh release upload v1.3.3 "$report" \
+            --clobber --repo "$GITHUB_REPOSITORY"
+
+      - name: Enforce successful verification
+        if: always()
+        env:
+          EXIT_CODE: ${{ steps.verify.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          if [[ "${EXIT_CODE:-1}" != 0 ]]; then
+            echo '::error::Zenodo record did not pass the stable release contract.'
+            exit 1
+          fi
