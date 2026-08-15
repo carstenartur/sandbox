@@ -15,6 +15,14 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.InheritedLifecycleMethodRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -59,6 +67,14 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 @CleanupPattern(value = "@After", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_AFTER, cleanupId = "cleanup.junit.after", description = "Migrate @After to @AfterEach", displayName = "JUnit 4 @After → JUnit 5 @AfterEach")
 @RewriteRule(replaceWith = "@AfterEach", targetQualifiedType = ORG_JUNIT_JUPITER_API_AFTER_EACH)
 public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
+		super.find(fixcore, compilationUnit, operations, nodesprocessed);
+		InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
+				operations, nodesprocessed, ORG_JUNIT_AFTER, ORG_JUNIT_JUPITER_API_AFTER_EACH);
+	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
