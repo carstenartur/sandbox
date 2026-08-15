@@ -1,0 +1,76 @@
+name: Finalize PR 1477 fixes v2
+
+on:
+  push:
+    branches:
+      - fix/strict-junit-lifecycle-compatibility
+    paths:
+      - .github/workflows/agent-pr1477-finalize-v2.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: fix/strict-junit-lifecycle-compatibility
+
+      - name: Apply remaining fixes and commit them
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo 'Patching strict-mode compatibility path'
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java")
+          source = path.read_text(encoding="utf-8")
+
+          anchor = "import org.sandbox.jdt.internal.corext.fix.helper.RuleImportCleanupSupport;\n"
+          replacement = anchor + (
+              "import org.sandbox.jdt.internal.corext.fix.helper.lib.InheritedLifecycleMethodRefactorer;\n"
+              "import org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants;\n"
+          )
+          if source.count(anchor) != 1:
+              raise SystemExit(f"Expected one import anchor, found {source.count(anchor)}")
+          source = source.replace(anchor, replacement, 1)
+
+          old = """\t\tif (!bestEffort && !localGaps.isEmpty()) {\n\t\t\t// Strict mode is atomic at compilation-unit level. This prevents a safe\n\t\t\t// looking local annotation rewrite from detaching a test class from an\n\t\t\t// unsupported runner, rule, parameter source, or lifecycle contract.\n\t\t\treturn null;\n\t\t}\n"""
+          new = """\t\tif (!bestEffort && !localGaps.isEmpty()) {\n\t\t\t// Strict mode remains atomic for migration edits. The only permitted\n\t\t\t// compatibility change makes inherited JUnit 4 virtual lifecycle dispatch\n\t\t\t// explicit when this compilation unit must stay on JUnit 4.\n\t\t\tSet<CompilationUnitRewriteOperationWithSourceRange> compatibilityOperations=\n\t\t\t\t\tnew LinkedHashSet<>();\n\t\t\tSet<ASTNode> compatibilityNodes= new HashSet<>();\n\t\t\tif (computeFixSet.contains(JUnitCleanUpFixCore.BEFORE)) {\n\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,\n\t\t\t\t\t\tcompatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_BEFORE,\n\t\t\t\t\t\tJUnitConstants.ORG_JUNIT_BEFORE);\n\t\t\t}\n\t\t\tif (computeFixSet.contains(JUnitCleanUpFixCore.AFTER)) {\n\t\t\t\tInheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,\n\t\t\t\t\t\tcompatibilityOperations, compatibilityNodes, JUnitConstants.ORG_JUNIT_AFTER,\n\t\t\t\t\t\tJUnitConstants.ORG_JUNIT_AFTER);\n\t\t\t}\n\t\t\tif (compatibilityOperations.isEmpty()) {\n\t\t\t\treturn null;\n\t\t\t}\n\t\t\treturn new CompilationUnitRewriteOperationsFixCore(JUnitCleanUpFix_refactor, compilationUnit,\n\t\t\t\t\tcompatibilityOperations.toArray(\n\t\t\t\t\t\t\tnew CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));\n\t\t}\n"""
+          if source.count(old) != 1:
+              raise SystemExit(f"Expected one strict-mode block, found {source.count(old)}")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
+
+          echo 'Downloading reproducible Help screenshots from the successful renderer'
+          rm -rf /tmp/help-455
+          gh run download 31872523928 \
+            --repo carstenartur/sandbox \
+            --name eclipse-help-screenshots-455 \
+            --dir /tmp/help-455
+          test -f /tmp/help-455/sandbox_junit_cleanup_help/images/junit-migration-cleanup.png
+          while IFS= read -r -d '' generated; do
+            relative="${generated#/tmp/help-455/}"
+            install -D -m 0644 "$generated" "$relative"
+          done < <(find /tmp/help-455 -type f -name '*.png' -print0)
+
+          rm -f \
+            .github/workflows/agent-pr1477-finalize.yml \
+            .github/workflows/agent-pr1477-finalize-v2.yml
+
+          git diff --check
+          git status --short
+          git config user.name "Carsten Hammer"
+          git config user.email "carsten.hammer@t-online.de"
+          git add -A
+          git commit -m "Preserve blocked JUnit lifecycle compatibility"
+          git push origin HEAD:fix/strict-junit-lifecycle-compatibility
