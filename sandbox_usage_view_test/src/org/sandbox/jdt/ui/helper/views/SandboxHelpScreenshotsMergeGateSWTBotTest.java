@@ -66,20 +66,25 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
     @Test
     public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
-        IFile singleFile = ResourcesPlugin.getWorkspace().getRoot()
-                .getProject(CLEANUP_PREVIEW_PROJECT)
-                .getFile("src/demo/single/SingleFileCleanup.java");
-        assertTrue(singleFile.exists(), "The deterministic single-file preview fixture must exist");
-        String before = readFile(singleFile);
-
-        screenshots.captureRealCleanupPreviewAndVerifyIndependentSelection();
-
         IUndoManager undoManager = RefactoringCore.getUndoManager();
-        assertTrue(undoManager.anythingToUndo(),
-                "The single-file Cleanup operation must remain available for aggregate undo verification");
-        undoManager.performUndo(null, new NullProgressMonitor());
-        assertEquals(before, readFile(singleFile),
-                "Undo must restore the single-file preview fixture byte-for-byte");
+        undoManager.flush();
+        try {
+            IFile singleFile = ResourcesPlugin.getWorkspace().getRoot()
+                    .getProject(CLEANUP_PREVIEW_PROJECT)
+                    .getFile("src/demo/single/SingleFileCleanup.java");
+            assertTrue(singleFile.exists(), "The deterministic single-file preview fixture must exist");
+            String before = readFile(singleFile);
+
+            screenshots.captureRealCleanupPreviewAndVerifyIndependentSelection();
+
+            assertTrue(undoManager.anythingToUndo(),
+                    "The single-file Cleanup operation must remain available for aggregate undo verification");
+            undoManager.performUndo(null, new NullProgressMonitor());
+            assertEquals(before, readFile(singleFile),
+                    "Undo must restore the single-file preview fixture byte-for-byte");
+        } finally {
+            undoManager.flush();
+        }
     }
 
     private static String readFile(IFile file) throws Exception {
