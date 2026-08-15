@@ -30,6 +30,21 @@ This layer builds on the source-root policy documented in `multi-file-source-roo
    - Preserve the planners' original complete-project entry points for explicit callers and compatibility tests.
    - Produce no coordinated migration when the scope decision is rejected.
 
+## Staged migration invariant
+
+A cleanup may be run repeatedly with different option selections. Candidate discovery must therefore describe semantic roles rather than only the syntax that happened to exist before the first rewrite.
+
+For safely migratable source, applying option set **A** and then option set **B** must reach the same semantic state as applying **A ∪ B** together. When the first pass cannot preserve the edges required by a later pass, it must remain unchanged and refuse the incomplete migration instead of making it irreversible.
+
+The JUnit cleanup implements this invariant by treating pre- and post-migration forms as equivalent scope anchors:
+
+- `@Before` and `@BeforeEach`, `@After` and `@AfterEach`, `@BeforeClass` and `@BeforeAll`, and `@AfterClass` and `@AfterAll` identify the same lifecycle hierarchy role;
+- JUnit 4 `@SuiteClasses` and JUnit Platform `@SelectClasses` identify the same direct suite-membership edges;
+- named `ExternalResource` declarations and their `@Rule`/`@ClassRule` fields form one atomic migration feature, regardless of which side's preference was selected;
+- a JUnit 4 `Parameterized` runner, its provider/constructor state, and its test/lifecycle/Rule annotations remain one execution component. A later repair pass accepts both JUnit 4 and already migrated Jupiter `@Test` annotations.
+
+The target-side annotations are deliberately retained as discovery anchors. Removing a legacy marker is therefore not allowed to hide remaining source from a later cleanup run.
+
 ## Cleanup-specific search seeds
 
 ### Int-to-Enum
@@ -43,12 +58,30 @@ The closure therefore includes the owner and every accurate source caller/refere
 
 ### JUnit ExternalResource
 
+The declaration-side and field-side options are normalized to one coordinated feature. Enabling either option computes the same closure and prevents a selected declaration from losing its `ExternalResource` contract before all Rule users are known.
+
 For each selected candidate, the search seed is the concrete resource type:
 
 - a selected class directly extending JUnit 4 `ExternalResource`; or
 - the resolved declared type of a selected `@Rule` or `@ClassRule` field.
 
 The closure therefore includes the resource declaration and every accurate source use that must move to Jupiter extension semantics.
+
+### JUnit lifecycle hierarchies
+
+When an enabled lifecycle migration is visible in the selected type or one of its source supertypes, the cleanup identifies the highest lifecycle-declaring source root and adds every source subtype. The detector accepts both JUnit 4 and Jupiter annotations, so a base class migrated in an earlier pass still pulls in unmigrated overriding subclasses.
+
+Only the hierarchy is added. Ordinary fields, parameters, imports, and unrelated references to a lifecycle base do not broaden the scope.
+
+### JUnit suites
+
+A selected `@SuiteClasses` or `@SelectClasses` annotation adds every directly referenced source test class. Suite membership remains a scope edge even when the current pass enables a different JUnit migration component from the pass that converted the suite annotation.
+
+### JUnit Parameterized execution components
+
+A JUnit 4 `Parameterized` class is not split by granular annotation choices. Structural rewrites are quarantined until the Parameterized migration is selected and its complete local provider/constructor contract is eligible. Assertion and assumption rewrites may still proceed because they do not change test discovery or execution lifecycle.
+
+For recovery from source produced by an older cleanup version, the Parameterized rewrite recognizes both `org.junit.Test` and `org.junit.jupiter.api.Test` before replacing either with `@ParameterizedTest`.
 
 ## Fallback and refusal rules
 
@@ -97,17 +130,22 @@ The common-layer tests cover deterministic admission and fail-closed handling fo
 - policy-excluded source units;
 - declarations outside the allow-list.
 
-The cleanup scope tests start from owner-only selections with real source users and verify that:
+The cleanup scope tests start from narrowly selected sources and verify that:
 
 - the exact Int-to-Enum caller closure is returned;
-- the exact JUnit Rule-user closure is returned;
+- the exact JUnit Rule-user closure is returned from either ExternalResource-side preference;
+- legacy and already migrated lifecycle bases return the same source hierarchy closure;
+- both `@SuiteClasses` and `@SelectClasses` return the same direct member closure;
 - unrelated editable source is not admitted;
 - each closure is emitted once and reaches a stable fixed point.
 
 The lifecycle tests exercise the ordinary Eclipse path with an explicit complete scope and verify that:
 
 - all semantically coupled sources are migrated atomically;
+- a later pass can still annotate overrides of an already migrated lifecycle base;
+- a Test-only pass cannot detach methods from a remaining JUnit 4 Parameterized runner, while a later Parameterized pass can repair an already-Jupiter `@Test`;
+- selecting only one ExternalResource-side option still migrates the declaration and Rule field together;
 - unrelated selected source remains unchanged;
 - apply and undo preserve the complete verified source/error baseline.
 
-Related issues: #1212, #1214, #1221, #1224.
+Related issues: #1212, #1214, #1221, #1224, #1485.

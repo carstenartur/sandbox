@@ -73,7 +73,8 @@ public class BeforeJUnitPlugin extends TriggerPatternCleanupPlugin {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) {
 		super.find(fixcore, compilationUnit, operations, nodesprocessed);
 		InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,
-				operations, nodesprocessed, ORG_JUNIT_BEFORE, ORG_JUNIT_JUPITER_API_BEFORE_EACH);
+				operations, nodesprocessed, Set.of(ORG_JUNIT_BEFORE, ORG_JUNIT_JUPITER_API_BEFORE_EACH),
+				ORG_JUNIT_JUPITER_API_BEFORE_EACH);
 	}
 
 	@Override
