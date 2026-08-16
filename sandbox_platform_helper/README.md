@@ -4,105 +4,132 @@
 
 ## Overview
 
-The **Platform Helper** plugin simplifies Eclipse Platform API usage, specifically focusing on Status object creation. It replaces verbose `new Status(...)` constructor calls with cleaner factory methods available in Java 11+, or the `StatusHelper` pattern for Java 8.
+The **Platform Helper** plugin simplifies Eclipse Platform `Status` and
+`MultiStatus` constructor calls without changing their observable status data.
+It removes a redundant, compile-time `IStatus.OK` argument while retaining the
+original severity, plug-in identity, message and throwable.
 
-## Key Features
+## Key features
 
-- 🎯 **Simplify Status Creation** - Replace verbose `new Status(...)` with factory methods
-- 📦 **Java Version Aware** - Uses `Status.error()` / `Status.warning()` on Java 11+
-- 🧹 **Reduce Boilerplate** - No need to specify plugin ID in factory methods
-- 🔌 **Eclipse Integration** - Works seamlessly with Eclipse Platform code
+- **Preserves plug-in identity** — String and Class identity expressions stay in
+  the rewritten constructor.
+- **Preserves status codes** — nonzero, unresolved and runtime-computed codes are
+  left unchanged.
+- **Uses resolved constants** — `IStatus.OK`, literal `0` and compile-time zero
+  constants are recognized by value rather than source spelling.
+- **Conservative `MultiStatus` support** — only a proven zero code may be named
+  as `IStatus.OK`.
+- **Eclipse integration** — changes use the standard Cleanup preview, Apply and
+  global Undo infrastructure.
 
-## Quick Start
+## Quick start
 
-### Enable in Eclipse
+1. Open **Java > Code Style > Clean Up** in Eclipse Preferences.
+2. Edit a dedicated cleanup profile.
+3. Enable **Platform Status (Sandbox)**.
+4. Run **Source > Clean Up...** on a small version-controlled selection.
+5. Select each file in the real LTK preview and inspect its combined diff.
 
-1. Open **Source** → **Clean Up...**
-2. Navigate to the **Platform Helper** category
-3. Enable **Simplify Status object creation**
+## Transformations
 
-### Example Transformations
+### `Status`
 
-**Basic Error Status:**
 ```java
 // Before
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Error message");
+IStatus status = new Status(
+        IStatus.ERROR,
+        MyPlugin.PLUGIN_ID,
+        IStatus.OK,
+        "Failed to load preferences",
+        exception);
 
-// After (Java 11+)
-IStatus status = Status.error("Error message", null);
+// After
+IStatus status = new Status(
+        IStatus.ERROR,
+        MyPlugin.PLUGIN_ID,
+        "Failed to load preferences",
+        exception);
 ```
 
-**Warning Status:**
+The explicit plug-in identifier is retained. The cleanup does not replace the
+constructor with `Status.error(...)` unless a future implementation can prove
+that the factory-derived caller bundle is exactly equivalent.
+
+### Numeric zero
+
 ```java
 // Before
-IStatus status = new Status(IStatus.WARNING, MyPlugin.PLUGIN_ID, "Warning");
+IStatus status = new Status(IStatus.WARNING, pluginId, 0, message, null);
 
-// After (Java 11+)
-IStatus status = Status.warning("Warning", null);
+// After
+IStatus status = new Status(IStatus.WARNING, pluginId, message, null);
 ```
 
-**With Exception:**
+### `MultiStatus`
+
 ```java
 // Before
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Failed", exception);
+MultiStatus status = new MultiStatus(pluginId, 0, message, exception);
 
-// After (Java 11+)
-IStatus status = Status.error("Failed", exception);
+// After
+MultiStatus status = new MultiStatus(pluginId, IStatus.OK, message, exception);
 ```
 
-## Supported Factory Methods
+A nonzero application-specific code is not changed:
 
-The plugin converts to these factory methods (Java 11+):
+```java
+new MultiStatus(pluginId, APPLICATION_ERROR_CODE, message, exception)
+```
 
-| Old Constructor | New Factory Method |
-|----------------|-------------------|
-| `new Status(IStatus.ERROR, ...)` | `Status.error(...)` |
-| `new Status(IStatus.WARNING, ...)` | `Status.warning(...)` |
-| `new Status(IStatus.INFO, ...)` | `Status.info(...)` |
-| `new Status(IStatus.OK, ...)` | `Status.ok(...)` |
+## Applicability boundary
 
-## Benefits
+A `Status` constructor is changed only when:
 
-- **Cleaner Code** - Factory methods are more concise and readable
-- **Less Boilerplate** - No need to specify plugin ID (handled internally)
-- **Modern Java** - Follows factory method pattern from Java 8+
-- **Eclipse Best Practice** - Aligns with Eclipse Platform 4.12+ conventions
+- its type binding resolves exactly to `org.eclipse.core.runtime.Status`;
+- it has the supported five-argument shape;
+- severity resolves to INFO, WARNING or ERROR;
+- code resolves at compile time to `IStatus.OK`;
+- the shorter constructor can retain every remaining argument.
 
-## Java Version Support
+No change is made for CANCEL, nonzero codes, runtime-computed codes, unresolved
+bindings, already simplified constructors or unsupported types.
 
-| Java Version | Transformation |
-|--------------|---------------|
-| **Java 8** | StatusHelper pattern (legacy, not actively maintained) |
-| **Java 11+** | Factory methods (`Status.error()`, `Status.warning()`, etc.) |
+## Why factories are not used automatically
 
-> **Note**: Factory methods are available in Eclipse Platform 4.12+ (2019-06)
-
-## Documentation
-
-- **[Architecture](ARCHITECTURE.md)** - Implementation details and AST visitor patterns
-- **[TODO](TODO.md)** - Future enhancements and known issues
-- **[Main README](../README.md#platform-status-helper-sandbox_platform_helper)** - Detailed examples
+`Status.info`, `Status.warning` and `Status.error` infer the plug-in id from the
+calling class and its OSGi bundle. An explicit constructor may intentionally use
+a different id. Dropping that value changes `IStatus#getPlugin()` and can affect
+logging, filtering and diagnostics. Readability does not justify that semantic
+change.
 
 ## Testing
 
-Tests are in `sandbox_platform_helper_test`:
-- Factory method transformation tests
-- Java version compatibility tests
-- Edge cases (null values, complex expressions)
+The Tycho test module `sandbox_platform_helper_test` covers:
 
-Run tests:
-```bash
-xvfb-run --auto-servernum mvn test -pl sandbox_platform_helper_test
-```
+- all supported severities;
+- String and Class identity overloads;
+- null and non-null throwable values;
+- named, literal and constant zero;
+- nonzero and nonconstant rejection cases;
+- idempotence of already simplified constructors;
+- safe and rejected `MultiStatus` forms.
 
-## Contributing to Eclipse JDT
+Run the repository's normal Maven/Tycho verification. The Help screenshot gate
+uses a real Eclipse workbench and real target-platform bindings; manually edited
+screenshots are not accepted as evidence.
 
-This plugin is designed for easy integration into Eclipse JDT:
-1. Replace `org.sandbox` with `org.eclipse` in package names
-2. Move classes to `org.eclipse.jdt.internal.corext.fix`
-3. Update cleanup registration
+## Real-corpus QA
 
-See [Architecture](ARCHITECTURE.md) for detailed design patterns.
+Issue [#1497](https://github.com/carstenartur/sandbox/issues/1497) tracks reuse
+of the pinned JDT Core/JDT UI Oomph workspaces for canonical screenshots and
+provenance. Issue [#1498](https://github.com/carstenartur/sandbox/issues/1498)
+tracks the semantic-preservation correction described here.
+
+## Documentation
+
+- [Architecture](ARCHITECTURE.md)
+- [Installed Eclipse Help](../sandbox_platform_helper_help/html/usage.html)
+- [Main README](../README.md#platform-status-helper-sandbox_platform_helper)
 
 ## License
 
@@ -110,4 +137,4 @@ Eclipse Public License 2.0 (EPL-2.0)
 
 ---
 
-> **Related Plugins**: [Encoding Quickfix](../sandbox_encoding_quickfix/), [JFace Cleanup](../sandbox_jface_cleanup/)
+> **Related plugins**: [Encoding Quickfix](../sandbox_encoding_quickfix/) · [JFace Cleanup](../sandbox_jface_cleanup/)
