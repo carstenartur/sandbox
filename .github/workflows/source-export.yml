@@ -12,43 +12,6 @@ jobs:
   patch:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout PR 1495
-        uses: actions/checkout@v7
-        with:
-          ref: e87578f370ca61789cd5f4bcd035c1c1848de958
-          fetch-depth: 0
-          path: pr1495
-
-      - name: Patch PR 1495
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git -C pr1495 rev-parse HEAD)" = e87578f370ca61789cd5f4bcd035c1c1848de958
-          git -C pr1495 apply --whitespace=error-all - <<'PATCH'
-          diff --git a/sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java b/sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
-          --- a/sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
-          +++ b/sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
-          @@ -218,8 +218,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
-                   SWTBotTree previewTree = wizard.bot().tree();
-                   SWTBotTreeItem singlePreviewFile = findTreeItemContaining(previewTree, "SingleFileCleanup.java");
-                   assertTrue(singlePreviewFile != null, "Preview must contain the selected file");
-          -        assertTrue(singlePreviewFile.getItems().length == 0,
-          -                "The standard LTK Cleanup preview must expose one selectable file item, not invented per-cleanup children");
-          +        assertTrue(java.util.Arrays.stream(singlePreviewFile.getItems())
-          +                .allMatch(child -> child.getText().isBlank() && !child.isChecked()),
-          +                "The standard LTK Cleanup preview may contain an empty decoration placeholder, "
-          +                        + "but must not expose named or selectable per-cleanup children");
-                   assertTrue(singlePreviewFile.isChecked(), "The selected file must initially be enabled");
-                   singlePreviewFile.select();
-                   bot.sleep(300);
-          PATCH
-          git -C pr1495 diff --check
-          git -C pr1495 config user.name "Sandbox CI Repair"
-          git -C pr1495 config user.email "actions@users.noreply.github.com"
-          git -C pr1495 add sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
-          git -C pr1495 commit -m "Accept empty LTK preview decoration placeholders"
-          git -C pr1495 push origin HEAD:qa/independent-cleanup-preview-gate
-
       - name: Checkout PR 1499
         uses: actions/checkout@v7
         with:
@@ -61,22 +24,17 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C pr1499 rev-parse HEAD)" = d3c07f0865904f54731044f5bf5c34b01b2c9aba
-          git -C pr1499 apply --whitespace=error-all - <<'PATCH'
-          diff --git a/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java b/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java
-          --- a/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java
-          +++ b/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java
-          @@ -212,8 +212,8 @@ public class BundledLibrariesTest {
-                   HintFile hintFile = loadBundledLibrary("platform-logging.sandbox-hint"); //$NON-NLS-1$
-                   assertNotNull(hintFile, "platform-logging library should be loadable"); //$NON-NLS-1$
-                   assertEquals("platform-logging", hintFile.getId()); //$NON-NLS-1$
-          -        assertTrue(hintFile.getRules().size() >= 5,
-          -                "platform-logging library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
-          +        assertEquals(1, hintFile.getRules().size(),
-          +                "platform-logging must expose only the identity-safe ILog modernization rule"); //$NON-NLS-1$
-               }
-          
-               @Test
-          PATCH
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("pr1499/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java")
+          source = path.read_text(encoding="utf-8")
+          old = """\t\tassertTrue(hintFile.getRules().size() >= 5,\n\t\t\t\t\"platform-logging library should have at least 5 rules, found: \" + hintFile.getRules().size()); //$NON-NLS-1$\n"""
+          new = """\t\tassertEquals(1, hintFile.getRules().size(),\n\t\t\t\t\"platform-logging must expose only the identity-safe ILog modernization rule\"); //$NON-NLS-1$\n"""
+          if source.count(old) != 1:
+              raise SystemExit(f"Expected exactly one stale Platform Logging assertion, found {source.count(old)}")
+          path.write_text(source.replace(old, new), encoding="utf-8")
+          PY
           git -C pr1499 diff --check
           git -C pr1499 config user.name "Sandbox CI Repair"
           git -C pr1499 config user.email "actions@users.noreply.github.com"
