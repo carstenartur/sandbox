@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "52a904e80db923b58420aadf3fb001bf289414b6c49f5407dbf5c0edc19f618c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: unboxing.primitiveValue\u003e\n\u003c!description: Replace explicit calls to Wrapper.primitiveValue() with the wrapper object directly, relying on Java\u0027s unboxing feature (Java 5+).\u003e\n\u003c!severity: HINT\u003e\n\u003c!map UNBOXING_METHODS: \"booleanValue\" \u003d\u003e \"java.lang.Boolean\",\n                        \"byteValue\" \u003d\u003e \"java.lang.Byte\",\n                        \"charValue\" \u003d\u003e \"java.lang.Character\",\n                        \"shortValue\" \u003d\u003e \"java.lang.Short\",\n                        \"intValue\" \u003d\u003e \"java.lang.Integer\",\n                        \"longValue\" \u003d\u003e \"java.lang.Long\",\n                        \"floatValue\" \u003d\u003e \"java.lang.Float\",\n                        \"doubleValue\" \u003d\u003e \"java.lang.Double\"\n\u003e\n\n$x.#{UNBOXING_METHODS_KEY}() :: instanceof($x, \"#{UNBOXING_METHODS_VALUE}\")\n\u003d\u003e $x\n;;",
+  "beforeExample": "public class Example {\n    public static void main(String[] args) {\n        Character cObject \u003d \u0027a\u0027;\n        char c1 \u003d cObject.charValue();\n\n        Integer iObject \u003d 10;\n        int i1 \u003d iObject.intValue();\n\n        Boolean bObject \u003d true;\n        boolean b1 \u003d bObject.booleanValue();\n\n        // This should not be touched by the rule, as \u0027num\u0027 is of type Number\n        Number num \u003d Integer.valueOf(5);\n        int val \u003d num.intValue();\n    }\n}",
+  "afterExample": "public class Example {\n    public static void main(String[] args) {\n        Character cObject \u003d \u0027a\u0027;\n        char c1 \u003d cObject;\n\n        Integer iObject \u003d 10;\n        int i1 \u003d iObject;\n\n        Boolean bObject \u003d true;\n        boolean b1 \u003d bObject;\n\n        // This should not be touched by the rule\n        Number num \u003d Integer.valueOf(5);\n        int val \u003d num.intValue();\n    }\n}",
+  "negativeExample": "public class Example {\n    public static void main(String[] args) {\n        // $x is of type Number, not Integer or Character, so the instanceof guard prevents matching.\n        Number num \u003d Integer.valueOf(5);\n        int val \u003d num.intValue();\n\n        // This is not a wrapper primitiveValue() call, so it should not be matched.\n        java.util.concurrent.atomic.AtomicInteger atomicInt \u003d new java.util.concurrent.atomic.AtomicInteger(0);\n        int current \u003d atomicInt.intValue();\n    }\n}",
+  "targetHintFile": "autoboxing.sandbox-hint",
+  "sourceCommit": "f35cbbf702eca4e4cbbc3c34eda461b9e697e9e5",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Unboxing",
+  "summary": "Replaces explicit calls to wrapper.primitiveValue() methods (e.g., Integer.intValue()) with the wrapper object directly, relying on Java\u0027s automatic unboxing feature introduced in Java 5. The rule ensures that the receiver object is indeed the corresponding wrapper type using an instanceof guard.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.499818370Z",
+  "ruleFingerprint": "sha256:a7299f8e17d9e623a3957a70e3ce2525ea63a9bf884496d3494da4b6b059bb4e",
+  "behaviorFingerprint": "sha256:a27d72ed911ff17117f7dc9db298053bf259a3c2d331eb1ac747077d3f5ae1d3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-16T02:39:10.563442952Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

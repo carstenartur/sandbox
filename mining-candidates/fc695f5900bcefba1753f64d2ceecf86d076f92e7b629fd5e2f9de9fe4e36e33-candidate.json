@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fc695f5900bcefba1753f64d2ceecf86d076f92e7b629fd5e2f9de9fe4e36e33",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.core.resources.IProject.open.backgroundRefresh\u003e\n\u003c!description: Adds IResource.BACKGROUND_REFRESH flag when opening an IProject with a SubProgressMonitor, ensuring resources are up-to-date.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.core.resources.IProject $project.open(new org.eclipse.core.runtime.SubProgressMonitor($monitor, 1))\n\u003d\u003e\n$project.open(org.eclipse.core.resources.IResource.BACKGROUND_REFRESH, new org.eclipse.core.runtime.SubProgressMonitor($monitor, 1))\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.resources.IProject;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\nimport org.eclipse.core.runtime.SubProgressMonitor;\n\npublic class TestClass {\n    public void openProject(IProject project, IProgressMonitor monitor) {\n        try {\n            project.open(new SubProgressMonitor(monitor, 1));\n        } catch (CoreException e) {\n            e.printStackTrace();\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.resources.IProject;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\nimport org.eclipse.core.runtime.SubProgressMonitor;\n\npublic class TestClass {\n    public void openProject(IProject project, IProgressMonitor monitor) {\n        try {\n            project.open(org.eclipse.core.resources.IResource.BACKGROUND_REFRESH, new SubProgressMonitor(monitor, 1));\n        } catch (CoreException e) {\n            e.printStackTrace();\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.resources.IProject;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\nimport org.eclipse.core.runtime.SubProgressMonitor;\n\npublic class TestClass {\n    public void openProjectWithFlags(IProject project, IProgressMonitor monitor) {\n        try {\n            // Should not match if other flags are present or no progress monitor\n            project.open(IResource.FORCE | IResource.KEEP_HISTORY, new SubProgressMonitor(monitor, 1));\n            project.open(null); // Does not match SubProgressMonitor argument\n            project.open(IResource.BACKGROUND_REFRESH, null); // Already has the flag and different argument\n        } catch (CoreException e) {\n            e.printStackTrace();\n        }\n    }\n}",
+  "targetHintFile": "eclipse-api-usage.sandbox-hint",
+  "sourceCommit": "79e9e0ad130dceaf88231f9aef06b7b8f8422fab",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.543228121Z",
+  "ruleFingerprint": "sha256:43a8f20bb96ced537bfc3f4eb4ad1a18c10e7d1edbb7ed81c78902b86b942eee",
+  "behaviorFingerprint": "sha256:262fd13b95bd10e0f3e87579c9ab6ddb878a456406dd7b8bfc20f4b6e57e26ef",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-16T02:39:10.623073472Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

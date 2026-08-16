@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The public type NewPackageWizardPage must be defined in its own file",
-    "verifiedAt": "2026-08-12T03:07:10.279435282Z",
+    "verifiedAt": "2026-08-16T02:39:10.470790895Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

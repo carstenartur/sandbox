@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "82ff1a71efc35614ab07408795c49b1f134d9928d7b752b299ac0c8eb99254f4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: boolean.getproperty.migrate.auto-build-property\u003e\n\u003c!description: Update VM property name from JDT-specific \u0027org.eclipse.jdt.core.disableAutoBuildOnSettingsChange\u0027 to a more generic \u0027org.eclipse.disableAutoBuildOnSettingsChange\u0027. This property controls auto-building on JDT core settings changes.\u003e\n\u003c!severity: WARNING\u003e\n\njava.lang.Boolean.getBoolean(\"org.eclipse.jdt.core.disableAutoBuildOnSettingsChange\")\n\u003d\u003e\njava.lang.Boolean.getBoolean(\"org.eclipse.disableAutoBuildOnSettingsChange\")\n;;",
+  "beforeExample": "class Example {\n    private static final boolean DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE \u003d Boolean.getBoolean(\"org.eclipse.jdt.core.disableAutoBuildOnSettingsChange\");\n\n    public void someMethod() {\n        boolean myFlag \u003d Boolean.getBoolean(\"org.eclipse.jdt.core.disableAutoBuildOnSettingsChange\");\n        System.out.println(myFlag);\n    }\n}",
+  "afterExample": "class Example {\n    private static final boolean DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE \u003d Boolean.getBoolean(\"org.eclipse.disableAutoBuildOnSettingsChange\");\n\n    public void someMethod() {\n        boolean myFlag \u003d Boolean.getBoolean(\"org.eclipse.disableAutoBuildOnSettingsChange\");\n        System.out.println(myFlag);\n    }\n}",
+  "negativeExample": "class Example {\n    private static final boolean SOME_OTHER_PROPERTY \u003d Boolean.getBoolean(\"org.eclipse.some.other.property\");\n\n    public void anotherMethod() {\n        boolean aFlag \u003d Boolean.getBoolean(\"some.custom.flag\");\n        System.out.println(aFlag);\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "af7f3585eff72fdbf6a07dc0cfe673d0cf7c26a6",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces the JDT-specific VM property name \u0027org.eclipse.jdt.core.disableAutoBuildOnSettingsChange\u0027 with \u0027org.eclipse.disableAutoBuildOnSettingsChange\u0027 in Boolean.getBoolean() calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.489042050Z",
+  "ruleFingerprint": "sha256:592cf1c2700d462a36231abcbea4fc58185e8360f6797053eb1f2a59d3dc87d8",
+  "behaviorFingerprint": "sha256:e2acea6f2f4b9fd02677d4ce2c881ede73c8e917a6e2a3cf0fe16473c05fd9d0",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-16T02:39:10.554504443Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

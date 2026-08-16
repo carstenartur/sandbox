@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The import org.eclipse.jdt.core.ITypeBinding cannot be resolved",
-    "verifiedAt": "2026-08-12T03:07:10.224124290Z",
+    "verifiedAt": "2026-08-16T02:39:10.410357342Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
