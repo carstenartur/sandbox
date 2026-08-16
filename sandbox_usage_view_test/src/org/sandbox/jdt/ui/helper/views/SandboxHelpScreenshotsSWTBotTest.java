@@ -200,7 +200,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
     @Test
     public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
-        System.out.println("[help-screenshots] Starting independent real Cleanup preview");
+        System.out.println("[help-screenshots] Starting real Cleanup file-selection preview");
         configureJFaceCleanupProfile();
         System.out.println("[help-screenshots] Configured JFace Cleanup profile");
         IFile singleFile = cleanupPreviewProject.getFile("src/demo/single/SingleFileCleanup.java");
@@ -218,40 +218,39 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTree previewTree = wizard.bot().tree();
         SWTBotTreeItem singlePreviewFile = findTreeItemContaining(previewTree, "SingleFileCleanup.java");
         assertTrue(singlePreviewFile != null, "Preview must contain the selected file");
-        singlePreviewFile.expand();
-        SWTBotTreeItem monitorStep = findDescendant(singlePreviewFile, "SubProgressMonitor");
-        SWTBotTreeItem viewerSorterStep = findDescendant(singlePreviewFile, "ViewerSorter");
-        assertTrue(monitorStep != null, "Preview must expose a SubProgressMonitor cleanup step");
-        assertTrue(viewerSorterStep != null, "Preview must expose a ViewerSorter cleanup step");
-        assertTrue(findDescendant(singlePreviewFile, "JFACE_CLEANUP_MONITOR") == null,
-                "Preview labels must be user-facing and not option ids");
+        assertTrue(singlePreviewFile.getItems().length == 0,
+                "The standard LTK Cleanup preview must expose one selectable file item, not invented per-cleanup children");
+        assertTrue(singlePreviewFile.isChecked(), "The selected file must initially be enabled");
+        singlePreviewFile.select();
+        bot.sleep(300);
 
-        monitorStep.select();
-        bot.sleep(300);
-        String monitorDiff = currentDiffText(wizard);
-        viewerSorterStep.select();
-        bot.sleep(300);
-        String sorterDiff = currentDiffText(wizard);
-        assertTrue(monitorDiff.contains("SubProgressMonitor"), "Monitor diff should mention SubProgressMonitor");
-        assertTrue(sorterDiff.contains("ViewerSorter"), "ViewerSorter diff should mention ViewerSorter");
-        assertTrue(!monitorDiff.equals(sorterDiff), "Selecting each cleanup step should update the diff viewer");
+        String combinedDiff = currentDiffText(wizard);
+        assertTrue(combinedDiff.contains("SubProgressMonitor"),
+                "The combined file diff must show the legacy monitor API");
+        assertTrue(combinedDiff.contains("SubMonitor"),
+                "The combined file diff must show the SubMonitor replacement");
+        assertTrue(combinedDiff.contains("ViewerSorter"),
+                "The combined file diff must show the legacy sorter API");
+        assertTrue(combinedDiff.contains("ViewerComparator"),
+                "The combined file diff must show the ViewerComparator replacement");
+        assertTrue(!combinedDiff.contains("JFACE_CLEANUP_MONITOR"),
+                "The preview must not expose internal cleanup option ids");
 
-        monitorStep.select();
-        bot.sleep(300);
         captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
                 "jface-cleanup-real-preview-single-file-steps.png");
-        viewerSorterStep.select();
-        bot.sleep(300);
-        captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
-                "jface-cleanup-real-preview-diff-step.png");
 
-        viewerSorterStep.uncheck();
         clickButtonAsync(wizard, "Finish");
         waitForShellToClose(wizard, "Clean Up wizard");
         String singleAfter = readFile(singleFile);
-        assertTrue(singleAfter.contains("SubMonitor.convert"), "Selected monitor migration must be applied");
-        assertTrue(singleAfter.contains("new ViewerSorter()"), "Deselected viewer sorter migration must not be applied");
-        assertTrue(!singleBefore.equals(singleAfter), "Applying the selected step should change the file");
+        assertTrue(singleAfter.contains("SubMonitor.convert"),
+                "The monitor migration in the selected file must be applied");
+        assertTrue(singleAfter.contains("ViewerComparator"),
+                "The sorter migration in the selected file must be applied");
+        assertTrue(!singleAfter.contains("SubProgressMonitor"),
+                "The selected file must no longer use SubProgressMonitor");
+        assertTrue(!singleAfter.contains("ViewerSorter"),
+                "The selected file must no longer use ViewerSorter");
+        assertTrue(!singleBefore.equals(singleAfter), "Applying the selected file must change it");
 
         IFile monitorFile = cleanupPreviewProject.getFile("src/demo/multi/MonitorOnly.java");
         IFile sorterFile = cleanupPreviewProject.getFile("src/demo/multi/SorterOnly.java");
@@ -271,17 +270,46 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem sorterPreviewFile = findTreeItemContaining(previewTree, "SorterOnly.java");
         assertTrue(monitorPreviewFile != null, "Preview must contain MonitorOnly.java");
         assertTrue(sorterPreviewFile != null, "Preview must contain SorterOnly.java");
+        assertTrue(monitorPreviewFile.isChecked(), "MonitorOnly.java must initially be selected");
+        assertTrue(sorterPreviewFile.isChecked(), "SorterOnly.java must initially be selected");
+
+        monitorPreviewFile.select();
+        bot.sleep(300);
+        String monitorDiff = currentDiffText(wizard);
+        assertTrue(monitorDiff.contains("SubProgressMonitor"),
+                "MonitorOnly.java diff must show the legacy monitor API");
+        assertTrue(monitorDiff.contains("SubMonitor"),
+                "MonitorOnly.java diff must show the SubMonitor replacement");
+        captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
+                "jface-cleanup-real-preview-diff-step.png");
+
+        sorterPreviewFile.select();
+        bot.sleep(300);
+        String sorterDiff = currentDiffText(wizard);
+        assertTrue(sorterDiff.contains("ViewerSorter"),
+                "SorterOnly.java diff must show the legacy sorter API");
+        assertTrue(sorterDiff.contains("ViewerComparator"),
+                "SorterOnly.java diff must show the ViewerComparator replacement");
+        assertTrue(!monitorDiff.equals(sorterDiff),
+                "Selecting another file must update the real LTK diff viewer");
+
+        sorterPreviewFile.uncheck();
+        assertTrue(!sorterPreviewFile.isChecked(), "SorterOnly.java must be independently deselectable");
+        assertTrue(monitorPreviewFile.isChecked(), "Deselecting SorterOnly.java must not disable MonitorOnly.java");
+        monitorPreviewFile.select();
+        bot.sleep(300);
         captureCleanUpPreview(wizard, "sandbox_jface_cleanup_help",
                 "jface-cleanup-real-preview-multi-file-selection.png");
 
-        sorterPreviewFile.uncheck();
         clickButtonAsync(wizard, "Finish");
         waitForShellToClose(wizard, "Clean Up wizard");
 
         String monitorAfter = readFile(monitorFile);
         String sorterAfter = readFile(sorterFile);
-        assertTrue(!monitorBefore.equals(monitorAfter), "Selected file must be modified");
-        assertTrue(sorterBefore.equals(sorterAfter), "Deselected file must remain byte-identical");
+        assertTrue(monitorAfter.contains("SubMonitor.convert"),
+                "The selected monitor file must receive its cleanup");
+        assertTrue(!monitorBefore.equals(monitorAfter), "The selected file must be modified");
+        assertTrue(sorterBefore.equals(sorterAfter), "The deselected file must remain byte-identical");
 
         undoLastCleanup();
         assertTrue(monitorBefore.equals(readFile(monitorFile)), "Undo must restore MonitorOnly.java");
