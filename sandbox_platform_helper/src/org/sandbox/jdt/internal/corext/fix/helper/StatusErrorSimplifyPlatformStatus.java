@@ -14,13 +14,12 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 
 /**
  * Removes a redundant {@code IStatus.OK} code from an error status while
  * preserving its explicit plug-in identifier, message and throwable.
  */
-public class StatusErrorSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
+public class StatusErrorSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
 	public StatusErrorSimplifyPlatformStatus() {
 		super(IStatus.ERROR);
