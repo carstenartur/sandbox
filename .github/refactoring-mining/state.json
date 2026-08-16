@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "a88222fc103cb7de7d4568d11b955957d5eaa085",
-      "lastProcessedDate": "2026-08-12T03:07:05.455870539Z",
-      "totalProcessed": 3903,
+      "lastProcessedCommit": "40d45495fde1320b1f3715ab2b5b2ba4446b91cd",
+      "lastProcessedDate": "2026-08-16T02:39:06.102542666Z",
+      "totalProcessed": 3995,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2942,6 +2942,15 @@
           "deferredAt": "2026-08-12T03:04:17.067017232Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "009a9a949ed05fe9b165056bf316389b9fc11762",
+          "message": "Bug 549473 - [13] Text Block support in Java Editor for JEP 355 Text Block",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-16T02:34:17.481302025Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -2960,7 +2969,7 @@
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
         "JDT UI Feature Implementation": 1,
-        "Resource Management": 4,
+        "Resource Management": 5,
         "JFace API Modernization": 1,
         "String-API": 7,
         "Java-Modernization": 26,
@@ -3084,7 +3093,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 14,
+        "API Migration": 16,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3095,7 +3104,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 25,
+        "API Modernization": 27,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3145,7 +3154,12 @@
         "Error Handling Improvement": 1,
         "refactoring": 1,
         "Annotation": 1,
-        "Warnings": 1
+        "Warnings": 1,
+        "Conditional Logic Update": 1,
+        "Unboxing": 1,
+        "Unnecessary API Removal": 1,
+        "Code Modernization": 1,
+        "Annotation Addition": 1
       },
       "exhaustedCategories": []
     },
@@ -3186,5 +3200,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26562
+  "globalTotalProcessed": 26654
 }
