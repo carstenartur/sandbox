@@ -1,0 +1,218 @@
+name: Recover Release Handoff
+
+# The release job may finish with a post-publication failure when protected main
+# rejects a direct push. This workflow is deliberately decoupled from that job:
+# it verifies that publication really succeeded, then creates the protected-main
+# promotion PR and the following next-development PR idempotently.
+on:
+  workflow_run:
+    workflows: [ 'Release Workflow' ]
+    types: [ completed ]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-handoff-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+  SOURCE_BRANCH: ${{ github.event.workflow_run.head_branch }}
+
+jobs:
+  handoff:
+    name: Create release promotion and next-development PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
+
+      - name: Discover and verify the published release
+        run: |
+          set -euo pipefail
+          artifact_name=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/artifacts?per_page=100" \
+            --jq '.artifacts[].name' \
+            | grep -E "^release-verification-[0-9]+\\.[0-9]+\\.[0-9]+-${SOURCE_RUN_ID}$" \
+            | head -n 1 || true)
+          if [[ -z "$artifact_name" ]]; then
+            echo "No verified release artifact belongs to workflow run ${SOURCE_RUN_ID}; no handoff is permitted."
+            exit 0
+          fi
+
+          release_version=${artifact_name#release-verification-}
+          release_version=${release_version%-${SOURCE_RUN_ID}}
+          if ! [[ "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid release version recovered from artifact '$artifact_name'."
+            exit 1
+          fi
+
+          release_fields=$(gh release view "v${release_version}" \
+            --json tagName,isDraft,isPrerelease \
+            --jq '[.tagName, .isDraft, .isPrerelease] | @tsv' 2>/dev/null || true)
+          if [[ -z "$release_fields" ]]; then
+            echo "Release v${release_version} is not published; no handoff is permitted."
+            exit 0
+          fi
+          IFS=$'\t' read -r actual_tag is_draft is_prerelease <<< "$release_fields"
+          if [[ "$actual_tag" != "v${release_version}" \
+              || "$is_draft" != false || "$is_prerelease" != false ]]; then
+            echo "::error::Release identity is not a published stable release: tag='$actual_tag', draft='$is_draft', prerelease='$is_prerelease'."
+            exit 1
+          fi
+
+          git fetch --force origin "refs/tags/v${release_version}:refs/tags/v${release_version}"
+          release_commit=$(git rev-parse "v${release_version}^{commit}")
+
+          requested_next=''
+          if [[ "$SOURCE_BRANCH" == release-request/* ]] \
+              && git ls-remote --exit-code origin "refs/heads/$SOURCE_BRANCH" >/dev/null 2>&1; then
+            git fetch --no-tags origin "$SOURCE_BRANCH:refs/remotes/origin/$SOURCE_BRANCH"
+            if git cat-file -e "refs/remotes/origin/$SOURCE_BRANCH:.github/next-development-version" \
+                2>/dev/null; then
+              requested_next=$(git show \
+                "refs/remotes/origin/$SOURCE_BRANCH:.github/next-development-version" \
+                | tr -d '[:space:]')
+            fi
+          fi
+
+          if [[ -n "$requested_next" ]]; then
+            if ! [[ "$requested_next" =~ ^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$ ]]; then
+              echo "::error::Invalid requested next development version '$requested_next'."
+              exit 1
+            fi
+            next=$requested_next
+          else
+            IFS='.' read -r major minor patch <<< "$release_version"
+            next="${major}.${minor}.$((patch + 1))-SNAPSHOT"
+          fi
+          next_release=${next%-SNAPSHOT}
+          highest=$(printf '%s\n%s\n' "$release_version" "$next_release" | sort -V | tail -n 1)
+          if [[ "$next_release" == "$release_version" || "$highest" != "$next_release" ]]; then
+            echo "::error::Next development version '$next' must be newer than release '$release_version'."
+            exit 1
+          fi
+
+          {
+            echo "RELEASE_VERSION=$release_version"
+            echo "RELEASE_COMMIT=$release_commit"
+            echo "NEXT_SNAPSHOT=$next"
+            echo "NEXT_RELEASE=$next_release"
+          } >> "$GITHUB_ENV"
+
+      - name: Create protected-main handoff pull requests
+        if: env.RELEASE_VERSION != ''
+        run: |
+          set -euo pipefail
+          current_version=$(mvn -q -DforceStdout help:evaluate \
+            -Dexpression=project.version | tail -n 1)
+
+          promotion_pr=''
+          if [[ "$current_version" != "$RELEASE_VERSION" ]]; then
+            expected_snapshot="${RELEASE_VERSION}-SNAPSHOT"
+            if [[ "$current_version" != "$expected_snapshot" ]]; then
+              echo "::error::main reports '$current_version'; expected '$expected_snapshot' or '$RELEASE_VERSION'."
+              exit 1
+            fi
+
+            promotion_branch="release/promote-${RELEASE_VERSION}"
+            git branch -f "$promotion_branch" "$RELEASE_COMMIT"
+            git push --force-with-lease origin "$promotion_branch"
+            promotion_pr=$(gh pr list --state open --base main --head "$promotion_branch" \
+              --json number --jq '.[0].number // empty')
+            printf -v promotion_body '%s\n' \
+              '## Verified release promotion' \
+              '' \
+              "Release v${RELEASE_VERSION} was published and independently verified before this handoff." \
+              '' \
+              "- source workflow run: ${SOURCE_RUN_ID}" \
+              "- verified release commit: ${RELEASE_COMMIT}" \
+              "- next development version: ${NEXT_SNAPSHOT}" \
+              '' \
+              'This PR replaces the former direct push to protected main. The separate next-development PR must follow this promotion.'
+            if [[ -z "$promotion_pr" ]]; then
+              promotion_url=$(gh pr create \
+                --title "Promote verified release ${RELEASE_VERSION} to main" \
+                --body "$promotion_body" \
+                --base main --head "$promotion_branch")
+              promotion_pr="${promotion_url##*/}"
+            else
+              gh pr edit "$promotion_pr" \
+                --title "Promote verified release ${RELEASE_VERSION} to main" \
+                --body "$promotion_body"
+            fi
+
+            # GITHUB_TOKEN-created pull requests do not recursively start normal
+            # PR workflows. Dispatch the required Maven verification explicitly.
+            gh workflow run maven.yml --ref "$promotion_branch"
+            gh pr merge "$promotion_pr" --auto --rebase
+          fi
+
+          next_branch="release/prepare-next-${NEXT_SNAPSHOT}"
+          existing_next=$(gh pr list --state open --base main --head "$next_branch" \
+            --json number --jq '.[0].number // empty')
+          if [[ -n "$existing_next" ]]; then
+            echo "Next-development PR #${existing_next} already exists."
+            exit 0
+          fi
+
+          git checkout -B "$next_branch" "$RELEASE_COMMIT"
+          tycho_version=$(mvn -q -DforceStdout help:evaluate \
+            -Dexpression=tycho-version | tail -n 1)
+          mvn org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
+            -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco
+          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
+            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
+          mvn -f sandbox-maven-plugin/pom.xml versions:set \
+            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
+          sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" \
+            release.properties
+
+          actual=$(mvn -q -DforceStdout help:evaluate \
+            -Dexpression=project.version | tail -n 1)
+          if [[ "$actual" != "$NEXT_SNAPSHOT" ]]; then
+            echo "::error::Prepared tree reports '$actual', expected '$NEXT_SNAPSHOT'."
+            exit 1
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A -- ':!.github/workflows/'
+          git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"
+          git push --force-with-lease origin "$next_branch"
+
+          dependency='The stable release is already present on main.'
+          draft_args=()
+          if [[ -n "$promotion_pr" ]]; then
+            dependency="Depends on #${promotion_pr}; that stable promotion must merge first."
+            draft_args=(--draft)
+          fi
+          printf -v next_body '%s\n' \
+            '## Next development iteration' \
+            '' \
+            "Advance verified release ${RELEASE_VERSION} to ${NEXT_SNAPSHOT}." \
+            '' \
+            "$dependency" \
+            '' \
+            'This PR contains only the Tycho/Maven/OSGi/product version transition and the corresponding next.release.version update.'
+          gh pr create "${draft_args[@]}" \
+            --title "Prepare for next development iteration ${NEXT_SNAPSHOT}" \
+            --body "$next_body" \
+            --base main --head "$next_branch"
+          gh workflow run maven.yml --ref "$next_branch"
