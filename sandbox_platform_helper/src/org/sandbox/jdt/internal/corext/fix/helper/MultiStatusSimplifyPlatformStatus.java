@@ -49,7 +49,7 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
  * left unchanged. The cleanup must never normalize an arbitrary domain code to
  * {@code IStatus.OK}.</p>
  */
-public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
+public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
 	private static final String ISTATUS_SIMPLE_NAME= "IStatus"; //$NON-NLS-1$
 	private static final String OK_SIMPLE_NAME= "OK"; //$NON-NLS-1$
@@ -68,22 +68,15 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 
 	@Override
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed)
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
-		find(fixcore, compilationUnit, operations, nodesprocessed, true);
-	}
-
-	@Override
-	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
-			boolean preservePluginId) throws CoreException {
 		try {
-			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
+			ReferenceHolder<ASTNode, Object> holder= ReferenceHolder.createForNodes();
 			HelperVisitorFactory.forClassInstanceCreation(MultiStatus.class)
 				.in(compilationUnit)
-				.excluding(nodesprocessed)
-				.processEach(dataholder, (visited, holder) -> {
-					if (nodesprocessed.contains(visited) || visited.arguments().size() != 4) {
+				.excluding(nodesProcessed)
+				.processEach(holder, (visited, data) -> {
+					if (nodesProcessed.contains(visited) || visited.arguments().size() != 4) {
 						return false;
 					}
 
@@ -100,8 +93,8 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 						return false;
 					}
 
-					operations.add(fixcore.rewrite(visited, holder, true));
-					nodesprocessed.add(visited);
+					operations.add(fixcore.rewrite(visited, data));
+					nodesProcessed.add(visited);
 					return false;
 				});
 		} catch (Exception exception) {
@@ -130,13 +123,6 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
 			ReferenceHolder<ASTNode, Object> holder) {
-		rewrite(cleanup, visited, cuRewrite, group, holder, true);
-	}
-
-	@Override
-	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
-			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
