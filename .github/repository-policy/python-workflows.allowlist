@@ -1,0 +1,16 @@
+# Existing workflows that still invoke Python or actions/setup-python.
+# Remove entries as those invocations are migrated to Maven/JUnit.
+.github/workflows/capability-inventory.yml
+.github/workflows/complete-candidate-promotion.yml
+.github/workflows/deploy-release.yml
+.github/workflows/deploy-snapshot.yml
+.github/workflows/distribution-smoke.yml
+.github/workflows/jdt-ui-junit4-strict-qa.yml
+.github/workflows/mining-core.yml
+.github/workflows/patched-jdt-ui-bundle.yml
+.github/workflows/post-merge-provenance.yml
+.github/workflows/refactoring-mining.yml
+.github/workflows/release-workflow-validation.yml
+.github/workflows/test-report.yml
+.github/workflows/upstream-jdt-migration-qa.yml
+.github/workflows/verify-zenodo-release.yml
