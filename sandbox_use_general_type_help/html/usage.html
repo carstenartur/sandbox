@@ -10,18 +10,63 @@
 <body>
    <h1>Using Use General Type</h1>
    <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Use General Type (Sandbox)</strong>.</p>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile,
+      and select <strong>Use General Type (Sandbox)</strong>. The configuration
+      preview demonstrates the selected cleanup; the execution preview shows the
+      declaration and import changes for the current source selection.</p>
 
-   <h2>When it is offered</h2>
-   <p>A more general type must preserve all statically resolved member access and assignment constraints in the analyzed scope.</p>
+   <h2>Representative transformation</h2>
+   <p>The cleanup widens a declaration only when every binding-resolved use is
+      available through the proposed API type.</p>
+
+   <h3>Before</h3>
+   <pre>import java.util.ArrayList;
+
+ArrayList&lt;String&gt; names = new ArrayList&lt;&gt;();
+names.add("Ada");
+int count = names.size();</pre>
+
+   <h3>After</h3>
+   <pre>import java.util.ArrayList;
+import java.util.List;
+
+List&lt;String&gt; names = new ArrayList&lt;&gt;();
+names.add("Ada");
+int count = names.size();</pre>
+
+   <p>Only the declared type changes. The concrete construction expression and
+      runtime collection remain an <code>ArrayList</code>. A separate cleanup or
+      semantic migration is required to change the representation itself.</p>
+
+   <h2>Target selection</h2>
+   <p>The target is derived from the operations that are actually used, not from
+      a fixed class-to-interface table. For example, a <code>LinkedList</code>
+      used through deque operations such as <code>addFirst</code> can be widened
+      to <code>Deque</code>, while ordinary list operations can lead to
+      <code>List</code>.</p>
+
+   <h2>When no change is made</h2>
+   <ul>
+      <li>A cast or <code>instanceof</code> check observes the concrete declared
+          type.</li>
+      <li>The value is returned, assigned, or passed to a declaration that still
+          requires the concrete type and is outside the supported local change.</li>
+      <li>Overload selection, generic constraints, reflection-sensitive code, or
+          unresolved bindings make the wider type uncertain.</li>
+      <li>No useful abstraction exposes every required member.</li>
+   </ul>
 
    <h2>Recommended workflow</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Enable <strong>Use General Type (Sandbox)</strong> in a dedicated cleanup
+          profile.</li>
+      <li>Start with local variables in a small source selection.</li>
+      <li>Inspect the execution preview to confirm the selected abstraction and
+          import changes.</li>
+      <li>Compile and run tests that exercise overloads, serialization, and
+          framework integration around the declaration.</li>
+      <li>Use a coordinated multi-file migration rather than this local cleanup
+          when method signatures and callers must change together.</li>
    </ol>
 
    <h2>Screenshot regeneration</h2>
