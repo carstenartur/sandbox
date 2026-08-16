@@ -43,21 +43,17 @@ public enum SimplifyPlatformStatusFixCore {
 	STATUSINFO(new StatusInfoSimplifyPlatformStatus()),
 	MULTISTATUS(new MultiStatusSimplifyPlatformStatus());
 
-	private final AbstractSimplifyPlatformStatus<ASTNode> platformStatus;
+	private final AbstractSimplifyPlatformStatus platformStatus;
 
-	@SuppressWarnings("unchecked")
-	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus<? extends ASTNode> platformStatus) {
-		this.platformStatus= (AbstractSimplifyPlatformStatus<ASTNode>) platformStatus;
+	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus platformStatus) {
+		this.platformStatus= platformStatus;
 	}
 
 	public String getPreview(boolean enabled) {
 		return platformStatus.getPreview(enabled);
 	}
 
-	/**
-	 * Finds supported rewrites while sharing one processed-node set across all
-	 * status families.
-	 */
+	/** Finds supported rewrites while sharing one processed-node set. */
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set<CompilationUnitRewriteOperationWithSourceRange> operations,
 			final Set<ASTNode> nodesProcessed) throws CoreException {
