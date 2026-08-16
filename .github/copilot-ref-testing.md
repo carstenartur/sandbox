@@ -37,6 +37,42 @@ mvn test -pl sandbox_mining_core
 
 **Prefer these faster paths** when working on code in these modules.
 
+## Repository Policy Tests
+
+Maven/JUnit is the executable authority for repository-policy checks. Run the focused gate locally with:
+
+```bash
+mvn -pl sandbox_common_test \
+  -Dtest='RepositoryPolicy*Test,PinnedGitRepositoryTest' test
+```
+
+A normal root `mvn verify` also executes these tests. The gate:
+
+- compares the current change slice with the configured Git base through JGit;
+- reports changed text lines per file and rejects a slice above 1,500 lines;
+- rejects every newly added tracked `.py` file;
+- rejects newly added Python or `actions/setup-python` workflow invocations, including additions to legacy-allowlisted workflows;
+- requires the existing Python file/workflow allowlists to shrink when legacy automation is removed;
+- verifies upstream test repositories through a pinned JGit fixture without command-line Git or Python.
+
+For a local branch, set an exact base when it cannot be inferred from `origin/main`:
+
+```bash
+mvn -pl sandbox_common_test \
+  -Drepository.policy.base=refs/remotes/origin/main test
+```
+
+A justified exception must be documented in the PR body before implementation continues:
+
+```markdown
+## Repository policy exception
+
+Explain why the change cannot be split, which generated/binary content is involved,
+which alternatives were considered, and how reviewers can validate the slice.
+```
+
+The explanation must contain at least 80 non-whitespace characters. Editing the allowlist cannot authorize new Python automation; additions are checked against the JGit base independently.
+
 ## SWTBot UI Tests
 
 ```bash
