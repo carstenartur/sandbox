@@ -53,10 +53,8 @@ import org.sandbox.jdt.internal.corext.util.ImportUtils;
  * new Status(severity, pluginId, IStatus.OK, message, throwable)
  *     -> new Status(severity, pluginId, message, throwable)
  * </pre>
- *
- * @param <T> node type found by the visitor
  */
-public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
+public abstract class AbstractSimplifyPlatformStatus {
 
 	private final int expectedSeverity;
 
@@ -64,14 +62,7 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		this.expectedSeverity= expectedSeverity;
 	}
 
-	/**
-	 * Adds an import for a generated type reference.
-	 *
-	 * @param typeName fully qualified type name
-	 * @param cuRewrite compilation-unit rewrite
-	 * @param ast target AST
-	 * @return a simple name when the import can be added, otherwise a qualified name
-	 */
+	/** Adds an import and returns a usable name for a generated type reference. */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
 		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
@@ -90,27 +81,17 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 
 	public abstract String getPreview(boolean afterRefactoring);
 
+	/** Finds exact {@link Status} constructors whose code is provably OK. */
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed)
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
-		find(fixcore, compilationUnit, operations, nodesprocessed, true);
-	}
-
-	/**
-	 * Finds exact {@link Status} constructors whose status code is provably
-	 * {@link IStatus#OK}. The compatibility parameter is retained for callers of
-	 * the previous API; plug-in identity is now always preserved.
-	 */
-	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
-			boolean preservePluginId) throws CoreException {
 		try {
-			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
+			ReferenceHolder<ASTNode, Object> holder= ReferenceHolder.createForNodes();
 			HelperVisitorFactory.forClassInstanceCreation(Status.class)
 				.in(compilationUnit)
-				.excluding(nodesprocessed)
-				.processEach(dataholder, (visited, holder) -> {
-					if (nodesprocessed.contains(visited) || visited.arguments().size() != 5) {
+				.excluding(nodesProcessed)
+				.processEach(holder, (visited, data) -> {
+					if (nodesProcessed.contains(visited) || visited.arguments().size() != 5) {
 						return false;
 					}
 
@@ -126,8 +107,8 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 						return false;
 					}
 
-					operations.add(fixcore.rewrite(visited, holder, true));
-					nodesprocessed.add(visited);
+					operations.add(fixcore.rewrite(visited, data));
+					nodesProcessed.add(visited);
 					return false;
 				});
 		} catch (Exception exception) {
@@ -135,20 +116,10 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 		}
 	}
 
+	/** Removes only the redundant OK code and retains every other argument. */
 	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
 			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
 			ReferenceHolder<ASTNode, Object> holder) {
-		rewrite(cleanup, visited, cuRewrite, group, holder, true);
-	}
-
-	/**
-	 * Removes only the redundant {@code IStatus.OK} argument. The original
-	 * plug-in identifier is moved into the corresponding four-argument
-	 * constructor and therefore cannot be silently replaced by caller inference.
-	 */
-	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
-			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
@@ -159,16 +130,12 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 
 		List<Expression> originalArguments= visited.arguments();
 		List<Expression> simplifiedArguments= simplifiedStatus.arguments();
-		// severity
 		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(originalArguments.get(0))));
-		// explicit String or Class<?> plug-in identity
 		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(originalArguments.get(1))));
-		// message; argument 2 (the proven OK code) is deliberately omitted
 		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));
-		// throwable, including an explicit null, is retained
 		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
 
