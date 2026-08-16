@@ -6,7 +6,6 @@
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>
 		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.SaveActionCleanUpOptionsInitializer" cleanUpKind="saveAction"></cleanUpOptionsInitializer>
 		<cleanUp class="org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp" id="org.eclipse.jdt.ui.cleanup.simplifystatus" />
-		<!--      runAfter="org.eclipse.jdt.ui.cleanup.unboxing" -->
 	</extension>
 	<extension point="org.sandbox.jdt.triggerpattern.hints">
 		<hintFile
@@ -14,13 +13,12 @@
 			resource="org/sandbox/jdt/internal/corext/fix/hints/platform-status.sandbox-hint" />
 	</extension>
 
-   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
-      <cheatsheet
-            id="org.sandbox.jdt.platform.helper.gettingStarted"
-            name="Simplifying the Eclipse Platform Status API"
-            contentFile="cheatsheets/platform-status-getting-started.xml">
-         <description>Learn how to replace verbose new Status(...) constructors with concise factory methods</description>
-      </cheatsheet>
-   </extension>
-
+	<extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+		<cheatsheet
+				id="org.sandbox.jdt.platform.helper.gettingStarted"
+				name="Modernizing Eclipse Platform Status construction"
+				contentFile="cheatsheets/platform-status-getting-started.xml">
+			<description>Use concise Status factories when bundle identity and source type are proven equivalent; otherwise remove only redundant OK codes while preserving explicit status data</description>
+		</cheatsheet>
+	</extension>
 </plugin>

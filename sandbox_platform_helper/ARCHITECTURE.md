@@ -1,308 +1,229 @@
-# Platform Helper Plugin - Architecture
+# Platform Helper Plugin — Architecture
 
-> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#platform_helper) | [TODO](TODO.md)
+> **Navigation**: [Main README](../README.md) | [Plugin README](README.md) | [TODO](TODO.md)
 
-## Overview
+## Design goal
 
-The platform helper plugin simplifies Eclipse Platform API usage, specifically focusing on Status object creation. It replaces verbose `new Status(...)` calls with cleaner factory methods available in Java 11+.
+The Platform Helper cleanup modernizes Eclipse Platform `Status` construction
+while preserving every observable `IStatus` value and every observable source
+expression. It therefore chooses the shortest target whose equivalence can be
+proved; a lower parameter count is not treated as information loss by itself.
 
-## Purpose
+The relevant observable data are severity, plug-in identity, application code,
+message, and throwable. Expression evaluation is observable too: removing a
+method invocation can change side effects or class initialization even when its
+returned String is expected to equal the current bundle id.
 
-- Simplify `Status` object creation in Eclipse plugins
-- Use modern Java 11+ factory methods (`Status.error()`, `Status.warning()`)
-- Apply `StatusHelper` pattern for Java 8 compatibility (legacy)
-- Reduce boilerplate in plugin error handling code
+## Decision tree
 
-## Transformation Examples
+For a binding-resolved five-argument `Status` constructor with supported
+severity and a compile-time code value of `IStatus.OK`, the native cleanup makes
+this decision:
 
-### Java 11+ Transformation
+1. Prove that the explicit identity is side-effect-free and equals the identity
+   the factory derives for the calling class.
+2. Resolve the actual `Status.info`, `Status.warning`, or `Status.error` overload
+   from the project's build path.
+3. Prove that message and throwable are representable and that the factory
+   return type is assignment-compatible with the source target.
+4. If all proofs succeed, generate the factory call.
+5. Otherwise, generate the four-argument constructor and retain the explicit
+   identity.
 
-**Before**:
+Nonzero, unresolved, and runtime-computed codes are not changed.
+
+## Factory path
+
+### Bundle identity proof
+
+The cleanup reads `META-INF/MANIFEST.MF` from the containing Java project. For
+a regular bundle it normalizes `Bundle-SymbolicName`; for a fragment it uses the
+`Fragment-Host` symbolic name because the host is the bundle that defines the
+fragment class at runtime. Directives and version attributes are removed before
+comparison.
+
+A factory is considered only for these side-effect-free identities:
+
+- a compile-time String constant whose value equals `Bundle-SymbolicName`;
+- the exact enclosing class literal, for example `MyView.class` inside
+  `MyView`.
+
+Compile-time String constants are safe to omit because Java inlines their values
+and referencing them does not trigger class initialization. The exact current
+class literal is safe because the constructor and the factory identify the same
+calling class and therefore the same manifest-backed bundle.
+
+These expressions do not establish the required proof:
+
+- a different literal or constant;
+- a Class literal different from the enclosing class;
+- a local variable or parameter;
+- an unresolved expression;
+- a method call such as `JavaPlugin.getPluginId()`.
+
+A getter is deliberately retained even when its expected return value equals the
+bundle id. Evaluating the method and initializing its declaring class can be
+observable; value equality alone is not evaluation equivalence.
+
+### Factory overload proof
+
+The cleanup does not assume a fixed Eclipse Platform API shape. It resolves the
+actual static factory methods from the `Status` type binding on the project's
+build path.
+
+For a literal null throwable, the one-argument factory is preferred when its
+return type fits the target. If it does not, the two-argument overload is tried
+with the explicit null. For a non-null throwable, the two-argument overload is
+required.
+
+This matters because the factory return types are not uniform. For example, a
+factory returning `IStatus` must not replace a constructor in a source context
+that requires concrete `Status`. Likewise, an INFO status with a non-null
+throwable keeps the constructor when no equivalent `Status.info(String,
+Throwable)` overload exists.
+
+### Factory rewrite
+
+A proven candidate such as:
+
 ```java
-IStatus status = new Status(IStatus.ERROR, "plugin.id", "Error message");
+new Status(IStatus.ERROR, PLUGIN_ID, IStatus.OK, message, exception)
 ```
 
-**After**:
+may become:
+
 ```java
-IStatus status = Status.error("Error message", null);
+Status.error(message, exception)
 ```
 
-### Status Creation Patterns
+The factory supplies the severity and OK code. `StackWalker` and the calling
+bundle supply the already-proven equivalent plug-in identity. Message and
+throwable are moved without re-evaluation.
 
-The plugin supports simplification of:
-- `new Status(IStatus.ERROR, ...)` → `Status.error(...)`
-- `new Status(IStatus.WARNING, ...)` → `Status.warning(...)`
-- `new Status(IStatus.INFO, ...)` → `Status.info(...)`
-- `new Status(IStatus.OK, ...)` → `Status.ok(...)`
+## Identity-preserving constructor path
 
-## Core Components
+When factory equivalence is not fully proven, the cleanup removes only the
+redundant OK code:
 
-### SimplifyPlatformStatusCleanUpCore
-
-**Location**: `org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUpCore`
-
-**Purpose**: Main cleanup implementation for Status object simplification
-
-**Key Methods**:
-- `findStatusCreations()` - Identifies `new Status(...)` calls
-- `rewrite()` - Transforms to factory methods
-- `createFactoryMethodCall()` - Generates simplified factory call
-
-## Version Compatibility
-
-- **Java 11+**: Uses `Status.error()`, `Status.warning()`, etc. factory methods
-- **Java 8**: Legacy approach using StatusHelper pattern (no longer actively supported)
-
-The cleanup checks the project's Java version and only applies transformations available in that version.
-
-## Package Structure
-
-- `org.sandbox.jdt.internal.corext.fix.*` - Core cleanup logic
-- `org.sandbox.jdt.internal.ui.*` - UI components and preferences
-
-**Eclipse JDT Correspondence**:
-- Maps to `org.eclipse.jdt.internal.corext.fix.*` in Eclipse JDT
-- Can be ported by replacing `sandbox` with `eclipse` in package paths
-
-## Design Patterns
-
-### AST Visitor Pattern
-Identifies Status constructor calls:
 ```java
-compilationUnit.accept(new ASTVisitor() {
-    @Override
-    public boolean visit(ClassInstanceCreation node) {
-        // Check if creating Status object
-        return true;
-    }
-});
+new Status(severity, explicitIdentity, IStatus.OK, message, throwable)
 ```
 
-### Factory Method Pattern
-Transforms constructor calls to factory methods:
+becomes:
+
 ```java
-// Old: new Status(IStatus.ERROR, pluginId, message)
-// New: Status.error(message, null)
+new Status(severity, explicitIdentity, message, throwable)
 ```
 
-## Eclipse Platform Integration
+The explicit String or Class expression, severity, message, and throwable remain
+in the same evaluation order. This is the fallback for delegated identities,
+method calls, missing bundle metadata, unavailable overloads, and incompatible
+factory return types.
 
-### Current State
-Experimental cleanup for Eclipse Platform code. The factory methods are part of Eclipse Platform 4.12+ (2019-06).
+## Compile-time value analysis
 
-### Benefits
-- Cleaner, more readable error handling code
-- Less boilerplate (no plugin ID required in factory methods)
-- Follows modern Java patterns
-- Aligns with Eclipse Platform best practices
+`Expression.resolveConstantExpressionValue()` is used rather than source-text
+matching. These code expressions are equivalent candidates:
 
-## Build Configuration
-
-- **Module Type**: Eclipse Plugin (OSGi bundle)
-- **Packaging**: `eclipse-plugin`
-- **Dependencies**: 
-  - Eclipse JDT Core APIs
-  - Eclipse Platform APIs (for Status class)
-  - `sandbox_common` for cleanup constants
-
-## Testing
-
-### Test Module
-`sandbox_platform_helper_test` contains test cases for Status transformations:
-- Factory method transformations
-- Java version compatibility
-- Plugin ID handling
-- Exception parameter handling
-
-## Known Limitations
-
-1. **Java 11+ Only**: Requires Java 11 or later (aligned with current Eclipse support)
-2. **Status Class Only**: Only handles `org.eclipse.core.runtime.Status` and `org.eclipse.core.runtime.MultiStatus`
-3. **Simple Cases**: Complex Status creation patterns may not be transformed
-4. **Plugin ID Not Preserved in Status Factory Methods**: The Eclipse Platform Status factory methods (error(), warning(), info()) only accept (message, exception) parameters and do not support plugin ID parameters
-
-## Integration Points
-
-### Eclipse Platform Integration
-
-The plugin integrates with Eclipse Platform APIs:
-
-1. **org.eclipse.core.runtime.Status**: Target class for simplification
-   - Factory methods available since Eclipse Platform 4.12 (2019-06)
-   - Methods: `Status.error()`, `Status.warning()`, `Status.info()`, `Status.ok()`
-   - Simplified API reduces boilerplate
-   - **Note**: Factory methods only accept (message, exception) parameters, not plugin ID
-
-2. **org.eclipse.core.runtime.MultiStatus**: Simplification support
-   - Normalizes status code to `IStatus.OK` in MultiStatus constructors
-   - Example: `new MultiStatus(pluginId, 123, "msg", e)` → `new MultiStatus(pluginId, IStatus.OK, "msg", e)`
-   - Rationale: MultiStatus overall status is determined by child statuses
-   - No factory methods available for MultiStatus
-
-3. **Eclipse Logging**: Status objects integrate with logging
-   - ILog.log(IStatus) accepts Status objects
-   - Simplified creation improves logging code readability
-   - Error reporting remains consistent
-
-### Eclipse JDT AST Integration
-
-Uses Eclipse JDT's AST framework for transformation:
-
-1. **AST Visitor**: Identifies `new Status(...)` constructor calls
-   - Visits `ClassInstanceCreation` nodes
-   - Checks type binding for `org.eclipse.core.runtime.Status`
-   - Extracts severity, message, and exception parameters
-
-2. **AST Rewrite**: Transforms constructor to factory method
-   - Replaces `new Status(...)` with `Status.error(...)`
-   - Removes plugin ID parameter (no longer needed)
-   - Preserves message and exception parameters
-   - Updates imports if needed
-
-3. **Type Checking**: Verifies transformation is safe
-   - Checks Java version (requires 11+)
-   - Verifies Status class is from org.eclipse.core.runtime
-   - Ensures factory method is available
-
-### Cleanup Framework Integration
-
-Registered as Eclipse JDT cleanup:
-
-1. **Extension Point**: `org.eclipse.jdt.ui.cleanUps`
-   - Cleanup ID defined in `MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP`
-   - Appears in Eclipse cleanup preferences
-   - Can be enabled in Save Actions
-
-2. **Java Version Check**: Only activates for Java 11+
-   - Reads project compliance level
-   - Disables cleanup for Java 8 projects
-   - Aligns with Root README [Build Instructions](../README.md#build-instructions)
-
-## Algorithms and Design Decisions
-
-### Severity Constant Mapping
-
-**Decision**: Map IStatus constants to factory method names
-
-**Algorithm**:
-```
-IStatus.ERROR   → Status.error(message, exception)
-IStatus.WARNING → Status.warning(message, exception)
-IStatus.INFO    → Status.info(message, exception)
-IStatus.OK      → Status.ok(message, exception)
-IStatus.CANCEL  → Not transformed (no factory method)
-```
-
-**Rationale**:
-- Direct 1:1 mapping simplifies implementation
-- Clear, readable factory method names
-- CANCEL has no factory (rarely used in creation)
-
-### Plugin ID Elimination Strategy
-
-**Decision**: Remove plugin ID parameter from transformation
-
-**Rationale**:
-- Factory methods infer plugin ID from calling bundle context
-- Reduces parameter count (4 params → 2 params)
-- Eliminates common errors (wrong plugin ID, null plugin ID)
-- Aligns with modern Eclipse Platform patterns
-
-**Trade-off**:
-- **Pro**: Simpler, less error-prone code
-- **Pro**: Follows Eclipse Platform best practices
-- **Con**: Plugin ID not explicitly visible in code
-- **Con**: Assumes correct Bundle-SymbolicName configuration
-
-**Example**:
 ```java
-// Before: 4 parameters, explicit plugin ID
-IStatus status = new Status(IStatus.ERROR, "my.plugin.id", "Error message", exception);
-
-// After: 2 parameters, implicit plugin ID
-IStatus status = Status.error("Error message", exception);
+IStatus.OK
+0
+private static final int OK_CODE = 0;
 ```
 
-### Why Only Java 11+?
+These remain unchanged unless a named constant itself resolves to zero:
 
-**Decision**: Only apply cleanup when project uses Java 11+
-
-**Rationale**:
-- Factory methods added in Eclipse Platform 4.12 (requires Java 11)
-- Sandbox targets Java 21 (see [Build Instructions](../README.md#build-instructions))
-- Java 8 support dropped by Eclipse Platform
-- Ensures transformed code compiles and runs
-
-**Implementation**:
 ```java
-if (JavaModelUtil.is11OrHigher(project)) {
-    // Apply cleanup
-}
+17
+APPLICATION_SPECIFIC_CODE
+computeCode()
 ```
 
-### Exception Parameter Handling
+The same resolved-value principle is used for supported severities.
 
-**Decision**: Preserve exception parameter position
+## `MultiStatus`
 
-**Algorithm**:
-```
-1. Extract exception parameter (if present)
-2. Pass as second parameter to factory method
-3. Use null if no exception in original code
-```
+A `MultiStatus` application code remains observable through `IStatus#getCode()`.
+The cleanup therefore never replaces a nonzero or unresolved code with
+`IStatus.OK`.
 
-**Example**:
+The only supported rewrite is a naming normalization:
+
 ```java
-// With exception
-new Status(IStatus.ERROR, pluginId, "msg", ex)  → Status.error("msg", ex)
-
-// Without exception  
-new Status(IStatus.ERROR, pluginId, "msg")     → Status.error("msg", null)
+new MultiStatus(pluginId, 0, message, exception)
 ```
 
-**Rationale**: This cleanup consistently uses factory method overloads that accept an exception parameter and passes `null` when the original code had no exception, for consistency across all transformations.
+becomes:
 
-## Cross-References
+```java
+new MultiStatus(pluginId, IStatus.OK, message, exception)
+```
 
-### Root README Sections
+An existing canonical `IStatus.OK` reference is left unchanged. Import conflicts
+are handled through the standard JDT import rewrite.
 
-This architecture document relates to:
+## Native cleanup and TriggerPattern DSL
 
-- [5. `sandbox_platform_helper`](../README.md#5-sandbox_platform_helper) - User-facing documentation
-- [Build Instructions](../README.md#build-instructions) - Java 11+ requirement
-- [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Platform APIs from Eclipse 2025-09
+The native JDT cleanup is authoritative for factory selection because it has
+access to the compilation unit, project manifest, resolved bindings, target
+type, and compile-time values.
 
-### Related Modules
+The bundled TriggerPattern DSL rules do not have an equivalent project-level
+identity and target-type proof. They therefore remain conservative: supported
+five-argument constructors are rewritten only to identity-preserving
+four-argument constructors. The general Platform Logging library contains no
+Status constructor-to-factory rules.
 
-- **sandbox_common** - Uses `MYCleanUpConstants` for cleanup IDs
-- **Eclipse Platform Runtime** - Target API being simplified
-- **sandbox_platform_helper_test** - Test cases covering transformations
+## Eclipse cleanup integration
+
+`SimplifyPlatformStatusCleanUpCore`:
+
+- requests a resolved AST;
+- applies the current Java-compliance gate;
+- shares one processed-node set between INFO, WARNING, ERROR, and MultiStatus;
+- creates comment-preserving `CompilationUnitRewrite` operations;
+- participates in the standard LTK preview, Apply, and global Undo workflow.
+
+The real execution preview is a review aid, not a semantic safety boundary. The
+candidate detector must establish equivalence before a proposal is shown or a
+save action is allowed to apply it.
+
+## Test strategy
+
+Focused tests cover:
+
+- INFO, WARNING, and ERROR;
+- compile-time String identity equal to the bundle symbolic name;
+- exact enclosing class identity;
+- delegated and mismatching identities;
+- method-call identities retained for evaluation safety;
+- one- and two-argument overload selection;
+- concrete `Status` versus `IStatus` target compatibility;
+- INFO with a non-null throwable;
+- literal, named, and constant zero;
+- nonzero and runtime-computed codes;
+- `MultiStatus` normalization and rejection cases;
+- import conflicts and idempotence.
+
+Pinned real-corpus tests and SWTBot screenshots must use the same applicability
+logic. In the current JDT UI corpus, `JavaPlugin.getPluginId()` remains in the
+constructor fallback because it is a method invocation, while literal or
+compile-time constants can use a factory when the manifest proves equality.
+
+## Known limitations
+
+- Only a PDE-style project manifest at `META-INF/MANIFEST.MF` is currently used
+  as bundle metadata.
+- Getter methods are not analyzed for purity or initialization equivalence.
+- A Class identity from another source type in the same bundle is not yet used
+  as a proof; only the exact enclosing class literal is accepted.
+- Rejection reasons are not yet exposed as a machine-readable inventory.
+- Custom `IStatus` implementations, subclasses, and indirect factory wrappers
+  are outside the matching scope.
 
 ## References
 
-- [Status Class API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/Status.html)
-- [Eclipse Platform Runtime Guide](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/runtime.htm)
-- [OSGi Bundle Context](https://docs.osgi.org/javadoc/r6/core/org/osgi/framework/BundleContext.html)
-
-## Future Enhancements
-
-- Support for custom Status subclasses
-- Preserve plugin ID as additional parameter if desired
-- Multi-status simplification
-- Integration with Eclipse logging framework updates
-
-## Documentation Requirements
-
-### Feature Properties
-
-The corresponding feature module `sandbox_platform_helper_feature` MUST maintain:
-
-1. **feature.properties** - English language properties file containing:
-   - `description` - Clear description of the feature's purpose and capabilities
-   - `copyright` - Copyright notice with appropriate years
-   - `licenseURL` - URL to the Eclipse Public License
-   - `license` - Eclipse Public License text or reference
-
-2. **feature_de.properties** - German translation of all properties
-
-These files enable Eclipse's built-in localization mechanism and provide user-facing documentation in the Eclipse IDE. When updating feature capabilities, ensure both property files are updated accordingly.
+- [Status API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/Status.html)
+- [MultiStatus API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/MultiStatus.html)
+- [Semantic preservation issue](https://github.com/carstenartur/sandbox/issues/1498)
+- [Pinned workspace and screenshot scenarios](https://github.com/carstenartur/sandbox/issues/1497)

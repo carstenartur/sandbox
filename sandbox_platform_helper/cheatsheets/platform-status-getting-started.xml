@@ -9,50 +9,50 @@
 
     SPDX-License-Identifier: EPL-2.0
 -->
-<cheatsheet title="Simplifying the Eclipse Platform Status API">
+<cheatsheet title="Modernizing Eclipse Platform Status construction">
 
    <intro>
       <description>
-         This cheat sheet guides you through using the
-         <b>Platform Status Cleanup</b> to simplify verbose
-         <b>new Status(...)</b> constructions with the concise
-         factory methods available in recent Eclipse versions when
-         running on Java 9 or higher.
+         This cheat sheet guides you through the
+         <b>Platform Status Cleanup</b>. The native cleanup uses a concise
+         factory when equivalence is proven and otherwise retains the explicit
+         identity in a shorter constructor. It never asks you to approve an
+         unproven semantic change in the preview.
       </description>
    </intro>
 
-   <item title="Understand the Old vs New Status API">
+   <item title="Understand the Two Safe Targets">
       <description>
-         Before these factory methods were available, creating a
-         status object required a verbose constructor call:
+         When a five-argument Status has a code that is provably
+         <b>IStatus.OK</b>, the cleanup chooses one of two targets.
          <br/><br/>
-         <b>new Status(IStatus.ERROR, Activator.PLUGIN_ID, IStatus.OK, message, exception)</b><br/>
+         <b>Proven bundle identity</b><br/>
+         new Status(IStatus.ERROR, PLUGIN_ID,
+         IStatus.OK, message, exception)<br/>
+         → Status.error(message, exception)<br/>
          <br/>
-         With these factory methods, concise replacements are available:
+         This factory form is used only when PLUGIN_ID is a side-effect-free
+         compile-time String equal to the project Bundle-SymbolicName, or the
+         identity is the exact enclosing class literal, and the factory return
+         type fits the source context.
          <br/><br/>
-         • <b>Status.error(message)</b><br/>
-         • <b>Status.error(message, exception)</b><br/>
-         • <b>Status.warning(message)</b><br/>
-         • <b>Status.info(message)</b><br/>
-         <br/>
-         The cleanup replaces the old constructor patterns with
-         these factory methods, reducing boilerplate and improving
-         readability.
+         <b>Identity not fully proven</b><br/>
+         new Status(IStatus.ERROR, responsiblePluginId,
+         IStatus.OK, message, exception)<br/>
+         → new Status(IStatus.ERROR, responsiblePluginId,
+         message, exception)
       </description>
    </item>
 
    <item title="Enable the Cleanup" dialog="true">
       <description>
-         Open the Clean Up dialog to enable the Platform Status
-         cleanup:
+         Open the Clean Up dialog:
          <br/><br/>
-         1. In the <b>Package Explorer</b>, select an Eclipse
-            plugin project<br/>
+         1. Select an Eclipse plug-in project in Package Explorer<br/>
          2. Choose <b>Source → Clean Up…</b><br/>
          3. Select <b>Use custom profile</b> and click
             <b>Configure…</b><br/>
-         4. On the <b>Platform Status (Sandbox)</b> tab,
-            enable <b>Simplify Status creation</b><br/>
+         4. On <b>Platform Status (Sandbox)</b>, enable the cleanup<br/>
          5. Click <b>OK</b><br/>
          <br/>
          Click <b>Perform</b> to open the Source menu.
@@ -62,39 +62,58 @@
          confirm="false"/>
    </item>
 
-   <item title="Run the Cleanup">
+   <item title="Know What Counts as a Proof">
       <description>
-         Apply the cleanup to your plugin source files:
+         The factory path requires project bundle metadata and a
+         side-effect-free identity. A compile-time String matching
+         Bundle-SymbolicName and the exact enclosing class literal are
+         supported.
          <br/><br/>
-         1. Open or select Java files that create
-            <b>Status</b> objects using the old constructor<br/>
-         2. Choose <b>Source → Clean Up…</b><br/>
-         3. Confirm the profile has
-            <b>Platform Status (Sandbox)</b> enabled<br/>
-         4. Click <b>Finish</b><br/>
-         <br/>
-         The cleanup processes all matching constructor calls
-         and replaces them with factory method invocations.
+         A method call such as JavaPlugin.getPluginId() remains in the
+         constructor fallback. Removing the method call or triggering its
+         declaring class differently could be observable even when the returned
+         String is expected to match.
       </description>
    </item>
 
-   <item title="Review the Simplified Status Calls">
+   <item title="Review the Real Execution Preview">
       <description>
-         After the cleanup runs, inspect the updated code:
+         Select each changed Java file in the LTK preview and inspect its
+         combined diff. Confirm that:
          <br/><br/>
-         • <b>new Status(IStatus.ERROR, pluginId, message)</b>
-           → <b>Status.error(message)</b><br/>
-         • <b>new Status(IStatus.ERROR, pluginId, message, e)</b>
-           → <b>Status.error(message, e)</b><br/>
-         • <b>new Status(IStatus.WARNING, pluginId, message)</b>
-           → <b>Status.warning(message)</b><br/>
-         • <b>new Status(IStatus.INFO, pluginId, message)</b>
-           → <b>Status.info(message)</b><br/>
-         <br/>
-         Note: The plug-in ID argument is omitted in the factory
-         methods because they automatically determine the caller
-         plug-in ID. Verify the build still passes
-         after the cleanup.
+         • a factory appears only for an obviously equivalent bundle identity;<br/>
+         • delegated or dynamic identities remain in a constructor;<br/>
+         • message and throwable are preserved;<br/>
+         • nonzero application-specific codes are not proposed;<br/>
+         • the resulting expression has the required IStatus or Status type.
+         <br/><br/>
+         Deselect an entire file when its complete proposed change should not
+         be applied.
+      </description>
+   </item>
+
+   <item title="Understand MultiStatus Handling">
+      <description>
+         MultiStatus may carry an application-specific code. The cleanup changes
+         only a value that is provably zero:
+         <br/><br/>
+         new MultiStatus(pluginId, 0, message, exception)<br/>
+         → new MultiStatus(pluginId, IStatus.OK, message, exception)
+         <br/><br/>
+         A nonzero constant, method call, or unresolved expression is left
+         unchanged.
+      </description>
+   </item>
+
+   <item title="Verify and Undo">
+      <description>
+         After applying the cleanup:
+         <br/><br/>
+         1. compile the affected plug-in projects;<br/>
+         2. run logging and error-handling tests;<br/>
+         3. inspect consumers of getPlugin() and getCode();<br/>
+         4. use Eclipse Undo to restore the complete cleanup operation when
+            validation fails.
       </description>
    </item>
 
