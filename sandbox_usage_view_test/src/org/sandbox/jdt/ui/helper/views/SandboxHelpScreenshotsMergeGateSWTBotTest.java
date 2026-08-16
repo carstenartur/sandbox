@@ -22,6 +22,9 @@ import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
+import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -93,7 +96,14 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
             assertTrue(singleFile.exists(), "The deterministic single-file preview fixture must exist");
             String before = readFile(singleFile);
 
-            screenshots.captureRealCleanupPreviewAndVerifyIndependentSelection();
+            try {
+                screenshots.captureRealCleanupPreviewAndVerifyIndependentSelection();
+            } catch (AssertionError failure) {
+                String previewTree = activePreviewTree();
+                System.out.println("[help-screenshots] Real Cleanup preview tree:\n" + previewTree);
+                throw new AssertionError(failure.getMessage() + "\nReal Cleanup preview tree:\n" + previewTree,
+                        failure);
+            }
 
             assertTrue(undoManager.anythingToUndo(),
                     "The single-file Cleanup operation must remain available for aggregate undo verification");
@@ -102,6 +112,30 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
                     "Undo must restore the single-file preview fixture byte-for-byte");
         } finally {
             undoManager.flush();
+        }
+    }
+
+    private static String activePreviewTree() {
+        try {
+            SWTWorkbenchBot workbench = new SWTWorkbenchBot();
+            SWTBotTree tree = workbench.activeShell().bot().tree();
+            StringBuilder result = new StringBuilder();
+            for (SWTBotTreeItem root : tree.getAllItems()) {
+                appendTreeItem(result, root, 0);
+            }
+            return result.isEmpty() ? "<empty tree>" : result.toString();
+        } catch (RuntimeException exception) {
+            return "<unavailable: " + exception.getClass().getSimpleName() + ": " + exception.getMessage() + ">";
+        }
+    }
+
+    private static void appendTreeItem(StringBuilder result, SWTBotTreeItem item, int depth) {
+        result.append("  ".repeat(depth))
+                .append(item.isChecked() ? "[x] " : "[ ] ")
+                .append(item.getText())
+                .append('\n');
+        for (SWTBotTreeItem child : item.getItems()) {
+            appendTreeItem(result, child, depth + 1);
         }
     }
 
