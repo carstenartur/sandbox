@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import org.eclipse.core.resources.IFile;
@@ -64,6 +65,7 @@ import org.sandbox.jdt.internal.corext.util.ImportUtils;
 public abstract class AbstractSimplifyPlatformStatus {
 
 	private static final String BUNDLE_SYMBOLIC_NAME= "Bundle-SymbolicName"; //$NON-NLS-1$
+	private static final String FRAGMENT_HOST= "Fragment-Host"; //$NON-NLS-1$
 
 	private final int expectedSeverity;
 	private final String factoryMethodName;
@@ -101,7 +103,7 @@ public abstract class AbstractSimplifyPlatformStatus {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
 		try {
-			String bundleId= bundleSymbolicName(compilationUnit);
+			String bundleId= runtimeBundleSymbolicName(compilationUnit);
 			ReferenceHolder<ASTNode, Object> holder= ReferenceHolder.createForNodes();
 			HelperVisitorFactory.forClassInstanceCreation(Status.class)
 				.in(compilationUnit)
@@ -205,7 +207,7 @@ public abstract class AbstractSimplifyPlatformStatus {
 		return parent instanceof ExpressionStatement;
 	}
 
-	private static String bundleSymbolicName(CompilationUnit compilationUnit) {
+	private static String runtimeBundleSymbolicName(CompilationUnit compilationUnit) {
 		IJavaElement javaElement= compilationUnit.getJavaElement();
 		if (javaElement == null) {
 			return null;
@@ -215,12 +217,14 @@ public abstract class AbstractSimplifyPlatformStatus {
 			return null;
 		}
 		try (InputStream contents= manifestFile.getContents()) {
-			String header= new Manifest(contents).getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
-			if (header == null) {
+			Attributes attributes= new Manifest(contents).getMainAttributes();
+			String fragmentHost= attributes.getValue(FRAGMENT_HOST);
+			String runtimeIdentity= fragmentHost != null ? fragmentHost : attributes.getValue(BUNDLE_SYMBOLIC_NAME);
+			if (runtimeIdentity == null) {
 				return null;
 			}
-			int directiveStart= header.indexOf(';');
-			return (directiveStart < 0 ? header : header.substring(0, directiveStart)).trim();
+			int directiveStart= runtimeIdentity.indexOf(';');
+			return (directiveStart < 0 ? runtimeIdentity : runtimeIdentity.substring(0, directiveStart)).trim();
 		} catch (CoreException | IOException exception) {
 			return null;
 		}

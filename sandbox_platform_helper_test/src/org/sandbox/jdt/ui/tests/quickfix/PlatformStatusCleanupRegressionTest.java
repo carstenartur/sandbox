@@ -77,14 +77,53 @@ public class PlatformStatusCleanupRegressionTest {
 		}
 	}
 
+	@Test
+	void usesFragmentHostAsRuntimeBundleIdentity() throws CoreException {
+		IFile manifest= createBundleManifest("test.fragment", "test.host"); //$NON-NLS-1$ //$NON-NLS-2$
+		try {
+			String given= """
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.Status;
+					public class E1 {
+						IStatus host = new Status(IStatus.ERROR, "test.host", IStatus.OK, "host", null);
+						IStatus fragment = new Status(IStatus.ERROR, "test.fragment", IStatus.OK, "fragment", null);
+					}"""; //$NON-NLS-1$
+			String expected= """
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.Status;
+					public class E1 {
+						IStatus host = Status.error("host");
+						IStatus fragment = new Status(IStatus.ERROR, "test.fragment", "fragment", null);
+					}"""; //$NON-NLS-1$
+
+			IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+			ICompilationUnit unit= pack.createCompilationUnit("E1.java", given, false, null); //$NON-NLS-1$
+			context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { expected }, null);
+		} finally {
+			manifest.getParent().delete(true, null);
+		}
+	}
+
 	private IFile createBundleManifest(String symbolicName) throws CoreException {
+		return createBundleManifest(symbolicName, null);
+	}
+
+	private IFile createBundleManifest(String symbolicName, String fragmentHost) throws CoreException {
 		IFolder metaInf= context.getJavaProject().getProject().getFolder("META-INF"); //$NON-NLS-1$
 		if (!metaInf.exists()) {
 			metaInf.create(true, true, null);
 		}
 		IFile manifest= metaInf.getFile("MANIFEST.MF"); //$NON-NLS-1$
-		String content= "Manifest-Version: 1.0\nBundle-SymbolicName: " + symbolicName + ";singleton:=true\n\n"; //$NON-NLS-1$ //$NON-NLS-2$
-		manifest.create(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), true, null);
+		StringBuilder content= new StringBuilder("Manifest-Version: 1.0\nBundle-SymbolicName: ") //$NON-NLS-1$
+				.append(symbolicName).append(";singleton:=true\n"); //$NON-NLS-1$
+		if (fragmentHost != null) {
+			content.append("Fragment-Host: ").append(fragmentHost).append(";bundle-version=\"[1.0,2.0)\"\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		content.append('\n');
+		manifest.create(new ByteArrayInputStream(content.toString().getBytes(StandardCharsets.UTF_8)), true, null);
 		return manifest;
 	}
 }
