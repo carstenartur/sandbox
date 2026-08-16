@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5ea54ad70e094d16fcfe3dcc51ec7e3c8ce58a2a5c673fa4cb3c3f7b329c8fea",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt.internal.templateutils.evaluateTemplate\u003e\n\u003c!description: Replace JavaContext.evaluateTemplate with TemplateUtils.evaluateTemplate due to internal refactoring in Eclipse JDT UI.\u003e\n\u003c!severity: INFO\u003e\n\norg.eclipse.jdt.internal.corext.template.java.JavaContext.evaluateTemplate($template, $parentCU, $pos)\n\u003d\u003e\norg.eclipse.jdt.internal.corext.template.java.TemplateUtils.evaluateTemplate($template, $parentCU, $pos)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.template.java.JavaContext;\nimport org.eclipse.jface.text.templates.Template;\n\npublic class Example {\n    public String process(Template template, ICompilationUnit parentCU, int pos) throws CoreException {\n        // Some logic\n        return JavaContext.evaluateTemplate(template, parentCU, pos);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.template.java.TemplateUtils;\nimport org.eclipse.jface.text.templates.Template;\n\npublic class Example {\n    public String process(Template template, ICompilationUnit parentCU, int pos) throws CoreException {\n        // Some logic\n        return TemplateUtils.evaluateTemplate(template, parentCU, pos);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jface.text.templates.Template;\n\n// This should not be matched as it does not use JavaContext.evaluateTemplate\npublic class AnotherExample {\n    public String anotherProcess(Template template, ICompilationUnit parentCU, int pos) throws CoreException {\n        return \"Some other result\";\n    }\n}",
+  "targetHintFile": "jdt.sandbox-hint",
+  "sourceCommit": "8093f53627786514d79829e6abd63fef6a6ac102",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces the specific internal method call `JavaContext.evaluateTemplate()` with `TemplateUtils.evaluateTemplate()` for identical arguments.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.511368770Z",
+  "ruleFingerprint": "sha256:7c7eaadc3f13586a26e618f8ae104346759f9a86c39e667909b872a99415705f",
+  "behaviorFingerprint": "sha256:2cc0f1de2004bee3ca866d3f1c47c787678346b006f09311ac316e87761a27c1",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-16T02:39:10.572031682Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f28b479a36b7978d4128b1ffd345c6c8983a6012e7460bcad75fd7d2cca35e97",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.java.JavaMultiLineStringAutoIndentStrategy.TEXT_BLOCK_STR\n\u003d\u003e org.eclipse.jdt.internal.ui.actions.IndentAction.TEXT_BLOCK_STR\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor;\n\npublic class JavaMultiLineStringAutoIndentStrategy {\n    private static String TEXT_BLOCK_STR \u003d \"\\\"\\\"\\\"\"; // This field is defined here\n\n    public void someMethod(String fullTextBlockText, String fullStr) {\n        // Unqualified usage of the static field within its defining class\n        boolean hasTextBlockEnded \u003d PreviewFeaturesSubProcessor.isPreviewFeatureEnabled(null) \u0026\u0026 fullTextBlockText.endsWith(TEXT_BLOCK_STR);\n        boolean isTextBlock \u003d PreviewFeaturesSubProcessor.isPreviewFeatureEnabled(null) \u0026\u0026 fullStr.endsWith(TEXT_BLOCK_STR);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jdt.internal.ui.text.correction.PreviewFeaturesSubProcessor;\nimport org.eclipse.jdt.internal.ui.actions.IndentAction; // Import is added manually by the user or by IDE\u0027s auto-fix\n\npublic class JavaMultiLineStringAutoIndentStrategy {\n    // The private static String TEXT_BLOCK_STR field is removed from this class\n\n    public void someMethod(String fullTextBlockText, String fullStr) {\n        // Qualified usage of the static field from the new location\n        boolean hasTextBlockEnded \u003d PreviewFeaturesSubProcessor.isPreviewFeatureEnabled(null) \u0026\u0026 fullTextBlockText.endsWith(IndentAction.TEXT_BLOCK_STR);\n        boolean isTextBlock \u003d PreviewFeaturesSubProcessor.isPreviewFeatureEnabled(null) \u0026\u0026 fullStr.endsWith(IndentAction.TEXT_BLOCK_STR);\n    }\n}",
+  "negativeExample": "package com.example;\n\npublic class MyOtherClass {\n    private static String TEXT_BLOCK_STR \u003d \"not_the_same_value\";\n    public void anotherMethod() {\n        String s \u003d TEXT_BLOCK_STR; // Should NOT match, as it refers to MyOtherClass.TEXT_BLOCK_STR, not the specific FQN in the pattern\n    }\n}",
+  "targetHintFile": "cleanup.sandbox-hint",
+  "sourceCommit": "ad21bf503fa751851a98f0e05e9ccbf9fa61ca87",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.520371124Z",
+  "ruleFingerprint": "sha256:bb3feb40ef6abab766272e8ec3e10b9ffc39a13ddf98ae027568b85422d95d05",
+  "behaviorFingerprint": "sha256:ce63a234c6dba52f1d8dc8beab5ab5d5113dc801a463535292906396a758457a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui.text.correction cannot be resolved",
+    "verifiedAt": "2026-08-16T02:39:10.586906871Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

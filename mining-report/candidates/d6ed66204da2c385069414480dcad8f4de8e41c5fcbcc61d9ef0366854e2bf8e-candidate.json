@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d6ed66204da2c385069414480dcad8f4de8e41c5fcbcc61d9ef0366854e2bf8e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$Type $name($params$) :: methodNameMatches($name, \"(addUncaughtExceptionProposals|evaluateMissingSwitchCases|createMissingCaseProposals|createMissingDefaultProposal)\")\n\u003d\u003e @java.lang.SuppressWarnings(\"deprecation\") $Type $name($params$)\n;;",
+  "beforeExample": "import java.util.Collection;\nimport java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.ITypeBinding;\nimport org.eclipse.jdt.core.dom.Statement;\nimport org.eclipse.swt.graphics.Image;\n\n// Dummy interfaces for compilation\ninterface ICommandAccess {}\ninterface IInvocationContext {}\ninterface IProblemLocation {}\n\npublic class TestClass {\n    public static void addUncaughtExceptionProposals(IInvocationContext context, IProblemLocation problem, Collection\u003cICommandAccess\u003e proposals) throws CoreException {\n        System.out.println(\"Add proposals\");\n    }\n\n    public static boolean evaluateMissingSwitchCases(ITypeBinding enumBindings, List\u003cStatement\u003e switchStatements, ArrayList\u003cString\u003e enumConstNames) {\n        System.out.println(\"Evaluate cases\");\n        return true;\n    }\n\n    private static void createMissingDefaultProposal(IInvocationContext context, ASTNode parent, Image image, Collection\u003cICommandAccess\u003e proposals) {\n        System.out.println(\"Create default proposal\");\n    }\n\n    public static void anotherMethod() {\n        // This method should not be touched by the rule.\n        System.out.println(\"Another method\");\n    }\n}",
+  "afterExample": "import java.util.Collection;\nimport java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.ITypeBinding;\nimport org.eclipse.jdt.core.dom.Statement;\nimport org.eclipse.swt.graphics.Image;\n\n// Dummy interfaces for compilation\ninterface ICommandAccess {}\ninterface IInvocationContext {}\ninterface IProblemLocation {}\n\npublic class TestClass {\n    @java.lang.SuppressWarnings(\"deprecation\")\n    public static void addUncaughtExceptionProposals(IInvocationContext context, IProblemLocation problem, Collection\u003cICommandAccess\u003e proposals) throws CoreException {\n        System.out.println(\"Add proposals\");\n    }\n\n    @java.lang.SuppressWarnings(\"deprecation\")\n    public static boolean evaluateMissingSwitchCases(ITypeBinding enumBindings, List\u003cStatement\u003e switchStatements, ArrayList\u003cString\u003e enumConstNames) {\n        System.out.println(\"Evaluate cases\");\n        return true;\n    }\n\n    @java.lang.SuppressWarnings(\"deprecation\")\n    private static void createMissingDefaultProposal(IInvocationContext context, ASTNode parent, Image image, Collection\u003cICommandAccess\u003e proposals) {\n        System.out.println(\"Create default proposal\");\n    }\n\n    public static void anotherMethod() {\n        // This method should not be touched by the rule.\n        System.out.println(\"Another method\");\n    }\n}",
+  "negativeExample": "public class NegativeTestClass {\n    public void someOtherMethod() {\n        System.out.println(\"Should not be annotated\");\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Also not annotated\");\n    }\n}",
+  "targetHintFile": "annotation.sandbox-hint",
+  "sourceCommit": "ba68df30fb963dac75a79492b32b1b6dde113eaf",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Annotation Addition",
+  "summary": "Add @SuppressWarnings(\"deprecation\") to specific methods identified by name, regardless of their return type or access modifiers.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.537441774Z",
+  "ruleFingerprint": "sha256:0a2c6c1b1464cfb3f065346eb28bac4d64dc6bb084fe3c206374573bf91fd916",
+  "behaviorFingerprint": "sha256:861d4edddeb82fa945d17356fc0406bfdffd6e7e53b51fbd840696395d90ff30",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 8: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-16T02:39:10.614186389Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

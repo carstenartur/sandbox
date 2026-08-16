@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "120654dbcad7a401eefe47917651b9f3eeb1aef6fc811e2ec5b0b545915e1a38",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add.explicit.compilationUnitContext.cast\u003e\n\u003c!description: Add explicit cast to CompilationUnitContext where createContext returns a wider type, following API refactoring.\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.jdt.internal.corext.template.java.CompilationUnitContext $contextVar \u003d $contextType.createContext($args$); :: instanceof($contextType, \"org.eclipse.jdt.internal.ui.text.template.contentassist.CompilationUnitContextType\")\n\u003d\u003e\norg.eclipse.jdt.internal.corext.template.java.CompilationUnitContext $contextVar \u003d (org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext) $contextType.createContext($args$);\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext;\nimport org.eclipse.jdt.internal.ui.text.template.contentassist.CompilationUnitContextType;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.templates.TemplateContext;\n\npublic class Example {\n    public void someMethod(IDocument document, int offset, int length, ICompilationUnit cu, CompilationUnitContextType contextType) {\n        CompilationUnitContext context \u003d contextType.createContext(document, offset, length, cu);\n        TemplateContext contextGeneric \u003d contextType.createContext(document, offset, length, cu);\n        System.out.println(context);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext;\nimport org.eclipse.jdt.internal.ui.text.template.contentassist.CompilationUnitContextType;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.templates.TemplateContext;\n\npublic class Example {\n    public void someMethod(IDocument document, int offset, int length, ICompilationUnit cu, CompilationUnitContextType contextType) {\n        CompilationUnitContext context \u003d (org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext) contextType.createContext(document, offset, length, cu);\n        TemplateContext contextGeneric \u003d contextType.createContext(document, offset, length, cu);\n        System.out.println(context);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext;\nimport org.eclipse.jdt.internal.ui.text.template.contentassist.CompilationUnitContextType;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.templates.TemplateContext;\nimport org.eclipse.jface.text.templates.TemplateContextType; // A supertype or sibling type\n\npublic class NegativeExample {\n    public void someMethod(IDocument document, int offset, int length, ICompilationUnit cu, CompilationUnitContextType contextType, TemplateContextType genericContextType) {\n        // Rule should not apply here because LHS type is TemplateContext, not CompilationUnitContext\n        TemplateContext contextNotMatching \u003d contextType.createContext(document, offset, length, cu);\n\n        // Rule should not apply here because it already has the cast\n        CompilationUnitContext contextAlreadyCast \u003d (org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext) contextType.createContext(document, offset, length, cu);\n\n        // Rule should not apply here because the receiver type `genericContextType` does not match the guard for `contextType`\n        TemplateContext contextWrongReceiver \u003d genericContextType.createContext(document, offset, length, cu);\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "e4168f008f3fb30cdc092e399e6ae0dc3c0729fb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Adds an explicit cast `(CompilationUnitContext)` to the result of `createContext` method calls where the assigned variable is of type `CompilationUnitContext` and the receiver is `CompilationUnitContextType`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.529065741Z",
+  "ruleFingerprint": "sha256:48d1d572cf451551b97b0aae5ccccc4fb76db2981873109b24a1be1c62c72366",
+  "behaviorFingerprint": "sha256:479fce72979fa7daf5a1495ab38caee46575beccaab7a42bbbb2f1bfdba3a1b6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-16T02:39:10.595604963Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

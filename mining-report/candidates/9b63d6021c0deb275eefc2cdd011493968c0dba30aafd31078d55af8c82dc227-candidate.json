@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9b63d6021c0deb275eefc2cdd011493968c0dba30aafd31078d55af8c82dc227",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: file.createTempFile.deleteOnExit\u003e\n\u003c!description: Ensure temporary files created with java.io.File.createTempFile are marked for deletion on JVM exit to prevent resource leaks.\u003e\n\u003c!severity: HINT\u003e\n\njava.io.File $file \u003d java.io.File.createTempFile($prefix, $suffix);\n\u003d\u003e\njava.io.File $file \u003d java.io.File.createTempFile($prefix, $suffix);\n$file.deleteOnExit();\n;;",
+  "beforeExample": "import java.io.File;\nimport java.io.IOException;\n\npublic class TempFileCreator {\n    public void createAndUseTempFile(String name) throws IOException {\n        File tempFile \u003d File.createTempFile(name, \".tmp\");\n        System.out.println(\"Created temp file: \" + tempFile.getAbsolutePath());\n        // The file might persist if not explicitly deleted or marked for deletion.\n    }\n}",
+  "afterExample": "import java.io.File;\nimport java.io.IOException;\n\npublic class TempFileCreator {\n    public void createAndUseTempFile(String name) throws IOException {\n        File tempFile \u003d File.createTempFile(name, \".tmp\");\n        tempFile.deleteOnExit();\n        System.out.println(\"Created temp file: \" + tempFile.getAbsolutePath());\n        // The file is now marked for deletion on JVM exit.\n    }\n}",
+  "negativeExample": "import java.io.File;\nimport java.io.IOException;\n\npublic class OtherFileOperations {\n    public File getSomeFile(String path) {\n        return new File(path); // Not a temp file, should not match\n    }\n\n    public void anotherMethod() throws IOException {\n        File logFile \u003d new File(\"log.txt\"); // Not created with createTempFile, should not match\n        logFile.createNewFile();\n    }\n}",
+  "targetHintFile": "cleanup.sandbox-hint",
+  "sourceCommit": "c59fdd54b18a4b376bce1deab9f528e1d7fdd742",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Resource Management",
+  "summary": "Mark temporary files created with `File.createTempFile` for deletion on JVM exit using `file.deleteOnExit()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.443625187Z",
+  "ruleFingerprint": "sha256:390a4ca0b110e9363d678c767e86fe7b0d716cfbe5d8718a9d95794ff25061b9",
+  "behaviorFingerprint": "sha256:ed8d6b9a9d09f018f222b2e259cb6f595be25fcf32cdfb31f6be828706a68dc6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-16T02:39:10.523814348Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

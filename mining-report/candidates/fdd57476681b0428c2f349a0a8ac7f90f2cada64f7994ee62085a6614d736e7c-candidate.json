@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fdd57476681b0428c2f349a0a8ac7f90f2cada64f7994ee62085a6614d736e7c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "isAutoBuilding() \u0026\u0026 hasJdtCoreSettings($args$) \u0026\u0026 !DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE\n\u003d\u003e isAutoBuilding() \u0026\u0026 hasJdtCoreSettings($args$) \u0026\u0026 fProject !\u003d null \u0026\u0026 !DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE\n;;",
+  "beforeExample": "class OptionsConfigurationBlock {\n    Object fProject;\n    static final boolean DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE \u003d false;\n\n    boolean isAutoBuilding() { return true; }\n    boolean hasJdtCoreSettings(Object changedOptions) { return true; }\n\n    void calculateAutoBuild(Object changedOptions) {\n        boolean isAutoBuildOn \u003d isAutoBuilding();\n        boolean hasJdtCoreSettings \u003d hasJdtCoreSettings(changedOptions);\n        boolean willAutoBuild \u003d isAutoBuildOn \u0026\u0026 hasJdtCoreSettings \u0026\u0026 !DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE;\n    }\n}",
+  "afterExample": "class OptionsConfigurationBlock {\n    Object fProject;\n    static final boolean DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE \u003d false;\n\n    boolean isAutoBuilding() { return true; }\n    boolean hasJdtCoreSettings(Object changedOptions) { return true; }\n\n    void calculateAutoBuild(Object changedOptions) {\n        boolean isAutoBuildOn \u003d isAutoBuilding();\n        boolean hasJdtCoreSettings \u003d hasJdtCoreSettings(changedOptions);\n        boolean willAutoBuild \u003d isAutoBuildOn \u0026\u0026 hasJdtCoreSettings \u0026\u0026 fProject !\u003d null \u0026\u0026 !DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE;\n    }\n}",
+  "negativeExample": "class OptionsConfigurationBlock {\n    static final boolean DISABLE_AUTO_BUILDING_ON_SETTINGS_CHANGE \u003d false;\n\n    boolean isAutoBuilding() { return true; }\n    boolean hasJdtCoreSettings(Object changedOptions) { return true; }\n\n    void anotherCalculation(Object changedOptions) {\n        boolean isAutoBuildOn \u003d isAutoBuilding();\n        boolean hasJdtCoreSettings \u003d hasJdtCoreSettings(changedOptions);\n        boolean anotherBuildCondition \u003d isAutoBuildOn \u0026\u0026 hasJdtCoreSettings;\n    }\n}",
+  "targetHintFile": "conditional.logic.sandbox-hint",
+  "sourceCommit": "2900892ff0e671ffb93de80d49c9f793809d1cee",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Conditional Logic Update",
+  "summary": "Adds a null check for \u0027fProject\u0027 into an existing boolean condition chain to ensure auto-build occurs only for project-specific settings changes.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-16T02:39:07.473486210Z",
+  "ruleFingerprint": "sha256:5663a6187426e2c0eea71b623152b58dcc9932c272d80f2dd1a089905f08bcc3",
+  "behaviorFingerprint": "sha256:a47bb9421ada0978eaccf89c479a1117916a7a58e60cc5e557b9f0a1c8734180",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-08-16T02:39:10.545591341Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
