@@ -9,6 +9,8 @@ org.eclipse.core.runtime.Platform.getLog($bundle)
 => org.eclipse.core.runtime.ILog.of($bundle)
 ;;
 
+// Keep this library limited to the single identity-safe ILog modernization;
+// BundledLibrariesTest enforces that exact rule inventory.
 // Status constructor-to-factory rules intentionally do not belong here.
 // Status.error(), Status.warning(), and Status.info() infer the plug-in id from
 // the calling bundle and are not generally equivalent to constructors carrying
