@@ -50,6 +50,7 @@ public final class JUnit4MigrationPresets {
 
 	private static final List<String> MANAGED_OPTIONS= List.of(
 			JUnitMigrationOptions.BEST_EFFORT,
+			JUnitMigrationOptions.JUNIT6_COMPATIBILITY,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION,
 			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME,

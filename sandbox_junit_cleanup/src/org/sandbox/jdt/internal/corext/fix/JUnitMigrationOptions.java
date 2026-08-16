@@ -21,6 +21,13 @@ public final class JUnitMigrationOptions {
 	 */
 	public static final String BEST_EFFORT= "cleanup.junitcleanup_best_effort"; //$NON-NLS-1$
 
+	/**
+	 * Enables source-compatible rewrites for APIs removed by JUnit 6. Project
+	 * dependency, classpath-container and ServiceLoader changes remain atomic
+	 * project-resource migrations and are not performed by this source cleanup.
+	 */
+	public static final String JUNIT6_COMPATIBILITY= "cleanup.junitcleanup_6_compatibility"; //$NON-NLS-1$
+
 	private JUnitMigrationOptions() {
 	}
 }

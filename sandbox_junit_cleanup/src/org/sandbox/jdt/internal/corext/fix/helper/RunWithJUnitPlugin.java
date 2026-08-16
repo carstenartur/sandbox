@@ -55,7 +55,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
  * Consolidated plugin to migrate ALL JUnit 4 {@code @RunWith(...)} variants
- * and {@code @Suite.SuiteClasses} to JUnit 5 equivalents.
+ * and {@code @Suite.SuiteClasses} to JUnit Jupiter equivalents.
  *
  * <p>This single plugin handles all runner types via internal dispatch:
  * <ul>
@@ -65,6 +65,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  *   <li>{@code @RunWith(Categories.class)} → {@code @Suite} + {@code @IncludeTags/@ExcludeTags}</li>
  *   <li>{@code @RunWith(MockitoJUnitRunner.class)} → {@code @ExtendWith(MockitoExtension.class)}</li>
  *   <li>{@code @RunWith(SpringRunner.class)} → {@code @ExtendWith(SpringExtension.class)}</li>
+ *   <li>JDT UI's {@code CustomBaseRunner} → unannotated overrides that keep
+ *       inherited tests out of Jupiter discovery</li>
  * </ul>
  *
  * <p>Previously these were four separate plugins (RunWithJUnitPlugin,
@@ -81,8 +83,11 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
  *
  * @since 1.3.0
  */
-@CleanupPattern(value = "@RunWith($runner)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH, cleanupId = "cleanup.junit.runwith", description = "Migrate @RunWith to JUnit 5 equivalents", displayName = "JUnit 4 @RunWith → JUnit 5 @ExtendWith/@Suite")
+@CleanupPattern(value = "@RunWith($runner)", kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_RUNWITH, cleanupId = "cleanup.junit.runwith", description = "Migrate @RunWith to JUnit Jupiter equivalents", displayName = "JUnit 4 @RunWith → Jupiter extensions, suites, or source adapters")
 public class RunWithJUnitPlugin extends TriggerPatternCleanupPlugin {
+
+	private static final String JDT_UI_INHERITED_TESTS_RUNNER=
+			"jdt-ui-ignore-inherited-tests"; //$NON-NLS-1$
 
 	// ---- Data classes for complex runner transformations ----
 
@@ -207,6 +212,16 @@ public class RunWithJUnitPlugin extends TriggerPatternCleanupPlugin {
 		mh.setMinv(node);
 		mh.setMinvname(node.getTypeName().getFullyQualifiedName());
 
+		JdtUiInheritedTestsRunnerMigration.Assessment inheritedTests=
+				JdtUiInheritedTestsRunnerMigration.assess(node, runnerQualifiedName);
+		if (inheritedTests.eligible()) {
+			mh.setValue(JDT_UI_INHERITED_TESTS_RUNNER);
+			mh.setAdditionalInfo(inheritedTests.plan());
+			dataHolder.put(dataHolder.size(), mh);
+			operations.add(fixcore.rewrite(dataHolder));
+			return true;
+		}
+
 		// --- Suite ---
 		if (ORG_JUNIT_SUITE.equals(runnerQualifiedName)) {
 			mh.setValue(ORG_JUNIT_RUNWITH);
@@ -301,6 +316,10 @@ public class RunWithJUnitPlugin extends TriggerPatternCleanupPlugin {
 			rewriteMockito(group, rewriter, ast, importRewriter, junitHolder);
 		} else if (ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(runnerValue)) {
 			rewriteSpring(group, rewriter, ast, importRewriter, junitHolder);
+		} else if (JDT_UI_INHERITED_TESTS_RUNNER.equals(runnerValue)) {
+			JdtUiInheritedTestsRunnerMigration.rewrite(group, rewriter, ast, importRewriter,
+					junitHolder.getAnnotation(),
+					(JdtUiInheritedTestsRunnerMigration.Plan) junitHolder.getAdditionalInfo());
 		}
 	}
 

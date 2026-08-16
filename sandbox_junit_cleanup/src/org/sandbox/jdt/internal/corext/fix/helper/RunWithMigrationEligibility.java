@@ -63,6 +63,10 @@ public final class RunWithMigrationEligibility {
 				|| ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(qualifiedRunnerName)) {
 			return true;
 		}
+		if (JdtUiInheritedTestsRunnerMigration.assess(type, qualifiedRunnerName).eligible()) {
+			return true;
+		}
+
 		if (ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED.equals(qualifiedRunnerName)) {
 			return hasMigratableNestedType(type);
 		}

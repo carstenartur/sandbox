@@ -24,6 +24,7 @@ public class DefaultCleanUpOptionsInitializer implements ICleanUpOptionsInitiali
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.FALSE);
 		options.setOption(JUnitMigrationOptions.BEST_EFFORT, CleanUpOptions.FALSE);
+		options.setOption(JUnitMigrationOptions.JUNIT6_COMPATIBILITY, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE, CleanUpOptions.FALSE);
 		options.setOption(MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS, CleanUpOptions.FALSE);
