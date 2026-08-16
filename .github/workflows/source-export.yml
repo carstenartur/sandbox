@@ -1,0 +1,35 @@
+name: Temporary source export
+
+on:
+  push:
+    branches:
+      - feature/cleanup-screenshot-scenario-contract
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR 1495 source
+        uses: actions/checkout@v7
+        with:
+          ref: e87578f370ca61789cd5f4bcd035c1c1848de958
+          path: pr1495
+
+      - name: Checkout PR 1499 source
+        uses: actions/checkout@v7
+        with:
+          ref: d3c07f0865904f54731044f5bf5c34b01b2c9aba
+          path: pr1499
+
+      - name: Upload exact source files
+        uses: actions/upload-artifact@v7
+        with:
+          name: connector-source-export
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            pr1495/sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
+            pr1499/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/BundledLibrariesTest.java
