@@ -51,7 +51,6 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
  */
 public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
-	private static final String ISTATUS_SIMPLE_NAME= "IStatus"; //$NON-NLS-1$
 	private static final String OK_SIMPLE_NAME= "OK"; //$NON-NLS-1$
 
 	public MultiStatusSimplifyPlatformStatus() {
@@ -130,14 +129,13 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		ClassInstanceCreation newMultiStatus= ast.newClassInstanceCreation();
 		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);
 		newMultiStatus.setType(ast.newSimpleType(multiStatusName));
-		addImport(IStatus.class.getName(), cuRewrite, ast);
+		Name iStatusName= addImport(IStatus.class.getName(), cuRewrite, ast);
 
 		List<Expression> arguments= visited.arguments();
 		List<Expression> newArguments= newMultiStatus.arguments();
 		newArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(0))));
-		QualifiedName okConstant= ast.newQualifiedName(
-				ast.newSimpleName(ISTATUS_SIMPLE_NAME), ast.newSimpleName(OK_SIMPLE_NAME));
+		QualifiedName okConstant= ast.newQualifiedName(iStatusName, ast.newSimpleName(OK_SIMPLE_NAME));
 		newArguments.add(okConstant);
 		newArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(2))));
