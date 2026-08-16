@@ -10,18 +10,64 @@
 <body>
    <h1>Using Platform Status</h1>
    <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Platform Status (Sandbox)</strong>.</p>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile,
+      and select <strong>Platform Status (Sandbox)</strong>. The configuration
+      preview shows the enabled factory-method form; the execution preview shows
+      the actual source edits before they are applied.</p>
 
-   <h2>When it is offered</h2>
-   <p>A proposal is created only for constructor forms for which the replacement can be resolved from bindings and mapped to an equivalent factory call.</p>
+   <h2>Representative transformation</h2>
+   <p>A supported <code>Status</code> constructor with a binding-resolved severity
+      can be replaced by the corresponding Eclipse Platform factory method.</p>
+
+   <h3>Before</h3>
+   <pre>import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+IStatus status = new Status(
+    IStatus.WARNING,
+    "com.example.plugin",
+    IStatus.OK,
+    "Could not load preferences",
+    exception);</pre>
+
+   <h3>After</h3>
+   <pre>import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+IStatus status = Status.warning(
+    "Could not load preferences",
+    exception);</pre>
+
+   <h2>Semantic boundary</h2>
+   <p>The factory call preserves the selected severity, message, and throwable.
+      It does <strong>not</strong> carry the constructor's explicit plug-in
+      identifier or an arbitrary status code. The Platform factory derives the
+      plug-in identity from the calling bundle and uses the factory's status-code
+      contract. Accept the rewrite only when that is the intended behavior.</p>
+
+   <h2>When no change is made</h2>
+   <ul>
+      <li>The constructed type is not exactly the supported Eclipse
+          <code>Status</code> type or its binding cannot be resolved.</li>
+      <li>The severity has no supported factory mapping, for example a cancel
+          status.</li>
+      <li>The constructor shape contains information for which the cleanup has no
+          supported target representation.</li>
+      <li>The required Eclipse Platform factory API is not available on the
+          project's build path.</li>
+   </ul>
 
    <h2>Recommended workflow</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
+      <li>Enable <strong>Platform Status (Sandbox)</strong> in a dedicated cleanup
+          profile.</li>
       <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Inspect every changed call in the execution preview, especially the
+          former plug-in identifier and status code.</li>
+      <li>Compile and run the error-handling and logging tests that consume the
+          resulting status.</li>
+      <li>Expand the scope only after the implicit plug-in identity is confirmed
+          for the project.</li>
    </ol>
 
    <h2>Screenshot regeneration</h2>
