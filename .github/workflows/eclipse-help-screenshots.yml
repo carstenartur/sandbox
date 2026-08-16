@@ -117,7 +117,7 @@ jobs:
       # The POM interpolates help.screenshot.testClass only in the dedicated
       # screenshot module. Dependency test modules may therefore legitimately
       # find no matching class, while this report proves the merge gate ran.
-      - name: Verify the temporary merge-gate test executed
+      - name: Verify the real-preview merge gate executed
         shell: bash
         run: |
           set -euo pipefail
@@ -129,17 +129,6 @@ jobs:
             exit 1
           fi
           printf 'Verified JUnit report: %s\n' "$report"
-
-      # The two real Cleanup preview methods remain executable in
-      # SandboxHelpScreenshotsSWTBotTest and are tracked by #1437. Their three
-      # committed images stay unchanged while those methods are outside this
-      # temporary merge gate.
-      - name: Restore deferred real-preview images
-        run: >-
-          git restore --source=HEAD --
-          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
-          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
-          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
 
       - name: Verify committed screenshots are reproducible
         shell: bash
