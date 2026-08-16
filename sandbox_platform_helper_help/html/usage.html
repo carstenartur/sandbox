@@ -9,17 +9,15 @@
 </head>
 <body>
    <h1>Using Platform Status</h1>
-
    <h2>Entry point</h2>
    <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile,
       and select <strong>Platform Status (Sandbox)</strong>. The configuration
-      preview shows the supported constructor simplification. The execution
-      preview shows the actual combined source diff for each selected file.</p>
+      preview shows the enabled factory-method form; the execution preview shows
+      the actual source edits before they are applied.</p>
 
-   <h2>Representative Status transformation</h2>
-   <p>A five-argument <code>Status</code> constructor can be shortened when its
-      severity is supported and its status code is provably
-      <code>IStatus.OK</code>. The explicit plug-in identity is retained.</p>
+   <h2>Representative transformation</h2>
+   <p>A supported <code>Status</code> constructor with a binding-resolved severity
+      can be replaced by the corresponding Eclipse Platform factory method.</p>
 
    <h3>Before</h3>
    <pre>import org.eclipse.core.runtime.IStatus;
@@ -27,7 +25,7 @@ import org.eclipse.core.runtime.Status;
 
 IStatus status = new Status(
     IStatus.WARNING,
-    MyPlugin.PLUGIN_ID,
+    "com.example.plugin",
     IStatus.OK,
     "Could not load preferences",
     exception);</pre>
@@ -36,82 +34,41 @@ IStatus status = new Status(
    <pre>import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
-IStatus status = new Status(
-    IStatus.WARNING,
-    MyPlugin.PLUGIN_ID,
+IStatus status = Status.warning(
     "Could not load preferences",
     exception);</pre>
 
-   <h2>Why the plug-in identifier is preserved</h2>
-   <p><code>Status.info(...)</code>, <code>Status.warning(...)</code>, and
-      <code>Status.error(...)</code> infer a plug-in identifier from the calling
-      class and its OSGi bundle. That inferred value is not necessarily equal to
-      the constructor's explicit String or Class identity. Replacing the
-      constructor with a factory call without proving equality would change
-      <code>IStatus.getPlugin()</code> and could affect logging and diagnostics.</p>
-   <p>The cleanup therefore removes only the redundant OK code. It does not shift
-      identity verification to the user after an automatic rewrite.</p>
-
-   <h2>Compile-time code evaluation</h2>
-   <p>Applicability is based on the resolved compile-time integer value rather
-      than the source spelling. These forms are equivalent candidates:</p>
-   <pre>IStatus.OK
-0
-private static final int OK_CODE = 0;</pre>
-   <p>Nonzero and runtime-computed codes remain unchanged:</p>
-   <pre>APPLICATION_SPECIFIC_CODE
-computeStatusCode()
-17</pre>
-
-   <h2>MultiStatus</h2>
-   <p>A <code>MultiStatus</code> may carry an application-specific code, so the
-      cleanup never replaces an arbitrary code with <code>IStatus.OK</code>. It
-      may only replace a compile-time numeric zero with the named constant.</p>
-
-   <h3>Before</h3>
-   <pre>MultiStatus status = new MultiStatus(
-    pluginId,
-    0,
-    "Several operations failed",
-    exception);</pre>
-
-   <h3>After</h3>
-   <pre>MultiStatus status = new MultiStatus(
-    pluginId,
-    IStatus.OK,
-    "Several operations failed",
-    exception);</pre>
+   <h2>Semantic boundary</h2>
+   <p>The factory call preserves the selected severity, message, and throwable.
+      It does <strong>not</strong> carry the constructor's explicit plug-in
+      identifier or an arbitrary status code. The Platform factory derives the
+      plug-in identity from the calling bundle and uses the factory's status-code
+      contract. Accept the rewrite only when that is the intended behavior.</p>
 
    <h2>When no change is made</h2>
    <ul>
       <li>The constructed type is not exactly the supported Eclipse
-          <code>Status</code> or <code>MultiStatus</code> type.</li>
-      <li>Type or constant bindings cannot be resolved.</li>
-      <li>The status code is nonzero or is computed at runtime.</li>
-      <li>The severity has no supported mapping, for example
-          <code>IStatus.CANCEL</code>.</li>
-      <li>The constructor is already in the shorter semantics-preserving form.</li>
-      <li>The project does not satisfy the cleanup's current compatibility gate.</li>
+          <code>Status</code> type or its binding cannot be resolved.</li>
+      <li>The severity has no supported factory mapping, for example a cancel
+          status.</li>
+      <li>The constructor shape contains information for which the cleanup has no
+          supported target representation.</li>
+      <li>The required Eclipse Platform factory API is not available on the
+          project's build path.</li>
    </ul>
 
    <h2>Recommended workflow</h2>
    <ol>
       <li>Enable <strong>Platform Status (Sandbox)</strong> in a dedicated cleanup
           profile.</li>
-      <li>Run <strong>Source &gt; Clean Up...</strong> on a small,
-          version-controlled selection.</li>
-      <li>Select each file in the real execution preview and inspect its combined
-          diff.</li>
-      <li>Confirm that only a redundant OK code is removed or named.</li>
-      <li>Compile and run status-handling and logging tests before expanding the
-          scope.</li>
+      <li>Run the cleanup on a small, version-controlled selection.</li>
+      <li>Inspect every changed call in the execution preview, especially the
+          former plug-in identifier and status code.</li>
+      <li>Compile and run the error-handling and logging tests that consume the
+          resulting status.</li>
+      <li>Expand the scope only after the implicit plug-in identity is confirmed
+          for the project.</li>
    </ol>
-
-   <h2>Real-corpus evidence</h2>
-   <p>Canonical upstream screenshots must use an exactly pinned local workspace
-      and the same corrected applicability rules as the headless inventory.
-      Nonzero application-specific codes are important negative evidence and
-      must remain unchanged.</p>
 
    <h2>Screenshot regeneration</h2>
    <p>The image in this Help bundle is generated from a real Eclipse workbench by
