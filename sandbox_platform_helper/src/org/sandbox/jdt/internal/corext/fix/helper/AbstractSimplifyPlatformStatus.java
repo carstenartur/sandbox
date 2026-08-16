@@ -13,19 +13,33 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Manifest;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -41,25 +55,26 @@ import org.sandbox.jdt.internal.corext.util.ImportUtils;
  * Shared implementation for semantics-preserving simplification of
  * {@link Status} constructor calls.
  *
- * <p>The five-argument constructor carries an explicit plug-in identifier and
- * status code. A factory call such as {@code Status.warning(message)} derives a
- * different identifier from the calling class, so this cleanup must not replace
- * the constructor with a factory unless that identity equivalence has been
- * proven. The conservative transformation implemented here removes only a
- * compile-time {@link IStatus#OK} code and retains the original severity,
- * plug-in identifier, message and throwable:</p>
- *
- * <pre>
- * new Status(severity, pluginId, IStatus.OK, message, throwable)
- *     -> new Status(severity, pluginId, message, throwable)
- * </pre>
+ * <p>A factory is preferred when the explicit identity is a side-effect-free
+ * value that is provably equal to the identity inferred for the calling class,
+ * and the factory return type fits the surrounding source context. Otherwise
+ * only a compile-time {@link IStatus#OK} code is removed and every explicit
+ * constructor value is retained.</p>
  */
 public abstract class AbstractSimplifyPlatformStatus {
 
+	private static final String BUNDLE_SYMBOLIC_NAME= "Bundle-SymbolicName"; //$NON-NLS-1$
+
 	private final int expectedSeverity;
+	private final String factoryMethodName;
 
 	protected AbstractSimplifyPlatformStatus(int expectedSeverity) {
+		this(expectedSeverity, null);
+	}
+
+	protected AbstractSimplifyPlatformStatus(int expectedSeverity, String factoryMethodName) {
 		this.expectedSeverity= expectedSeverity;
+		this.factoryMethodName= factoryMethodName;
 	}
 
 	/** Adds an import and returns a usable name for a generated type reference. */
@@ -86,6 +101,7 @@ public abstract class AbstractSimplifyPlatformStatus {
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
 		try {
+			String bundleId= bundleSymbolicName(compilationUnit);
 			ReferenceHolder<ASTNode, Object> holder= ReferenceHolder.createForNodes();
 			HelperVisitorFactory.forClassInstanceCreation(Status.class)
 				.in(compilationUnit)
@@ -107,12 +123,106 @@ public abstract class AbstractSimplifyPlatformStatus {
 						return false;
 					}
 
-					operations.add(fixcore.rewrite(visited, data));
+					Integer factoryArgumentCount= factoryArgumentCount(visited, arguments, bundleId);
+					operations.add(fixcore.rewrite(visited, data, factoryArgumentCount));
 					nodesProcessed.add(visited);
 					return false;
 				});
 		} catch (Exception exception) {
 			throw new CoreException(Status.error("Problem while finding Status simplifications", exception)); //$NON-NLS-1$
+		}
+	}
+
+	private Integer factoryArgumentCount(ClassInstanceCreation visited, List<Expression> arguments,
+			String bundleId) {
+		if (factoryMethodName == null || bundleId == null
+				|| !hasEquivalentIdentity(arguments.get(1), visited, bundleId)) {
+			return null;
+		}
+		boolean nullThrowable= ASTNodes.getUnparenthesedExpression(arguments.get(4)) instanceof NullLiteral;
+		if (nullThrowable && hasCompatibleFactory(visited, 1)) {
+			return Integer.valueOf(1);
+		}
+		return hasCompatibleFactory(visited, 2) ? Integer.valueOf(2) : null;
+	}
+
+	private boolean hasCompatibleFactory(ClassInstanceCreation visited, int argumentCount) {
+		ITypeBinding statusType= visited.resolveTypeBinding();
+		if (statusType == null) {
+			return false;
+		}
+		ITypeBinding targetType= ASTNodes.getTargetType(visited);
+		for (IMethodBinding method : statusType.getErasure().getDeclaredMethods()) {
+			ITypeBinding[] parameters= method.getParameterTypes();
+			if (!factoryMethodName.equals(method.getName()) || !Modifier.isStatic(method.getModifiers())
+					|| parameters.length != argumentCount
+					|| !String.class.getName().equals(parameters[0].getErasure().getQualifiedName())
+					|| argumentCount == 2
+							&& !Throwable.class.getName().equals(parameters[1].getErasure().getQualifiedName())) {
+				continue;
+			}
+			if (targetType != null && method.getReturnType().isAssignmentCompatible(targetType)
+					|| targetType == null && isExpressionStatement(visited)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasEquivalentIdentity(Expression identity, ClassInstanceCreation visited,
+			String bundleId) {
+		Expression expression= ASTNodes.getUnparenthesedExpression(identity);
+		Object constantValue= expression.resolveConstantExpressionValue();
+		if (constantValue instanceof String stringValue) {
+			return bundleId != null && bundleId.equals(stringValue);
+		}
+		if (!(expression instanceof TypeLiteral typeLiteral)) {
+			return false;
+		}
+		ITypeBinding explicitType= typeLiteral.getType().resolveBinding();
+		ITypeBinding callerType= enclosingTypeBinding(visited);
+		return explicitType != null && callerType != null
+				&& explicitType.getErasure().isEqualTo(callerType.getErasure());
+	}
+
+	private static ITypeBinding enclosingTypeBinding(ASTNode node) {
+		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {
+			if (current instanceof AnonymousClassDeclaration anonymousClass) {
+				return anonymousClass.resolveBinding();
+			}
+			if (current instanceof AbstractTypeDeclaration typeDeclaration) {
+				return typeDeclaration.resolveBinding();
+			}
+		}
+		return null;
+	}
+
+	private static boolean isExpressionStatement(Expression expression) {
+		ASTNode parent= expression.getParent();
+		while (parent instanceof ParenthesizedExpression) {
+			parent= parent.getParent();
+		}
+		return parent instanceof ExpressionStatement;
+	}
+
+	private static String bundleSymbolicName(CompilationUnit compilationUnit) {
+		IJavaElement javaElement= compilationUnit.getJavaElement();
+		if (javaElement == null) {
+			return null;
+		}
+		IFile manifestFile= javaElement.getJavaProject().getProject().getFile("META-INF/MANIFEST.MF"); //$NON-NLS-1$
+		if (!manifestFile.isAccessible()) {
+			return null;
+		}
+		try (InputStream contents= manifestFile.getContents()) {
+			String header= new Manifest(contents).getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
+			if (header == null) {
+				return null;
+			}
+			int directiveStart= header.indexOf(';');
+			return (directiveStart < 0 ? header : header.substring(0, directiveStart)).trim();
+		} catch (CoreException | IOException exception) {
+			return null;
 		}
 	}
 
@@ -140,6 +250,30 @@ public abstract class AbstractSimplifyPlatformStatus {
 				ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, simplifiedStatus, group);
+		remover.registerRemovedNode(visited);
+	}
+
+	/** Uses a factory after identity and target-type equivalence have been proven. */
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> holder, int factoryArgumentCount) {
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRemover remover= cuRewrite.getImportRemover();
+
+		MethodInvocation factoryCall= ast.newMethodInvocation();
+		factoryCall.setExpression(addImport(Status.class.getName(), cuRewrite, ast));
+		factoryCall.setName(ast.newSimpleName(factoryMethodName));
+		List<Expression> originalArguments= visited.arguments();
+		List<Expression> factoryArguments= factoryCall.arguments();
+		factoryArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));
+		if (factoryArgumentCount == 2) {
+			factoryArguments.add(ASTNodes.createMoveTarget(rewrite,
+					ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
+		}
+
+		ASTNodes.replaceButKeepComment(rewrite, visited, factoryCall, group);
 		remover.registerRemovedNode(visited);
 	}
 }

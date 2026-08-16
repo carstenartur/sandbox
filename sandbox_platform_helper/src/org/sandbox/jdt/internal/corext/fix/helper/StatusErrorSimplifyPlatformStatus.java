@@ -15,21 +15,18 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.core.runtime.IStatus;
 
-/**
- * Removes a redundant {@code IStatus.OK} code from an error status while
- * preserving its explicit plug-in identifier, message and throwable.
- */
+/** Simplifies error statuses without changing their observable identity. */
 public class StatusErrorSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
 	public StatusErrorSimplifyPlatformStatus() {
-		super(IStatus.ERROR);
+		super(IStatus.ERROR, "error"); //$NON-NLS-1$
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "IStatus status = new Status(IStatus.ERROR, UIPlugin.PLUGIN_ID, message, e);\n"; //$NON-NLS-1$
+			return "IStatus status = new Status(IStatus.ERROR, delegatedPluginId, message, e);\n"; //$NON-NLS-1$
 		}
-		return "IStatus status = new Status(IStatus.ERROR, UIPlugin.PLUGIN_ID, IStatus.OK, message, e);\n"; //$NON-NLS-1$
+		return "IStatus status = new Status(IStatus.ERROR, delegatedPluginId, IStatus.OK, message, e);\n"; //$NON-NLS-1$
 	}
 }

@@ -15,21 +15,18 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.core.runtime.IStatus;
 
-/**
- * Removes a redundant {@code IStatus.OK} code from a warning status while
- * preserving its explicit plug-in identifier, message and throwable.
- */
+/** Simplifies warning statuses without changing their observable identity. */
 public class StatusWarningSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
 	public StatusWarningSimplifyPlatformStatus() {
-		super(IStatus.WARNING);
+		super(IStatus.WARNING, "warning"); //$NON-NLS-1$
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "IStatus status = new Status(IStatus.WARNING, UIPlugin.PLUGIN_ID, message, e);\n"; //$NON-NLS-1$
+			return "IStatus status = Status.warning(message, e);\n"; //$NON-NLS-1$
 		}
-		return "IStatus status = new Status(IStatus.WARNING, UIPlugin.PLUGIN_ID, IStatus.OK, message, e);\n"; //$NON-NLS-1$
+		return "IStatus status = new Status(IStatus.WARNING, UIPlugin.class, IStatus.OK, message, e);\n"; //$NON-NLS-1$
 	}
 }

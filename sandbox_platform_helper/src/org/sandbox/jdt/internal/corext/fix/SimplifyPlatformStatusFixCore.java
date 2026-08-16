@@ -63,6 +63,12 @@ public enum SimplifyPlatformStatusFixCore {
 	/** Creates the comment-preserving rewrite for one accepted constructor. */
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
+		return rewrite(visited, holder, null);
+	}
+
+	/** Creates either a proven factory rewrite or the preserving fallback. */
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
+			ReferenceHolder<ASTNode, Object> holder, Integer factoryArgumentCount) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
@@ -72,7 +78,12 @@ public enum SimplifyPlatformStatusFixCore {
 								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),
 						cuRewrite);
 				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(COMPUTER);
-				platformStatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder);
+				if (factoryArgumentCount == null) {
+					platformStatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder);
+				} else {
+					platformStatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder,
+							factoryArgumentCount.intValue());
+				}
 				if (SimplifyPlatformStatusFixCore.this != MULTISTATUS) {
 					cuRewrite.getImportRemover().registerAddedImport(Status.class.getName());
 				}
