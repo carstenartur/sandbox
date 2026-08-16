@@ -16,13 +16,13 @@ public class Java9CleanUpTest {
 
 	enum PlatformStatusPatterns {
 
-		STATUSWARNING5("""
+		STATUS_WARNING_WITH_THROWABLE("""
 			package test1;
 			import org.eclipse.core.runtime.IStatus;
 			import org.eclipse.core.runtime.Status;
 			public class E1 {
-				void bla(Throwable e) {
-					IStatus status = new Status(IStatus.WARNING, "plugin id", IStatus.OK, "important message", e);
+				void method(Throwable e) {
+					IStatus status = new Status(IStatus.WARNING, "plugin.id", IStatus.OK, "important message", e);
 				}
 			}""", //$NON-NLS-1$
 
@@ -31,17 +31,18 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
-						void bla(Throwable e) {
-							IStatus status = Status.warning("important message", e);
+						void method(Throwable e) {
+							IStatus status = new Status(IStatus.WARNING, "plugin.id", "important message", e);
 						}
 					}"""), //$NON-NLS-1$
-		STATUSERROR5("""
+
+		STATUS_ERROR_WITH_THROWABLE("""
 			package test1;
 			import org.eclipse.core.runtime.IStatus;
 			import org.eclipse.core.runtime.Status;
 			public class E1 {
-				void bla(Throwable e) {
-					IStatus status = new Status(IStatus.ERROR, "plugin id", IStatus.OK, "important message", e);
+				void method(Throwable e) {
+					IStatus status = new Status(IStatus.ERROR, "plugin.id", IStatus.OK, "important message", e);
 				}
 			}""", //$NON-NLS-1$
 
@@ -50,17 +51,18 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
-						void bla(Throwable e) {
-							IStatus status = Status.error("important message", e);
+						void method(Throwable e) {
+							IStatus status = new Status(IStatus.ERROR, "plugin.id", "important message", e);
 						}
 					}"""), //$NON-NLS-1$
-		STATUSINFO5("""
+
+		STATUS_INFO_WITH_THROWABLE("""
 			package test1;
 			import org.eclipse.core.runtime.IStatus;
 			import org.eclipse.core.runtime.Status;
 			public class E1 {
-				void bla(Throwable e) {
-					IStatus status = new Status(IStatus.INFO, "plugin id", IStatus.OK, "important message", e);
+				void method(Throwable e) {
+					IStatus status = new Status(IStatus.INFO, "plugin.id", IStatus.OK, "important message", e);
 				}
 			}""", //$NON-NLS-1$
 
@@ -69,17 +71,83 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
-						void bla(Throwable e) {
-							IStatus status = Status.info("important message", e);
+						void method(Throwable e) {
+							IStatus status = new Status(IStatus.INFO, "plugin.id", "important message", e);
 						}
+					}"""), //$NON-NLS-1$
+
+		STATUS_WARNING_WITH_NULL("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				IStatus status = new Status(IStatus.WARNING, "plugin.id", IStatus.OK, "important message", null);
+			}""", //$NON-NLS-1$
+
+				"""
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.Status;
+					public class E1 {
+						IStatus status = new Status(IStatus.WARNING, "plugin.id", "important message", null);
+					}"""), //$NON-NLS-1$
+
+		STATUS_WITH_NUMERIC_ZERO("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				IStatus status = new Status(IStatus.WARNING, "plugin.id", 0, "important message", null);
+			}""", //$NON-NLS-1$
+
+				"""
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.Status;
+					public class E1 {
+						IStatus status = new Status(IStatus.WARNING, "plugin.id", "important message", null);
+					}"""), //$NON-NLS-1$
+
+		STATUS_WITH_ZERO_CONSTANT("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				private static final int OK_CODE = 0;
+				IStatus status = new Status(IStatus.ERROR, "plugin.id", OK_CODE, "important message", null);
+			}""", //$NON-NLS-1$
+
+				"""
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.Status;
+					public class E1 {
+						private static final int OK_CODE = 0;
+						IStatus status = new Status(IStatus.ERROR, "plugin.id", "important message", null);
+					}"""), //$NON-NLS-1$
+
+		STATUS_WITH_CLASS_IDENTITY("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				IStatus status = new Status(IStatus.INFO, E1.class, IStatus.OK, "important message", null);
+			}""", //$NON-NLS-1$
+
+				"""
+					package test1;
+					import org.eclipse.core.runtime.IStatus;
+					import org.eclipse.core.runtime.Status;
+					public class E1 {
+						IStatus status = new Status(IStatus.INFO, E1.class, "important message", null);
 					}"""); //$NON-NLS-1$
 
-		String given;
-		String expected;
+		final String given;
+		final String expected;
 
 		PlatformStatusPatterns(String given, String expected) {
-			this.given=given;
-			this.expected=expected;
+			this.given= given;
+			this.expected= expected;
 		}
 	}
 
@@ -89,96 +157,77 @@ public class Java9CleanUpTest {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+	}
+
+	enum PlatformStatusPatternsDontTouch {
+
+		NON_ZERO_LITERAL("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				IStatus status = new Status(IStatus.WARNING, "plugin.id", 17, "important message", null);
+			}"""), //$NON-NLS-1$
+
+		NON_ZERO_CONSTANT("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				private static final int APPLICATION_CODE = 100;
+				IStatus status = new Status(IStatus.ERROR, "plugin.id", APPLICATION_CODE, "important message", null);
+			}"""), //$NON-NLS-1$
+
+		NON_CONSTANT_CODE("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				int code() { return 0; }
+				IStatus status = new Status(IStatus.INFO, "plugin.id", code(), "important message", null);
+			}"""), //$NON-NLS-1$
+
+		UNSUPPORTED_SEVERITY("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				IStatus status = new Status(IStatus.CANCEL, "plugin.id", IStatus.OK, "important message", null);
+			}"""), //$NON-NLS-1$
+
+		ALREADY_SIMPLIFIED("""
+			package test1;
+			import org.eclipse.core.runtime.IStatus;
+			import org.eclipse.core.runtime.Status;
+			public class E1 {
+				IStatus status = new Status(IStatus.WARNING, "plugin.id", "important message", null);
+			}"""); //$NON-NLS-1$
+
+		final String given;
+
+		PlatformStatusPatternsDontTouch(String given) {
+			this.given= given;
+		}
 	}
 
 	@ParameterizedTest
 	@EnumSource(PlatformStatusPatternsDontTouch.class)
-	public void testPlatformStatusdonttouch(PlatformStatusPatternsDontTouch test) throws CoreException {
+	public void testPlatformStatusDontTouch(PlatformStatusPatternsDontTouch test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
-	enum PlatformStatusPatternsDontTouch {
-
-		SIMPLE("""
-			package test1;
-			import java.io.ByteArrayOutputStream;
-			import java.io.InputStreamReader;
-			import java.io.IOException;
-			import java.nio.charset.Charset;
-			import java.io.FileInputStream;
-			import java.io.FileNotFoundException;
-			import java.io.UnsupportedEncodingException;
-			public class E1 {
-			    void method() throws UnsupportedEncodingException, IOException {
-			    }
-			}
-			""") //$NON-NLS-1$
-//		,
-//		STATUSWARNING3("package test1;\n"
-//				+ "import org.eclipse.core.runtime.IStatus;\n"
-//				+ "import org.eclipse.core.runtime.Status;\n"
-//				+ "public class E1 {\n"
-//				+ "	void bla(Throwable e) {\n"
-//				+ "	IStatus status = new Status(IStatus.WARNING, \"plugin id\",\"important message\");\n"
-//				+ "	}\n"
-//				+ "}"),
-//		STATUSWARNING4("package test1;\n"
-//				+ "import org.eclipse.core.runtime.IStatus;\n"
-//				+ "import org.eclipse.core.runtime.Status;\n"
-//				+ "public class E1 {\n"
-//				+ "	IStatus status = new Status(IStatus.WARNING, \"plugin id\", \"important message\", null);\n"
-//				+ "	void bla(Throwable e) {\n"
-//				+ "		IStatus status = new Status(IStatus.WARNING, \"plugin id\", IStatus.OK, \"important message\", e);\n"
-//				+ "	}\n"
-//				+ "}"),
-//		STATUSERROR4("package test1;\n"
-//				+ "import org.eclipse.core.runtime.IStatus;\n"
-//				+ "import org.eclipse.core.runtime.Status;\n"
-//				+ "public class E1 {\n"
-//				+ "	void bla(Throwable e) {\n"
-//				+ "	IStatus status = new Status(IStatus.ERROR, \"plugin id\", \"important message\", null);\n"
-//				+ "	}\n"
-//				+ "}"),
-//		STATUSINFO4("package test1;\n"
-//				+ "import org.eclipse.core.runtime.IStatus;\n"
-//				+ "import org.eclipse.core.runtime.Status;\n"
-//				+ "public class E1 {\n"
-//				+ "	void bla(Throwable e) {\n"
-//				+ "	IStatus status = new Status(IStatus.INFO, \"plugin id\", \"important message\", null);\n"
-//				+ "	}\n"
-//				+ "}")
-//		,
-//		WRONGSECONDPARAM("package test1;\n"
-//				+ "import org.eclipse.core.runtime.IStatus;\n"
-//				+ "import org.eclipse.core.runtime.Status;\n"
-//				+ "public class E2 {\n"
-//				+ "	IStatus status = new Status(IStatus.WARNING, \"plugin id\", \"important message\", null);\n"
-//				+ "	void bla(Throwable e) {\n"
-//				+ "		IStatus status = new Status(IStatus.WARNING, \"plugin id\", IStatus.OK, \"important message\", e);\n"
-//				+ "	}\n"
-//				+ "}")
-		;
-
-		PlatformStatusPatternsDontTouch(String given) {
-			this.given=given;
-		}
-
-		String given;
-	}
-
 	enum MultiStatusPatterns {
 
-		MULTISTATUS_BASIC("""
+		ZERO_LITERAL("""
 			package test1;
-			import org.eclipse.core.runtime.IStatus;
 			import org.eclipse.core.runtime.MultiStatus;
 			public class E1 {
-				void bla(Throwable e) {
-					MultiStatus status = new MultiStatus("my.plugin.id", 1, "important message", e);
+				void method(Throwable e) {
+					MultiStatus status = new MultiStatus("plugin.id", 0, "important message", e);
 				}
 			}""", //$NON-NLS-1$
 
@@ -187,18 +236,18 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.MultiStatus;
 					public class E1 {
-						void bla(Throwable e) {
-							MultiStatus status = new MultiStatus("my.plugin.id", IStatus.OK, "important message", e);
+						void method(Throwable e) {
+							MultiStatus status = new MultiStatus("plugin.id", IStatus.OK, "important message", e);
 						}
 					}"""), //$NON-NLS-1$
-		MULTISTATUS_WITH_CONSTANT("""
+
+		ZERO_CONSTANT("""
 			package test1;
-			import org.eclipse.core.runtime.IStatus;
 			import org.eclipse.core.runtime.MultiStatus;
 			public class E1 {
-				private static final int ERROR_CODE = 100;
-				void bla(Throwable e) {
-					MultiStatus status = new MultiStatus("my.plugin.id", ERROR_CODE, "important message", e);
+				private static final int OK_CODE = 0;
+				void method(Throwable e) {
+					MultiStatus status = new MultiStatus("plugin.id", OK_CODE, "important message", e);
 				}
 			}""", //$NON-NLS-1$
 
@@ -207,18 +256,18 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.MultiStatus;
 					public class E1 {
-						private static final int ERROR_CODE = 100;
-						void bla(Throwable e) {
-							MultiStatus status = new MultiStatus("my.plugin.id", IStatus.OK, "important message", e);
+						private static final int OK_CODE = 0;
+						void method(Throwable e) {
+							MultiStatus status = new MultiStatus("plugin.id", IStatus.OK, "important message", e);
 						}
 					}"""); //$NON-NLS-1$
 
-		String given;
-		String expected;
+		final String given;
+		final String expected;
 
 		MultiStatusPatterns(String given, String expected) {
-			this.given = given;
-			this.expected = expected;
+			this.given= given;
+			this.expected= expected;
 		}
 	}
 
@@ -228,7 +277,7 @@ public class Java9CleanUpTest {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 	}
 
 	enum MultiStatusPatternsDontTouch {
@@ -238,15 +287,36 @@ public class Java9CleanUpTest {
 			import org.eclipse.core.runtime.IStatus;
 			import org.eclipse.core.runtime.MultiStatus;
 			public class E1 {
-				void bla(Throwable e) {
-					MultiStatus status = new MultiStatus("my.plugin.id", IStatus.OK, "important message", e);
-				}
+				MultiStatus status = new MultiStatus("plugin.id", IStatus.OK, "important message", null);
+			}"""), //$NON-NLS-1$
+
+		NON_ZERO_LITERAL("""
+			package test1;
+			import org.eclipse.core.runtime.MultiStatus;
+			public class E1 {
+				MultiStatus status = new MultiStatus("plugin.id", 1, "important message", null);
+			}"""), //$NON-NLS-1$
+
+		NON_ZERO_CONSTANT("""
+			package test1;
+			import org.eclipse.core.runtime.MultiStatus;
+			public class E1 {
+				private static final int APPLICATION_CODE = 100;
+				MultiStatus status = new MultiStatus("plugin.id", APPLICATION_CODE, "important message", null);
+			}"""), //$NON-NLS-1$
+
+		NON_CONSTANT_CODE("""
+			package test1;
+			import org.eclipse.core.runtime.MultiStatus;
+			public class E1 {
+				int code() { return 0; }
+				MultiStatus status = new MultiStatus("plugin.id", code(), "important message", null);
 			}"""); //$NON-NLS-1$
 
-		String given;
+		final String given;
 
 		MultiStatusPatternsDontTouch(String given) {
-			this.given = given;
+			this.given= given;
 		}
 	}
 
@@ -258,13 +328,4 @@ public class Java9CleanUpTest {
 		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
-
-//	@ParameterizedTest
-//	@EnumSource(PlatformStatusPatternsDontTouch.class)
-//	public void testPlatformStatus_donttouch(PlatformStatusPatternsDontTouch test) throws CoreException {
-//		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
-//		ICompilationUnit cu= pack.createCompilationUnit("E2.java", test.given, false, null);
-//		context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-//		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
-//	}
 }
