@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<contexts>
+	<context id="cleanup_configuration" title="Semantic Container Refactorings">
+		<description>
+			Configure fail-closed local container migrations. Project-wide rules
+			are registered separately and are not offered as save actions.
+		</description>
+		<topic href="html/cleanup.html" label="Cleanup rules and safety boundaries"/>
+	</context>
+	<context id="append_array_to_list" title="Append-only array to list">
+		<description>Convert a proven strictly local append-only array to a mutable list.</description>
+		<topic href="html/cleanup.html#append-array" label="Append-only array to list"/>
+	</context>
+	<context id="unique_sequence_to_set" title="Unique sequence to ordered set">
+		<description>Convert a proven manually unique local sequence to an encounter-ordered set.</description>
+		<topic href="html/cleanup.html#unique-sequence" label="Unique sequence to ordered set"/>
+	</context>
+	<context id="closed_source_parameter_migration" title="Closed-source parameter migration">
+		<description>This project-wide rule requires coordinated multi-file preview.</description>
+		<topic href="html/cleanup.html#project-closed" label="Project-closed migration"/>
+	</context>
+</contexts>

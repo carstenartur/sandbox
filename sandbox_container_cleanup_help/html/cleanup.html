@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Container cleanup rules</title></head>
+<body>
+<h1>Container cleanup rules</h1>
+<p>All rules are disabled by default. A transformation is offered only after
+binding, usage, ordering, aliasing and thread-confinement checks succeed.</p>
+
+<h2 id="append-array">Append-only array to list</h2>
+<pre>String[] values = new String[0];
+values = Arrays.copyOf(values, values.length + 1);
+values[values.length - 1] = value;</pre>
+<p>For a strictly local, append-only reference array this becomes a mutable
+<code>List</code> backed by <code>ArrayList</code>.</p>
+
+<h2 id="unique-sequence">Manually unique list to ordered set</h2>
+<pre>if (!values.contains(value)) {
+    values.add(value);
+}</pre>
+<p>For a strictly local list with stable equality and encounter-order iteration,
+this becomes a <code>LinkedHashSet</code>.</p>
+
+<h2 id="project-closed">Execution boundaries</h2>
+<ul>
+  <li><strong>LOCAL_SAFE</strong> rules are ordinary explicit cleanups.</li>
+  <li><strong>PROJECT_CLOSED</strong> rules require coordinated multi-file preview.</li>
+  <li>The closed-source caller-to-parameter migration is registered as
+      <strong>PROJECT_CLOSED</strong>; it is not exposed as a local cleanup or save action.</li>
+  <li>Unsupported aliasing, positional access, capture, publication or external
+      signatures cause the cleanup to make no change.</li>
+</ul>
+</body>
+</html>

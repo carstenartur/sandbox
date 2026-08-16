@@ -112,6 +112,10 @@
 		<module>sandbox_int_to_enum_help</module>
 		<module>sandbox_int_to_enum_feature</module>
 		<module>sandbox_int_to_enum_test</module>
+		<module>sandbox_container_cleanup</module>
+		<module>sandbox_container_cleanup_help</module>
+		<module>sandbox_container_cleanup_feature</module>
+		<module>sandbox_container_cleanup_test</module>
 		<module>sandbox_use_general_type</module>
 		<module>sandbox_use_general_type_help</module>
 		<module>sandbox_use_general_type_feature</module>
@@ -644,6 +648,21 @@
 			<dependency>
 				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_int_to_enum_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_container_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_container_cleanup_feature</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_container_cleanup_test</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
