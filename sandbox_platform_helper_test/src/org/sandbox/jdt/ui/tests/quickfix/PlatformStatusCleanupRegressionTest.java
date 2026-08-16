@@ -43,12 +43,15 @@ public class PlatformStatusCleanupRegressionTest {
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
 						private static final String PLUGIN_ID = "test.bundle";
+						private static String getPluginId() { return PLUGIN_ID; }
 						void method(Throwable failure) {
 							IStatus fromConstant = new Status(IStatus.ERROR, PLUGIN_ID, IStatus.OK, "constant", null);
 							IStatus fromClass = new Status(IStatus.WARNING, E1.class, IStatus.OK, "class", failure);
 							Status concreteWarning = new Status(IStatus.WARNING, PLUGIN_ID, IStatus.OK, "warning", failure);
+							Status concreteWarningNull = new Status(IStatus.WARNING, PLUGIN_ID, IStatus.OK, "warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, IStatus.OK, "concrete", null);
 							IStatus delegated = new Status(IStatus.ERROR, "other.bundle", IStatus.OK, "delegated", null);
+							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), IStatus.OK, "getter", null);
 							IStatus infoWithFailure = new Status(IStatus.INFO, PLUGIN_ID, IStatus.OK, "info", failure);
 						}
 					}"""; //$NON-NLS-1$
@@ -58,12 +61,15 @@ public class PlatformStatusCleanupRegressionTest {
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
 						private static final String PLUGIN_ID = "test.bundle";
+						private static String getPluginId() { return PLUGIN_ID; }
 						void method(Throwable failure) {
 							IStatus fromConstant = Status.error("constant");
 							IStatus fromClass = Status.warning("class", failure);
 							Status concreteWarning = Status.warning("warning", failure);
+							Status concreteWarningNull = Status.warning("warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, "concrete", null);
 							IStatus delegated = new Status(IStatus.ERROR, "other.bundle", "delegated", null);
+							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), "getter", null);
 							IStatus infoWithFailure = new Status(IStatus.INFO, PLUGIN_ID, "info", failure);
 						}
 					}"""; //$NON-NLS-1$
