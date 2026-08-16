@@ -15,21 +15,18 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.core.runtime.IStatus;
 
-/**
- * Removes a redundant {@code IStatus.OK} code from an informational status while
- * preserving its explicit plug-in identifier, message and throwable.
- */
+/** Simplifies informational statuses without changing their observable identity. */
 public class StatusInfoSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
 	public StatusInfoSimplifyPlatformStatus() {
-		super(IStatus.INFO);
+		super(IStatus.INFO, "info"); //$NON-NLS-1$
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
-			return "IStatus status = new Status(IStatus.INFO, UIPlugin.PLUGIN_ID, message, e);\n"; //$NON-NLS-1$
+			return "IStatus status = Status.info(message);\n"; //$NON-NLS-1$
 		}
-		return "IStatus status = new Status(IStatus.INFO, UIPlugin.PLUGIN_ID, IStatus.OK, message, e);\n"; //$NON-NLS-1$
+		return "IStatus status = new Status(IStatus.INFO, UIPlugin.class, IStatus.OK, message, null);\n"; //$NON-NLS-1$
 	}
 }
