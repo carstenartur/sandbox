@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -17,16 +17,15 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.core.dom.NullLiteral;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -39,38 +38,69 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 import org.sandbox.jdt.internal.corext.util.ImportUtils;
 
 /**
- * @param <T> Type found in Visitor
+ * Shared implementation for semantics-preserving simplification of
+ * {@link Status} constructor calls.
+ *
+ * <p>The five-argument constructor carries an explicit plug-in identifier and
+ * status code. A factory call such as {@code Status.warning(message)} derives a
+ * different identifier from the calling class, so this cleanup must not replace
+ * the constructor with a factory unless that identity equivalence has been
+ * proven. The conservative transformation implemented here removes only a
+ * compile-time {@link IStatus#OK} code and retains the original severity,
+ * plug-in identifier, message and throwable:</p>
+ *
+ * <pre>
+ * new Status(severity, pluginId, IStatus.OK, message, throwable)
+ *     -> new Status(severity, pluginId, message, throwable)
+ * </pre>
+ *
+ * @param <T> node type found by the visitor
  */
 public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
-	String methodName;
-	String expectedStatusLiteral;
 
-	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {
-		this.methodName= methodName;
-		this.expectedStatusLiteral= expectedStatusLiteral;
+	private final int expectedSeverity;
+
+	protected AbstractSimplifyPlatformStatus(int expectedSeverity) {
+		this.expectedSeverity= expectedSeverity;
 	}
 
 	/**
-	 * Adds an import to the class. This method should be used for every class
-	 * reference added to the generated code.
+	 * Adds an import for a generated type reference.
 	 *
-	 * @param typeName  a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast       AST
-	 * @return simple name of a class if the import was added and fully qualified
-	 *         name if there was a conflict
+	 * @param typeName fully qualified type name
+	 * @param cuRewrite compilation-unit rewrite
+	 * @param ast target AST
+	 * @return a simple name when the import can be added, otherwise a qualified name
 	 */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
 		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
+	/** Returns the compile-time integer value of an expression, or {@code null}. */
+	protected static Integer constantIntValue(Expression expression) {
+		Object value= expression.resolveConstantExpressionValue();
+		return value instanceof Integer integer ? integer : null;
+	}
+
+	/** Tests an expression by compile-time value instead of source spelling. */
+	protected static boolean hasConstantIntValue(Expression expression, int expected) {
+		Integer value= constantIntValue(expression);
+		return value != null && value.intValue() == expected;
+	}
+
 	public abstract String getPreview(boolean afterRefactoring);
 
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) throws CoreException {
-		find(fixcore, compilationUnit, operations, nodesprocessed, false);
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed)
+			throws CoreException {
+		find(fixcore, compilationUnit, operations, nodesprocessed, true);
 	}
 
+	/**
+	 * Finds exact {@link Status} constructors whose status code is provably
+	 * {@link IStatus#OK}. The compatibility parameter is retained for callers of
+	 * the previous API; plug-in identity is now always preserved.
+	 */
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
 			boolean preservePluginId) throws CoreException {
@@ -80,98 +110,69 @@ public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
 				.in(compilationUnit)
 				.excluding(nodesprocessed)
 				.processEach(dataholder, (visited, holder) -> {
-					if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {
+					if (nodesprocessed.contains(visited) || visited.arguments().size() != 5) {
 						return false;
 					}
-					/**
-					 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
-					 * Where:
-					 *   - severity is IStatus.INFO, IStatus.WARNING, or IStatus.ERROR
-					 *   - pluginId is a String
-					 *   - code is IStatus.OK (mandatory for this transformation)
-					 *   - message is a String
-					 *   - throwable is a Throwable or null
-					 *
-					 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
-					 */
+
+					ITypeBinding typeBinding= visited.resolveTypeBinding();
+					if (typeBinding == null
+							|| !Status.class.getName().equals(typeBinding.getErasure().getQualifiedName())) {
+						return false;
+					}
+
 					List<Expression> arguments= visited.arguments();
-					
-					// Safely check if argument at index 2 (code) is IStatus.OK
-					Expression codeArg= arguments.get(2);
-					if (!(codeArg instanceof QualifiedName)) {
+					if (!hasConstantIntValue(arguments.get(0), expectedSeverity)
+							|| !hasConstantIntValue(arguments.get(2), IStatus.OK)) {
 						return false;
 					}
-					QualifiedName codeQualifiedName= (QualifiedName) codeArg;
-					if (!"IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
-						return false;
-					}
-					
-					// Safely check if argument at index 0 (severity) matches expected status literal
-					Expression severityArg= arguments.get(0);
-					if (!(severityArg instanceof QualifiedName)) {
-						return false;
-					}
-					QualifiedName severityQualifiedName= (QualifiedName) severityArg;
-					if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {
-						operations.add(fixcore.rewrite(visited, holder, preservePluginId));
-						nodesprocessed.add(visited);
-						return false;
-					}
-					return true;
+
+					operations.add(fixcore.rewrite(visited, holder, true));
+					nodesprocessed.add(visited);
+					return false;
 				});
-		} catch (Exception e) {
-			throw new CoreException(Status.error("Problem in find", e)); //$NON-NLS-1$
+		} catch (Exception exception) {
+			throw new CoreException(Status.error("Problem while finding Status simplifications", exception)); //$NON-NLS-1$
 		}
 	}
 
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder) {
-		rewrite(upp, visited, cuRewrite, group, holder, false);
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> holder) {
+		rewrite(cleanup, visited, cuRewrite, group, holder, true);
 	}
 
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder,
-			boolean preservePluginId) {
+	/**
+	 * Removes only the redundant {@code IStatus.OK} argument. The original
+	 * plug-in identifier is moved into the corresponding four-argument
+	 * constructor and therefore cannot be silently replaced by caller inference.
+	 */
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
 
-		/**
-		 * Create call to Status.warning(), Status.error(), or Status.info()
-		 */
-		// Add imports in alphabetical order to match expected test output
-		// IStatus comes before Status alphabetically
-		addImport("org.eclipse.core.runtime.IStatus", cuRewrite, ast);
-		
-		MethodInvocation staticCall= ast.newMethodInvocation();
+		ClassInstanceCreation simplifiedStatus= ast.newClassInstanceCreation();
 		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);
-		staticCall.setExpression(statusName);
-		staticCall.setName(ast.newSimpleName(methodName));
-		
-		List<ASTNode> arguments= visited.arguments();
-		List<ASTNode> staticCallArguments= staticCall.arguments();
-		
-		// Note: preservePluginId parameter is not used for Status factory methods
-		// because the Eclipse Platform Status.error(), Status.warning(), and Status.info()
-		// methods only accept (message, exception) parameters, not plugin ID.
-		
-		// Add message argument (always at position 3 for 5-argument constructor)
-		int messagePosition= 3;
-		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
-				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));
-		
-		// Add throwable argument if present (at position 4) and not null
-		ASTNode throwableArg= arguments.get(4);
-		// Add the exception parameter if it's not a null literal
-		// The code argument (position 2) was already validated as IStatus.OK in the find() method
-		if (!(throwableArg instanceof NullLiteral)) {
-			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
-		}
-		
-		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
+		simplifiedStatus.setType(ast.newSimpleType(statusName));
+
+		List<Expression> originalArguments= visited.arguments();
+		List<Expression> simplifiedArguments= simplifiedStatus.arguments();
+		// severity
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(0))));
+		// explicit String or Class<?> plug-in identity
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(1))));
+		// message; argument 2 (the proven OK code) is deliberately omitted
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));
+		// throwable, including an explicit null, is retained
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
+
+		ASTNodes.replaceButKeepComment(rewrite, visited, simplifiedStatus, group);
 		remover.registerRemovedNode(visited);
-		// Note: Do NOT call remover.applyRemoves(importRewrite) here
-		// ImportRewrite automatically manages import removal/addition throughout the transformation.
-		// The Status import is explicitly added via addImport() above, and IStatus is preserved from the variable declaration.
 	}
 }
