@@ -27,7 +27,8 @@ public class PlatformStatusImportConflictTest {
 	@Test
 	public void qualifiesIStatusWhenTheSimpleNameIsOccupied() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("E1.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
+				"""
 				package test1;
 				import org.eclipse.core.runtime.MultiStatus;
 				public class E1 {
