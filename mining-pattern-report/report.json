@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 242,
+    "totalMatches": 250,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1273,
-        "matches": 66,
+        "files": 1314,
+        "matches": 74,
         "rules": 11
       }
     }
@@ -1591,7 +1591,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java",
-      "line": 163,
+      "line": 174,
       "matchedCode": "compilationUnits.clone()"
     },
     {
@@ -1799,9 +1799,81 @@
       "repository": "sandbox",
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java",
+      "line": 74,
+      "matchedCode": "byteOrderMark.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java",
+      "line": 79,
+      "matchedCode": "byteOrderMark.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java",
+      "line": 210,
+      "matchedCode": "bytes.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java",
+      "line": 215,
+      "matchedCode": "bytes.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java",
+      "line": 182,
+      "matchedCode": "System.arraycopy(bom,0,result,0,bom.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserverCompatibilityTest.java",
+      "line": 93,
+      "matchedCode": "System.arraycopy(prefix,0,result,0,prefix.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserverTest.java",
+      "line": 103,
+      "matchedCode": "System.arraycopy(bom,0,result,0,bom.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
       "file": ".github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java",
       "line": 312,
       "matchedCode": "compilationUnits.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
+      "line": 201,
+      "matchedCode": "fixes.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
+      "line": 623,
+      "matchedCode": "fixes.clone()"
     },
     {
       "repository": "sandbox",
@@ -1942,14 +2014,6 @@
       "repository": "sandbox",
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_jface_cleanup/src/org/sandbox/jdt/internal/ui/fix/JFaceCleanUpCore.java",
-      "line": 89,
-      "matchedCode": "computeFixSet().stream().map(JfaceCleanUpFixCore::toString).collect(Collectors.toList())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java",
       "line": 87,
       "matchedCode": "computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(Collectors.toList())"
@@ -1983,7 +2047,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 225,
+      "line": 350,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
