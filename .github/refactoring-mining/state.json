@@ -1192,9 +1192,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "40d45495fde1320b1f3715ab2b5b2ba4446b91cd",
-      "lastProcessedDate": "2026-08-16T02:39:06.102542666Z",
-      "totalProcessed": 3995,
+      "lastProcessedCommit": "7cb54eac474a671709c83f20aec46d4ab0c77921",
+      "lastProcessedDate": "2026-08-17T02:38:53.486851886Z",
+      "totalProcessed": 4079,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -2951,6 +2951,60 @@
           "deferredAt": "2026-08-16T02:34:17.481302025Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "597b04b2adaf7af650fa42b6b441fbb0d153f217",
+          "message": "Bug 550583 - Fix files that have ended up with CRLF in the git repository",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-17T02:33:02.548219031Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6f073a3072bb0876f092287d7a485c8a63f65d64",
+          "message": "Bug 548309 - Use switch over strings where possible",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-17T02:36:03.425186387Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d9cd2f3580c64bdf8dfa54f861eb251789ec5637",
+          "message": "Bug 538656 - Make JDT CompletionProcessors not require UI Thread",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-17T02:38:08.300144961Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9f309774d613680abe496440534dece9e5e744be",
+          "message": "Revert \"Bug 538656 - Make JDT CompletionProcessors not require UI Thread\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-17T02:38:24.739049605Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "afe2ff9be7e361388cca3e43f94ce5c902149a21",
+          "message": "Bug 538656 - Make JDT CompletionProcessors not require UI Thread",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-17T02:38:24.745152714Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "89ea2c6596fdcfa355e79600261b224a899708ac",
+          "message": "Bug 550113 - [13] Text Block: Cumbersome to enter a text block into the editor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-17T02:38:24.752247426Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3021,7 +3075,7 @@
         "Architecture Refactoring": 4,
         "Dead Code Removal": 13,
         "Quick Fix Enhancement": 6,
-        "Unnecessary Code": 1,
+        "Unnecessary Code": 2,
         "Correctness": 4,
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
@@ -3093,7 +3147,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 16,
+        "API Migration": 18,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3104,7 +3158,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 27,
+        "API Modernization": 28,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3159,7 +3213,12 @@
         "Unboxing": 1,
         "Unnecessary API Removal": 1,
         "Code Modernization": 1,
-        "Annotation Addition": 1
+        "Annotation Addition": 1,
+        "String Modernization": 1,
+        "String Manipulation": 1,
+        "Code Style/Readability": 1,
+        "Control Flow Refactoring": 1,
+        "Method Extraction/Call Site Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -3200,5 +3259,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26654
+  "globalTotalProcessed": 26738
 }
