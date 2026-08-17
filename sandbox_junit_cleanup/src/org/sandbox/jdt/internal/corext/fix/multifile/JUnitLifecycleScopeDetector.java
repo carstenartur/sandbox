@@ -102,7 +102,7 @@ public final class JUnitLifecycleScopeDetector {
 							return false;
 						}
 						try {
-							ITypeHierarchy hierarchy= rootType.newTypeHierarchy(null);
+							ITypeHierarchy hierarchy= newTypeHierarchy(rootType, monitor);
 							complete[0]&= addType(rootType, directUnits);
 							for (IType subtype : hierarchy.getAllSubtypes(rootType)) {
 								ICompilationUnit subtypeUnit= subtype.getCompilationUnit();
@@ -123,6 +123,11 @@ public final class JUnitLifecycleScopeDetector {
 		checkCanceled(monitor);
 		return new JUnitScopeCandidateDetector.SearchSeeds(candidateFound[0], complete[0],
 				List.of(), new ArrayList<>(directUnits));
+	}
+
+	static ITypeHierarchy newTypeHierarchy(IType rootType, IProgressMonitor monitor)
+			throws JavaModelException {
+		return rootType.newTypeHierarchy(monitor);
 	}
 
 	private static ITypeBinding lifecycleRoot(ITypeBinding binding, Set<String> annotations) {
