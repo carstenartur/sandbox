@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e75ed8cc7dd79dadb7bd3c6c1e8b74f3111ed42347c57cd1f33866b8b24fb198",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string.trim.length.zero.to.isempty\u003e\n\u003c!description: Replace String.trim().length() \u003d\u003d 0 with String.trim().isEmpty().\u003e\n\u003c!severity: HINT\u003e\n\n$x.trim().length() \u003d\u003d 0\n\u003d\u003e\n$x.trim().isEmpty()\n;;",
+  "beforeExample": "class MyClass {\n    void myMethod(String s) {\n        if (s.trim().length() \u003d\u003d 0) {\n            System.out.println(\"String is empty after trim.\");\n        }\n    }\n    void anotherMethod() {\n        String myString \u003d \"   \";\n        if (myString.trim().length() \u003d\u003d 0) {\n            System.out.println(\"Whitespace string is empty after trim.\");\n        }\n    }\n}",
+  "afterExample": "class MyClass {\n    void myMethod(String s) {\n        if (s.trim().isEmpty()) {\n            System.out.println(\"String is empty after trim.\");\n        }\n    }\n    void anotherMethod() {\n        String myString \u003d \"   \";\n        if (myString.trim().isEmpty()) {\n            System.out.println(\"Whitespace string is empty after trim.\");\n        }\n    }\n}",
+  "negativeExample": "class MyClass {\n    void notMatchingMethod(String s) {\n        // This should not be changed as it doesn\u0027t involve trim()\n        if (s.length() \u003d\u003d 0) {\n            System.out.println(\"String is empty.\");\n        }\n        // This should not be changed as the comparison is not \u003d\u003d 0\n        if (s.trim().length() \u003e 0) {\n            System.out.println(\"String is not empty after trim.\");\n        }\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "cf6c42522ee5a5ea21a34fcfdecf3504d4750a04",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Modernization",
+  "summary": "Replaces `String.trim().length() \u003d\u003d 0` with `String.trim().isEmpty()` for conciseness and readability, leveraging the `isEmpty()` method introduced in Java 6.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-17T02:38:54.877317988Z",
+  "ruleFingerprint": "sha256:2695a3a27e224eadc7d1c49782a3647f191a929784845257f968abb267686e74",
+  "behaviorFingerprint": "sha256:61b3e2036d23f2448b70f25fcf8c7d6bfadcc4bea3bd4941aa3ef5026aefa17d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-17T02:38:58.429638910Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

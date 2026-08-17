@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b506e4d7182c60cee7d11ff2e411ae74e71cae5d51e8b22d123e30c3ae5ea7d8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "!(!($x))\n\u003d\u003e\n$x\n;;",
+  "beforeExample": "public class MyClass {\n    boolean isValid() {\n        return true;\n    }\n\n    void test() {\n        boolean x \u003d true;\n        boolean result1 \u003d !!x;\n        boolean result2 \u003d !(!isValid());\n        boolean result3 \u003d !(!(!true)); // Example for iterative application\n    }\n}",
+  "afterExample": "public class MyClass {\n    boolean isValid() {\n        return true;\n    }\n\n    void test() {\n        boolean x \u003d true;\n        boolean result1 \u003d x;\n        boolean result2 \u003d isValid();\n        boolean result3 \u003d !true;\n    }\n}",
+  "negativeExample": "public class MyClass {\n    boolean isValid() {\n        return true;\n    }\n\n    void test() {\n        boolean x \u003d true;\n        boolean result1 \u003d !x;\n        boolean result2 \u003d !(isValid());\n        boolean result3 \u003d true; // Not a negation\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "6fe286944ed7f3f7855c7471d582ca0efc827b4f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Style/Readability",
+  "summary": "Removes redundant double negation `!!x` with `x`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-17T02:38:54.915627366Z",
+  "ruleFingerprint": "sha256:7bbb50778dcba5b98cd54a8470c161798bd8aadb27b7950990fed9e18b43678a",
+  "behaviorFingerprint": "sha256:e593b8ff3a75d9fa8f3f8d6bb043550437233ac665f7bce53dc2a0b200ffba30",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-17T02:38:58.488783930Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

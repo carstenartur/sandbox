@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "607192a69ee15c008ef6d02d41fde47b80d0040fe44acd805e67b70248a08983",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.equals(\"\")\n\u003d\u003e $x.isEmpty()\n;;",
+  "beforeExample": "public class StringComparison {\n    public void check(String s) {\n        boolean isReallyEmpty \u003d s.equals(\"\");\n        if (!s.equals(\"\")) {\n            System.out.println(\"Not empty.\");\n        }\n        String someText \u003d s.trim();\n        if (someText !\u003d null \u0026\u0026 !someText.equals(\"\")) {\n            System.out.println(\"Trimmed not empty.\");\n        }\n    }\n    public void testNull() {\n        String s \u003d null;\n        try {\n            s.equals(\"\"); // Will throw NullPointerException\n        } catch (NullPointerException e) {\n            System.out.println(\"NPE as expected\");\n        }\n    }\n}",
+  "afterExample": "public class StringComparison {\n    public void check(String s) {\n        boolean isReallyEmpty \u003d s.isEmpty();\n        if (!s.isEmpty()) {\n            System.out.println(\"Not empty.\");\n        }\n        String someText \u003d s.trim();\n        if (someText !\u003d null \u0026\u0026 !someText.isEmpty()) {\n            System.out.println(\"Trimmed not empty.\");\n        }\n    }\n    public void testNull() {\n        String s \u003d null;\n        try {\n            s.isEmpty(); // Will throw NullPointerException\n        } catch (NullPointerException e) {\n            System.out.println(\"NPE as expected\");\n        }\n    }\n}",
+  "negativeExample": "import java.util.Objects;\n\npublic class StringComparisonNegative {\n    public void check(String s) {\n        boolean notEmpty \u003d s.equals(\" \"); // Not equals(\"\")\n        boolean otherCheck \u003d s.length() \u003d\u003d 0; // Different method\n        boolean another \u003d Objects.equals(s, \"\"); // Different method\n    }\n}",
+  "targetHintFile": "strings.sandbox-hint",
+  "sourceCommit": "8bd0aa6379866e721da3692c3676be63fb1fa7f4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Manipulation",
+  "summary": "Replace `String.equals(\"\")` with `String.isEmpty()` for improved readability and slight performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-17T02:38:54.891907333Z",
+  "ruleFingerprint": "sha256:5a86bb5d26803a5d2c7df272fd25c9ad438dde18ab1333db871f830f9e0353e4",
+  "behaviorFingerprint": "sha256:ab7ecc8fadef493acfc388cf6ae466385df9d776df153670dd41a1579cc01170",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type StringComparison must be defined in its own file",
+    "verifiedAt": "2026-08-17T02:38:58.450667345Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
