@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2365091b8898d435790532d8ad596d44b57e47bc63564097175c11b5348297b1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt.core.api.migrate.isSystemModule\u003e\n\u003c!description: Migrate from provisional JavaModelAccess.isSystemModule() to the final IModuleDescription.isSystemModule() API (Java 9+).\nThis change reflects the stabilization of the Java module API within JDT Core.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.core.provisional.JavaModelAccess.isSystemModule($module) :: sourceVersionGE(9) \u0026\u0026 instanceof($module, \"org.eclipse.jdt.core.IModuleDescription\")\n\u003d\u003e $module.isSystemModule()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IModuleDescription;\nimport org.eclipse.jdt.core.provisional.JavaModelAccess;\n\npublic class TestClass {\n    public boolean checkModule(IModuleDescription module) {\n        if (module !\u003d null \u0026\u0026 JavaModelAccess.isSystemModule(module)) {\n            System.out.println(\"Provisional system module\");\n            return true;\n        }\n        return false;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IModuleDescription;\n\npublic class TestClass {\n    public boolean checkModule(IModuleDescription module) {\n        if (module !\u003d null \u0026\u0026 module.isSystemModule()) {\n            System.out.println(\"Provisional system module\");\n            return true;\n        }\n        return false;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IModuleDescription;\n\npublic class NegativeTestClass {\n\n    // This method already uses the modern API, should not be touched.\n    public boolean checkModernModule(IModuleDescription module) {\n        if (module !\u003d null \u0026\u0026 module.isSystemModule()) {\n            return true;\n        }\n        return false;\n    }\n\n    // This method uses a different \u0027isSystemModule\u0027 or type, should not be touched.\n    public boolean checkOtherModule(MyCustomModule customModule) {\n        if (customModule !\u003d null \u0026\u0026 customModule.isSystemModule()) {\n            return true;\n        }\n        return false;\n    }\n}\n\n// A custom class with a method of the same name but different context.\nclass MyCustomModule {\n    public boolean isSystemModule() {\n        return false;\n    }\n}",
+  "targetHintFile": "jdt-api-modernization.sandbox-hint",
+  "sourceCommit": "c3df288b966ad32d2f02586646836cb4b7364f92",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-17T02:38:54.860989144Z",
+  "ruleFingerprint": "sha256:1fc544e7d09957fd6e30abcb75d939440b6c382903a62e44f04585e042e12cd9",
+  "behaviorFingerprint": "sha256:9674a3e0ae182582fa631879ce5ef2292c4cf938b72dc30cbd6cbdf045e0b73b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-17T02:38:58.423070267Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

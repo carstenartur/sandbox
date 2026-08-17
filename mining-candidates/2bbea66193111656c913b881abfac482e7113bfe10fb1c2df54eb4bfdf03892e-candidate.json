@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2bbea66193111656c913b881abfac482e7113bfe10fb1c2df54eb4bfdf03892e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$jProj.getModuleDescription()\n\u003d\u003e $jProj.getOwnModuleDescription()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.JavaCore;\nimport org.eclipse.core.resources.IProject;\n\n// Mock classes for compilation purposes\ninterface IProject { boolean isOpen(); boolean hasNature(String id) throws CoreException; }\ninterface IJavaProject { Object getModuleDescription(); Object getOwnModuleDescription(); String getElementName(); }\nclass JavaCore { public static final String NATURE_ID \u003d \"jdt.core.nature\"; public static IJavaProject create(IProject project) { return null; } }\nclass CoreException extends Exception { public CoreException(Object o, Object o2) {} }\n\npublic class ModulePatchSourceSelection {\n    public void processProject(IProject project) throws CoreException {\n        if (project.isOpen() \u0026\u0026 project.hasNature(JavaCore.NATURE_ID)) {\n            IJavaProject jProj \u003d JavaCore.create(project);\n            if (jProj !\u003d null \u0026\u0026 jProj.getModuleDescription() \u003d\u003d null) {\n                System.out.println(\"Project \" + jProj.getElementName() + \" has no module description.\");\n            }\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.JavaCore;\nimport org.eclipse.core.resources.IProject;\n\n// Mock classes for compilation purposes\ninterface IProject { boolean isOpen(); boolean hasNature(String id) throws CoreException; }\ninterface IJavaProject { Object getModuleDescription(); Object getOwnModuleDescription(); String getElementName(); }\nclass JavaCore { public static final String NATURE_ID \u003d \"jdt.core.nature\"; public static IJavaProject create(IProject project) { return null; } }\nclass CoreException extends Exception { public CoreException(Object o, Object o2) {} }\n\npublic class ModulePatchSourceSelection {\n    public void processProject(IProject project) throws CoreException {\n        if (project.isOpen() \u0026\u0026 project.hasNature(JavaCore.NATURE_ID)) {\n            IJavaProject jProj \u003d JavaCore.create(project);\n            if (jProj !\u003d null \u0026\u0026 jProj.getOwnModuleDescription() \u003d\u003d null) {\n                System.out.println(\"Project \" + jProj.getElementName() + \" has no module description.\");\n            }\n        }\n    }\n}",
+  "negativeExample": "package test;\npublic class OtherClass {\n    public static class SomeModule {\n        public Object getModuleDescription() { return null; }\n    }\n    public void someMethod() {\n        SomeModule sm \u003d new SomeModule();\n        if (sm.getModuleDescription() \u003d\u003d null) {\n            System.out.println(\"Other module.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse-jdt-api.sandbox-hint",
+  "sourceCommit": "de71bde4cab16539e8bd017018c9d0634ea039ff",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replace `IJavaProject.getModuleDescription()` with `IJavaProject.getOwnModuleDescription()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-17T02:38:54.904109062Z",
+  "ruleFingerprint": "sha256:b994afb9aa1508f2cb7399dfdee0ca7f90b55a7101c9194419fa68236d3d9d8a",
+  "behaviorFingerprint": "sha256:55dee933ad83285072f88cfbf1cdf8ec6a163376844b3ffeffc6c13f66ba7c6f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.core.runtime.CoreException conflicts with a type defined in the same file",
+    "verifiedAt": "2026-08-17T02:38:58.476143738Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

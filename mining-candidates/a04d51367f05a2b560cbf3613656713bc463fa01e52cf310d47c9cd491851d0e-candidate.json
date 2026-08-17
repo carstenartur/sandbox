@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a04d51367f05a2b560cbf3613656713bc463fa01e52cf310d47c9cd491851d0e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext\n\u003d\u003e\norg.eclipse.jdt.internal.corext.template.java.JavaContext\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.template.contentassist;\n\nimport org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext;\nimport org.eclipse.jdt.internal.corext.template.java.MultiVariableGuess;\n\nclass TemplateProposal {\n    Object fContext;\n\n    void apply() {\n        MultiVariableGuess guess \u003d fContext instanceof CompilationUnitContext ? ((CompilationUnitContext) fContext).getMultiVariableGuess() : null;\n        CompilationUnitContext directUsage \u003d (CompilationUnitContext) fContext;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.template.contentassist;\n\nimport org.eclipse.jdt.internal.corext.template.java.JavaContext;\nimport org.eclipse.jdt.internal.corext.template.java.MultiVariableGuess;\n\nclass TemplateProposal {\n    Object fContext;\n\n    void apply() {\n        MultiVariableGuess guess \u003d fContext instanceof JavaContext ? ((JavaContext) fContext).getMultiVariableGuess() : null;\n        JavaContext directUsage \u003d (JavaContext) fContext;\n    }\n}",
+  "negativeExample": "package some.other.package;\n\n// This rule assumes CompilationUnitContext is superseded by JavaContext.\n// A negative example would only be relevant if CompilationUnitContext still \n// existed as a distinct, valid type in other parts of the codebase that \n// should NOT be migrated. Given the commit message about achieving a single \n// inheritance hierarchy, a global replacement is implied.\n\npublic class SomeLegacyContext {\n    // Assuming org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext \n    // is *not* intended to be changed here, e.g., if it\u0027s a completely unrelated type.\n    // However, for this specific commit, the intent is clearly a type migration.\n}",
+  "targetHintFile": "eclipse-jdt-internal-api-migration.sandbox-hint",
+  "sourceCommit": "1e6016316d686953436c9deee17576bf3a81b4f2",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces all usages of the fully qualified type \u0027org.eclipse.jdt.internal.corext.template.java.CompilationUnitContext\u0027 with \u0027org.eclipse.jdt.internal.corext.template.java.JavaContext\u0027, reflecting an internal API migration.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-17T02:38:54.840102466Z",
+  "ruleFingerprint": "sha256:dc3801aec68472e96b9c1b26b768ec62fdc5440f1daca8338b58670cb531adab",
+  "behaviorFingerprint": "sha256:bb56aa5a80d3752506126f5d3ebc31e914697c420ba651a290bce8f720408e85",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-08-17T02:38:58.413744583Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
