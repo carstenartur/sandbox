@@ -1,9 +1,9 @@
 name: One-time PR 1510 screenshot baseline refresh
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/restore-eclipse-help-screenshot-gate
+      - main
 
 permissions:
   contents: write
@@ -14,7 +14,10 @@ concurrency:
 
 jobs:
   refresh:
-    if: github.actor != 'github-actions[bot]'
+    if: >-
+      github.event.pull_request.number == 1510 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'github-actions[bot]'
     name: Refresh deterministic Cleanup configuration screenshots
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -24,11 +27,13 @@ jobs:
       GDK_BACKEND: x11
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
     steps:
       - name: Checkout refresh branch
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -90,6 +95,13 @@ jobs:
           fi
           printf 'Verified JUnit report: %s\n' "$report"
 
+      - name: Keep real preview screenshots outside this baseline refresh
+        run: >-
+          git restore --source=HEAD --
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
+
       - name: Commit exactly the deterministic profile baselines
         shell: bash
         run: |
@@ -148,7 +160,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Refresh deterministic Eclipse Help screenshots'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:$HEAD_BRANCH"
 
       - name: Upload reproduced screenshots
         if: always()
