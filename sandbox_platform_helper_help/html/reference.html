@@ -9,24 +9,120 @@
 </head>
 <body>
    <h1>Platform Status: reference</h1>
-   <h2>Applicability contract</h2>
-   <p>A proposal is created only for constructor forms for which the replacement can be resolved from bindings and mapped to an equivalent factory call.</p>
 
-   <h2>Safety model</h2>
-   <p>The cleanup refuses conversions whose less common status fields cannot be represented by the selected factory method.</p>
+   <h2>Status applicability</h2>
+   <p>A <code>Status</code> proposal requires all of the following:</p>
+   <ul>
+      <li>the constructed type resolves exactly to
+          <code>org.eclipse.core.runtime.Status</code>;</li>
+      <li>the constructor has five arguments;</li>
+      <li>severity resolves to INFO, WARNING, or ERROR;</li>
+      <li>code resolves at compile time to <code>IStatus.OK</code>.</li>
+   </ul>
+
+   <h2>Factory applicability</h2>
+   <p>The native cleanup uses a factory only when every additional proof
+      succeeds:</p>
+   <ul>
+      <li>the project contains a readable
+          <code>META-INF/MANIFEST.MF</code> with a runtime identity from
+          <code>Bundle-SymbolicName</code>, or from <code>Fragment-Host</code>
+          for a fragment;</li>
+      <li>the identity is a matching compile-time String constant or the exact
+          enclosing class literal;</li>
+      <li>omitting the identity expression does not remove observable
+          evaluation;</li>
+      <li>the required static factory overload exists in the resolved
+          <code>Status</code> API;</li>
+      <li>message and throwable can be represented by that overload;</li>
+      <li>the factory return type is assignment-compatible with the source
+          target.</li>
+   </ul>
+
+   <p>When any factory proof fails, the proposal uses the four-argument
+      constructor and retains the explicit identity. This fallback is still a
+      useful cleanup because the proven redundant OK argument is removed.</p>
+
+   <h2>Identity proof boundary</h2>
+   <table border="1" cellpadding="4" cellspacing="0">
+      <thead>
+         <tr><th>Identity expression</th><th>Native target</th><th>Reason</th></tr>
+      </thead>
+      <tbody>
+         <tr>
+            <td>Compile-time String equal to Bundle-SymbolicName</td>
+            <td>Factory when overload and type also fit</td>
+            <td>Same value; constant access has no class-initialization effect</td>
+         </tr>
+         <tr>
+            <td>Exact enclosing class literal</td>
+            <td>Factory when overload and type also fit</td>
+            <td>Factory and constructor identify the same calling class and bundle</td>
+         </tr>
+         <tr>
+            <td>Fragment host id</td>
+            <td>Factory when overload and type also fit</td>
+            <td>The fragment class is defined by the host bundle at runtime</td>
+         </tr>
+         <tr>
+            <td>Fragment's own id, different, or delegated String</td>
+            <td>Four-argument constructor</td>
+            <td><code>IStatus.getPlugin()</code> must retain the explicit value</td>
+         </tr>
+         <tr>
+            <td>Method call such as JavaPlugin.getPluginId()</td>
+            <td>Four-argument constructor</td>
+            <td>Method evaluation and class initialization are not proven removable</td>
+         </tr>
+         <tr>
+            <td>Different Class literal or unresolved expression</td>
+            <td>Four-argument constructor</td>
+            <td>Identity equality is not established</td>
+         </tr>
+      </tbody>
+   </table>
+
+   <h2>Factory overload boundary</h2>
+   <ul>
+      <li>The one-argument overload may omit only a literal null throwable.</li>
+      <li>The two-argument overload preserves a non-null throwable or an
+          explicit null when needed for return-type compatibility.</li>
+      <li>INFO with a non-null throwable remains a constructor when no
+          equivalent overload exists.</li>
+      <li>The API is read from project bindings; availability is not inferred
+          merely from the configured Java language level.</li>
+   </ul>
+
+   <h2>MultiStatus applicability</h2>
+   <p>The constructed type must resolve exactly to
+      <code>org.eclipse.core.runtime.MultiStatus</code>. Only a code whose
+      compile-time value is zero and which is not already the canonical
+      <code>IStatus.OK</code> reference is normalized. Nonzero, unresolved, and
+      runtime-computed codes remain unchanged.</p>
+
+   <h2>Bundled TriggerPattern boundary</h2>
+   <p>The bundled hint has no project manifest and target-type proof. It never
+      performs a Status constructor-to-factory replacement; it retains the
+      explicit identity and removes only the redundant OK argument. The general
+      Platform Logging hint contains no such Status rules.</p>
 
    <h2>Known limitations</h2>
    <ul>
-      <li>Custom subclasses and indirect factory wrappers are outside the matching scope.</li>
-      <li>Availability depends on the Eclipse Platform API level on the project's build path.</li>
-      <li>Binary compatibility of downstream code is not changed; only source calls are rewritten.</li>
+      <li>Only PDE-style manifest metadata at
+          <code>META-INF/MANIFEST.MF</code> is used.</li>
+      <li>Getter purity and class-initialization equivalence are not analyzed.</li>
+      <li>Only the exact enclosing class literal is accepted as a Class proof.</li>
+      <li>Custom subclasses and indirect factory wrappers are outside the
+          matching scope.</li>
+      <li>Applicability and rejection reasons are not yet exposed as a public
+          machine-readable report.</li>
    </ul>
 
    <h2>Support information</h2>
-   <p>The Help content is shipped with the same feature version as the runtime
-      plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+   <p>When reporting a problem, include the Sandbox feature version, Eclipse
+      version, Java version, the project's Bundle-SymbolicName, the smallest
+      reproducing source, the expected target type, and whether bindings were
+      available.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>

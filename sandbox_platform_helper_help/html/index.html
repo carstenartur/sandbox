@@ -9,20 +9,35 @@
 </head>
 <body>
    <h1>Platform Status</h1>
-   <p>Modernizes verbose Eclipse Platform status construction to the supported status factory APIs.</p>
-   <p class="note">This documentation is installed by <code>sandbox_platform_helper_feature</code>
-      together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
+   <p>Modernizes Eclipse Platform <code>Status</code> construction while
+      preserving observable status data and expression evaluation.</p>
+   <p class="note">This documentation is installed by
+      <code>sandbox_platform_helper_feature</code> together with the runtime
+      plug-in. The runtime plug-in does not depend on this Help bundle.</p>
 
    <h2>What the feature provides</h2>
    <ul>
-      <li>Recognizes supported <code>new Status(...)</code> construction patterns.</li>
-      <li>Replaces them with concise Eclipse Platform status factory methods where equivalent.</li>
-      <li>Preserves severity, message, exception, plug-in identifier, and code where the target factory supports the same semantics.</li>
-      <li>Runs as a cleanup or save action.</li>
+      <li>Recognizes supported five-argument <code>Status</code> constructors
+          whose code is provably <code>IStatus.OK</code>.</li>
+      <li>Uses <code>Status.info</code>, <code>Status.warning</code>, or
+          <code>Status.error</code> when bundle identity, overload, and target
+          type are proven equivalent.</li>
+      <li>Otherwise retains the explicit String or Class identity in the
+          shorter four-argument constructor.</li>
+      <li>Never replaces a nonzero or unresolved application code.</li>
+      <li>Runs as an Eclipse cleanup or save action with the standard preview,
+          Apply, and Undo workflow.</li>
    </ul>
 
+   <h2>Why fewer parameters can be equivalent</h2>
+   <p>A factory still supplies severity, code <code>IStatus.OK</code>, and the
+      calling bundle identity. Removing explicit arguments is safe when those
+      values and the omitted expression evaluation are proven equivalent. The
+      cleanup uses a constructor fallback whenever that proof is incomplete.</p>
+
    <h2>Where to start</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Platform Status (Sandbox)</strong>.</p>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup
+      profile, and select <strong>Platform Status (Sandbox)</strong>.</p>
 
    <h2>Configuration in Eclipse</h2>
    <p><img class="screenshot" src="../images/platform-status-cleanup.png"
