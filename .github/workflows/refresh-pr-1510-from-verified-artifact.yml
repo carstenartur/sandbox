@@ -1,0 +1,111 @@
+name: One-time PR 1510 verified baseline import
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: one-time-pr-1510-verified-baseline-import
+  cancel-in-progress: true
+
+jobs:
+  import:
+    if: >-
+      github.event.pull_request.number == 1510 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    env:
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+      SOURCE_HEAD: 9f11594a857a89fddf5961f009a4afa3b3660d89
+      ARTIFACT_ID: '9338338760'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Verify that only gate workflows changed since screenshot generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t product_changes < <(git diff --name-only "$SOURCE_HEAD" HEAD -- \
+            . \
+            ':(exclude).github/workflows/eclipse-help-screenshots.yml' \
+            ':(exclude).github/workflows/refresh-pr-1510-from-verified-artifact.yml')
+          if (( ${#product_changes[@]} > 0 )); then
+            echo 'Product files changed after the verified screenshot run:' >&2
+            printf '%s\n' "${product_changes[@]}" >&2
+            exit 1
+          fi
+
+      - name: Import exactly the verified deterministic baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            --output "$work/screenshots.zip"
+          unzip -q "$work/screenshots.zip" -d "$work/screenshots"
+
+          expected=(
+            sandbox_encoding_quickfix_help/images/explicit-encoding-cleanup.png
+            sandbox_functional_converter_help/images/functional-converter-cleanup.png
+            sandbox_int_to_enum_help/images/int-to-enum-cleanup.png
+            sandbox_jface_cleanup_help/images/jface-cleanup.png
+            sandbox_junit_cleanup_help/images/junit-migration-cleanup.png
+            sandbox_method_reuse_help/images/method-reuse-cleanup.png
+            sandbox_platform_helper_help/images/platform-status-cleanup.png
+            sandbox_triggerpattern_help/images/code-patterns-cleanup.png
+            sandbox_use_general_type_help/images/use-general-type-cleanup.png
+            sandbox_xml_cleanup_help/images/xml-cleanup.png
+          )
+
+          for path in "${expected[@]}"; do
+            source="$work/screenshots/$path"
+            test -s "$source"
+            file "$source" | grep -q 'PNG image data'
+            cp "$source" "$path"
+          done
+
+          mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
+            ':(glob)sandbox*_help/images/*.png')
+          if (( ${#changes[@]} != ${#expected[@]} )); then
+            echo 'The verified artifact did not change exactly the expected baselines:' >&2
+            printf '%s\n' "${changes[@]}" >&2
+            exit 1
+          fi
+          for change in "${changes[@]}"; do
+            path="${change:3}"
+            found=false
+            for expected_path in "${expected[@]}"; do
+              if [[ "$path" == "$expected_path" ]]; then
+                found=true
+                break
+              fi
+            done
+            if [[ "$found" != true ]]; then
+              echo "Unexpected screenshot change: $change" >&2
+              exit 1
+            fi
+          done
+
+          git add -- "${expected[@]}"
+          git diff --cached --stat
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Refresh deterministic Eclipse Help screenshots'
+          git push origin "HEAD:$HEAD_BRANCH"
