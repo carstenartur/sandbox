@@ -83,6 +83,42 @@ public class MigrationJUnit6CompatibilityTest {
 	}
 
 	@Test
+	public void qualifiesReplacementWhenSimpleNamesConflict() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("ConflictingNames.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				@org.junit.jupiter.api.TestMethodOrder(org.junit.jupiter.api.MethodOrderer.Alphanumeric.class)
+				public class ConflictingNames {
+					static class MethodOrderer {
+					}
+
+					@interface TestMethodOrder {
+					}
+				}
+				""", false, null);
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(JUnitMigrationOptions.JUNIT6_COMPATIBILITY);
+
+		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] {
+				"""
+				package test;
+
+				@org.junit.jupiter.api.TestMethodOrder(org.junit.jupiter.api.MethodOrderer.MethodName.class)
+				public class ConflictingNames {
+					static class MethodOrderer {
+					}
+
+					@interface TestMethodOrder {
+					}
+				}
+				"""
+		}, null);
+	}
+
+	@Test
 	public void leavesUserDefinedAlphanumericTypeUntouched() throws CoreException {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit unit= pack.createCompilationUnit("CustomOrderTest.java", //$NON-NLS-1$
