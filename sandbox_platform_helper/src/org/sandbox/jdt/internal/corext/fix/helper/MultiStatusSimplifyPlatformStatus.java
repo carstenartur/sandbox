@@ -32,6 +32,9 @@ import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -125,11 +128,14 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
+		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
+		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(cuRewrite.getRoot(),
+				visited.getStartPosition(), importRewrite);
 
 		ClassInstanceCreation newMultiStatus= ast.newClassInstanceCreation();
-		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);
+		Name multiStatusName= ast.newName(importRewrite.addImport(MultiStatus.class.getName(), importContext));
 		newMultiStatus.setType(ast.newSimpleType(multiStatusName));
-		Name iStatusName= addImport(IStatus.class.getName(), cuRewrite, ast);
+		Name iStatusName= ast.newName(importRewrite.addImport(IStatus.class.getName(), importContext));
 
 		List<Expression> arguments= visited.arguments();
 		List<Expression> newArguments= newMultiStatus.arguments();
