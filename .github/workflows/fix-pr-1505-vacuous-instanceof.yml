@@ -1,0 +1,64 @@
+name: One-time PR 1505 SpotBugs fix
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-pr-1505-vacuous-instanceof
+  cancel-in-progress: true
+
+jobs:
+  patch:
+    if: >-
+      github.event.pull_request.number == 1505 &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    env:
+      HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Replace the vacuous instanceof expression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/JdtUiInheritedTestsRunnerMigration.java")
+          text = path.read_text(encoding="utf-8")
+          old = "\t\treturn assess(current instanceof TypeDeclaration type ? type : null, runnerQualifiedName);\n"
+          new = (
+              "\t\tTypeDeclaration type= current == null ? null : (TypeDeclaration) current;\n"
+              "\t\treturn assess(type, runnerQualifiedName);\n"
+          )
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f"expected exactly one source occurrence, found {count}")
+          path.write_text(text.replace(old, new), encoding="utf-8")
+          PY
+
+          git diff --check
+          git diff -- \
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/JdtUiInheritedTestsRunnerMigration.java
+
+      - name: Commit the source correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          path='sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/JdtUiInheritedTestsRunnerMigration.java'
+          git add -- "$path"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Remove vacuous inherited-runner type check'
+          git push origin "HEAD:$HEAD_BRANCH"
