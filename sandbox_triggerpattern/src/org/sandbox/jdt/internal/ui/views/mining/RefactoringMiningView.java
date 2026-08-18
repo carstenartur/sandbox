@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.views.mining;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -169,12 +170,16 @@ public class RefactoringMiningView extends ViewPart {
 	private void chooseAndAnalyzeProject() {
 		List<IProject> projects = new ArrayList<>();
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
-			if (project.isOpen() && project.getLocation() != null) {
+			if (!project.isOpen() || project.getLocation() == null) {
+				continue;
+			}
+			Path location = project.getLocation().toFile().toPath();
+			if (isGitBackedLocation(location)) {
 				projects.add(project);
 			}
 		}
 		if (projects.isEmpty()) {
-			setContentDescription("No open workspace project is available for analysis"); //$NON-NLS-1$
+			setContentDescription("No open Git-backed workspace project is available for analysis"); //$NON-NLS-1$
 			return;
 		}
 
@@ -282,6 +287,15 @@ public class RefactoringMiningView extends ViewPart {
 			sb.append(rule).append("\n;;\n\n"); //$NON-NLS-1$
 		}
 		return sb.toString();
+	}
+
+	static boolean isGitBackedLocation(Path location) {
+		for (Path current = location; current != null; current = current.getParent()) {
+			if (Files.exists(current.resolve(".git"))) { //$NON-NLS-1$
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static GitHistoryProvider createGitProvider() {

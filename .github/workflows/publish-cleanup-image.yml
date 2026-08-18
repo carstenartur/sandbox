@@ -59,7 +59,10 @@ jobs:
 
     - name: Build Eclipse product
       run: |
-        xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode \
+        # Keep this mixed Maven/bnd/Tycho reactor sequential. With Maven reactor
+        # parallelism, Tycho can inspect sandbox_common_core/target/classes before
+        # bnd has written its OSGi manifest and then report the bundle as missing.
+        xvfb-run --auto-servernum mvn -e -V --batch-mode \
           -Dtycho.localArtifacts=ignore \
           -Pproduct clean verify -DskipTests
 

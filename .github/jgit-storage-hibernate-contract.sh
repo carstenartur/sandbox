@@ -156,32 +156,56 @@ if ! grep -Fq "$core_coordinate" "$evidence_dir/dependency-tree.txt"; then
   exit 1
 fi
 
-find sandbox-jgit-storage-hibernate/target/surefire-reports \
-     sandbox-jgit-server-webapp/target/surefire-reports \
-     -type f -name 'TEST-*.xml' -print 2>/dev/null \
+report_directories=()
+for directory in \
+    sandbox-jgit-storage-hibernate/target/surefire-reports \
+    sandbox-jgit-server-webapp/target/surefire-reports; do
+  if [[ -d "$directory" ]]; then
+    report_directories+=("$directory")
+  fi
+done
+if (( ${#report_directories[@]} == 0 )); then
+  echo "The Sandbox storage modules produced no Surefire report directories." >&2
+  exit 1
+fi
+find "${report_directories[@]}" -type f -name 'TEST-*.xml' -print \
   | sort > "$evidence_dir/test-reports.txt"
 if [[ ! -s "$evidence_dir/test-reports.txt" ]]; then
   echo "The Sandbox storage modules produced no test reports." >&2
   exit 1
 fi
 
-cat > "$evidence_dir/result.json" <<EOF
-{
-  "consumer": "sandbox",
-  "mode": "$mode",
-  "candidateVersion": "$candidate_version",
-  "resolvedVersion": "$resolved_version",
-  "java": "$java_specification",
-  "expectedModules": ["jgit-storage-hibernate-core"],
-  "forbiddenModules": [
-    "jgit-storage-hibernate-search",
-    "jgit-storage-hibernate-java-analysis",
-    "jgit-storage-hibernate-architecture",
-    "jgit-storage-hibernate-benchmarks"
-  ],
-  "contract": "Core-only public API, OSGi bridge metadata, legacy preflight, repository lifecycle and shaded-server packaging"
+python3 - \
+    "$evidence_dir/result.json" \
+    "$mode" \
+    "$candidate_version" \
+    "$resolved_version" \
+    "$java_specification" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+output, mode, candidate_version, resolved_version, java_specification = sys.argv[1:]
+evidence = {
+    "consumer": "sandbox",
+    "mode": mode,
+    "candidateVersion": candidate_version,
+    "resolvedVersion": resolved_version,
+    "java": java_specification,
+    "expectedModules": ["jgit-storage-hibernate-core"],
+    "forbiddenModules": [
+        "jgit-storage-hibernate-search",
+        "jgit-storage-hibernate-java-analysis",
+        "jgit-storage-hibernate-architecture",
+        "jgit-storage-hibernate-benchmarks",
+    ],
+    "contract": (
+        "Core-only public API, OSGi bridge metadata, legacy preflight, "
+        "repository lifecycle and shaded-server packaging"
+    ),
 }
-EOF
+Path(output).write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+PY
 
 printf 'Sandbox jgit-storage-hibernate contract passed in %s mode with Core %s.\n' \
   "$mode" "$resolved_version"

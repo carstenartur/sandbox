@@ -12,7 +12,7 @@
    <h2>Entry point</h2>
    <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile,
       select <strong>JFace Cleanup (Sandbox)</strong>, and enable only the
-      independent migrations you intend to review.</p>
+      migrations you intend to review.</p>
 
    <h2>SubProgressMonitor to SubMonitor</h2>
    <p>The cleanup joins the parent task declaration and its child-monitor
@@ -73,9 +73,9 @@ return new ImageData(1, 1, 1, palette);
       and unresolved constructor bindings are deliberately left unchanged.</p>
 
    <h2>When a migration is offered</h2>
-   <p>Each migration is independent. It is offered only when the relevant source
-      types and invocations resolve to supported Eclipse APIs and the complete
-      local rewrite can be produced without guessing.</p>
+   <p>The three profile options are independent. A migration is offered only when
+      the relevant source types and invocations resolve to supported Eclipse APIs
+      and the complete local rewrite can be produced without guessing.</p>
 
    <h2>Recommended workflow</h2>
    <ol>
@@ -83,26 +83,31 @@ return new ImageData(1, 1, 1, palette);
           profile.</li>
       <li>Run <strong>Source &gt; Clean Up...</strong> on a small,
           version-controlled selection.</li>
-      <li>Use the execution preview to inspect each labelled JFace step and its
-          concrete diff.</li>
-      <li>Deselect an independent file or step when it is not appropriate for the
-          current change.</li>
+      <li>Select each file in the execution preview and inspect its combined diff
+          for all enabled cleanup options.</li>
+      <li>Deselect a file when the complete proposed change for that file is not
+          appropriate. To review one migration in isolation, run a profile that
+          enables only that migration.</li>
       <li>Compile and run progress-reporting, viewer-ordering, and SWT image tests
           before expanding the scope.</li>
    </ol>
 
    <h2>Real execution preview (LTK)</h2>
    <p>The profile tab preview is an example snippet. The actual execution preview
-      appears after <strong>Source &gt; Clean Up...</strong> and lists the concrete
-      file and step changes that will be applied.</p>
+      appears after <strong>Source &gt; Clean Up...</strong>. Standard Eclipse LTK
+      cleanups expose selectable files; selecting a file displays the combined
+      source diff produced by all enabled cleanup options for that file.</p>
    <p><img class="screenshot" src="../images/jface-cleanup-real-preview-single-file-steps.png"
-      alt="Cleanup preview tree with one file and multiple JFace cleanup step labels"/></p>
+      alt="Cleanup preview with one selected file and its combined JFace source diff"/></p>
    <p><img class="screenshot" src="../images/jface-cleanup-real-preview-diff-step.png"
-      alt="Cleanup preview diff for the selected JFace cleanup step"/></p>
+      alt="Cleanup preview diff for the selected monitor-only source file"/></p>
    <p><img class="screenshot" src="../images/jface-cleanup-real-preview-multi-file-selection.png"
-      alt="Cleanup preview tree with multiple independently selectable files"/></p>
-   <p>Independent local changes may be deselected per file or per step. Coordinated
-      multi-file migrations use a separate atomic-selection contract tracked by
+      alt="Cleanup preview with independently selectable files and one file deselected"/></p>
+   <p>The standard preview does not invent separate checkboxes for every cleanup
+      option inside one file. Only named file entries define the selection; an
+      empty, unchecked presentation row is not an additional cleanup step.
+      Independent local results can be selected per file; coordinated multi-file
+      migrations use a separate atomic-selection contract tracked by
       <a href="https://github.com/carstenartur/sandbox/issues/1451">carstenartur/sandbox#1451</a>.</p>
    <p>See <a href="/topic/sandbox_cleanup_application_help/html/cleanup-preview.html">Cleanup preview model</a>
       for the shared behavior details.</p>
