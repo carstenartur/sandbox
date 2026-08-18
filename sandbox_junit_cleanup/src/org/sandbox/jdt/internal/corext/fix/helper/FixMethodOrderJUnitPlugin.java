@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ANNOTATION_TEST_METHOD_ORDER;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_FIX_METHOD_ORDER;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_METHOD_ORDERER;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER;
@@ -18,6 +17,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeLiteral;
@@ -62,17 +62,18 @@ public class FixMethodOrderJUnitPlugin extends TriggerPatternCleanupPlugin {
 			rewriter.remove(oldAnnotation, group);
 		} else if ("NAME_ASCENDING".equals(methodSorter) || "JVM".equals(methodSorter)) { //$NON-NLS-1$ //$NON-NLS-2$
 			SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
-			newAnnotation.setTypeName(ast.newSimpleName(ANNOTATION_TEST_METHOD_ORDER));
+			newAnnotation.setTypeName(ast.newName(
+					importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER)));
 
+			Name methodOrderer= ast.newName(
+					importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER));
 			TypeLiteral typeLiteral= ast.newTypeLiteral();
 			String targetOrderer= "NAME_ASCENDING".equals(methodSorter) //$NON-NLS-1$
 					? "MethodName" : "Random"; //$NON-NLS-1$ //$NON-NLS-2$
 			typeLiteral.setType(ast.newSimpleType(ast.newQualifiedName(
-					ast.newSimpleName("MethodOrderer"), ast.newSimpleName(targetOrderer)))); //$NON-NLS-1$
+					methodOrderer, ast.newSimpleName(targetOrderer))));
 			newAnnotation.setValue(typeLiteral);
 			rewriter.replace(oldAnnotation, newAnnotation, group);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER);
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER);
 		} else {
 			// Unknown custom sorters are not semantics-preserving migrations.
 			return;
