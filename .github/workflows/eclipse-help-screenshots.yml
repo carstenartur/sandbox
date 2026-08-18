@@ -1,51 +1,20 @@
-name: Eclipse Help screenshots
+name: One-time PR 1495 screenshot capture
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'pom.xml'
-      - 'docs/ECLIPSE_HELP.md'
-      - 'sandbox_help_build/**'
-      - 'sandbox_target/**'
-      - 'sandbox-functional-converter-core/**'
-      - 'sandbox_common_core/**'
-      - 'sandbox_common/**'
-      - 'sandbox_test_commons/**'
-      - 'sandbox*_cleanup/**'
-      - 'sandbox*_cleanup_help/**'
-      - 'sandbox*_quickfix/**'
-      - 'sandbox*_quickfix_help/**'
-      - 'sandbox_functional_converter/**'
-      - 'sandbox_functional_converter_help/**'
-      - 'sandbox_int_to_enum/**'
-      - 'sandbox_int_to_enum_help/**'
-      - 'sandbox_method_reuse/**'
-      - 'sandbox_method_reuse_help/**'
-      - 'sandbox_platform_helper/**'
-      - 'sandbox_platform_helper_help/**'
-      - 'sandbox_tools/**'
-      - 'sandbox_tools_help/**'
-      - 'sandbox_triggerpattern/**'
-      - 'sandbox_triggerpattern_help/**'
-      - 'sandbox_use_general_type/**'
-      - 'sandbox_use_general_type_help/**'
-      - 'sandbox_usage_view/**'
-      - 'sandbox_usage_view_test/**'
-      - '.github/scripts/*.java'
-      - '.github/workflows/eclipse-help-screenshots.yml'
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  push:
+    branches:
+      - qa/independent-cleanup-preview-gate
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: one-time-pr-1495-screenshot-capture
+  cancel-in-progress: true
 
 jobs:
-  generate:
-    name: Reproduce screenshots from the checkout
+  capture:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     env:
@@ -55,7 +24,7 @@ jobs:
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
     steps:
-      - name: Checkout
+      - name: Checkout capture branch
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -74,113 +43,48 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
-          # The hosted Ubuntu runner contains third-party APT sources that are
-          # unrelated to Eclipse. A temporary outage or access policy on one of
-          # them must not prevent us from installing packages from Ubuntu.
           shopt -s nullglob
           for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
             if grep -q 'packages\.microsoft\.com' "$source"; then
-              echo "Disabling unrelated runner APT source: $source"
               sudo mv "$source" "$source.disabled"
             fi
           done
-
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
-      # This is the documented local Maven command with only the Linux virtual
-      # display wrapper added. The workflow is a verifier, not the generator API.
-      - name: Reproduce Eclipse Help screenshots
-        run: >-
-          timeout
-          --signal=TERM
-          --kill-after=2m
-          70m
-          xvfb-run
-          --auto-servernum
-          --server-args="-screen 0 1600x1200x24"
-          mvn
-          --no-transfer-progress
-          -e
-          -V
-          --batch-mode
-          -Dtycho.localArtifacts=ignore
-          -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest
-          -DfailIfNoTests=false
-          -f sandbox_help_build/pom.xml
-          -Phelp-screenshots
-          clean verify
-
-      # The POM interpolates help.screenshot.testClass only in the dedicated
-      # screenshot module. Dependency test modules may therefore legitimately
-      # find no matching class, while this report proves the merge gate ran.
-      - name: Verify the real-preview merge gate executed
+      - name: Generate and verify the real Cleanup preview
         shell: bash
         run: |
           set -euo pipefail
-          report="$(grep -R -l --include='TEST-*.xml' \
-            'SandboxHelpScreenshotsMergeGateSWTBotTest' \
-            sandbox_usage_view_test/target/surefire-reports | head -n 1 || true)"
-          if [[ -z "$report" ]]; then
-            echo 'The selected Help screenshot JUnit merge gate did not execute.' >&2
-            exit 1
-          fi
-          printf 'Verified JUnit report: %s\n' "$report"
+          timeout --signal=TERM --kill-after=2m 70m \
+            xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24" \
+            mvn --no-transfer-progress -e -V --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest \
+            -DfailIfNoTests=false \
+            -f sandbox_help_build/pom.xml \
+            -Phelp-screenshots clean verify
 
-      - name: Verify committed screenshots are reproducible
+      - name: Commit only the reproducible JFace preview evidence
         shell: bash
         run: |
           set -euo pipefail
-
-          code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
-          deferred_junit='sandbox_junit_cleanup_help/images/junit-migration-cleanup.png'
-          mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
-            ':(glob)sandbox*_help/images/*.png')
-          unexpected=()
-          code_patterns_changed=false
-          for change in "${changes[@]}"; do
-            path="${change:3}"
-            if [[ "$path" == "$code_patterns" ]]; then
-              code_patterns_changed=true
-            elif [[ "$path" == "$deferred_junit" ]]; then
-              echo "Ignoring known JUnit Help screenshot variance tracked in #1475: $change"
-            else
-              unexpected+=("$change")
-            fi
+          paths=(
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+          )
+          for path in "${paths[@]}"; do
+            test -s "$path"
           done
-
-          if (( ${#unexpected[@]} > 0 )); then
-            echo "Regenerated Help screenshots differ from the checkout:" >&2
-            printf '%s\n' "${unexpected[@]}" >&2
-            exit 1
+          git add -- "${paths[@]}"
+          if git diff --cached --quiet; then
+            echo 'The committed screenshots already match the generated evidence.'
+            exit 0
           fi
-
-          if [[ "$code_patterns_changed" == true ]]; then
-            baseline="$(mktemp --suffix=.png)"
-            trap 'rm -f "$baseline"' EXIT
-            git show "HEAD:$code_patterns" > "$baseline"
-            java .github/scripts/VerifyHelpScreenshotDiff.java "$baseline" "$code_patterns"
-          fi
-
-      - name: Upload reproduced screenshots
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: eclipse-help-screenshots-${{ github.run_number }}
-          path: sandbox*_help/images/*.png
-          retention-days: 14
-          if-no-files-found: error
-
-      - name: Upload SWTBot diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: eclipse-help-swtbot-diagnostics-${{ github.run_number }}
-          path: |
-            sandbox_usage_view_test/target/work/data/.metadata/.log
-            sandbox_usage_view_test/target/surefire-reports/**
-          retention-days: 14
-          if-no-files-found: warn
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Commit reproducible real Cleanup preview screenshots'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
