@@ -65,8 +65,8 @@ public class PlatformStatusCleanupRegressionTest {
 						void method(Throwable failure) {
 							IStatus fromConstant = Status.error("constant");
 							IStatus fromClass = Status.warning("class", failure);
-							Status concreteWarning = Status.warning("warning", failure);
-							Status concreteWarningNull = Status.warning("warning null", null);
+							Status concreteWarning = new Status(IStatus.WARNING, PLUGIN_ID, "warning", failure);
+							Status concreteWarningNull = new Status(IStatus.WARNING, PLUGIN_ID, "warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, "concrete", null);
 							IStatus delegated = new Status(IStatus.ERROR, "other.bundle", "delegated", null);
 							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), "getter", null);
