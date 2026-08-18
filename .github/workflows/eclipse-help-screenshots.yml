@@ -130,6 +130,8 @@ jobs:
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
 
+      # Intentional baseline changes must be copied from a completed verifier
+      # artifact; the pull-request gate itself always remains read-only.
       - name: Verify committed screenshots are reproducible
         shell: bash
         run: |
