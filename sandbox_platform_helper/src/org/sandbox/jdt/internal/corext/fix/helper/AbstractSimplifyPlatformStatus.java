@@ -169,7 +169,9 @@ public abstract class AbstractSimplifyPlatformStatus {
 							&& !Throwable.class.getName().equals(parameters[1].getErasure().getQualifiedName())) {
 				continue;
 			}
-			if ((targetType != null && method.getReturnType().isAssignmentCompatible(targetType))
+			ITypeBinding returnType= method.getReturnType();
+			if (returnType.getErasure().isEqualTo(statusType.getErasure())
+					|| targetType != null && returnType.isAssignmentCompatible(targetType)
 					|| targetType == null && isExpressionStatement(visited)) {
 				return true;
 			}
