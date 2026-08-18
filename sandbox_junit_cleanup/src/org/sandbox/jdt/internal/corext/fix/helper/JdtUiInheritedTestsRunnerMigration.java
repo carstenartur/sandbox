@@ -159,7 +159,8 @@ public final class JdtUiInheritedTestsRunnerMigration {
 		while (current != null && !(current instanceof TypeDeclaration)) {
 			current= current.getParent();
 		}
-		return assess(current instanceof TypeDeclaration type ? type : null, runnerQualifiedName);
+		TypeDeclaration type= current == null ? null : (TypeDeclaration) current;
+		return assess(type, runnerQualifiedName);
 	}
 
 	/** Returns whether the exact JDT UI runner contract can be migrated safely. */
