@@ -170,7 +170,7 @@ public abstract class AbstractSimplifyPlatformStatus {
 				continue;
 			}
 			ITypeBinding returnType= method.getReturnType();
-			if (returnType.getErasure().isEqualTo(statusType.getErasure())
+			if (Status.class.getName().equals(returnType.getErasure().getQualifiedName())
 					|| targetType != null && returnType.isAssignmentCompatible(targetType)
 					|| targetType == null && isExpressionStatement(visited)) {
 				return true;
