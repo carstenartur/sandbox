@@ -1,0 +1,66 @@
+name: Refresh Platform Status screenshot baseline (one-time)
+
+on:
+  push:
+    branches:
+      - fix/restore-eclipse-help-screenshot-gate
+    paths:
+      - .github/workflows/refresh-platform-status-screenshot.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-platform-status-screenshot-baseline
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.repository == 'carstenartur/sandbox' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the exact pull-request branch
+        uses: actions/checkout@v7
+        with:
+          ref: fix/restore-eclipse-help-screenshot-gate
+          fetch-depth: 0
+
+      - name: Download the verified screenshot artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: eclipse-help-screenshots-542
+          path: generated
+          github-token: ${{ github.token }}
+          repository: carstenartur/sandbox
+          run-id: 32185083546
+
+      - name: Commit only the verified Platform Status baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='generated/sandbox_platform_helper_help/images/platform-status-cleanup.png'
+          target='sandbox_platform_helper_help/images/platform-status-cleanup.png'
+          workflow='.github/workflows/refresh-platform-status-screenshot.yml'
+
+          test -f "$source"
+          printf '%s  %s\n' \
+            'de0e168ad31aa34d40702d0fff2a7c2f2268e8f8423ab501a99346ac3bb6092d' \
+            "$source" | sha256sum --check --strict
+
+          cp "$source" "$target"
+          rm "$workflow"
+
+          git add -- "$target" "$workflow"
+          changed="$(git diff --cached --name-only)"
+          expected="$(printf '%s\n%s\n' "$workflow" "$target" | sort)"
+          actual="$(printf '%s\n' "$changed" | sort)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo 'Unexpected staged paths:' >&2
+            printf '%s\n' "$changed" >&2
+            exit 1
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Refresh Platform Status Help screenshot baseline'
+          git push origin HEAD:fix/restore-eclipse-help-screenshot-gate
