@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5a52ed64628caef7b74396deb7b25a2192cd96ad2e320637ddfc53e28cfae59e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: simplify.single.string.array.to.varargs\u003e\n\u003c!description: Replace single-element String array with its element when passed to a varargs method.\u003e\n\u003c!severity: HINT\u003e\nnew java.lang.String[] { $arg } :: isPassedToMethod() \u0026\u0026 instanceof($arg, \"java.lang.String\")\n\u003d\u003e $arg\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.FileDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void configureFilters(Shell shell) {\n        FileDialog fileDialog \u003d new FileDialog(shell, SWT.SAVE | SWT.SHEET);\n        fileDialog.setFilterExtensions(new String[] { \"*.csv\" });\n        fileDialog.setFilterNames(new String[] { \"CSV Files\" });\n    }\n\n    public void anotherMethod(String someFilter) {\n        // This case should also match, with a variable instead of a literal\n        configureFilters(new Shell());\n        new FileDialog(new Shell()).setFilterExtensions(new String[] { someFilter });\n    }\n}\n",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.FileDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void configureFilters(Shell shell) {\n        FileDialog fileDialog \u003d new FileDialog(shell, SWT.SAVE | SWT.SHEET);\n        fileDialog.setFilterExtensions(\"*.csv\");\n        fileDialog.setFilterNames(\"CSV Files\");\n    }\n\n    public void anotherMethod(String someFilter) {\n        // This case should also match, with a variable instead of a literal\n        configureFilters(new Shell());\n        new FileDialog(new Shell()).setFilterExtensions(someFilter);\n    }\n}\n",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.FileDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class NegativeTestClass {\n    // Should NOT match (multi-element array)\n    public void multiElementArray(Shell shell) {\n        FileDialog dialog \u003d new FileDialog(shell, SWT.SAVE);\n        dialog.setFilterExtensions(new String[] { \"*.epf\", \"*.*\" });\n    }\n\n    // Should NOT match (array not passed as an argument to a method)\n    public String[] arrayNotPassed() {\n        String[] filters \u003d new String[] { \"filter.txt\" };\n        return filters;\n    }\n\n    // Should NOT match (array element is not a String)\n    public void nonStringArrayArg(Object obj) {\n        myMethod(new Integer[] { 123 });\n    }\n\n    public void myMethod(Integer... args) { /* ... */ }\n}\n",
+  "targetHintFile": "common.sandbox-hint",
+  "sourceCommit": "fae0fe8da2b0005a82e1c5a23d1764ff1b050a3d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.ui",
+  "category": "Code Simplification",
+  "summary": "Simplifies passing a single-element String array to a varargs method by replacing the array creation with its sole element, improving readability and leveraging Java 5+ varargs.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-18T04:26:44.171147903Z",
+  "ruleFingerprint": "sha256:909e1ef68aab138ecb4e856bfe802617685383a2841375549d985b102d3230fc",
+  "behaviorFingerprint": "sha256:5d766bc8e3a61fc13b279e01a78f7d61232cf14357293072e2fa625e7b919220",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-18T04:26:47.492414887Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
