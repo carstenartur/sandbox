@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "4f771f0b79fc7193e72bc1309340ed9ea39eca16",
-      "lastProcessedDate": "2026-07-20T03:16:52.746236842Z",
-      "totalProcessed": 9997,
+      "lastProcessedCommit": "3b7d70e8f9596d238f32f79c2481303a5cc11bb9",
+      "lastProcessedDate": "2026-08-18T04:26:42.127818179Z",
+      "totalProcessed": 10109,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -165,7 +165,10 @@
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
-      "categoryHitCounts": {},
+      "categoryHitCounts": {
+        "Resource Management": 1,
+        "Code Simplification": 1
+      },
       "exhaustedCategories": []
     },
     "https://github.com/carstenartur/sandbox": {
@@ -1192,9 +1195,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "7cb54eac474a671709c83f20aec46d4ab0c77921",
-      "lastProcessedDate": "2026-08-17T02:38:53.486851886Z",
-      "totalProcessed": 4079,
+      "lastProcessedDate": "2026-08-18T04:23:28.489159583Z",
+      "totalProcessed": 4117,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3010,9 +3012,10 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 1,
+      "currentEpoch": 2,
       "completedEpochs": [
-        "2020-01-01 to 2026-01-01"
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01"
       ],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
@@ -3259,5 +3262,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26738
+  "globalTotalProcessed": 26888
 }
