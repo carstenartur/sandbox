@@ -1,0 +1,90 @@
+name: One-time PR 1495 screenshot capture
+
+on:
+  push:
+    branches:
+      - qa/independent-cleanup-preview-gate
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-pr-1495-screenshot-capture
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=false
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    steps:
+      - name: Checkout capture branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
+
+      - name: Install Eclipse desktop dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if grep -q 'packages\.microsoft\.com' "$source"; then
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Generate and verify the real Cleanup preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=2m 70m \
+            xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24" \
+            mvn --no-transfer-progress -e -V --batch-mode \
+            -Dtycho.localArtifacts=ignore \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest \
+            -DfailIfNoTests=false \
+            -f sandbox_help_build/pom.xml \
+            -Phelp-screenshots clean verify
+
+      - name: Commit only the reproducible JFace preview evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths=(
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+          )
+          for path in "${paths[@]}"; do
+            test -s "$path"
+          done
+          git add -- "${paths[@]}"
+          if git diff --cached --quiet; then
+            echo 'The committed screenshots already match the generated evidence.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Commit reproducible real Cleanup preview screenshots'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
