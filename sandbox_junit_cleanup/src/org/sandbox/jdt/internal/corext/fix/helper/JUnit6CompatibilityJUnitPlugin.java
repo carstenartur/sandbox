@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ANNOTATION_TEST_METHOD_ORDER;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_METHOD_ORDERER;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER;
 
@@ -21,6 +20,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -80,17 +80,18 @@ public final class JUnit6CompatibilityJUnitPlugin
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		Annotation oldAnnotation= junitHolder.getAnnotation();
 		SingleMemberAnnotation replacement= ast.newSingleMemberAnnotation();
-		replacement.setTypeName(ast.newSimpleName(ANNOTATION_TEST_METHOD_ORDER));
+		replacement.setTypeName(ast.newName(
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER)));
 
+		Name methodOrderer= ast.newName(
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER));
 		TypeLiteral typeLiteral= ast.newTypeLiteral();
 		typeLiteral.setType(ast.newSimpleType(ast.newQualifiedName(
-				ast.newSimpleName("MethodOrderer"), //$NON-NLS-1$
+				methodOrderer,
 				ast.newSimpleName("MethodName")))); //$NON-NLS-1$
 		replacement.setValue(typeLiteral);
 
 		rewriter.replace(oldAnnotation, replacement, group);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER);
-		importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER);
 		importRewriter.removeImport(JUPITER_ALPHANUMERIC);
 	}
 
