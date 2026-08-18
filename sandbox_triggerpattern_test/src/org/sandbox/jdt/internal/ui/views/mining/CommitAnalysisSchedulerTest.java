@@ -189,7 +189,8 @@ public class CommitAnalysisSchedulerTest {
 		await(() -> !scheduler.isRunning());
 
 		assertEquals(AnalysisStatus.FAILED, entry.getStatus());
-		assertEquals("synthetic provider failure", entry.getFailureMessage()); //$NON-NLS-1$
+		assertEquals("Commit analysis failed (IllegalStateException)", entry.getFailureMessage()); //$NON-NLS-1$
+		assertFalse(entry.getFailureMessage().contains("synthetic provider failure")); //$NON-NLS-1$
 		assertEquals(1, scheduler.getProgress().completed());
 	}
 

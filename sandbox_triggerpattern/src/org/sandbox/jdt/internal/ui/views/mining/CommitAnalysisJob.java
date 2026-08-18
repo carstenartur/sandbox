@@ -92,16 +92,20 @@ public class CommitAnalysisJob extends Job {
 				entry.setStatus(AnalysisStatus.PENDING);
 				return Status.CANCEL_STATUS;
 			}
-			String message = e.getMessage();
-			entry.setFailureMessage(message == null || message.isBlank()
-					? e.getClass().getSimpleName()
-					: message);
+			entry.setFailureMessage(safeFailureMessage(e));
 			return Status.error("Commit analysis failed", e); //$NON-NLS-1$
 		} finally {
 			if (onComplete != null) {
 				onComplete.run();
 			}
 		}
+	}
+
+	static String safeFailureMessage(Exception failure) {
+		String type = failure.getClass().getSimpleName();
+		return type.isBlank()
+				? "Commit analysis failed" //$NON-NLS-1$
+				: "Commit analysis failed (" + type + ')'; //$NON-NLS-1$
 	}
 
 	private void analyzeWithAi(AiRuleInferenceEngine engine, List<FileDiff> diffs,
