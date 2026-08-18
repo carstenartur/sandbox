@@ -35,12 +35,14 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -66,6 +68,7 @@ public abstract class AbstractSimplifyPlatformStatus {
 
 	private static final String BUNDLE_SYMBOLIC_NAME= "Bundle-SymbolicName"; //$NON-NLS-1$
 	private static final String FRAGMENT_HOST= "Fragment-Host"; //$NON-NLS-1$
+	private static final String INFO_FACTORY_METHOD= "info"; //$NON-NLS-1$
 
 	private final int expectedSeverity;
 	private final String factoryMethodName;
@@ -149,11 +152,14 @@ public abstract class AbstractSimplifyPlatformStatus {
 	}
 
 	private boolean hasCompatibleFactory(ClassInstanceCreation visited, int argumentCount) {
+		if (argumentCount == 2 && INFO_FACTORY_METHOD.equals(factoryMethodName)) {
+			return false;
+		}
 		ITypeBinding statusType= visited.resolveTypeBinding();
 		if (statusType == null) {
 			return false;
 		}
-		ITypeBinding targetType= ASTNodes.getTargetType(visited);
+		ITypeBinding targetType= targetType(visited);
 		for (IMethodBinding method : statusType.getErasure().getDeclaredMethods()) {
 			ITypeBinding[] parameters= method.getParameterTypes();
 			if (!factoryMethodName.equals(method.getName()) || !Modifier.isStatic(method.getModifiers())
@@ -163,12 +169,28 @@ public abstract class AbstractSimplifyPlatformStatus {
 							&& !Throwable.class.getName().equals(parameters[1].getErasure().getQualifiedName())) {
 				continue;
 			}
-			if (targetType != null && method.getReturnType().isAssignmentCompatible(targetType)
+			if ((targetType != null && method.getReturnType().isAssignmentCompatible(targetType))
 					|| targetType == null && isExpressionStatement(visited)) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private static ITypeBinding targetType(Expression expression) {
+		ASTNode current= expression;
+		ASTNode parent= current.getParent();
+		while (parent instanceof ParenthesizedExpression) {
+			current= parent;
+			parent= parent.getParent();
+		}
+		if (parent instanceof VariableDeclarationFragment fragment && fragment.getInitializer() == current) {
+			IVariableBinding variableBinding= fragment.resolveBinding();
+			if (variableBinding != null) {
+				return variableBinding.getType();
+			}
+		}
+		return ASTNodes.getTargetType((Expression) current);
 	}
 
 	private static boolean hasEquivalentIdentity(Expression identity, ClassInstanceCreation visited,
