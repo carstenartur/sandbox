@@ -1,194 +1,121 @@
-# Platform Helper Plugin - TODO
+# Platform Helper Plugin — TODO
 
-> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#platform_helper) | [Architecture](ARCHITECTURE.md)
+> **Navigation**: [Main README](../README.md) | [Plugin README](README.md) | [Architecture](ARCHITECTURE.md)
 
-## Status Summary
+## Current state
 
-**Current State**: Stable implementation for Status and MultiStatus simplification
+The native cleanup now implements a two-path semantics-preserving policy:
 
-### Completed
-- ✅ Status factory method transformation (Java 11+)
-- ✅ Java version detection
-- ✅ Test coverage for Status transformations
-- ✅ MultiStatus code normalization (to IStatus.OK)
+- use `Status.info`, `Status.warning`, or `Status.error` when bundle identity,
+  factory overload, throwable representation, and target type are all proven
+  equivalent;
+- otherwise remove only a compile-time `IStatus.OK` code and retain the explicit
+  String or Class identity in the four-argument constructor;
+- normalize `MultiStatus` only when its code is provably zero;
+- leave nonzero, unresolved, and runtime-computed application codes unchanged.
 
-### In Progress
-- None currently
+The bundled TriggerPattern rules remain constructor-only because they do not
+have the project metadata and target-type proof available to the native cleanup.
 
-### Pending
-- [ ] Plugin ID preservation (awaiting Eclipse Platform API support)
-- [ ] Advanced MultiStatus pattern detection (detect .add() calls)
-- [ ] Custom Status subclass handling
-- [ ] Additional Platform API simplifications
+## Completed semantic work
 
-## Priority Tasks
+- [x] Resolve constructed `Status` and `MultiStatus` types exactly.
+- [x] Compare severity and status codes by compile-time value.
+- [x] Recognize `IStatus.OK`, numeric zero, and named zero constants.
+- [x] Preserve delegated, dynamic, mismatching, and unresolved identities.
+- [x] Derive the runtime bundle identity from `Bundle-SymbolicName` or, for
+  fragments, `Fragment-Host`.
+- [x] Use factories for matching compile-time String identities.
+- [x] Use factories for the exact enclosing class literal.
+- [x] Resolve actual factory overloads from the project's build path.
+- [x] Check factory return-type compatibility with the source target.
+- [x] Retain INFO constructors when a non-null throwable has no equivalent
+  factory overload.
+- [x] Retain method-call identities because removing their evaluation is not
+  proven equivalent.
+- [x] Prevent TriggerPattern libraries from reintroducing unsafe factory rules.
+- [x] Correct README, architecture, Help, feature metadata, and cheat sheet to
+  describe both the factory path and the preserving fallback.
 
-### 1. Advanced MultiStatus Pattern Detection
-**Priority**: Low  
-**Effort**: 8-10 hours
+## Required before closing #1498
 
-Detect and optimize MultiStatus usage with .add() calls:
-```java
-// Detect this pattern
-MultiStatus status = new MultiStatus(pluginId, code, message, null);
-status.add(new Status(IStatus.ERROR, pluginId, "error1", null));
-status.add(new Status(IStatus.WARNING, pluginId, "warning1", null));
+- [ ] Make the full Maven/Tycho matrix green for the stacked implementation and
+  documentation branches.
+- [ ] Add exact-pin inventory assertions for the selected JDT UI 4.40 corpus.
+- [ ] Confirm that `ProposalSorterHandle.java` retains
+  `JavaPlugin.getPluginId()` while losing only the redundant OK code.
+- [ ] Confirm that manifest-matching compile-time constants use factories in a
+  representative real bundle.
+- [ ] Confirm that `JarBuilder.java` remains unchanged because it uses
+  `IJavaStatusConstants.INTERNAL_ERROR`.
+- [ ] Confirm that numeric zero in `JavaSearchResult.java` is recognized by
+  value.
+- [ ] Verify real LTK preview, Apply, and byte-exact Undo.
+- [ ] Regenerate Help screenshots only through the real SWTBot workbench
+  scenario after the final UI and preview text are stable.
 
-// Suggest optimization (future enhancement)
-```
+## Follow-up design work
 
-**Benefits**:
-- More comprehensive MultiStatus handling
-- Better pattern recognition
-- Potential for suggesting alternative approaches
+### Machine-readable applicability reasons
 
-### 2. Expand to Other Platform APIs
-**Priority**: Medium  
-**Effort**: 10-12 hours
+Expose stable classifications shared by cleanup, headless inventory, and
+scenario provenance, for example:
 
-Simplify additional Eclipse Platform APIs:
-- `CoreException` creation
-- `OperationCanceledException` patterns
-- `IProgressMonitor` boilerplate
-- `IAdaptable` implementations
+- `NON_OK_STATUS_CODE`;
+- `UNRESOLVED_STATUS_CODE`;
+- `UNSUPPORTED_SEVERITY`;
+- `UNRESOLVED_STATUS_TYPE`;
+- `BUNDLE_METADATA_UNAVAILABLE`;
+- `FACTORY_IDENTITY_NOT_PROVEN`;
+- `FACTORY_IDENTITY_EVALUATION_NOT_PROVEN`;
+- `FACTORY_OVERLOAD_UNAVAILABLE`;
+- `FACTORY_RETURN_TYPE_INCOMPATIBLE`;
+- `ALREADY_SIMPLIFIED`.
 
-**Benefits**:
-- More comprehensive Platform API cleanup
-- Consistent modernization across plugin code
+### Broader identity proof
 
-## Known Issues
+Possible extensions must preserve both value and evaluation semantics:
 
-### Plugin ID Preservation Not Applicable
-**Status**: Eclipse Platform API Limitation  
-**Priority**: N/A
+- additional bundle metadata formats generated by bnd or Maven tooling;
+- a Class literal for another source type only when source ownership proves it
+  belongs to the same bundle;
+- generated plug-in-id accessors only when purity, class initialization, and
+  exception behavior are all proven equivalent.
 
-The Eclipse Platform's Status factory methods (error(), warning(), info()) do not support plugin ID parameters. They only accept (message, exception) arguments. Therefore, the plugin ID preservation option has been deferred until Eclipse Platform adds this capability.
+Do not add a preference that merely asks the user to accept uncertainty.
 
-Current behavior: Plugin ID from `new Status(IStatus.ERROR, "plugin.id", IStatus.OK, "msg", e)` is always dropped when transforming to `Status.error("msg", e)`.
+### `MultiStatus` value
 
-### MultiStatus Factory Methods
-**Status**: Not Available  
-**Priority**: N/A
+The zero-to-`IStatus.OK` rewrite is readability-only. Re-evaluate its practical
+value after real-corpus inventory, but never infer that arbitrary application
+codes are irrelevant merely because child statuses determine aggregate
+severity.
 
-Eclipse Platform's MultiStatus class does not have factory methods like `Status.error()` or `Status.warning()`. The current implementation normalizes the status code to `IStatus.OK`, which is appropriate since MultiStatus overall status is determined by its child statuses.
+### Additional Platform APIs
 
-## Configuration Notes
+Treat each as a separate cleanup with its own semantic contract:
 
-### Default Behavior
-- **Status cleanup**: Enabled via preferences, disabled by default
-- **MultiStatus normalization**: Included when Status cleanup is enabled
-- **Plugin ID**: Always omitted in Status factory methods (API limitation)
+- `CoreException` construction and propagation;
+- `OperationCanceledException` patterns;
+- `SubMonitor` and progress reporting;
+- `IAdaptable` and adapter-manager patterns;
+- logging API modernization that preserves status identity and codes.
 
-### Preferences Location
-1. **Preferences > Java > Code Style > Clean Up**
-2. Select or create a cleanup profile
-3. Navigate to **Platform Status** section
-4. Options:
-   - **Simplify Platform Status**: Enable Status/MultiStatus cleanups
+## Testing layers
 
-### Removed Options
-- ~~**Preserve plugin ID in Status factory methods**~~: Removed because Eclipse Platform Status factory methods don't support plugin ID parameters
+1. focused constructor/factory and rejection tests;
+2. bundled hint behavior and safety tests;
+3. target-platform compilation and Tycho tests;
+4. real Eclipse LTK preview, Apply, and Undo;
+5. pinned upstream inventory and project tests;
+6. reproducible Help screenshots with provenance.
 
-## Future Enhancements
-
-### Eclipse Logging Integration
-**Priority**: Low  
-**Effort**: 8-10 hours
-
-Integrate with Eclipse's logging framework:
-- Transform Status creation + logging calls
-- Use modern logging APIs
-- Simplify error reporting patterns
-
-### Status Utility Methods
-**Priority**: Low  
-**Effort**: 6-8 hours
-
-Add more Status-related simplifications:
-- Status severity checking
-- Status merging and combining
-- Status conversion utilities
-
-### Platform Pattern Library
-**Priority**: Medium  
-**Effort**: 12-15 hours
-
-Expand beyond Status to common Platform patterns:
-- Extension point handling
-- Preference store usage
-- Resource management
-- Job API patterns
-
-## Testing Strategy
-
-### Current Coverage
-Good test coverage for Status factory transformations in `sandbox_platform_helper_test`.
-
-### Future Testing
-- Add tests for MultiStatus support
-- Add tests for plugin ID preservation
-- Performance tests for large codebases
-- Integration tests with real Eclipse plugins
-
-## Eclipse Contribution
-
-### Contribution Potential
-Platform API cleanups could benefit Eclipse plugin developers. Consider:
-- Proposing as Eclipse Platform enhancement
-- Integration with Eclipse JDT cleanups
-- Documentation for Eclipse developers
-
-### Prerequisites
-- [ ] Expand beyond Status to cover more Platform APIs
-- [ ] Comprehensive testing with real Eclipse plugins
-- [ ] User documentation and examples
-- [ ] Community feedback on transformation approach
-
-### Porting Checklist
-- [ ] Replace `org.sandbox` with `org.eclipse` in package names
-- [ ] Move classes to appropriate Eclipse module
-- [ ] Register cleanup in Eclipse's extension points
-- [ ] Submit to Eclipse Gerrit for review
-
-## TriggerPattern DSL Integration
-
-### Status: ✅ Hint file created
-
-A `platform-status.sandbox-hint` file has been created with DSL rules covering
-the core Status factory method transformations:
-
-| Pattern | DSL Coverage | Notes |
-|---------|-------------|-------|
-| 5-arg Status → factory method | ✅ Covered | `new Status(severity, pluginId, IStatus.OK, msg, ex)` → `Status.error(msg, ex)` |
-| 4-arg Status → factory method | ✅ Covered | `new Status(severity, pluginId, msg, ex)` → `Status.error(msg, ex)` |
-| 3-arg Status → factory method | ✅ Covered | `new Status(severity, pluginId, msg)` → `Status.error(msg)` |
-| MultiStatus code normalization | ❌ Native only | Requires parameter replacement within same constructor (not method substitution) |
-| Null literal handling | ✅ Covered | Guards distinguish null vs non-null exception arguments |
-
-### Future Work
-- [ ] Integrate DSL-first architecture (DSL runs first, native handles remaining edge cases)
-- [ ] Verify DSL rules produce identical output to native Java implementation for all test cases
-- [ ] Once verified, consider removing native Java code for patterns covered by DSL
-
-## Technical Debt
-
-None currently identified. The codebase is focused and well-tested.
-
-## Performance Considerations
-
-### Current Performance
-Efficient single-pass AST traversal. No performance issues identified.
-
-### Optimization Opportunities
-- Cache type bindings for Status class
-- Early exit if file contains no Status usage
-- Batch processing for multiple files
+A screenshot is not evidence of semantic correctness unless the same detector
+has first classified the candidate and the generated source compiles.
 
 ## References
 
-- [Eclipse Platform Status API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/Status.html)
-- [Eclipse Platform Error Handling](https://wiki.eclipse.org/FAQ_How_do_I_use_IStatus_to_handle_problems%3F)
-
-## Contact
-
-For questions about Platform Helper cleanup or suggestions for improvements, please open an issue in the repository.
+- [Status API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/Status.html)
+- [MultiStatus API](https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/reference/api/org/eclipse/core/runtime/MultiStatus.html)
+- [Semantic preservation issue](https://github.com/carstenartur/sandbox/issues/1498)
+- [Pinned workspace and screenshot scenarios](https://github.com/carstenartur/sandbox/issues/1497)
