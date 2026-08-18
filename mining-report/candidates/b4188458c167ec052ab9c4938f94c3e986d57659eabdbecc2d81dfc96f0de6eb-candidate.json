@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b4188458c167ec052ab9c4938f94c3e986d57659eabdbecc2d81dfc96f0de6eb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.resource.ImageDescriptor.getMissingImageDescriptor().createImage()\n\u003d\u003e\norg.eclipse.ui.ISharedImages.get().getImage(org.eclipse.ui.ISharedImages.IMG_DEF_MISSING)\n;;",
+  "beforeExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.ui.ISharedImages;\n\n// Minimal placeholder for org.eclipse.swt.graphics.Image\nclass Image {\n    public void dispose() {}\n}\n\n// Minimal placeholder for org.eclipse.jface.resource.ImageDescriptor\nclass ImageDescriptor {\n    public static ImageDescriptor getMissingImageDescriptor() {\n        return new ImageDescriptor();\n    }\n    public Image createImage() {\n        return new Image();\n    }\n}\n\n// Minimal placeholder for org.eclipse.ui.ISharedImages\ninterface ISharedImages {\n    String IMG_DEF_MISSING \u003d \"IMG_DEF_MISSING\";\n    static ISharedImages get() { return new ISharedImages() {}; }\n    Image getImage(String key);\n}\n\npublic class BeforeExample {\n    public Image getMissingImage() {\n        // This creates an image that needs manual disposal.\n        return ImageDescriptor.getMissingImageDescriptor().createImage();\n    }\n\n    public void processImage() {\n        Image img \u003d ImageDescriptor.getMissingImageDescriptor().createImage();\n        // ... use img ...\n        // Missing img.dispose() here would be a resource leak.\n    }\n}",
+  "afterExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.ui.ISharedImages;\n\n// Minimal placeholder for org.eclipse.swt.graphics.Image\nclass Image {\n    public void dispose() {}\n}\n\n// Minimal placeholder for org.eclipse.jface.resource.ImageDescriptor\nclass ImageDescriptor {\n    public static ImageDescriptor getMissingImageDescriptor() {\n        return new ImageDescriptor();\n    }\n    public Image createImage() {\n        return new Image();\n    }\n}\n\n// Minimal placeholder for org.eclipse.ui.ISharedImages\ninterface ISharedImages {\n    String IMG_DEF_MISSING \u003d \"IMG_DEF_MISSING\";\n    static ISharedImages get() { return new ISharedImages() {}; }\n    Image getImage(String key);\n}\n\npublic class AfterExample {\n    public Image getMissingImage() {\n        // This retrieves a shared, managed image, no manual disposal needed.\n        return ISharedImages.get().getImage(ISharedImages.IMG_DEF_MISSING);\n    }\n\n    public void processImage() {\n        Image img \u003d ISharedImages.get().getImage(ISharedImages.IMG_DEF_MISSING);\n        // ... use img ...\n        // No img.dispose() is needed as the image is shared and managed by the workbench.\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.graphics.ImageData;\n\n// Minimal placeholder for org.eclipse.swt.graphics.Image\nclass Image {\n    public void dispose() {}\n}\n\n// Minimal placeholder for org.eclipse.jface.resource.ImageDescriptor\nclass ImageDescriptor {\n    public static ImageDescriptor getMissingImageDescriptor() {\n        return new ImageDescriptor();\n    }\n    public Image createImage() {\n        return new Image();\n    }\n    public static ImageDescriptor createFromImageData(ImageData data) {\n        return new ImageDescriptor();\n    }\n}\n\n// Minimal placeholder for org.eclipse.swt.graphics.ImageData\nclass ImageData {\n    public ImageData(int width, int height, int depth, int[] palette) {}\n}\n\n// Minimal placeholder for org.eclipse.ui.ISharedImages\ninterface ISharedImages {\n    String IMG_DEF_MISSING \u003d \"IMG_DEF_MISSING\";\n    static ISharedImages get() { return new ISharedImages() {}; }\n    Image getImage(String key);\n}\n\npublic class NegativeExample {\n    public Image createCustomImage() {\n        // This should not be changed as it uses a specific ImageDescriptor, not the \u0027missing\u0027 one.\n        ImageDescriptor customDescriptor \u003d ImageDescriptor.createFromImageData(new ImageData(16, 16, 1, new int[]{0x00,0x00,0x00}));\n        return customDescriptor.createImage();\n    }\n\n    public Image createAnotherArbitraryImage() {\n        // This should not be changed as it does not match the specific pattern.\n        return new ImageDescriptor().createImage();\n    }\n}",
+  "targetHintFile": "eclipse-resource-management.sandbox-hint",
+  "sourceCommit": "5489911f6283b40b97354ae16ec38be4b3e76234",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.ui",
+  "category": "Resource Management",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-18T04:26:44.133286631Z",
+  "ruleFingerprint": "sha256:471b5a720fc7ee123d232b67636f49623aae2e526d87e2198e761d1aad458091",
+  "behaviorFingerprint": "sha256:9dff7779a238f5aaf58cc6b69726b2358270f3df39b2f79ebe00e9050aa848fd",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
+    "verifiedAt": "2026-08-18T04:26:47.484773032Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
