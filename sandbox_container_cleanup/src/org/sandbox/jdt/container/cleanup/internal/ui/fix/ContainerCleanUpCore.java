@@ -107,7 +107,8 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 			for (ContainerUsageProfile seed : arraySeedDetector.findSeeds(root)) {
 				ContainerUsageProfile profile= arrayUsageAnalyzer.analyze(root, seed);
 				arrayInferrer.infer(profile).ifPresent(recommendation -> {
-					ContainerFlowComponent component= localComponent(unit, profile);
+					ContainerFlowComponent component= localComponent(
+							unit.getHandleIdentifier(), profile);
 					var signaturePlan= signaturePlanner.plan(
 							component,
 							ResolvedContainerFlowSearchPlan.empty(),
@@ -128,7 +129,8 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		if (isEnabled(UNIQUE_SEQUENCE_TO_SET)) {
 			for (ContainerUsageProfile profile : uniqueSequenceAnalyzer.analyze(root)) {
 				uniqueSequenceInferrer.infer(profile).ifPresent(recommendation -> {
-					ContainerFlowComponent component= localComponent(unit, profile);
+					ContainerFlowComponent component= localComponent(
+							unit.getHandleIdentifier(), profile);
 					var signaturePlan= signaturePlanner.plan(
 							component,
 							ResolvedContainerFlowSearchPlan.empty(),
@@ -189,16 +191,16 @@ public final class ContainerCleanUpCore extends AbstractCleanUp {
 		return preview.toString();
 	}
 
-	private static ContainerFlowComponent localComponent(
-			ICompilationUnit unit,
+	static ContainerFlowComponent localComponent(
+			String compilationUnitHandle,
 			ContainerUsageProfile profile) {
 		FlowNode root= new FlowNode(
-				"local:" + profile.identity().stableId(), //$NON-NLS-1$
+				"variable:" + profile.identity().stableId(), //$NON-NLS-1$
 				NodeKind.LOCAL_VARIABLE,
 				profile.identity().bindingKey(),
-				"method:" + unit.getHandleIdentifier(), //$NON-NLS-1$
-				unit.getHandleIdentifier(),
-				"local:" + profile.identity().stableId(), //$NON-NLS-1$
+				"", //$NON-NLS-1$
+				compilationUnitHandle,
+				"", //$NON-NLS-1$
 				-1,
 				true,
 				profile.identity().sourceStart(),
