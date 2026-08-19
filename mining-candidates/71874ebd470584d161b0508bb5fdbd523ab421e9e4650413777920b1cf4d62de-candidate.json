@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "71874ebd470584d161b0508bb5fdbd523ab421e9e4650413777920b1cf4d62de",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: unused.throwable.allocation.to.throw\u003e\n\u003c!description: Transforms an unused throwable object allocation statement into a throw statement. This typically fixes a compiler warning about an unused object allocation where the object is an exception that should have been thrown.\n\u003c!severity: WARNING\u003e\n\u003c!tags: bug-fix, error-prone, problem-fix\u003e\n\nnew $Type($args$); :: subtypeOf($Type, \"java.lang.Throwable\")\n\u003d\u003e\nthrow new $Type($args$);\n;;",
+  "beforeExample": "class MyCustomException extends RuntimeException {\n    public MyCustomException(String message) { super(message); }\n}\n\npublic class TestClass {\n    public void method() {\n        // This statement would trigger a compiler warning about an unused object allocation\n        new MyCustomException(\"An error occurred but was not thrown.\");\n    }\n}",
+  "afterExample": "class MyCustomException extends RuntimeException {\n    public MyCustomException(String message) { super(message); }\n}\n\npublic class TestClass {\n    public void method() {\n        throw new MyCustomException(\"An error occurred but was not thrown.\");\n    }\n}",
+  "negativeExample": "public class TestClass {\n    public void method() {\n        // This is an unused object, but it is not a Throwable, so this rule should not apply.\n        new java.util.ArrayList\u003cString\u003e();\n        \n        // This Throwable is used (thrown), so it\u0027s not an \u0027unused allocation\u0027 problem.\n        throw new java.lang.IllegalArgumentException(\"Argument invalid\");\n    }\n}",
+  "targetHintFile": "problem-fixes.sandbox-hint",
+  "sourceCommit": "80a93fa0b6d37141877c1a96f4c33085228c7a0f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Bug Fix",
+  "summary": "Transforms an unused `new Throwable(...)` statement into `throw new Throwable(...)`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-19T02:38:44.209950584Z",
+  "ruleFingerprint": "sha256:dde3aa9544a70cecf9de76225147e392ea79b67a4c18ec3a14c4e36c5b885c21",
+  "behaviorFingerprint": "sha256:b7b2c2e98e88709078bbaf06d6d7be76d1089e43910cc1bcb30eaab640328152",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-19T02:38:47.882184490Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

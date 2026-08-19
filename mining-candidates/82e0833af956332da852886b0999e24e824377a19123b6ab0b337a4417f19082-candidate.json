@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "82e0833af956332da852886b0999e24e824377a19123b6ab0b337a4417f19082",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$binding.getName() :: instanceof($binding, \"org.eclipse.jdt.core.dom.ITypeBinding\")\n\u003d\u003e org.eclipse.jdt.internal.corext.dom.Bindings.getTypeQualifiedName($binding)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.dom.ITypeBinding;\n\npublic class TestClass {\n    public String getTypeName(ITypeBinding binding) {\n        // Original code:\n        final String name \u003d binding.getName();\n        return name;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.dom.ITypeBinding;\nimport org.eclipse.jdt.internal.corext.dom.Bindings; // Added by cleanup\n\npublic class TestClass {\n    public String getTypeName(ITypeBinding binding) {\n        // Transformed code:\n        final String name \u003d Bindings.getTypeQualifiedName(binding);\n        return name;\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.List;\n\npublic class TestClass {\n    public String getListSize(List\u003c?\u003e list) {\n        // This should NOT match because \u0027list\u0027 is not an ITypeBinding\n        return \"List size: \" + list.size();\n    }\n\n    public String getSimpleName(Object obj) {\n        // This should NOT match because \u0027obj\u0027 is not an ITypeBinding\n        return \"Object name: \" + obj.getClass().getName();\n    }\n}",
+  "targetHintFile": "eclipse-jdt-api.sandbox-hint",
+  "sourceCommit": "cf1accd76024fcb3db433cad2776d461e3474a2b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces ITypeBinding.getName() with Bindings.getTypeQualifiedName() to retrieve the fully qualified name of a type binding, including outer type names. This addresses cases where the simple name is insufficient, as seen in the original bug fix.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-19T02:38:44.129715891Z",
+  "ruleFingerprint": "sha256:1569ce2e0649ee5c42c9939e9853680b80b7c88af70ad96745db7b705589ca84",
+  "behaviorFingerprint": "sha256:924ae248ca8b915ce0152c02bdbfa64ccc7c8b8ad8118630c2350e59d44c236d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-08-19T02:38:47.839541208Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
