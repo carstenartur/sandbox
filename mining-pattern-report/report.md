@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-08-17
+# Refactoring Mining Report — 2026-08-19
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1314 | 74 | 11 |
+| sandbox | 1322 | 75 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -260,6 +260,7 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:182` — `System.arraycopy(bom,0,result,0,bom.length)`
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserverCompatibilityTest.java:93` — `System.arraycopy(prefix,0,result,0,prefix.length)`
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserverTest.java:103` — `System.arraycopy(bom,0,result,0,bom.length)`
+- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java:112` — `System.arraycopy(current,0,updated,0,current.length)`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:396` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
 
 #### Rule: `arrays` → `arrays.clone.review`
@@ -325,6 +326,6 @@
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:350` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
-- `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:92` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
+- `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:179` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 

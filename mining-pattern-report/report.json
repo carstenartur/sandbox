@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 250,
+    "totalMatches": 251,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1314,
-        "matches": 74,
+        "files": 1322,
+        "matches": 75,
         "rules": 11
       }
     }
@@ -1943,6 +1943,14 @@
       "repository": "sandbox",
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
+      "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java",
+      "line": 112,
+      "matchedCode": "System.arraycopy(current,0,updated,0,current.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.arraycopy-full-copy.review",
       "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
       "line": 396,
       "matchedCode": "System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)"
@@ -2063,7 +2071,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java",
-      "line": 92,
+      "line": 89,
       "matchedCode": "computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())"
     },
     {
