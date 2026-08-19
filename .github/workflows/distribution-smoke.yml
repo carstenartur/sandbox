@@ -44,7 +44,7 @@ concurrency:
 
 jobs:
   product-and-update-site:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
@@ -57,12 +57,35 @@ jobs:
           cache: maven
       - name: Use runner Maven
         uses: ./.github/actions/use-runner-maven
-      - name: Install Linux desktop runtime
+      - name: Verify preinstalled Eclipse desktop runtime
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+          set -euo pipefail
+
+          missing=()
+          for executable in xvfb-run Xvfb; do
+            if ! command -v "$executable" >/dev/null 2>&1; then
+              missing+=("executable:$executable")
+            fi
+          done
+
+          packages=(
+            xvfb xauth libgtk-3-0t64 libxext6 libxrender1 libxtst6 libxi6
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+          )
+          for package in "${packages[@]}"; do
+            status="$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)"
+            if [[ "$status" != "install ok installed" ]]; then
+              missing+=("package:$package")
+            fi
+          done
+
+          if ((${#missing[@]})); then
+            echo "Missing Eclipse desktop runtime requirements:" >&2
+            printf '  - %s\n' "${missing[@]}" >&2
+            exit 1
+          fi
+          echo "Eclipse desktop runtime requirements are installed."
       - name: Maven distribution build and verification
         shell: bash
         run: |
