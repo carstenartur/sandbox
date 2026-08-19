@@ -13,6 +13,7 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
+      - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
@@ -28,6 +29,7 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
+      - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
@@ -58,34 +60,7 @@ jobs:
       - name: Use runner Maven
         uses: ./.github/actions/use-runner-maven
       - name: Verify preinstalled Eclipse desktop runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          missing=()
-          for executable in xvfb-run Xvfb; do
-            if ! command -v "$executable" >/dev/null 2>&1; then
-              missing+=("executable:$executable")
-            fi
-          done
-
-          packages=(
-            xvfb xauth libgtk-3-0t64 libxext6 libxrender1 libxtst6 libxi6
-            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
-          )
-          for package in "${packages[@]}"; do
-            status="$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)"
-            if [[ "$status" != "install ok installed" ]]; then
-              missing+=("package:$package")
-            fi
-          done
-
-          if ((${#missing[@]})); then
-            echo "Missing Eclipse desktop runtime requirements:" >&2
-            printf '  - %s\n' "${missing[@]}" >&2
-            exit 1
-          fi
-          echo "Eclipse desktop runtime requirements are installed."
+        uses: ./.github/actions/verify-eclipse-desktop-runtime
       - name: Maven distribution build and verification
         shell: bash
         run: |
