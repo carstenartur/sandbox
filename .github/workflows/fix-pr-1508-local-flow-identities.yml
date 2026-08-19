@@ -1,0 +1,201 @@
+name: Apply PR 1508 local FlowNode identity fix (one-time)
+
+on:
+  push:
+    branches:
+      - agent/container-cleanup-feature
+    paths:
+      - .github/workflows/fix-pr-1508-local-flow-identities.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-pr-1508-local-flow-identities
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: github.repository == 'carstenartur/sandbox' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the exact pull-request branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/container-cleanup-feature
+          fetch-depth: 0
+
+      - name: Apply the reviewed fail-closed identity model
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          core_path = Path(
+              'sandbox_container_cleanup/src/org/sandbox/jdt/container/'
+              'cleanup/internal/ui/fix/ContainerCleanUpCore.java'
+          )
+          workflow_path = Path(
+              '.github/workflows/fix-pr-1508-local-flow-identities.yml'
+          )
+          test_path = Path(
+              'sandbox_container_cleanup_test/src/org/sandbox/jdt/container/'
+              'cleanup/internal/ui/fix/ContainerCleanUpCoreTest.java'
+          )
+
+          text = core_path.read_text(encoding='utf-8')
+
+          old_call = 'ContainerFlowComponent component= localComponent(unit, profile);'
+          new_call = (
+              'ContainerFlowComponent component= localComponent('
+              'unit.getHandleIdentifier(), profile);'
+          )
+          if text.count(old_call) != 2:
+              raise SystemExit('Expected exactly two localComponent call sites')
+          text = text.replace(old_call, new_call)
+
+          old_block = '''\tprivate static ContainerFlowComponent localComponent(
+\t\t\tICompilationUnit unit,
+\t\t\tContainerUsageProfile profile) {
+\t\tFlowNode root= new FlowNode(
+\t\t\t\t"local:" + profile.identity().stableId(), //$NON-NLS-1$
+\t\t\t\tNodeKind.LOCAL_VARIABLE,
+\t\t\t\tprofile.identity().bindingKey(),
+\t\t\t\t"method:" + unit.getHandleIdentifier(), //$NON-NLS-1$
+\t\t\t\tunit.getHandleIdentifier(),
+\t\t\t\t"local:" + profile.identity().stableId(), //$NON-NLS-1$
+\t\t\t\t-1,
+\t\t\t\ttrue,
+\t\t\t\tprofile.identity().sourceStart(),
+\t\t\t\tprofile.identity().sourceLength());
+'''
+          new_block = '''\tstatic ContainerFlowComponent localComponent(
+\t\t\tString compilationUnitHandle,
+\t\t\tContainerUsageProfile profile) {
+\t\tFlowNode root= new FlowNode(
+\t\t\t\t"variable:" + profile.identity().stableId(), //$NON-NLS-1$
+\t\t\t\tNodeKind.LOCAL_VARIABLE,
+\t\t\t\tprofile.identity().bindingKey(),
+\t\t\t\t"", //$NON-NLS-1$
+\t\t\t\tcompilationUnitHandle,
+\t\t\t\t"", //$NON-NLS-1$
+\t\t\t\t-1,
+\t\t\t\ttrue,
+\t\t\t\tprofile.identity().sourceStart(),
+\t\t\t\tprofile.identity().sourceLength());
+'''
+          if text.count(old_block) != 1:
+              raise SystemExit('Expected the original localComponent block exactly once')
+          text = text.replace(old_block, new_block)
+          core_path.write_text(text, encoding='utf-8')
+
+          test_path.parent.mkdir(parents=True, exist_ok=True)
+          test_path.write_text('''/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.cleanup.internal.ui.fix;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.sandbox.jdt.container.api.ContainerFlowComponent;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
+import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.MutationLifecycle;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+
+class ContainerCleanUpCoreTest {
+
+\t@Test
+\tvoid localComponentDoesNotAdvertiseSyntheticJavaModelHandles() {
+\t\tContainerUsageProfile profile= new ContainerUsageProfile(
+\t\t\t\tnew ContainerIdentity("binding-key", "values", 12, 6), //$NON-NLS-1$ //$NON-NLS-2$
+\t\t\t\tContainerShape.ARRAY,
+\t\t\t\tElementDomain.REFERENCE,
+\t\t\t\tAccessProfile.appendOnlyArraySeed(),
+\t\t\t\tOrderRequirement.ENCOUNTER,
+\t\t\t\tUniquenessRequirement.DUPLICATES_ALLOWED,
+\t\t\t\tMutationLifecycle.CONTINUOUSLY_MUTABLE,
+\t\t\t\tNullContract.ALLOWED,
+\t\t\t\tAliasingContract.NO_OBSERVED_ALIAS,
+\t\t\t\tEscapeLevel.LOCAL,
+\t\t\t\tConcurrencyProfile.unknown(),
+\t\t\t\tAnalysisCompleteness.LOCAL_USAGE_COMPLETE,
+\t\t\t\tList.of());
+\t\tString compilationUnitHandle= "=Sandbox/src<test{Sample.java"; //$NON-NLS-1$
+
+\t\tContainerFlowComponent component= ContainerCleanUpCore.localComponent(
+\t\t\t\tcompilationUnitHandle, profile);
+\t\tFlowNode node= component.nodes().get(0);
+
+\t\tassertEquals("variable:binding-key", node.stableId()); //$NON-NLS-1$
+\t\tassertEquals(node.stableId(), component.rootNodeId());
+\t\tassertEquals("binding-key", node.bindingKey()); //$NON-NLS-1$
+\t\tassertEquals("", node.ownerKey()); //$NON-NLS-1$
+\t\tassertEquals(compilationUnitHandle, node.compilationUnitHandle());
+\t\tassertEquals("", node.javaElementHandle()); //$NON-NLS-1$
+\t\tassertFalse(node.hasJavaElementHandle());
+\t\tassertEquals(ClosureStatus.LOCAL_CLOSED, component.closureStatus());
+\t}
+}
+''', encoding='utf-8')
+
+          workflow_path.unlink()
+          PY
+
+      - name: Verify and publish only the reviewed change
+        shell: bash
+        run: |
+          set -euo pipefail
+          core='sandbox_container_cleanup/src/org/sandbox/jdt/container/cleanup/internal/ui/fix/ContainerCleanUpCore.java'
+          test='sandbox_container_cleanup_test/src/org/sandbox/jdt/container/cleanup/internal/ui/fix/ContainerCleanUpCoreTest.java'
+          workflow='.github/workflows/fix-pr-1508-local-flow-identities.yml'
+
+          grep -Fq '"variable:" + profile.identity().stableId()' "$core"
+          grep -Fq 'String compilationUnitHandle,' "$core"
+          if grep -Fq '"method:" + unit.getHandleIdentifier()' "$core"; then
+            echo 'Synthetic method owner key remains.' >&2
+            exit 1
+          fi
+          if grep -Fq '"local:" + profile.identity().stableId()' "$core"; then
+            echo 'Synthetic local Java-element handle remains.' >&2
+            exit 1
+          fi
+          grep -Fq 'assertFalse(node.hasJavaElementHandle())' "$test"
+
+          git diff --check
+          mapfile -t changed < <(git status --porcelain=v1 --untracked-files=all | sed 's/^...//' | sort)
+          mapfile -t expected < <(printf '%s\n%s\n%s\n' "$workflow" "$core" "$test" | sort)
+          if [[ "${changed[*]}" != "${expected[*]}" ]]; then
+            echo 'Unexpected changed paths:' >&2
+            printf '%s\n' "${changed[@]}" >&2
+            exit 1
+          fi
+
+          git add -- "$workflow" "$core" "$test"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Use resolvable identities for local container flow nodes'
+          git push origin HEAD:agent/container-cleanup-feature
