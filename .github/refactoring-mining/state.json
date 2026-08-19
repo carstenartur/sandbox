@@ -1195,8 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedDate": "2026-08-18T04:23:28.489159583Z",
-      "totalProcessed": 4117,
+      "lastProcessedCommit": "c500a24536e05d8ccdab0d5fa0cea77a1077b1fd",
+      "lastProcessedDate": "2026-08-19T02:38:42.816179710Z",
+      "totalProcessed": 4191,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3007,6 +3008,15 @@
           "deferredAt": "2026-08-17T02:38:24.752247426Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ad3795350d7b7042f04a350df22f01fe8339e3db",
+          "message": "support \u0027..\u0027 in path (Bug 281867 comment 12)\n",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-19T02:32:13.388271192Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3083,7 +3093,7 @@
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
         "Concurrency": 4,
-        "Bug Fix": 5,
+        "Bug Fix": 6,
         "New Cleanup": 1,
         "Logical Simplification": 8,
         "UI Bug Fix": 9,
@@ -3161,7 +3171,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 28,
+        "API Modernization": 29,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3218,10 +3228,12 @@
         "Code Modernization": 1,
         "Annotation Addition": 1,
         "String Modernization": 1,
-        "String Manipulation": 1,
+        "String Manipulation": 2,
         "Code Style/Readability": 1,
         "Control Flow Refactoring": 1,
-        "Method Extraction/Call Site Refactoring": 1
+        "Method Extraction/Call Site Refactoring": 1,
+        "Bug Fix / Robustness": 1,
+        "Nullability": 1
       },
       "exhaustedCategories": []
     },
@@ -3262,5 +3274,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26888
+  "globalTotalProcessed": 26962
 }
