@@ -13,6 +13,7 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
+      - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
@@ -28,6 +29,7 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
+      - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
@@ -44,7 +46,7 @@ concurrency:
 
 jobs:
   product-and-update-site:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
@@ -57,12 +59,8 @@ jobs:
           cache: maven
       - name: Use runner Maven
         uses: ./.github/actions/use-runner-maven
-      - name: Install Linux desktop runtime
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
-            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+      - name: Verify preinstalled Eclipse desktop runtime
+        uses: ./.github/actions/verify-eclipse-desktop-runtime
       - name: Maven distribution build and verification
         shell: bash
         run: |

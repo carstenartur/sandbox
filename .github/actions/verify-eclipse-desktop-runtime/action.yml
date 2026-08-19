@@ -1,0 +1,36 @@
+name: Verify Eclipse desktop runtime
+description: Verify the preinstalled Ubuntu desktop runtime required by Eclipse, SWT, and Xvfb-based builds.
+
+runs:
+  using: composite
+  steps:
+    - name: Verify preinstalled Eclipse desktop runtime
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        missing=()
+        for executable in xvfb-run Xvfb; do
+          if ! command -v "$executable" >/dev/null 2>&1; then
+            missing+=("executable:$executable")
+          fi
+        done
+
+        packages=(
+          xvfb xauth libgtk-3-0t64 libxext6 libxrender1 libxtst6 libxi6
+          libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+        )
+        for package in "${packages[@]}"; do
+          status="$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)"
+          if [[ "$status" != "install ok installed" ]]; then
+            missing+=("package:$package")
+          fi
+        done
+
+        if ((${#missing[@]})); then
+          echo "::error title=Missing Eclipse desktop runtime::The runner image is missing required Eclipse desktop components."
+          printf '  - %s\n' "${missing[@]}" >&2
+          exit 1
+        fi
+
+        echo "Eclipse desktop runtime requirements are installed."
