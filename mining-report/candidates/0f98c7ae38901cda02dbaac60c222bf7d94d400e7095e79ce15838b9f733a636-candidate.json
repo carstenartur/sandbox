@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0f98c7ae38901cda02dbaac60c222bf7d94d400e7095e79ce15838b9f733a636",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$partRef instanceof org.eclipse.ui.IEditorReference\n\u003d\u003e\n$partRef instanceof org.eclipse.ui.IEditorReference \u0026\u0026 org.eclipse.jdt.internal.ui.JavaPlugin.getActivePage() !\u003d null \u0026\u0026 org.eclipse.jdt.internal.ui.JavaPlugin.getActivePage().getActivePartReference() \u003d\u003d $partRef\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.IEditorReference;\nimport org.eclipse.ui.IWorkbenchPartReference;\n\npublic class MyClass {\n    public void partInputChanged(IWorkbenchPartReference partRef) {\n        if (partRef instanceof IEditorReference) {\n            System.out.println(\"Editor reference detected.\");\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.IEditorReference;\nimport org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.IWorkbenchPartReference;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class MyClass {\n    public void partInputChanged(IWorkbenchPartReference partRef) {\n        if (partRef instanceof IEditorReference \u0026\u0026 JavaPlugin.getActivePage() !\u003d null \u0026\u0026 JavaPlugin.getActivePage().getActivePartReference() \u003d\u003d partRef) {\n            System.out.println(\"Editor reference detected.\");\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.ui.IEditorReference;\nimport org.eclipse.ui.IWorkbenchPartReference;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class MyClass {\n    public void partInputChanged(IWorkbenchPartReference partRef) {\n        // This should not be matched as it already contains the additional checks\n        if (partRef instanceof IEditorReference \u0026\u0026 JavaPlugin.getActivePage() !\u003d null \u0026\u0026 JavaPlugin.getActivePage().getActivePartReference() \u003d\u003d partRef) {\n            System.out.println(\"Already checked.\");\n        }\n        // This should not be matched as it\u0027s not an IEditorReference check\n        if (partRef \u003d\u003d null) {\n            System.out.println(\"Null partRef.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse-ui-robustness.sandbox-hint",
+  "sourceCommit": "4e8f6d3b4acf4c0607381a9c8f90ae4acab7ecdf",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Bug Fix / Robustness",
+  "summary": "Add null and active part reference checks to an \u0027if\u0027 condition when `partRef` is an `IEditorReference`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-19T02:38:44.167346015Z",
+  "ruleFingerprint": "sha256:592c303c240fdd980c6e3dd4876a07a47fc5231d865c44138e8e65fc0634e1d2",
+  "behaviorFingerprint": "sha256:6e9a2679cd79780964834f928f3959e83cbac9cf21c71e53c94da8eb1e598e13",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-08-19T02:38:47.850341499Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

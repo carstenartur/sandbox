@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6950ca6596275aa405a48e1932880239c5c1a75e089a04198621b93a4c5d2e9d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$buffer.append(\u0027\\r\u0027).append(\u0027\\n\u0027)\n\u003d\u003e\n$buffer.append(java.lang.System.getProperty(\"line.separator\"))\n;;",
+  "beforeExample": "public class MyClass {\n    public void printLines(java.lang.StringBuilder sb, java.lang.String text) {\n        sb.append(\u0027\\r\u0027).append(\u0027\\n\u0027).append(text);\n    }\n    public void printOtherLines(java.lang.StringBuffer sb, java.lang.String text) {\n        sb.append(\u0027\\r\u0027).append(\u0027\\n\u0027).append(text);\n    }\n}",
+  "afterExample": "public class MyClass {\n    public void printLines(java.lang.StringBuilder sb, java.lang.String text) {\n        sb.append(java.lang.System.getProperty(\"line.separator\")).append(text);\n    }\n    public void printOtherLines(java.lang.StringBuffer sb, java.lang.String text) {\n        sb.append(java.lang.System.getProperty(\"line.separator\")).append(text);\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public void printOtherChars(java.lang.StringBuilder sb) {\n        sb.append(\u0027\\r\u0027); // Does not contain both \u0027\\r\u0027 and then \u0027\\n\u0027\n        sb.append(\u0027\\n\u0027); // Does not contain both \u0027\\r\u0027 and then \u0027\\n\u0027\n        sb.append(\u0027X\u0027).append(\u0027Y\u0027); // Different characters\n        sb.append(\"\\n\"); // String literal, not character literal\n    }\n}",
+  "targetHintFile": "strings.sandbox-hint",
+  "sourceCommit": "341cb8d383a6bbcdd557c29767900d29d16bc463",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Manipulation",
+  "summary": "Replace hardcoded Windows-style newline characters appended via a chained call (e.g., `sb.append(\u0027\\r\u0027).append(\u0027\\n\u0027)`) with the platform-agnostic `System.getProperty(\"line.separator\")`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-19T02:38:44.198840259Z",
+  "ruleFingerprint": "sha256:5285bbc281479cc34eec6b6a770fa5de1810e012f6465710619d7d9c3ac602ac",
+  "behaviorFingerprint": "sha256:be010292f1a7ce5455b05af60dd47e82fd57a3f70ff69aab417bdaf27e7ee238",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-19T02:38:47.876262735Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

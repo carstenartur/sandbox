@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0d402ed1dbb215a2929ab04543514fe0297f04220253ddcbfc49230b5554ee27",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "test.EditorUtility.isCompareEditorInput($part.getEditorInput()) :: instanceof($part, \"test.IWorkbenchPart\") \u0026\u0026 isNullable($part)\n\u003d\u003e $part !\u003d null \u0026\u0026 test.EditorUtility.isCompareEditorInput($part.getEditorInput())\n;;",
+  "beforeExample": "package test;\n\n// Dummy dependencies for compilation\ninterface IEditorInput {}\ninterface ITextEditorExtension3 { int SMART_INSERT \u003d 1; int getInsertMode(); }\ninterface IWorkbenchPart { IEditorInput getEditorInput(); Object getAdapter(Class adapter); }\n\nclass EditorUtility {\n    public static boolean isCompareEditorInput(IEditorInput input) { return false; }\n}\n\nclass ConcreteWorkbenchPart implements IWorkbenchPart {\n    public IEditorInput getEditorInput() { return null; }\n    public Object getAdapter(Class adapter) { return null; }\n}\n\npublic class JavaAutoIndentStrategy {\n    public boolean computeSmartMode(IWorkbenchPart part) {\n        if (part instanceof ITextEditorExtension3) {\n            return ((ITextEditorExtension3) part).getInsertMode() \u003d\u003d ITextEditorExtension3.SMART_INSERT;\n        } else if (EditorUtility.isCompareEditorInput(part.getEditorInput())) { // \u003c\u003d SHOULD MATCH\n            ITextEditorExtension3 extension \u003d (ITextEditorExtension3) part.getAdapter(ITextEditorExtension3.class);\n            if (extension !\u003d null)\n                return extension.getInsertMode() \u003d\u003d ITextEditorExtension3.SMART_INSERT;\n        }\n        return false;\n    }\n}",
+  "afterExample": "package test;\n\n// Dummy dependencies for compilation\ninterface IEditorInput {}\ninterface ITextEditorExtension3 { int SMART_INSERT \u003d 1; int getInsertMode(); }\ninterface IWorkbenchPart { IEditorInput getEditorInput(); Object getAdapter(Class adapter); }\n\nclass EditorUtility {\n    public static boolean isCompareEditorInput(IEditorInput input) { return false; }\n}\n\nclass ConcreteWorkbenchPart implements IWorkbenchPart {\n    public IEditorInput getEditorInput() { return null; }\n    public Object getAdapter(Class adapter) { return null; }\n}\n\npublic class JavaAutoIndentStrategy {\n    public boolean computeSmartMode(IWorkbenchPart part) {\n        if (part instanceof ITextEditorExtension3) {\n            return ((ITextEditorExtension3) part).getInsertMode() \u003d\u003d ITextEditorExtension3.SMART_INSERT;\n        } else if (part !\u003d null \u0026\u0026 EditorUtility.isCompareEditorInput(part.getEditorInput())) { // \u003c\u003d SHOULD BE THIS\n            ITextEditorExtension3 extension \u003d (ITextEditorExtension3) part.getAdapter(ITextEditorExtension3.class);\n            if (extension !\u003d null)\n                return extension.getInsertMode() \u003d\u003d ITextEditorExtension3.SMART_INSERT;\n        }\n        return false;\n    }\n}",
+  "negativeExample": "package test;\n\n// Dummy dependencies for compilation\ninterface IEditorInput {}\ninterface ITextEditorExtension3 { int SMART_INSERT \u003d 1; int getInsertMode(); }\ninterface IWorkbenchPart { IEditorInput getEditorInput(); Object getAdapter(Class adapter); }\n\nclass EditorUtility {\n    public static boolean isCompareEditorInput(IEditorInput input) { return false; }\n}\n\nclass ConcreteWorkbenchPart implements IWorkbenchPart {\n    public IEditorInput getEditorInput() { return null; }\n    public Object getAdapter(Class adapter) { return null; }\n}\n\npublic class JavaAutoIndentStrategy {\n    // This should NOT match because \u0027nonNullPart\u0027 is initialized and guaranteed non-null\n    public boolean computeSmartModeWithNonNullPart() {\n        IWorkbenchPart nonNullPart \u003d new ConcreteWorkbenchPart(); // Guaranteed non-null after this line\n        if (EditorUtility.isCompareEditorInput(nonNullPart.getEditorInput())) { // \u003c\u003d SHOULD NOT MATCH (isNullable(nonNullPart) is false)\n            return true;\n        }\n        return false;\n    }\n\n    // This should NOT match because \u0027part\u0027 is explicitly checked *before* the call, so isNullable should be false\n    public boolean computeSmartModeWithEarlyCheck(IWorkbenchPart part) {\n        if (part \u003d\u003d null) return false; // Guard ensures part is non-null afterwards\n        if (EditorUtility.isCompareEditorInput(part.getEditorInput())) { // \u003c\u003d SHOULD NOT MATCH (isNullable(part) is false)\n            return true;\n        }\n        return false;\n    }\n}",
+  "targetHintFile": "null_safety.sandbox-hint",
+  "sourceCommit": "92da31efd5af7494e8db6b8e0cf7f02072862f08",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Nullability",
+  "summary": "Add null check for IWorkbenchPart before calling its methods in an expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-19T02:38:44.183461868Z",
+  "ruleFingerprint": "sha256:a87ff59082061b30f720d2693e76fe56208b490f37b6a63ef846db542476f101",
+  "behaviorFingerprint": "sha256:5b09cb054890d773ac3c1501225b7ebb1a9f6d1dd3f935b7cb4b69b59a75b9f2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 17: The public type JavaAutoIndentStrategy must be defined in its own file",
+    "verifiedAt": "2026-08-19T02:38:47.864000214Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
