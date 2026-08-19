@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
+ * https://www.eclipse.org/legal/epl-2.0/.
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -55,12 +55,19 @@ public final class ContainerLocalRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerLocalRewritePlan plan) throws CoreException {
-		ResolvedPlan resolved= resolve(unit, root, plan);
 		return new CompilationUnitRewriteOperationsFixCore(
 				DESCRIPTION,
 				root,
 				new CompilationUnitRewriteOperationWithSourceRange[] {
-						new RewriteOperation(resolved) });
+						operation(unit, root, plan) });
+	}
+
+	/** Package-visible operation factory used by the aggregate container cleanup. */
+	static CompilationUnitRewriteOperationWithSourceRange operation(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerLocalRewritePlan plan) throws CoreException {
+		return new RewriteOperation(resolve(unit, root, plan));
 	}
 
 	/** Package-visible semantic resolution used by the cleanup adapter. */

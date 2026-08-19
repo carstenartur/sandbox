@@ -84,6 +84,11 @@
 		<module>../sandbox_int_to_enum_help</module>
 		<module>../sandbox_int_to_enum_feature</module>
 
+		<!-- Semantic container-refactoring family. -->
+		<module>../sandbox_container_cleanup</module>
+		<module>../sandbox_container_cleanup_help</module>
+		<module>../sandbox_container_cleanup_feature</module>
+
 		<!-- General-type family. -->
 		<module>../sandbox_use_general_type</module>
 		<module>../sandbox_use_general_type_help</module>
