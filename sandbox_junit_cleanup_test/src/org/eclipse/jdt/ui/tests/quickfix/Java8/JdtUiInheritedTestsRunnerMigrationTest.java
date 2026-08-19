@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,8 +22,13 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.junit.JUnitCore;
 
+import org.sandbox.jdt.internal.corext.fix.helper.JdtUiInheritedTestsRunnerMigration;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
@@ -39,6 +46,22 @@ public class JdtUiInheritedTestsRunnerMigrationTest {
 		root= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
 		AbstractEclipseJava.addToClasspath(context.getJavaProject(),
 				JavaCore.newContainerEntry(JUnitCore.JUNIT6_CONTAINER_PATH));
+	}
+
+	@Test
+	public void rejectsAnnotationsThatAreNotDeclaredDirectlyOnAType() {
+		AST ast= AST.newAST(AST.JLS17, false);
+		TypeDeclaration type= ast.newTypeDeclaration();
+		MethodDeclaration method= ast.newMethodDeclaration();
+		MarkerAnnotation annotation= ast.newMarkerAnnotation();
+		annotation.setTypeName(ast.newSimpleName("RunWith")); //$NON-NLS-1$
+		method.modifiers().add(annotation);
+		type.bodyDeclarations().add(method);
+
+		var assessment= JdtUiInheritedTestsRunnerMigration.assess(annotation,
+				"org.eclipse.jdt.ui.tests.CustomBaseRunner"); //$NON-NLS-1$
+
+		assertEquals("NOT_JDT_UI_INHERITED_TEST_RUNNER", assessment.reasonCode()); //$NON-NLS-1$
 	}
 
 	@Test

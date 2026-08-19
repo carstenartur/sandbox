@@ -155,11 +155,11 @@ public final class JdtUiInheritedTestsRunnerMigration {
 
 	/** Returns whether the exact JDT UI runner contract can be migrated safely. */
 	public static Assessment assess(Annotation runWith, String runnerQualifiedName) {
-		ASTNode current= runWith == null ? null : runWith.getParent();
-		while (current != null && !(current instanceof TypeDeclaration)) {
-			current= current.getParent();
-		}
-		TypeDeclaration type= current == null ? null : (TypeDeclaration) current;
+		ASTNode parent= runWith == null ? null : runWith.getParent();
+		TypeDeclaration type= parent != null
+				&& parent.getNodeType() == ASTNode.TYPE_DECLARATION
+						? (TypeDeclaration) parent
+						: null;
 		return assess(type, runnerQualifiedName);
 	}
 
