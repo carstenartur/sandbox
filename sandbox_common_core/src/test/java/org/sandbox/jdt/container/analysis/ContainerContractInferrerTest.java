@@ -68,6 +68,28 @@ class ContainerContractInferrerTest {
 	}
 
 	@Test
+	void infersListContractWhenOnlySizeIsObserved() {
+		ContainerRecommendation recommendation= infer("""
+			import java.util.Arrays;
+			class Sample {
+				int collect(String value) {
+					String[] values = new String[0];
+					values = Arrays.copyOf(values, values.length + 1);
+					values[values.length - 1] = value;
+					return values.length;
+				}
+			}
+			""");
+
+		assertEquals(ContainerShape.LIST, recommendation.targetContract().shape());
+		assertEquals(OrderRequirement.NONE,
+				recommendation.targetContract().orderRequirement());
+		assertEquals(Confidence.HIGH, recommendation.confidence());
+		assertEquals(Preservation.PRESERVED,
+				preservation(recommendation, ContractProperty.ORDER));
+	}
+
+	@Test
 	void preservesPositionalRequirementInTargetContract() {
 		ContainerRecommendation recommendation= infer("""
 			import java.util.Arrays;

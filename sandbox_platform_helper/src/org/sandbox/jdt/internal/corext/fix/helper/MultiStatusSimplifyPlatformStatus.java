@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
+ * Copyright (c) 2025, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.dom.AST;
@@ -24,9 +25,16 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -37,30 +45,19 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 
 /**
- * Simplifies MultiStatus creation patterns to use IStatus.OK as the status code.
- * 
- * Transforms:
- * <pre>
- * MultiStatus status = new MultiStatus(pluginId, someCode, message, exception);
- * </pre>
- * 
- * To:
- * <pre>
- * MultiStatus status = new MultiStatus(pluginId, IStatus.OK, message, exception);
- * </pre>
- * 
- * Note: Unlike Status, MultiStatus doesn't have factory methods like error() or warning().
- * This transformation normalizes the status code to IStatus.OK, which is the recommended
- * practice when the overall status is determined by child statuses.
+ * Replaces a compile-time integer value of {@code 0} with the named
+ * {@link IStatus#OK} constant in a {@link MultiStatus} constructor.
+ *
+ * <p>Application-specific, nonzero or unresolved status codes are deliberately
+ * left unchanged. The cleanup must never normalize an arbitrary domain code to
+ * {@code IStatus.OK}.</p>
  */
-public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus<ClassInstanceCreation> {
+public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformStatus {
 
-	private static final String ISTATUS_OK = "IStatus.OK"; //$NON-NLS-1$
-	private static final String ISTATUS_SIMPLE_NAME = "IStatus"; //$NON-NLS-1$
-	private static final String OK_SIMPLE_NAME = "OK"; //$NON-NLS-1$
+	private static final String OK_SIMPLE_NAME= "OK"; //$NON-NLS-1$
 
 	public MultiStatusSimplifyPlatformStatus() {
-		super("", ""); // MultiStatus doesn't use factory method names //$NON-NLS-1$ //$NON-NLS-2$
+		super(IStatus.OK);
 	}
 
 	@Override
@@ -68,105 +65,90 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 		if (afterRefactoring) {
 			return "MultiStatus status = new MultiStatus(pluginId, IStatus.OK, \"message\", null);\n"; //$NON-NLS-1$
 		}
-		return "MultiStatus status = new MultiStatus(pluginId, someCode, \"message\", null);\n"; //$NON-NLS-1$
+		return "MultiStatus status = new MultiStatus(pluginId, 0, \"message\", null);\n"; //$NON-NLS-1$
 	}
 
 	@Override
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) throws CoreException {
-		find(fixcore, compilationUnit, operations, nodesprocessed, false);
-	}
-
-	@Override
-	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
-			boolean preservePluginId) throws CoreException {
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
+			throws CoreException {
 		try {
-			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
+			ReferenceHolder<ASTNode, Object> holder= ReferenceHolder.createForNodes();
 			HelperVisitorFactory.forClassInstanceCreation(MultiStatus.class)
 				.in(compilationUnit)
-				.excluding(nodesprocessed)
-				.processEach(dataholder, (visited, holder) -> {
-					if (nodesprocessed.contains(visited)) {
+				.excluding(nodesProcessed)
+				.processEach(holder, (visited, data) -> {
+					if (nodesProcessed.contains(visited) || visited.arguments().size() != 4) {
 						return false;
 					}
-					
-					// MultiStatus has a 4-argument constructor:
-					// MultiStatus(String pluginId, int code, String message, Throwable exception)
-					if (visited.arguments().size() != 4) {
+
+					ITypeBinding typeBinding= visited.resolveTypeBinding();
+					if (typeBinding == null
+							|| !MultiStatus.class.getName().equals(typeBinding.getErasure().getQualifiedName())) {
 						return false;
 					}
-					
+
 					List<Expression> arguments= visited.arguments();
-					
-					// Check if argument at index 1 (code) is NOT already IStatus.OK
-					Expression codeArg= arguments.get(1);
-					if (codeArg instanceof QualifiedName) {
-						QualifiedName codeQualifiedName= (QualifiedName) codeArg;
-						if (ISTATUS_OK.equals(codeQualifiedName.toString())) {
-							// Already using IStatus.OK, no transformation needed
-							return false;
-						}
+					Expression codeArgument= arguments.get(1);
+					if (!hasConstantIntValue(codeArgument, IStatus.OK)
+							|| isCanonicalIStatusOkReference(codeArgument)) {
+						return false;
 					}
-					
-					// Found a MultiStatus that could be simplified to use IStatus.OK
-					operations.add(fixcore.rewrite(visited, holder, preservePluginId));
-					nodesprocessed.add(visited);
+
+					operations.add(fixcore.rewrite(visited, data));
+					nodesProcessed.add(visited);
 					return false;
 				});
-		} catch (Exception e) {
-			throw new CoreException(Status.error("Problem in find MultiStatus", e)); //$NON-NLS-1$
+		} catch (Exception exception) {
+			throw new CoreException(Status.error("Problem while finding MultiStatus simplifications", exception)); //$NON-NLS-1$
 		}
 	}
 
-	@Override
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder) {
-		rewrite(upp, visited, cuRewrite, group, holder, false);
+	private static boolean isCanonicalIStatusOkReference(Expression expression) {
+		IBinding binding= null;
+		if (expression instanceof QualifiedName qualifiedName) {
+			binding= qualifiedName.resolveBinding();
+		} else if (expression instanceof SimpleName simpleName) {
+			binding= simpleName.resolveBinding();
+		}
+		if (!(binding instanceof IVariableBinding variableBinding)
+				|| !variableBinding.isField()
+				|| !OK_SIMPLE_NAME.equals(variableBinding.getName())) {
+			return false;
+		}
+		ITypeBinding declaringClass= variableBinding.getDeclaringClass();
+		return declaringClass != null
+				&& IStatus.class.getName().equals(declaringClass.getErasure().getQualifiedName());
 	}
 
 	@Override
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder,
-			boolean preservePluginId) {
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> holder) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
+		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
+		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(cuRewrite.getRoot(),
+				visited.getStartPosition(), importRewrite);
 
-		// Create a new MultiStatus construction with IStatus.OK as the code parameter
 		ClassInstanceCreation newMultiStatus= ast.newClassInstanceCreation();
-		Name multiStatusName= addImport(MultiStatus.class.getName(), cuRewrite, ast);
+		Name multiStatusName= ast.newName(importRewrite.addImport(MultiStatus.class.getName(), importContext));
 		newMultiStatus.setType(ast.newSimpleType(multiStatusName));
-		
-		// Add import for IStatus to support IStatus.OK reference
-		addImport(org.eclipse.core.runtime.IStatus.class.getName(), cuRewrite, ast);
-		
+		Name iStatusName= ast.newName(importRewrite.addImport(IStatus.class.getName(), importContext));
+
 		List<Expression> arguments= visited.arguments();
 		List<Expression> newArguments= newMultiStatus.arguments();
-		
-		// Copy pluginId (argument 0)
 		newArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(0))));
-		
-		// Replace code with IStatus.OK
-		QualifiedName okConstant= ast.newQualifiedName(
-				ast.newSimpleName(ISTATUS_SIMPLE_NAME),
-				ast.newSimpleName(OK_SIMPLE_NAME));
+		QualifiedName okConstant= ast.newQualifiedName(iStatusName, ast.newSimpleName(OK_SIMPLE_NAME));
 		newArguments.add(okConstant);
-		
-		// Copy message (argument 2)
 		newArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(2))));
-		
-		// Copy exception (argument 3)
 		newArguments.add(ASTNodes.createMoveTarget(rewrite,
 				ASTNodes.getUnparenthesedExpression(arguments.get(3))));
-		
+
 		ASTNodes.replaceButKeepComment(rewrite, visited, newMultiStatus, group);
 		remover.registerRemovedNode(visited);
-		// Note: Do NOT call remover.applyRemoves(importRewrite) here
-		// The transformation still uses MultiStatus and IStatus classes,
-		// so the imports should be preserved.
-		// ImportRewrite will automatically manage imports without explicit applyRemoves.
 	}
 }

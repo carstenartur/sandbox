@@ -219,6 +219,21 @@
       "knownLimitations": ["#1216", "#1223", "#1225", "#1226"]
     },
     {
+      "id": "container-cleanup",
+      "kind": "cleanup",
+      "bundle": "sandbox_container_cleanup",
+      "feature": "sandbox_container_cleanup_feature",
+      "testModule": "sandbox_container_cleanup_test",
+      "scope": "local",
+      "automaticSupport": "yes",
+      "saveActionSupport": "no",
+      "safetyLevel": "conservative",
+      "status": "experimental",
+      "tests": { "total": 4, "enabled": 4, "disabled": 0 },
+      "delivery": { "product": true, "updateSite": true },
+      "knownLimitations": []
+    },
+    {
       "id": "use-general-type",
       "kind": "cleanup",
       "bundle": "sandbox_use_general_type",

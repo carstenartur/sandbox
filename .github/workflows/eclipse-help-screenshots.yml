@@ -32,6 +32,7 @@ on:
       - 'sandbox_use_general_type_help/**'
       - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
+      - '.github/actions/use-runner-maven/**'
       - '.github/scripts/*.java'
       - '.github/workflows/eclipse-help-screenshots.yml'
   workflow_dispatch:
@@ -70,25 +71,14 @@ jobs:
       - name: Use runner Maven
         uses: ./.github/actions/use-runner-maven
 
-      - name: Install Eclipse desktop dependencies
+      - name: Verify preinstalled Eclipse desktop runtime
         shell: bash
         run: |
           set -euo pipefail
-
-          # The hosted Ubuntu runner contains third-party APT sources that are
-          # unrelated to Eclipse. A temporary outage or access policy on one of
-          # them must not prevent us from installing packages from Ubuntu.
-          shopt -s nullglob
-          for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
-            if grep -q 'packages\.microsoft\.com' "$source"; then
-              echo "Disabling unrelated runner APT source: $source"
-              sudo mv "$source" "$source.disabled"
-            fi
-          done
-
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+          command -v xvfb-run
+          command -v Xvfb
+          dpkg-query -W \
+            xvfb xauth libgtk-3-0t64 libxext6 libxrender1 libxtst6 libxi6 \
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
       # This is the documented local Maven command with only the Linux virtual
@@ -117,7 +107,7 @@ jobs:
       # The POM interpolates help.screenshot.testClass only in the dedicated
       # screenshot module. Dependency test modules may therefore legitimately
       # find no matching class, while this report proves the merge gate ran.
-      - name: Verify the temporary merge-gate test executed
+      - name: Verify the merge-gate test executed
         shell: bash
         run: |
           set -euo pipefail
@@ -130,24 +120,24 @@ jobs:
           fi
           printf 'Verified JUnit report: %s\n' "$report"
 
-      # The two real Cleanup preview methods remain executable in
-      # SandboxHelpScreenshotsSWTBotTest and are tracked by #1437. Their three
-      # committed images stay unchanged while those methods are outside this
-      # temporary merge gate.
-      - name: Restore deferred real-preview images
+      # The real Cleanup preview methods remain executable, but their committed
+      # images are maintained separately from the deterministic configuration-tab
+      # baselines verified by this merge gate.
+      - name: Restore separately maintained real-preview images
         run: >-
           git restore --source=HEAD --
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
 
+      # Intentional baseline changes must be copied from a completed verifier
+      # artifact; the pull-request gate itself always remains read-only.
       - name: Verify committed screenshots are reproducible
         shell: bash
         run: |
           set -euo pipefail
 
           code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
-          deferred_junit='sandbox_junit_cleanup_help/images/junit-migration-cleanup.png'
           mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
             ':(glob)sandbox*_help/images/*.png')
           unexpected=()
@@ -156,15 +146,13 @@ jobs:
             path="${change:3}"
             if [[ "$path" == "$code_patterns" ]]; then
               code_patterns_changed=true
-            elif [[ "$path" == "$deferred_junit" ]]; then
-              echo "Ignoring known JUnit Help screenshot variance tracked in #1475: $change"
             else
               unexpected+=("$change")
             fi
           done
 
           if (( ${#unexpected[@]} > 0 )); then
-            echo "Regenerated Help screenshots differ from the checkout:" >&2
+            echo 'Regenerated Help screenshots differ from the checkout:' >&2
             printf '%s\n' "${unexpected[@]}" >&2
             exit 1
           fi

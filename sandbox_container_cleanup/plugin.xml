@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+	<extension point="org.eclipse.jdt.ui.cleanUps">
+		<cleanUpConfigurationUI
+				class="org.sandbox.jdt.container.cleanup.internal.ui.preferences.cleanup.SandboxCodeTabPage"
+				cleanUpKind="cleanUp"
+				name="Semantic Container Refactorings (Sandbox)"/>
+		<cleanUpOptionsInitializer
+				class="org.sandbox.jdt.container.cleanup.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer"
+				cleanUpKind="cleanUp"/>
+		<cleanUp
+				class="org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp"
+				id="org.sandbox.jdt.ui.cleanup.container_contracts"/>
+	</extension>
+</plugin>

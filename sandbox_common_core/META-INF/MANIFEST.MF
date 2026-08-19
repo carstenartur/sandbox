@@ -7,6 +7,8 @@ Bundle-Version: 1.2.6.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: org.sandbox.jdt.cleanup.io,
  org.sandbox.jdt.cleanup.multifile.api,
+ org.sandbox.jdt.container.analysis,
+ org.sandbox.jdt.container.api,
  org.sandbox.jdt.internal.common,
  org.sandbox.jdt.triggerpattern.api,
  org.sandbox.jdt.triggerpattern.internal,

@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -69,17 +69,15 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 		}
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
-		// Note: preservePluginId is always false because Eclipse Platform Status factory methods
-		// don't support plugin ID parameters
-		boolean preservePluginId= false;
-		for (var i : computeFixSet) {
-			i.findOperations(compilationUnit, operations, nodesprocessed, preservePluginId);
+		for (SimplifyPlatformStatusFixCore fix : computeFixSet) {
+			fix.findOperations(compilationUnit, operations, nodesprocessed);
 		}
 		if (operations.isEmpty()) {
 			return null;
 		}
 		return new CompilationUnitRewriteOperationsFixCore(PlatformStatusCleanUpFix_refactor, compilationUnit,
-				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
+				operations.toArray(
+						new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange[0]));
 	}
 
 	@Override
@@ -87,30 +85,26 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {
 			String with= ""; //$NON-NLS-1$
-			result.add(
-					Messages.format(PlatformStatusCleanUp_description,
-							new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
-									.map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())),
-									with }));
+			result.add(Messages.format(PlatformStatusCleanUp_description,
+					new Object[] { String.join(",", computeFixSet().stream() //$NON-NLS-1$
+							.map(SimplifyPlatformStatusFixCore::toString).collect(Collectors.toList())), with }));
 		}
 		return result.toArray(new String[0]);
 	}
 
 	@Override
 	public String getPreview() {
-		StringBuilder sb= new StringBuilder();
+		StringBuilder preview= new StringBuilder();
 		EnumSet<SimplifyPlatformStatusFixCore> computeFixSet= computeFixSet();
 		EnumSet.allOf(SimplifyPlatformStatusFixCore.class)
-		.forEach(e -> sb.append(e.getPreview(computeFixSet.contains(e))));
-		return sb.toString();
+				.forEach(fix -> preview.append(fix.getPreview(computeFixSet.contains(fix))));
+		return preview.toString();
 	}
 
 	private EnumSet<SimplifyPlatformStatusFixCore> computeFixSet() {
-		EnumSet<SimplifyPlatformStatusFixCore> fixSet= EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);
-
 		if (isEnabled(SIMPLIFY_STATUS_CLEANUP)) {
-			fixSet= EnumSet.allOf(SimplifyPlatformStatusFixCore.class);
+			return EnumSet.allOf(SimplifyPlatformStatusFixCore.class);
 		}
-		return fixSet;
+		return EnumSet.noneOf(SimplifyPlatformStatusFixCore.class);
 	}
 }

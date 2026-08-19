@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -13,20 +13,36 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NullLiteral;
-import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -39,139 +55,253 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 import org.sandbox.jdt.internal.corext.util.ImportUtils;
 
 /**
- * @param <T> Type found in Visitor
+ * Shared implementation for semantics-preserving simplification of
+ * {@link Status} constructor calls.
+ *
+ * <p>A factory is preferred when the explicit identity is a side-effect-free
+ * value that is provably equal to the identity inferred for the calling class,
+ * and the factory return type fits the surrounding source context. Otherwise
+ * only a compile-time {@link IStatus#OK} code is removed and every explicit
+ * constructor value is retained.</p>
  */
-public abstract class AbstractSimplifyPlatformStatus<T extends ASTNode> {
-	String methodName;
-	String expectedStatusLiteral;
+public abstract class AbstractSimplifyPlatformStatus {
 
-	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {
-		this.methodName= methodName;
-		this.expectedStatusLiteral= expectedStatusLiteral;
+	private static final String BUNDLE_SYMBOLIC_NAME= "Bundle-SymbolicName"; //$NON-NLS-1$
+	private static final String FRAGMENT_HOST= "Fragment-Host"; //$NON-NLS-1$
+	private static final String INFO_FACTORY_METHOD= "info"; //$NON-NLS-1$
+
+	private final int expectedSeverity;
+	private final String factoryMethodName;
+
+	protected AbstractSimplifyPlatformStatus(int expectedSeverity) {
+		this(expectedSeverity, null);
 	}
 
-	/**
-	 * Adds an import to the class. This method should be used for every class
-	 * reference added to the generated code.
-	 *
-	 * @param typeName  a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast       AST
-	 * @return simple name of a class if the import was added and fully qualified
-	 *         name if there was a conflict
-	 */
+	protected AbstractSimplifyPlatformStatus(int expectedSeverity, String factoryMethodName) {
+		this.expectedSeverity= expectedSeverity;
+		this.factoryMethodName= factoryMethodName;
+	}
+
+	/** Adds an import and returns a usable name for a generated type reference. */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
 		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);
 	}
 
-	public abstract String getPreview(boolean afterRefactoring);
-
-	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed) throws CoreException {
-		find(fixcore, compilationUnit, operations, nodesprocessed, false);
+	/** Returns the compile-time integer value of an expression, or {@code null}. */
+	protected static Integer constantIntValue(Expression expression) {
+		Object value= expression.resolveConstantExpressionValue();
+		return value instanceof Integer integer ? integer : null;
 	}
 
+	/** Tests an expression by compile-time value instead of source spelling. */
+	protected static boolean hasConstantIntValue(Expression expression, int expected) {
+		Integer value= constantIntValue(expression);
+		return value != null && value.intValue() == expected;
+	}
+
+	public abstract String getPreview(boolean afterRefactoring);
+
+	/** Finds exact {@link Status} constructors whose code is provably OK. */
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesprocessed,
-			boolean preservePluginId) throws CoreException {
+			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
+			throws CoreException {
 		try {
-			ReferenceHolder<ASTNode, Object> dataholder= ReferenceHolder.createForNodes();
+			String bundleId= runtimeBundleSymbolicName(compilationUnit);
+			ReferenceHolder<ASTNode, Object> holder= ReferenceHolder.createForNodes();
 			HelperVisitorFactory.forClassInstanceCreation(Status.class)
 				.in(compilationUnit)
-				.excluding(nodesprocessed)
-				.processEach(dataholder, (visited, holder) -> {
-					if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {
+				.excluding(nodesProcessed)
+				.processEach(holder, (visited, data) -> {
+					if (nodesProcessed.contains(visited) || visited.arguments().size() != 5) {
 						return false;
 					}
-					/**
-					 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
-					 * Where:
-					 *   - severity is IStatus.INFO, IStatus.WARNING, or IStatus.ERROR
-					 *   - pluginId is a String
-					 *   - code is IStatus.OK (mandatory for this transformation)
-					 *   - message is a String
-					 *   - throwable is a Throwable or null
-					 *
-					 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
-					 */
+
+					ITypeBinding typeBinding= visited.resolveTypeBinding();
+					if (typeBinding == null
+							|| !Status.class.getName().equals(typeBinding.getErasure().getQualifiedName())) {
+						return false;
+					}
+
 					List<Expression> arguments= visited.arguments();
-					
-					// Safely check if argument at index 2 (code) is IStatus.OK
-					Expression codeArg= arguments.get(2);
-					if (!(codeArg instanceof QualifiedName)) {
+					if (!hasConstantIntValue(arguments.get(0), expectedSeverity)
+							|| !hasConstantIntValue(arguments.get(2), IStatus.OK)) {
 						return false;
 					}
-					QualifiedName codeQualifiedName= (QualifiedName) codeArg;
-					if (!"IStatus.OK".equals(codeQualifiedName.toString())) { //$NON-NLS-1$
-						return false;
-					}
-					
-					// Safely check if argument at index 0 (severity) matches expected status literal
-					Expression severityArg= arguments.get(0);
-					if (!(severityArg instanceof QualifiedName)) {
-						return false;
-					}
-					QualifiedName severityQualifiedName= (QualifiedName) severityArg;
-					if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {
-						operations.add(fixcore.rewrite(visited, holder, preservePluginId));
-						nodesprocessed.add(visited);
-						return false;
-					}
-					return true;
+
+					Integer factoryArgumentCount= factoryArgumentCount(visited, arguments, bundleId);
+					operations.add(fixcore.rewrite(visited, data, factoryArgumentCount));
+					nodesProcessed.add(visited);
+					return false;
 				});
-		} catch (Exception e) {
-			throw new CoreException(Status.error("Problem in find", e)); //$NON-NLS-1$
+		} catch (Exception exception) {
+			throw new CoreException(Status.error("Problem while finding Status simplifications", exception)); //$NON-NLS-1$
 		}
 	}
 
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder) {
-		rewrite(upp, visited, cuRewrite, group, holder, false);
+	private Integer factoryArgumentCount(ClassInstanceCreation visited, List<Expression> arguments,
+			String bundleId) {
+		if (factoryMethodName == null || bundleId == null
+				|| !hasEquivalentIdentity(arguments.get(1), visited, bundleId)) {
+			return null;
+		}
+		boolean nullThrowable= ASTNodes.getUnparenthesedExpression(arguments.get(4)) instanceof NullLiteral;
+		if (nullThrowable && hasCompatibleFactory(visited, 1)) {
+			return Integer.valueOf(1);
+		}
+		return hasCompatibleFactory(visited, 2) ? Integer.valueOf(2) : null;
 	}
 
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> holder,
-			boolean preservePluginId) {
+	private boolean hasCompatibleFactory(ClassInstanceCreation visited, int argumentCount) {
+		if (argumentCount == 2 && INFO_FACTORY_METHOD.equals(factoryMethodName)) {
+			return false;
+		}
+		ITypeBinding statusType= visited.resolveTypeBinding();
+		if (statusType == null) {
+			return false;
+		}
+		ITypeBinding targetType= targetType(visited);
+		for (IMethodBinding method : statusType.getErasure().getDeclaredMethods()) {
+			ITypeBinding[] parameters= method.getParameterTypes();
+			if (!factoryMethodName.equals(method.getName()) || !Modifier.isStatic(method.getModifiers())
+					|| parameters.length != argumentCount
+					|| !String.class.getName().equals(parameters[0].getErasure().getQualifiedName())
+					|| argumentCount == 2
+							&& !Throwable.class.getName().equals(parameters[1].getErasure().getQualifiedName())) {
+				continue;
+			}
+			ITypeBinding returnType= method.getReturnType();
+			if (Status.class.getName().equals(returnType.getErasure().getQualifiedName())
+					|| targetType != null && returnType.isAssignmentCompatible(targetType)
+					|| targetType == null && isExpressionStatement(visited)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static ITypeBinding targetType(Expression expression) {
+		ASTNode current= expression;
+		ASTNode parent= current.getParent();
+		while (parent instanceof ParenthesizedExpression) {
+			current= parent;
+			parent= parent.getParent();
+		}
+		if (parent instanceof VariableDeclarationFragment fragment && fragment.getInitializer() == current) {
+			IVariableBinding variableBinding= fragment.resolveBinding();
+			if (variableBinding != null) {
+				return variableBinding.getType();
+			}
+		}
+		return ASTNodes.getTargetType((Expression) current);
+	}
+
+	private static boolean hasEquivalentIdentity(Expression identity, ClassInstanceCreation visited,
+			String bundleId) {
+		Expression expression= ASTNodes.getUnparenthesedExpression(identity);
+		Object constantValue= expression.resolveConstantExpressionValue();
+		if (constantValue instanceof String stringValue) {
+			return bundleId != null && bundleId.equals(stringValue);
+		}
+		if (!(expression instanceof TypeLiteral typeLiteral)) {
+			return false;
+		}
+		ITypeBinding explicitType= typeLiteral.getType().resolveBinding();
+		ITypeBinding callerType= enclosingTypeBinding(visited);
+		return explicitType != null && callerType != null
+				&& explicitType.getErasure().isEqualTo(callerType.getErasure());
+	}
+
+	private static ITypeBinding enclosingTypeBinding(ASTNode node) {
+		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {
+			if (current instanceof AnonymousClassDeclaration anonymousClass) {
+				return anonymousClass.resolveBinding();
+			}
+			if (current instanceof AbstractTypeDeclaration typeDeclaration) {
+				return typeDeclaration.resolveBinding();
+			}
+		}
+		return null;
+	}
+
+	private static boolean isExpressionStatement(Expression expression) {
+		ASTNode parent= expression.getParent();
+		while (parent instanceof ParenthesizedExpression) {
+			parent= parent.getParent();
+		}
+		return parent instanceof ExpressionStatement;
+	}
+
+	private static String runtimeBundleSymbolicName(CompilationUnit compilationUnit) {
+		IJavaElement javaElement= compilationUnit.getJavaElement();
+		if (javaElement == null) {
+			return null;
+		}
+		IFile manifestFile= javaElement.getJavaProject().getProject().getFile("META-INF/MANIFEST.MF"); //$NON-NLS-1$
+		if (!manifestFile.isAccessible()) {
+			return null;
+		}
+		try (InputStream contents= manifestFile.getContents()) {
+			Attributes attributes= new Manifest(contents).getMainAttributes();
+			String fragmentHost= attributes.getValue(FRAGMENT_HOST);
+			String runtimeIdentity= fragmentHost != null ? fragmentHost : attributes.getValue(BUNDLE_SYMBOLIC_NAME);
+			if (runtimeIdentity == null) {
+				return null;
+			}
+			int directiveStart= runtimeIdentity.indexOf(';');
+			return (directiveStart < 0 ? runtimeIdentity : runtimeIdentity.substring(0, directiveStart)).trim();
+		} catch (CoreException | IOException exception) {
+			return null;
+		}
+	}
+
+	/** Removes only the redundant OK code and retains every other argument. */
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> holder) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRemover remover= cuRewrite.getImportRemover();
 
-		/**
-		 * Create call to Status.warning(), Status.error(), or Status.info()
-		 */
-		// Add imports in alphabetical order to match expected test output
-		// IStatus comes before Status alphabetically
-		addImport("org.eclipse.core.runtime.IStatus", cuRewrite, ast);
-		
-		MethodInvocation staticCall= ast.newMethodInvocation();
+		ClassInstanceCreation simplifiedStatus= ast.newClassInstanceCreation();
 		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);
-		staticCall.setExpression(statusName);
-		staticCall.setName(ast.newSimpleName(methodName));
-		
-		List<ASTNode> arguments= visited.arguments();
-		List<ASTNode> staticCallArguments= staticCall.arguments();
-		
-		// Note: preservePluginId parameter is not used for Status factory methods
-		// because the Eclipse Platform Status.error(), Status.warning(), and Status.info()
-		// methods only accept (message, exception) parameters, not plugin ID.
-		
-		// Add message argument (always at position 3 for 5-argument constructor)
-		int messagePosition= 3;
-		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,
-				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));
-		
-		// Add throwable argument if present (at position 4) and not null
-		ASTNode throwableArg= arguments.get(4);
-		// Add the exception parameter if it's not a null literal
-		// The code argument (position 2) was already validated as IStatus.OK in the find() method
-		if (!(throwableArg instanceof NullLiteral)) {
-			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));
-		}
-		
-		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);
+		simplifiedStatus.setType(ast.newSimpleType(statusName));
+
+		List<Expression> originalArguments= visited.arguments();
+		List<Expression> simplifiedArguments= simplifiedStatus.arguments();
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(0))));
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(1))));
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));
+		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
+
+		ASTNodes.replaceButKeepComment(rewrite, visited, simplifiedStatus, group);
 		remover.registerRemovedNode(visited);
-		// Note: Do NOT call remover.applyRemoves(importRewrite) here
-		// ImportRewrite automatically manages import removal/addition throughout the transformation.
-		// The Status import is explicitly added via addImport() above, and IStatus is preserved from the variable declaration.
+	}
+
+	/** Uses a factory after identity and target-type equivalence have been proven. */
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder<ASTNode, Object> holder, int factoryArgumentCount) {
+		ASTRewrite rewrite= cuRewrite.getASTRewrite();
+		AST ast= cuRewrite.getRoot().getAST();
+		ImportRemover remover= cuRewrite.getImportRemover();
+
+		MethodInvocation factoryCall= ast.newMethodInvocation();
+		factoryCall.setExpression(addImport(Status.class.getName(), cuRewrite, ast));
+		factoryCall.setName(ast.newSimpleName(factoryMethodName));
+		List<Expression> originalArguments= visited.arguments();
+		List<Expression> factoryArguments= factoryCall.arguments();
+		factoryArguments.add(ASTNodes.createMoveTarget(rewrite,
+				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));
+		if (factoryArgumentCount == 2) {
+			factoryArguments.add(ASTNodes.createMoveTarget(rewrite,
+					ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
+		}
+
+		ASTNodes.replaceButKeepComment(rewrite, visited, factoryCall, group);
+		remover.registerRemovedNode(visited);
 	}
 }

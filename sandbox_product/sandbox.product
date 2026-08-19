@@ -211,6 +211,7 @@ United States, other countries, or both.
       <feature id="sandbox_int_to_enum_feature"/>
       <feature id="sandbox_cleanup_application_feature"/>
       <feature id="sandbox_triggerpattern_feature"/>
+      <feature id="sandbox_container_cleanup_feature"/>
       <feature id="sandbox_use_general_type_feature"/>
       <feature id="org.eclipse.egit" installMode="root"/>
       <feature id="org.eclipse.jgit" installMode="root"/>

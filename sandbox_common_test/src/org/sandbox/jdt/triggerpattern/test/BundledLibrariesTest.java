@@ -212,8 +212,8 @@ public class BundledLibrariesTest {
 		HintFile hintFile = loadBundledLibrary("platform-logging.sandbox-hint"); //$NON-NLS-1$
 		assertNotNull(hintFile, "platform-logging library should be loadable"); //$NON-NLS-1$
 		assertEquals("platform-logging", hintFile.getId()); //$NON-NLS-1$
-		assertTrue(hintFile.getRules().size() >= 5,
-				"platform-logging library should have at least 5 rules, found: " + hintFile.getRules().size()); //$NON-NLS-1$
+		assertEquals(1, hintFile.getRules().size(),
+				"platform-logging must expose only the identity-safe ILog modernization rule"); //$NON-NLS-1$
 	}
 
 	@Test

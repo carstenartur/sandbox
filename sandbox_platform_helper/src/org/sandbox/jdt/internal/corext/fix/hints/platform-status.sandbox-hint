@@ -1,75 +1,33 @@
-// platform-status.sandbox-hint — Simplify Eclipse Platform Status API
-// Replaces verbose Status constructors with concise factory methods (Java 9+)
-// Import directives are automatically inferred from FQNs in patterns
+// platform-status.sandbox-hint — semantics-preserving Status simplification
+//
+// The factory methods Status.error(), Status.warning(), and Status.info()
+// infer the plug-in id from the calling bundle. They are not equivalent to an
+// arbitrary explicit String or Class identity. These rules therefore remove
+// only the redundant IStatus.OK argument and retain every other constructor
+// argument.
 
 <!id: platform-status>
-<!description: Simplify Eclipse Platform Status constructors to factory methods>
+<!description: Remove redundant IStatus.OK codes while preserving Status identity>
 <!severity: warning>
 <!minJavaVersion: 9>
-<!tags: eclipse, modernization, platform, status>
+<!tags: eclipse, modernization, platform, status, semantics-preserving>
 
-// --- 5-argument Status constructor patterns ---
-// new Status(IStatus.ERROR, pluginId, IStatus.OK, message, exception) → Status.error(message, exception)
+// Five-argument Status constructors with an explicit IStatus.OK code can use
+// the corresponding four-argument constructor. More general constant-value
+// recognition (for example a literal or named compile-time zero) remains in the
+// native cleanup, where JDT bindings and constant evaluation are available.
 
-// Status.error(msg, ex) — with non-null exception
 new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, org.eclipse.core.runtime.IStatus.OK, $msg, $ex)
-:: !($ex instanceof org.eclipse.jdt.core.dom.NullLiteral)
-=> org.eclipse.core.runtime.Status.error($msg, $ex)
+=> new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, $msg, $ex)
 ;;
 
-// Status.error(msg) — with null exception
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, org.eclipse.core.runtime.IStatus.OK, $msg, null)
-=> org.eclipse.core.runtime.Status.error($msg)
-;;
-
-// Status.warning(msg, ex) — with non-null exception
 new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, $pluginId, org.eclipse.core.runtime.IStatus.OK, $msg, $ex)
-:: !($ex instanceof org.eclipse.jdt.core.dom.NullLiteral)
-=> org.eclipse.core.runtime.Status.warning($msg, $ex)
+=> new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, $pluginId, $msg, $ex)
 ;;
 
-// Status.warning(msg) — with null exception
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, $pluginId, org.eclipse.core.runtime.IStatus.OK, $msg, null)
-=> org.eclipse.core.runtime.Status.warning($msg)
-;;
-
-// Status.info(msg, ex) — with non-null exception
 new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.INFO, $pluginId, org.eclipse.core.runtime.IStatus.OK, $msg, $ex)
-:: !($ex instanceof org.eclipse.jdt.core.dom.NullLiteral)
-=> org.eclipse.core.runtime.Status.info($msg, $ex)
+=> new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.INFO, $pluginId, $msg, $ex)
 ;;
 
-// Status.info(msg) — with null exception
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.INFO, $pluginId, org.eclipse.core.runtime.IStatus.OK, $msg, null)
-=> org.eclipse.core.runtime.Status.info($msg)
-;;
-
-// --- 3-argument Status constructor patterns ---
-// new Status(IStatus.ERROR, pluginId, msg) → Status.error(msg)
-
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, $msg)
-=> org.eclipse.core.runtime.Status.error($msg)
-;;
-
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, $pluginId, $msg)
-=> org.eclipse.core.runtime.Status.warning($msg)
-;;
-
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.INFO, $pluginId, $msg)
-=> org.eclipse.core.runtime.Status.info($msg)
-;;
-
-// --- 4-argument Status constructor patterns ---
-// new Status(IStatus.ERROR, pluginId, msg, exception) → Status.error(msg, exception)
-
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, $pluginId, $msg, $ex)
-=> org.eclipse.core.runtime.Status.error($msg, $ex)
-;;
-
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.WARNING, $pluginId, $msg, $ex)
-=> org.eclipse.core.runtime.Status.warning($msg, $ex)
-;;
-
-new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.INFO, $pluginId, $msg, $ex)
-=> org.eclipse.core.runtime.Status.info($msg, $ex)
-;;
+// Three- and four-argument constructors are already in the shortest available
+// identity-preserving form and are intentionally not rewritten to factories.

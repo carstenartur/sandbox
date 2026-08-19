@@ -59,16 +59,17 @@ public final class ContainerContractInferrer {
 			return Optional.empty();
 		}
 
+		OrderRequirement orderRequirement= inferredOrderRequirement(profile);
 		TargetContainerContract target= new TargetContainerContract(
 				ContainerShape.LIST,
-				profile.orderRequirement(),
+				orderRequirement,
 				profile.uniquenessRequirement(),
 				Mutability.MUTABLE,
 				profile.nullContract(),
 				"Use a dynamically growing mutable sequence instead of repeatedly copying an array."); //$NON-NLS-1$
 
 		List<ContractAssessment> assessments= new ArrayList<>();
-		assessments.add(orderAssessment(profile));
+		assessments.add(orderAssessment(orderRequirement));
 		assessments.add(new ContractAssessment(
 				ContractProperty.UNIQUENESS,
 				Preservation.PRESERVED,
@@ -105,8 +106,19 @@ public final class ContainerContractInferrer {
 				|| profile.access().positionalRemove()) {
 			return false;
 		}
-		return profile.orderRequirement() == OrderRequirement.ENCOUNTER
-				|| profile.orderRequirement() == OrderRequirement.POSITIONAL;
+		OrderRequirement orderRequirement= inferredOrderRequirement(profile);
+		return orderRequirement == OrderRequirement.NONE
+				|| orderRequirement == OrderRequirement.ENCOUNTER
+				|| orderRequirement == OrderRequirement.POSITIONAL;
+	}
+
+	private static OrderRequirement inferredOrderRequirement(
+			ContainerUsageProfile profile) {
+		if (completeProfile(profile)
+				&& profile.orderRequirement() == OrderRequirement.UNKNOWN) {
+			return OrderRequirement.NONE;
+		}
+		return profile.orderRequirement();
 	}
 
 	private static boolean completeProfile(ContainerUsageProfile profile) {
@@ -118,17 +130,24 @@ public final class ContainerContractInferrer {
 		return domain == ElementDomain.REFERENCE || domain == ElementDomain.ENUM;
 	}
 
-	private static ContractAssessment orderAssessment(ContainerUsageProfile profile) {
-		if (profile.orderRequirement() == OrderRequirement.POSITIONAL) {
+	private static ContractAssessment orderAssessment(
+			OrderRequirement orderRequirement) {
+		if (orderRequirement == OrderRequirement.POSITIONAL) {
 			return new ContractAssessment(
 					ContractProperty.ORDER,
 					Preservation.PRESERVED,
 					"A list retains the observed positional and encounter-order contract."); //$NON-NLS-1$
 		}
+		if (orderRequirement == OrderRequirement.ENCOUNTER) {
+			return new ContractAssessment(
+					ContractProperty.ORDER,
+					Preservation.PRESERVED,
+					"A list preserves the observed encounter order of appended elements."); //$NON-NLS-1$
+		}
 		return new ContractAssessment(
 				ContractProperty.ORDER,
 				Preservation.PRESERVED,
-				"A list preserves the observed encounter order of appended elements."); //$NON-NLS-1$
+				"No observed operation depends on element order; a list does not remove an existing order guarantee."); //$NON-NLS-1$
 	}
 
 	private static ContractAssessment aliasingAssessment(ContainerUsageProfile profile) {

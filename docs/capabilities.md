@@ -22,6 +22,7 @@ All status and support fields are explicit. `not-assessed` means that the reposi
 | `method-reuse` | cleanup | local | `sandbox_method_reuse` / `sandbox_method_reuse_feature` | 1/1 enabled | product, update site | not-assessed / not-assessed | experimental | experimental | — |
 | `usage-view` | view | workspace | `sandbox_usage_view` / `sandbox_usage_view_feature` | 23/23 enabled | product, update site | no / no | read-only | experimental | — |
 | `int-to-enum` | cleanup | multi-file | `sandbox_int_to_enum` / `sandbox_int_to_enum_feature` | 30/30 enabled | product, update site | not-assessed / not-assessed | conservative | experimental | [#1216](https://github.com/carstenartur/sandbox/issues/1216), [#1223](https://github.com/carstenartur/sandbox/issues/1223), [#1225](https://github.com/carstenartur/sandbox/issues/1225), [#1226](https://github.com/carstenartur/sandbox/issues/1226) |
+| `container-cleanup` | cleanup | local | `sandbox_container_cleanup` / `sandbox_container_cleanup_feature` | 4/4 enabled | product, update site | yes / no | conservative | experimental | — |
 | `use-general-type` | cleanup | local | `sandbox_use_general_type` / `sandbox_use_general_type_feature` | 29/29 enabled | product, update site | not-assessed / not-assessed | conservative | experimental | — |
 
 Test counts are the last explicitly reviewed Test Report snapshot. The validator checks their internal consistency and referenced test modules; the Test Report workflow remains the source of current execution totals.
