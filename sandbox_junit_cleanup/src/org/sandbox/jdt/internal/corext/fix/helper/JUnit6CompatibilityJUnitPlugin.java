@@ -25,6 +25,8 @@ import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.text.edits.TextEditGroup;
 
@@ -79,12 +81,14 @@ public final class JUnit6CompatibilityJUnitPlugin
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, JunitHolder junitHolder) {
 		Annotation oldAnnotation= junitHolder.getAnnotation();
+		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(
+				(CompilationUnit) oldAnnotation.getRoot(), oldAnnotation.getStartPosition(), importRewriter);
 		SingleMemberAnnotation replacement= ast.newSingleMemberAnnotation();
 		replacement.setTypeName(ast.newName(
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER)));
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER, importContext)));
 
 		Name methodOrderer= ast.newName(
-				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER));
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER, importContext));
 		TypeLiteral typeLiteral= ast.newTypeLiteral();
 		typeLiteral.setType(ast.newSimpleType(ast.newQualifiedName(
 				methodOrderer,

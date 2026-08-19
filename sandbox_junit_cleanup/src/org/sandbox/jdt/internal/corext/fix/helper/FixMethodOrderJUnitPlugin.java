@@ -17,12 +17,15 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.text.edits.TextEditGroup;
 
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
@@ -61,12 +64,14 @@ public class FixMethodOrderJUnitPlugin extends TriggerPatternCleanupPlugin {
 		if ("DEFAULT".equals(methodSorter)) { //$NON-NLS-1$
 			rewriter.remove(oldAnnotation, group);
 		} else if ("NAME_ASCENDING".equals(methodSorter) || "JVM".equals(methodSorter)) { //$NON-NLS-1$ //$NON-NLS-2$
+			ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(
+					(CompilationUnit) oldAnnotation.getRoot(), oldAnnotation.getStartPosition(), importRewriter);
 			SingleMemberAnnotation newAnnotation= ast.newSingleMemberAnnotation();
 			newAnnotation.setTypeName(ast.newName(
-					importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER)));
+					importRewriter.addImport(ORG_JUNIT_JUPITER_API_TEST_METHOD_ORDER, importContext)));
 
 			Name methodOrderer= ast.newName(
-					importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER));
+					importRewriter.addImport(ORG_JUNIT_JUPITER_API_METHOD_ORDERER, importContext));
 			TypeLiteral typeLiteral= ast.newTypeLiteral();
 			String targetOrderer= "NAME_ASCENDING".equals(methodSorter) //$NON-NLS-1$
 					? "MethodName" : "Random"; //$NON-NLS-1$ //$NON-NLS-2$
