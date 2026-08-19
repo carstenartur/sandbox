@@ -9,23 +9,27 @@
 </head>
 <body>
    <h1>Using Platform Status</h1>
-   <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile,
-      and select <strong>Platform Status (Sandbox)</strong>. The configuration
-      preview shows the enabled factory-method form; the execution preview shows
-      the actual source edits before they are applied.</p>
 
-   <h2>Representative transformation</h2>
-   <p>A supported <code>Status</code> constructor with a binding-resolved severity
-      can be replaced by the corresponding Eclipse Platform factory method.</p>
+   <h2>Entry point</h2>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup
+      profile, and select <strong>Platform Status (Sandbox)</strong>. The
+      configuration preview illustrates the two safe targets. The execution
+      preview shows the actual combined source diff for each selected file.</p>
+
+   <h2>Factory when identity is proven</h2>
+   <p>Assume the project manifest declares
+      <code>Bundle-SymbolicName: com.example.plugin</code> and the plug-in id is
+      a compile-time String constant with that value.</p>
 
    <h3>Before</h3>
    <pre>import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
+private static final String PLUGIN_ID = "com.example.plugin";
+
 IStatus status = new Status(
-    IStatus.WARNING,
-    "com.example.plugin",
+    IStatus.ERROR,
+    PLUGIN_ID,
     IStatus.OK,
     "Could not load preferences",
     exception);</pre>
@@ -34,46 +38,141 @@ IStatus status = new Status(
    <pre>import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 
-IStatus status = Status.warning(
+private static final String PLUGIN_ID = "com.example.plugin";
+
+IStatus status = Status.error(
     "Could not load preferences",
     exception);</pre>
 
-   <h2>Semantic boundary</h2>
-   <p>The factory call preserves the selected severity, message, and throwable.
-      It does <strong>not</strong> carry the constructor's explicit plug-in
-      identifier or an arbitrary status code. The Platform factory derives the
-      plug-in identity from the calling bundle and uses the factory's status-code
-      contract. Accept the rewrite only when that is the intended behavior.</p>
+   <p>No status information is lost. The selected factory supplies severity
+      <code>ERROR</code> and code <code>IStatus.OK</code>; the calling bundle
+      supplies the already-proven same plug-in identifier; message and
+      throwable remain unchanged.</p>
+
+   <p>For a fragment project, the runtime bundle identity comes from
+      <code>Fragment-Host</code>. A constant equal to the host symbolic name may
+      use the factory; a constant equal only to the fragment symbolic name stays
+      in the constructor fallback.</p>
+
+   <p>The exact enclosing class literal is another supported proof. Inside
+      <code>MyView</code>, a constructor using <code>MyView.class</code> may use
+      the corresponding factory when the factory return type fits the source
+      context.</p>
+
+   <h2>Constructor fallback when identity is not proven</h2>
+
+   <h3>Before</h3>
+   <pre>import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+IStatus status = new Status(
+    IStatus.WARNING,
+    responsiblePluginId,
+    IStatus.OK,
+    "Extension failed",
+    exception);</pre>
+
+   <h3>After</h3>
+   <pre>import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+
+IStatus status = new Status(
+    IStatus.WARNING,
+    responsiblePluginId,
+    "Extension failed",
+    exception);</pre>
+
+   <p>The explicit identity is retained for delegated, mismatching, dynamic, or
+      unresolved expressions and when project bundle metadata is unavailable.</p>
+
+   <h2>Why a matching getter is retained</h2>
+   <p>A call such as <code>JavaPlugin.getPluginId()</code> is not erased merely
+      because its expected return value equals the bundle symbolic name.
+      Evaluating the method and initializing its declaring class can be
+      observable. The cleanup therefore uses the constructor fallback unless
+      both value and evaluation equivalence are proven.</p>
+
+   <h2>Factory overload and result type</h2>
+   <p>The cleanup resolves the actual Platform API on the project's build path.
+      It uses a factory only when the required overload exists and its return
+      type is assignment-compatible with the surrounding source target.</p>
+   <ul>
+      <li>A literal null throwable may use a one-argument factory.</li>
+      <li>A non-null throwable requires a corresponding two-argument factory.</li>
+      <li>An INFO status with a non-null throwable retains the constructor when
+          no equivalent INFO overload exists.</li>
+      <li>A factory returning <code>IStatus</code> is not inserted into a source
+          context that requires concrete <code>Status</code>.</li>
+   </ul>
+
+   <h2>Compile-time code evaluation</h2>
+   <p>Applicability is based on resolved integer values rather than source
+      spelling. These are equivalent OK-code candidates:</p>
+   <pre>IStatus.OK
+0
+private static final int OK_CODE = 0;</pre>
+   <p>Nonzero and runtime-computed codes remain unchanged:</p>
+   <pre>APPLICATION_SPECIFIC_CODE
+computeStatusCode()
+17</pre>
+
+   <h2>MultiStatus</h2>
+   <p>A <code>MultiStatus</code> may carry an application-specific code. The
+      cleanup changes only a compile-time value of zero to the named constant.</p>
+
+   <h3>Before</h3>
+   <pre>import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
+
+MultiStatus status = new MultiStatus(
+    pluginId,
+    0,
+    "Several operations failed",
+    exception);</pre>
+
+   <h3>After</h3>
+   <pre>import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
+
+MultiStatus status = new MultiStatus(
+    pluginId,
+    IStatus.OK,
+    "Several operations failed",
+    exception);</pre>
 
    <h2>When no change is made</h2>
    <ul>
-      <li>The constructed type is not exactly the supported Eclipse
-          <code>Status</code> type or its binding cannot be resolved.</li>
-      <li>The severity has no supported factory mapping, for example a cancel
-          status.</li>
-      <li>The constructor shape contains information for which the cleanup has no
-          supported target representation.</li>
-      <li>The required Eclipse Platform factory API is not available on the
-          project's build path.</li>
+      <li>The constructed type is not exactly the supported
+          <code>Status</code> or <code>MultiStatus</code> type.</li>
+      <li>Type or constant bindings cannot be resolved.</li>
+      <li>The status code is nonzero or computed at runtime.</li>
+      <li>The severity is unsupported, for example
+          <code>IStatus.CANCEL</code>.</li>
+      <li>The constructor is already in a supported shorter form.</li>
+      <li>The project does not satisfy the cleanup's compatibility gate.</li>
    </ul>
+
+   <h2>Native cleanup and bundled hints</h2>
+   <p>The native cleanup has project metadata and target-type information and
+      can therefore choose a proven factory. The bundled TriggerPattern hint
+      remains conservative and only removes the redundant OK argument while
+      retaining the explicit identity.</p>
 
    <h2>Recommended workflow</h2>
    <ol>
-      <li>Enable <strong>Platform Status (Sandbox)</strong> in a dedicated cleanup
-          profile.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect every changed call in the execution preview, especially the
-          former plug-in identifier and status code.</li>
-      <li>Compile and run the error-handling and logging tests that consume the
-          resulting status.</li>
-      <li>Expand the scope only after the implicit plug-in identity is confirmed
-          for the project.</li>
+      <li>Enable <strong>Platform Status (Sandbox)</strong> in a dedicated
+          cleanup profile.</li>
+      <li>Run <strong>Source &gt; Clean Up...</strong> on a small,
+          version-controlled selection.</li>
+      <li>Inspect each file in the real execution preview.</li>
+      <li>Compile and run status-handling and logging tests.</li>
+      <li>Use the standard Eclipse Undo operation when required.</li>
    </ol>
 
    <h2>Screenshot regeneration</h2>
-   <p>The image in this Help bundle is generated from a real Eclipse workbench by
-      <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
-      <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+   <p>The image in this Help bundle is generated from a real Eclipse workbench
+      by <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
+      <code>help-screenshots</code> under Xvfb after UI changes.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>

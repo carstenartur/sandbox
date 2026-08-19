@@ -1,10 +1,10 @@
 /*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -35,6 +35,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.StatusInfoSimplifyPlatformStat
 import org.sandbox.jdt.internal.corext.fix.helper.StatusWarningSimplifyPlatformStatus;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
+/** Supported semantics-preserving Platform Status rewrite families. */
 public enum SimplifyPlatformStatusFixCore {
 
 	STATUSWARNING(new StatusWarningSimplifyPlatformStatus()),
@@ -42,76 +43,47 @@ public enum SimplifyPlatformStatusFixCore {
 	STATUSINFO(new StatusInfoSimplifyPlatformStatus()),
 	MULTISTATUS(new MultiStatusSimplifyPlatformStatus());
 
-	AbstractSimplifyPlatformStatus<ASTNode> platformstatus;
+	private final AbstractSimplifyPlatformStatus platformStatus;
 
-	@SuppressWarnings("unchecked")
-	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus<? extends ASTNode> explicitencoding) {
-		this.platformstatus= (AbstractSimplifyPlatformStatus<ASTNode>) explicitencoding;
+	SimplifyPlatformStatusFixCore(AbstractSimplifyPlatformStatus platformStatus) {
+		this.platformStatus= platformStatus;
 	}
 
-	public String getPreview(boolean i) {
-		return platformstatus.getPreview(i);
+	public String getPreview(boolean enabled) {
+		return platformStatus.getPreview(enabled);
 	}
 
-	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported
-	 * situations using platform status instantiation
-	 *
-	 * @param compilationUnit unit to search in
-	 * @param operations      set of all CompilationUnitRewriteOperations created
-	 *                        already
-	 * @param nodesprocessed  list to remember nodes already processed
-	 * @throws CoreException
-	 */
+	/** Finds supported rewrites while sharing one processed-node set. */
 	public void findOperations(final CompilationUnit compilationUnit,
-			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed)
-					throws CoreException {
-		findOperations(compilationUnit, operations, nodesprocessed, false);
+			final Set<CompilationUnitRewriteOperationWithSourceRange> operations,
+			final Set<ASTNode> nodesProcessed) throws CoreException {
+		platformStatus.find(this, compilationUnit, operations, nodesProcessed);
 	}
 
-	/**
-	 * Compute set of CompilationUnitRewriteOperation to refactor supported
-	 * situations using platform status instantiation
-	 *
-	 * @param compilationUnit unit to search in
-	 * @param operations      set of all CompilationUnitRewriteOperations created
-	 *                        already
-	 * @param nodesprocessed  list to remember nodes already processed
-	 * @param preservePluginId whether to preserve plugin ID in factory calls
-	 * @throws CoreException
-	 */
-	public void findOperations(final CompilationUnit compilationUnit,
-			final Set<CompilationUnitRewriteOperationWithSourceRange> operations, final Set<ASTNode> nodesprocessed,
-			boolean preservePluginId)
-					throws CoreException {
-		platformstatus.find(this, compilationUnit, operations, nodesprocessed, preservePluginId);
-	}
-
-	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited, ReferenceHolder<ASTNode, Object> holder) {
-		return rewrite(visited, holder, false);
-	}
-
-	/**
-	 * Creates a rewrite operation for the given Status or MultiStatus creation.
-	 *
-	 * @param visited the ClassInstanceCreation node to rewrite
-	 * @param holder reference holder for additional context
-	 * @param preservePluginId if true, preserves the plugin ID parameter in the transformation;
-	 *                         if false (default), omits the plugin ID
-	 * @return a CompilationUnitRewriteOperation for the transformation
-	 */
+	/** Creates the comment-preserving rewrite for one accepted constructor. */
 	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
-			ReferenceHolder<ASTNode, Object> holder, boolean preservePluginId) {
+			ReferenceHolder<ASTNode, Object> holder) {
+		return rewrite(visited, holder, null);
+	}
+
+	/** Creates either a proven factory rewrite or the preserving fallback. */
+	public CompilationUnitRewriteOperationWithSourceRange rewrite(final ClassInstanceCreation visited,
+			ReferenceHolder<ASTNode, Object> holder, Integer factoryArgumentCount) {
 		return new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
-			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
-					throws CoreException {
+			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite,
+					final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(
 						Messages.format(MultiFixMessages.PlatformStatusCleanUp_description,
 								new Object[] { SimplifyPlatformStatusFixCore.this.toString() }),
 						cuRewrite);
-				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);
-				platformstatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder, preservePluginId);
+				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(COMPUTER);
+				if (factoryArgumentCount == null) {
+					platformStatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder);
+				} else {
+					platformStatus.rewrite(SimplifyPlatformStatusFixCore.this, visited, cuRewrite, group, holder,
+							factoryArgumentCount.intValue());
+				}
 				if (SimplifyPlatformStatusFixCore.this != MULTISTATUS) {
 					cuRewrite.getImportRemover().registerAddedImport(Status.class.getName());
 				}
@@ -119,7 +91,7 @@ public enum SimplifyPlatformStatusFixCore {
 		};
 	}
 
-	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {
+	private static final TargetSourceRangeComputer COMPUTER= new TargetSourceRangeComputer() {
 		@Override
 		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
 			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {

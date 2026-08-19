@@ -51,7 +51,8 @@ public class JGitStorageMigrationMatrixTest {
 				pomVersion.find());
 		assertFalse(selectedVersion.endsWith("-SNAPSHOT")); //$NON-NLS-1$
 		if (candidateVersion == null || candidateVersion.isBlank()) {
-			assertEquals(pomVersion.group(1), selectedVersion);
+			assertEquals("The released migration ledger must match the selected module POM", //$NON-NLS-1$
+					selectedVersion, pomVersion.group(1));
 		} else {
 			assertEquals("The substituted module POM must select the exact candidate", //$NON-NLS-1$
 					candidateVersion, pomVersion.group(1));

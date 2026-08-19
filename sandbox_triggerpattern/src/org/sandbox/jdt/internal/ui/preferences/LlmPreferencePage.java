@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.preferences;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.equinox.security.storage.StorageException;
@@ -37,6 +38,11 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /** Preference page for the LLM settings actually consumed by rule inference. */
 public class LlmPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
+
+	@FunctionalInterface
+	interface CredentialPersistence {
+		void persist() throws StorageException, IOException, BackingStoreException;
+	}
 
 	public static final String PLUGIN_ID = "sandbox_triggerpattern"; //$NON-NLS-1$
 	private static final String PREFIX = "org.sandbox.jdt.triggerpattern.llm."; //$NON-NLS-1$
@@ -133,17 +139,28 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 	@Override
 	public boolean performOk() {
 		try {
-			LlmSecureCredentials.storeApiKey(selectedProvider,
-					apiKeyText != null ? apiKeyText.getText() : ""); //$NON-NLS-1$
+			boolean result = persistAfterPreferenceAcceptance(
+					super::performOk,
+					() -> LlmSecureCredentials.storeApiKey(selectedProvider,
+							apiKeyText != null ? apiKeyText.getText() : "")); //$NON-NLS-1$
+			if (result) {
+				EclipseLlmService.reset();
+			}
+			return result;
 		} catch (StorageException | IOException | BackingStoreException e) {
 			setErrorMessage("Could not save the API key in Eclipse Secure Storage: " + e.getMessage()); //$NON-NLS-1$
 			return false;
 		}
-		boolean result = super.performOk();
-		if (result) {
-			EclipseLlmService.reset();
+	}
+
+	static boolean persistAfterPreferenceAcceptance(BooleanSupplier persistPreferences,
+			CredentialPersistence persistCredential)
+			throws StorageException, IOException, BackingStoreException {
+		if (!persistPreferences.getAsBoolean()) {
+			return false;
 		}
-		return result;
+		persistCredential.persist();
+		return true;
 	}
 
 	@Override
