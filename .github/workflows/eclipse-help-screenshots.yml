@@ -33,6 +33,7 @@ on:
       - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
       - '.github/actions/use-runner-maven/**'
+      - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/*.java'
       - '.github/workflows/eclipse-help-screenshots.yml'
   workflow_dispatch:
@@ -72,14 +73,7 @@ jobs:
         uses: ./.github/actions/use-runner-maven
 
       - name: Verify preinstalled Eclipse desktop runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v xvfb-run
-          command -v Xvfb
-          dpkg-query -W \
-            xvfb xauth libgtk-3-0t64 libxext6 libxrender1 libxtst6 libxi6 \
-            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+        uses: ./.github/actions/verify-eclipse-desktop-runtime
 
       # This is the documented local Maven command with only the Linux virtual
       # display wrapper added. The workflow is a verifier, not the generator API.
