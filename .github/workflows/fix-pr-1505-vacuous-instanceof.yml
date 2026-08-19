@@ -1,0 +1,89 @@
+name: Apply PR 1505 SpotBugs fix (one-time)
+
+on:
+  push:
+    branches:
+      - agent/junit6-inherited-test-filter
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-pr-1505-vacuous-instanceof
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: github.repository == 'carstenartur/sandbox' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the exact pull-request branch
+        uses: actions/checkout@v7
+        with:
+          ref: agent/junit6-inherited-test-filter
+          fetch-depth: 0
+
+      - name: Apply the fail-closed parent-type check
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          source = Path(
+              'sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/'
+              'JdtUiInheritedTestsRunnerMigration.java'
+          )
+          workflow = Path('.github/workflows/fix-pr-1505-vacuous-instanceof.yml')
+          text = source.read_text(encoding='utf-8')
+          old = '''\tpublic static Assessment assess(Annotation runWith, String runnerQualifiedName) {
+\t\tASTNode current= runWith == null ? null : runWith.getParent();
+\t\twhile (current != null && !(current instanceof TypeDeclaration)) {
+\t\t\tcurrent= current.getParent();
+\t\t}
+\t\tTypeDeclaration type= current == null ? null : (TypeDeclaration) current;
+\t\treturn assess(type, runnerQualifiedName);
+\t}
+'''
+          new = '''\tpublic static Assessment assess(Annotation runWith, String runnerQualifiedName) {
+\t\tASTNode parent= runWith == null ? null : runWith.getParent();
+\t\tTypeDeclaration type= parent != null
+\t\t\t\t&& parent.getNodeType() == ASTNode.TYPE_DECLARATION
+\t\t\t\t\t\t? (TypeDeclaration) parent
+\t\t\t\t\t\t: null;
+\t\treturn assess(type, runnerQualifiedName);
+\t}
+'''
+          if text.count(old) != 1:
+              raise SystemExit('Expected the original assessment block exactly once')
+          source.write_text(text.replace(old, new), encoding='utf-8')
+          workflow.unlink()
+          PY
+
+      - name: Verify and publish only the reviewed fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          source='sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/JdtUiInheritedTestsRunnerMigration.java'
+          workflow='.github/workflows/fix-pr-1505-vacuous-instanceof.yml'
+
+          grep -Fq 'parent.getNodeType() == ASTNode.TYPE_DECLARATION' "$source"
+          if grep -Fq 'current instanceof TypeDeclaration' "$source"; then
+            echo 'The vacuous instanceof remains.' >&2
+            exit 1
+          fi
+          git diff --check
+
+          mapfile -t changed < <(git status --porcelain=v1 --untracked-files=all | sed 's/^...//' | sort)
+          mapfile -t expected < <(printf '%s\n%s\n' "$workflow" "$source" | sort)
+          if [[ "${changed[*]}" != "${expected[*]}" ]]; then
+            echo 'Unexpected changed paths:' >&2
+            printf '%s\n' "${changed[@]}" >&2
+            exit 1
+          fi
+
+          git add -- "$workflow" "$source"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Use a fail-closed parent type check for JDT UI runners'
+          git push origin HEAD:agent/junit6-inherited-test-filter
