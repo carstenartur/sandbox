@@ -97,7 +97,7 @@ jobs:
           awk -v repository="$repository" '
             /<\/locations>/ {
               print "        <!-- Exact optional JDT UI replacement for atomic Cleanup preview QA. -->"
-              print "        <location includeAllPlatforms=\"false\" includeConfigurePhase=\"true\" includeMode=\"planner\" includeSource=\"false\" type=\"InstallableUnit\">"
+              print "        <location includeAllPlatforms=\"false\" includeConfigurePhase=\"true\" includeMode=\"planner\" includeSource=\"true\" type=\"InstallableUnit\">"
               print "            <repository location=\"" repository "\"/>"
               print "            <unit id=\"sandbox_patched_jdt_ui_feature.feature.group\" version=\"0.0.0\"/>"
               print "        </location>"
