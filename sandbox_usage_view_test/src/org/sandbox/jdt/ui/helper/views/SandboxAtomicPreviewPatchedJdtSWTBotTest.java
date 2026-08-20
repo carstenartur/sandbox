@@ -19,8 +19,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import org.osgi.framework.Bundle;
-
 /**
  * Runs the coordinated Int-to-Enum preview only in the optional product path
  * that installs the pinned JDT UI replacement bundle.
@@ -35,7 +33,7 @@ public class SandboxAtomicPreviewPatchedJdtSWTBotTest {
 
     @BeforeAll
     public static void setUp() throws Exception {
-        Bundle jdtUi = Platform.getBundle(JDT_UI_BUNDLE);
+        var jdtUi = Platform.getBundle(JDT_UI_BUNDLE);
         assertNotNull(jdtUi, "The JDT UI bundle must be installed in the SWTBot runtime");
         jdtUi.loadClass(COORDINATED_CHANGE);
 
