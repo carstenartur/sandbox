@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d9e874a21fcf3a83d4530af209b16a4b1710f97bf3c9d57e1abb4a5b1893249d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "((org.eclipse.jface.text.ITextViewerExtension4)$viewer).removeTextPresentationListener($listenerField); :: isField($listenerField)\n\u003d\u003e\n((org.eclipse.jface.text.ITextViewerExtension4)$viewer).removeTextPresentationListener($listenerField);\n$listenerField \u003d null;\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jface.text.ITextViewerExtension4;\nimport org.eclipse.jface.text.ITextPresentationListener;\nimport org.eclipse.jface.text.ITextViewer;\n\nclass AbstractJavaCompletionProposal {\n    private ITextPresentationListener fTextPresentationListener;\n\n    public void unselected(ITextViewer viewer) {\n        if (fTextPresentationListener !\u003d null) {\n            ((ITextViewerExtension4)viewer).removeTextPresentationListener(fTextPresentationListener);\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jface.text.ITextViewerExtension4;\nimport org.eclipse.jface.text.ITextPresentationListener;\nimport org.eclipse.jface.text.ITextViewer;\n\nclass AbstractJavaCompletionProposal {\n    private ITextPresentationListener fTextPresentationListener;\n\n    public void unselected(ITextViewer viewer) {\n        if (fTextPresentationListener !\u003d null) {\n            ((ITextViewerExtension4)viewer).removeTextPresentationListener(fTextPresentationListener);\n            fTextPresentationListener \u003d null;\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.jface.text.ITextViewerExtension4;\nimport org.eclipse.jface.text.ITextPresentationListener;\nimport org.eclipse.jface.text.ITextViewer;\n\nclass AbstractJavaCompletionProposal {\n    private ITextPresentationListener fOtherListener;\n\n    public void unselected(ITextViewer viewer) {\n        if (fOtherListener !\u003d null) {\n            ITextPresentationListener localListener \u003d fOtherListener;\n            ((ITextViewerExtension4)viewer).removeTextPresentationListener(localListener);\n        }\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-cleanups.sandbox-hint",
+  "sourceCommit": "b4f3249552f31606a108e445cfee0172827f1c53",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "UI State Management",
+  "summary": "Nullify a field reference to a listener immediately after removing it to prevent stale references.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:58.020496692Z",
+  "ruleFingerprint": "sha256:20319eafc478193be48cc5871660a21c411418ac5db86b23f67165684e99d303",
+  "behaviorFingerprint": "sha256:34b975ef9706c209396acbe8c00bb23db206c70dca8d36135e8082d7fd8437d2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextViewerExtension4 cannot be resolved",
+    "verifiedAt": "2026-08-20T02:38:01.029516799Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-    "verifiedAt": "2026-08-19T02:38:47.735329801Z",
+    "verifiedAt": "2026-08-20T02:38:00.822959816Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

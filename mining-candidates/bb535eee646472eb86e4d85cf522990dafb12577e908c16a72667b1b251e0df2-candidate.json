@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bb535eee646472eb86e4d85cf522990dafb12577e908c16a72667b1b251e0df2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x !\u003d null \u0026\u0026 $x instanceof $Type\n\u003d\u003e\n$x instanceof $Type\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\n// Dummy class to simulate org.eclipse.jface.text.source.Annotation\nclass Annotation {\n    public String getType() { return \"base.annotation\"; }\n}\n\n// Dummy class to simulate OverrideIndicatorManager\nclass OverrideIndicatorManager {\n    static class OverrideIndicator extends Annotation {\n        // Example content\n    }\n    public static final String ANNOTATION_TYPE \u003d \"some.type\";\n}\n\npublic class MyClass {\n    private boolean checkAnnotation(Annotation annotation) {\n        // Original code with redundant null check\n        return annotation !\u003d null \u0026\u0026 annotation instanceof OverrideIndicatorManager.OverrideIndicator \u0026\u0026 OverrideIndicatorManager.ANNOTATION_TYPE.equals(annotation.getType());\n    }\n\n    private boolean anotherCheck(Object obj) {\n        // A similar case that should also match\n        return obj !\u003d null \u0026\u0026 obj instanceof String;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\n// Dummy class to simulate org.eclipse.jface.text.source.Annotation\nclass Annotation {\n    public String getType() { return \"base.annotation\"; }\n}\n\n// Dummy class to simulate OverrideIndicatorManager\nclass OverrideIndicatorManager {\n    static class OverrideIndicator extends Annotation {\n        // Example content\n    }\n    public static final String ANNOTATION_TYPE \u003d \"some.type\";\n}\n\npublic class MyClass {\n    private boolean checkAnnotation(Annotation annotation) {\n        // Cleaned up code\n        return annotation instanceof OverrideIndicatorManager.OverrideIndicator \u0026\u0026 OverrideIndicatorManager.ANNOTATION_TYPE.equals(annotation.getType());\n    }\n\n    private boolean anotherCheck(Object obj) {\n        // A similar case that should also match\n        return obj instanceof String;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\n// Dummy class to simulate org.eclipse.jface.text.source.Annotation\nclass Annotation {\n    public String getType() { return \"base.annotation\"; }\n}\n\n// Dummy class to simulate OverrideIndicatorManager\nclass OverrideIndicatorManager {\n    static class OverrideIndicator extends Annotation {\n        // Example content\n    }\n    public static final String ANNOTATION_TYPE \u003d \"some.type\";\n}\n\npublic class MyClass {\n    private boolean checkAnnotation(Annotation annotation) {\n        // This should NOT be cleaned up as instanceof is not present\n        return annotation !\u003d null \u0026\u0026 OverrideIndicatorManager.ANNOTATION_TYPE.equals(annotation.getType());\n    }\n\n    private boolean anotherCheck(String s) {\n        // This should NOT be cleaned up because it does not contain \u0027instanceof\u0027\n        return s !\u003d null \u0026\u0026 s.isEmpty();\n    }\n}",
+  "targetHintFile": "redundant-code.sandbox-hint",
+  "sourceCommit": "a86a16349e9833eab4cdeab2be1c2a5b9f80cf5f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Redundant Code",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:57.967451481Z",
+  "ruleFingerprint": "sha256:3e9b5fa614063f3b2091750cc25d3eb226e72d5b6c64a8e1bf1176695228ef5a",
+  "behaviorFingerprint": "sha256:1ad9050d26db379d2512d8a0d456e3521026d71dfe221e5d3cb87e9a4e6410e9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 16: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-20T02:38:00.996199204Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

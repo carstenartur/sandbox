@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "857b59ba64049a4bc4367ba6766adfee133cdea22a1af24309ea73423b49783d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modernize.createrewrite\u003e\n\u003c!description: Replace CodeStyleConfiguration.createImportRewrite with StubUtility.createImportRewrite as part of internal API modernization.\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jdt.ui.CodeStyleConfiguration.createImportRewrite($arg1$, $arg2$)\n\u003d\u003e\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility.createImportRewrite($arg1$, $arg2$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.rewrite.ImportRewrite;\nimport org.eclipse.jdt.ui.CodeStyleConfiguration;\n\npublic class TestClass {\n    public ImportRewrite getImportRewrite(CompilationUnit unit) {\n        // Old API usage\n        return CodeStyleConfiguration.createImportRewrite(unit, true);\n    }\n\n    public void anotherMethod() {\n        // Ensure other CodeStyleConfiguration methods are not affected\n        boolean value \u003d CodeStyleConfiguration.hasProjectSpecificSettings(null);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.rewrite.ImportRewrite;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility;\n\npublic class TestClass {\n    public ImportRewrite getImportRewrite(CompilationUnit unit) {\n        // New API usage\n        return StubUtility.createImportRewrite(unit, true);\n    }\n\n    public void anotherMethod() {\n        // Ensure other CodeStyleConfiguration methods are not affected\n        boolean value \u003d org.eclipse.jdt.ui.CodeStyleConfiguration.hasProjectSpecificSettings(null);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.rewrite.ImportRewrite;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility;\n\npublic class AnotherTestClass {\n    public ImportRewrite getImportRewrite(CompilationUnit unit) {\n        // This already uses the StubUtility, should not be changed\n        return StubUtility.createImportRewrite(unit, true);\n    }\n\n    public ImportRewrite createOtherRewrite(CompilationUnit unit) {\n        // This uses a different method, should not be changed\n        return ImportRewrite.create(unit, true);\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "3f6fd7631c92454e1f1157cad62f69a26b5deb27",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:58.009370600Z",
+  "ruleFingerprint": "sha256:cdb4be21be3673dbc7a6302983037a8113b3929f4e7b8ec893c982c428a539ff",
+  "behaviorFingerprint": "sha256:4c77318eca7747bfaafdd984f4ba9fbabeb1c599dbe938cfa711624b4719d674",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-20T02:38:01.018099037Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "77fe5984a0223da8ffd52dd11ef6b1fee88b17983cd8f9f9c4a69b63dee4288f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.actions.OpenBrowserUtil.open($url, $display, $title)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.actions.OpenBrowserUtil.open($url, $display)\n;;",
+  "beforeExample": "package test;\n\nimport java.net.MalformedURLException;\nimport java.net.URL;\nimport org.eclipse.jdt.internal.ui.actions.OpenBrowserUtil;\nimport org.eclipse.swt.widgets.Display;\n\npublic class Example {\n    public void someMethod(URL url, Display display) throws MalformedURLException {\n        // Example calls to the deprecated method\n        OpenBrowserUtil.open(new URL(\"http://example.com/page1\"), display, \"Page One\");\n        OpenBrowserUtil.open(url, Display.getDefault(), \"Default Display Page\");\n    }\n}",
+  "afterExample": "package test;\n\nimport java.net.MalformedURLException;\nimport java.net.URL;\nimport org.eclipse.jdt.internal.ui.actions.OpenBrowserUtil;\nimport org.eclipse.swt.widgets.Display;\n\npublic class Example {\n    public void someMethod(URL url, Display display) throws MalformedURLException {\n        // Expected calls after cleanup\n        OpenBrowserUtil.open(new URL(\"http://example.com/page1\"), display);\n        OpenBrowserUtil.open(url, Display.getDefault());\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.net.MalformedURLException;\nimport java.net.URL;\nimport org.eclipse.jdt.internal.ui.actions.OpenBrowserUtil;\nimport org.eclipse.swt.widgets.Display;\n\npublic class NegativeExample {\n    public void someMethod(URL url, Display display) throws MalformedURLException {\n        // This method call should not be transformed as it already uses the correct signature\n        OpenBrowserUtil.open(url, display);\n        // Another method call from a different class should also not be transformed\n        someOtherClass.staticMethod(url, display, \"Title\");\n    }\n\n    static class someOtherClass {\n        public static void staticMethod(URL url, Display display, String title) { }\n    }\n}",
+  "targetHintFile": "deprecated-api.sandbox-hint",
+  "sourceCommit": "0cfc954d3c3c71d7ddf995f27217ce7da3adc48a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Deprecated API Usage",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:57.996602671Z",
+  "ruleFingerprint": "sha256:806fc6c05c69c693f2a484ecce4fa887acba1c24e58fcb647b97949141285fc6",
+  "behaviorFingerprint": "sha256:3f19f1f986167aa6efc4e4f9fe2a9f172f936f367268753cdd544eb658279e5b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-20T02:38:01.010678213Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

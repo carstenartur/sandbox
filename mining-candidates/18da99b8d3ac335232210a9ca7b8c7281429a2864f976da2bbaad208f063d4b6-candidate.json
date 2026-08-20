@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "18da99b8d3ac335232210a9ca7b8c7281429a2864f976da2bbaad208f063d4b6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: rename-onofftags-to-offontags\u003e\n\u003c!description: Renames usages of OnOffTagsTabPage to OffOnTagsTabPage due to a class rename for consistency.\nThis rule specifically targets constructor invocations of the renamed class.\u003e\n\u003c!severity: INFO\u003e\nnew org.eclipse.jdt.internal.ui.preferences.formatter.OnOffTagsTabPage($arg1$, $arg2$)\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.preferences.formatter.OffOnTagsTabPage($arg1$, $arg2$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nimport java.util.Map;\nimport org.eclipse.swt.widgets.Composite;\n\n// Dummy classes for compilation context\nclass FormatterTabPage {\n    public FormatterTabPage(ModifyDialog dialog, Map workingValues) {}\n    protected void doCreatePreferences(Composite composite, int numColumns) {}\n}\n\nclass ModifyDialog {\n    public void addTabPage(String title, FormatterTabPage tabPage) {}\n}\n\n// The class whose constructor invocation is being renamed.\n// This class itself would be renamed in a real refactoring, but for the DSL example,\n// we provide its \u0027before\u0027 state to make the \u0027new\u0027 call match.\nclass OnOffTagsTabPage extends FormatterTabPage {\n    public OnOffTagsTabPage(ModifyDialog modifyDialog, Map workingValues) {\n        super(modifyDialog, workingValues);\n    }\n    protected void doCreatePreferences(Composite composite, int numColumns) {}\n}\n\npublic class FormatterModifyDialog {\n    ModifyDialog dialog;\n    Map values;\n    public FormatterModifyDialog(ModifyDialog dialog, Map values) {\n        this.dialog \u003d dialog;\n        this.values \u003d values;\n    }\n    public void initialize() {\n        // This is the specific usage of the constructor we want to refactor\n        dialog.addTabPage(\"On/Off Tags\", new org.eclipse.jdt.internal.ui.preferences.formatter.OnOffTagsTabPage(dialog, values));\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nimport java.util.Map;\nimport org.eclipse.swt.widgets.Composite;\n\n// Dummy classes for compilation context\nclass FormatterTabPage {\n    public FormatterTabPage(ModifyDialog dialog, Map workingValues) {}\n    protected void doCreatePreferences(Composite composite, int numColumns) {}\n}\n\nclass ModifyDialog {\n    public void addTabPage(String title, FormatterTabPage tabPage) {}\n}\n\n// The class representing the \u0027after\u0027 state of the rename.\n// This class itself would be created/renamed in a real refactoring, but for the DSL example,\n// we provide its \u0027after\u0027 state to make the \u0027new\u0027 call valid.\nclass OffOnTagsTabPage extends FormatterTabPage {\n    public OffOnTagsTabPage(ModifyDialog modifyDialog, Map workingValues) {\n        super(modifyDialog, workingValues);\n    }\n    protected void doCreatePreferences(Composite composite, int numColumns) {}\n}\n\npublic class FormatterModifyDialog {\n    ModifyDialog dialog;\n    Map values;\n    public FormatterModifyDialog(ModifyDialog dialog, Map values) {\n        this.dialog \u003d dialog;\n        this.values \u003d values;\n    }\n    public void initialize() {\n        // This is the specific usage after refactoring\n        dialog.addTabPage(\"On/Off Tags\", new org.eclipse.jdt.internal.ui.preferences.formatter.OffOnTagsTabPage(dialog, values));\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nimport java.util.Map;\nimport org.eclipse.swt.widgets.Composite;\n\n// Dummy classes for compilation context\nclass FormatterTabPage {\n    public FormatterTabPage(ModifyDialog dialog, Map workingValues) {}\n    protected void doCreatePreferences(Composite composite, int numColumns) {}\n}\n\nclass ModifyDialog {\n    public void addTabPage(String title, FormatterTabPage tabPage) {}\n}\n\n// Another class that should not be renamed by this rule\nclass SomeOtherTabPage extends FormatterTabPage {\n    public SomeOtherTabPage(ModifyDialog modifyDialog, Map workingValues) {\n        super(modifyDialog, workingValues);\n    }\n    protected void doCreatePreferences(Composite composite, int numColumns) {}\n}\n\npublic class FormatterModifyDialog {\n    ModifyDialog dialog;\n    Map values;\n    public FormatterModifyDialog(ModifyDialog dialog, Map values) {\n        this.dialog \u003d dialog;\n        this.values \u003d values;\n    }\n    public void initialize() {\n        // This constructor call for a different class should not be matched\n        dialog.addTabPage(\"Some Other Tags\", new org.eclipse.jdt.internal.ui.preferences.formatter.SomeOtherTabPage(dialog, values));\n        \n        // Direct field access (e.g., class literal) should not be matched by a constructor pattern\n        Class\u003c?\u003e clazz \u003d org.eclipse.jdt.internal.ui.preferences.formatter.OnOffTagsTabPage.class;\n    }\n}\n",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "752ba792f1e48cb1bab526a65252011861e027af",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Refactoring",
+  "summary": "Replaces constructor invocations of `OnOffTagsTabPage` with `OffOnTagsTabPage`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:58.056320577Z",
+  "ruleFingerprint": "sha256:18f09274231287e7349e9413ffe50e4c7c6f57198d6dcff5cad0c90cc7f764a6",
+  "behaviorFingerprint": "sha256:779beb5ed9e17b9b4580b53b73e49cf2fdb319cc596157b0c6b13ad2187607a7",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-20T02:38:01.063383903Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

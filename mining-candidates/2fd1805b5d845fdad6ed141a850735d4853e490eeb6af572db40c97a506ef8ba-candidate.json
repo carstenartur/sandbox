@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2fd1805b5d845fdad6ed141a850735d4853e490eeb6af572db40c97a506ef8ba",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.ui.IPageLayout.ID_RES_NAV\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPlugin.ID_RES_NAV\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.IPageLayout;\nimport org.eclipse.jdt.ui.JavaUI;\nimport org.eclipse.ui.part.IShowInTargetList;\n\npublic class Example {\n    public static final String VIEW_ID \u003d IPageLayout.ID_RES_NAV;\n\n    public String[] getTargetIds() {\n        return new String[] { JavaUI.ID_PACKAGES, IPageLayout.ID_RES_NAV  };\n    }\n\n    public void showView(org.eclipse.ui.IWorkbenchPage page) {\n        // Example usage: page.showView(IPageLayout.ID_RES_NAV);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.IPageLayout;\nimport org.eclipse.jdt.ui.JavaUI;\nimport org.eclipse.ui.part.IShowInTargetList;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class Example {\n    public static final String VIEW_ID \u003d JavaPlugin.ID_RES_NAV;\n\n    public String[] getTargetIds() {\n        return new String[] { JavaUI.ID_PACKAGES, JavaPlugin.ID_RES_NAV  };\n    }\n\n    public void showView(org.eclipse.ui.IWorkbenchPage page) {\n        // Example usage: page.showView(JavaPlugin.ID_RES_NAV);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.ui.IPageLayout;\n\npublic class NegativeExample {\n    public static final String OTHER_ID \u003d IPageLayout.ID_OUTLINE; // Should not be affected\n    public static final String SOME_STRING \u003d \"ID_RES_NAV\"; // Not the constant reference\n}",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "ad1ef0107d7fa250f7cc282a89af7e15b1f96002",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace IPageLayout.ID_RES_NAV with JavaPlugin.ID_RES_NAV",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:58.029987067Z",
+  "ruleFingerprint": "sha256:989178948b77b5de40a79b90521a0404c34c404d1e3d9a1e6925213d6a9262ba",
+  "behaviorFingerprint": "sha256:7ada00f5526473bd1333a0e9e6096628c4b00bf7d784f9806fd91a86f40e7711",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-08-20T02:38:01.038414850Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
