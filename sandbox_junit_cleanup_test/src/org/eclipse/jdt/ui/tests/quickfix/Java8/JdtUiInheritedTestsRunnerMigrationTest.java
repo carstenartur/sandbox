@@ -11,6 +11,8 @@
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,9 +25,12 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.junit.JUnitCore;
 
 import org.sandbox.jdt.internal.corext.fix.helper.JdtUiInheritedTestsRunnerMigration;
@@ -36,8 +41,14 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 /** Regression coverage for the JDT UI custom inherited-test runner. */
 public class JdtUiInheritedTestsRunnerMigrationTest {
 
+	private static final String CUSTOM_BASE_RUNNER= "org.eclipse.jdt.ui.tests.CustomBaseRunner"; //$NON-NLS-1$
+
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava17();
+
+	private record RunnerFixture(ICompilationUnit marker, ICompilationUnit filter, ICompilationUnit runner,
+			ICompilationUnit base, ICompilationUnit version) {
+	}
 
 	private IPackageFragmentRoot root;
 
@@ -58,14 +69,77 @@ public class JdtUiInheritedTestsRunnerMigrationTest {
 		method.modifiers().add(annotation);
 		type.bodyDeclarations().add(method);
 
-		var assessment= JdtUiInheritedTestsRunnerMigration.assess(annotation,
-				"org.eclipse.jdt.ui.tests.CustomBaseRunner"); //$NON-NLS-1$
+		var assessment= JdtUiInheritedTestsRunnerMigration.assess(annotation, CUSTOM_BASE_RUNNER);
 
 		assertEquals("NOT_JDT_UI_INHERITED_TEST_RUNNER", assessment.reasonCode()); //$NON-NLS-1$
 	}
 
 	@Test
+	public void invalidatesCachedContractWhenFilterSourceChanges() throws CoreException {
+		RunnerFixture fixture= createRunnerFixture();
+		var accepted= JdtUiInheritedTestsRunnerMigration.assess(primaryType(fixture.version()), CUSTOM_BASE_RUNNER);
+		assertTrue(accepted.eligible(), accepted::explanation);
+
+		String originalFilter= fixture.filter().getSource();
+		String changedFilter= originalFilter.replace("\t\treturn true;\n", "\t\treturn false;\n"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(originalFilter.equals(changedFilter), "The fixture must contain the supported final return"); //$NON-NLS-1$
+		fixture.filter().getBuffer().setContents(changedFilter);
+		fixture.filter().save(null, true);
+
+		var rejected= JdtUiInheritedTestsRunnerMigration.assess(primaryType(fixture.version()), CUSTOM_BASE_RUNNER);
+		assertFalse(rejected.eligible(), "A changed filter contract must not reuse the cached acceptance"); //$NON-NLS-1$
+		assertEquals("JDT_UI_RUNNER_CONTRACT_CHANGED", rejected.reasonCode()); //$NON-NLS-1$
+	}
+
+	@Test
 	public void materializesSuppressionAndCompilesAgainstJUnit6() throws CoreException {
+		RunnerFixture fixture= createRunnerFixture();
+
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
+		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
+				new ICompilationUnit[] { fixture.marker(), fixture.filter(), fixture.runner(), fixture.base(),
+						fixture.version() },
+				new String[] {
+						fixture.marker().getSource(),
+						fixture.filter().getSource(),
+						fixture.runner().getSource(),
+						"""
+						package org.eclipse.jdt.ui.tests.refactoring;
+
+						import org.junit.jupiter.api.Test;
+
+						public class BaseTests {
+							@Test
+							public void testSelected() throws Exception {
+							}
+
+							@Test
+							public void testInherited() throws Exception {
+							}
+						}
+						""",
+						"""
+						package org.eclipse.jdt.ui.tests.refactoring;
+
+						import org.junit.jupiter.api.Test;
+
+						public class VersionTests extends BaseTests {
+							@Override
+							@Test
+							public void testSelected() throws Exception {
+							}
+
+							@Override
+							public void testInherited() throws Exception {
+								super.testInherited();
+							}
+						}
+						""" }, null);
+	}
+
+	private RunnerFixture createRunnerFixture() throws CoreException {
 		IPackageFragment support= root.createPackageFragment("org.eclipse.jdt.ui.tests", true, null); //$NON-NLS-1$
 		IPackageFragment tests= root.createPackageFragment("org.eclipse.jdt.ui.tests.refactoring", true, null); //$NON-NLS-1$
 
@@ -167,47 +241,17 @@ public class JdtUiInheritedTestsRunnerMigrationTest {
 					}
 				}
 				""", false, null);
+		return new RunnerFixture(marker, filter, runner, base, version);
+	}
 
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_TEST);
-		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH);
-		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
-				new ICompilationUnit[] { marker, filter, runner, base, version },
-				new String[] {
-						marker.getSource(),
-						filter.getSource(),
-						runner.getSource(),
-						"""
-						package org.eclipse.jdt.ui.tests.refactoring;
-
-						import org.junit.jupiter.api.Test;
-
-						public class BaseTests {
-							@Test
-							public void testSelected() throws Exception {
-							}
-
-							@Test
-							public void testInherited() throws Exception {
-							}
-						}
-						""",
-						"""
-						package org.eclipse.jdt.ui.tests.refactoring;
-
-						import org.junit.jupiter.api.Test;
-
-						public class VersionTests extends BaseTests {
-							@Override
-							@Test
-							public void testSelected() throws Exception {
-							}
-
-							@Override
-							public void testInherited() throws Exception {
-								super.testInherited();
-							}
-						}
-						""" }, null);
+	private TypeDeclaration primaryType(ICompilationUnit unit) {
+		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
+		parser.setProject(unit.getJavaProject());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(false);
+		parser.setStatementsRecovery(false);
+		CompilationUnit rootNode= (CompilationUnit) parser.createAST(null);
+		return (TypeDeclaration) rootNode.types().get(0);
 	}
 }

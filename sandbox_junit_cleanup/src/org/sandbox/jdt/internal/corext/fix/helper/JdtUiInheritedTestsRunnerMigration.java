@@ -18,13 +18,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -106,6 +110,13 @@ public final class JdtUiInheritedTestsRunnerMigration {
 	private static final String TARGET_META_ANNOTATION= "java.lang.annotation.Target"; //$NON-NLS-1$
 	private static final String ELEMENT_TYPE= "java.lang.annotation.ElementType"; //$NON-NLS-1$
 
+	/**
+	 * One entry per Java project. Values deliberately contain no project or Java
+	 * model references so the weak project keys can be reclaimed with the
+	 * workspace project.
+	 */
+	private static final Map<IJavaProject, ContractCacheEntry> CONTRACT_CACHE= new WeakHashMap<>();
+
 	/** One inherited method that must be shadowed in the migrated subclass. */
 	public record SuppressedMethod(String name, List<String> thrownExceptionTypes) {
 
@@ -147,6 +158,16 @@ public final class JdtUiInheritedTestsRunnerMigration {
 		MethodCollection {
 			methods= List.copyOf(methods);
 		}
+	}
+
+	private record ContractSourceState(String runnerBindingKey, String runnerHandle, String runnerSource,
+			String filterHandle, String filterSource) {
+	}
+
+	private record ContractSnapshot(IJavaProject project, ContractSourceState sourceState) {
+	}
+
+	private record ContractCacheEntry(ContractSourceState sourceState, String rejection) {
 	}
 
 	private JdtUiInheritedTestsRunnerMigration() {
@@ -192,7 +213,7 @@ public final class JdtUiInheritedTestsRunnerMigration {
 					"The marker must remain a binding-resolved @Inherited, @Retention(RUNTIME), @Target(TYPE) annotation."); //$NON-NLS-1$
 		}
 
-		String runnerRejection= verifyRunnerAndFilterContract(runnerBinding);
+		String runnerRejection= verifyRunnerAndFilterContractCached(runnerBinding);
 		if (runnerRejection != null) {
 			return Assessment.rejected("JDT_UI_RUNNER_CONTRACT_CHANGED", runnerRejection); //$NON-NLS-1$
 		}
@@ -245,6 +266,67 @@ public final class JdtUiInheritedTestsRunnerMigration {
 		imports.removeImport(ORG_JUNIT_RUNWITH);
 		imports.removeImport(CUSTOM_BASE_RUNNER);
 		imports.removeImport(IGNORE_INHERITED_TESTS);
+	}
+
+	/**
+	 * Reuses the project-wide runner/filter contract result while still rebuilding
+	 * the subclass-specific rewrite plan from the current AST. Exact source text
+	 * is part of the cache state, including unsaved working-copy contents, so any
+	 * change to either support type forces a fresh fail-closed verification.
+	 */
+	private static String verifyRunnerAndFilterContractCached(ITypeBinding runnerBinding) {
+		ContractSnapshot before= contractSnapshot(runnerBinding);
+		if (before == null) {
+			return verifyRunnerAndFilterContract(runnerBinding);
+		}
+		synchronized (CONTRACT_CACHE) {
+			ContractCacheEntry cached= CONTRACT_CACHE.get(before.project());
+			if (cached != null && cached.sourceState().equals(before.sourceState())) {
+				return cached.rejection();
+			}
+		}
+
+		String rejection= verifyRunnerAndFilterContract(runnerBinding);
+		ContractSnapshot after= contractSnapshot(runnerBinding);
+		if (after != null && before.project().equals(after.project())
+				&& before.sourceState().equals(after.sourceState())) {
+			synchronized (CONTRACT_CACHE) {
+				CONTRACT_CACHE.put(before.project(), new ContractCacheEntry(before.sourceState(), rejection));
+			}
+		}
+		return rejection;
+	}
+
+	private static ContractSnapshot contractSnapshot(ITypeBinding runnerBinding) {
+		ITypeBinding erasedRunner= erasure(runnerBinding);
+		IJavaElement runnerElement= erasedRunner == null ? null : erasedRunner.getJavaElement();
+		if (!(runnerElement instanceof IType runnerType)) {
+			return null;
+		}
+		ICompilationUnit runnerUnit= runnerType.getCompilationUnit();
+		IJavaProject project= runnerType.getJavaProject();
+		if (runnerUnit == null || project == null) {
+			return null;
+		}
+		try {
+			IType filterType= project.findType(INHERITED_TESTS_FILTER);
+			ICompilationUnit filterUnit= filterType == null ? null : filterType.getCompilationUnit();
+			if (filterUnit == null) {
+				return null;
+			}
+			String runnerSource= runnerUnit.getSource();
+			String filterSource= filterUnit.getSource();
+			if (runnerSource == null || filterSource == null) {
+				return null;
+			}
+			ContractSourceState state= new ContractSourceState(
+					Objects.toString(erasedRunner.getKey(), ""), //$NON-NLS-1$
+					runnerUnit.getPrimary().getHandleIdentifier(), runnerSource,
+					filterUnit.getPrimary().getHandleIdentifier(), filterSource);
+			return new ContractSnapshot(project, state);
+		} catch (JavaModelException exception) {
+			return null;
+		}
 	}
 
 	private static String verifyRunnerAndFilterContract(ITypeBinding runnerBinding) {
@@ -524,7 +606,8 @@ public final class JdtUiInheritedTestsRunnerMigration {
 	}
 
 	private static TypeDeclaration sourceDeclaration(ITypeBinding binding) {
-		IJavaElement element= erasure(binding).getJavaElement();
+		ITypeBinding erased= erasure(binding);
+		IJavaElement element= erased == null ? null : erased.getJavaElement();
 		if (!(element instanceof IType sourceType)) {
 			return null;
 		}
@@ -539,8 +622,8 @@ public final class JdtUiInheritedTestsRunnerMigration {
 		parser.setBindingsRecovery(false);
 		parser.setStatementsRecovery(false);
 		CompilationUnit root= (CompilationUnit) parser.createAST(null);
-		String expectedKey= erasure(binding).getKey();
-		String expectedName= erasure(binding).getQualifiedName();
+		String expectedKey= erased.getKey();
+		String expectedName= erased.getQualifiedName();
 		TypeDeclaration[] result= new TypeDeclaration[1];
 		root.accept(new ASTVisitor() {
 			@Override
