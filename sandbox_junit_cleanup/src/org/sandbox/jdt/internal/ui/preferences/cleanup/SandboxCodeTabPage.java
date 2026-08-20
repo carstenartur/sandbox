@@ -78,6 +78,11 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				JUnitMigrationOptions.BEST_EFFORT, FALSE_TRUE);
 
 		intent(junitGroup);
+		CheckboxPreference junit6Compatibility= createCheckboxPref(junitGroup, numColumns - 1,
+				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JUNIT6_COMPATIBILITY,
+				JUnitMigrationOptions.JUNIT6_COMPATIBILITY, FALSE_TRUE);
+
+		intent(junitGroup);
 		Label quickSelectLabel= new Label(junitGroup, SWT.NONE);
 		quickSelectLabel.setText(CleanUpMessages.JavaFeatureTabPage_QuickSelect_Label);
 
@@ -221,6 +226,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 		registerSlavePreference(junit, new CheckboxPreference[] {
 				bestEffort,
+				junit6Compatibility,
 				junitAssert,
 				junitAssume,
 				junitIgnore,
@@ -251,6 +257,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 		Map<String, CheckboxPreference> junit4Preferences= Map.ofEntries(
 				Map.entry(JUnitMigrationOptions.BEST_EFFORT, bestEffort),
+				Map.entry(JUnitMigrationOptions.JUNIT6_COMPATIBILITY, junit6Compatibility),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, junitAssert),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION, junitAssertOptimization),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME, junitAssume),

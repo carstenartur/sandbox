@@ -226,7 +226,8 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
 		EnumSet<JUnitCleanUpFixCore> fixes= computeFixSet();
 		boolean migrateExternalResourceRules= fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE);
-		boolean followSuiteMembership= isEnabled(JUNIT_CLEANUP) && !fixes.isEmpty();
+		boolean followSuiteMembership= isEnabled(JUNIT_CLEANUP)
+				&& fixes.stream().anyMatch(fix -> fix != JUnitCleanUpFixCore.JUNIT6_COMPATIBILITY);
 		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);
 		Set<String> lifecycleAnnotations= lifecycleAnnotations(fixes);
 		boolean migrateLifecycleHierarchies= !lifecycleAnnotations.isEmpty();
@@ -401,6 +402,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE, JUnitCleanUpFixCore.IGNORE),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY, JUnitCleanUpFixCore.CATEGORY),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER, JUnitCleanUpFixCore.FIX_METHOD_ORDER),
+				Map.entry(JUnitMigrationOptions.JUNIT6_COMPATIBILITY, JUnitCleanUpFixCore.JUNIT6_COMPATIBILITY),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH, JUnitCleanUpFixCore.RUNWITH),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE, JUnitCleanUpFixCore.SUITEMETHOD),
 				Map.entry(MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE, JUnitCleanUpFixCore.EXTERNALRESOURCE),

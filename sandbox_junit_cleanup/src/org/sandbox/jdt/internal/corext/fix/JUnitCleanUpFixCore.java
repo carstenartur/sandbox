@@ -45,6 +45,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.BeforeJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.CategoryJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ExternalResourceJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.FixMethodOrderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.JUnit6CompatibilityJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.IgnoreJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.LostTestFinderJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.RuleErrorCollectorJUnitPlugin;
@@ -79,6 +80,7 @@ public enum JUnitCleanUpFixCore {
 	IGNORE(new IgnoreJUnitPlugin()),
 	CATEGORY(new CategoryJUnitPlugin()),
 	FIX_METHOD_ORDER(new FixMethodOrderJUnitPlugin()),
+	JUNIT6_COMPATIBILITY(new JUnit6CompatibilityJUnitPlugin()),
 	RUNWITH(new RunWithJUnitPlugin()),
 	SUITEMETHOD(new SuiteMethodJUnitPlugin()),
 	ASSERT(new AssertJUnitPlugin()),

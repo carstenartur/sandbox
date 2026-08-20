@@ -4,15 +4,22 @@
 
 ## Overview
 
-The **JUnit Cleanup** plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). It transforms test classes, methods, annotations, and assertions to use the modern JUnit 5 API, making test code more maintainable and feature-rich.
+The **JUnit Cleanup** plugin provides automated migration from JUnit 3/4 to
+**JUnit Jupiter**. The generated Jupiter source is shared by JUnit 5 and JUnit 6;
+the selected Eclipse JUnit container and project dependencies determine the
+runtime major version.
 
 ## Key Features
 
-- 🔄 **Automated JUnit 3 → 5 Migration** - Transform `extends TestCase` to annotations
-- 🔄 **JUnit 4 → 5 Migration** - Update annotations and assertions
+- 🔄 **Automated JUnit 3 → Jupiter Migration** - Transform `extends TestCase` to annotations
+- 🔄 **JUnit 4 → Jupiter Migration** - Update annotations and assertions
 - 🧪 **Assertion Migration** - Convert `assertEquals()` to message-last pattern
 - 📦 **Lifecycle Methods** - Transform `setUp()`/`tearDown()` to `@BeforeEach`/`@AfterEach`
 - 🎯 **Exception Testing** - Convert `@Test(expected=...)` to `assertThrows()`
+- 🧬 **Inherited-test filtering** - Preserve the JDT UI `CustomBaseRunner`
+  contract without counting suppressed inherited tests
+- 6️⃣ **JUnit 6 compatibility cleanup** - Rewrite binding-proven APIs removed by JUnit 6
+- 🧪 **JUnit 6 verification** - Compile generated source against Eclipse's JUnit 6 container
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse JDT
 
 ## Quick Start
@@ -21,7 +28,11 @@ The **JUnit Cleanup** plugin provides automated migration from JUnit 3/4 to JUni
 
 1. Open **Source** → **Clean Up...**
 2. Navigate to the **JUnit** category
-3. Enable **Migrate to JUnit 5**
+3. Enable **JUnit migrations and compatibility rewrites**, then select the required migration options
+
+For a JUnit 6 target, enable **Upgrade JUnit Jupiter 5 source to JUnit 6** and add
+the Eclipse JUnit 6 container. Non-Java dependency and ServiceLoader changes
+remain project-level refactorings and are not applied silently by a source cleanup.
 
 ### Example Transformations
 
