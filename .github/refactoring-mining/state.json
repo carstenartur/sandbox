@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "c500a24536e05d8ccdab0d5fa0cea77a1077b1fd",
-      "lastProcessedDate": "2026-08-19T02:38:42.816179710Z",
-      "totalProcessed": 4191,
+      "lastProcessedCommit": "8294273d8d34117c1860d8d61460e1e9c2ac0857",
+      "lastProcessedDate": "2026-08-20T02:37:56.895879249Z",
+      "totalProcessed": 4267,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3017,6 +3017,15 @@
           "deferredAt": "2026-08-19T02:32:13.388271192Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "0719e52a5ba860ea870d84771c979bb591f5dbff",
+          "message": "Bug 295638: [refactoring][actions] Use ImportRewriteContext everywhere (patch from Deepak)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-20T02:37:48.062352820Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3080,7 +3089,7 @@
         "Algorithm/Sorting Logic": 1,
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
-        "Refactoring": 1,
+        "Refactoring": 2,
         "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
@@ -3171,7 +3180,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 29,
+        "API Modernization": 32,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3187,7 +3196,7 @@
         "Generics Modernization": 2,
         "Configuration Update": 2,
         "Type Mismatch Cleanup": 1,
-        "API usage": 1,
+        "API usage": 2,
         "UI Color Management": 1,
         "Expression Simplification": 2,
         "API Fix": 1,
@@ -3233,7 +3242,10 @@
         "Control Flow Refactoring": 1,
         "Method Extraction/Call Site Refactoring": 1,
         "Bug Fix / Robustness": 1,
-        "Nullability": 1
+        "Nullability": 1,
+        "Redundant Code": 1,
+        "Deprecated API Usage": 1,
+        "UI State Management": 1
       },
       "exhaustedCategories": []
     },
@@ -3274,5 +3286,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 26962
+  "globalTotalProcessed": 27038
 }
