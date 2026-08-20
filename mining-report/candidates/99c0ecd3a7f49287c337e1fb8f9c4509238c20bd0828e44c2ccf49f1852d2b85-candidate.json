@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "99c0ecd3a7f49287c337e1fb8f9c4509238c20bd0828e44c2ccf49f1852d2b85",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPerspectiveFactory.ID_PROJECT_EXPLORER\n\u003d\u003e\norg.eclipse.ui.IPageLayout.ID_PROJECT_EXPLORER\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.IPageLayout;\nimport org.eclipse.jdt.internal.ui.JavaPerspectiveFactory;\n\npublic class Example {\n    public static final String PROJECT_EXPLORER_ID \u003d JavaPerspectiveFactory.ID_PROJECT_EXPLORER;\n\n    public void addPlaceholder(IPageLayout layout) {\n        // layout.createPlaceholderFolder(\"left\", IPageLayout.LEFT, 0.25f, \"editorArea\").addPlaceholder(JavaPerspectiveFactory.ID_PROJECT_EXPLORER);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.IPageLayout;\n\npublic class Example {\n    public static final String PROJECT_EXPLORER_ID \u003d IPageLayout.ID_PROJECT_EXPLORER;\n\n    public void addPlaceholder(IPageLayout layout) {\n        // layout.createPlaceholderFolder(\"left\", IPageLayout.LEFT, 0.25f, \"editorArea\").addPlaceholder(IPageLayout.ID_PROJECT_EXPLORER);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.ui.IPageLayout;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class NegativeExample {\n    public static final String RES_NAV_ID \u003d JavaPlugin.ID_RES_NAV; // Not affected\n    public static final String OUTLINE_ID \u003d IPageLayout.ID_OUTLINE; // Not affected\n}",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "5d7c6fe9495847b81e4914c77062032708a9afce",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace JavaPerspectiveFactory.ID_PROJECT_EXPLORER with IPageLayout.ID_PROJECT_EXPLORER",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:58.038965059Z",
+  "ruleFingerprint": "sha256:f07666e9b11458838c40cddea9204b518abdc51bdb0c94c70d0318d0435876cf",
+  "behaviorFingerprint": "sha256:686a8d3cbf426aec20d1ea32fb6454b29ce074104deabf40969c45ab58f8fc75",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-08-20T02:38:01.046841140Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

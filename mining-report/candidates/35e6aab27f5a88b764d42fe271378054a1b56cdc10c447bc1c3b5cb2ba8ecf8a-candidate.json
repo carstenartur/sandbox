@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "35e6aab27f5a88b764d42fe271378054a1b56cdc10c447bc1c3b5cb2ba8ecf8a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.preferences.formatter.FormatterMessages.LineWrappingTabPage_force_split_checkbox_multi_text\n\u003d\u003e\norg.eclipse.jdt.internal.ui.preferences.formatter.FormatterMessages.LineWrappingTabPage_force_split_checkbox_text\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class LineWrappingTabPage {\n    private Button fForceSplit;\n    \n    public void someMethod(Composite fOptionsGroup, int numColumns) {\n        fForceSplit \u003d new Button(fOptionsGroup, 0); // Placeholder for SWT.CHECK\n        String label \u003d FormatterMessages.LineWrappingTabPage_force_split_checkbox_multi_text;\n        fForceSplit.setText(label);\n    }\n}\n\nclass FormatterMessages {\n    public static String LineWrappingTabPage_force_split_checkbox_multi_text \u003d \"\u0026Force split\";\n    public static String LineWrappingTabPage_force_split_checkbox_text \u003d \"\u0026Force split (even if line shorter than maximum line width)\";\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class LineWrappingTabPage {\n    private Button fForceSplit;\n    \n    public void someMethod(Composite fOptionsGroup, int numColumns) {\n        fForceSplit \u003d new Button(fOptionsGroup, 0); // Placeholder for SWT.CHECK\n        String label \u003d FormatterMessages.LineWrappingTabPage_force_split_checkbox_text;\n        fForceSplit.setText(label);\n    }\n}\n\nclass FormatterMessages {\n    public static String LineWrappingTabPage_force_split_checkbox_multi_text \u003d \"\u0026Force split\";\n    public static String LineWrappingTabPage_force_split_checkbox_text \u003d \"\u0026Force split (even if line shorter than maximum line width)\";\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences.formatter;\n\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class LineWrappingTabPage {\n    private Button fForceSplit;\n    \n    public void someMethod(Composite fOptionsGroup, int numColumns) {\n        fForceSplit \u003d new Button(fOptionsGroup, 0); // Placeholder for SWT.CHECK\n        String label \u003d \"Some other string literal\";\n        fForceSplit.setText(label);\n        String otherLabel \u003d FormatterMessages.LineWrappingTabPage_line_width_for_preview_label_text; // Another valid static field access\n        fForceSplit.setText(otherLabel);\n    }\n}\n\nclass FormatterMessages {\n    public static String LineWrappingTabPage_force_split_checkbox_multi_text \u003d \"\u0026Force split\";\n    public static String LineWrappingTabPage_force_split_checkbox_text \u003d \"\u0026Force split (even if line shorter than maximum line width)\";\n    public static String LineWrappingTabPage_line_width_for_preview_label_text \u003d \"\u0026Set line width for preview window:\";\n}",
+  "targetHintFile": "messages.sandbox-hint",
+  "sourceCommit": "8d609888d1d308aa407b9c01a6a0ca3f28ad58af",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API usage",
+  "summary": "Replaces a specific static field reference to `LineWrappingTabPage_force_split_checkbox_multi_text` with `LineWrappingTabPage_force_split_checkbox_text`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-20T02:37:58.047961148Z",
+  "ruleFingerprint": "sha256:e0c5daf7688a5a65b3104db84789e3821a8aa908905c5230101267957f124c28",
+  "behaviorFingerprint": "sha256:a426218867131c043883d87efdbaf875d8698727bffef5627c2c575c48926a7e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-20T02:38:01.057336922Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
