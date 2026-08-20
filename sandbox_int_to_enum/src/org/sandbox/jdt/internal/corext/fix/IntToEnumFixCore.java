@@ -96,7 +96,7 @@ public enum IntToEnumFixCore {
 				// Get the first IntConstantHolder from the hit map
 				IntConstantHolder holder = hit.values().stream().findFirst().orElse(null);
 				if (holder != null) {
-					recoverLocalCallSites(holder, cuRewrite.getRoot());
+					recoverLocalCallSites(holder);
 					if (holder.switchStatement != null) {
 						rangeComputer.addTightSourceNode(holder.switchStatement);
 					}
@@ -116,10 +116,11 @@ public enum IntToEnumFixCore {
 	 * carries a temporarily stale method or constant binding. Candidate discovery
 	 * has already proven the private method and enum-like constants; this final
 	 * structural pass only fills a missing replacement within the same top-level
-	 * type. Qualified calls, overloads, nested types and shadowed constants remain
-	 * fail-closed.
+	 * type. Traversal starts at the already validated owner type, so it does not
+	 * depend on identity with a potentially reparsed shared AST root. Qualified
+	 * calls, overloads, nested types and shadowed constants remain fail-closed.
 	 */
-	private static void recoverLocalCallSites(IntConstantHolder holder, CompilationUnit compilationUnit) {
+	private static void recoverLocalCallSites(IntConstantHolder holder) {
 		if (holder.method == null || holder.enclosingType == null || holder.method.parameters().size() != 1) {
 			return;
 		}
@@ -132,13 +133,17 @@ public enum IntToEnumFixCore {
 		}
 
 		Set<String> constantNames = new HashSet<>(holder.constantNames);
-		compilationUnit.accept(new ASTVisitor() {
+		holder.enclosingType.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(TypeDeclaration type) {
+				return type == holder.enclosingType;
+			}
+
 			@Override
 			public boolean visit(MethodInvocation invocation) {
 				if (invocation.getExpression() != null
 						|| !invocation.getName().getIdentifier().equals(methodName)
-						|| invocation.arguments().size() != 1
-						|| findEnclosingType(invocation) != holder.enclosingType) {
+						|| invocation.arguments().size() != 1) {
 					return true;
 				}
 				MethodDeclaration caller = findEnclosingMethod(invocation);
@@ -194,17 +199,6 @@ public enum IntToEnumFixCore {
 		while (current != null) {
 			if (current instanceof MethodDeclaration method) {
 				return method;
-			}
-			current = current.getParent();
-		}
-		return null;
-	}
-
-	private static TypeDeclaration findEnclosingType(ASTNode node) {
-		ASTNode current = node.getParent();
-		while (current != null) {
-			if (current instanceof TypeDeclaration type) {
-				return type;
 			}
 			current = current.getParent();
 		}
