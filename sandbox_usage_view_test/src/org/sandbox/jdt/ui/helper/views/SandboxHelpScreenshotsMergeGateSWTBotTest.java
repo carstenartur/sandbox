@@ -115,6 +115,11 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
         }
     }
 
+    @Test
+    public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
+        screenshots.coordinatedIntToEnumPreviewIsAtomic();
+    }
+
     private static String activePreviewTree() {
         try {
             SWTWorkbenchBot workbench = new SWTWorkbenchBot();

@@ -114,10 +114,11 @@ jobs:
           fi
           printf 'Verified JUnit report: %s\n' "$report"
 
-      # The real Cleanup preview methods remain executable, but their committed
-      # images are maintained separately from the deterministic configuration-tab
-      # baselines verified by this merge gate.
-      - name: Restore separately maintained real-preview images
+      # The standard JFace preview remains executable, but its three committed
+      # images are maintained separately from the deterministic baselines. The
+      # coordinated Int-to-Enum preview is part of this merge gate and its image
+      # deliberately remains in the working tree for reproducibility verification.
+      - name: Restore separately maintained JFace real-preview images
         run: >-
           git restore --source=HEAD --
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
