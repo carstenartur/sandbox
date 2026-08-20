@@ -117,7 +117,15 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
     @Test
     public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
-        screenshots.coordinatedIntToEnumPreviewIsAtomic();
+        IUndoManager undoManager = RefactoringCore.getUndoManager();
+        undoManager.flush();
+        try {
+            IProject previewProject = ResourcesPlugin.getWorkspace().getRoot().getProject(CLEANUP_PREVIEW_PROJECT);
+            buildPreviewProject(previewProject);
+            screenshots.coordinatedIntToEnumPreviewIsAtomic();
+        } finally {
+            undoManager.flush();
+        }
     }
 
     private static String activePreviewTree() {
@@ -158,6 +166,12 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
                 "org.eclipse.equinox.common",
                 "org.eclipse.jface",
                 "org.eclipse.swt");
+        buildPreviewProject(project);
+    }
+
+    private static void buildPreviewProject(IProject project) throws Exception {
+        assertTrue(project.exists(), "The deterministic Cleanup preview project must exist");
+        NullProgressMonitor monitor = new NullProgressMonitor();
         ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.FULL_BUILD, monitor);
         Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
         assertNoJavaErrors(project);
