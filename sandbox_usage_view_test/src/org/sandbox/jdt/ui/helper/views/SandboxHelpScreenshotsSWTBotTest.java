@@ -100,6 +100,23 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private record CleanUpPreview(SWTBotShell shell, SWTBotTree tree) {
     }
 
+    private enum CleanUpWizardPageKind {
+        CONDITION_STATUS,
+        PREVIEW
+    }
+
+    private record CleanUpWizardPage(SWTBotShell shell, CleanUpWizardPageKind kind,
+            SWTBotTree previewTree) {
+
+        private static CleanUpWizardPage conditionStatus(SWTBotShell shell) {
+            return new CleanUpWizardPage(shell, CleanUpWizardPageKind.CONDITION_STATUS, null);
+        }
+
+        private static CleanUpWizardPage preview(SWTBotShell shell, SWTBotTree tree) {
+            return new CleanUpWizardPage(shell, CleanUpWizardPageKind.PREVIEW, tree);
+        }
+    }
+
     private static final List<CleanupTab> CLEANUP_TABS = List.of(
             new CleanupTab("Explicit Encoding (Sandbox)", "sandbox_encoding_quickfix_help",
                     "explicit-encoding-cleanup.png"),
@@ -339,8 +356,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
         ownerNode.select();
         SWTBotShell wizard = openCleanUpWizard(ownerNode);
-        clickButton(wizard, "Next >", "Next >");
-        CleanUpPreview preview = waitForCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        CleanUpPreview preview = openCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
         prepareForScreenshot(wizard);
 
@@ -385,8 +401,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 .getNode("src").expand().getNode("demo.coordinated").expand().getNode("StateOwner.java");
         ownerNode.select();
         wizard = openCleanUpWizard(ownerNode);
-        clickButton(wizard, "Next >", "Next >");
-        preview = waitForCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
+        preview = openCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
         previewTree = preview.tree();
         candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
@@ -609,30 +624,62 @@ public class SandboxHelpScreenshotsSWTBotTest {
         return result[0].activate();
     }
 
-    private static CleanUpPreview waitForCleanUpPreview(SWTBotShell originatingWizard,
+    private static CleanUpPreview openCleanUpPreview(SWTBotShell originatingWizard,
             String expectedItemFragment) {
-        CleanUpPreview[] result = new CleanUpPreview[1];
+        clickButton(originatingWizard, "Next >", "&Next >");
+        CleanUpWizardPage page = waitForCleanUpPreviewOrStatusPage(originatingWizard,
+                expectedItemFragment);
+        if (page.kind() == CleanUpWizardPageKind.CONDITION_STATUS) {
+            assertTrue(hasVisibleEnabledButton(page.shell(), "Next >"),
+                    () -> "The Clean Up condition status blocks the preview. "
+                            + "Visible shell controls:\n" + visibleShellDiagnostics());
+            clickButton(page.shell(), "Next >", "&Next >");
+            page = waitForCleanUpPreviewPage(page.shell(), expectedItemFragment);
+        }
+        return new CleanUpPreview(page.shell().activate(), page.previewTree());
+    }
+
+    private static CleanUpWizardPage waitForCleanUpPreviewOrStatusPage(
+            SWTBotShell originatingWizard, String expectedItemFragment) {
+        CleanUpWizardPage[] result = new CleanUpWizardPage[1];
         bot.waitUntil(new DefaultCondition() {
             @Override
             public boolean test() {
-                for (SWTBotShell shell : bot.shells()) {
-                    if (!shell.isOpen() || (!shell.getText().startsWith("Clean Up")
-                            && shell.widget != originatingWizard.widget)) {
-                        continue;
-                    }
-                    Tree tree = previewTreeControl(shell);
-                    if (tree == null) {
-                        continue;
-                    }
-                    try {
-                        SWTBotTree previewTree = new SWTBotTree(tree);
-                        if (findTreeItemContaining(previewTree, expectedItemFragment) == null) {
-                            continue;
-                        }
-                        result[0] = new CleanUpPreview(shell, previewTree);
+                for (SWTBotShell shell : candidateCleanUpShells(originatingWizard)) {
+                    SWTBotTree previewTree = visibleTreeContaining(shell, expectedItemFragment);
+                    if (previewTree != null) {
+                        result[0] = CleanUpWizardPage.preview(shell, previewTree);
                         return true;
-                    } catch (WidgetNotFoundException exception) {
-                        // The page changed while SWTBot was inspecting the control; retry.
+                    }
+                    if (hasVisibleControl(shell, "RefactoringStatusViewer")) {
+                        result[0] = CleanUpWizardPage.conditionStatus(shell);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The Clean Up wizard exposed neither its condition status nor '"
+                        + expectedItemFragment + "'. Visible shell controls:\n"
+                        + visibleShellDiagnostics();
+            }
+        });
+        return result[0];
+    }
+
+    private static CleanUpWizardPage waitForCleanUpPreviewPage(SWTBotShell originatingWizard,
+            String expectedItemFragment) {
+        CleanUpWizardPage[] result = new CleanUpWizardPage[1];
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                for (SWTBotShell shell : candidateCleanUpShells(originatingWizard)) {
+                    SWTBotTree previewTree = visibleTreeContaining(shell, expectedItemFragment);
+                    if (previewTree != null) {
+                        result[0] = CleanUpWizardPage.preview(shell, previewTree);
+                        return true;
                     }
                 }
                 return false;
@@ -645,7 +692,108 @@ public class SandboxHelpScreenshotsSWTBotTest {
                         + visibleShellDiagnostics();
             }
         });
-        return new CleanUpPreview(result[0].shell().activate(), result[0].tree());
+        return result[0];
+    }
+
+    private static List<SWTBotShell> candidateCleanUpShells(SWTBotShell originatingWizard) {
+        return java.util.Arrays.stream(bot.shells())
+                .filter(SWTBotShell::isOpen)
+                .filter(shell -> shell.widget == originatingWizard.widget
+                        || shell.getText().startsWith("Clean Up"))
+                .toList();
+    }
+
+    private static SWTBotTree visibleTreeContaining(SWTBotShell shell, String expectedItemFragment) {
+        for (Tree tree : visibleTreeControls(shell)) {
+            try {
+                SWTBotTree candidateTree = new SWTBotTree(tree);
+                if (findTreeItemContaining(candidateTree, expectedItemFragment) != null) {
+                    return candidateTree;
+                }
+            } catch (WidgetNotFoundException exception) {
+                // The page replaced the tree while SWTBot was inspecting it; retry later.
+            }
+        }
+        return null;
+    }
+
+    private static List<Tree> visibleTreeControls(SWTBotShell shell) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<List<Tree>>() {
+            @Override
+            public List<Tree> run() {
+                List<Tree> trees = new ArrayList<>();
+                if (shell.widget.isDisposed()) {
+                    return trees;
+                }
+                Deque<Control> pending = new ArrayDeque<>();
+                pending.add(shell.widget);
+                while (!pending.isEmpty()) {
+                    Control control = pending.removeFirst();
+                    if (control instanceof Tree tree && tree.isVisible()) {
+                        trees.add(tree);
+                    }
+                    if (control instanceof Composite composite) {
+                        for (Control child : composite.getChildren()) {
+                            pending.addLast(child);
+                        }
+                    }
+                }
+                return trees;
+            }
+        });
+    }
+
+    private static boolean hasVisibleControl(SWTBotShell shell, String simpleClassName) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
+            @Override
+            public Boolean run() {
+                if (shell.widget.isDisposed()) {
+                    return Boolean.FALSE;
+                }
+                Deque<Control> pending = new ArrayDeque<>();
+                pending.add(shell.widget);
+                while (!pending.isEmpty()) {
+                    Control control = pending.removeFirst();
+                    if (control.isVisible()
+                            && control.getClass().getSimpleName().equals(simpleClassName)) {
+                        return Boolean.TRUE;
+                    }
+                    if (control instanceof Composite composite) {
+                        for (Control child : composite.getChildren()) {
+                            pending.addLast(child);
+                        }
+                    }
+                }
+                return Boolean.FALSE;
+            }
+        });
+    }
+
+    private static boolean hasVisibleEnabledButton(SWTBotShell shell, String text) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
+            @Override
+            public Boolean run() {
+                if (shell.widget.isDisposed()) {
+                    return Boolean.FALSE;
+                }
+                Deque<Control> pending = new ArrayDeque<>();
+                pending.add(shell.widget);
+                while (!pending.isEmpty()) {
+                    Control control = pending.removeFirst();
+                    if (control instanceof Button button && button.isVisible()
+                            && button.isEnabled()
+                            && text.equals(button.getText().replace("&", ""))) {
+                        return Boolean.TRUE;
+                    }
+                    if (control instanceof Composite composite) {
+                        for (Control child : composite.getChildren()) {
+                            pending.addLast(child);
+                        }
+                    }
+                }
+                return Boolean.FALSE;
+            }
+        });
     }
 
     private static void waitForCoordinatedPreviewDetails(SWTBotShell wizard) {
@@ -676,57 +824,6 @@ public class SandboxHelpScreenshotsSWTBotTest {
                         + "Visible shell controls:\n" + visibleShellDiagnostics();
             }
         });
-    }
-
-    private static Tree previewTreeControl(SWTBotShell shell) {
-        return UIThreadRunnable.syncExec(shell.display, new Result<Tree>() {
-            @Override
-            public Tree run() {
-                if (shell.widget.isDisposed()) {
-                    return null;
-                }
-                Tree tree = findControl(shell.widget, Tree.class);
-                if (tree == null || !hasButton(shell.widget, "Finish")
-                        || !hasButton(shell.widget, "Cancel")) {
-                    return null;
-                }
-                return tree;
-            }
-        });
-    }
-
-    private static <T extends Control> T findControl(Control root, Class<T> type) {
-        Deque<Control> pending = new ArrayDeque<>();
-        pending.add(root);
-        while (!pending.isEmpty()) {
-            Control control = pending.removeFirst();
-            if (type.isInstance(control) && !control.isDisposed()) {
-                return type.cast(control);
-            }
-            if (control instanceof Composite composite) {
-                for (Control child : composite.getChildren()) {
-                    pending.addLast(child);
-                }
-            }
-        }
-        return null;
-    }
-
-    private static boolean hasButton(Control root, String text) {
-        Deque<Control> pending = new ArrayDeque<>();
-        pending.add(root);
-        while (!pending.isEmpty()) {
-            Control control = pending.removeFirst();
-            if (control instanceof Button button && text.equals(button.getText())) {
-                return true;
-            }
-            if (control instanceof Composite composite) {
-                for (Control child : composite.getChildren()) {
-                    pending.addLast(child);
-                }
-            }
-        }
-        return false;
     }
 
     private static String visibleShellDiagnostics() {
