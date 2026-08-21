@@ -6,6 +6,7 @@ on:
       - qa/junit-coordinated-preview-contract
     paths:
       - .github/workflows/tmp-pr1514-render-junit-containers.yml
+      - sandbox_usage_view_test/pr1514-junit-containers.trigger
 
 permissions:
   contents: read
