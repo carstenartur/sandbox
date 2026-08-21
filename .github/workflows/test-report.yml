@@ -46,6 +46,7 @@ jobs:
         path: |
           test-report.md
           test-report.json
+          sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
         retention-days: 9
 
     - name: Display inventory summary
