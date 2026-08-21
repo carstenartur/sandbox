@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "012b7e304c77ea96c1e990c1ef26266ca6de646f025d0d92696485057bf87d20",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.ui.JavaElementImageDescriptor.PROJECT_ERROR\n\u003d\u003e\norg.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator.PROJECT_ERROR\n;;",
+  "beforeExample": "class JavaElementImageDescriptor {\n    public static final int ERROR \u003d 0x1;\n    public static final int WARNING \u003d 0x2;\n    public static final int PROJECT_ERROR \u003d 0x2000;\n}\n\nclass PackageExplorerProblemsDecorator {\n    // In the \u0027before\u0027 state, this class may not define PROJECT_ERROR publicly,\n    // but it needs to exist for the \u0027after\u0027 state\u0027s compilation.\n}\n\npublic class MyClientCode {\n    private static final int MY_PROJECT_ERROR \u003d JavaElementImageDescriptor.PROJECT_ERROR;\n\n    public int getStatus(int flags) {\n        if ((flags \u0026 JavaElementImageDescriptor.PROJECT_ERROR) !\u003d 0) {\n            return MY_PROJECT_ERROR;\n        }\n        return 0;\n    }\n}",
+  "afterExample": "class JavaElementImageDescriptor {\n    public static final int ERROR \u003d 0x1;\n    public static final int WARNING \u003d 0x2;\n    // PROJECT_ERROR is either removed or aliased internally, so external references are replaced.\n}\n\nclass PackageExplorerProblemsDecorator {\n    public static final int PROJECT_ERROR \u003d 0x2000;\n}\n\npublic class MyClientCode {\n    private static final int MY_PROJECT_ERROR \u003d PackageExplorerProblemsDecorator.PROJECT_ERROR;\n\n    public int getStatus(int flags) {\n        if ((flags \u0026 PackageExplorerProblemsDecorator.PROJECT_ERROR) !\u003d 0) {\n            return MY_PROJECT_ERROR;\n        }\n        return 0;\n    }\n}",
+  "negativeExample": "class JavaElementImageDescriptor {\n    public static final int ERROR \u003d 0x1;\n    public static final int WARNING \u003d 0x2;\n    public static final int PROJECT_ERROR \u003d 0x2000;\n}\n\nclass PackageExplorerProblemsDecorator {\n    public static final int PROJECT_ERROR \u003d 0x2000;\n}\n\npublic class MyClientCode {\n    // This constant should not be changed by the rule as it\u0027s not PROJECT_ERROR\n    private static final int MY_OTHER_ERROR \u003d JavaElementImageDescriptor.ERROR;\n\n    public int getStatus(int flags) {\n        if ((flags \u0026 JavaElementImageDescriptor.WARNING) !\u003d 0) {\n            return MY_OTHER_ERROR;\n        }\n        return 0;\n    }\n}",
+  "targetHintFile": "api-migration.sandbox-hint",
+  "sourceCommit": "7c8ebb369dbad33c9331a5c43f9ee20e00fd0433",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces references to the `PROJECT_ERROR` constant from `JavaElementImageDescriptor` with its new location in `PackageExplorerProblemsDecorator`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.360427188Z",
+  "ruleFingerprint": "sha256:89a46719db1884ee71731dd7a41b2deda45d844d31d60de5369af8a191c2eeec",
+  "behaviorFingerprint": "sha256:5d199ff6045ac23c7b240ea227468110b9edc34c1c19d5b2e08b01425baf5a5b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 12: The public type MyClientCode must be defined in its own file",
+    "verifiedAt": "2026-08-21T02:41:58.067168016Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

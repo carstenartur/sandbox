@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8dffbad2bb56afa27ab8fff7953b79ba37dc5e36635b0e0802cbcd214b6de60b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jdt.internal.ui.callhierarchy.RefreshElementAction(this, $viewer)\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.callhierarchy.RefreshElementAction($viewer)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nimport org.eclipse.jface.viewers.ISelectionProvider;\n\npublic class CallHierarchyViewPart {\n    CallHierarchyViewer fCallHierarchyViewer;\n    RefreshElementAction fRefreshSingleElementAction;\n\n    public ISelectionProvider getSelection() { return null; }\n    public CallHierarchyViewer getViewer() { return fCallHierarchyViewer; }\n\n    private void makeActions() {\n        // Old constructor call: RefreshElementAction(part, viewer)\n        fRefreshSingleElementAction \u003d new RefreshElementAction(this, fCallHierarchyViewer);\n    }\n}\n\n// Simplified RefreshElementAction for example context\nclass RefreshElementAction {\n    CallHierarchyViewer fViewer;\n    public RefreshElementAction(CallHierarchyViewPart part, CallHierarchyViewer viewer) {\n        fViewer \u003d viewer;\n        // fPart \u003d part; // Imagine this was removed from the actual class\n    }\n}\n\nclass CallHierarchyViewer {}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nimport org.eclipse.jface.viewers.ISelectionProvider;\n\npublic class CallHierarchyViewPart {\n    CallHierarchyViewer fCallHierarchyViewer;\n    RefreshElementAction fRefreshSingleElementAction;\n\n    public ISelectionProvider getSelection() { return null; }\n    public CallHierarchyViewer getViewer() { return fCallHierarchyViewer; }\n\n    private void makeActions() {\n        // New constructor call: RefreshElementAction(viewer)\n        fRefreshSingleElementAction \u003d new RefreshElementAction(fCallHierarchyViewer);\n    }\n}\n\n// Simplified RefreshElementAction for example context, matching the new constructor signature\nclass RefreshElementAction {\n    CallHierarchyViewer fViewer;\n    public RefreshElementAction(CallHierarchyViewer viewer) { \n        fViewer \u003d viewer;\n    }\n}\n\nclass CallHierarchyViewer {}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\npublic class MyOtherClass {\n    RefreshElementAction fOtherAction;\n    CallHierarchyViewer fCallHierarchyViewer;\n\n    private void makeSomething() {\n        // This call should not match as it already has the simplified one-argument constructor format.\n        fOtherAction \u003d new RefreshElementAction(fCallHierarchyViewer);\n    }\n}\n\n// Simplified RefreshElementAction for example context\nclass RefreshElementAction {\n    CallHierarchyViewer fViewer;\n    public RefreshElementAction(CallHierarchyViewer viewer) {\n        fViewer \u003d viewer;\n    }\n}\n\nclass CallHierarchyViewer {}",
+  "targetHintFile": "eclipse-jdt-ui-cleanup.sandbox-hint",
+  "sourceCommit": "4816adf57bcd10de85af2c3c405f311e0567962a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Simplification",
+  "summary": "Simplifies the `RefreshElementAction` constructor call by removing the `this` (CallHierarchyViewPart) argument. This is safe because the `RefreshElementAction` constructor was refactored to no longer require or store this argument.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.334647151Z",
+  "ruleFingerprint": "sha256:9509e95521318202802a204c641a0bd2b6bc7662ed36ac6b36d25c4d178c7574",
+  "behaviorFingerprint": "sha256:84a4fcb65fb1ce9b17177ab067fdf0cf3dc7da3b6e3444d184688a50063ff9b8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-08-21T02:41:58.040751605Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

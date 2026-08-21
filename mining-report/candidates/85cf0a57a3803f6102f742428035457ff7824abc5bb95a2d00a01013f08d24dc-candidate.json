@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "85cf0a57a3803f6102f742428035457ff7824abc5bb95a2d00a01013f08d24dc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: method.visibility.to.packagePrivate\u003e\n\u003c!description: Changes a specific private method to package-private.\n   This is typically done to allow access from other classes within the same package\n   without exposing it to the entire module or requiring a public API.\n   Based on bug 308898 fix where activeJavaEditorChanged needed to be called from ClassFileEditor.\u003e\n\u003c!severity: HINT\u003e\n\nprivate void $name($params$) :: methodNameMatches($name, \"activeJavaEditorChanged\")\n\u003d\u003e\nvoid $name($params$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.ui.IWorkbenchPart;\nimport org.eclipse.jdt.core.ITypeRoot;\n\npublic class ASTProvider {\n    private void activeJavaEditorChanged(IWorkbenchPart editor) {\n        ITypeRoot javaElement \u003d null;\n        // ... some logic ...\n    }\n\n    private void anotherPrivateMethod(IWorkbenchPart part) {\n        System.out.println(\"No change here.\");\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.ui.IWorkbenchPart;\nimport org.eclipse.jdt.core.ITypeRoot;\n\npublic class ASTProvider {\n    void activeJavaEditorChanged(IWorkbenchPart editor) {\n        ITypeRoot javaElement \u003d null;\n        // ... some logic ...\n    }\n\n    private void anotherPrivateMethod(IWorkbenchPart part) {\n        System.out.println(\"No change here.\");\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.ui.IWorkbenchPart;\nimport org.eclipse.jdt.core.ITypeRoot;\n\npublic class ASTProvider {\n    public void activeJavaEditorChanged(IWorkbenchPart editor) {\n        System.out.println(\"Already public, no change.\");\n    }\n\n    private void someOtherPrivateMethod(IWorkbenchPart editor) {\n        System.out.println(\"Different name, no change.\");\n    }\n}",
+  "targetHintFile": "visibility.sandbox-hint",
+  "sourceCommit": "68747f1a984c22aa8a58fcbe4e7e5ac2170a5a6e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Visibility Refactoring",
+  "summary": "Transforms a specific private method `activeJavaEditorChanged` to have package-private visibility.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.374058436Z",
+  "ruleFingerprint": "sha256:42886b2252b5ef22d919175897d09a3c676d9354c5b54eb481ffb124215820e7",
+  "behaviorFingerprint": "sha256:415850ab1ef6876c23d82c6c0b4bc31df6e599308cddb7aaf5240157b630324f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-21T02:41:58.074903905Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

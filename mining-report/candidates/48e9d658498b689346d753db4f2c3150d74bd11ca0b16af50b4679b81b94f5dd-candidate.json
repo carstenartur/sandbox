@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "48e9d658498b689346d753db4f2c3150d74bd11ca0b16af50b4679b81b94f5dd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$root.getRawClasspathEntry()\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JavaModelUtil.getClasspathEntry($root)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    public void processRoot(IPackageFragmentRoot root) throws JavaModelException {\n        // Assume root is a valid IPackageFragmentRoot instance\n        IClasspathEntry entry \u003d root.getRawClasspathEntry();\n        if (entry !\u003d null) {\n            System.out.println(\"Path: \" + entry.getPath());\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.corext.util.JavaModelUtil;\n\npublic class TestClass {\n    public void processRoot(IPackageFragmentRoot root) throws JavaModelException {\n        // Assume root is a valid IPackageFragmentRoot instance\n        IClasspathEntry entry \u003d JavaModelUtil.getClasspathEntry(root);\n        if (entry !\u003d null) {\n            System.out.println(\"Path: \" + entry.getPath());\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IClasspathEntry;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class NegativeTestClass {\n    public void processProject(IJavaProject project) throws JavaModelException {\n        // This should not be matched as it\u0027s a different method on a different type\n        IClasspathEntry[] entries \u003d project.getRawClasspath();\n        System.out.println(\"Project Classpath: \" + entries.length);\n    }\n\n    public IClasspathEntry someOtherMethod(IPackageFragmentRoot root) {\n        // This should not be matched as it\u0027s a different method call\n        return root.getResolvedClasspathEntry();\n    }\n}",
+  "targetHintFile": "jdt-ui-api-modernization.sandbox-hint",
+  "sourceCommit": "ee89ad47c7c75c97deff0a7163e993b74d1139a6",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.213565727Z",
+  "ruleFingerprint": "sha256:9ad01189ecddf5a2739d5fc40782d960321b0e75b09ef193fb5b470a4d6b7696",
+  "behaviorFingerprint": "sha256:60d8429779aefe77bc519c3acecd40cf8da7c98d86e3c8fefcd8dbe8eb0a13a9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-08-21T02:41:57.963420069Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

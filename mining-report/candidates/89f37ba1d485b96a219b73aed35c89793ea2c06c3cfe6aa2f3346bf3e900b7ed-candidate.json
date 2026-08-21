@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "89f37ba1d485b96a219b73aed35c89793ea2c06c3cfe6aa2f3346bf3e900b7ed",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.corext.util.Strings.markLTR($x, org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabelComposer.ADDITIONAL_DELIMITERS) :: instanceof($x, \"java.lang.String\")\n\u003d\u003e org.eclipse.jdt.internal.corext.util.Strings.markJavaElementLabelLTR($x)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.util.Strings;\nimport org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabelComposer;\nimport org.eclipse.jface.viewers.StyledString;\n\npublic class TestClass {\n    public String getLabel(String name) {\n        return Strings.markLTR(name, JavaElementLabelComposer.ADDITIONAL_DELIMITERS);\n    }\n\n    public String getAnotherLabel(StringBuilder buf) {\n        return Strings.markLTR(buf.toString(), JavaElementLabelComposer.ADDITIONAL_DELIMITERS);\n    }\n\n    // This method matches the pattern and guard, as StyledString.toString() returns a String.\n    public String getStyledStringLabel(StyledString styled) {\n        return Strings.markLTR(styled.toString(), JavaElementLabelComposer.ADDITIONAL_DELIMITERS);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.util.Strings;\n\n// JavaElementLabelComposer.ADDITIONAL_DELIMITERS is removed and no longer needed.\n// Assuming Strings.markJavaElementLabelLTR is available.\nimport org.eclipse.jface.viewers.StyledString;\n\npublic class TestClass {\n    public String getLabel(String name) {\n        return Strings.markJavaElementLabelLTR(name);\n    }\n\n    public String getAnotherLabel(StringBuilder buf) {\n        return Strings.markJavaElementLabelLTR(buf.toString());\n    }\n\n    // This method\u0027s argument is String, so the rule applies safely.\n    public String getStyledStringLabel(StyledString styled) {\n        return Strings.markJavaElementLabelLTR(styled.toString());\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.corext.util.Strings;\nimport org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabelComposer;\nimport org.eclipse.jface.viewers.StyledString;\n\npublic class NegativeTestClass {\n\n    // Should not match: different second argument (String literal)\n    public String getFilePattern(String name) {\n        return Strings.markLTR(name, \"*.?\");\n    }\n\n    // Should not match: second argument is a local variable, not the specific constant\n    public String getUrlPart(String name, String delimiters) {\n        return Strings.markLTR(name, delimiters);\n    }\n\n    // Should not match: $x is a StyledString object, not a java.lang.String. The \u0027instanceof\u0027 guard prevents this match.\n    // (The `markLTR` method might have an overload for StyledString, but this rule specifically targets String arguments).\n    public StyledString getStyledStringArgumentExample(StyledString styledResult) {\n        return Strings.markLTR(styledResult, JavaElementLabelComposer.ADDITIONAL_DELIMITERS);\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "ef296f0cde63e6465dd0f1c8ff44f82974be77a6",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.321679677Z",
+  "ruleFingerprint": "sha256:d3a36a69a12049cc8e34e70c87c06373320f5fb4f38a237d6f3c908bc7b3d833",
+  "behaviorFingerprint": "sha256:bf96402f81569209010ac500640eaf599a89e47322c05e159db86a2f0180a2b1",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-08-21T02:41:58.027915969Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b905feeb895391772225decfa43156f215010d93afedd9ace7c4976ed351b777",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.text.TextMessages.markLTR($result)\n\u003d\u003e org.eclipse.jface.text.TextMessages.markJavaElementLabelLTR($result)\n;;",
+  "beforeExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.jface.text.StyledString;\nimport org.eclipse.jdt.core.IJavaElement;\n\n// This mock class simulates the behavior of org.eclipse.jface.text.TextMessages\n// and is required for the example to be self-contained and compile.\nclass TextMessages {\n    public static StyledString markLTR(StyledString s) { return s; }\n    public static StyledString markJavaElementLabelLTR(StyledString s) { return s; }\n}\n\npublic class JavaElementLabels {\n    public static StyledString getStyledElementLabel(IJavaElement element, long flags) {\n        StyledString result\u003d new StyledString();\n        // Assume getElementLabel populates result\n        return TextMessages.markLTR(result);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.ui;\n\nimport org.eclipse.jface.text.StyledString;\nimport org.eclipse.jdt.core.IJavaElement;\n\n// This mock class simulates the behavior of org.eclipse.jface.text.TextMessages\n// and is required for the example to be self-contained and compile.\nclass TextMessages {\n    public static StyledString markLTR(StyledString s) { return s; }\n    public static StyledString markJavaElementLabelLTR(StyledString s) { return s; }\n}\n\npublic class JavaElementLabels {\n    public static StyledString getStyledElementLabel(IJavaElement element, long flags) {\n        StyledString result\u003d new StyledString();\n        // Assume getElementLabel populates result\n        return TextMessages.markJavaElementLabelLTR(result);\n    }\n}",
+  "negativeExample": "package some.other.package;\n\nimport org.eclipse.jface.text.StyledString;\n\nclass AnotherStrings {\n    public static StyledString markLTR(StyledString s) { return s; }\n}\n\npublic class MyClass {\n    public StyledString someMethod(StyledString label) {\n        // This should not be matched as the FQN of \u0027AnotherStrings\u0027 does not match \u0027org.eclipse.jface.text.TextMessages\u0027\n        return AnotherStrings.markLTR(label);\n    }\n}",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "f80f91d95533401c2cdb2546465ce0223439d338",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces a generic BiDi (Bidirectional text) marker method with a more specialized one for Java element labels within Eclipse JDT UI. This is a direct method call replacement improving semantic clarity for specific UI elements.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.347985099Z",
+  "ruleFingerprint": "sha256:49c3a107de9041107190ed88687cd232c9ff23423d1d853162020a920b64d6e2",
+  "behaviorFingerprint": "sha256:3899b6a5c82845de10aba47b9815f5251453663fb66a0580a85f08d832cd93d8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.StyledString cannot be resolved",
+    "verifiedAt": "2026-08-21T02:41:58.054165576Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

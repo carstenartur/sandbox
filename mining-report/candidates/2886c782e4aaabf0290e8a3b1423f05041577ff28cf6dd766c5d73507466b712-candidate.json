@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2886c782e4aaabf0290e8a3b1423f05041577ff28cf6dd766c5d73507466b712",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: textprocessor.deprocess.labelprovider.text\n@description: Wrap ILabelProvider.getText() calls with TextProcessor.deprocess() to remove BiDi markers. This is useful for preventing BiDi markers from appearing in copied text.\n@severity: HINT\n*/\norg.eclipse.jface.viewers.ILabelProvider $provider.getText($element)\n\u003d\u003e\norg.eclipse.osgi.util.TextProcessor.deprocess($provider.getText($element))\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jface.viewers.ILabelProvider;\nimport org.eclipse.swt.graphics.Image;\n\nclass MyLabelProvider implements ILabelProvider {\n    @Override\n    public Image getImage(Object element) { return null; }\n    @Override\n    public String getText(Object element) { return element.toString(); }\n    @Override\n    public void addListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}\n    @Override\n    public void dispose() {}\n    @Override\n    public boolean isLabelProperty(Object element, String property) { return false; }\n    @Override\n    public void removeListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}\n}\n\npublic class TestClass {\n    ILabelProvider fLabelProvider \u003d new MyLabelProvider();\n\n    public String getResourceName(Object resource) {\n        return fLabelProvider.getText(resource);\n    }\n\n    public String getJavaElementName(IJavaElement javaElement) {\n        return fLabelProvider.getText(javaElement);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jface.viewers.ILabelProvider;\nimport org.eclipse.osgi.util.TextProcessor;\nimport org.eclipse.swt.graphics.Image;\n\nclass MyLabelProvider implements ILabelProvider {\n    @Override\n    public Image getImage(Object element) { return null; }\n    @Override\n    public String getText(Object element) { return element.toString(); }\n    @Override\n    public void addListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}\n    @Override\n    public void dispose() {}\n    @Override\n    public boolean isLabelProperty(Object element, String property) { return false; }\n    @Override\n    public void removeListener(org.eclipse.jface.viewers.ILabelProviderListener listener) {}\n}\n\npublic class TestClass {\n    ILabelProvider fLabelProvider \u003d new MyLabelProvider();\n\n    public String getResourceName(Object resource) {\n        return TextProcessor.deprocess(fLabelProvider.getText(resource));\n    }\n\n    public String getJavaElementName(IJavaElement javaElement) {\n        return TextProcessor.deprocess(fLabelProvider.getText(javaElement));\n    }\n}",
+  "negativeExample": "package test;\n\npublic class NegativeTestClass {\n    public String getSimpleText() {\n        return \"some text\";\n    }\n\n    class CustomObject {\n        public String getText() { return \"custom text\"; }\n    }\n\n    public String getCustomObjectText() {\n        CustomObject obj \u003d new CustomObject();\n        return obj.getText(); // Should not match: not called on ILabelProvider\n    }\n\n    public String getOtherText() {\n        String s \u003d \"hello\";\n        return s; // No getText() call\n    }\n}",
+  "targetHintFile": "text-processing.sandbox-hint",
+  "sourceCommit": "d4634f58d2c0ec7060776e0530ea58565caf4b43",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Wrap calls to ILabelProvider.getText() with TextProcessor.deprocess().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.307442162Z",
+  "ruleFingerprint": "sha256:2ffddc51dfc0d791794035c2589ad543fe555e4f813c57c849580a6416e2ffe5",
+  "behaviorFingerprint": "sha256:1db5ed6cec8c3693cdb5935707f3e3cd5e94a3037d9031b69a19a92982b9f178",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-08-21T02:41:58.013171414Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
