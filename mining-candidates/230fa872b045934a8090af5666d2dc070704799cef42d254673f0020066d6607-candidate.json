@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "230fa872b045934a8090af5666d2dc070704799cef42d254673f0020066d6607",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.use-preference-constants-abbreviate-package-names\u003e\n\u003c!description: Replace reference to \u0027JavaElementLabelComposer.APPEARANCE_ABBREVIATE_PACKAGE_NAMES\u0027 with \u0027PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES\u0027. This uses the preferred constant from the central PreferenceConstants class.\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.internal.ui.viewers.JavaElementLabelComposer.APPEARANCE_ABBREVIATE_PACKAGE_NAMES\n\u003d\u003e\norg.eclipse.jdt.ui.PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES\n;;",
+  "beforeExample": "package org.eclipse.jface.preference;\npublic interface IPreferenceStore {\n    void setDefault(String key, boolean value);\n    void setDefault(String key, String value);\n}\n\npackage org.eclipse.jdt.internal.ui.viewers;\npublic class JavaElementLabelComposer {\n    public static final String APPEARANCE_ABBREVIATE_PACKAGE_NAMES \u003d \"key1\";\n    public static final String APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW \u003d \"key2\";\n}\n\npackage org.eclipse.jdt.ui;\npublic class PreferenceConstants {\n    public static final String APPEARANCE_ABBREVIATE_PACKAGE_NAMES \u003d \"key1\";\n    public static final String APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW \u003d \"key2\";\n}\n\npackage com.example;\n\npublic class MyClass {\n    public void configurePreferences(org.eclipse.jface.preference.IPreferenceStore store) {\n        store.setDefault(org.eclipse.jdt.internal.ui.viewers.JavaElementLabelComposer.APPEARANCE_ABBREVIATE_PACKAGE_NAMES, false);\n    }\n}",
+  "afterExample": "package org.eclipse.jface.preference;\npublic interface IPreferenceStore {\n    void setDefault(String key, boolean value);\n    void setDefault(String key, String value);\n}\n\npackage org.eclipse.jdt.internal.ui.viewers;\npublic class JavaElementLabelComposer {\n    public static final String APPEARANCE_ABBREVIATE_PACKAGE_NAMES \u003d \"key1\";\n    public static final String APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW \u003d \"key2\";\n}\n\npackage org.eclipse.jdt.ui;\npublic class PreferenceConstants {\n    public static final String APPEARANCE_ABBREVIATE_PACKAGE_NAMES \u003d \"key1\";\n    public static final String APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW \u003d \"key2\";\n}\n\npackage com.example;\n\npublic class MyClass {\n    public void configurePreferences(org.eclipse.jface.preference.IPreferenceStore store) {\n        store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES, false);\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.preference;\npublic interface IPreferenceStore {\n    void setDefault(String key, boolean value);\n    void setDefault(String key, String value);\n}\n\npackage org.eclipse.jdt.internal.ui.viewers;\npublic class JavaElementLabelComposer {\n    public static final String APPEARANCE_ABBREVIATE_PACKAGE_NAMES \u003d \"key1\";\n    public static final String APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW \u003d \"key2\";\n}\n\npackage org.eclipse.jdt.ui;\npublic class PreferenceConstants {\n    public static final String APPEARANCE_ABBREVIATE_PACKAGE_NAMES \u003d \"key1\";\n    public static final String APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW \u003d \"key2\";\n}\n\npackage com.example;\n\npublic class MyClass {\n    public void configurePreferences(org.eclipse.jface.preference.IPreferenceStore store) {\n        // This already uses the preferred constant, should not be matched\n        store.setDefault(org.eclipse.jdt.ui.PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES, false);\n        // This uses a different constant, not targeted by the specific rule\n        store.setDefault(org.eclipse.jdt.internal.ui.viewers.JavaElementLabelComposer.APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW, \"\");\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "e7164676f5a971fd4cb1d44019815407063a3414",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Refactoring",
+  "summary": "Replaces a specific constant reference from `JavaElementLabelComposer` with its equivalent from `PreferenceConstants`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-21T02:41:54.293040340Z",
+  "ruleFingerprint": "sha256:89aa712e919b2b94c543b02ddfe23ee0bdd725eb116a27039112c9ff730c909c",
+  "behaviorFingerprint": "sha256:fac655f94ec0f2706046451b490e49fa470545ec2c015637194c680bdc7d0e0b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-21T02:41:57.998484878Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
