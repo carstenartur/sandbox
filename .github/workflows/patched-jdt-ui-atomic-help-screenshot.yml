@@ -72,7 +72,7 @@ jobs:
           marker='sandbox_usage_view_test/pr1513-accept-atomic-preview.txt'
           workflow='.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
           destination='sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
-          source="$(find \"$RUNNER_TEMP/reviewed-atomic-preview\" -type f \
+          source="$(find "$RUNNER_TEMP/reviewed-atomic-preview" -type f \
             -path '*/sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png' \
             -print -quit)"
           test -n "$HEAD_BRANCH"
