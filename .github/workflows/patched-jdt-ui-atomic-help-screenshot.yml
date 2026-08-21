@@ -66,11 +66,9 @@ jobs:
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-          RESTORE_COMMIT: ed16668896226b4600ab70e33ce9d35d99f6e975
         run: |
           set -euo pipefail
           marker='sandbox_usage_view_test/pr1513-accept-atomic-preview.txt'
-          workflow='.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
           destination='sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
           source="$(find "$RUNNER_TEMP/reviewed-atomic-preview" -type f \
             -path '*/sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png' \
@@ -88,9 +86,8 @@ jobs:
           git fetch origin "$HEAD_BRANCH"
           git checkout -B "$HEAD_BRANCH" "origin/$HEAD_BRANCH"
           cp "$RUNNER_TEMP/int-to-enum-coordinated-preview.png" "$destination"
-          git checkout "$RESTORE_COMMIT" -- "$workflow"
           git rm "$marker"
-          git add "$destination" "$workflow"
+          git add "$destination"
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
