@@ -12,6 +12,7 @@ package org.sandbox.jdt.ui.tests.quickfix.rules;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
@@ -23,6 +24,7 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.junit.JUnitCore;
 import org.osgi.framework.Bundle;
 
 /**
@@ -35,22 +37,42 @@ import org.osgi.framework.Bundle;
  * they can hide missing dependencies and do not prove the binding contract used
  * by real JDT Core or JDT UI projects.
  * </p>
+ * <p>
+ * Eclipse packages the JUnit libraries behind JDT classpath containers rather
+ * than one OSGi bundle per library package. The well-known JUnit package
+ * identifiers below therefore resolve through the official JDT containers so
+ * fixtures see the same nested libraries as ordinary Eclipse Java projects.
+ * </p>
  */
 public final class EclipseBundleClasspath {
+
+	private static final Map<String, IPath> JUNIT_LIBRARY_CONTAINERS= Map.of(
+			"org.junit", JUnitCore.JUNIT4_CONTAINER_PATH, //$NON-NLS-1$
+			"org.junit.jupiter.api", JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$
+			"org.apiguardian.api", JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$
+			"org.opentest4j", JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$
+			"org.junit.platform.commons", JUnitCore.JUNIT5_CONTAINER_PATH); //$NON-NLS-1$
 
 	private EclipseBundleClasspath() {
 	}
 
 	/**
-	 * Adds all named bundles and their installed fragments.
+	 * Adds all named bundles and their installed fragments. Well-known JUnit
+	 * library package identifiers use the corresponding Eclipse JUnit container.
 	 *
 	 * @param javaProject the temporary Java project
-	 * @param bundleSymbolicNames exact bundle symbolic names
-	 * @throws CoreException if a bundle cannot be resolved or added
+	 * @param bundleSymbolicNames exact bundle symbolic names or supported JUnit
+	 *                            library package identifiers
+	 * @throws CoreException if a dependency cannot be resolved or added
 	 */
 	public static void addBundles(IJavaProject javaProject, String... bundleSymbolicNames) throws CoreException {
 		for (String bundleSymbolicName : bundleSymbolicNames) {
-			addBundle(javaProject, bundleSymbolicName);
+			IPath junitContainer= JUNIT_LIBRARY_CONTAINERS.get(bundleSymbolicName);
+			if (junitContainer != null) {
+				addToClasspath(javaProject, JavaCore.newContainerEntry(junitContainer));
+			} else {
+				addBundle(javaProject, bundleSymbolicName);
+			}
 		}
 	}
 
