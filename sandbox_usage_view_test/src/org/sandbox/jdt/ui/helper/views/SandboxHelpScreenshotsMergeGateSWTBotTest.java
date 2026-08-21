@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,9 +34,6 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
     private static final String CLEANUP_PREVIEW_PROJECT = "SandboxCleanupPreviewProject";
-    private static final String OUTPUT_PROPERTY = "sandbox.help.screenshot.output";
-    private static final Path PATCHED_INT_TO_ENUM_PREVIEW = Path.of("sandbox_int_to_enum_help", "images",
-            "int-to-enum-coordinated-preview.png");
     private static final List<String> SHADOW_PLATFORM_SOURCES = List.of(
             "src/org/eclipse/core/runtime/IProgressMonitor.java",
             "src/org/eclipse/core/runtime/SubMonitor.java",
@@ -50,21 +45,7 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
     @BeforeAll
     public static void setUp() throws Exception {
-        Path patchedPreview = SandboxCheckout.locate(OUTPUT_PROPERTY).resolve(PATCHED_INT_TO_ENUM_PREVIEW);
-        byte[] patchedPreviewBaseline = Files.isRegularFile(patchedPreview)
-                ? Files.readAllBytes(patchedPreview)
-                : null;
-        try {
-            SandboxHelpScreenshotsSWTBotTest.setUp();
-        } finally {
-            // The shared fixture deletes every image that its full generator can
-            // produce. This stock-Eclipse merge gate deliberately omits the
-            // patched-JDT-only atomic preview, so preserve that reviewed baseline.
-            if (patchedPreviewBaseline != null) {
-                Files.createDirectories(patchedPreview.getParent());
-                Files.write(patchedPreview, patchedPreviewBaseline);
-            }
-        }
+        SandboxHelpScreenshotsSWTBotTest.setUp();
         screenshots = new SandboxHelpScreenshotsSWTBotTest();
     }
 
