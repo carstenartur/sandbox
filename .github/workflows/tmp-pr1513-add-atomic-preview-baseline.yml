@@ -42,8 +42,8 @@ jobs:
           trigger='sandbox_int_to_enum_help/pr1513-atomic-preview-baseline.trigger'
           target='sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
           artifact_dir="$RUNNER_TEMP/patched-jdt-ui-atomic-preview-35"
-          expected_sha256='57d034be1bfb8f1f357688ca3590e2197b053fb8c8a309dd0aa6881e0a952be6'
-          expected_size='90434'
+          expected_sha256='57d034be3268ca825ee2cb02083d11d73417dbe0cf5e924ad6974f968a3d5793'
+          expected_size='90891'
 
           test ! -e "$target"
           source_image="$(find "$artifact_dir" -type f \
