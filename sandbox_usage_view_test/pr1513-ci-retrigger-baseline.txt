@@ -1,4 +1,0 @@
-Retrigger PR 1513 checks after github-actions[bot] committed the verified atomic preview baseline.
-Baseline commit: c324ddca254b7b22f19e0f3beecb433f74e4252f
-Image SHA-256: 57d034be3268ca825ee2cb02083d11d73417dbe0cf5e924ad6974f968a3d5793
-This marker is removed immediately so it does not remain in the pull-request diff.
