@@ -180,3 +180,4 @@ jobs:
             sandbox_usage_view_test/target/surefire-reports/**
           retention-days: 14
           if-no-files-found: warn
+          include-hidden-files: true
