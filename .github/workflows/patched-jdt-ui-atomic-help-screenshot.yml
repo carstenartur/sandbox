@@ -178,6 +178,7 @@ jobs:
           path: |
             sandbox_usage_view_test/target/work/data/.metadata/.log
             sandbox_usage_view_test/target/surefire-reports/**
+            sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
           retention-days: 14
           if-no-files-found: warn
           include-hidden-files: true
