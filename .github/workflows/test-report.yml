@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 concurrency:
@@ -25,33 +25,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v7
-      with:
-        fetch-depth: 0
-
-    - name: Apply targeted Cleanup preview-shell repair
-      if: >-
-        github.event_name == 'pull_request' &&
-        github.event.pull_request.number == 1513 &&
-        github.event.pull_request.head.repo.full_name == github.repository &&
-        github.head_ref == 'qa/atomic-int-to-enum-preview-gate'
-      shell: bash
-      run: |
-        set -euo pipefail
-        target='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java'
-        git fetch --no-tags origin "$GITHUB_HEAD_REF"
-        git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
-        if grep -Fq 'private record CleanUpPreview' "$target"; then
-          echo 'Targeted preview-shell repair is already present.'
-          exit 0
-        fi
-        git apply --check .github/pr1513-preview-shell.patch
-        git apply .github/pr1513-preview-shell.patch
-        git diff --check -- "$target"
-        git config user.name 'github-actions[bot]'
-        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-        git add -- "$target"
-        git commit -m 'Resolve the actual Cleanup preview shell'
-        git push origin "HEAD:$GITHUB_HEAD_REF"
 
     - name: Set up Python
       uses: actions/setup-python@v7
@@ -73,7 +46,6 @@ jobs:
         path: |
           test-report.md
           test-report.json
-          sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java
         retention-days: 9
 
     - name: Display inventory summary
