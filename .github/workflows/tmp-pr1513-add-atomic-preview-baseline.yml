@@ -25,10 +25,17 @@ jobs:
           ref: qa/atomic-int-to-enum-preview-gate
           fetch-depth: 0
 
-      - name: Add exact image from verified patched-runtime run
+      - name: Download exact image artifact from verified patched-runtime run
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-ui-atomic-preview-35
+          path: ${{ runner.temp }}/patched-jdt-ui-atomic-preview-35
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 32488655182
+
+      - name: Validate and commit exact preview baseline
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           workflow='.github/workflows/tmp-pr1513-add-atomic-preview-baseline.yml'
@@ -39,12 +46,6 @@ jobs:
           expected_size='90434'
 
           test ! -e "$target"
-          mkdir -p "$artifact_dir"
-          gh run download 32488655182 \
-            --repo "$GITHUB_REPOSITORY" \
-            --name patched-jdt-ui-atomic-preview-35 \
-            --dir "$artifact_dir"
-
           source_image="$(find "$artifact_dir" -type f \
             -path '*/sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png' \
             -print -quit)"
