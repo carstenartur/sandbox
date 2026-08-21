@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1332,
+        "files": 1337,
         "matches": 75,
         "rules": 11
       }
@@ -2055,7 +2055,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 350,
+      "line": 351,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {

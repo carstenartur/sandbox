@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-08-20
+# Refactoring Mining Report — 2026-08-21
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1332 | 75 | 11 |
+| sandbox | 1337 | 75 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -324,7 +324,7 @@
 - `sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java:107` — `computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Coll...`
 - `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:148` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:350` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:351` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:179` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
