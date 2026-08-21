@@ -114,15 +114,16 @@ jobs:
           fi
           printf 'Verified JUnit report: %s\n' "$report"
 
-      # The real Cleanup preview methods remain executable, but their committed
-      # images are maintained separately from the deterministic configuration-tab
-      # baselines verified by this merge gate.
+      # These previews remain executable, but their committed images are
+      # maintained by separate real-runtime gates rather than this deterministic
+      # stock-Eclipse configuration-tab verifier.
       - name: Restore separately maintained real-preview images
         run: >-
           git restore --source=HEAD --
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
+          sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
 
       # Intentional baseline changes must be copied from a completed verifier
       # artifact; the pull-request gate itself always remains read-only.

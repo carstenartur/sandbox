@@ -43,4 +43,19 @@ public class IntToEnumCleanUp extends AbstractCleanUpCoreWrapper<IntToEnumCleanU
 			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
 		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
 	}
+
+	/**
+	 * Optional dependency-free contract discovered reflectively by the patched
+	 * JDT Cleanup host. The registered UI wrapper must expose the metadata held by
+	 * its planned cleanup core; otherwise scope expansion succeeds but the preview
+	 * falls back to unsafe per-file selection.
+	 *
+	 * @param project current Java project
+	 * @return immutable coordinated-candidate metadata
+	 * @throws CoreException if the planned preview metadata is inconsistent
+	 */
+	public Collection<Map<String, Object>> getCoordinatedCleanUpPreview(IJavaProject project)
+			throws CoreException {
+		return cleanUpCore.getCoordinatedCleanUpPreview(project);
+	}
 }
