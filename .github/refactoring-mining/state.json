@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "8294273d8d34117c1860d8d61460e1e9c2ac0857",
-      "lastProcessedDate": "2026-08-20T02:37:56.895879249Z",
-      "totalProcessed": 4267,
+      "lastProcessedCommit": "a1afd690602023689c1b32bc21a0b4365302c54a",
+      "lastProcessedDate": "2026-08-21T02:41:52.921066803Z",
+      "totalProcessed": 4339,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3026,6 +3026,15 @@
           "deferredAt": "2026-08-20T02:37:48.062352820Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "80074877f413b71cd7efcd2acb5f754d00fc09fb",
+          "message": "Bug 299514: [package explorer] Alternative package name shortening: abbreviation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-21T02:35:41.169898095Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3169,7 +3178,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 18,
+        "API Migration": 19,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3180,7 +3189,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 2,
         "API Replacement": 2,
-        "API Modernization": 32,
+        "API Modernization": 38,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3189,7 +3198,7 @@
         "Null Safety": 5,
         "Boolean Simplification": 1,
         "Constant Replacement": 2,
-        "API Simplification": 2,
+        "API Simplification": 3,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
         "String Literal Refactoring": 1,
@@ -3245,7 +3254,9 @@
         "Nullability": 1,
         "Redundant Code": 1,
         "Deprecated API Usage": 1,
-        "UI State Management": 1
+        "UI State Management": 1,
+        "Constant Refactoring": 1,
+        "Visibility Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -3286,5 +3297,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27038
+  "globalTotalProcessed": 27110
 }
