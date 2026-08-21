@@ -340,7 +340,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ownerNode.select();
         SWTBotShell wizard = openCleanUpWizard(ownerNode);
         clickButton(wizard, "Next >", "Next >");
-        CleanUpPreview preview = waitForCleanUpPreview(wizard);
+        CleanUpPreview preview = waitForCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
         prepareForScreenshot(wizard);
 
@@ -348,7 +348,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotTreeItem candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         assertTrue(candidate != null, "Preview must expose the coordinated Int-to-Enum candidate");
         candidate.select();
-        bot.sleep(500);
+        waitForCoordinatedPreviewDetails(wizard);
 
         assertTrue(candidate.getItems().length == 0,
                 "The atomic candidate must be a leaf without per-file or per-edit checkboxes");
@@ -386,7 +386,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ownerNode.select();
         wizard = openCleanUpWizard(ownerNode);
         clickButton(wizard, "Next >", "Next >");
-        preview = waitForCleanUpPreview(wizard);
+        preview = waitForCleanUpPreview(wizard, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
         previewTree = preview.tree();
         candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
@@ -605,11 +605,12 @@ public class SandboxHelpScreenshotsSWTBotTest {
             public String getFailureMessage() {
                 return "The real Clean Up wizard did not open; visible shells: " + visibleShells();
             }
-        }, 30_000);
+        });
         return result[0].activate();
     }
 
-    private static CleanUpPreview waitForCleanUpPreview(SWTBotShell originatingWizard) {
+    private static CleanUpPreview waitForCleanUpPreview(SWTBotShell originatingWizard,
+            String expectedItemFragment) {
         CleanUpPreview[] result = new CleanUpPreview[1];
         bot.waitUntil(new DefaultCondition() {
             @Override
@@ -624,10 +625,14 @@ public class SandboxHelpScreenshotsSWTBotTest {
                         continue;
                     }
                     try {
-                        result[0] = new CleanUpPreview(shell, new SWTBotTree(tree));
+                        SWTBotTree previewTree = new SWTBotTree(tree);
+                        if (findTreeItemContaining(previewTree, expectedItemFragment) == null) {
+                            continue;
+                        }
+                        result[0] = new CleanUpPreview(shell, previewTree);
                         return true;
                     } catch (WidgetNotFoundException exception) {
-                        // The page changed while SWTBot was wrapping the control; retry.
+                        // The page changed while SWTBot was inspecting the control; retry.
                     }
                 }
                 return false;
@@ -635,11 +640,42 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
             @Override
             public String getFailureMessage() {
-                return "The Clean Up preview did not expose its selection tree. "
+                return "The Clean Up preview did not expose the expected item '"
+                        + expectedItemFragment + "'. Visible shell controls:\n"
+                        + visibleShellDiagnostics();
+            }
+        });
+        return new CleanUpPreview(result[0].shell().activate(), result[0].tree());
+    }
+
+    private static void waitForCoordinatedPreviewDetails(SWTBotShell wizard) {
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                if (!wizard.isOpen()) {
+                    return false;
+                }
+                try {
+                    var affectedFiles = wizard.bot().table();
+                    if (!currentPlainText(wizard).contains("Selection is atomic")
+                            || affectedFiles.rowCount() != 2) {
+                        return false;
+                    }
+                    String affectedLabels = affectedFiles.cell(0, 0) + "\n"
+                            + affectedFiles.cell(1, 0);
+                    return affectedLabels.contains("StateOwner.java")
+                            && affectedLabels.contains("StateCaller.java");
+                } catch (WidgetNotFoundException exception) {
+                    return false;
+                }
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The coordinated Cleanup preview did not expose its atomic details. "
                         + "Visible shell controls:\n" + visibleShellDiagnostics();
             }
-        }, 30_000);
-        return new CleanUpPreview(result[0].shell().activate(), result[0].tree());
+        });
     }
 
     private static Tree previewTreeControl(SWTBotShell shell) {
@@ -829,7 +865,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
             public String getFailureMessage() {
                 return description + " did not close";
             }
-        }, 30_000);
+        });
     }
 
     private static void undoLastCleanup() throws Exception {
