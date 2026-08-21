@@ -43,11 +43,14 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.Tree;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -92,6 +95,9 @@ import org.junit.jupiter.api.Test;
 public class SandboxHelpScreenshotsSWTBotTest {
 
     private record CleanupTab(String label, String helpBundle, String fileName) {
+    }
+
+    private record CleanUpPreview(SWTBotShell shell, SWTBotTree tree) {
     }
 
     private static final List<CleanupTab> CLEANUP_TABS = List.of(
@@ -334,10 +340,11 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ownerNode.select();
         SWTBotShell wizard = openCleanUpWizard(ownerNode);
         clickButton(wizard, "Next >", "Next >");
-        bot.sleep(800);
+        CleanUpPreview preview = waitForCleanUpPreview(wizard);
+        wizard = preview.shell();
         prepareForScreenshot(wizard);
 
-        SWTBotTree previewTree = wizard.bot().tree();
+        SWTBotTree previewTree = preview.tree();
         SWTBotTreeItem candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         assertTrue(candidate != null, "Preview must expose the coordinated Int-to-Enum candidate");
         candidate.select();
@@ -379,8 +386,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
         ownerNode.select();
         wizard = openCleanUpWizard(ownerNode);
         clickButton(wizard, "Next >", "Next >");
-        bot.sleep(800);
-        previewTree = wizard.bot().tree();
+        preview = waitForCleanUpPreview(wizard);
+        wizard = preview.shell();
+        previewTree = preview.tree();
         candidate = findTreeItemContaining(previewTree, INT_TO_ENUM_CANDIDATE_FRAGMENT);
         assertTrue(candidate != null && candidate.isChecked(),
                 "Reopening the preview must present one selected atomic candidate");
@@ -599,6 +607,138 @@ public class SandboxHelpScreenshotsSWTBotTest {
             }
         }, 30_000);
         return result[0].activate();
+    }
+
+    private static CleanUpPreview waitForCleanUpPreview(SWTBotShell originatingWizard) {
+        CleanUpPreview[] result = new CleanUpPreview[1];
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                for (SWTBotShell shell : bot.shells()) {
+                    if (!shell.isOpen() || (!shell.getText().startsWith("Clean Up")
+                            && shell.widget != originatingWizard.widget)) {
+                        continue;
+                    }
+                    Tree tree = previewTreeControl(shell);
+                    if (tree == null) {
+                        continue;
+                    }
+                    try {
+                        result[0] = new CleanUpPreview(shell, new SWTBotTree(tree));
+                        return true;
+                    } catch (WidgetNotFoundException exception) {
+                        // The page changed while SWTBot was wrapping the control; retry.
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The Clean Up preview did not expose its selection tree. "
+                        + "Visible shell controls:\n" + visibleShellDiagnostics();
+            }
+        }, 30_000);
+        return new CleanUpPreview(result[0].shell().activate(), result[0].tree());
+    }
+
+    private static Tree previewTreeControl(SWTBotShell shell) {
+        return UIThreadRunnable.syncExec(shell.display, new Result<Tree>() {
+            @Override
+            public Tree run() {
+                if (shell.widget.isDisposed()) {
+                    return null;
+                }
+                Tree tree = findControl(shell.widget, Tree.class);
+                if (tree == null || !hasButton(shell.widget, "Finish")
+                        || !hasButton(shell.widget, "Cancel")) {
+                    return null;
+                }
+                return tree;
+            }
+        });
+    }
+
+    private static <T extends Control> T findControl(Control root, Class<T> type) {
+        Deque<Control> pending = new ArrayDeque<>();
+        pending.add(root);
+        while (!pending.isEmpty()) {
+            Control control = pending.removeFirst();
+            if (type.isInstance(control) && !control.isDisposed()) {
+                return type.cast(control);
+            }
+            if (control instanceof Composite composite) {
+                for (Control child : composite.getChildren()) {
+                    pending.addLast(child);
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean hasButton(Control root, String text) {
+        Deque<Control> pending = new ArrayDeque<>();
+        pending.add(root);
+        while (!pending.isEmpty()) {
+            Control control = pending.removeFirst();
+            if (control instanceof Button button && text.equals(button.getText())) {
+                return true;
+            }
+            if (control instanceof Composite composite) {
+                for (Control child : composite.getChildren()) {
+                    pending.addLast(child);
+                }
+            }
+        }
+        return false;
+    }
+
+    private static String visibleShellDiagnostics() {
+        List<String> shells = new ArrayList<>();
+        for (SWTBotShell shell : bot.shells()) {
+            if (!shell.isOpen()) {
+                continue;
+            }
+            shells.add(UIThreadRunnable.syncExec(shell.display, new Result<String>() {
+                @Override
+                public String run() {
+                    if (shell.widget.isDisposed()) {
+                        return "<disposed shell>";
+                    }
+                    StringBuilder description = new StringBuilder();
+                    description.append("Shell '").append(shell.widget.getText()).append("':");
+                    Deque<Control> pending = new ArrayDeque<>();
+                    pending.add(shell.widget);
+                    int count = 0;
+                    while (!pending.isEmpty() && count < 80) {
+                        Control control = pending.removeFirst();
+                        description.append("\n  ").append(control.getClass().getSimpleName())
+                                .append(" visible=").append(control.isVisible())
+                                .append(" enabled=").append(control.isEnabled());
+                        if (control instanceof Button button) {
+                            description.append(" text='").append(button.getText()).append("'");
+                        } else if (control instanceof Label label) {
+                            description.append(" text='").append(label.getText()).append("'");
+                        } else if (control instanceof Text text) {
+                            description.append(" text='").append(text.getText()).append("'");
+                        } else if (control instanceof StyledText text) {
+                            description.append(" text='").append(text.getText()).append("'");
+                        }
+                        count++;
+                        if (control instanceof Composite composite) {
+                            for (Control child : composite.getChildren()) {
+                                pending.addLast(child);
+                            }
+                        }
+                    }
+                    if (!pending.isEmpty()) {
+                        description.append("\n  ... additional controls omitted");
+                    }
+                    return description.toString();
+                }
+            }));
+        }
+        return String.join("\n", shells);
     }
 
     private static SWTBotTreeItem findTreeItemContaining(SWTBotTree tree, String needle) {
