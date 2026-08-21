@@ -61,7 +61,7 @@ public class JUnitPreviewWrapperContractTest {
 		assertEquals(Collection.class, method.getReturnType());
 		assertTrue(cleanup.getCoordinatedCleanUpPreview(
 				context.getSourceFolder().getJavaProject()).isEmpty(),
-				"A wrapper without a completed plan must expose an empty preview rather than fail");
+				"A wrapper without a completed plan must expose an empty preview rather than fail"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -100,7 +100,7 @@ public class JUnitPreviewWrapperContractTest {
 		try {
 			var status= cleanup.checkPreConditions(resource.getJavaProject(),
 					new ICompilationUnit[] { resource, consumer }, monitor);
-			assertTrue(!status.hasFatalError(), () -> "JUnit planning failed: " + status);
+			assertTrue(!status.hasFatalError(), () -> "JUnit planning failed: " + status); //$NON-NLS-1$
 
 			Collection<Map<String, Object>> previews=
 					cleanup.getCoordinatedCleanUpPreview(resource.getJavaProject());
