@@ -1,29 +1,35 @@
-name: Prepare state-based PR 1514 SWTBot source
+name: Apply state-based PR 1514 SWTBot synchronization
 
 on:
-  pull_request:
-    branches: [ main ]
+  push:
+    branches:
+      - qa/junit-coordinated-preview-contract
     paths:
       - '.github/workflows/tmp-pr1514-state-based-swtbot.yml'
-      - 'sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java'
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: pr1514-state-based-swtbot
+  cancel-in-progress: true
 
 jobs:
-  render:
+  apply:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout
+      - name: Checkout exact PR branch
         uses: actions/checkout@v7
         with:
+          ref: qa/junit-coordinated-preview-contract
           fetch-depth: 0
 
-      - name: Replace fixed waits with semantic conditions
+      - name: Replace fixed waits and remove this one-shot workflow
         shell: bash
         run: |
           set -euo pipefail
           target='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java'
+          workflow='.github/workflows/tmp-pr1514-state-based-swtbot.yml'
           expected_before='6d3c6d1773c20a048909b5cc98f9a51bb8e233a1'
           actual_before="$(git hash-object "$target")"
           if [[ "$actual_before" != "$expected_before" ]]; then
@@ -128,11 +134,10 @@ jobs:
           git diff --check
           test "$(git diff --name-only | wc -l)" -eq 1
           git diff --name-only | grep -Fxq "$target"
+          git rm -- "$workflow"
 
-      - name: Upload reviewed Java source
-        uses: actions/upload-artifact@v7
-        with:
-          name: pr1514-state-based-swtbot-source
-          path: sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java
-          if-no-files-found: error
-          retention-days: 2
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "$target"
+          git commit -m 'Replace fixed JUnit SWTBot waits with state conditions'
+          git push origin HEAD:qa/junit-coordinated-preview-contract
