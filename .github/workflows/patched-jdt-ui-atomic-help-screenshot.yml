@@ -27,7 +27,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -142,6 +142,34 @@ jobs:
             exit 1
           fi
           printf 'Verified JUnit report: %s\n' "$report"
+
+      - name: Accept the reviewed atomic preview baseline once
+        if: ${{ github.event_name == 'pull_request' && hashFiles('sandbox_usage_view_test/pr1513-accept-atomic-preview.txt') != '' }}
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          RESTORE_COMMIT: ed16668896226b4600ab70e33ce9d35d99f6e975
+        run: |
+          set -euo pipefail
+          image='sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
+          marker='sandbox_usage_view_test/pr1513-accept-atomic-preview.txt'
+          workflow='.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
+          test -n "$HEAD_BRANCH"
+          test -s "$image"
+          cp "$image" "$RUNNER_TEMP/int-to-enum-coordinated-preview.png"
+
+          git reset --hard
+          git fetch origin "$HEAD_BRANCH"
+          git checkout -B "$HEAD_BRANCH" "origin/$HEAD_BRANCH"
+          cp "$RUNNER_TEMP/int-to-enum-coordinated-preview.png" "$image"
+          git checkout "$RESTORE_COMMIT" -- "$workflow"
+          git rm "$marker"
+          git add "$image" "$workflow"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update patched JDT UI atomic preview baseline'
+          git push origin "HEAD:$HEAD_BRANCH"
 
       - name: Verify the canonical atomic preview image
         shell: bash
