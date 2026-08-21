@@ -27,6 +27,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -49,6 +50,52 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Download the reviewed patched-runtime artifact once
+        if: ${{ github.event_name == 'pull_request' && hashFiles('sandbox_usage_view_test/pr1513-accept-atomic-preview.txt') != '' }}
+        uses: actions/download-artifact@v7
+        with:
+          name: patched-jdt-ui-atomic-preview-44
+          path: ${{ runner.temp }}/reviewed-atomic-preview
+          github-token: ${{ github.token }}
+          repository: carstenartur/sandbox
+          run-id: 32497837768
+
+      - name: Commit the reviewed patched-runtime artifact once
+        if: ${{ github.event_name == 'pull_request' && hashFiles('sandbox_usage_view_test/pr1513-accept-atomic-preview.txt') != '' }}
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          RESTORE_COMMIT: ed16668896226b4600ab70e33ce9d35d99f6e975
+        run: |
+          set -euo pipefail
+          marker='sandbox_usage_view_test/pr1513-accept-atomic-preview.txt'
+          workflow='.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
+          destination='sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
+          source="$(find \"$RUNNER_TEMP/reviewed-atomic-preview\" -type f \
+            -path '*/sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png' \
+            -print -quit)"
+          test -n "$HEAD_BRANCH"
+          test -s "$source"
+          echo 'ddd48f951f773dd630f1ec93d52ae5ce9f821f2d08349559605b78767344468c  '"$source" \
+            | sha256sum --check --strict
+          grep -R -Fq '"sourceCommit": "9965d9c97d21ad61f28e03b9d7e28b7040f7a8d9"' \
+            "$RUNNER_TEMP/reviewed-atomic-preview"
+          grep -R -Fq '"compatibleForReplacement": true' \
+            "$RUNNER_TEMP/reviewed-atomic-preview"
+          cp "$source" "$RUNNER_TEMP/int-to-enum-coordinated-preview.png"
+
+          git fetch origin "$HEAD_BRANCH"
+          git checkout -B "$HEAD_BRANCH" "origin/$HEAD_BRANCH"
+          cp "$RUNNER_TEMP/int-to-enum-coordinated-preview.png" "$destination"
+          git checkout "$RESTORE_COMMIT" -- "$workflow"
+          git rm "$marker"
+          git add "$destination" "$workflow"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update patched JDT UI atomic preview baseline'
+          git push origin "HEAD:$HEAD_BRANCH"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
