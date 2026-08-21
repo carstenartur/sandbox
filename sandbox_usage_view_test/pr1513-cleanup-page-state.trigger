@@ -1,0 +1,4 @@
+Apply the reviewed Cleanup wizard status-page navigation patch.
+Workflow bootstrap commit: 40ae18a81acd441f154f8be04f701591fa505ec8
+Expected source blob: 7d79115d530996ba100c3bee68be5187751cea3e
+Expected result blob: 9db821e3092870e6820746224b4034a3eed57468
