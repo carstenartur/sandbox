@@ -1,0 +1,94 @@
+name: Prepare PR 1514 JUnit container patch
+
+on:
+  push:
+    branches:
+      - qa/junit-coordinated-preview-contract
+    paths:
+      - .github/workflows/tmp-pr1514-render-junit-containers.yml
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact branch head
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Render reviewed source replacement
+        shell: bash
+        run: |
+          set -euo pipefail
+          target='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java'
+          expected_before='6d3c6d1773c20a048909b5cc98f9a51bb8e233a1'
+          actual_before="$(git hash-object "$target")"
+          if [[ "$actual_before" != "$expected_before" ]]; then
+            echo "::error::Unexpected source blob $actual_before"
+            exit 1
+          fi
+
+          python3 - "$target" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              ('import org.eclipse.jdt.core.IJavaModelMarker;\n',
+               'import org.eclipse.jdt.core.IClasspathEntry;\n'
+               'import org.eclipse.jdt.core.IJavaModelMarker;\n'),
+              ('import org.eclipse.jdt.core.JavaCore;\n',
+               'import org.eclipse.jdt.core.JavaCore;\n\n'
+               'import org.eclipse.jdt.junit.JUnitCore;\n'),
+              ('\nimport org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;\n', '\n'),
+              ('''        EclipseBundleClasspath.addBundles(javaProject,
+                  "org.junit",
+                  "org.junit.jupiter.api",
+                  "org.apiguardian.api",
+                  "org.opentest4j",
+                  "org.junit.platform.commons");''',
+               '        addJUnitContainers(javaProject);'),
+              ('    static void run() throws Exception {\n',
+               '''    private static void addJUnitContainers(IJavaProject javaProject) throws Exception {
+        List<IClasspathEntry> classpath = new ArrayList<>(List.of(javaProject.getRawClasspath()));
+        for (var containerPath : List.of(JUnitCore.JUNIT4_CONTAINER_PATH,
+                JUnitCore.JUNIT5_CONTAINER_PATH)) {
+            IClasspathEntry entry = JavaCore.newContainerEntry(containerPath);
+            if (!classpath.contains(entry)) {
+                classpath.add(entry);
+            }
+        }
+        javaProject.setRawClasspath(classpath.toArray(IClasspathEntry[]::new),
+                new NullProgressMonitor());
+    }
+
+    static void run() throws Exception {
+'''),
+          ]
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected one occurrence, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          git diff --check
+          grep -Fq 'JUnitCore.JUNIT4_CONTAINER_PATH' "$target"
+          grep -Fq 'JUnitCore.JUNIT5_CONTAINER_PATH' "$target"
+          if grep -Fq 'EclipseBundleClasspath' "$target"; then
+            echo '::error::Direct bundle lookup remains'
+            exit 1
+          fi
+
+      - name: Upload patched Java source
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr1514-junit-container-source
+          path: sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java
+          if-no-files-found: error
+          retention-days: 2
