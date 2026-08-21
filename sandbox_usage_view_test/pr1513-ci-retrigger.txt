@@ -1,0 +1,3 @@
+Retrigger CI after the reviewed wizard-page patch was committed by github-actions[bot].
+The file is removed immediately so the pull-request diff remains unchanged.
+Patched head: e14ee39e7cc722edec6e7284ef1f180a41bf2806
