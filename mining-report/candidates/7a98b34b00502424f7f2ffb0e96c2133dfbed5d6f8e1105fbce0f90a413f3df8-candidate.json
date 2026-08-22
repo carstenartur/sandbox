@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7a98b34b00502424f7f2ffb0e96c2133dfbed5d6f8e1105fbce0f90a413f3df8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.Flags.isStatic($member.getFlags()) :: instanceof($member, \"org.eclipse.jdt.core.IMember\")\n\u003d\u003e org.eclipse.jdt.internal.corext.util.JdtFlags.isStatic($member)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.Flags;\nimport org.eclipse.jdt.core.IField;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyClass {\n    public boolean isStaticField(IField field) throws JavaModelException {\n        return Flags.isStatic(field.getFlags()); // Target line\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.IField;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.corext.util.JdtFlags;\n\npublic class MyClass {\n    public boolean isStaticField(IField field) throws JavaModelException {\n        return JdtFlags.isStatic(field); // Replacement\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.Flags;\nimport org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.internal.corext.util.JdtFlags;\n\npublic class OtherFlagsCheck {\n    public boolean checkPublic(int flags) {\n        return Flags.isPublic(flags); // Not isStatic or isFinal, should not match\n    }\n    public boolean checkWithJdtFlags(IMember member) {\n        return JdtFlags.isStatic(member); // Already using new API, should not match\n    }\n}",
+  "targetHintFile": "eclipse-jdt-api-modernize.sandbox-hint",
+  "sourceCommit": "be629231b520a7b0d11f15092da49871012133fd",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces `Flags.isStatic($member.getFlags())` with `JdtFlags.isStatic($member)`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-22T02:33:24.093641319Z",
+  "ruleFingerprint": "sha256:4e4611cedcd1e182679eb2fe2faf13a7e029ffa07927e8c9a4eb89e4496d0a7a",
+  "behaviorFingerprint": "sha256:4fa2d2dabe68537fd2ccbeab9926108f7c5136fb04069401c1dd0bd5015125da",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-22T02:33:28.172480523Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

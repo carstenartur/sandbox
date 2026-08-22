@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b2b09a12df1ec92c076858f04f5c49f9e30337d0c91a02adb8a9356f00993193",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"J2SE-1.6\"\n\u003d\u003e\n\"JavaSE-1.6\"\n;;",
+  "beforeExample": "class Example {\n    String getVersion() {\n        // Before: Using deprecated platform identifier\n        return \"J2SE-1.6\";\n    }\n}",
+  "afterExample": "class Example {\n    String getVersion() {\n        // After: Using modern platform identifier\n        return \"JavaSE-1.6\";\n    }\n}",
+  "negativeExample": "class Example {\n    String getOtherVersion() {\n        // This should not be changed as it\u0027s a different identifier\n        return \"J2SE-1.5\";\n    }\n    String getDifferentString() {\n        // This should not be changed as it\u0027s not the target string\n        return \"J2SE-Custom\";\n    }\n}",
+  "targetHintFile": "java-platform-modernization.sandbox-hint",
+  "sourceCommit": "b56179876d3c6f0d137572a01fff55569395e434",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Literal Replacement",
+  "summary": "Replaces the deprecated Java platform identifier \u0027J2SE-1.6\u0027 with \u0027JavaSE-1.6\u0027.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-08-22T02:33:23.993637131Z",
+  "ruleFingerprint": "sha256:2186cedfd5d5e7b45183d855825087132065098a7fe127ac7d4696b62a5ed6ba",
+  "behaviorFingerprint": "sha256:0dd805a050a8879b551a0453e2c84a9310780594382998f5a61a1052376eacdd",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-08-22T02:33:28.115152508Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-08-22T02:33:28.115508877Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-08-22T02:33:28.115541677Z"
+    }
+  ]
+}

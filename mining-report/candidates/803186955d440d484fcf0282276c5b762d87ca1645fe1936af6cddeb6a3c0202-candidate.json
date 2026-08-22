@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "803186955d440d484fcf0282276c5b762d87ca1645fe1936af6cddeb6a3c0202",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator.PROJECT_ERROR\n\u003d\u003e\norg.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator.BUILDPATH_ERROR\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator;\n\npublic class TestClass {\n    public int getErrorFlag() {\n        return PackageExplorerProblemsDecorator.PROJECT_ERROR;\n    }\n    public boolean checkError(int flags) {\n        return (flags \u0026 PackageExplorerProblemsDecorator.PROJECT_ERROR) !\u003d 0;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator;\n\npublic class TestClass {\n    public int getErrorFlag() {\n        return PackageExplorerProblemsDecorator.BUILDPATH_ERROR;\n    }\n    public boolean checkError(int flags) {\n        return (flags \u0026 PackageExplorerProblemsDecorator.BUILDPATH_ERROR) !\u003d 0;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator;\n\npublic class NegativeTestClass {\n    public int getOtherFlag() {\n        return 0x1000;\n    }\n    public int getBuildpathFlag() {\n        // This should not be matched or changed as it\u0027s already the target value\n        return PackageExplorerProblemsDecorator.BUILDPATH_ERROR;\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "e42c61d6ed0f84cc0e2b6134beb22357f93b43bd",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Renaming",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-22T02:33:24.055556960Z",
+  "ruleFingerprint": "sha256:0f8f22da29ae4080ad7f081eaf1830c249e875f175e57b4c911b8067879fe2e6",
+  "behaviorFingerprint": "sha256:0d20184c1a9133306d835e75e754af79e100b65e341ce3087930b6566d51537f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-22T02:33:28.144849322Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
