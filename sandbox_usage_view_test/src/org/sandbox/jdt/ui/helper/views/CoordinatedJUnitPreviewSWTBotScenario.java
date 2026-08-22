@@ -611,10 +611,41 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
                         SCREENSHOT_CLIENT_WIDTH, SCREENSHOT_CLIENT_HEIGHT);
                 shell.widget.setBounds(20, 20, trim.width, trim.height);
                 shell.widget.layout(true, true);
+                shell.widget.update();
             }
         });
         shell.activate();
-        bot.sleep(500);
+        waitForActiveScreenshotShell(shell);
+    }
+
+    private static void waitForActiveScreenshotShell(SWTBotShell shell) {
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                try {
+                    if (!shell.isOpen() || bot.activeShell().widget != shell.widget) {
+                        return false;
+                    }
+                    Rectangle clientArea = UIThreadRunnable.syncExec(shell.display,
+                            new Result<Rectangle>() {
+                                @Override
+                                public Rectangle run() {
+                                    return shell.widget.getClientArea();
+                                }
+                            });
+                    return clientArea.width == SCREENSHOT_CLIENT_WIDTH
+                            && clientArea.height == SCREENSHOT_CLIENT_HEIGHT;
+                } catch (WidgetNotFoundException exception) {
+                    return false;
+                }
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The screenshot shell did not become active with the requested client area: "
+                        + shell.getText();
+            }
+        });
     }
 
     private static void openPreferences() {
@@ -635,7 +666,19 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
             }
         }
         item.select();
-        bot.sleep(300);
+        SWTBotTreeItem selectedItem = item;
+        bot.waitUntil(new DefaultCondition() {
+            @Override
+            public boolean test() {
+                return selectedItem.isSelected();
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "The requested preference node was not selected: "
+                        + selectedItem.getText();
+            }
+        });
     }
 
     private static void clickButton(SWTBotShell shell, String... labels) {
@@ -717,7 +760,6 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
                 }
             }
         });
-        bot.sleep(300);
     }
 
     private static String visibleShells() {
