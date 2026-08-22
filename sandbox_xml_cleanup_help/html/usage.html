@@ -9,25 +9,55 @@
 </head>
 <body>
    <h1>Using PDE XML Cleanup</h1>
-   <h2>Entry point</h2>
-   <p>Use <strong>XML Cleanup (Sandbox)</strong> in a cleanup profile or invoke <strong>Clean Up PDE XML</strong> from a supported file or project selection.</p>
+   <h2>Entry points</h2>
+   <p>Enable <strong>XML Cleanup (Sandbox)</strong> in a cleanup profile, or select a supported PDE resource or project
+      and invoke <strong>Clean Up PDE XML</strong> from its context menu.</p>
+   <p><img class="screenshot" src="../images/xml-cleanup.png"
+      alt="PDE XML cleanup configuration"/></p>
 
-   <h2>When it is offered</h2>
-   <p>Only supported PDE metadata and schema resources are processed. The command visibility is restricted to matching files or projects.</p>
+   <h2>Representative formatting result</h2>
+   <h3>Before</h3>
+   <pre>&lt;plugin&gt;
+    &lt;extension point="org.eclipse.ui.views"&gt;
+        &lt;view
+            class="com.example.MyView"
+            id="com.example.myview"
+            name="My View" /&gt;
+    &lt;/extension&gt;
+&lt;/plugin&gt;</pre>
+   <h3>After</h3>
+   <pre>&lt;plugin&gt;
+  &lt;extension point="org.eclipse.ui.views"&gt;
+    &lt;view class="com.example.MyView"
+          id="com.example.myview"
+          name="My View"/&gt;
+  &lt;/extension&gt;
+&lt;/plugin&gt;</pre>
+   <p>When tab conversion is enabled, only structural leading indentation is converted. Attribute values and text
+      content are not rewritten as indentation.</p>
+
+   <h2>Supported scope and guarantees</h2>
+   <p>The cleanup is restricted to supported PDE descriptors and schema resources in approved project locations,
+      such as project-root metadata, <code>META-INF</code>, and <code>OSGI-INF</code>. It removes redundant whitespace,
+      normalizes formatting, and is expected to be idempotent. XML element structure, attributes, and meaningful text
+      must remain equivalent.</p>
+   <p>Unsupported resources, malformed XML, mixed-content cases that cannot be formatted safely, and paths outside the
+      PDE scope are left unchanged or reported rather than processed as generic XML.</p>
 
    <h2>Recommended workflow</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Start with one descriptor in version control.</li>
+      <li>Run the cleanup or context command and inspect the actual XML diff.</li>
+      <li>Confirm that only formatting changed and run PDE/schema validation.</li>
+      <li>Run the operation a second time; a stable result should produce no further diff.</li>
    </ol>
+   <p>Java cleanup preview screenshots do not represent the direct PDE XML context command. The configuration image
+      shows the cleanup options; the source-control diff is the authoritative result evidence for the selected XML file.</p>
 
    <h2>Screenshot regeneration</h2>
-   <p>The image in this Help bundle is generated from a real Eclipse workbench by
+   <p>The configuration image is generated from a real Eclipse workbench by
       <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
-      <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+      <code>help-screenshots</code> under Xvfb after UI changes.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>
