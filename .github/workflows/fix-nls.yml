@@ -5,167 +5,43 @@ on:
     types: [opened, synchronize]
     paths:
       - '**.java'
-      - '.github/workflows/fix-nls.yml'
-
-permissions:
-  contents: write
-  pull-requests: write
 
 jobs:
-  finalize-pr1514:
-    if: github.event.pull_request.head.ref == 'qa/junit-coordinated-preview-contract' && github.event.pull_request.head.repo.full_name == github.repository
+  fix-nls:
     runs-on: ubuntu-latest
+    # Only run if PR is from Copilot or has specific label
+    if: github.actor == 'copilot[bot]' || contains(github.event.pull_request.labels.*.name, 'auto-fix-nls')
+    
+    permissions:
+      contents: write       # Required: push NLS comment fixes to PR branch
+      pull-requests: write  # Required: access PR branch information
+    
     steps:
-      - name: Checkout exact PR branch
+      - name: Checkout PR branch
         uses: actions/checkout@v7
         with:
-          ref: qa/junit-coordinated-preview-contract
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Apply state-based waits and restore registered workflows
-        shell: bash
+      
+      - name: Fix missing NLS comments in plugin sources
+        run: .github/scripts/fix-nls.sh
+      
+      - name: Check for changes
+        id: changes
         run: |
-          set -euo pipefail
-          source_file='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java'
-          temporary_workflow='.github/workflows/tmp-pr1514-state-based-swtbot.yml'
-          patched_workflow='.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
-          fix_workflow='.github/workflows/fix-nls.yml'
-          expected_source='6d3c6d1773c20a048909b5cc98f9a51bb8e233a1'
-          final_patched_commit='2e6749ae60f05f58b2763acd24ad443ef160c64e'
-          final_fix_commit='6b1a837315e32c59cd5b30b68da4b7b9d775fdfd'
-          expected_patched='99453f2b6637fb29cac91de06caf4276f3bd7af3'
-          expected_fix='e5ea54dd2c239ac5cd6609304ef7a5940b827002'
-
-          actual_source="$(git hash-object "$source_file")"
-          if [[ "$actual_source" != "$expected_source" ]]; then
-            echo "::error::Unexpected source blob $actual_source"
-            exit 1
+          git add -A
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
-          test -f "$temporary_workflow"
-
-          python3 - "$source_file" <<'PY'
-          from pathlib import Path
-          import sys
-
-          path = Path(sys.argv[1])
-          text = path.read_text(encoding='utf-8')
-          replacements = [
-              (
-                  '''                shell.widget.layout(true, true);
-            }
-        });
-        shell.activate();
-        bot.sleep(500);
-    }
-
-    private static void openPreferences() {''',
-                  '''                shell.widget.layout(true, true);
-                shell.widget.update();
-            }
-        });
-        shell.activate();
-        waitForActiveShell(shell);
-    }
-
-    private static void waitForActiveShell(SWTBotShell shell) {
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                try {
-                    return shell.isOpen() && bot.activeShell().widget == shell.widget;
-                } catch (WidgetNotFoundException exception) {
-                    return false;
-                }
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The screenshot shell did not become active: " + shell.getText();
-            }
-        });
-    }
-
-    private static void openPreferences() {''',
-              ),
-              (
-                  '''        item.select();
-        bot.sleep(300);
-    }
-
-    private static void clickButton(SWTBotShell shell, String... labels) {''',
-                  '''        item.select();
-        waitForSelected(item);
-    }
-
-    private static void waitForSelected(SWTBotTreeItem item) {
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return item.isSelected();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The requested preference node was not selected: " + item.getText();
-            }
-        });
-    }
-
-    private static void clickButton(SWTBotShell shell, String... labels) {''',
-              ),
-              (
-                  '''        });
-        bot.sleep(300);
-    }
-
-    private static String visibleShells() {''',
-                  '''        });
-    }
-
-    private static String visibleShells() {''',
-              ),
-          ]
-
-          for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected one occurrence, found {count}: {old[:100]!r}')
-              text = text.replace(old, new, 1)
-
-          if 'bot.sleep(' in text:
-              raise SystemExit('Fixed SWTBot sleep remains in coordinated JUnit scenario')
-          path.write_text(text, encoding='utf-8')
-          PY
-
-          git show "$final_patched_commit:$patched_workflow" > "$patched_workflow"
-          git show "$final_fix_commit:$fix_workflow" > "$fix_workflow"
-          if [[ "$(git hash-object "$patched_workflow")" != "$expected_patched" ]]; then
-            echo '::error::Patched-JDT workflow did not restore byte-exactly' >&2
-            exit 1
-          fi
-          if [[ "$(git hash-object "$fix_workflow")" != "$expected_fix" ]]; then
-            echo '::error::Fix-NLS workflow did not restore byte-exactly' >&2
-            exit 1
-          fi
-
-          git rm -- "$temporary_workflow"
-          git add -- "$source_file" "$patched_workflow" "$fix_workflow"
-          git diff --check
-          if grep -Fq 'bot.sleep(' "$source_file"; then
-            echo '::error::Fixed SWTBot sleep remains' >&2
-            exit 1
-          fi
-
-          expected_paths="$(printf '%s\n' "$fix_workflow" "$patched_workflow" "$source_file" "$temporary_workflow" | sort)"
-          actual_paths="$(git diff --cached --name-only | sort)"
-          if [[ "$actual_paths" != "$expected_paths" ]]; then
-            echo '::error::Unexpected staged paths' >&2
-            git diff --cached --name-status >&2
-            exit 1
-          fi
-
-          git config --local user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git config --local user.name 'github-actions[bot]'
-          git commit -m 'Replace fixed JUnit SWTBot waits with state conditions'
-          git push origin HEAD:qa/junit-coordinated-preview-contract
+      
+      - name: Commit and push fixes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "fix: Add missing NLS comments to string literals"
+          git push
