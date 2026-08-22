@@ -1,3 +1,4 @@
+# One-shot branch maintenance; this workflow removes itself after applying the reviewed change.
 name: Apply state-based PR 1514 SWTBot synchronization
 
 on:
