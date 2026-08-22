@@ -69,7 +69,7 @@ With the pinned optional patched JDT UI host, one coordinated migration candidat
 - required file changes and nested edit groups are not independently selectable;
 - users may enable or disable disjoint candidates independently;
 - disabling one candidate leaves every other candidate unchanged;
-- a partially disabled nested change is rejected before execution and by direct-perform validation;
+- a partially disabled nested change is rejected before execution and by direct perform validation;
 - applying a selected candidate changes all participating files in one operation;
 - Undo restores all participating files byte-for-byte;
 - ordinary local cleanups retain Eclipse's normal file-level and edit-group selection;
