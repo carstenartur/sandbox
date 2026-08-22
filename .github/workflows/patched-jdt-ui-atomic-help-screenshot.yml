@@ -11,6 +11,7 @@ on:
       - '.github/scripts/build_patched_jdt_ui.sh'
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/scripts/publish_patched_jdt_ui_repository.sh'
+      - '.github/scripts/VerifyAtomicPreviewScreenshotDiff.java'
       - '.github/scripts/verify_minimal_patched_jdt_ui_units.py'
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
@@ -22,6 +23,8 @@ on:
       - 'sandbox_test_commons/**'
       - 'sandbox_int_to_enum/**'
       - 'sandbox_int_to_enum_help/**'
+      - 'sandbox_junit_cleanup/**'
+      - 'sandbox_junit_cleanup_help/**'
       - 'sandbox_usage_view/**'
       - 'sandbox_usage_view_test/**'
   workflow_dispatch:
@@ -35,7 +38,7 @@ concurrency:
 
 jobs:
   atomic-preview:
-    name: Reproduce atomic Int-to-Enum preview with patched JDT UI
+    name: Reproduce atomic Cleanup previews with patched JDT UI
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
@@ -109,7 +112,23 @@ jobs:
           grep -Fq 'sandbox_patched_jdt_ui_feature.feature.group' "$target"
           grep -Fq "$repository" "$target"
 
-      - name: Reproduce the atomic Cleanup preview
+      - name: Preserve committed atomic preview baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline_dir="$RUNNER_TEMP/atomic-preview-baselines"
+          mkdir -p "$baseline_dir"
+          images=(
+            'sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
+            'sandbox_junit_cleanup_help/images/junit-coordinated-preview.png'
+          )
+          for image in "${images[@]}"; do
+            baseline="$baseline_dir/$(basename "$image")"
+            git show "HEAD:$image" > "$baseline"
+            test -s "$baseline"
+          done
+
+      - name: Reproduce the atomic Cleanup previews
         run: >-
           timeout
           --signal=TERM
@@ -130,7 +149,7 @@ jobs:
           -Phelp-screenshots
           clean verify
 
-      - name: Verify the patched-runtime SWTBot test executed
+      - name: Verify both patched-runtime SWTBot scenarios executed
         shell: bash
         run: |
           set -euo pipefail
@@ -138,32 +157,44 @@ jobs:
             'SandboxAtomicPreviewPatchedJdtSWTBotTest' \
             sandbox_usage_view_test/target/surefire-reports | head -n 1 || true)"
           if [[ -z "$report" ]]; then
-            echo 'The patched-runtime atomic preview test did not execute.' >&2
+            echo 'The patched-runtime atomic preview test class did not execute.' >&2
             exit 1
           fi
+          for scenario in \
+            coordinatedIntToEnumPreviewIsAtomic \
+            coordinatedJUnitCandidatesAreAtomicAndIndependentlySelectable
+          do
+            if ! grep -Fq "name=\"$scenario\"" "$report"; then
+              echo "The patched-runtime scenario did not execute: $scenario" >&2
+              exit 1
+            fi
+          done
           printf 'Verified JUnit report: %s\n' "$report"
 
-      - name: Verify the canonical atomic preview image
+      - name: Verify the canonical atomic preview images
         shell: bash
         run: |
           set -euo pipefail
-          image='sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
-          test -s "$image"
-          change="$(git status --porcelain=v1 --untracked-files=all -- "$image")"
-          if [[ -n "$change" ]]; then
-            echo 'The generated atomic preview differs from the committed baseline:' >&2
-            echo "$change" >&2
-            echo 'Use the uploaded image from this exact patched-runtime run as the reviewed baseline.' >&2
-            exit 1
-          fi
+          baseline_dir="$RUNNER_TEMP/atomic-preview-baselines"
+          verifier='.github/scripts/VerifyAtomicPreviewScreenshotDiff.java'
+          images=(
+            'sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
+            'sandbox_junit_cleanup_help/images/junit-coordinated-preview.png'
+          )
+          for image in "${images[@]}"; do
+            test -s "$image"
+            baseline="$baseline_dir/$(basename "$image")"
+            java "$verifier" "$baseline" "$image"
+          done
 
-      - name: Upload atomic preview and patch provenance
+      - name: Upload atomic previews and patch provenance
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: patched-jdt-ui-atomic-preview-${{ github.run_number }}
           path: |
             sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
+            sandbox_junit_cleanup_help/images/junit-coordinated-preview.png
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
             ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
             ${{ runner.temp }}/patched-jdt-ui-p2/evidence/repository-provenance.json

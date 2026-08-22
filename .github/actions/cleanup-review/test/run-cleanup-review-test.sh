@@ -13,11 +13,25 @@ trap 'rm -rf "$test_root"' EXIT
 repo=$test_root/repository
 output=$test_root/output
 bin_dir=$test_root/bin
-mkdir -p "$repo/alpha/src" "$repo/orphan" "$bin_dir"
+mkdir -p "$repo/alpha/src" "$repo/orphan" "$repo/.github/scripts" "$bin_dir"
 
+cat > "$repo/.project" <<'PROJECT'
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+  <name>aggregate</name>
+  <natures>
+    <nature>org.eclipse.m2e.core.maven2Nature</nature>
+  </natures>
+</projectDescription>
+PROJECT
 cat > "$repo/alpha/.project" <<'PROJECT'
 <?xml version="1.0" encoding="UTF-8"?>
-<projectDescription><name>alpha</name></projectDescription>
+<projectDescription>
+  <name>alpha</name>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
 PROJECT
 cat > "$repo/alpha/src/A.java" <<'JAVA'
 class A {
@@ -31,6 +45,9 @@ class WithSpace {
 JAVA
 cat > "$repo/orphan/B.java" <<'JAVA'
 class B {}
+JAVA
+cat > "$repo/.github/scripts/Verifier.java" <<'JAVA'
+class Verifier {}
 JAVA
 cat > "$repo/cleanup.properties" <<'PROPERTIES'
 cleanup.explicit_encoding=true
@@ -49,6 +66,7 @@ base_sha=$(git -C "$repo" rev-parse HEAD)
 printf '\n// pull request change\n' >> "$repo/alpha/src/A.java"
 printf '\n// pull request change\n' >> "$repo/alpha/src/With Space.java"
 printf '\n// pull request change\n' >> "$repo/orphan/B.java"
+printf '\n// pull request change\n' >> "$repo/.github/scripts/Verifier.java"
 (
   cd "$repo"
   git add .
@@ -137,10 +155,10 @@ log_file=$test_root/docker.log
 )
 
 grep -Fx 'has_changes=true' "$output_file" >/dev/null
-grep -Fx 'input_java_count=3' "$output_file" >/dev/null
+grep -Fx 'input_java_count=4' "$output_file" >/dev/null
 grep -Fx 'project_count=1' "$output_file" >/dev/null
 grep -Fx 'changed_file_count=2' "$output_file" >/dev/null
-grep -Fx 'skipped_file_count=1' "$output_file" >/dev/null
+grep -Fx 'skipped_file_count=2' "$output_file" >/dev/null
 grep -F -- '--import-project /workspace/alpha' "$log_file" >/dev/null
 grep -F -- '--source /workspace/alpha/src/A.java' "$log_file" >/dev/null
 grep -F -- "--source /workspace/alpha/src/With\\ Space.java" "$log_file" >/dev/null
@@ -148,6 +166,7 @@ grep -F -- "--source /workspace/alpha/src/With\\ Space.java" "$log_file" >/dev/n
 grep -F '`alpha`' "$output/summary.md" >/dev/null
 grep -F '// cleanup suggestion' "$output/suggestions.patch" >/dev/null
 grep -F 'orphan/B.java' "$output/skipped-files.txt" >/dev/null
+grep -F '.github/scripts/Verifier.java' "$output/skipped-files.txt" >/dev/null
 [[ -s $output/report-0.json ]]
 
 # A pull request without Java changes must not invoke Docker and must be a clean no-op.

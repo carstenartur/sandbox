@@ -45,6 +45,21 @@ public class JUnitCleanUp extends AbstractCleanUpCoreWrapper<ReportingJUnitClean
 		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
 	}
 
+	/**
+	 * Optional dependency-free contract discovered reflectively by the patched
+	 * JDT Cleanup host. Coordinated JUnit migrations must expose the candidate
+	 * metadata held by the planned cleanup core so declarations and consumers are
+	 * represented by one atomic preview selection unit.
+	 *
+	 * @param project current Java project
+	 * @return immutable coordinated-candidate metadata
+	 * @throws CoreException if the planned preview metadata is inconsistent
+	 */
+	public Collection<Map<String, Object>> getCoordinatedCleanUpPreview(IJavaProject project)
+			throws CoreException {
+		return cleanUpCore.getCoordinatedCleanUpPreview(project);
+	}
+
 	@Override
 	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
 		return cleanUpCore.getLastPlanningDiagnosticsJson(project);
