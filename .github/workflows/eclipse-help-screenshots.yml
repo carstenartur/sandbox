@@ -112,18 +112,28 @@ jobs:
             echo 'The selected Help screenshot JUnit merge gate did not execute.' >&2
             exit 1
           fi
+          if ! grep -Fq 'name="captureRealCleanupPreviewAndVerifyIndependentSelection"' "$report"; then
+            echo 'The real LTK Cleanup preview scenario did not execute.' >&2
+            exit 1
+          fi
           printf 'Verified JUnit report: %s\n' "$report"
 
-      # These previews remain executable, but their committed images are
-      # maintained by separate real-runtime gates rather than this deterministic
-      # stock-Eclipse configuration-tab verifier.
-      - name: Restore separately maintained real-preview images
+      # The Int-to-Enum atomic candidate image is maintained by the separate
+      # pinned patched-JDT-UI workflow. JFace previews are generated and checked
+      # here and must never be restored from the checkout before verification.
+      - name: Restore patched-host atomic preview image
         run: >-
           git restore --source=HEAD --
+          sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
+
+      - name: Verify real Cleanup preview evidence
+        run: >-
+          java
+          .github/scripts/VerifyRealCleanupPreviewScreenshots.java
+          sandbox_jface_cleanup_help/images/jface-cleanup.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
-          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
-          sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
 
       # Intentional baseline changes must be copied from a completed verifier
       # artifact; the pull-request gate itself always remains read-only.
