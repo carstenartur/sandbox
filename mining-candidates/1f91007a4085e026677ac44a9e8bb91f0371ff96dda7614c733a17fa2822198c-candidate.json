@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1f91007a4085e026677ac44a9e8bb91f0371ff96dda7614c733a17fa2822198c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.String.split(\"\\\\s*\\n\\\\s*\")\n\u003d\u003e\njava.lang.String.split(\"\\\\s*(?:\\\\r\\\\n?|\\n)\\\\s*\")\n;;",
+  "beforeExample": "class Example {\n    void method(String pattern) {\n        String[] parts \u003d pattern.split(\"\\\\s*\\n\\\\s*\");\n    }\n}",
+  "afterExample": "class Example {\n    void method(String pattern) {\n        String[] parts \u003d pattern.split(\"\\\\s*(?:\\\\r\\\\n?|\\n)\\\\s*\");\n    }\n}",
+  "negativeExample": "class Example {\n    void method(String pattern) {\n        // Should not match other split patterns\n        String[] parts1 \u003d pattern.split(\"\\t\");\n        String[] parts2 \u003d pattern.split(\" \");\n        // Should not match if the string literal is different\n        String[] parts3 \u003d pattern.split(\"\\\\s*\r\n\\\\s*\");\n    }\n}",
+  "targetHintFile": "string-regex.sandbox-hint",
+  "sourceCommit": "8cdd6a0657036d6bf3199f2f9331da144b02844c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String/Regex Modernization",
+  "summary": "Replace `String.split(\"\\\\s*\\n\\\\s*\")` with `String.split(\"\\\\s*(?:\\\\r\\\\n?|\\n)\\\\s*\")` to correctly handle all newline types.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-22T02:33:24.036909086Z",
+  "ruleFingerprint": "sha256:21acbc75f9327ac5829f59ae3b786ffded7034c0669d093439732920c731d3b0",
+  "behaviorFingerprint": "sha256:bc09a7e6d7002e6a66e7135636c32366a79193903d75589eb93d081eb61a74ea",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-08-22T02:33:28.132952329Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

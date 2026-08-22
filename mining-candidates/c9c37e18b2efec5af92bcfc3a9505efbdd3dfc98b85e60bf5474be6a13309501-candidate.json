@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c9c37e18b2efec5af92bcfc3a9505efbdd3dfc98b85e60bf5474be6a13309501",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$res !\u003d null :: instanceof($res, \"org.eclipse.core.resources.IResource\")\n\u003d\u003e $res !\u003d null \u0026\u0026 !$res.exists()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyContentProvider {\n    public void checkResource(Object element) throws JavaModelException {\n        if (element instanceof IPackageFragmentRoot) {\n            IPackageFragmentRoot root \u003d (IPackageFragmentRoot) element;\n            IResource resource \u003d root.getResource();\n            if (resource !\u003d null) { // This line is the target\n                System.out.println(\"Resource exists: \" + resource.getName());\n            }\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyContentProvider {\n    public void checkResource(Object element) throws JavaModelException {\n        if (element instanceof IPackageFragmentRoot) {\n            IPackageFragmentRoot root \u003d (IPackageFragmentRoot) element;\n            IResource resource \u003d root.getResource();\n            if (resource !\u003d null \u0026\u0026 !resource.exists()) { // This line is the target\n                System.out.println(\"Resource exists: \" + resource.getName());\n            }\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport java.util.List;\n\npublic class MyOtherChecker {\n    public void checkList(List\u003c?\u003e list) {\n        if (list !\u003d null) { // Should not match, list is not IResource\n            System.out.println(\"List is not null.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse-jdt-api-modernize.sandbox-hint",
+  "sourceCommit": "f5ab282026277795b57542469676f077cbf9f366",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Adds a check for `!resource.exists()` to `resource !\u003d null` condition when `resource` is an `IResource`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-22T02:33:24.073179813Z",
+  "ruleFingerprint": "sha256:a24d4e5e9e5e21e132443fc543038a29270bb4ef1d4645d7ff9c4ae631d93ea1",
+  "behaviorFingerprint": "sha256:6a236fa07ffa71843d2ba20f96b3bf3d29b0afbcdf388ade326f09dc4a4b3ca5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MyContentProvider must be defined in its own file",
+    "verifiedAt": "2026-08-22T02:33:28.159907126Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
