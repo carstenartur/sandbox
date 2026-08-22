@@ -2,6 +2,12 @@
 name: Apply state-based PR 1514 SWTBot synchronization
 
 on:
+  pull_request:
+    types: [synchronize]
+    branches:
+      - main
+    paths:
+      - '.github/workflows/tmp-pr1514-state-based-swtbot.yml'
   push:
     branches:
       - qa/junit-coordinated-preview-contract
@@ -17,6 +23,7 @@ concurrency:
 
 jobs:
   apply:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout exact PR branch
