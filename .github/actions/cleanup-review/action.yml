@@ -1,0 +1,141 @@
+name: Sandbox Cleanup Review Suggestions
+description: Run a configured Sandbox Eclipse cleanup and publish its diff as applicable GitHub review suggestions.
+author: Sandbox Project
+
+branding:
+  icon: code
+  color: blue
+
+inputs:
+  github-token:
+    description: Token used to publish the pull-request review.
+    required: true
+  base-sha:
+    description: Pull-request base commit SHA.
+    required: true
+  head-sha:
+    description: Exact checked-out pull-request head commit SHA.
+    required: true
+  config-file:
+    description: Repository-relative Sandbox cleanup properties file.
+    required: false
+    default: .github/cleanup-profiles/review-explicit-encoding.properties
+  image:
+    description: Sandbox cleanup container image.
+    required: false
+    default: ghcr.io/carstenartur/sandbox-cleanup:latest
+  scope:
+    description: Cleanup source scope (main, test, or both).
+    required: false
+    default: both
+  source-mode:
+    description: Analyze only changed Java files or each complete affected Eclipse project (changed or project).
+    required: false
+    default: changed
+  tool-name:
+    description: Name shown on generated review suggestions.
+    required: false
+    default: sandbox-cleanup
+  artifact-name:
+    description: Name of the complete patch/report artifact.
+    required: false
+    default: sandbox-cleanup-review
+  upload-artifact:
+    description: Upload the complete patch and JSON reports.
+    required: false
+    default: 'true'
+
+outputs:
+  has-changes:
+    description: Whether the cleanup modified Java source files.
+    value: ${{ steps.cleanup.outputs.has_changes }}
+  changed-file-count:
+    description: Number of Java files modified by the cleanup.
+    value: ${{ steps.cleanup.outputs.changed_file_count }}
+  project-count:
+    description: Number of imported Eclipse projects.
+    value: ${{ steps.cleanup.outputs.project_count }}
+  skipped-file-count:
+    description: Number of changed Java files without an ancestor .project file.
+    value: ${{ steps.cleanup.outputs.skipped_file_count }}
+  patch-file:
+    description: Path to the complete Git patch.
+    value: ${{ steps.cleanup.outputs.patch_file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run configured Sandbox cleanup
+      id: cleanup
+      shell: bash
+      env:
+        OUTPUT_DIR: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
+      run: |
+        "$GITHUB_ACTION_PATH/run-cleanup-review.sh" \
+          --base-sha "${{ inputs.base-sha }}" \
+          --head-sha "${{ inputs.head-sha }}" \
+          --config-file "${{ inputs.config-file }}" \
+          --image "${{ inputs.image }}" \
+          --scope "${{ inputs.scope }}" \
+          --source-mode "${{ inputs.source-mode }}" \
+          --output-dir "$OUTPUT_DIR"
+
+    - name: Publish applicable Suggested Changes
+      id: publish
+      if: steps.cleanup.outputs.has_changes == 'true'
+      continue-on-error: true
+      uses: reviewdog/action-suggester@4747dbc9f9e37adba0943e681cc20db466642158
+      with:
+        github_token: ${{ inputs.github-token }}
+        tool_name: ${{ inputs.tool-name }}
+        filter_mode: diff_context
+        fail_level: none
+        cleanup: 'false'
+
+    - name: Restore diff before one publisher retry
+      if: steps.publish.outcome == 'failure'
+      shell: bash
+      run: |
+        # action-suggester stashes the diff before calling GitHub. Its current
+        # script exits on API failure before restoring that stash.
+        if [[ -n $(git stash list) ]]; then
+          git stash pop
+        fi
+        sleep 5
+
+    - name: Retry applicable Suggested Changes
+      id: publish-retry
+      if: steps.publish.outcome == 'failure'
+      uses: reviewdog/action-suggester@4747dbc9f9e37adba0943e681cc20db466642158
+      with:
+        github_token: ${{ inputs.github-token }}
+        tool_name: ${{ inputs.tool-name }}
+        filter_mode: diff_context
+        fail_level: none
+        cleanup: 'false'
+
+    - name: Restore diff after final publisher failure
+      if: always() && steps.publish-retry.outcome == 'failure'
+      shell: bash
+      run: |
+        if [[ -n $(git stash list) ]]; then
+          git stash pop || true
+        fi
+
+    - name: Upload complete cleanup evidence
+      if: always() && steps.cleanup.outputs.has_changes == 'true' && inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.cleanup.outputs.output_dir }}
+        if-no-files-found: error
+
+    - name: Add cleanup summary
+      if: always()
+      shell: bash
+      env:
+        SUMMARY_FILE: ${{ steps.cleanup.outputs.summary_file }}
+      run: |
+        if [[ -n "$SUMMARY_FILE" && -f "$SUMMARY_FILE" ]]; then
+          cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+        fi
