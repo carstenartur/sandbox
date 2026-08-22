@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "a1afd690602023689c1b32bc21a0b4365302c54a",
-      "lastProcessedDate": "2026-08-21T02:41:52.921066803Z",
-      "totalProcessed": 4339,
+      "lastProcessedCommit": "3fa3124eb680a976c9dae5f2c17f1834f8c6e818",
+      "lastProcessedDate": "2026-08-22T02:33:22.550236299Z",
+      "totalProcessed": 4419,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3035,6 +3035,15 @@
           "deferredAt": "2026-08-21T02:35:41.169898095Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "26503f8d8287a5995f95b82a2770d3a0ad11ea16",
+          "message": "Bug 236850: [misc] Show Java Annotations in the Javadoc hover and view",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-22T02:29:49.970734602Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3178,7 +3187,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 19,
+        "API Migration": 20,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3187,9 +3196,9 @@
         "Preference Configuration": 1,
         "Typo Fix": 1,
         "Unnecessary Call Removal": 1,
-        "String Literal Replacement": 2,
+        "String Literal Replacement": 3,
         "API Replacement": 2,
-        "API Modernization": 38,
+        "API Modernization": 39,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3256,7 +3265,9 @@
         "Deprecated API Usage": 1,
         "UI State Management": 1,
         "Constant Refactoring": 1,
-        "Visibility Refactoring": 1
+        "Visibility Refactoring": 1,
+        "String/Regex Modernization": 1,
+        "Constant Renaming": 1
       },
       "exhaustedCategories": []
     },
@@ -3297,5 +3308,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27110
+  "globalTotalProcessed": 27190
 }
