@@ -11,6 +11,7 @@ on:
       - '.github/scripts/build_patched_jdt_ui.sh'
       - '.github/scripts/compare_patched_jdt_ui_with_target.sh'
       - '.github/scripts/publish_patched_jdt_ui_repository.sh'
+      - '.github/scripts/VerifyAtomicPreviewScreenshotDiff.java'
       - '.github/scripts/verify_minimal_patched_jdt_ui_units.py'
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
@@ -111,6 +112,22 @@ jobs:
           grep -Fq 'sandbox_patched_jdt_ui_feature.feature.group' "$target"
           grep -Fq "$repository" "$target"
 
+      - name: Preserve committed atomic preview baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          baseline_dir="$RUNNER_TEMP/atomic-preview-baselines"
+          mkdir -p "$baseline_dir"
+          images=(
+            'sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
+            'sandbox_junit_cleanup_help/images/junit-coordinated-preview.png'
+          )
+          for image in "${images[@]}"; do
+            baseline="$baseline_dir/$(basename "$image")"
+            git show "HEAD:$image" > "$baseline"
+            test -s "$baseline"
+          done
+
       - name: Reproduce the atomic Cleanup previews
         run: >-
           timeout
@@ -158,24 +175,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          baseline_dir="$RUNNER_TEMP/atomic-preview-baselines"
+          verifier='.github/scripts/VerifyAtomicPreviewScreenshotDiff.java'
           images=(
             'sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png'
             'sandbox_junit_cleanup_help/images/junit-coordinated-preview.png'
           )
-          unexpected=()
           for image in "${images[@]}"; do
             test -s "$image"
-            change="$(git status --porcelain=v1 --untracked-files=all -- "$image")"
-            if [[ -n "$change" ]]; then
-              unexpected+=("$change")
-            fi
+            baseline="$baseline_dir/$(basename "$image")"
+            java "$verifier" "$baseline" "$image"
           done
-          if (( ${#unexpected[@]} > 0 )); then
-            echo 'Generated atomic previews differ from the committed baselines:' >&2
-            printf '%s\n' "${unexpected[@]}" >&2
-            echo 'Use the uploaded images from this exact patched-runtime run as reviewed baselines.' >&2
-            exit 1
-          fi
 
       - name: Upload atomic previews and patch provenance
         if: always()
