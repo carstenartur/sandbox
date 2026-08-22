@@ -10,24 +10,64 @@
 <body>
    <h1>Using Functional Converter</h1>
    <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Functional Converter (Sandbox)</strong>.</p>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a dedicated profile, and select
+      <strong>Functional Converter (Sandbox)</strong>.</p>
+   <p><img class="screenshot" src="../images/functional-converter-cleanup.png"
+      alt="Functional Converter cleanup configuration"/></p>
+   <p>The implemented target is <strong>Stream</strong>. Target choices shown as not implemented do not authorize a
+      speculative conversion and leave the source unchanged.</p>
 
-   <h2>When it is offered</h2>
-   <p>The cleanup is conservative around mutation, control-flow exits, exception behavior, ordering, and variable capture. It runs only when the source pattern maps to a supported stream form.</p>
+   <h2>Simple iteration</h2>
+   <h3>Before</h3>
+   <pre>for (String name : names) {
+    System.out.println(name);
+}</pre>
+   <h3>After</h3>
+   <pre>names.forEach(name -&gt; System.out.println(name));</pre>
 
-   <h2>Recommended workflow</h2>
+   <h2>Filter, map, and ordered terminal action</h2>
+   <h3>Before</h3>
+   <pre>for (Integer value : values) {
+    if (value != null) {
+        String text = value.toString();
+        System.out.println(text);
+    }
+}</pre>
+   <h3>After</h3>
+   <pre>values.stream()
+    .filter(value -&gt; value != null)
+    .map(value -&gt; value.toString())
+    .forEachOrdered(text -&gt; System.out.println(text));</pre>
+
+   <h2>Reduction</h2>
+   <h3>Before</h3>
+   <pre>int max = Integer.MIN_VALUE;
+for (Integer value : values) {
+    max = Math.max(max, value);
+}</pre>
+   <h3>After</h3>
+   <pre>int max = values.stream().reduce(Integer.MIN_VALUE, Math::max);</pre>
+
+   <h2>Safety boundary</h2>
+   <p>The cleanup is intentionally conservative around mutation, side effects, encounter order, exception behavior,
+      variable capture, labeled control flow, and values that escape the loop. A visually similar loop is not enough:
+      the complete binding-resolved source pattern must match a supported transformation. Comments are retained in
+      supported block-lambda forms; unsupported placements cause the candidate to be rejected rather than discarded.</p>
+
+   <h2>Review the real execution preview</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Start with one method or one source file in version control.</li>
+      <li>Inspect the complete pipeline in <strong>Source &gt; Clean Up...</strong>, including terminal operation and ordering.</li>
+      <li>Compare exception timing, side effects, short-circuiting, and result values with the original loop.</li>
+      <li>Compile and run focused tests before applying the cleanup to a wider selection.</li>
    </ol>
+   <p>The standard Eclipse file-selection and code-comparison UI is shown in the
+      <a href="/topic/sandbox_cleanup_application_help/html/cleanup-preview.html">Cleanup preview model</a>.</p>
 
    <h2>Screenshot regeneration</h2>
-   <p>The image in this Help bundle is generated from a real Eclipse workbench by
+   <p>The configuration image is generated from a real Eclipse workbench by
       <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
-      <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+      <code>help-screenshots</code> under Xvfb after UI changes.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>
