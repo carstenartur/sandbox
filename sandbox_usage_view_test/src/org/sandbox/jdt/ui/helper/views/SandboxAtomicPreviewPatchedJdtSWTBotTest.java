@@ -36,8 +36,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
- * Runs the coordinated Int-to-Enum preview only in the optional product path
- * that installs the pinned JDT UI replacement bundle.
+ * Runs coordinated preview scenarios only in the optional product path that
+ * installs the pinned JDT UI replacement bundle.
  */
 public class SandboxAtomicPreviewPatchedJdtSWTBotTest {
 
@@ -56,6 +56,7 @@ public class SandboxAtomicPreviewPatchedJdtSWTBotTest {
 
         SandboxHelpScreenshotsSWTBotTest.setUp();
         screenshots = new SandboxHelpScreenshotsSWTBotTest();
+        CoordinatedJUnitPreviewSWTBotScenario.prepareFixture();
         preparePreviewFixture();
     }
 
@@ -73,6 +74,16 @@ public class SandboxAtomicPreviewPatchedJdtSWTBotTest {
     public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
         try {
             screenshots.coordinatedIntToEnumPreviewIsAtomic();
+        } catch (AssertionError | RuntimeException failure) {
+            printWorkspaceLog();
+            throw failure;
+        }
+    }
+
+    @Test
+    public void coordinatedJUnitCandidatesAreAtomicAndIndependentlySelectable() throws Exception {
+        try {
+            CoordinatedJUnitPreviewSWTBotScenario.run();
         } catch (AssertionError | RuntimeException failure) {
             printWorkspaceLog();
             throw failure;
