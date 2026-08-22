@@ -148,14 +148,25 @@ summary_file=$output_dir/summary.md
 : > "$changed_file_list"
 : > "$patch_file"
 
+is_java_project_root() {
+  local directory=$1
+  grep -Eq '<nature>[[:space:]]*org\.eclipse\.jdt\.core\.javanature[[:space:]]*</nature>' \
+    "$directory/.project"
+}
+
 find_project_root() {
   local candidate=$1
   local directory
   directory=$(dirname "$candidate")
   while :; do
     if [[ -f $directory/.project ]]; then
-      printf '%s\n' "$directory"
-      return 0
+      if is_java_project_root "$directory"; then
+        printf '%s\n' "$directory"
+        return 0
+      fi
+      # An Eclipse project boundary is authoritative. Do not accidentally
+      # associate a file from a non-Java project with a Java parent project.
+      return 1
     fi
     [[ $directory == "$repo_root" ]] && break
     local parent
@@ -182,7 +193,7 @@ while IFS= read -r -d '' relative_path; do
   if ! project_root=$(find_project_root "$absolute_path"); then
     append_quoted_line "$skipped_file" "$relative_path"
     ((skipped_count += 1))
-    warning "Skipping Java file without an ancestor .project: $relative_path"
+    warning "Skipping Java file outside an Eclipse Java project: $relative_path"
     continue
   fi
 
@@ -301,7 +312,7 @@ fi
   echo "| Changed Java files in the PR input | $input_java_count |"
   echo "| Imported Eclipse projects | $project_count |"
   echo "| Cleanup-modified Java files | $changed_file_count |"
-  echo "| Skipped files without \`.project\` | $skipped_count |"
+  echo "| Skipped files outside Eclipse Java projects | $skipped_count |"
   echo
   echo "**Profile:** \`$config_rel\`  "
   echo "**Scope:** \`$scope\`  "
@@ -319,7 +330,7 @@ fi
   if [[ $has_changes == true ]]; then
     echo "Applicable changed lines are published as GitHub Suggested Changes. The complete patch and JSON reports are retained as a workflow artifact, including changes that GitHub cannot place inline."
   elif ((project_count == 0 && input_java_count > 0)); then
-    echo "No cleanup ran because none of the changed Java files belongs to a directory tree containing an Eclipse \`.project\` file."
+    echo "No cleanup ran because none of the changed Java files belongs to an Eclipse Java project."
   else
     echo "The selected cleanup produced no source changes."
   fi
