@@ -1,4 +1,4 @@
-name: Apply state-based PR 1514 SWTBot synchronization
+name: Finalize reviewed PR 1514 JUnit preview baseline
 
 on:
   push:
@@ -8,14 +8,15 @@ on:
       - '.github/workflows/tmp-pr1514-state-based-swtbot.yml'
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
-  group: pr1514-state-based-swtbot
+  group: pr1514-finalize-reviewed-junit-preview
   cancel-in-progress: true
 
 jobs:
-  apply:
+  finalize:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout exact PR branch
@@ -24,120 +25,72 @@ jobs:
           ref: qa/junit-coordinated-preview-contract
           fetch-depth: 0
 
-      - name: Replace fixed waits and remove this one-shot workflow
+      - name: Commit the reviewed generated baseline and remove this workflow
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          target='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/CoordinatedJUnitPreviewSWTBotScenario.java'
+
           workflow='.github/workflows/tmp-pr1514-state-based-swtbot.yml'
-          expected_before='6d3c6d1773c20a048909b5cc98f9a51bb8e233a1'
-          actual_before="$(git hash-object "$target")"
-          if [[ "$actual_before" != "$expected_before" ]]; then
-            echo "::error::Unexpected source blob $actual_before"
+          target='sandbox_junit_cleanup_help/images/junit-coordinated-preview.png'
+          run_id='32537901836'
+          artifact='patched-jdt-ui-atomic-preview-65'
+          expected_head='e42446c01b8f54f018e0511f21861e7ca55222bb'
+          expected_sha256='3da344928b837a65c713a58cd72675887c626b95da541352e7278c102c318054'
+          download_dir="$RUNNER_TEMP/pr1514-reviewed-preview"
+
+          actual_head="$(gh run view "$run_id" --repo "$GITHUB_REPOSITORY" --json headSha --jq '.headSha')"
+          if [[ "$actual_head" != "$expected_head" ]]; then
+            echo "::error::Artifact run head $actual_head does not match $expected_head"
             exit 1
           fi
 
-          python3 - "$target" <<'PY'
-          from pathlib import Path
-          import sys
+          rm -rf "$download_dir"
+          mkdir -p "$download_dir"
+          gh run download "$run_id" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$artifact" \
+            --dir "$download_dir"
 
-          path = Path(sys.argv[1])
-          text = path.read_text(encoding='utf-8')
-          replacements = [
-              (
-                  '''                shell.widget.layout(true, true);
-            }
-        });
-        shell.activate();
-        bot.sleep(500);
-    }
+          mapfile -t candidates < <(find "$download_dir" -type f \
+            -path '*/sandbox_junit_cleanup_help/images/junit-coordinated-preview.png' \
+            -print)
+          if [[ ${#candidates[@]} -ne 1 ]]; then
+            printf 'Expected one generated JUnit preview, found %d:\n' "${#candidates[@]}" >&2
+            printf '%s\n' "${candidates[@]}" >&2
+            exit 1
+          fi
 
-    private static void openPreferences() {''',
-                  '''                shell.widget.layout(true, true);
-                shell.widget.update();
-            }
-        });
-        shell.activate();
-        waitForActiveShell(shell);
-    }
+          source_image="${candidates[0]}"
+          actual_sha256="$(sha256sum "$source_image" | cut -d' ' -f1)"
+          if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+            echo "::error::Unexpected JUnit preview digest $actual_sha256"
+            exit 1
+          fi
+          file "$source_image" | grep -Fq 'PNG image data, 1280 x 900'
 
-    private static void waitForActiveShell(SWTBotShell shell) {
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                try {
-                    return shell.isOpen() && bot.activeShell().widget == shell.widget;
-                } catch (WidgetNotFoundException exception) {
-                    return false;
-                }
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The screenshot shell did not become active: " + shell.getText();
-            }
-        });
-    }
-
-    private static void openPreferences() {''',
-              ),
-              (
-                  '''        item.select();
-        bot.sleep(300);
-    }
-
-    private static void clickButton(SWTBotShell shell, String... labels) {''',
-                  '''        item.select();
-        waitForSelected(item);
-    }
-
-    private static void waitForSelected(SWTBotTreeItem item) {
-        bot.waitUntil(new DefaultCondition() {
-            @Override
-            public boolean test() {
-                return item.isSelected();
-            }
-
-            @Override
-            public String getFailureMessage() {
-                return "The requested preference node was not selected: " + item.getText();
-            }
-        });
-    }
-
-    private static void clickButton(SWTBotShell shell, String... labels) {''',
-              ),
-              (
-                  '''        });
-        bot.sleep(300);
-    }
-
-    private static String visibleShells() {''',
-                  '''        });
-    }
-
-    private static String visibleShells() {''',
-              ),
-          ]
-
-          for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected one occurrence, found {count}: {old[:100]!r}')
-              text = text.replace(old, new, 1)
-
-          if 'bot.sleep(' in text:
-              raise SystemExit('Fixed SWTBot sleep remains in coordinated JUnit scenario')
-          path.write_text(text, encoding='utf-8')
-          PY
-
-          git diff --check
-          test "$(git diff --name-only | wc -l)" -eq 1
-          git diff --name-only | grep -Fxq "$target"
+          if [[ -e "$target" ]]; then
+            echo "::error::The reviewed baseline already exists unexpectedly: $target"
+            exit 1
+          fi
+          mkdir -p "$(dirname "$target")"
+          install -m 0644 "$source_image" "$target"
           git rm -- "$workflow"
+          git add -- "$target"
+          git diff --check
+
+          expected_paths="$(printf '%s\n' "$workflow" "$target" | sort)"
+          actual_paths="$(git diff --cached --name-only | sort)"
+          if [[ "$actual_paths" != "$expected_paths" ]]; then
+            echo '::error::Unexpected staged paths'
+            git diff --cached --name-status
+            exit 1
+          fi
+          git diff --cached --name-status | grep -Fqx $'D\t'"$workflow"
+          git diff --cached --name-status | grep -Fqx $'A\t'"$target"
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "$target"
-          git commit -m 'Replace fixed JUnit SWTBot waits with state conditions'
+          git commit -m 'Commit reviewed JUnit atomic preview baseline'
           git push origin HEAD:qa/junit-coordinated-preview-contract
