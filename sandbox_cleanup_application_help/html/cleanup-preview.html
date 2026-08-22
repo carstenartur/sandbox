@@ -11,14 +11,23 @@
    <h1>Cleanup preview model</h1>
    <p>The cleanup workflow has two distinct previews:</p>
    <ul>
-      <li>The profile configuration tab preview, which shows a small static example for the selected options.</li>
-      <li>The real execution preview shown after <strong>Source &gt; Clean Up...</strong>, which lists concrete changes.</li>
+      <li>The profile configuration tab preview is a small static example for the selected options.</li>
+      <li>The real execution preview shown after <strong>Source &gt; Clean Up...</strong> lists concrete files and
+          displays their proposed source comparison.</li>
    </ul>
+   <p>A configuration-tab screenshot is not evidence of an executable code change and must not be documented as one.</p>
 
-   <h2>Independent local changes</h2>
-   <p>When proposed edits are local and semantically independent, the execution preview keeps Eclipse's standard
-      fine-grained behavior. Users may select or deselect individual files and text-edit groups, and only the
-      selected subset is applied. Undo restores that applied operation.</p>
+   <h2>Standard local Cleanup changes</h2>
+   <p>For ordinary local changes, Eclipse's standard LTK preview exposes affected files. Selecting a file updates the
+      source comparison to the combined diff produced by all enabled applicable cleanup options for that file. Files
+      with independent changes may be deselected independently; only the selected complete file changes are applied.
+      Undo restores the applied operation.</p>
+   <p>The installed <a href="/topic/sandbox_jface_cleanup_help/html/usage.html">JFace Cleanup Help</a> contains three
+      SWTBot-generated captures of this real workflow: a combined single-file diff, another selected file's diff, and
+      a multi-file preview with one file deliberately deselected. The same SWTBot scenario applies the changes and
+      verifies byte-exact Undo.</p>
+   <p>This representative host-level proof is shared by local Cleanup families. Their own Help pages use compact
+      before/after examples to document feature-specific source semantics instead of duplicating the same LTK frame.</p>
 
    <h2>Coordinated multi-file migrations</h2>
    <p>Some migrations are proven safe only as a closed set of changes across several Java files. With the pinned
@@ -31,6 +40,9 @@
       <li>Applying and undoing a candidate changes and restores all participating files together.</li>
       <li>Save actions remain single-file and do not use this coordinated preview path.</li>
    </ul>
+   <p>See the installed <a href="/topic/sandbox_int_to_enum_help/html/usage.html">Int-to-Enum Help</a> and
+      <a href="/topic/sandbox_junit_cleanup_help/html/usage.html">JUnit Migration Help</a> for real
+      SWTBot-generated atomic candidate screenshots and transformation-specific applicability rules.</p>
 
    <h2>Product boundary</h2>
    <p class="note">Candidate-level atomic selection is an optional host capability supplied by the pinned patched
@@ -38,9 +50,6 @@
       dependency-free reflective bridge, but stock Eclipse does not enforce this candidate contract. Documentation
       and screenshots must identify the patched-product boundary rather than implying that every Eclipse host has
       the same behavior.</p>
-
-   <p>See the installed Int-to-Enum and JUnit Migration Help for real SWTBot-generated candidate screenshots and
-      transformation-specific applicability rules.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>
