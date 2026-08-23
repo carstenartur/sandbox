@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3eb87fc11dfeca29ca24c76d3db7cff763f882f71777f77b5df6fa6710751a0e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$fLibraryList.refresh($elem)\n:: instanceof($elem, \"org.eclipse.jdt.internal.ui.preferences.CPListElementAttribute\")\n:: instanceof($fLibraryList, \"org.eclipse.jface.viewers.StructuredViewer\")\n\u003d\u003e\n$fLibraryList.refresh($elem.getParent().getParentContainer())\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\nimport org.eclipse.jface.viewers.TableViewer;\nclass CPListElement {\n    public Object getParentContainer() { return null; }\n}\nclass CPListElementAttribute {\n    public CPListElement getParent() { return null; }\n}\npublic class UserLibraryPreferencePage {\n    private TableViewer fLibraryList;\n    public void editAttributeEntry(CPListElementAttribute elem) {\n        // ... other statements ...\n        fLibraryList.refresh(elem); // Target line\n        // ... other statements ...\n    }\n    public void removeEntry(Object element) {\n        if (element instanceof CPListElementAttribute) {\n            CPListElementAttribute attrib \u003d (CPListElementAttribute) element;\n            // ... other statements ...\n            fLibraryList.refresh(attrib); // Another target line\n            // ... other statements ...\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\nimport org.eclipse.jface.viewers.TableViewer;\nclass CPListElement {\n    public Object getParentContainer() { return null; }\n}\nclass CPListElementAttribute {\n    public CPListElement getParent() { return null; }\n}\npublic class UserLibraryPreferencePage {\n    private TableViewer fLibraryList;\n    public void editAttributeEntry(CPListElementAttribute elem) {\n        // ... other statements ...\n        fLibraryList.refresh(elem.getParent().getParentContainer()); // Transformed line\n        // ... other statements ...\n    }\n    public void removeEntry(Object element) {\n        if (element instanceof CPListElementAttribute) {\n            CPListElementAttribute attrib \u003d (CPListElementAttribute) element;\n            // ... other statements ...\n            fLibraryList.refresh(attrib.getParent().getParentContainer()); // Transformed line\n            // ... other statements ...\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\nimport org.eclipse.jface.viewers.TableViewer;\nclass CPListElement {\n    public Object getParentContainer() { return null; }\n}\nclass CPListElementAttribute {\n    public CPListElement getParent() { return null; }\n}\npublic class UserLibraryPreferencePage {\n    private TableViewer fLibraryList;\n    public void someOtherMethod(String someString) {\n        fLibraryList.refresh(someString); // Should not match: argument is String\n    }\n    public void someOtherMethod(CPListElement someElement) {\n        fLibraryList.refresh(someElement); // Should not match: argument is CPListElement, not CPListElementAttribute\n    }\n}",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "0be9881e59ddeeaa1aeabd4478005b072c186f06",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Refactoring",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.495684027Z",
+  "ruleFingerprint": "sha256:8bf1f8a2f716cffa58e40b0ace7172fd399b2b91226c5f14f8b7b5b6c74a8206",
+  "behaviorFingerprint": "sha256:edc6dcaff50496a4b048e91fb07bbedb1ebc6bbccb83a93c503798dd13eb8c09",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-08-23T02:41:21.075870964Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

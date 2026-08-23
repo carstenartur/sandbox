@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "640fd95667f01e24a8f6713a38af1a8b9ab2428e44fd7bb7ff5de4a7e470feaa",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addChangeOverriddenModfierProposal($args$)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.correction.ModifierCorrectionSubProcessor.addChangeOverriddenModifierProposal($args$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.correction;\nimport java.util.Collection;\nimport org.eclipse.jdt.core.compiler.IProblem;\nimport org.eclipse.jdt.internal.corext.fix.IProblemLocation;\nimport org.eclipse.jdt.internal.ui.fix.IInvocationContext;\n\n// Dummy interfaces/classes for compilation\ninterface IInvocationContext {}\ninterface IProblemLocation {}\ninterface IProblem {\n    int getID();\n    int InheritedMethodReducesVisibility \u003d 1;\n}\n\nclass ModifierCorrectionSubProcessor {\n    public static final int TO_VISIBLE \u003d 1;\n    public static void addChangeOverriddenModfierProposal(IInvocationContext context, IProblemLocation problem, Collection proposals, int kind) {}\n    public static void addChangeOverriddenModifierProposal(IInvocationContext context, IProblemLocation problem, Collection proposals, int kind) {}\n}\n\npublic class QuickFixProcessor {\n    public void process(IInvocationContext context, IProblem problem, Collection proposals) {\n        // This is the line to be fixed\n        ModifierCorrectionSubProcessor.addChangeOverriddenModfierProposal(context, problem, proposals, ModifierCorrectionSubProcessor.TO_VISIBLE);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.correction;\nimport java.util.Collection;\nimport org.eclipse.jdt.core.compiler.IProblem;\nimport org.eclipse.jdt.internal.corext.fix.IProblemLocation;\nimport org.eclipse.jdt.internal.ui.fix.IInvocationContext;\n\n// Dummy interfaces/classes for compilation\ninterface IInvocationContext {}\ninterface IProblemLocation {}\ninterface IProblem {\n    int getID();\n    int InheritedMethodReducesVisibility \u003d 1;\n}\n\nclass ModifierCorrectionSubProcessor {\n    public static final int TO_VISIBLE \u003d 1;\n    public static void addChangeOverriddenModfierProposal(IInvocationContext context, IProblemLocation problem, Collection proposals, int kind) {}\n    public static void addChangeOverriddenModifierProposal(IInvocationContext context, IProblemLocation problem, Collection proposals, int kind) {}\n}\n\npublic class QuickFixProcessor {\n    public void process(IInvocationContext context, IProblem problem, Collection proposals) {\n        // This is the line after fixing\n        ModifierCorrectionSubProcessor.addChangeOverriddenModifierProposal(context, problem, proposals, ModifierCorrectionSubProcessor.TO_VISIBLE);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.correction;\nimport java.util.Collection;\nimport org.eclipse.jdt.core.compiler.IProblem;\nimport org.eclipse.jdt.internal.corext.fix.IProblemLocation;\nimport org.eclipse.jdt.internal.ui.fix.IInvocationContext;\n\n// Dummy interfaces/classes for compilation\ninterface IInvocationContext {}\ninterface IProblemLocation {}\ninterface IProblem {\n    int getID();\n    int InheritedMethodReducesVisibility \u003d 1;\n}\n\nclass ModifierCorrectionSubProcessor {\n    public static final int TO_VISIBLE \u003d 1;\n    public static void addChangeOverriddenModfierProposal(IInvocationContext context, IProblemLocation problem, Collection proposals, int kind) {}\n    public static void addChangeOverriddenModifierProposal(IInvocationContext context, IProblemLocation problem, Collection proposals, int kind) {}\n}\n\npublic class AnotherClass {\n    public void doSomething() {\n        // This should not be matched as it is the correctly spelled method.\n        ModifierCorrectionSubProcessor.addChangeOverriddenModifierProposal(null, null, null, ModifierCorrectionSubProcessor.TO_VISIBLE);\n    }\n}",
+  "targetHintFile": "typo-fixes.sandbox-hint",
+  "sourceCommit": "941839d1f4199de034529abb7fa2b9bb935671bf",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Typo Fix",
+  "summary": "Fix typo \u0027Modfier\u0027 to \u0027Modifier\u0027 in method call `addChangeOverriddenModfierProposal`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.338680197Z",
+  "ruleFingerprint": "sha256:f51146dc9c32818a2143937d91cba66d11222b033c26b6e748bb4108d65c4939",
+  "behaviorFingerprint": "sha256:d4a8e99c011c4de8334fe60865d9fe85c9807204b21c9485b923cd48ab54804c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.core.compiler.IProblem conflicts with a type defined in the same file",
+    "verifiedAt": "2026-08-23T02:41:20.951497629Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

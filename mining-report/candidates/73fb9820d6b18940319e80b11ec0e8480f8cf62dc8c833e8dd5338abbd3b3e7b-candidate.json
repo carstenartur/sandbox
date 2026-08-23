@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "73fb9820d6b18940319e80b11ec0e8480f8cf62dc8c833e8dd5338abbd3b3e7b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.search.SearchUtil.isBinaryPrimitiveConstantOrString($element)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.search.SearchUtil.isPrimitiveConstantOrString($element)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.search;\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.swt.widgets.Shell;\npublic class SearchUtil {\n    private static final String BIN_PRIM_CONST_WARN_DIALOG_ID \u003d \"some_id\";\n    public static void warnIfBinaryConstant(IJavaElement element, Shell shell) {\n        if (isBinaryPrimitiveConstantOrString(element))\n            OptionalMessageDialog.open(\n                BIN_PRIM_CONST_WARN_DIALOG_ID,\n                shell,\n                SearchMessages.Search_FindReferencesAction_BinPrimConstWarnDialog_title,\n                SearchMessages.Search_FindReferencesAction_BinPrimConstWarnDialog_message,\n                0);\n    }\n    private static boolean isBinaryPrimitiveConstantOrString(IJavaElement element) { return false; /* stub */ }\n    private static class OptionalMessageDialog {\n        public static void open(String id, Shell shell, String title, String message, int options) {}\n    }\n    private static class SearchMessages {\n        public static String Search_FindReferencesAction_BinPrimConstWarnDialog_title \u003d \"Title\";\n        public static String Search_FindReferencesAction_BinPrimConstWarnDialog_message \u003d \"Message\";\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.search;\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.swt.widgets.Shell;\npublic class SearchUtil {\n    private static final String BIN_PRIM_CONST_WARN_DIALOG_ID \u003d \"some_id\";\n    public static void warnIfBinaryConstant(IJavaElement element, Shell shell) {\n        if (isPrimitiveConstantOrString(element))\n            OptionalMessageDialog.open(\n                BIN_PRIM_CONST_WARN_DIALOG_ID,\n                shell,\n                SearchMessages.Search_FindReferencesAction_BinPrimConstWarnDialog_title,\n                SearchMessages.Search_FindReferencesAction_BinPrimConstWarnDialog_message,\n                0);\n    }\n    private static boolean isPrimitiveConstantOrString(IJavaElement element) { return false; /* stub */ }\n    private static class OptionalMessageDialog {\n        public static void open(String id, Shell shell, String title, String message, int options) {}\n    }\n    private static class SearchMessages {\n        public static String Search_FindReferencesAction_BinPrimConstWarnDialog_title \u003d \"Title\";\n        public static String Search_FindReferencesAction_BinPrimConstWarnDialog_message \u003d \"Message\";\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.search;\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.swt.widgets.Shell;\npublic class SearchUtil {\n    private static final String BIN_PRIM_CONST_WARN_DIALOG_ID \u003d \"some_id\";\n    public static void warnIfBinaryConstant(IJavaElement element, Shell shell) {\n        if (someOtherMethod(element))\n            OptionalMessageDialog.open(\n                BIN_PRIM_CONST_WARN_DIALOG_ID,\n                shell,\n                SearchMessages.Search_FindReferencesAction_BinPrimConstWarnDialog_title,\n                SearchMessages.Search_FindReferencesAction_BinPrimConstWarnDialog_message,\n                0);\n    }\n    private static boolean someOtherMethod(IJavaElement element) { return true; }\n    private static class OptionalMessageDialog {\n        public static void open(String id, Shell shell, String title, String message, int options) {}\n    }\n    private static class SearchMessages {\n        public static String Search_FindReferencesAction_BinPrimConstWarnDialog_title \u003d \"Title\";\n        public static String Search_FindReferencesAction_BinPrimConstWarnDialog_message \u003d \"Message\";\n    }\n}",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "995dea0a4965473ddacd5a8f9b76a1f9f7ec5e76",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Method Rename",
+  "summary": "Replaces calls to `isBinaryPrimitiveConstantOrString` with `isPrimitiveConstantOrString` after the method was renamed to reflect corrected internal logic.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.482330428Z",
+  "ruleFingerprint": "sha256:4aa049b6e28fd19397c2ed5cca87ff4aaa66bf294aa44e2adbe2ef9cf0ec15c4",
+  "behaviorFingerprint": "sha256:98f064c27a42f01c4805d6515be283d2c55d1894756e77041e1f2ddfc4409469",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-23T02:41:21.061152197Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
