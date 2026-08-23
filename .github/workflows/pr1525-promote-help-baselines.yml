@@ -1,0 +1,108 @@
+name: Promote PR 1525 Help screenshot baselines
+
+on:
+  push:
+    branches:
+      - docs/atomic-cleanup-preview-contract
+    paths:
+      - '.github/workflows/pr1525-promote-help-baselines.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: pr1525-help-baseline-promotion
+  cancel-in-progress: true
+
+jobs:
+  promote:
+    name: Promote verifier-approved Help screenshots
+    if: github.ref_name == 'docs/atomic-cleanup-preview-contract'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download exact verifier artifact from run 684
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/eclipse-help-screenshots-684.zip"
+          evidence="$RUNNER_TEMP/eclipse-help-screenshots-684"
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${GITHUB_REPOSITORY}/actions/artifacts/9492086518/zip" \
+            > "$archive"
+          rm -rf "$evidence"
+          mkdir -p "$evidence"
+          unzip -q "$archive" -d "$evidence"
+
+          cat > "$RUNNER_TEMP/expected-help-screenshots.sha256" <<'EOF'
+          0ac2aebb92b40b2a32aeac893fec03f3df3ce387e58b4b65fb03ca6118be1b21  sandbox_css_cleanup_help/images/css-cleanup-preferences.png
+          c103ec153fc4f14616554c09c5607dd2f0d87473a8a27f10dc0e2216fd62428e  sandbox_encoding_quickfix_help/images/explicit-encoding-cleanup.png
+          c3dd843a2e571f9b936f8ee4dd4e440f15c99f000ed2bb276b5342de0cc7dafa  sandbox_functional_converter_help/images/functional-converter-cleanup.png
+          0e3cb5a27697cf36b294c0bc0e5bfaf62063265ca4e271d61f3f5b59453d25b2  sandbox_int_to_enum_help/images/int-to-enum-cleanup.png
+          cba37cd4cb70e3f3038e9bf74421089cef3ea9f0043ef4ef041cef7bde52b04e  sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+          81957aace67eefd45344daaef3971767ef336d5d730e63ecbdaf8a01f3b970f1  sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+          b6bfdd9d4658b39b8f92ef0b0aabdd7c706fe039258cd12a5cb52ec769cb1161  sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
+          af405065365f71b7196f0f5f6782283b55e299659f7317c99b42745fddff6c17  sandbox_jface_cleanup_help/images/jface-cleanup.png
+          33f36f5d4fd8338730203deeb164d014b5956e230beddc2347b6f109f10055b0  sandbox_junit_cleanup_help/images/junit-migration-cleanup.png
+          23b89bb45d369f141310ac035bba58412a3e0dd79692880478da7752d8657a93  sandbox_method_reuse_help/images/method-reuse-cleanup.png
+          a6838c1dc29b96bb736c8c9c9f2ee478aa75578265fc2f79a3a02a3e31f6fb49  sandbox_platform_helper_help/images/platform-status-cleanup.png
+          5dc8df547f60bb6bac77170f47447c5d3b2dfaa126e67cfe091c8737ccb1ce3c  sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png
+          65e7913cb32989be09fe43a03ed19e36e4bb3fd6a9ccbfebbbfcc4aa1c1ab3de  sandbox_triggerpattern_help/images/new-hint-rule-wizard.png
+          3f9f8e97aa1f8a33266f91b5ae4f2d41d6df91b684c6dff2a56bda9308c7b1d2  sandbox_triggerpattern_help/images/refactoring-mining-view.png
+          15f80ad4ef5285a4b8ceadb262f36d1b3400a4de877ca2f27284a695c2ccd7f6  sandbox_use_general_type_help/images/use-general-type-cleanup.png
+          e294b8a01d4fba639d4b1b936cce7ae4bda90965b3b1c9fce0aa9e614c74cc32  sandbox_xml_cleanup_help/images/xml-cleanup.png
+          EOF
+          sed -i 's/^          //' "$RUNNER_TEMP/expected-help-screenshots.sha256"
+          (cd "$evidence" && sha256sum -c "$RUNNER_TEMP/expected-help-screenshots.sha256")
+
+      - name: Promote only stock-Eclipse evidence and remove this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/eclipse-help-screenshots-684"
+          images=(
+            'sandbox_css_cleanup_help/images/css-cleanup-preferences.png'
+            'sandbox_encoding_quickfix_help/images/explicit-encoding-cleanup.png'
+            'sandbox_functional_converter_help/images/functional-converter-cleanup.png'
+            'sandbox_int_to_enum_help/images/int-to-enum-cleanup.png'
+            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
+            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
+            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png'
+            'sandbox_jface_cleanup_help/images/jface-cleanup.png'
+            'sandbox_junit_cleanup_help/images/junit-migration-cleanup.png'
+            'sandbox_method_reuse_help/images/method-reuse-cleanup.png'
+            'sandbox_platform_helper_help/images/platform-status-cleanup.png'
+            'sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png'
+            'sandbox_triggerpattern_help/images/new-hint-rule-wizard.png'
+            'sandbox_triggerpattern_help/images/refactoring-mining-view.png'
+            'sandbox_use_general_type_help/images/use-general-type-cleanup.png'
+            'sandbox_xml_cleanup_help/images/xml-cleanup.png'
+          )
+          for image in "${images[@]}"; do
+            install -D -m 0644 "$evidence/$image" "$image"
+          done
+
+          java \
+            .github/scripts/VerifyRealCleanupPreviewScreenshots.java \
+            sandbox_jface_cleanup_help/images/jface-cleanup.png \
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png \
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png \
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+
+          git rm -- .github/workflows/pr1525-promote-help-baselines.yml
+          git add -- "${images[@]}"
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Refresh verified Eclipse Help screenshot evidence'
+          git push origin "HEAD:${GITHUB_REF_NAME}"

@@ -44,7 +44,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   generate:
@@ -140,33 +140,6 @@ jobs:
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
-
-      # One-shot recovery for PR #1525. The workflow generated the three truthful
-      # captures already, but their previous committed baselines were one duplicate
-      # image. Push only these verifier-approved files to the PR head branch. This
-      # step and its temporary write permission are removed immediately afterward.
-      - name: Refresh real JFace preview baselines on repair branch
-        if: github.event_name == 'pull_request' && github.head_ref == 'docs/atomic-cleanup-preview-contract'
-        shell: bash
-        env:
-          HEAD_BRANCH: ${{ github.head_ref }}
-        run: |
-          set -euo pipefail
-          images=(
-            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png'
-            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
-            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
-          )
-          if git diff --quiet -- "${images[@]}"; then
-            echo 'The committed real-preview baselines already match the generated captures.'
-            exit 0
-          fi
-          git status --short -- "${images[@]}"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "${images[@]}"
-          git commit -m 'Refresh real JFace preview evidence'
-          git push origin "HEAD:${HEAD_BRANCH}"
 
       # Preserve every generated PNG before the intentional baseline mismatch can
       # fail this read-only verifier. The original relative paths, SHA-256
