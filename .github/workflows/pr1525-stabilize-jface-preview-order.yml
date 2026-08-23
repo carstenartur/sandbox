@@ -1,0 +1,101 @@
+name: Stabilize PR 1525 JFace preview order
+
+on:
+  push:
+    branches:
+      - docs/atomic-cleanup-preview-contract
+    paths:
+      - '.github/workflows/pr1525-stabilize-jface-preview-order.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: pr1525-stabilize-jface-preview-order
+  cancel-in-progress: true
+
+jobs:
+  stabilize:
+    name: Use deterministic file selection and reviewed baselines
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download the exact successful SWTBot output from run 690
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/eclipse-help-screenshots-690.zip"
+          evidence="$RUNNER_TEMP/eclipse-help-screenshots-690"
+          gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "repos/${GITHUB_REPOSITORY}/actions/artifacts/9493938762/zip" \
+            > "$archive"
+          rm -rf "$evidence"
+          mkdir -p "$evidence"
+          unzip -q "$archive" -d "$evidence"
+          (
+            cd "$evidence"
+            printf '%s  %s\n' \
+              '99ff9d47caf8b2f108e7908adb1d08693c493d4f7178d54d89cb725912e44829' \
+              'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png' \
+              '99c1ca431e9038f8197ca22c29101b93bd8ffcc273ebde099bfb4487a19764c3' \
+              'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png' \
+              | sha256sum -c -
+          )
+
+      - name: Make the two-file Workbench selection deterministic
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java')
+          source = path.read_text(encoding='utf-8')
+          old = '''        SWTBotTreeItem multiPackage = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                  .getNode("src").expand().getNode("demo.multi");
+          multiPackage.select();
+          wizard = openCleanUpWizard(multiPackage);
+          '''
+          new = '''        SWTBotTreeItem multiPackage = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                  .getNode("src").expand().getNode("demo.multi").expand();
+          SWTBotTreeItem monitorFileNode = multiPackage.getNode("MonitorOnly.java");
+          SWTBotTreeItem sorterFileNode = multiPackage.getNode("SorterOnly.java");
+          projectTree().select(monitorFileNode, sorterFileNode);
+          wizard = openCleanUpWizard(monitorFileNode);
+          '''
+          if source.count(old) != 1:
+              raise SystemExit('Expected exactly one package-selection block to replace')
+          path.write_text(source.replace(old, new), encoding='utf-8')
+          PY
+
+      - name: Promote only the two reviewed deterministic baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/eclipse-help-screenshots-690"
+          images=(
+            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
+            'sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
+          )
+          for image in "${images[@]}"; do
+            install -D -m 0644 "$evidence/$image" "$image"
+          done
+
+          git rm -- .github/workflows/pr1525-stabilize-jface-preview-order.yml
+          git add -- \
+            sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java \
+            "${images[@]}"
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Stabilize real JFace preview screenshot ordering'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
