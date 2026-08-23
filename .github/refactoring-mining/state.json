@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "3fa3124eb680a976c9dae5f2c17f1834f8c6e818",
-      "lastProcessedDate": "2026-08-22T02:33:22.550236299Z",
-      "totalProcessed": 4419,
+      "lastProcessedCommit": "0be9881e59ddeeaa1aeabd4478005b072c186f06",
+      "lastProcessedDate": "2026-08-23T02:41:15.038923027Z",
+      "totalProcessed": 4507,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3044,6 +3044,15 @@
           "deferredAt": "2026-08-22T02:29:49.970734602Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "dfe220d5e5b35fb454692b2d159e45b386909af8",
+          "message": "Fixed bug 313339: Remove unused internal deprecated code",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-23T02:34:34.086115094Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3107,7 +3116,7 @@
         "Algorithm/Sorting Logic": 1,
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
-        "Refactoring": 2,
+        "Refactoring": 3,
         "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
@@ -3187,18 +3196,18 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 20,
+        "API Migration": 21,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
         "Modernization": 5,
         "Defensive Programming": 1,
         "Preference Configuration": 1,
-        "Typo Fix": 1,
+        "Typo Fix": 2,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 2,
-        "API Modernization": 39,
+        "API Modernization": 40,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3206,7 +3215,7 @@
         "API Constant Update": 1,
         "Null Safety": 5,
         "Boolean Simplification": 1,
-        "Constant Replacement": 2,
+        "Constant Replacement": 3,
         "API Simplification": 3,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
@@ -3262,12 +3271,16 @@
         "Bug Fix / Robustness": 1,
         "Nullability": 1,
         "Redundant Code": 1,
-        "Deprecated API Usage": 1,
+        "Deprecated API Usage": 2,
         "UI State Management": 1,
         "Constant Refactoring": 1,
         "Visibility Refactoring": 1,
         "String/Regex Modernization": 1,
-        "Constant Renaming": 1
+        "Constant Renaming": 1,
+        "idiom-simplification": 1,
+        "api-modernization": 1,
+        "Method Rename": 1,
+        "API Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -3308,5 +3321,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27190
+  "globalTotalProcessed": 27278
 }
