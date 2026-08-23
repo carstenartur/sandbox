@@ -154,6 +154,32 @@ class QualityBadgeGeneratorTest {
 	}
 
 	@Test
+	void rendersFailuresAndErrorsAsARedTestBadge() throws Exception {
+		write("module/target/surefire-reports/TEST-Failing.xml", """
+				<testsuite tests="4" failures="1" errors="1" skipped="1">
+				  <testcase classname="Failing" name="passes"/>
+				  <testcase classname="Failing" name="skips"><skipped/></testcase>
+				  <testcase classname="Failing" name="fails"><failure/></testcase>
+				  <testcase classname="Failing" name="errors"><error/></testcase>
+				</testsuite>
+				""");
+		write("module/target/site/surefire-report.html", "report");
+		Path coverage = write("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml", """
+				<report name="aggregate">
+				  <counter type="INSTRUCTION" missed="5" covered="5"/>
+				</report>
+				""");
+		Path output = temporaryDirectory.resolve("quality-site");
+
+		QualityBadgeGenerator.generate(temporaryDirectory, output, coverage, "failed-build",
+				"2026-08-23T12:00:00Z");
+
+		String badge = Files.readString(output.resolve("badges/tests.json"), StandardCharsets.UTF_8);
+		assertTrue(badge.contains("\"message\": \"4, 2 failing, 1 skipped\""));
+		assertTrue(badge.contains("\"color\": \"red\""));
+	}
+
+	@Test
 	void rejectsMissingEvidenceAndConflictingTestcaseOutcomes() throws Exception {
 		assertThrows(IOException.class, () -> QualityBadgeGenerator.collectTests(temporaryDirectory));
 		assertThrows(IOException.class, () -> QualityBadgeGenerator.collectCoverage(
