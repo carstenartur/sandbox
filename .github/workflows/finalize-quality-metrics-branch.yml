@@ -1,0 +1,109 @@
+name: Finalize quality metrics branch
+
+on:
+  push:
+    branches: [ ci/verified-quality-metric-badges ]
+    paths:
+      - '.github/workflows/finalize-quality-metrics-branch.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Register Maven module and exact README badges
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! grep -Fq '<module>sandbox_quality_metrics</module>' pom.xml; then
+            awk '
+              !inserted && /<\/modules>/ {
+                print "\t\t<module>sandbox_quality_metrics</module>"
+                inserted=1
+              }
+              { print }
+              END { if (!inserted) exit 2 }
+            ' pom.xml > pom.xml.new
+            mv pom.xml.new pom.xml
+          fi
+
+          coverage='[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fcoverage.json)](https://carstenartur.github.io/sandbox/coverage/)'
+          tests='[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Ftests.json)](https://carstenartur.github.io/sandbox/tests/)'
+          skipped='[![Skipped tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fskipped.json)](https://carstenartur.github.io/sandbox/tests/)'
+
+          sed -i "s|^\[!\[Coverage\](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg?branch=main)\](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml)$|$coverage|" README.md
+          sed -i "s|^\[!\[Tests\](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg?branch=main)\](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml)$|$tests|" README.md
+          if ! grep -Fq 'badges%2Fskipped.json' README.md; then
+            awk -v skipped="$skipped" '
+              { print }
+              /^\[!\[Tests\]/ { print skipped }
+            ' README.md > README.md.new
+            mv README.md.new README.md
+          fi
+
+          grep -Fq '<module>sandbox_quality_metrics</module>' pom.xml
+          grep -Fq 'badges%2Ftests.json' README.md
+          grep -Fq 'badges%2Fskipped.json' README.md
+          grep -Fq 'badges%2Fcoverage.json' README.md
+
+      - name: Verify the Maven-owned generator and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn --no-transfer-progress --batch-mode -pl sandbox_quality_metrics -am test
+
+      - name: Commit final branch contents
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git rm -- .github/workflows/finalize-quality-metrics-branch.yml
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pom.xml README.md sandbox_quality_metrics .github/workflows/coverage.yml
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish Maven-verified quality metric badges'
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+          cat > "$RUNNER_TEMP/pr-body.md" <<'EOF'
+          ## Summary
+          - publish exact executed-test and skipped-test totals from JUnit XML
+          - publish aggregate JaCoCo line coverage from the same authoritative Maven run
+          - keep metric parsing and its tests in a normal Java/JUnit Maven module
+          - update README badges only from successful `main` evidence
+
+          ## Evidence contract
+          - every `<testcase>` in Surefire/Failsafe XML is classified exactly once
+          - missing reports and missing/empty aggregate coverage fail closed
+          - the root JaCoCo `LINE` counter is used, avoiding package-counter double counting
+          - pull requests verify the complete pipeline but cannot overwrite public values
+          - `gh-pages` publication records the verified commit in `quality-summary.json`
+
+          ## Testing
+          - `mvn --no-transfer-progress --batch-mode -pl sandbox_quality_metrics -am test`
+          - full `Verified test and coverage metrics` workflow
+          EOF
+          sed -i 's/^          //' "$RUNNER_TEMP/pr-body.md"
+
+          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')"
+          if [[ -z "$number" ]]; then
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$GITHUB_REF_NAME" \
+              --title 'Publish exact test, skipped-test and coverage badges' \
+              --body-file "$RUNNER_TEMP/pr-body.md"
+          else
+            gh pr edit "$number" --repo "$GITHUB_REPOSITORY" \
+              --title 'Publish exact test, skipped-test and coverage badges' \
+              --body-file "$RUNNER_TEMP/pr-body.md"
+          fi
