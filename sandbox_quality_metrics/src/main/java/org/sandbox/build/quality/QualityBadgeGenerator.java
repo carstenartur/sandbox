@@ -367,42 +367,41 @@ public final class QualityBadgeGenerator {
 	}
 
 	private static String badgeJson(String label, String message, String color) {
-		return """
-				{
-				  "schemaVersion": 1,
-				  "label": "%s",
-				  "message": "%s",
-				  "color": "%s"
-				}
-				""".formatted(jsonEscape(label), jsonEscape(message), jsonEscape(color));
+		StringBuilder json = new StringBuilder();
+		appendLine(json, "{"); //$NON-NLS-1$
+		appendLine(json, "  \"schemaVersion\": 1,"); //$NON-NLS-1$
+		appendLine(json, "  \"label\": \"" + jsonEscape(label) + "\","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "  \"message\": \"" + jsonEscape(message) + "\","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "  \"color\": \"" + jsonEscape(color) + "\""); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "}"); //$NON-NLS-1$
+		return json.toString();
 	}
 
 	private static String summaryJson(String commit, String generatedAt, TestTotals tests,
 			CoverageTotals coverage) {
-		return """
-				{
-				  "schemaVersion": 1,
-				  "sourceCommit": "%s",
-				  "generatedAt": "%s",
-				  "tests": {
-				    "tests": %d,
-				    "executed": %d,
-				    "passed": %d,
-				    "failures": %d,
-				    "errors": %d,
-				    "skipped": %d,
-				    "reportFiles": %d
-				  },
-				  "coverage": {
-				    "metric": "%s",
-				    "covered": %d,
-				    "missed": %d,
-				    "percent": %.2f
-				  }
-				}
-				""".formatted(jsonEscape(commit), jsonEscape(generatedAt), tests.tests(), tests.executed(),
-						tests.passed(), tests.failures(), tests.errors(), tests.skipped(), tests.reportFiles(),
-						jsonEscape(coverage.metric()), coverage.covered(), coverage.missed(), coverage.percent());
+		StringBuilder json = new StringBuilder();
+		appendLine(json, "{"); //$NON-NLS-1$
+		appendLine(json, "  \"schemaVersion\": 1,"); //$NON-NLS-1$
+		appendLine(json, "  \"sourceCommit\": \"" + jsonEscape(commit) + "\","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "  \"generatedAt\": \"" + jsonEscape(generatedAt) + "\","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "  \"tests\": {"); //$NON-NLS-1$
+		appendLine(json, "    \"tests\": " + tests.tests() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"executed\": " + tests.executed() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"passed\": " + tests.passed() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"failures\": " + tests.failures() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"errors\": " + tests.errors() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"skipped\": " + tests.skipped() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"reportFiles\": " + tests.reportFiles()); //$NON-NLS-1$
+		appendLine(json, "  },"); //$NON-NLS-1$
+		appendLine(json, "  \"coverage\": {"); //$NON-NLS-1$
+		appendLine(json, "    \"metric\": \"" + jsonEscape(coverage.metric()) + "\","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"covered\": " + coverage.covered() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"missed\": " + coverage.missed() + ","); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "    \"percent\": "
+				+ String.format(Locale.ROOT, "%.2f", coverage.percent())); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(json, "  }"); //$NON-NLS-1$
+		appendLine(json, "}"); //$NON-NLS-1$
+		return json.toString();
 	}
 
 	private static String testIndexHtml(Path root, String commit, String generatedAt,
@@ -419,47 +418,54 @@ public final class QualityBadgeGenerator {
 					.append(htmlEscape(report.module()))
 					.append("</a></li>\n"); //$NON-NLS-1$
 		}
-		return """
-				<!doctype html>
-				<html lang="en">
-				<head>
-				<meta charset="utf-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1">
-				<title>Sandbox verified test results</title>
-				<style>
-				body { font: 16px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2rem auto; padding: 0 1rem; }
-				table { border-collapse: collapse; margin: 1rem 0 1.5rem; }
-				th, td { border: 1px solid #bbb; padding: .45rem .7rem; text-align: right; }
-				th:first-child, td:first-child { text-align: left; }
-				code { overflow-wrap: anywhere; }
-				</style>
-				</head>
-				<body>
-				<h1>Sandbox verified test results</h1>
-				<p>Source commit: <code>%s</code></p>
-				<p>Generated: %s</p>
-				<table>
-				<thead><tr><th>Metric</th><th>Value</th></tr></thead>
-				<tbody>
-				<tr><td>Registered tests</td><td>%d</td></tr>
-				<tr><td>Executed</td><td>%d</td></tr>
-				<tr><td>Passed</td><td>%d</td></tr>
-				<tr><td>Skipped</td><td>%d</td></tr>
-				<tr><td>Failures</td><td>%d</td></tr>
-				<tr><td>Errors</td><td>%d</td></tr>
-				<tr><td>Instruction coverage</td><td>%.2f%%</td></tr>
-				<tr><td>JUnit report files</td><td>%d</td></tr>
-				</tbody>
-				</table>
-				<p><a href="../coverage/">Aggregate JaCoCo report</a> · <a href="../quality-summary.json">Machine-readable summary</a></p>
-				<h2>Module reports</h2>
-				<ul>
-				%s</ul>
-				</body>
-				</html>
-				""".formatted(htmlEscape(commit), htmlEscape(generatedAt), tests.tests(), tests.executed(),
-						tests.passed(), tests.skipped(), tests.failures(), tests.errors(), coverage.percent(),
-						tests.reportFiles(), links);
+
+		StringBuilder html = new StringBuilder();
+		appendLine(html, "<!doctype html>"); //$NON-NLS-1$
+		appendLine(html, "<html lang=\"en\">"); //$NON-NLS-1$
+		appendLine(html, "<head>"); //$NON-NLS-1$
+		appendLine(html, "<meta charset=\"utf-8\">"); //$NON-NLS-1$
+		appendLine(html, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"); //$NON-NLS-1$
+		appendLine(html, "<title>Sandbox verified test results</title>"); //$NON-NLS-1$
+		appendLine(html, "<style>"); //$NON-NLS-1$
+		appendLine(html,
+				"body { font: 16px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2rem auto; padding: 0 1rem; }"); //$NON-NLS-1$
+		appendLine(html, "table { border-collapse: collapse; margin: 1rem 0 1.5rem; }"); //$NON-NLS-1$
+		appendLine(html, "th, td { border: 1px solid #bbb; padding: .45rem .7rem; text-align: right; }"); //$NON-NLS-1$
+		appendLine(html, "th:first-child, td:first-child { text-align: left; }"); //$NON-NLS-1$
+		appendLine(html, "code { overflow-wrap: anywhere; }"); //$NON-NLS-1$
+		appendLine(html, "</style>"); //$NON-NLS-1$
+		appendLine(html, "</head>"); //$NON-NLS-1$
+		appendLine(html, "<body>"); //$NON-NLS-1$
+		appendLine(html, "<h1>Sandbox verified test results</h1>"); //$NON-NLS-1$
+		appendLine(html, "<p>Source commit: <code>" + htmlEscape(commit) + "</code></p>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<p>Generated: " + htmlEscape(generatedAt) + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<table>"); //$NON-NLS-1$
+		appendLine(html, "<thead><tr><th>Metric</th><th>Value</th></tr></thead>"); //$NON-NLS-1$
+		appendLine(html, "<tbody>"); //$NON-NLS-1$
+		appendLine(html, "<tr><td>Registered tests</td><td>" + tests.tests() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>Executed</td><td>" + tests.executed() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>Passed</td><td>" + tests.passed() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>Skipped</td><td>" + tests.skipped() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>Failures</td><td>" + tests.failures() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>Errors</td><td>" + tests.errors() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>Instruction coverage</td><td>"
+				+ String.format(Locale.ROOT, "%.2f%%", coverage.percent()) + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "<tr><td>JUnit report files</td><td>" + tests.reportFiles() + "</td></tr>"); //$NON-NLS-1$ //$NON-NLS-2$
+		appendLine(html, "</tbody>"); //$NON-NLS-1$
+		appendLine(html, "</table>"); //$NON-NLS-1$
+		appendLine(html,
+				"<p><a href=\"../coverage/\">Aggregate JaCoCo report</a> · <a href=\"../quality-summary.json\">Machine-readable summary</a></p>"); //$NON-NLS-1$
+		appendLine(html, "<h2>Module reports</h2>"); //$NON-NLS-1$
+		appendLine(html, "<ul>"); //$NON-NLS-1$
+		html.append(links);
+		appendLine(html, "</ul>"); //$NON-NLS-1$
+		appendLine(html, "</body>"); //$NON-NLS-1$
+		appendLine(html, "</html>"); //$NON-NLS-1$
+		return html.toString();
+	}
+
+	private static void appendLine(StringBuilder target, String line) {
+		target.append(line).append('\n');
 	}
 
 	private static String coverageColor(double percent) {
