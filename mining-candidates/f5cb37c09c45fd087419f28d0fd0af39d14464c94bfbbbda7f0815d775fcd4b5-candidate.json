@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f5cb37c09c45fd087419f28d0fd0af39d14464c94bfbbbda7f0815d775fcd4b5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.packageview.PackageExplorerProblemsDecorator.BUILDPATH_ERROR\n\u003d\u003e\norg.eclipse.jdt.ui.JavaElementImageDescriptor.BUILDPATH_ERROR\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.packageview;\n\nimport org.eclipse.core.runtime.IAdaptable;\nimport org.eclipse.jdt.ui.JavaElementImageDescriptor;\n\n// This class demonstrates usage of the constant before it became public API.\n// Assumes existence of IAdaptable and JavaElementImageDescriptor types. \n// In this context, BUILDPATH_ERROR refers to the one declared within this class.\npublic class PackageExplorerProblemsDecorator {\n    public final static int BUILDPATH_ERROR \u003d 0x2000; // Internal declaration\n\n    public int computeAdornmentFlags(IAdaptable element) {\n        int flags \u003d 0; // Simplified for example context\n        if ((flags \u0026 PackageExplorerProblemsDecorator.BUILDPATH_ERROR) !\u003d 0) {\n            return PackageExplorerProblemsDecorator.BUILDPATH_ERROR;\n        }\n        if ((flags \u0026 JavaElementImageDescriptor.ERROR) !\u003d 0) {\n            return JavaElementImageDescriptor.ERROR;\n        }\n        return flags;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.packageview;\n\nimport org.eclipse.core.runtime.IAdaptable;\nimport org.eclipse.jdt.ui.JavaElementImageDescriptor;\n\n// This class shows the code after the cleanup, using the public API constant.\n// The internal constant definition from this class is assumed to be removed.\npublic class PackageExplorerProblemsDecorator {\n\n    public int computeAdornmentFlags(IAdaptable element) {\n        int flags \u003d 0; // Simplified for example context\n        // References now point to the public API constant in JavaElementImageDescriptor.\n        if ((flags \u0026 org.eclipse.jdt.ui.JavaElementImageDescriptor.BUILDPATH_ERROR) !\u003d 0) {\n            return org.eclipse.jdt.ui.JavaElementImageDescriptor.BUILDPATH_ERROR;\n        }\n        if ((flags \u0026 JavaElementImageDescriptor.ERROR) !\u003d 0) {\n            return JavaElementImageDescriptor.ERROR;\n        }\n        return flags;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.packageview;\n\nimport org.eclipse.core.runtime.IAdaptable;\nimport org.eclipse.jdt.ui.JavaElementImageDescriptor;\n\n// This example should not be changed as it uses a different, valid constant from JavaElementImageDescriptor.\npublic class PackageExplorerProblemsDecorator {\n    public int computeAdornmentFlags(IAdaptable element) {\n        int flags \u003d 0; // Simplified for example context\n        if ((flags \u0026 org.eclipse.jdt.ui.JavaElementImageDescriptor.ERROR) !\u003d 0) {\n            return org.eclipse.jdt.ui.JavaElementImageDescriptor.ERROR;\n        }\n        return flags;\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "cd04b95cb1319cd05adb385c7cd13417915a67ea",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Update references from the internal PackageExplorerProblemsDecorator.BUILDPATH_ERROR constant to the public org.eclipse.jdt.ui.JavaElementImageDescriptor.BUILDPATH_ERROR.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.438978192Z",
+  "ruleFingerprint": "sha256:a4b6604a86abe400e1f01af6725fc5cfa324706c7e7204c02e8ee07b6d02c73b",
+  "behaviorFingerprint": "sha256:47b8f6d199a2918064a64ffa30631ff3d0a0bfe220ba5f174ddc2ba70516a66c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.ui cannot be resolved",
+    "verifiedAt": "2026-08-23T02:41:21.014546784Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

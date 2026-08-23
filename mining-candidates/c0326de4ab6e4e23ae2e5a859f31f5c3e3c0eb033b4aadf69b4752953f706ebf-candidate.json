@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c0326de4ab6e4e23ae2e5a859f31f5c3e3c0eb033b4aadf69b4752953f706ebf",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$resource.isDerived() :: instanceof($resource, \"org.eclipse.core.resources.IResource\")\n\u003d\u003e\n$resource.isDerived(org.eclipse.core.resources.IResource.CHECK_ANCESTORS)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.IPath;\n\npublic class MyResourceChecker {\n    public boolean checkResource(IResource resource) {\n        if (resource !\u003d null \u0026\u0026 resource.isDerived()) {\n            return true;\n        }\n        return false;\n    }\n\n    public boolean anotherCheck(IResource res) {\n        return res.isDerived();\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.IPath;\n\npublic class MyResourceChecker {\n    public boolean checkResource(IResource resource) {\n        if (resource !\u003d null \u0026\u0026 resource.isDerived(org.eclipse.core.resources.IResource.CHECK_ANCESTORS)) {\n            return true;\n        }\n        return false;\n    }\n\n    public boolean anotherCheck(IResource res) {\n        return res.isDerived(org.eclipse.core.resources.IResource.CHECK_ANCESTORS);\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport java.io.File;\nimport java.nio.file.Path;\n\npublic class NegativeExample {\n    public boolean checkFile(File file) {\n        // Should not match File.isAbsolute()\n        return file.isAbsolute();\n    }\n\n    public boolean checkPath(Path path) {\n        // Should not match Path.isAbsolute()\n        return path.isAbsolute();\n    }\n\n    public boolean checkDerived(MyCustomResource customResource) {\n        // Should not match if MyCustomResource.isDerived() exists but isn\u0027t IResource\n        return customResource.isDerived();\n    }\n}\n\nclass MyCustomResource {\n    public boolean isDerived() { return false; }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "5cf3a33d974e47a9b34e84fef90949758b51b32a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "api-modernization",
+  "summary": "Replace `IResource.isDerived()` with `IResource.isDerived(IResource.CHECK_ANCESTORS)` for more robust derived resource checking.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.384102700Z",
+  "ruleFingerprint": "sha256:775c84e3c121d85a5229c029545dd68f04989d9d4ca7f58d33f7dd4493000d69",
+  "behaviorFingerprint": "sha256:9c3abd96fc54ce7d232ec87562dc2fde3d015d6ea0e41ab7aa397b682a8c0282",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MyResourceChecker must be defined in its own file",
+    "verifiedAt": "2026-08-23T02:41:20.971242421Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

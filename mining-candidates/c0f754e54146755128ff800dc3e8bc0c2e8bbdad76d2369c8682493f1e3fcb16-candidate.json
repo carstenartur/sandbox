@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c0f754e54146755128ff800dc3e8bc0c2e8bbdad76d2369c8682493f1e3fcb16",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2.getHTMLContent($member, $allowInherited, $useAttachedJavadoc)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2.getHTMLContent($member, $useAttachedJavadoc)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;\n\n// This class demonstrates the usage of the deprecated method.\n// Assumes existence of types like IMember, IProgressMonitor, JavaModelException, and JavadocContentAccess2.\npublic class ProposalInfo {\n    private String extractJavadoc(IMember member, IProgressMonitor monitor) throws JavaModelException {\n        if (member !\u003d null) {\n            // Deprecated call with three arguments\n            return JavadocContentAccess2.getHTMLContent(member, true, true);\n        }\n        return null;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;\n\n// This class shows the code after the cleanup, using the non-deprecated method.\npublic class ProposalInfo {\n    private String extractJavadoc(IMember member, IProgressMonitor monitor) throws JavaModelException {\n        if (member !\u003d null) {\n            // Non-deprecated call with two arguments\n            return JavadocContentAccess2.getHTMLContent(member, true);\n        }\n        return null;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2;\n\n// This example should not be changed as it already uses the non-deprecated two-argument method.\npublic class ProposalInfo {\n    private String extractJavadoc(IMember member, IProgressMonitor monitor) throws JavaModelException {\n        if (member !\u003d null) {\n            return JavadocContentAccess2.getHTMLContent(member, false);\n        }\n        return null;\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "e87aa929a448f219bf19c054c3cfd331f9ef0795",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Deprecated API Usage",
+  "summary": "Replace JavadocContentAccess2.getHTMLContent(IMember, boolean, boolean) with its two-argument equivalent, which the deprecated method delegates to, removing the redundant \u0027allowInherited\u0027 argument.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.423042460Z",
+  "ruleFingerprint": "sha256:a723b47fdbd2d09f9d8ce01dee7a1ca9628b81542d4a551f573f337dc714f317",
+  "behaviorFingerprint": "sha256:1fbb2da17eb328d9cfe6686e76331ad8c214c677fc7f8f05e58f015cf0ff8159",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.ui.text.javadoc cannot be resolved",
+    "verifiedAt": "2026-08-23T02:41:21.000792638Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

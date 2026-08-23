@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "43f27f997e82fdff21c6fe730ab03a283f35ecd547291342b2bb6e4d272839c1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: javadochover.add-element-arg\u003e\n\u003c!description: Update JavadocHover.addImageAndLabel calls to include the IJavaElement argument. This migrates calls from a removed overloaded method to the version that accepts an IJavaElement, which is required for correct tooltip behavior. \u003e\n\u003c!severity: INFO\u003e\n\norg.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.addImageAndLabel($buf, $imageSrcPath, $imageWidth, $imageHeight, $label, $labelLeft, $labelTop)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.addImageAndLabel($buf, member, $imageSrcPath, $imageWidth, $imageHeight, $label, $labelLeft, $labelTop)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\n// Mock JavadocHover class to make the example self-contained and compile\nclass JavadocHover {\n    public static void addImageAndLabel(StringBuffer buf, String imageSrcPath, int imageWidth, int imageHeight, String label, int labelLeft, int labelTop) {\n        // Original mock implementation\n    }\n    public static void addImageAndLabel(StringBuffer buf, IJavaElement element, String imageSrcPath, int imageWidth, int imageHeight, String label, int labelLeft, int labelTop) {\n        // New mock implementation\n    }\n}\n\npublic class JavadocView {\n    private String getFooterHtml(IJavaElement member) {\n        StringBuffer buf \u003d new StringBuffer();\n        String imageName \u003d \"some/path/image.png\";\n        String label \u003d \"My Label\";\n        int imageWidth \u003d 16;\n        int imageHeight \u003d 16;\n        int labelLeft \u003d 20;\n        int labelTop \u003d 2;\n        JavadocHover.addImageAndLabel(buf, imageName, imageWidth, imageHeight, label, labelLeft, labelTop);\n        return buf.toString();\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\n// Mock JavadocHover class to make the example self-contained and compile\nclass JavadocHover {\n    public static void addImageAndLabel(StringBuffer buf, String imageSrcPath, int imageWidth, int imageHeight, String label, int labelLeft, int labelTop) {\n        // Original mock implementation (might be removed in real code, but for the example, it shows the change at call site)\n    }\n    public static void addImageAndLabel(StringBuffer buf, IJavaElement element, String imageSrcPath, int imageWidth, int imageHeight, String label, int labelLeft, int labelTop) {\n        // New mock implementation\n    }\n}\n\npublic class JavadocView {\n    private String getFooterHtml(IJavaElement member) {\n        StringBuffer buf \u003d new StringBuffer();\n        String imageName \u003d \"some/path/image.png\";\n        String label \u003d \"My Label\";\n        int imageWidth \u003d 16;\n        int imageHeight \u003d 16;\n        int labelLeft \u003d 20;\n        int labelTop \u003d 2;\n        JavadocHover.addImageAndLabel(buf, member, imageName, imageWidth, imageHeight, label, labelLeft, labelTop);\n        return buf.toString();\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\n// Mock JavadocHover class to make the example self-contained and compile\nclass JavadocHover {\n    public static void addImageAndLabel(StringBuffer buf, String imageSrcPath, int imageWidth, int imageHeight, String label, int labelLeft, int labelTop) {\n        // Mock implementation\n    }\n    public static void addImageAndLabel(StringBuffer buf, IJavaElement element, String imageSrcPath, int imageWidth, int imageHeight, String label, int labelLeft, int labelTop) {\n        // Mock implementation\n    }\n}\n\npublic class AnotherClass {\n    public void someMethodWithoutMember() {\n        StringBuffer buf \u003d new StringBuffer();\n        String imageName \u003d \"another/path/image.png\";\n        String label \u003d \"Another Label\";\n        int imageWidth \u003d 16;\n        int imageHeight \u003d 16;\n        int labelLeft \u003d 20;\n        int labelTop \u003d 2;\n        // \u0027member\u0027 is not defined in this scope. The rule should not apply.\n        // This call must remain unchanged.\n        JavadocHover.addImageAndLabel(buf, imageName, imageWidth, imageHeight, label, labelLeft, labelTop);\n    }\n}",
+  "targetHintFile": "cleanup.sandbox-hint",
+  "sourceCommit": "81ec81bde2fa633b1c02ae08d0a85a1861398427",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Update JavadocHover method call to include `IJavaElement` argument, migrating from an older overloaded signature.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.405938044Z",
+  "ruleFingerprint": "sha256:9335456445358e3361efd5fccbaa6e83258aef6e9ebe383dfe78d33951dff840",
+  "behaviorFingerprint": "sha256:6f2b323e91c55766f90a0b306802820e79348a4efa052a8426cda95ccb37d21c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-23T02:41:20.982971536Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

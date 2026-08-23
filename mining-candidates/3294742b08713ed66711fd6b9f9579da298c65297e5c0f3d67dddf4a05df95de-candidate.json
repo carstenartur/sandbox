@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3294742b08713ed66711fd6b9f9579da298c65297e5c0f3d67dddf4a05df95de",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jreContainerMarker\u003e\n\u003c!description: Replace the magic string literal for the JRE container problem marker with its symbolic constant.\nThis improves readability and maintainability.\n\u003e\n\u003c!severity: WARNING\u003e\n\u003c!minJavaVersion: 8\u003e\n\u003c!tags: eclipse, constant, magic-string\u003e\n\n\"org.eclipse.jdt.launching.jreContainerMarker\"\n\u003d\u003e\norg.eclipse.jdt.launching.JavaRuntime.JRE_CONTAINER_MARKER\n;;",
+  "beforeExample": "import org.eclipse.core.resources.IMarker;\nimport org.eclipse.core.resources.IResource;\n\n// Dummy classes for compilation context, as Eclipse types are not available directly.\n// In a real Eclipse environment, these would be provided by JDT bundles.\nclass IMarker {\n    public static final int SEVERITY_ERROR \u003d 2;\n}\ninterface IResource {\n    int DEPTH_ZERO \u003d 0;\n    int findMaxProblemSeverity(String markerType, boolean includeSubtypes, int depth);\n}\n\nclass Example {\n    void foo(IResource res) throws Exception {\n        int severity \u003d res.findMaxProblemSeverity(\"org.eclipse.jdt.launching.jreContainerMarker\", true, IResource.DEPTH_ZERO);\n        if (severity \u003d\u003d IMarker.SEVERITY_ERROR) {\n            System.out.println(\"Error found.\");\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.core.resources.IMarker;\nimport org.eclipse.core.resources.IResource;\n// Dummy classes for compilation context, as Eclipse types are not available directly.\n// In a real Eclipse environment, these would be provided by JDT bundles.\nclass IMarker {\n    public static final int SEVERITY_ERROR \u003d 2;\n}\ninterface IResource {\n    int DEPTH_ZERO \u003d 0;\n    int findMaxProblemSeverity(String markerType, boolean includeSubtypes, int depth);\n}\nclass JavaRuntime {\n    public static final String JRE_CONTAINER_MARKER \u003d \"org.eclipse.jdt.launching.jreContainerMarker\";\n}\n\nclass Example {\n    void foo(IResource res) throws Exception {\n        int severity \u003d res.findMaxProblemSeverity(JavaRuntime.JRE_CONTAINER_MARKER, true, IResource.DEPTH_ZERO);\n        if (severity \u003d\u003d IMarker.SEVERITY_ERROR) {\n            System.out.println(\"Error found.\");\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.core.resources.IMarker;\nimport org.eclipse.core.resources.IResource;\n\n// Dummy classes for compilation context.\nclass IMarker {\n    public static final int SEVERITY_ERROR \u003d 2;\n}\ninterface IResource {\n    int DEPTH_ZERO \u003d 0;\n    int findMaxProblemSeverity(String markerType, boolean includeSubtypes, int depth);\n}\n\nclass NegativeExample {\n    void foo(IResource res) throws Exception {\n        // This string literal is different and should not be replaced.\n        int severity \u003d res.findMaxProblemSeverity(\"some.other.marker.type\", true, IResource.DEPTH_ZERO);\n        if (severity \u003d\u003d IMarker.SEVERITY_ERROR) {\n            System.out.println(\"Another type of error.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "7aac4b794e9e6c038066e89572e313d2f1bceffc",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Replacement",
+  "summary": "Replaces the magic string literal \"org.eclipse.jdt.launching.jreContainerMarker\" with the symbolic constant JavaRuntime.JRE_CONTAINER_MARKER for improved maintainability and consistency.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.468096659Z",
+  "ruleFingerprint": "sha256:94dbccad0c2abf74f7ed40e8846e26a52b5dce2761f23ad31ef9cd626d20dfc0",
+  "behaviorFingerprint": "sha256:bc86811a054b2dc50cf2684505309f1e4a93de0e5165154e3fd3a1d3959d2171",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-23T02:41:21.045472918Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

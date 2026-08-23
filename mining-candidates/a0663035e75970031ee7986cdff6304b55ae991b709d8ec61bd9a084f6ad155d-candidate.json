@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a0663035e75970031ee7986cdff6304b55ae991b709d8ec61bd9a084f6ad155d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.javaeditor.breadcrumb.BreadcrumbItemDropDown.DROP_DOWN_WIDTH\n\u003d\u003e\norg.eclipse.jdt.internal.ui.javaeditor.breadcrumb.BreadcrumbItemDropDown.DROP_DOWN_MAX_WIDTH\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.javaeditor.breadcrumb;\n\npublic class BreadcrumbItemDropDown {\n    public static final int DROP_DOWN_WIDTH \u003d 500; // Original constant definition\n\n    public int calculateWidth(int sizeX, int preferedSizeX, int currentWidth) {\n        int x1 \u003d Math.min(sizeX, BreadcrumbItemDropDown.DROP_DOWN_WIDTH); // Usage 1\n        if (currentWidth \u003e\u003d BreadcrumbItemDropDown.DROP_DOWN_WIDTH) { // Usage 2\n            return preferedSizeX;\n        }\n        return Math.min(preferedSizeX, BreadcrumbItemDropDown.DROP_DOWN_WIDTH); // Usage 3\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.javaeditor.breadcrumb;\n\npublic class BreadcrumbItemDropDown {\n    public static final int DROP_DOWN_MAX_WIDTH \u003d 500; // New constant name\n\n    public int calculateWidth(int sizeX, int preferedSizeX, int currentWidth) {\n        int x1 \u003d Math.min(sizeX, BreadcrumbItemDropDown.DROP_DOWN_MAX_WIDTH); // Usage 1\n        if (currentWidth \u003e\u003d BreadcrumbItemDropDown.DROP_DOWN_MAX_WIDTH) { // Usage 2\n            return preferedSizeX;\n        }\n        return Math.min(preferedSizeX, BreadcrumbItemDropDown.DROP_DOWN_MAX_WIDTH); // Usage 3\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.javaeditor.breadcrumb;\n\npublic class OtherClass {\n    private static final int OTHER_WIDTH \u003d 100;\n    // This constant in a different class should not match\n    public static final int DROP_DOWN_WIDTH \u003d 200;\n\n    public void someOtherMethod(int sizeX) {\n        int x \u003d Math.min(sizeX, OTHER_WIDTH); // Different constant name\n        // This specific constant in \u0027OtherClass\u0027 should not match the rule for \u0027BreadcrumbItemDropDown\u0027\n        int y \u003d Math.min(sizeX, OtherClass.DROP_DOWN_WIDTH);\n    }\n}",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "fb053ddf7bc9a5a5df1390ca752a0dcc4883690a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Refactoring",
+  "summary": "Replaces usages of the constant field \u0027DROP_DOWN_WIDTH\u0027 with \u0027DROP_DOWN_MAX_WIDTH\u0027 within the \u0027BreadcrumbItemDropDown\u0027 class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-23T02:41:16.454054240Z",
+  "ruleFingerprint": "sha256:e6c1211cdc30dd495ca392919b43e9254e57a061d708a200ba05091be699aec2",
+  "behaviorFingerprint": "sha256:64874fd6dd4797f7d72cc127556e589a4884d935a1cf9c3771e1910cfc9ead72",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type BreadcrumbItemDropDown must be defined in its own file",
+    "verifiedAt": "2026-08-23T02:41:21.033620390Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
