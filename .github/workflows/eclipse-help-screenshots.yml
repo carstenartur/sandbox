@@ -182,17 +182,26 @@ jobs:
           set -euo pipefail
 
           code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
+          jface_diff='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
+          jface_selection='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
           mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
             ':(glob)sandbox*_help/images/*.png')
           unexpected=()
+          row_permutations=()
           code_patterns_changed=false
           for change in "${changes[@]}"; do
             path="${change:3}"
-            if [[ "$path" == "$code_patterns" ]]; then
-              code_patterns_changed=true
-            else
-              unexpected+=("$change")
-            fi
+            case "$path" in
+              "$code_patterns")
+                code_patterns_changed=true
+                ;;
+              "$jface_diff"|"$jface_selection")
+                row_permutations+=("$path")
+                ;;
+              *)
+                unexpected+=("$change")
+                ;;
+            esac
           done
 
           if (( ${#unexpected[@]} > 0 )); then
@@ -201,11 +210,22 @@ jobs:
             exit 1
           fi
 
+          # Stock LTK does not define the presentation order of sibling file
+          # changes. Semantic assertions already bind each capture to its file,
+          # diff and checkbox state. Accept only an exact swap of the two complete
+          # file rows; every other pixel must remain identical to the baseline.
+          for image in "${row_permutations[@]}"; do
+            baseline="$(mktemp --suffix=.png)"
+            git show "HEAD:$image" > "$baseline"
+            java .github/scripts/VerifyHelpScreenshotRowPermutation.java "$baseline" "$image"
+            rm -f "$baseline"
+          done
+
           if [[ "$code_patterns_changed" == true ]]; then
             baseline="$(mktemp --suffix=.png)"
-            trap 'rm -f "$baseline"' EXIT
             git show "HEAD:$code_patterns" > "$baseline"
             java .github/scripts/VerifyHelpScreenshotDiff.java "$baseline" "$code_patterns"
+            rm -f "$baseline"
           fi
 
       - name: Upload generated Help screenshot evidence
