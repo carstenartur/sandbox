@@ -63,7 +63,7 @@ jobs:
           -Dtycho.localArtifacts=ignore
           -Dtest=QualityBadgeGeneratorTest
           -Dsurefire.failIfNoSpecifiedTests=false
-          -pl sandbox_common_test
+          -pl sandbox_target,sandbox_common_test
           -am
           test
 
