@@ -52,8 +52,8 @@ public class EclipseHelpScreenshotEvidenceTest {
         Path repository = SandboxCheckout.locate(null);
         try (Stream<Path> bundles = Files.list(repository)) {
             for (Path helpBundle : bundles.filter(Files::isDirectory)
-                    .filter(path -> path.getFileName().toString().startsWith("sandbox")) //$NON-NLS-1$
-                    .filter(path -> path.getFileName().toString().endsWith("_help")) //$NON-NLS-1$
+                    .filter(path -> pathFileName(path).startsWith("sandbox")) //$NON-NLS-1$
+                    .filter(path -> pathFileName(path).endsWith("_help")) //$NON-NLS-1$
                     .toList()) {
                 assertEveryPngIsReferenced(helpBundle);
             }
@@ -104,10 +104,10 @@ public class EclipseHelpScreenshotEvidenceTest {
         String html = allHtml(helpBundle.resolve("html")); //$NON-NLS-1$
         try (Stream<Path> images = Files.list(imageDirectory)) {
             for (Path image : images.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".png")) //$NON-NLS-1$
+                    .filter(path -> pathFileName(path).endsWith(".png")) //$NON-NLS-1$
                     .toList()) {
                 assertTrue(Files.size(image) > 0, () -> "Empty Help screenshot " + image); //$NON-NLS-1$
-                String fileName = image.getFileName().toString();
+                String fileName = pathFileName(image);
                 assertTrue(html.contains(fileName),
                         () -> "Shipped Help screenshot is not referenced by any HTML page: " + image); //$NON-NLS-1$
             }
@@ -131,12 +131,20 @@ public class EclipseHelpScreenshotEvidenceTest {
         StringBuilder result = new StringBuilder();
         try (Stream<Path> pages = Files.walk(htmlDirectory)) {
             for (Path page : pages.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".html")) //$NON-NLS-1$
+                    .filter(path -> pathFileName(path).endsWith(".html")) //$NON-NLS-1$
                     .toList()) {
                 result.append(Files.readString(page, StandardCharsets.UTF_8)).append('\n');
             }
         }
         return result.toString();
+    }
+
+    private static String pathFileName(Path path) {
+        Path fileName = path.getFileName();
+        if (fileName == null) {
+            throw new IllegalArgumentException("Path has no file name: " + path); //$NON-NLS-1$
+        }
+        return fileName.toString();
     }
 
     private static BufferedImage requireImage(Path image) throws IOException {
