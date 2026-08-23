@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.test.quality;
+package org.sandbox.build.quality;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -167,6 +167,20 @@ class QualityBadgeGeneratorTest {
 		IOException error = assertThrows(IOException.class,
 				() -> QualityBadgeGenerator.collectTests(temporaryDirectory));
 		assertTrue(error.getMessage().contains("conflicting outcomes"));
+	}
+
+	@Test
+	void rejectsExternalEntityDeclarations() throws Exception {
+		write("module/target/surefire-reports/TEST-Unsafe.xml", """
+				<!DOCTYPE testsuite [<!ENTITY external SYSTEM "file:///etc/passwd">]>
+				<testsuite tests="1" failures="0" errors="0" skipped="0">
+				  <testcase classname="Unsafe" name="&external;"/>
+				</testsuite>
+				""");
+
+		IOException error = assertThrows(IOException.class,
+				() -> QualityBadgeGenerator.collectTests(temporaryDirectory));
+		assertTrue(error.getMessage().contains("Cannot parse XML evidence"));
 	}
 
 	private Path write(String relative, String content) throws IOException {

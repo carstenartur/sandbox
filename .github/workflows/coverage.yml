@@ -19,7 +19,8 @@ on:
     branches: [ main ]
     paths:
       - 'README.md'
-      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/quality/**'
+      - 'docs/quality-metrics.md'
+      - 'sandbox_quality_metrics/**'
       - '.github/workflows/coverage.yml'
   schedule:
     - cron: '0 0 * * *'
@@ -60,12 +61,8 @@ jobs:
           --no-transfer-progress
           -V
           --batch-mode
-          -Dtycho.localArtifacts=ignore
-          -Dtest=QualityBadgeGeneratorTest
-          -Dsurefire.failIfNoSpecifiedTests=false
-          -pl sandbox_target,sandbox_common_test
-          -am
-          package
+          --file sandbox_quality_metrics/pom.xml
+          clean verify
 
   coverage:
     name: Build and publish verified metrics
@@ -142,6 +139,17 @@ jobs:
           -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
           clean verify
 
+      - name: Package the verified metric generator
+        if: steps.gate.outputs.run == 'true'
+        run: >-
+          mvn
+          --no-transfer-progress
+          -V
+          --batch-mode
+          --file sandbox_quality_metrics/pom.xml
+          -DskipTests
+          package
+
       - name: Stage reports and generate badges
         if: steps.gate.outputs.run == 'true'
         shell: bash
@@ -164,8 +172,8 @@ jobs:
           done < <(find . -type f -path '*/target/site/surefire-report.html' -print0)
 
           java \
-            -cp sandbox_common_test/target/test-classes \
-            org.sandbox.jdt.triggerpattern.test.quality.QualityBadgeGenerator \
+            -cp sandbox_quality_metrics/target/classes \
+            org.sandbox.build.quality.QualityBadgeGenerator \
             --root . \
             --output "$QUALITY_SITE" \
             --commit "$GITHUB_SHA"

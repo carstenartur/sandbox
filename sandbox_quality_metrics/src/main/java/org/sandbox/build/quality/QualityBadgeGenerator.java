@@ -11,7 +11,7 @@
  * Contributors:
  *     Carsten Hammer - initial API and implementation
  *******************************************************************************/
-package org.sandbox.jdt.triggerpattern.test.quality;
+package org.sandbox.build.quality;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -263,6 +263,7 @@ public final class QualityBadgeGenerator {
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			factory.setNamespaceAware(true);
+			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
 			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
 			factory.setFeature("http://xml.org/sax/features/external-general-entities", false); //$NON-NLS-1$
 			factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false); //$NON-NLS-1$

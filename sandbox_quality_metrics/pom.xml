@@ -11,7 +11,12 @@
 	</parent>
 	<artifactId>sandbox_quality_metrics</artifactId>
 	<name>Sandbox Quality Metrics</name>
+	<description>Build-only generator for verified test and coverage badges</description>
 	<packaging>jar</packaging>
+	<properties>
+		<!-- Keep this build-support module outside Tycho/OSGi dependency resolution. -->
+		<tycho.mode>maven</tycho.mode>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -19,4 +24,21 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<configuration>
+					<release>${java-version}</release>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven-surefire-plugin.version}</version>
+			</plugin>
+		</plugins>
+	</build>
 </project>
