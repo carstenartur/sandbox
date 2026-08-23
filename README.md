@@ -12,8 +12,8 @@ An experimental Java modernization toolkit built on Eclipse JDT (Java Developmen
 
 [![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
 [![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-[![Coverage](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/coverage.yml)
-[![Tests](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/test-report.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fcoverage.json)](https://carstenartur.github.io/sandbox/coverage/)
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Ftests.json)](https://carstenartur.github.io/sandbox/tests/)
 [![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
 [![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
 [![Commit Mining](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml)
