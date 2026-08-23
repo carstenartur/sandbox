@@ -9,25 +9,66 @@
 </head>
 <body>
    <h1>Using Explicit Encoding</h1>
-   <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Explicit Encoding (Sandbox)</strong>.</p>
+   <h2>Entry point and policy</h2>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a dedicated cleanup profile,
+      and select <strong>Explicit Encoding (Sandbox)</strong>. Choose the policy before running the cleanup:
+      <strong>Prefer UTF-8</strong>, <strong>Keep behavior</strong>, or <strong>Aggregate UTF-8</strong>.</p>
+   <p><img class="screenshot" src="../images/explicit-encoding-cleanup.png"
+      alt="Explicit Encoding cleanup configuration and strategy selection"/></p>
 
-   <h2>When it is offered</h2>
-   <p>The cleanup is offered only when the Java AST and bindings identify a supported encoding-sensitive API call and the selected policy provides an unambiguous replacement.</p>
+   <h2>Prefer UTF-8</h2>
+   <p>This policy deliberately replaces supported platform-default behavior with UTF-8 and replaces explicit
+      UTF-8 names with the type-safe standard constant.</p>
+   <h3>Before</h3>
+   <pre>Reader reader = new InputStreamReader(input);
+Charset charset = Charset.forName("UTF-8");</pre>
+   <h3>After</h3>
+   <pre>Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8);
+Charset charset = StandardCharsets.UTF_8;</pre>
+   <p>Use this policy only when adopting UTF-8 is an intended compatibility decision. The source change is not
+      behavior-preserving on systems whose default charset is different.</p>
 
-   <h2>Recommended workflow</h2>
+   <h2>Keep behavior</h2>
+   <p>This conservative policy modernizes an encoding only when the source already names it explicitly. Implicit
+      platform-default calls remain unchanged.</p>
+   <h3>Before</h3>
+   <pre>Reader defaultReader = new InputStreamReader(input);
+Charset explicitUtf8 = Charset.forName("UTF-8");</pre>
+   <h3>After</h3>
+   <pre>Reader defaultReader = new InputStreamReader(input);
+Charset explicitUtf8 = StandardCharsets.UTF_8;</pre>
+
+   <h2>Aggregate UTF-8</h2>
+   <p>This policy introduces or reuses the configured class-level charset constant and routes supported UTF-8 uses
+      through it.</p>
+   <h3>Before</h3>
+   <pre>Reader first = new InputStreamReader(in1, StandardCharsets.UTF_8);
+Reader second = new InputStreamReader(in2, StandardCharsets.UTF_8);</pre>
+   <h3>After</h3>
+   <pre>private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+Reader first = new InputStreamReader(in1, UTF_8);
+Reader second = new InputStreamReader(in2, UTF_8);</pre>
+
+   <h2>Applicability and Java version</h2>
+   <p>The cleanup requires resolved bindings and a supported encoding-sensitive API. It adapts replacements to the
+      project's Java level. Dynamic charset expressions, unsupported overloads, ambiguous constants, and cases where
+      checked-exception or resource-lifetime behavior cannot be preserved are left unchanged.</p>
+
+   <h2>Review the real execution preview</h2>
    <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
+      <li>Run <strong>Source &gt; Clean Up...</strong> on a small version-controlled selection.</li>
+      <li>Select every affected file in the execution preview and inspect constructor, import, and exception changes.</li>
+      <li>Confirm that every platform-default change is intentional for the chosen policy.</li>
+      <li>Compile and run I/O, serialization, and integration tests before expanding the scope.</li>
    </ol>
+   <p>For a real SWTBot-generated standard LTK code comparison and the distinction from coordinated atomic
+      candidates, see <a href="/topic/sandbox_cleanup_application_help/html/cleanup-preview.html">Cleanup preview model</a>.</p>
 
    <h2>Screenshot regeneration</h2>
-   <p>The image in this Help bundle is generated from a real Eclipse workbench by
+   <p>The configuration image is generated from a real Eclipse workbench by
       <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
-      <code>help-screenshots</code> under Xvfb to regenerate it after UI changes.</p>
+      <code>help-screenshots</code> under Xvfb after UI changes.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>

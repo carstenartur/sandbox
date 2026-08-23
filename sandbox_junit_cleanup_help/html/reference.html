@@ -18,10 +18,28 @@
       or incompatible lifecycle prevents the affected coordinated migration. The cleanup does not manufacture an extension whose behavior
       has not been proven.</p>
 
+   <h2>Coordinated preview-selection contract</h2>
+   <p>A named JUnit 4 resource and every consumer required for its Jupiter lifecycle migration form one immutable
+      candidate. With the pinned optional patched JDT UI host, that candidate is one atomic LTK selection unit.</p>
+   <ul>
+      <li>All required resource and consumer files are applied together or not at all.</li>
+      <li>Disjoint migration candidates can be enabled or disabled independently.</li>
+      <li>Required file and edit children are displayed as details, not as independently selectable checkboxes.</li>
+      <li>Fail-closed host validation rejects a partially disabled nested change before execution and on direct perform.</li>
+      <li>Applying one candidate and invoking Undo changes and restores every participating file together.</li>
+      <li>Ordinary local cleanups retain the standard Eclipse file-level and edit-group selection behavior.</li>
+      <li>Save actions remain single-file and do not enter the coordinated preview path.</li>
+   </ul>
+   <p class="note">The candidate-level selection guarantee belongs to the pinned optional patched JDT UI product.
+      The Sandbox wrapper exposes its metadata through a dependency-free reflective bridge and therefore remains
+      loadable on stock Eclipse, but a stock preview does not enforce this atomic-selection contract.</p>
+
    <h2>Best-effort safety model</h2>
-   <p>Best-effort mode changes the atomicity policy, not the semantic standard for individual rewrites. Proven candidates may be transformed;
-      rejected candidates remain unchanged and receive an explicit manual-completion marker. Diagnostics state that manual completion is
-      required and explain the exact gap. This mode does not promise a compilable or runnable intermediate tree.</p>
+   <p>Best-effort mode changes the planning policy between independent candidates, not the atomicity of one
+      coordinated candidate. Proven candidates may be transformed while rejected candidates remain unchanged and
+      receive an explicit manual-completion marker. Files inside one retained coordinated candidate still apply
+      together. Diagnostics state that manual completion is required and explain the exact gap. This mode does not
+      promise a compilable or runnable intermediate tree.</p>
 
    <h2>Real-source validation</h2>
    <p>JUnit 3 and JUnit 4 are validated against different upstream corpora:</p>
@@ -39,6 +57,7 @@
       <li>Baseline and after-test commands plus the complete JUnit XML inventory.</li>
       <li>Comparison of test identities, states, counts, and parameterized multiplicity.</li>
       <li>For best-effort runs, the expected compile/test outcome and every remaining marker reason.</li>
+      <li>For coordinated preview QA, candidate identities, affected-file order, selection state, applied files, and byte-exact Undo.</li>
    </ul>
 
    <h2>Known limitations</h2>
@@ -54,7 +73,8 @@
    <p>The Help content is shipped with the same feature version as the runtime
       plug-in. When reporting a problem, include the Sandbox feature version,
       Eclipse version, Java version, the smallest reproducing source, whether
-      bindings were available, the cleanup mode, and the structured reason code.</p>
+      bindings were available, the cleanup mode, the structured reason code,
+      and whether the host used the pinned patched JDT UI bundle.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>

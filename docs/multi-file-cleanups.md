@@ -1,35 +1,95 @@
-# Planned multi-file cleanups
+# Coordinated multi-file cleanups
 
 ## Purpose
 
-Some source migrations cannot be decided correctly from one Java file:
+Some source migrations cannot be decided or applied correctly from one Java file:
 
-- converting an integer state domain to an enum changes declarations, signatures, callers, and comparisons;
-- migrating JUnit 4 rules or lifecycle contracts may change base classes, subclasses, suites, shared resources, and consuming tests;
-- removing or changing an API requires coordinated edits in every selected compilation unit.
+- converting an integer state domain to an enum changes declarations, signatures, callers, comparisons, and switches;
+- migrating a JUnit 4 rule may change a shared resource class and every `@Rule` or `@ClassRule` consumer;
+- future API or signature migrations may require coordinated declaration and caller edits.
 
-The Sandbox implementation uses the existing Eclipse cleanup lifecycle instead of introducing a second refactoring engine.
+Sandbox uses the Eclipse cleanup lifecycle rather than introducing a second refactoring engine. A cleanup performs project-wide analysis during precondition checking, retains an immutable semantic plan, and emits the current compilation unit's part of that plan when Eclipse requests its fix.
 
-## What the existing cleanup API already provides
+## Product and host boundary
 
-For each Java project in an explicit cleanup run, Eclipse:
+The Sandbox cleanup bundles remain compatible with stock Eclipse. Their optional multi-file bridges use JDT model objects and JDK collection types and are discovered reflectively, so an unpatched `org.eclipse.jdt.ui` host can still load the bundles.
 
-1. creates one cleanup instance;
-2. calls `checkPreConditions(IJavaProject, ICompilationUnit[], ...)` with all target compilation units;
-3. invokes that same cleanup instance once per target through `createFix(CleanUpContext)`;
-4. collects the returned `CompilationUnitChange` objects;
-5. presents one preview and applies and undoes the complete LTK change tree atomically.
+Candidate-level atomic preview selection is an **optional host capability**, not a stock-Eclipse promise. The dedicated patched-product QA path currently pins:
 
-Therefore a cleanup can perform project-wide analysis in `checkPreConditions`, retain an immutable semantic plan, and return only the current file's part of that plan from `createFix`.
+```text
+repository: https://github.com/carstenartur/eclipse.jdt.ui.git
+commit: 11268d554d484fb7cc8c73054694d33153aa239c
+expected parent: 9965d9c97d21ad61f28e03b9d7e28b7040f7a8d9
+bundle: org.eclipse.jdt.ui 3.38.0.*
+```
 
-## Shared classes and bundle boundary
+The ordinary Sandbox target and ordinary Help screenshot workflow deliberately remain on stock Eclipse. A separate read-only workflow builds the exact replacement bundle, verifies its compatibility with the stock target, publishes a local feature patch, installs it into the test target, and runs the real Workbench scenarios. Documentation and screenshots must identify this boundary instead of implying that every Eclipse installation enforces atomic candidates.
+
+## Cleanup lifecycle
+
+```text
+Initial Java selection
+        │
+        ├─ optional fixed-point scope expansion in the patched host
+        │      └─ related source units are added and validated
+        │
+        ├─ checkPreConditions(project, completeTargetArray)
+        │      └─ create immutable semantic candidates and rejection diagnostics
+        │
+        ├─ existing JDT batch parser and fixpoint iterator
+        │      └─ createFix(context) for each target compilation unit
+        │             └─ resolve planned identities again against the current AST
+        │
+        ├─ existing overlap and fresh-AST handling
+        ├─ candidate-aware execution preview in the optional patched host
+        └─ one LTK operation with atomic apply and byte-exact Undo
+```
+
+The plan must not retain AST nodes. Earlier cleanups may change a working copy between planning and fix creation. Every required declaration, reference, and invocation is resolved again from stable Java-element handles, binding keys, expected identities, and deterministic counts. If a required target is missing or no longer matches, the complete candidate is rejected; implementations must not silently apply only the remaining convenient edits.
+
+## Candidate metadata contract
+
+A coordinated cleanup wrapper may expose `getCoordinatedCleanUpPreview(IJavaProject)` to the optional patched host. Each immutable candidate provides only dependency-free metadata:
+
+- a stable candidate identity;
+- a user-facing candidate name;
+- the ordered participating compilation units;
+- explanatory details, including the atomic-selection statement.
+
+Candidate identity and ordering are deterministic. Disjoint candidates are ordered by stable candidate identity even when per-file LTK changes arrive in another order. The affected-file order supplied by the cleanup is preserved inside the candidate.
+
+The metadata describes a plan that has already passed semantic validation. It is not a second planner, and it does not authorize the host to infer atomicity merely because a cleanup also expands scope.
+
+## Preview and selection contract
+
+With the pinned optional patched JDT UI host, one coordinated migration candidate is one atomic LTK selection unit:
+
+- the preview displays the candidate as one checkbox leaf;
+- selecting it shows every required file and the atomicity explanation;
+- required file changes and nested edit groups are not independently selectable;
+- users may enable or disable disjoint candidates independently;
+- disabling one candidate leaves every other candidate unchanged;
+- a partially disabled nested change is rejected before execution and by direct perform validation;
+- applying a selected candidate changes all participating files in one operation;
+- Undo restores all participating files byte-for-byte;
+- ordinary local cleanups retain Eclipse's normal file-level and edit-group selection;
+- save actions remain single-file and never enter this coordinated preview path.
+
+The canonical SWTBot-generated images are installed with the corresponding Help bundles:
+
+- `sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png`;
+- `sandbox_junit_cleanup_help/images/junit-coordinated-preview.png`.
+
+Both are reproduced only in the dedicated patched-product workflow. The stock Help workflow preserves the reviewed baselines rather than pretending to reproduce fork-only behavior on an unpatched host.
+
+## Shared implementation boundary
 
 ### `sandbox_common_core`
 
 `org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider`
 : Optional capability for discovering related compilation units that were not in the initial selection.
 
-Only this small SPI is exported from the UI-independent core bundle. A patched `org.eclipse.jdt.ui` bundle can describe or eventually depend on this boundary without creating a dependency cycle.
+Only the small UI-independent SPI is exported from the core bundle. The patched JDT UI host uses reflective capability discovery and has no runtime dependency on Sandbox bundles.
 
 ### `sandbox_common`
 
@@ -40,178 +100,86 @@ Only this small SPI is exported from the UI-independent core bundle. A patched `
 : Carries the plan and its `RefactoringStatus` diagnostics.
 
 `org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits`
-: Deterministically collects all source compilation units in a Java project.
+: Deterministically collects source compilation units in a Java project.
 
 `org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan`
 : Minimal immutable plan containing project and compilation-unit handles.
 
-Keeping implementation and plan classes together in `sandbox_common` avoids an OSGi split package. A package imported by another bundle is wired to one exporter; it must not be assembled from classes exported by both common bundles.
+Keeping implementation and plan classes together in `sandbox_common` avoids an OSGi split package. A package imported by another bundle is wired to one exporter and must not be assembled from classes exported by both common bundles.
 
-## Lifecycle
+The extension-point wrapper, rather than only its core implementation, must forward every optional host capability because Eclipse registers the wrapper instance.
 
-```text
-Initial Java selection
-        │
-        ├─ optional scope expansion in patched CleanUpRefactoring
-        │      └─ repeat until no provider adds a compilation unit
-        │
-        ├─ checkPreConditions(project, completeTargetArray)
-        │      └─ create immutable semantic migration plan
-        │
-        ├─ existing JDT batch parser and fixpoint iterator
-        │      └─ createFix(context) for each target
-        │             └─ resolve this unit's planned edits against the current AST
-        │
-        ├─ existing overlap and fresh-AST handling
-        ├─ existing resource validation and preview
-        └─ one atomic apply and undo
-```
+## Scope expansion
 
-## Implementing a planned cleanup
+The maintained JDT UI fork adds a deliberately narrow enhancement to `CleanUpRefactoring`:
 
-```java
-public final class ExampleCleanUp
-        extends AbstractPlannedMultiFileCleanUp<ExamplePlan> {
-
-    @Override
-    protected MultiFileCleanUpPlanResult<ExamplePlan> createPlan(
-            IJavaProject project,
-            ICompilationUnit[] units,
-            IProgressMonitor monitor) throws CoreException {
-        ExamplePlan plan = ExamplePlanner.analyse(project, units, monitor);
-        return plan.isEmpty()
-                ? MultiFileCleanUpPlanResult.noPlan()
-                : MultiFileCleanUpPlanResult.success(plan);
-    }
-
-    @Override
-    protected ICleanUpFix createFixForPlan(
-            ExamplePlan plan,
-            CleanUpContext context) throws CoreException {
-        return plan.createFixFor(context);
-    }
-
-    @Override
-    protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(
-            IJavaProject project,
-            Collection<ICompilationUnit> currentScope,
-            IProgressMonitor monitor) throws CoreException {
-        return ExampleScopeDiscovery.findRelated(project, currentScope, monitor);
-    }
-}
-```
-
-The extension-point wrapper must implement the API-package `IMultiFileCleanUpScopeProvider` and forward `expandCleanUpScope(...)`, because Eclipse registers the wrapper rather than the core implementation.
-
-## Plan rules
-
-A production plan should contain:
-
-- Java element handles and binding keys;
-- generated names and compatibility choices;
-- explicit expected declarations and references;
-- a deterministic list of edits per compilation unit;
-- rejection diagnostics for incomplete or unsafe candidates.
-
-A plan must not retain AST nodes. The AST used during planning is not necessarily the AST later supplied to `createFix`; earlier cleanups may already have changed a working copy.
-
-For each file, `createFixForPlan` must resolve planned declarations and references again. If a required target is missing or no longer matches, throw a `CoreException` or otherwise reject the complete coordinated candidate. Do not silently apply only the edits that remain convenient.
-
-## Scope expansion patch
-
-The Sandbox JDT UI fork adds a deliberately small enhancement to `CleanUpRefactoring`:
-
-1. detect cleanups exposing `expandCleanUpScope(...)`;
+1. detect cleanups exposing scope expansion;
 2. ask them for additional compilation units after cleanup options are installed;
 3. merge and de-duplicate results until the target set reaches a fixed point;
-4. reject missing or cross-project units;
+4. reject missing, non-source, or cross-project units;
 5. feed the expanded scope into the unchanged cleanup pipeline.
 
-The implementation uses reflective capability discovery so the patched JDT UI bundle has no runtime dependency on Sandbox bundles and no second patch of `org.eclipse.jdt.core.manipulation` is needed. The typed Sandbox SPI documents and tests the contract.
-
-Implemented and merged in `carstenartur/eclipse.jdt.ui#94` as commit `37da2aee4f2013669e4466f180fb822255382b4b`.
-
-## OSGi product integration
-
-`org.eclipse.jdt.ui` is a singleton bundle. A fragment cannot reliably override an existing host class because host classes are resolved before attached fragment classes.
-
-Use a patched, higher-version `org.eclipse.jdt.ui` bundle in the Sandbox target/product or distribute it through a p2 feature patch. The bundle keeps its symbolic name and compatible package exports and dependencies. Reproducible p2 and product delivery is tracked in #1209.
-
-No JDT UI patch is required when users explicitly run cleanup on a complete project, source folder, package, working set, or multi-file selection. The patch is only needed to add related files outside that original target set automatically.
-
-## Save actions
-
-The save participant supplies only the saved compilation unit and does not run the scope-expansion phase. This is intentional.
-
-Local, semantics-preserving transformations may remain available as save actions. Project-wide API migrations should require an explicit cleanup run with preview; saving one editor must not silently rewrite unrelated files.
+Scope expansion and atomic preview selection are separate contracts. A scope provider does not automatically make every generated change atomic; the cleanup must explicitly expose stable coordinated candidate metadata.
 
 ## Implemented consumers
 
-The shared planning infrastructure and the first consumers were merged through `carstenartur/sandbox#1207` as commit `61b10590146557da3cbf9e56e140c7fd18a1f734`.
-
-### Int-to-enum
+### Int-to-Enum
 
 Two paths are implemented:
 
 1. A local detector migrates a private closed integer state flow inside one compilation unit.
-2. `IntEnumMultiFilePlanner` detects a conservative package-scoped state API when the complete Java source project is in scope. It migrates package-private `static final int` constants, the package-private method parameter and its equality tests, and callers in other compilation units.
+2. `IntEnumMultiFilePlanner` detects a conservative package-scoped state API when the complete source project is available. It migrates package-private `static final int` constants, the package-private method parameter and its equality tests, and callers in other compilation units.
 
-The cross-file plan records constant, type, method, and parameter identities through binding keys and Java-element handles. Before rewriting each file it verifies expected reference and invocation counts against the current AST. The current project-wide path deliberately rejects public/protected APIs, type hierarchies, arbitrary integer arguments, aliases, arithmetic, bit flags, unresolved uses, persistence/protocol semantics, incomplete project selections, and generated enum names that conflict with an existing nested type.
+The cross-file plan records constant, type, method, and parameter identities through binding keys and Java-element handles. Before rewriting each file it verifies expected reference and invocation counts against the current AST. The project-wide path rejects public or protected APIs, type hierarchies, arbitrary integer arguments, aliases, arithmetic, bit flags, unresolved uses, persistence or protocol semantics, incomplete source scope, and generated enum names that conflict with an existing nested type.
+
+The real Workbench scenario proves that the coordinated declaration and caller changes appear as one atomic candidate, deselecting it changes no file, finishing changes both files, and Undo restores both files exactly.
 
 ### JUnit migration
 
 `JUnitMultiFilePlanner` implements the first coordinated JUnit migration:
 
 - a named class directly extending JUnit 4 `ExternalResource` may be declared in one file;
-- one or more rule fields in the resource file or other selected test files may use it through `@Rule` or `@ClassRule`;
-- rule fields become Jupiter `@RegisterExtension` fields in their own compilation units;
-- the resource class becomes the corresponding Before/After Each or Before/After All callback implementation in its own compilation unit;
+- one or more fields in the resource file or other selected test files may use it through `@Rule` or `@ClassRule`;
+- consumer fields become Jupiter `@RegisterExtension` fields in their own compilation units;
+- the resource class becomes the corresponding before/after callback implementation in its own compilation unit;
 - mixed instance and class-rule use of one resource type is rejected because one callback lifecycle cannot represent both safely.
 
-The old local helper is prevented from editing the planned declarations, so no AST node from one compilation unit is ever passed to another file's `ASTRewrite`.
+The old local helper is prevented from editing planned declarations, so an AST node from one compilation unit is never passed to another file's `ASTRewrite`.
 
-Further planned consumers include test hierarchies, suites, shared helper APIs, method sources, and dependency validation.
+The real Workbench fixture creates two disjoint resource-and-consumer candidates. It proves that both appear as atomic leaves, can be selected independently, expose their ordered affected files and explanation, apply only the selected candidate, leave the deselected candidate byte-identical, and Undo the selected multi-file migration exactly.
 
-## Headless execution
+## Strict and best-effort planning
 
-A headless caller must add all participating compilation units to one `CleanUpRefactoring`. Running a separate refactoring per file prevents coordinated planning.
+Strict planning is fail closed: an incomplete or unsupported candidate is not emitted.
 
-The current `sandbox_cleanup_application` still executes one refactoring per file. Its atomic per-project transaction conversion is tracked in #1210 and must be completed before the new project-wide plans are advertised for command-line use.
+JUnit best-effort mode may retain one independently proven candidate while rejecting another candidate and producing explicit manual-completion diagnostics. It does **not** make the files inside one retained coordinated candidate partially selectable. Candidate independence and within-candidate atomicity are separate properties.
 
-## Testing requirements
+## Save actions and headless execution
 
-Implemented tests cover:
+The save participant supplies only the saved compilation unit and does not run scope expansion. This is intentional. Local semantics-preserving transformations may remain available as save actions; project-wide API migrations require an explicit cleanup run with preview.
 
-- planning before local fixes and cleanup of retained state;
-- fatal planning diagnostics;
-- target-scope expansion into one unified preview in the JDT UI fork;
-- duplicate provider results, transitive fixed-point discovery, and invalid provider results;
-- a named `ExternalResource` plus `@Rule` consumer in another file;
-- a named `ExternalResource` plus `@ClassRule` consumer in another file;
-- local and remote rule fields using one named `ExternalResource` type;
-- a package-scoped integer state method plus caller in another file;
-- rejection when the generated enum name conflicts with an existing nested type.
+A headless caller must add every participating compilation unit to one `CleanUpRefactoring`. Running a separate refactoring per file prevents coordinated planning and atomic execution. The current `sandbox_cleanup_application` still executes one refactoring per file; its project-wide transaction conversion remains tracked in #1210. Until that work is complete, coordinated project-wide plans must not be advertised as a safe command-line capability.
 
-Additional required coverage remains:
+## Verification
 
-- cross-project and missing targets;
-- stale-plan rejection after an earlier cleanup changes a target;
-- one atomic apply and undo in PDE integration tests;
-- save-action isolation;
-- ordinary cleanups unchanged when no provider is present.
+The merged contract is protected at several levels:
 
-## Post-merge QA and roadmap
+- headless wrapper tests verify the reflective metadata signatures and candidate contents;
+- planner and lifecycle tests cover stale plans, rejection diagnostics, ordering, and retained-state cleanup;
+- JDT-side tests cover fail-closed partial activation, direct perform, disjoint and overlapping candidates, local selection behavior, apply, and Undo;
+- Sandbox SWTBot tests drive the real **Source > Clean Up...** wizard for Int-to-Enum and JUnit;
+- the workflow verifies that both SWTBot methods executed;
+- reviewed screenshots are compared with narrow GTK-only rendering tolerances while any content-area change fails;
+- patch source commit, parent, bundle hash, target compatibility, local p2 repository, and screenshot evidence are retained as artifacts.
 
-The validated implementation is deliberately an initial closed-scope capability, not a claim that arbitrary project-wide API migration is solved. The detailed post-merge assessment is in [`docs/qa/multi-file-cleanup-post-merge-qa.md`](qa/multi-file-cleanup-post-merge-qa.md).
+## Remaining work
 
-Prioritized follow-ups:
+The current capability is deliberately closed-scope, not a claim that arbitrary project-wide API migration is solved. Important follow-ups include:
 
-1. Gate project expansion by the actually enabled coordinated option (#1228).
-2. Prove atomic apply/undo, stale-plan rejection, save-action isolation, and semantic compilation (#1213, #1222).
-3. Replace unconditional full-project expansion with candidate-driven JDT search and explicit source-root/resource policies (#1212, #1224, #1221).
-4. Expose scope and rejection diagnostics and classify cleanup impact (#1214, #1226).
-5. Define compatibility, visibility, qualification, and generated-name policy before widening Int-to-Enum (#1216, #1223, #1225).
-6. Extend coordinated JUnit migration incrementally (#1217).
-7. Complete headless transactions and reproducible patched-product delivery (#1210, #1209, #1215).
+1. complete project-wide transactions in the headless cleanup application (#1210);
+2. widen Int-to-Enum only after visibility, compatibility, qualification, and generated-name policies are proven (#1216, #1223, #1225);
+3. extend coordinated JUnit migration incrementally (#1217);
+4. keep scope discovery candidate-driven and bounded (#1212, #1221, #1224);
+5. preserve truthful release and Help boundaries for the optional patched product (#1451, #1455, #1456).
 
-The dependency-ordered umbrella is #1229.
+The broader dependency-ordered roadmap remains tracked by #1229.
