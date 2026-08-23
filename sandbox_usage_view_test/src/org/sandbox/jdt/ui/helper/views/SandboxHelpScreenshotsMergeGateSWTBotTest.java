@@ -153,12 +153,12 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 			}
 		}
 
-		EclipseBundleClaspath.addBundles(JavaCore.create(project),
+		EclipseBundleClasspath.addBundles(JavaCore.create(project),
 				"org.eclipse.equinox.common", //$NON-NLS-1$
 				"org.eclipse.jface", //$NON-NLS-1$
 				"org.eclipse.swt"); //$NON-NLS-1$
 		ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.FULL_BUILD, monitor);
-		Jib.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+		Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
 		assertNoJavaErrors(project);
 	}
 
@@ -173,8 +173,7 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 						+ ": " + marker.getAttribute(IMarker.MESSAGE, "Unknown Java problem")) //$NON-NLS-1$ //$NON-NLS-2$
 			.collect(Collectors.joining("\n")); //$NON-NLS-1$
 		assertTrue(errors.isEmpty(),
-				"The real target-platform Cleanup preview fixture must compile before SWTBot QA:
-	" + errors); //$NON-NLS-1$
+				"The real target-platform Cleanup preview fixture must compile before SWTBot QA:\n\t" + errors); //$NON-NLS-1$
 	}
 
 	private static String readFile(IFile file) throws Exception {
