@@ -23,7 +23,8 @@ import javax.imageio.ImageIO;
  * step from silently replacing all captures with one stale image.</p>
  */
 public final class VerifyRealCleanupPreviewScreenshots {
-    private static final long MIN_PREVIEW_PAIR_DIFFERENCE = 1_000;
+    private static final long MIN_SOURCE_DIFF_DIFFERENCE = 1_000;
+    private static final long MIN_SELECTION_TOGGLE_DIFFERENCE = 100;
     private static final long MIN_CONFIGURATION_DIFFERENCE = 50_000;
     private static final int MIN_WIDTH = 1_000;
     private static final int MIN_HEIGHT = 700;
@@ -40,10 +41,10 @@ public final class VerifyRealCleanupPreviewScreenshots {
         }
 
         Screenshot configuration = load(Path.of(args[0]));
-        List<Screenshot> previews = List.of(
-                load(Path.of(args[1])),
-                load(Path.of(args[2])),
-                load(Path.of(args[3])));
+        Screenshot singleFilePreview = load(Path.of(args[1]));
+        Screenshot selectedFileDiff = load(Path.of(args[2]));
+        Screenshot multiFileSelection = load(Path.of(args[3]));
+        List<Screenshot> previews = List.of(singleFilePreview, selectedFileDiff, multiFileSelection);
 
         requireSameDimensions(configuration, previews);
         requireUniqueFiles(previews);
@@ -56,21 +57,23 @@ public final class VerifyRealCleanupPreviewScreenshots {
             }
         }
 
-        for (int first = 0; first < previews.size(); first++) {
-            for (int second = first + 1; second < previews.size(); second++) {
-                Screenshot left = previews.get(first);
-                Screenshot right = previews.get(second);
-                long changed = changedPixels(left.image(), right.image());
-                if (changed < MIN_PREVIEW_PAIR_DIFFERENCE) {
-                    fail(left.path() + " and " + right.path() + " differ in only " + changed
-                            + " pixels; the documented preview states must be separate captures");
-                }
-            }
-        }
+        requireMinimumDifference(singleFilePreview, selectedFileDiff, MIN_SOURCE_DIFF_DIFFERENCE);
+        requireMinimumDifference(singleFilePreview, multiFileSelection, MIN_SOURCE_DIFF_DIFFERENCE);
+        // The last two captures deliberately keep MonitorOnly.java selected. Their
+        // semantic difference is the independent SorterOnly.java checkbox state.
+        requireMinimumDifference(selectedFileDiff, multiFileSelection, MIN_SELECTION_TOGGLE_DIFFERENCE);
 
         System.out.println("Verified three distinct real JFace Cleanup execution-preview screenshots:");
         for (Screenshot preview : previews) {
             System.out.println("- " + preview.path() + " sha256=" + preview.sha256());
+        }
+    }
+
+    private static void requireMinimumDifference(Screenshot left, Screenshot right, long minimum) {
+        long changed = changedPixels(left.image(), right.image());
+        if (changed < minimum) {
+            fail(left.path() + " and " + right.path() + " differ in only " + changed
+                    + " pixels; expected at least " + minimum + " for separate documented states");
         }
     }
 
