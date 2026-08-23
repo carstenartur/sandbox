@@ -180,6 +180,30 @@ class QualityBadgeGeneratorTest {
 	}
 
 	@Test
+	void escapesProvenanceForJsonAndHtml() throws Exception {
+		write("module/target/surefire-reports/TEST-Provenance.xml", """
+				<testsuite tests="1" failures="0" errors="0" skipped="0">
+				  <testcase classname="Provenance" name="passes"/>
+				</testsuite>
+				""");
+		write("module/target/site/surefire-report.html", "report");
+		Path coverage = write("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml", """
+				<report name="aggregate">
+				  <counter type="INSTRUCTION" missed="1" covered="9"/>
+				</report>
+				""");
+		Path output = temporaryDirectory.resolve("quality-site");
+
+		QualityBadgeGenerator.generate(temporaryDirectory, output, coverage,
+				"ref\"with\\<unsafe>&", "2026-08-23T12:00:00Z");
+
+		String summary = Files.readString(output.resolve("quality-summary.json"), StandardCharsets.UTF_8);
+		String index = Files.readString(output.resolve("tests/index.html"), StandardCharsets.UTF_8);
+		assertTrue(summary.contains("\"sourceCommit\": \"ref\\\"with\\\\<unsafe>&\""));
+		assertTrue(index.contains("<code>ref&quot;with\\&lt;unsafe&gt;&amp;</code>"));
+	}
+
+	@Test
 	void rejectsMissingEvidenceAndConflictingTestcaseOutcomes() throws Exception {
 		assertThrows(IOException.class, () -> QualityBadgeGenerator.collectTests(temporaryDirectory));
 		assertThrows(IOException.class, () -> QualityBadgeGenerator.collectCoverage(
