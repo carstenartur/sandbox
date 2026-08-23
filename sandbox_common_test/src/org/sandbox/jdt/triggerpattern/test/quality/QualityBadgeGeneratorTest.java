@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -140,10 +141,10 @@ class QualityBadgeGeneratorTest {
 		QualityBadgeGenerator.generate(temporaryDirectory, output, coverage, "abc123",
 				"2026-08-23T12:00:00Z");
 
-		String testsBadge = Files.readString(output.resolve("badges/tests.json"));
-		String coverageBadge = Files.readString(output.resolve("badges/coverage.json"));
-		String summary = Files.readString(output.resolve("quality-summary.json"));
-		String index = Files.readString(output.resolve("tests/index.html"));
+		String testsBadge = Files.readString(output.resolve("badges/tests.json"), StandardCharsets.UTF_8);
+		String coverageBadge = Files.readString(output.resolve("badges/coverage.json"), StandardCharsets.UTF_8);
+		String summary = Files.readString(output.resolve("quality-summary.json"), StandardCharsets.UTF_8);
+		String index = Files.readString(output.resolve("tests/index.html"), StandardCharsets.UTF_8);
 		assertTrue(testsBadge.contains("\"message\": \"3, 1 skipped\""));
 		assertTrue(coverageBadge.contains("\"message\": \"75.0%\""));
 		assertTrue(summary.contains("\"passed\": 2"));
@@ -171,7 +172,7 @@ class QualityBadgeGeneratorTest {
 	private Path write(String relative, String content) throws IOException {
 		Path target = temporaryDirectory.resolve(relative);
 		Files.createDirectories(target.getParent());
-		Files.writeString(target, content);
+		Files.writeString(target, content, StandardCharsets.UTF_8);
 		return target;
 	}
 }

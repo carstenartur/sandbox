@@ -65,7 +65,7 @@ jobs:
           -Dsurefire.failIfNoSpecifiedTests=false
           -pl sandbox_target,sandbox_common_test
           -am
-          test
+          package
 
   coverage:
     name: Build and publish verified metrics
