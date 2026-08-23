@@ -11,6 +11,12 @@
 	<artifactId>sandbox_container_cleanup</artifactId>
 	<name>Sandbox Container Cleanup</name>
 	<packaging>eclipse-plugin</packaging>
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_common_core</artifactId>
+		</dependency>
+	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
 	</build>

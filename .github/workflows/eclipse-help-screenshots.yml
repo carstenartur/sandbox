@@ -6,6 +6,7 @@ on:
     paths:
       - 'pom.xml'
       - 'docs/ECLIPSE_HELP.md'
+      - 'docs/ECLIPSE_HELP_COVERAGE.md'
       - 'sandbox_help_build/**'
       - 'sandbox_target/**'
       - 'sandbox-functional-converter-core/**'
@@ -112,18 +113,66 @@ jobs:
             echo 'The selected Help screenshot JUnit merge gate did not execute.' >&2
             exit 1
           fi
+          for scenario in \
+            captureCleanupConfigurationTabs \
+            captureRealCleanupPreviewAndVerifyIndependentSelection
+          do
+            if ! grep -Fq "name=\"$scenario\"" "$report"; then
+              echo "The required Help screenshot scenario did not execute: $scenario" >&2
+              exit 1
+            fi
+          done
           printf 'Verified JUnit report: %s\n' "$report"
 
-      # These previews remain executable, but their committed images are
-      # maintained by separate real-runtime gates rather than this deterministic
-      # stock-Eclipse configuration-tab verifier.
-      - name: Restore separately maintained real-preview images
+      # The Int-to-Enum atomic candidate image is maintained by the separate
+      # pinned patched-JDT-UI workflow. JFace previews are generated and checked
+      # here and must never be restored from the checkout before verification.
+      - name: Restore patched-host atomic preview image
         run: >-
           git restore --source=HEAD --
+          sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
+
+      - name: Verify real Cleanup preview evidence
+        run: >-
+          java
+          .github/scripts/VerifyRealCleanupPreviewScreenshots.java
+          sandbox_jface_cleanup_help/images/jface-cleanup.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
-          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
-          sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
+
+      # Preserve every generated PNG before the intentional baseline mismatch can
+      # fail this read-only verifier. The original relative paths, SHA-256
+      # manifest and deterministic archive make stale artifact content obvious.
+      - name: Stage generated Help screenshot evidence
+        id: stage_help_screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence='target/generated-help-screenshot-evidence'
+          archive="target/generated-help-screenshots-${GITHUB_RUN_ID}.tar.gz"
+          rm -rf "$evidence"
+          mkdir -p "$evidence/files"
+          : > "$evidence/sha256.txt"
+          while IFS= read -r image; do
+            destination="$evidence/files/$image"
+            mkdir -p "$(dirname "$destination")"
+            cp -- "$image" "$destination"
+            digest="$(sha256sum "$image" | cut -d' ' -f1)"
+            printf '%s  %s\n' "$digest" "$image" >> "$evidence/sha256.txt"
+          done < <(find . -path './sandbox*_help/images/*.png' -type f -printf '%P\n' | sort)
+          sort -o "$evidence/sha256.txt" "$evidence/sha256.txt"
+          tar \
+            --sort=name \
+            --mtime='UTC 1970-01-01' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            -czf "$archive" \
+            -C "$evidence" .
+          sha256sum "$archive" | tee "$evidence/archive-sha256.txt"
+          cat "$evidence/sha256.txt"
+          find "$evidence/files" -type f -printf '%P %s bytes\n' | sort
 
       # Intentional baseline changes must be copied from a completed verifier
       # artifact; the pull-request gate itself always remains read-only.
@@ -133,17 +182,26 @@ jobs:
           set -euo pipefail
 
           code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
+          jface_diff='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
+          jface_selection='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
           mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
             ':(glob)sandbox*_help/images/*.png')
           unexpected=()
+          row_permutations=()
           code_patterns_changed=false
           for change in "${changes[@]}"; do
             path="${change:3}"
-            if [[ "$path" == "$code_patterns" ]]; then
-              code_patterns_changed=true
-            else
-              unexpected+=("$change")
-            fi
+            case "$path" in
+              "$code_patterns")
+                code_patterns_changed=true
+                ;;
+              "$jface_diff"|"$jface_selection")
+                row_permutations+=("$path")
+                ;;
+              *)
+                unexpected+=("$change")
+                ;;
+            esac
           done
 
           if (( ${#unexpected[@]} > 0 )); then
@@ -152,12 +210,34 @@ jobs:
             exit 1
           fi
 
+          # Stock LTK does not define the presentation order of sibling file
+          # changes. Semantic assertions already bind each capture to its file,
+          # diff and checkbox state. Accept only an exact swap of the two complete
+          # file rows; every other pixel must remain identical to the baseline.
+          for image in "${row_permutations[@]}"; do
+            baseline="$(mktemp --suffix=.png)"
+            git show "HEAD:$image" > "$baseline"
+            java .github/scripts/VerifyHelpScreenshotRowPermutation.java "$baseline" "$image"
+            rm -f "$baseline"
+          done
+
           if [[ "$code_patterns_changed" == true ]]; then
             baseline="$(mktemp --suffix=.png)"
-            trap 'rm -f "$baseline"' EXIT
             git show "HEAD:$code_patterns" > "$baseline"
             java .github/scripts/VerifyHelpScreenshotDiff.java "$baseline" "$code_patterns"
+            rm -f "$baseline"
           fi
+
+      - name: Upload generated Help screenshot evidence
+        if: always() && steps.stage_help_screenshots.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: generated-help-screenshots-${{ github.run_number }}-${{ github.run_id }}
+          path: |
+            target/generated-help-screenshot-evidence/
+            target/generated-help-screenshots-${{ github.run_id }}.tar.gz
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Upload reproduced screenshots
         if: always()

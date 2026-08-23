@@ -15,6 +15,22 @@
    <h2>Safety model</h2>
    <p>Open-ended arithmetic, persistence/wire contracts, reflection, native boundaries, or unresolved external uses prevent automatic conversion.</p>
 
+   <h2>Coordinated preview-selection contract</h2>
+   <p>A project-wide conversion may be proven safe only as a closed set of declaration, signature, caller,
+      comparison, and switch changes. With the pinned optional patched JDT UI host, that set is exposed as one
+      immutable candidate identity and one atomic selection unit.</p>
+   <ul>
+      <li>All files and edits required by one candidate are applied together or not at all.</li>
+      <li>Users may independently enable or disable disjoint candidates.</li>
+      <li>The preview does not expose selectable per-file or per-edit children inside an atomic candidate.</li>
+      <li>Host-side validation rejects a partially disabled nested change even when execution is invoked directly.</li>
+      <li>Ordinary local cleanups keep the standard Eclipse preview-selection behavior.</li>
+      <li>The contract does not apply to save actions, which remain single-file.</li>
+   </ul>
+   <p class="note">This selection guarantee is a capability of the pinned optional patched JDT UI product, not of
+      stock Eclipse. The reflective Sandbox bridge remains loadable on an unpatched host, but an unpatched preview
+      must not be described as enforcing atomic candidate selection.</p>
+
    <h2>Known limitations</h2>
    <ul>
       <li>Integer values that form a public serialization or database contract require an explicit migration strategy.</li>
@@ -25,8 +41,8 @@
    <h2>Support information</h2>
    <p>The Help content is shipped with the same feature version as the runtime
       plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+      Eclipse version, Java version, the smallest reproducing source, whether
+      bindings were available, and whether the host used the pinned patched JDT UI bundle.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>
