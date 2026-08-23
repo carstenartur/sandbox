@@ -14,15 +14,12 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/use-runner-maven/**'
-      - '.github/scripts/generate_quality_badges.py'
-      - '.github/scripts/test_generate_quality_badges.py'
       - '.github/workflows/coverage.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'README.md'
-      - '.github/scripts/generate_quality_badges.py'
-      - '.github/scripts/test_generate_quality_badges.py'
+      - 'sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/quality/**'
       - '.github/workflows/coverage.yml'
   schedule:
     - cron: '0 0 * * *'
@@ -36,28 +33,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  badge-generator-tests:
-    name: Quality badge generator tests
+  quality-tool-tests:
+    name: Quality metric generator tests
     runs-on: ubuntu-24.04
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          fetch-depth: 0
 
-      - name: Compile and test the generator
-        run: |
-          python3 -m py_compile \
-            .github/scripts/generate_quality_badges.py \
-            .github/scripts/test_generate_quality_badges.py
-          python3 .github/scripts/test_generate_quality_badges.py
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
+
+      - name: Run the Maven/JUnit metric-generator tests
+        run: >-
+          mvn
+          --no-transfer-progress
+          -V
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          -Dtest=QualityBadgeGeneratorTest
+          -Dsurefire.failIfNoSpecifiedTests=false
+          -pl sandbox_common_test
+          -am
+          test
 
   coverage:
     name: Build and publish verified metrics
-    needs: badge-generator-tests
+    needs: quality-tool-tests
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -76,13 +88,17 @@ jobs:
       - name: Decide whether the scheduled build is needed
         id: gate
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           run=true
-          if [[ "${{ github.event_name }}" == "schedule" ]] \
-              && ! git log --since='24 hours ago' --format='%H' | grep -q .; then
-            run=false
-            echo 'No commits in the last 24 hours; keeping the last verified publication.'
+          if [[ "$EVENT_NAME" == 'schedule' ]]; then
+            recent_commit="$(git log -1 --since='24 hours ago' --format='%H')"
+            if [[ -z "$recent_commit" ]]; then
+              run=false
+              echo 'No commits in the last 24 hours; keeping the last verified publication.'
+            fi
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
 
@@ -123,7 +139,7 @@ jobs:
           -T 1C
           --batch-mode
           -Dtycho.localArtifacts=ignore
-          -Pjacoco,product,repo,benchmark,cli-dist,maven-plugin
+          -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
           clean verify
 
       - name: Stage reports and generate badges
@@ -138,15 +154,18 @@ jobs:
           test -s "$coverage_dir/jacoco.xml"
           cp -a "$coverage_dir/." "$QUALITY_SITE/coverage/"
 
-          for module in sandbox_*_test; do
-            report="$module/target/site/surefire-report.html"
-            if [[ -f "$report" ]]; then
-              mkdir -p "$QUALITY_SITE/tests/$module"
-              cp -a "$module/target/site/." "$QUALITY_SITE/tests/$module/"
-            fi
-          done
+          while IFS= read -r -d '' report; do
+            site_dir="$(dirname "$report")"
+            target_dir="$(dirname "$site_dir")"
+            module_dir="$(dirname "$target_dir")"
+            module="${module_dir#./}"
+            mkdir -p "$QUALITY_SITE/tests/$module"
+            cp -a "$site_dir/." "$QUALITY_SITE/tests/$module/"
+          done < <(find . -type f -path '*/target/site/surefire-report.html' -print0)
 
-          python3 .github/scripts/generate_quality_badges.py \
+          java \
+            -cp sandbox_common_test/target/test-classes \
+            org.sandbox.jdt.triggerpattern.test.quality.QualityBadgeGenerator \
             --root . \
             --output "$QUALITY_SITE" \
             --commit "$GITHUB_SHA"
@@ -156,8 +175,8 @@ jobs:
           test -s "$QUALITY_SITE/quality-summary.json"
           test -s "$QUALITY_SITE/tests/index.html"
 
-      - name: Upload metric evidence
-        if: steps.gate.outputs.run == 'true'
+      - name: Upload available metric evidence
+        if: always() && steps.gate.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: verified-quality-${{ github.run_number }}
@@ -167,11 +186,11 @@ jobs:
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
 
       - name: Publish reports and badges to GitHub Pages
-        if: steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
+        if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
