@@ -1,0 +1,25 @@
+name: Temporary quality source export
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/temporary-quality-source-export.yml'
+      - 'sandbox_quality_metrics/**'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: quality-generator-sources-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
+            sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
+          if-no-files-found: error
+          retention-days: 1
