@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-08-21
+# Refactoring Mining Report — 2026-08-24
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1337 | 75 | 11 |
+| sandbox | 1347 | 75 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -260,7 +260,7 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:182` — `System.arraycopy(bom,0,result,0,bom.length)`
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserverCompatibilityTest.java:93` — `System.arraycopy(prefix,0,result,0,prefix.length)`
 - `sandbox_common_core/src/test/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserverTest.java:103` — `System.arraycopy(bom,0,result,0,bom.length)`
-- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java:112` — `System.arraycopy(current,0,updated,0,current.length)`
+- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java:134` — `System.arraycopy(current,0,updated,0,current.length)`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:396` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
 
 #### Rule: `arrays` → `arrays.clone.review`

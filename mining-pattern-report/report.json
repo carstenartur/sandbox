@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1337,
+        "files": 1347,
         "matches": 75,
         "rules": 11
       }
@@ -1944,7 +1944,7 @@
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
       "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java",
-      "line": 112,
+      "line": 134,
       "matchedCode": "System.arraycopy(current,0,updated,0,current.length)"
     },
     {
