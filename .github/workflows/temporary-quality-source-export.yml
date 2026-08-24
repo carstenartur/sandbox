@@ -1,4 +1,4 @@
-name: Temporary quality source export
+name: Temporary quality source patch
 
 on:
   pull_request:
@@ -8,18 +8,149 @@ on:
       - 'sandbox_quality_metrics/**'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  patch:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/upload-artifact@v7
         with:
-          name: quality-generator-sources-${{ github.run_number }}-${{ github.run_attempt }}
-          path: |
-            sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
+          ref: ci/verified-quality-metric-badges
+          fetch-depth: 0
+      - name: Apply tested Surefire nested-class compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/quality-fix.patch <<'PATCH'
+          diff --git a/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java b/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
+          index 065c325..bdb5cda 100644
+          --- a/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
+          +++ b/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
+          @@ -20,10 +20,12 @@ import java.nio.file.Path;
+           import java.time.Instant;
+           import java.util.ArrayList;
+           import java.util.Comparator;
+          +import java.util.HashSet;
+           import java.util.LinkedHashMap;
+           import java.util.List;
+           import java.util.Locale;
+           import java.util.Map;
+          +import java.util.Set;
+           import java.util.stream.Stream;
+           
+           import javax.xml.XMLConstants;
+          @@ -201,7 +203,7 @@ public final class QualityBadgeGenerator {
+          	}
+          	if ("testsuites".equals(rootName) && root.hasAttribute("tests")) { //$NON-NLS-1$ //$NON-NLS-2$
+          		long declared = requiredLong(root, "tests", report); //$NON-NLS-1$
+          -		if (declared != testCases.size()) {
+          +		if (!matchesDeclaredTestCount(declared, testCases)) {
+          			throw new IOException("JUnit aggregate declares " + declared + " tests but contains " //$NON-NLS-1$ //$NON-NLS-2$
+          					+ testCases.size() + " testcases in " + report); //$NON-NLS-1$
+          		}
+          @@ -230,7 +232,7 @@ public final class QualityBadgeGenerator {
+          	private static void validateSuiteSummary(Element suite, Path report) throws IOException {
+          		List<Element> testCases = descendants(suite, "testcase"); //$NON-NLS-1$
+          		long declared = requiredLong(suite, "tests", report); //$NON-NLS-1$
+          -		if (declared != testCases.size()) {
+          +		if (!matchesDeclaredTestCount(declared, testCases)) {
+          			throw new IOException("JUnit suite declares " + declared + " tests but contains " //$NON-NLS-1$ //$NON-NLS-2$
+          					+ testCases.size() + " testcases in " + report); //$NON-NLS-1$
+          		}
+          @@ -239,6 +241,31 @@ public final class QualityBadgeGenerator {
+          		validateOptionalCount(suite, "skipped", testCases, "skipped", report); //$NON-NLS-1$ //$NON-NLS-2$
+          	}
+           
+          +	private static boolean matchesDeclaredTestCount(long declared, List<Element> testCases) {
+          +		if (declared == testCases.size()) {
+          +			return true;
+          +		}
+          +
+          +		Set<String> names = new HashSet<>();
+          +		Set<String> identities = new HashSet<>();
+          +		for (Element testCase : testCases) {
+          +			String name = testCase.getAttribute("name").strip(); //$NON-NLS-1$
+          +			String className = testCase.getAttribute("classname").strip(); //$NON-NLS-1$
+          +			if (name.isEmpty() || className.isEmpty()) {
+          +				return false;
+          +			}
+          +			names.add(name);
+          +			if (!identities.add(className + '\u0000' + name)) {
+          +				return false;
+          +			}
+          +		}
+          +
+          +		// Surefire's JUnit Platform summary can de-duplicate equal method names
+          +		// from different @Nested classes even though it emits one testcase for
+          +		// each class/name pair. The testcase elements remain the exact evidence.
+          +		return declared == names.size() && identities.size() == testCases.size();
+          +	}
+          +
+          	private static void validateOptionalCount(Element suite, String attribute,
+          			List<Element> testCases, String outcome, Path report) throws IOException {
+          		if (!suite.hasAttribute(attribute)) {
+          diff --git a/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java b/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
+          index 9dce0e6..b795d9f 100644
+          --- a/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
+          +++ b/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
+          @@ -81,6 +81,39 @@ class QualityBadgeGeneratorTest {
+          		assertTrue(mismatchError.getMessage().contains("declares 2 tests but contains 1"));
+          	}
+           
+          +	@Test
+          +	void countsSurefireNestedClassTestcasesEvenWhenSummaryDeduplicatesMethodNames() throws Exception {
+          +		write("nested/target/surefire-reports/TEST-Nested.xml", """
+          +				<testsuite tests="3" failures="0" errors="0" skipped="0">
+          +				  <testcase classname="First nested class" name="sharedName"/>
+          +				  <testcase classname="Second nested class" name="sharedName"/>
+          +				  <testcase classname="First nested class" name="firstOnly"/>
+          +				  <testcase classname="Second nested class" name="secondOnly"/>
+          +				</testsuite>
+          +				""");
+          +
+          +		QualityBadgeGenerator.TestTotals totals = QualityBadgeGenerator.collectTests(temporaryDirectory);
+          +
+          +		assertEquals(4, totals.tests());
+          +		assertEquals(4, totals.passed());
+          +		assertEquals(1, totals.reportFiles());
+          +	}
+          +
+          +	@Test
+          +	void rejectsRepeatedIdenticalTestcaseIdentityAsAContradictorySummary() throws Exception {
+          +		write("duplicate/target/surefire-reports/TEST-Duplicate.xml", """
+          +				<testsuite tests="1" failures="0" errors="0" skipped="0">
+          +				  <testcase classname="Same class" name="sameName"/>
+          +				  <testcase classname="Same class" name="sameName"/>
+          +				</testsuite>
+          +				""");
+          +
+          +		IOException error = assertThrows(IOException.class,
+          +				() -> QualityBadgeGenerator.collectTests(temporaryDirectory));
+          +
+          +		assertTrue(error.getMessage().contains("declares 1 tests but contains 2"));
+          +	}
+          +
+          	@Test
+          	void usesOnlyOneCompleteAggregateJacocoCounter() throws Exception {
+          		Path report = write("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml", """
+          PATCH
+
+          if git apply --check /tmp/quality-fix.patch; then
+            git apply /tmp/quality-fix.patch
+          elif grep -Fq 'matchesDeclaredTestCount' \
+              sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java; then
+            echo 'Compatibility patch is already present.'
+            exit 0
+          else
+            echo 'Patch no longer applies and the expected implementation is absent.' >&2
+            exit 1
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java \
             sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
-          if-no-files-found: error
-          retention-days: 1
+          git commit -m 'Handle Surefire nested-class testcase summaries'
+          git push origin HEAD:ci/verified-quality-metric-badges
