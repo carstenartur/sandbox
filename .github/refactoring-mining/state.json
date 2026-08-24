@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "0be9881e59ddeeaa1aeabd4478005b072c186f06",
-      "lastProcessedDate": "2026-08-23T02:41:15.038923027Z",
-      "totalProcessed": 4507,
+      "lastProcessedCommit": "abdfb2229e341c94ea40604cade7628452e6ef65",
+      "lastProcessedDate": "2026-08-24T02:40:44.063586965Z",
+      "totalProcessed": 4583,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3053,6 +3053,24 @@
           "deferredAt": "2026-08-23T02:34:34.086115094Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "0976f61b0000e78996afcf49243dc7d86f23704c",
+          "message": "Bug 315772: [preferences] Better UI to find preferences on Java \u003e Compiler \u003e Errors/Warnings (patch from Deepak with a f",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-24T02:35:32.424640929Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "40dc940f4da51c889a895a80437370a88c9c8b59",
+          "message": "Fixed bug 234849: [call hierarchy] Search scope doesn\u0027t work for a working set",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-24T02:36:23.425244171Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3120,7 +3138,7 @@
         "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
-        "Code Quality": 6,
+        "Code Quality": 7,
         "Architecture Refactoring": 4,
         "Dead Code Removal": 13,
         "Quick Fix Enhancement": 6,
@@ -3206,7 +3224,7 @@
         "Typo Fix": 2,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
-        "API Replacement": 2,
+        "API Replacement": 3,
         "API Modernization": 40,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
@@ -3216,7 +3234,7 @@
         "Null Safety": 5,
         "Boolean Simplification": 1,
         "Constant Replacement": 3,
-        "API Simplification": 3,
+        "API Simplification": 4,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
         "String Literal Refactoring": 1,
@@ -3280,7 +3298,11 @@
         "idiom-simplification": 1,
         "api-modernization": 1,
         "Method Rename": 1,
-        "API Refactoring": 1
+        "API Refactoring": 1,
+        "Array Type Modernization": 1,
+        "SWT API usage": 1,
+        "Constant modernization": 1,
+        "SWT Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -3321,5 +3343,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27278
+  "globalTotalProcessed": 27354
 }
