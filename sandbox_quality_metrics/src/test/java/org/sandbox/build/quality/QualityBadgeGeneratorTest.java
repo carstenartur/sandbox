@@ -82,6 +82,39 @@ class QualityBadgeGeneratorTest {
 	}
 
 	@Test
+	void countsSurefireNestedClassTestcasesEvenWhenSummaryDeduplicatesMethodNames() throws Exception {
+		write("nested/target/surefire-reports/TEST-Nested.xml", """
+				<testsuite tests="3" failures="0" errors="0" skipped="0">
+				  <testcase classname="First nested class" name="sharedName"/>
+				  <testcase classname="Second nested class" name="sharedName"/>
+				  <testcase classname="First nested class" name="firstOnly"/>
+				  <testcase classname="Second nested class" name="secondOnly"/>
+				</testsuite>
+				""");
+
+		QualityBadgeGenerator.TestTotals totals = QualityBadgeGenerator.collectTests(temporaryDirectory);
+
+		assertEquals(4, totals.tests());
+		assertEquals(4, totals.passed());
+		assertEquals(1, totals.reportFiles());
+	}
+
+	@Test
+	void rejectsRepeatedIdenticalTestcaseIdentityAsAContradictorySummary() throws Exception {
+		write("duplicate/target/surefire-reports/TEST-Duplicate.xml", """
+				<testsuite tests="1" failures="0" errors="0" skipped="0">
+				  <testcase classname="Same class" name="sameName"/>
+				  <testcase classname="Same class" name="sameName"/>
+				</testsuite>
+				""");
+
+		IOException error = assertThrows(IOException.class,
+				() -> QualityBadgeGenerator.collectTests(temporaryDirectory));
+
+		assertTrue(error.getMessage().contains("declares 1 tests but contains 2"));
+	}
+
+	@Test
 	void usesOnlyOneCompleteAggregateJacocoCounter() throws Exception {
 		Path report = write("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml", """
 				<report name="aggregate">

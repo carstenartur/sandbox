@@ -20,10 +20,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.xml.XMLConstants;
@@ -201,7 +203,7 @@ public final class QualityBadgeGenerator {
 		}
 		if ("testsuites".equals(rootName) && root.hasAttribute("tests")) { //$NON-NLS-1$ //$NON-NLS-2$
 			long declared = requiredLong(root, "tests", report); //$NON-NLS-1$
-			if (declared != testCases.size()) {
+			if (!matchesDeclaredTestCount(declared, testCases)) {
 				throw new IOException("JUnit aggregate declares " + declared + " tests but contains " //$NON-NLS-1$ //$NON-NLS-2$
 						+ testCases.size() + " testcases in " + report); //$NON-NLS-1$
 			}
@@ -230,13 +232,38 @@ public final class QualityBadgeGenerator {
 	private static void validateSuiteSummary(Element suite, Path report) throws IOException {
 		List<Element> testCases = descendants(suite, "testcase"); //$NON-NLS-1$
 		long declared = requiredLong(suite, "tests", report); //$NON-NLS-1$
-		if (declared != testCases.size()) {
+		if (!matchesDeclaredTestCount(declared, testCases)) {
 			throw new IOException("JUnit suite declares " + declared + " tests but contains " //$NON-NLS-1$ //$NON-NLS-2$
 					+ testCases.size() + " testcases in " + report); //$NON-NLS-1$
 		}
 		validateOptionalCount(suite, "failures", testCases, "failure", report); //$NON-NLS-1$ //$NON-NLS-2$
 		validateOptionalCount(suite, "errors", testCases, "error", report); //$NON-NLS-1$ //$NON-NLS-2$
 		validateOptionalCount(suite, "skipped", testCases, "skipped", report); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static boolean matchesDeclaredTestCount(long declared, List<Element> testCases) {
+		if (declared == testCases.size()) {
+			return true;
+		}
+
+		Set<String> names = new HashSet<>();
+		Set<String> identities = new HashSet<>();
+		for (Element testCase : testCases) {
+			String name = testCase.getAttribute("name").strip(); //$NON-NLS-1$
+			String className = testCase.getAttribute("classname").strip(); //$NON-NLS-1$
+			if (name.isEmpty() || className.isEmpty()) {
+				return false;
+			}
+			names.add(name);
+			if (!identities.add(className + '\u0000' + name)) {
+				return false;
+			}
+		}
+
+		// Surefire's JUnit Platform summary can de-duplicate equal method names
+		// from different @Nested classes even though it emits one testcase for
+		// each class/name pair. The testcase elements remain the exact evidence.
+		return declared == names.size() && identities.size() == testCases.size();
 	}
 
 	private static void validateOptionalCount(Element suite, String attribute,
