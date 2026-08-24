@@ -71,12 +71,13 @@ jobs:
             base="refs/remotes/origin/$GITHUB_BASE_REF"
             printf 'REPOSITORY_POLICY_BASE=%s\n' "$base" >> "$GITHUB_ENV"
             printf 'Repository policy base: %s\n' "$base"
-          elif [[ "$EVENT_BEFORE" =~ ^[0-9a-fA-F]{40}$ ]] \
-              && [[ "$EVENT_BEFORE" != '0000000000000000000000000000000000000000' ]]; then
-            printf 'REPOSITORY_POLICY_BASE=%s\n' "$EVENT_BEFORE" >> "$GITHUB_ENV"
-            printf 'Repository policy base: %s\n' "$EVENT_BEFORE"
           else
-            exception='Post-merge or manually dispatched verification has no active pull-request review slice; full tracked-tree and forbidden-automation policy checks remain active.'
+            if [[ "$EVENT_BEFORE" =~ ^[0-9a-fA-F]{40}$ ]] \
+                && [[ "$EVENT_BEFORE" != '0000000000000000000000000000000000000000' ]]; then
+              printf 'REPOSITORY_POLICY_BASE=%s\n' "$EVENT_BEFORE" >> "$GITHUB_ENV"
+              printf 'Repository policy base: %s\n' "$EVENT_BEFORE"
+            fi
+            exception='Post-review push, scheduled, or manually dispatched verification has no active pull-request body; review-size approval was already handled before merge, while full tracked-tree and forbidden-automation policy checks remain active.'
             printf 'REPOSITORY_POLICY_EXCEPTION=%s\n' "$exception" >> "$GITHUB_ENV"
             printf '%s\n' "$exception"
           fi
