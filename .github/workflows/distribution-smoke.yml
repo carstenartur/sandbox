@@ -61,6 +61,26 @@ jobs:
         uses: ./.github/actions/use-runner-maven
       - name: Verify preinstalled Eclipse desktop runtime
         uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Select repository-policy review context
+        shell: bash
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
+            base="refs/remotes/origin/$GITHUB_BASE_REF"
+            printf 'REPOSITORY_POLICY_BASE=%s\n' "$base" >> "$GITHUB_ENV"
+            printf 'Repository policy base: %s\n' "$base"
+          else
+            if [[ "$EVENT_BEFORE" =~ ^[0-9a-fA-F]{40}$ ]] \
+                && [[ "$EVENT_BEFORE" != '0000000000000000000000000000000000000000' ]]; then
+              printf 'REPOSITORY_POLICY_BASE=%s\n' "$EVENT_BEFORE" >> "$GITHUB_ENV"
+              printf 'Repository policy base: %s\n' "$EVENT_BEFORE"
+            fi
+            exception='Post-review push, scheduled, or manually dispatched verification has no active pull-request body; review-size approval was already handled before merge, while full tracked-tree and forbidden-automation policy checks remain active.'
+            printf 'REPOSITORY_POLICY_EXCEPTION=%s\n' "$exception" >> "$GITHUB_ENV"
+            printf '%s\n' "$exception"
+          fi
       - name: Maven distribution build and verification
         shell: bash
         run: |
