@@ -20,122 +20,11 @@ jobs:
           fetch-depth: 0
       - name: Apply tested Surefire nested-class compatibility patch
         shell: bash
+        env:
+          PATCH_BASE64: ZGlmZiAtLWdpdCBhL3NhbmRib3hfcXVhbGl0eV9tZXRyaWNzL3NyYy9tYWluL2phdmEvb3JnL3NhbmRib3gvYnVpbGQvcXVhbGl0eS9RdWFsaXR5QmFkZ2VHZW5lcmF0b3IuamF2YSBiL3NhbmRib3hfcXVhbGl0eV9tZXRyaWNzL3NyYy9tYWluL2phdmEvb3JnL3NhbmRib3gvYnVpbGQvcXVhbGl0eS9RdWFsaXR5QmFkZ2VHZW5lcmF0b3IuamF2YQppbmRleCAwNjVjMzI1Li5iZGI1Y2RhIDEwMDY0NAotLS0gYS9zYW5kYm94X3F1YWxpdHlfbWV0cmljcy9zcmMvbWFpbi9qYXZhL29yZy9zYW5kYm94L2J1aWxkL3F1YWxpdHkvUXVhbGl0eUJhZGdlR2VuZXJhdG9yLmphdmEKKysrIGIvc2FuZGJveF9xdWFsaXR5X21ldHJpY3Mvc3JjL21haW4vamF2YS9vcmcvc2FuZGJveC9idWlsZC9xdWFsaXR5L1F1YWxpdHlCYWRnZUdlbmVyYXRvci5qYXZhCkBAIC0yMCwxMCArMjAsMTIgQEAgaW1wb3J0IGphdmEubmlvLmZpbGUuUGF0aDsKIGltcG9ydCBqYXZhLnRpbWUuSW5zdGFudDsKIGltcG9ydCBqYXZhLnV0aWwuQXJyYXlMaXN0OwogaW1wb3J0IGphdmEudXRpbC5Db21wYXJhdG9yOworaW1wb3J0IGphdmEudXRpbC5IYXNoU2V0OwogaW1wb3J0IGphdmEudXRpbC5MaW5rZWRIYXNoTWFwOwogaW1wb3J0IGphdmEudXRpbC5MaXN0OwogaW1wb3J0IGphdmEudXRpbC5Mb2NhbGU7CiBpbXBvcnQgamF2YS51dGlsLk1hcDsKK2ltcG9ydCBqYXZhLnV0aWwuU2V0OwogaW1wb3J0IGphdmEudXRpbC5zdHJlYW0uU3RyZWFtOwogCiBpbXBvcnQgamF2YXgueG1sLlhNTENvbnN0YW50czsKQEAgLTIwMSw3ICsyMDMsNyBAQCBwdWJsaWMgZmluYWwgY2xhc3MgUXVhbGl0eUJhZGdlR2VuZXJhdG9yIHsKIAkJfQogCQlpZiAoInRlc3RzdWl0ZXMiLmVxdWFscyhyb290TmFtZSkgJiYgcm9vdC5oYXNBdHRyaWJ1dGUoInRlc3RzIikpIHsgLy8kTk9OLU5MUy0xJCAvLyROT04tTkxTLTIkCiAJCQlsb25nIGRlY2xhcmVkID0gcmVxdWlyZWRMb25nKHJvb3QsICJ0ZXN0cyIsIHJlcG9ydCk7IC8vJE5PTi1OTFMtMSQKLQkJCWlmIChkZWNsYXJlZCAhPSB0ZXN0Q2FzZXMuc2l6ZSgpKSB7CisJCQlpZiAoIW1hdGNoZXNEZWNsYXJlZFRlc3RDb3VudChkZWNsYXJlZCwgdGVzdENhc2VzKSkgewogCQkJCXRocm93IG5ldyBJT0V4Y2VwdGlvbigiSlVuaXQgYWdncmVnYXRlIGRlY2xhcmVzICIgKyBkZWNsYXJlZCArICIgdGVzdHMgYnV0IGNvbnRhaW5zICIgLy8kTk9OLU5MUy0xJCAvLyROT04tTkxTLTIkCiAJCQkJCQkrIHRlc3RDYXNlcy5zaXplKCkgKyAiIHRlc3RjYXNlcyBpbiAiICsgcmVwb3J0KTsgLy8kTk9OLU5MUy0xJAogCQkJfQpAQCAtMjMwLDcgKzIzMiw3IEBAIHB1YmxpYyBmaW5hbCBjbGFzcyBRdWFsaXR5QmFkZ2VHZW5lcmF0b3IgewogCXByaXZhdGUgc3RhdGljIHZvaWQgdmFsaWRhdGVTdWl0ZVN1bW1hcnkoRWxlbWVudCBzdWl0ZSwgUGF0aCByZXBvcnQpIHRocm93cyBJT0V4Y2VwdGlvbiB7CiAJCUxpc3Q8RWxlbWVudD4gdGVzdENhc2VzID0gZGVzY2VuZGFudHMoc3VpdGUsICJ0ZXN0Y2FzZSIpOyAvLyROT04tTkxTLTEkCiAJCWxvbmcgZGVjbGFyZWQgPSByZXF1aXJlZExvbmcoc3VpdGUsICJ0ZXN0cyIsIHJlcG9ydCk7IC8vJE5PTi1OTFMtMSQKLQkJaWYgKGRlY2xhcmVkICE9IHRlc3RDYXNlcy5zaXplKCkpIHsKKwkJaWYgKCFtYXRjaGVzRGVjbGFyZWRUZXN0Q291bnQoZGVjbGFyZWQsIHRlc3RDYXNlcykpIHsKIAkJCXRocm93IG5ldyBJT0V4Y2VwdGlvbigiSlVuaXQgc3VpdGUgZGVjbGFyZXMgIiArIGRlY2xhcmVkICsgIiB0ZXN0cyBidXQgY29udGFpbnMgIiAvLyROT04tTkxTLTEkIC8vJE5PTi1OTFMtMiQKIAkJCQkJKyB0ZXN0Q2FzZXMuc2l6ZSgpICsgIiB0ZXN0Y2FzZXMgaW4gIiArIHJlcG9ydCk7IC8vJE5PTi1OTFMtMSQKIAkJfQpAQCAtMjM5LDYgKzI0MSwzMSBAQCBwdWJsaWMgZmluYWwgY2xhc3MgUXVhbGl0eUJhZGdlR2VuZXJhdG9yIHsKIAkJdmFsaWRhdGVPcHRpb25hbENvdW50KHN1aXRlLCAic2tpcHBlZCIsIHRlc3RDYXNlcywgInNraXBwZWQiLCByZXBvcnQpOyAvLyROT04tTkxTLTEkIC8vJE5PTi1OTFMtMiQKIAl9CiAKKwlwcml2YXRlIHN0YXRpYyBib29sZWFuIG1hdGNoZXNEZWNsYXJlZFRlc3RDb3VudChsb25nIGRlY2xhcmVkLCBMaXN0PEVsZW1lbnQ+IHRlc3RDYXNlcykgeworCQlpZiAoZGVjbGFyZWQgPT0gdGVzdENhc2VzLnNpemUoKSkgeworCQkJcmV0dXJuIHRydWU7CisJCX0KKworCQlTZXQ8U3RyaW5nPiBuYW1lcyA9IG5ldyBIYXNoU2V0PD4oKTsKKwkJU2V0PFN0cmluZz4gaWRlbnRpdGllcyA9IG5ldyBIYXNoU2V0PD4oKTsKKwkJZm9yIChFbGVtZW50IHRlc3RDYXNlIDogdGVzdENhc2VzKSB7CisJCQlTdHJpbmcgbmFtZSA9IHRlc3RDYXNlLmdldEF0dHJpYnV0ZSgibmFtZSIpLnN0cmlwKCk7IC8vJE5PTi1OTFMtMSQKKwkJCVN0cmluZyBjbGFzc05hbWUgPSB0ZXN0Q2FzZS5nZXRBdHRyaWJ1dGUoImNsYXNzbmFtZSIpLnN0cmlwKCk7IC8vJE5PTi1OTFMtMSQKKwkJCWlmIChuYW1lLmlzRW1wdHkoKSB8fCBjbGFzc05hbWUuaXNFbXB0eSgpKSB7CisJCQkJcmV0dXJuIGZhbHNlOworCQkJfQorCQkJbmFtZXMuYWRkKG5hbWUpOworCQkJaWYgKCFpZGVudGl0aWVzLmFkZChjbGFzc05hbWUgKyAnXHUwMDAwJyArIG5hbWUpKSB7CisJCQkJcmV0dXJuIGZhbHNlOworCQkJfQorCQl9CisKKwkJLy8gU3VyZWZpcmUncyBKVW5pdCBQbGF0Zm9ybSBzdW1tYXJ5IGNhbiBkZS1kdXBsaWNhdGUgZXF1YWwgbWV0aG9kIG5hbWVzCisJCS8vIGZyb20gZGlmZmVyZW50IEBOZXN0ZWQgY2xhc3NlcyBldmVuIHRob3VnaCBpdCBlbWl0cyBvbmUgdGVzdGNhc2UgZm9yCisJCS8vIGVhY2ggY2xhc3MvbmFtZSBwYWlyLiBUaGUgdGVzdGNhc2UgZWxlbWVudHMgcmVtYWluIHRoZSBleGFjdCBldmlkZW5jZS4KKwkJcmV0dXJuIGRlY2xhcmVkID09IG5hbWVzLnNpemUoKSAmJiBpZGVudGl0aWVzLnNpemUoKSA9PSB0ZXN0Q2FzZXMuc2l6ZSgpOworCX0KKwogCXByaXZhdGUgc3RhdGljIHZvaWQgdmFsaWRhdGVPcHRpb25hbENvdW50KEVsZW1lbnQgc3VpdGUsIFN0cmluZyBhdHRyaWJ1dGUsCiAJCQlMaXN0PEVsZW1lbnQ+IHRlc3RDYXNlcywgU3RyaW5nIG91dGNvbWUsIFBhdGggcmVwb3J0KSB0aHJvd3MgSU9FeGNlcHRpb24gewogCQlpZiAoIXN1aXRlLmhhc0F0dHJpYnV0ZShhdHRyaWJ1dGUpKSB7CmRpZmYgLS1naXQgYS9zYW5kYm94X3F1YWxpdHlfbWV0cmljcy9zcmMvdGVzdC9qYXZhL29yZy9zYW5kYm94L2J1aWxkL3F1YWxpdHkvUXVhbGl0eUJhZGdlR2VuZXJhdG9yVGVzdC5qYXZhIGIvc2FuZGJveF9xdWFsaXR5X21ldHJpY3Mvc3JjL3Rlc3QvamF2YS9vcmcvc2FuZGJveC9idWlsZC9xdWFsaXR5L1F1YWxpdHlCYWRnZUdlbmVyYXRvclRlc3QuamF2YQppbmRleCA5ZGNlMGU2Li5iNzk1ZDlmIDEwMDY0NAotLS0gYS9zYW5kYm94X3F1YWxpdHlfbWV0cmljcy9zcmMvdGVzdC9qYXZhL29yZy9zYW5kYm94L2J1aWxkL3F1YWxpdHkvUXVhbGl0eUJhZGdlR2VuZXJhdG9yVGVzdC5qYXZhCisrKyBiL3NhbmRib3hfcXVhbGl0eV9tZXRyaWNzL3NyYy90ZXN0L2phdmEvb3JnL3NhbmRib3gvYnVpbGQvcXVhbGl0eS9RdWFsaXR5QmFkZ2VHZW5lcmF0b3JUZXN0LmphdmEKQEAgLTgxLDYgKzgxLDM5IEBAIGNsYXNzIFF1YWxpdHlCYWRnZUdlbmVyYXRvclRlc3QgewogCQlhc3NlcnRUcnVlKG1pc21hdGNoRXJyb3IuZ2V0TWVzc2FnZSgpLmNvbnRhaW5zKCJkZWNsYXJlcyAyIHRlc3RzIGJ1dCBjb250YWlucyAxIikpOwogCX0KIAorCUBUZXN0CisJdm9pZCBjb3VudHNTdXJlZmlyZU5lc3RlZENsYXNzVGVzdGNhc2VzRXZlbldoZW5TdW1tYXJ5RGVkdXBsaWNhdGVzTWV0aG9kTmFtZXMoKSB0aHJvd3MgRXhjZXB0aW9uIHsKKwkJd3JpdGUoIm5lc3RlZC90YXJnZXQvc3VyZWZpcmUtcmVwb3J0cy9URVNULU5lc3RlZC54bWwiLCAiIiIKKwkJCQk8dGVzdHN1aXRlIHRlc3RzPSIzIiBmYWlsdXJlcz0iMCIgZXJyb3JzPSIwIiBza2lwcGVkPSIwIj4KKwkJCQkgIDx0ZXN0Y2FzZSBjbGFzc25hbWU9IkZpcnN0IG5lc3RlZCBjbGFzcyIgbmFtZT0ic2hhcmVkTmFtZSIvPgorCQkJCSAgPHRlc3RjYXNlIGNsYXNzbmFtZT0iU2Vjb25kIG5lc3RlZCBjbGFzcyIgbmFtZT0ic2hhcmVkTmFtZSIvPgorCQkJCSAgPHRlc3RjYXNlIGNsYXNzbmFtZT0iRmlyc3QgbmVzdGVkIGNsYXNzIiBuYW1lPSJmaXJzdE9ubHkiLz4KKwkJCQkgIDx0ZXN0Y2FzZSBjbGFzc25hbWU9IlNlY29uZCBuZXN0ZWQgY2xhc3MiIG5hbWU9InNlY29uZE9ubHkiLz4KKwkJCQk8L3Rlc3RzdWl0ZT4KKwkJCQkiIiIpOworCisJCVF1YWxpdHlCYWRnZUdlbmVyYXRvci5UZXN0VG90YWxzIHRvdGFscyA9IFF1YWxpdHlCYWRnZUdlbmVyYXRvci5jb2xsZWN0VGVzdHModGVtcG9yYXJ5RGlyZWN0b3J5KTsKKworCQlhc3NlcnRFcXVhbHMoNCwgdG90YWxzLnRlc3RzKCkpOworCQlhc3NlcnRFcXVhbHMoNCwgdG90YWxzLnBhc3NlZCgpKTsKKwkJYXNzZXJ0RXF1YWxzKDEsIHRvdGFscy5yZXBvcnRGaWxlcygpKTsKKwl9CisKKwlAVGVzdAorCXZvaWQgcmVqZWN0c1JlcGVhdGVkSWRlbnRpY2FsVGVzdGNhc2VJZGVudGl0eUFzQUNvbnRyYWRpY3RvcnlTdW1tYXJ5KCkgdGhyb3dzIEV4Y2VwdGlvbiB7CisJCXdyaXRlKCJkdXBsaWNhdGUvdGFyZ2V0L3N1cmVmaXJlLXJlcG9ydHMvVEVTVC1EdXBsaWNhdGUueG1sIiwgIiIiCisJCQkJPHRlc3RzdWl0ZSB0ZXN0cz0iMSIgZmFpbHVyZXM9IjAiIGVycm9ycz0iMCIgc2tpcHBlZD0iMCI+CisJCQkJICA8dGVzdGNhc2UgY2xhc3NuYW1lPSJTYW1lIGNsYXNzIiBuYW1lPSJzYW1lTmFtZSIvPgorCQkJCSAgPHRlc3RjYXNlIGNsYXNzbmFtZT0iU2FtZSBjbGFzcyIgbmFtZT0ic2FtZU5hbWUiLz4KKwkJCQk8L3Rlc3RzdWl0ZT4KKwkJCQkiIiIpOworCisJCUlPRXhjZXB0aW9uIGVycm9yID0gYXNzZXJ0VGhyb3dzKElPRXhjZXB0aW9uLmNsYXNzLAorCQkJCSgpIC0+IFF1YWxpdHlCYWRnZUdlbmVyYXRvci5jb2xsZWN0VGVzdHModGVtcG9yYXJ5RGlyZWN0b3J5KSk7CisKKwkJYXNzZXJ0VHJ1ZShlcnJvci5nZXRNZXNzYWdlKCkuY29udGFpbnMoImRlY2xhcmVzIDEgdGVzdHMgYnV0IGNvbnRhaW5zIDIiKSk7CisJfQorCiAJQFRlc3QKIAl2b2lkIHVzZXNPbmx5T25lQ29tcGxldGVBZ2dyZWdhdGVKYWNvY29Db3VudGVyKCkgdGhyb3dzIEV4Y2VwdGlvbiB7CiAJCVBhdGggcmVwb3J0ID0gd3JpdGUoInNhbmRib3hfY292ZXJhZ2UvdGFyZ2V0L3NpdGUvamFjb2NvLWFnZ3JlZ2F0ZS9qYWNvY28ueG1sIiwgIiIiCg==
         run: |
           set -euo pipefail
-          cat > /tmp/quality-fix.patch <<'PATCH'
-          diff --git a/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java b/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
-          index 065c325..bdb5cda 100644
-          --- a/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
-          +++ b/sandbox_quality_metrics/src/main/java/org/sandbox/build/quality/QualityBadgeGenerator.java
-          @@ -20,10 +20,12 @@ import java.nio.file.Path;
-           import java.time.Instant;
-           import java.util.ArrayList;
-           import java.util.Comparator;
-          +import java.util.HashSet;
-           import java.util.LinkedHashMap;
-           import java.util.List;
-           import java.util.Locale;
-           import java.util.Map;
-          +import java.util.Set;
-           import java.util.stream.Stream;
-           
-           import javax.xml.XMLConstants;
-          @@ -201,7 +203,7 @@ public final class QualityBadgeGenerator {
-          	}
-          	if ("testsuites".equals(rootName) && root.hasAttribute("tests")) { //$NON-NLS-1$ //$NON-NLS-2$
-          		long declared = requiredLong(root, "tests", report); //$NON-NLS-1$
-          -		if (declared != testCases.size()) {
-          +		if (!matchesDeclaredTestCount(declared, testCases)) {
-          			throw new IOException("JUnit aggregate declares " + declared + " tests but contains " //$NON-NLS-1$ //$NON-NLS-2$
-          					+ testCases.size() + " testcases in " + report); //$NON-NLS-1$
-          		}
-          @@ -230,7 +232,7 @@ public final class QualityBadgeGenerator {
-          	private static void validateSuiteSummary(Element suite, Path report) throws IOException {
-          		List<Element> testCases = descendants(suite, "testcase"); //$NON-NLS-1$
-          		long declared = requiredLong(suite, "tests", report); //$NON-NLS-1$
-          -		if (declared != testCases.size()) {
-          +		if (!matchesDeclaredTestCount(declared, testCases)) {
-          			throw new IOException("JUnit suite declares " + declared + " tests but contains " //$NON-NLS-1$ //$NON-NLS-2$
-          					+ testCases.size() + " testcases in " + report); //$NON-NLS-1$
-          		}
-          @@ -239,6 +241,31 @@ public final class QualityBadgeGenerator {
-          		validateOptionalCount(suite, "skipped", testCases, "skipped", report); //$NON-NLS-1$ //$NON-NLS-2$
-          	}
-           
-          +	private static boolean matchesDeclaredTestCount(long declared, List<Element> testCases) {
-          +		if (declared == testCases.size()) {
-          +			return true;
-          +		}
-          +
-          +		Set<String> names = new HashSet<>();
-          +		Set<String> identities = new HashSet<>();
-          +		for (Element testCase : testCases) {
-          +			String name = testCase.getAttribute("name").strip(); //$NON-NLS-1$
-          +			String className = testCase.getAttribute("classname").strip(); //$NON-NLS-1$
-          +			if (name.isEmpty() || className.isEmpty()) {
-          +				return false;
-          +			}
-          +			names.add(name);
-          +			if (!identities.add(className + '\u0000' + name)) {
-          +				return false;
-          +			}
-          +		}
-          +
-          +		// Surefire's JUnit Platform summary can de-duplicate equal method names
-          +		// from different @Nested classes even though it emits one testcase for
-          +		// each class/name pair. The testcase elements remain the exact evidence.
-          +		return declared == names.size() && identities.size() == testCases.size();
-          +	}
-          +
-          	private static void validateOptionalCount(Element suite, String attribute,
-          			List<Element> testCases, String outcome, Path report) throws IOException {
-          		if (!suite.hasAttribute(attribute)) {
-          diff --git a/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java b/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
-          index 9dce0e6..b795d9f 100644
-          --- a/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
-          +++ b/sandbox_quality_metrics/src/test/java/org/sandbox/build/quality/QualityBadgeGeneratorTest.java
-          @@ -81,6 +81,39 @@ class QualityBadgeGeneratorTest {
-          		assertTrue(mismatchError.getMessage().contains("declares 2 tests but contains 1"));
-          	}
-           
-          +	@Test
-          +	void countsSurefireNestedClassTestcasesEvenWhenSummaryDeduplicatesMethodNames() throws Exception {
-          +		write("nested/target/surefire-reports/TEST-Nested.xml", """
-          +				<testsuite tests="3" failures="0" errors="0" skipped="0">
-          +				  <testcase classname="First nested class" name="sharedName"/>
-          +				  <testcase classname="Second nested class" name="sharedName"/>
-          +				  <testcase classname="First nested class" name="firstOnly"/>
-          +				  <testcase classname="Second nested class" name="secondOnly"/>
-          +				</testsuite>
-          +				""");
-          +
-          +		QualityBadgeGenerator.TestTotals totals = QualityBadgeGenerator.collectTests(temporaryDirectory);
-          +
-          +		assertEquals(4, totals.tests());
-          +		assertEquals(4, totals.passed());
-          +		assertEquals(1, totals.reportFiles());
-          +	}
-          +
-          +	@Test
-          +	void rejectsRepeatedIdenticalTestcaseIdentityAsAContradictorySummary() throws Exception {
-          +		write("duplicate/target/surefire-reports/TEST-Duplicate.xml", """
-          +				<testsuite tests="1" failures="0" errors="0" skipped="0">
-          +				  <testcase classname="Same class" name="sameName"/>
-          +				  <testcase classname="Same class" name="sameName"/>
-          +				</testsuite>
-          +				""");
-          +
-          +		IOException error = assertThrows(IOException.class,
-          +				() -> QualityBadgeGenerator.collectTests(temporaryDirectory));
-          +
-          +		assertTrue(error.getMessage().contains("declares 1 tests but contains 2"));
-          +	}
-          +
-          	@Test
-          	void usesOnlyOneCompleteAggregateJacocoCounter() throws Exception {
-          		Path report = write("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml", """
-          PATCH
-
+          printf '%s' "$PATCH_BASE64" | base64 --decode > /tmp/quality-fix.patch
           if git apply --check /tmp/quality-fix.patch; then
             git apply /tmp/quality-fix.patch
           elif grep -Fq 'matchesDeclaredTestCount' \
@@ -146,7 +35,6 @@ jobs:
             echo 'Patch no longer applies and the expected implementation is absent.' >&2
             exit 1
           fi
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
