@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4a75d14ed6247dd76e79c13f8c38d8a4887deea6d5e8fc7b7400be7e4113d953",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.HTMLPrinter.convertInfoTextColor($x)\n\u003d\u003e $x\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text;\n\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\npublic class HTMLPrinter {\n    public static String fgStyleSheet \u003d \"some-style\";\n    public static String convertInfoTextColor(String css) {\n        // In the context of the bug fix, this conversion was causing issues or became redundant.\n        // For example purposes, we can assume it simply returns the input or applies a no-longer-desired effect.\n        return \"converted-\" + css;\n    }\n\n    public static void insertPageProlog(StringBuffer buffer, int offset, String title, RGB background, String styleSheet) {\n        // Dummy implementation for example\n        buffer.insert(offset, \"\u003chtml\u003e\u003chead\u003e\u003cstyle\u003e\" + styleSheet + \"\u003c/style\u003e\u003c/head\u003e\u003cbody\u003e\");\n    }\n\n    public void exampleMethod() {\n        StringBuffer buffer \u003d new StringBuffer();\n        RGB fBackgroundColorRGB \u003d new RGB(0,0,0);\n        String css \u003d \"initial-css\";\n        // This is the call site from JavadocView.java that matches the rule\n        insertPageProlog(buffer, 0, null, fBackgroundColorRGB, HTMLPrinter.convertInfoTextColor(fgStyleSheet));\n        // This pattern matches the RHS of assignment in AbstractJavaCompletionProposal.java and JavadocHover.java\n        // The rule replaces the call, making the assignment redundant (css \u003d css;)\n        css \u003d HTMLPrinter.convertInfoTextColor(css);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text;\n\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\npublic class HTMLPrinter {\n    public static String fgStyleSheet \u003d \"some-style\";\n    public static String convertInfoTextColor(String css) {\n        // In the context of the bug fix, this conversion was causing issues or became redundant.\n        // For example purposes, we can assume it simply returns the input or applies a no-longer-desired effect.\n        return \"converted-\" + css;\n    }\n\n    public static void insertPageProlog(StringBuffer buffer, int offset, String title, RGB background, String styleSheet) {\n        // Dummy implementation for example\n        buffer.insert(offset, \"\u003chtml\u003e\u003chead\u003e\u003cstyle\u003e\" + styleSheet + \"\u003c/style\u003e\u003c/head\u003e\u003cbody\u003e\");\n    }\n\n    public void exampleMethod() {\n        StringBuffer buffer \u003d new StringBuffer();\n        RGB fBackgroundColorRGB \u003d new RGB(0,0,0);\n        String css \u003d \"initial-css\";\n        // Transformed line\n        insertPageProlog(buffer, 0, null, fBackgroundColorRGB, fgStyleSheet);\n        // Transformed line (becomes redundant assignment, which can be handled by a separate rule or manual cleanup)\n        css \u003d css;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text;\n\nimport org.eclipse.swt.graphics.RGB;\nimport java.lang.StringBuffer;\n\npublic class HTMLPrinter {\n    public static String fgStyleSheet \u003d \"some-style\";\n    public static String convertInfoTextColor(String css) {\n        return \"converted-\" + css;\n    }\n\n    public static String someOtherMethod(String input) {\n        return convertInfoTextColor(\"other-\" + input); // Argument is not a simple variable, so rule will not match $x\n    }\n\n    public static void insertPageProlog(StringBuffer buffer, int offset, String title, RGB background, String styleSheet) {\n        buffer.insert(offset, \"\u003chtml\u003e\u003chead\u003e\u003cstyle\u003e\" + styleSheet + \"\u003c/style\u003e\u003c/head\u003e\u003cbody\u003e\");\n    }\n\n    public void anotherMethod() {\n        StringBuffer buffer \u003d new StringBuffer();\n        RGB fBackgroundColorRGB \u003d new RGB(0,0,0);\n        insertPageProlog(buffer, 0, null, fBackgroundColorRGB, \"a-constant-string\"); // Does not contain the pattern\n        String someText \u003d \"text\";\n        String result \u003d HTMLPrinter.convertInfoTextColor(someText + \" more\"); // Argument is not a simple variable $x\n    }\n}",
+  "targetHintFile": "api-simplification.sandbox-hint",
+  "sourceCommit": "376e7bd56daa3857b00b2d5a126276735b2a71bc",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Simplification",
+  "summary": "Replaces calls to HTMLPrinter.convertInfoTextColor(arg) with just arg, assuming the conversion is no longer needed or causes issues.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-24T02:40:45.206170061Z",
+  "ruleFingerprint": "sha256:59deddd220c8d53bfb1bd296b89dc584a0a097ae38b3607e1af710bbddf5a970",
+  "behaviorFingerprint": "sha256:f24992f332bcb8c42c11d16e4f7d68ebd09790f91db59e43c9a3ef803b3c254d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-24T02:40:48.321359945Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

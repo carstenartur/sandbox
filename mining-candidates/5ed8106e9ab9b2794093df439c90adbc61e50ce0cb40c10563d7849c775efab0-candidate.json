@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5ed8106e9ab9b2794093df439c90adbc61e50ce0cb40c10563d7849c775efab0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.swt.widgets.Label($parent, org.eclipse.swt.SWT.WRAP)\n\u003d\u003e\nnew org.eclipse.swt.widgets.Label($parent, org.eclipse.swt.SWT.NONE)\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Label;\n\npublic class Example {\n    public void createLabel(Composite parent) {\n        Label labelControl \u003d new Label(parent, SWT.WRAP);\n        labelControl.setText(\"A long text that wraps.\");\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Label;\n\npublic class Example {\n    public void createLabel(Composite parent) {\n        Label labelControl \u003d new Label(parent, SWT.NONE);\n        labelControl.setText(\"A long text that wraps.\");\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Label;\nimport org.eclipse.swt.widgets.Button;\n\npublic class Example {\n    public void createOtherWidgets(Composite parent) {\n        Label labelControl \u003d new Label(parent, SWT.LEFT);\n        Button button \u003d new Button(parent, SWT.WRAP); // Should not match Button\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "c49e910d78667f4e9931af72467663f59d6a2b11",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "SWT API usage",
+  "summary": "Replace SWT.WRAP style with SWT.NONE for Label constructor.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-24T02:40:45.167963719Z",
+  "ruleFingerprint": "sha256:678c5d684ae5c32c9672d5e555d3ddf50aff75e2cfa8a4134f39dd190dd42f0d",
+  "behaviorFingerprint": "sha256:688810ffb488b4c62bea57b232bf9aa65cb76659be93e1d2bef5083bf71634f6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-24T02:40:48.294178093Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
