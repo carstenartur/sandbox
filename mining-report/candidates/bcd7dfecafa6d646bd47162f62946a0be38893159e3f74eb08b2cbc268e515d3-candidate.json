@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bcd7dfecafa6d646bd47162f62946a0be38893159e3f74eb08b2cbc268e515d3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.text.MessageFormat.format($message, new java.lang.String[] { $args$ })\n\u003d\u003e\njava.text.MessageFormat.format($message, new java.lang.Object[] { $args$ })\n;;",
+  "beforeExample": "import java.text.MessageFormat;\n\npublic class Example {\n    public static void main(String[] args) {\n        String name \u003d \"World\";\n        String greeting \u003d MessageFormat.format(\"Hello, {0}!\", new String[]{name});\n        System.out.println(greeting);\n    }\n}",
+  "afterExample": "import java.text.MessageFormat;\n\npublic class Example {\n    public static void main(String[] args) {\n        String name \u003d \"World\";\n        String greeting \u003d MessageFormat.format(\"Hello, {0}!\", new Object[]{name});\n        System.out.println(greeting);\n    }\n}",
+  "negativeExample": "import java.text.MessageFormat;\n\npublic class Example {\n    public static void main(String[] args) {\n        Object[] data \u003d new Object[]{\"hello\", 123}; // Already Object[]\n        System.out.println(MessageFormat.format(\"Value: {0}\", data));\n\n        String[] names \u003d new String[]{\"Alice\", \"Bob\"}; // Not passed to MessageFormat.format\n        System.out.println(names[0]);\n    }\n}",
+  "targetHintFile": "java-lang-modernization.sandbox-hint",
+  "sourceCommit": "a897ee71608a67d0616e8af9cf91f4c79267f3b9",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Array Type Modernization",
+  "summary": "Replace `new String[] { ... }` with `new Object[] { ... }` when passed as an argument array to `MessageFormat.format()` to avoid reliance on array covariance and make the type explicit.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-24T02:40:45.141277816Z",
+  "ruleFingerprint": "sha256:0b58ba8a41a6600cb5253babbdd09ef65fe2cd10baaefd06089ee22247a97ff7",
+  "behaviorFingerprint": "sha256:22accb268512a47f724c4c50821dffc1a9c111fb565da46c8b1b015156d50e5c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-08-24T02:40:48.285270092Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f8ed926943d1192b65fcbcbb5d509edb1d9d558223a1cbc291b9a08998a6b415",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.swt.SWT.FILL\n\u003d\u003e\norg.eclipse.swt.layout.GridData.FILL\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TestClass {\n    public void setup(Composite parent) {\n        Composite othersComposite \u003d new Composite(parent, SWT.NONE);\n        // The old code uses SWT.FILL\n        GridData gridData \u003d new GridData(SWT.FILL, SWT.FILL, true, true);\n        gridData.heightHint \u003d 20;\n        othersComposite.setLayoutData(gridData);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TestClass {\n    public void setup(Composite parent) {\n        Composite othersComposite \u003d new Composite(parent, SWT.NONE);\n        // The new code uses GridData.FILL for clarity and specificity\n        GridData gridData \u003d new GridData(GridData.FILL, GridData.FILL, true, true);\n        gridData.heightHint \u003d 20;\n        othersComposite.setLayoutData(gridData);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class NegativeTestClass {\n    public void setup(Composite parent) {\n        Composite othersComposite \u003d new Composite(parent, SWT.NONE);\n        // This case uses different GridData alignment constants, and therefore should not be affected.\n        GridData gridData \u003d new GridData(SWT.LEFT, GridData.BEGINNING, false, false);\n        gridData.heightHint \u003d 20;\n        othersComposite.setLayoutData(gridData);\n\n        int someStyle \u003d SWT.NONE; // Another SWT constant, should not be matched\n    }\n}",
+  "targetHintFile": "swt-layout-modernization.sandbox-hint",
+  "sourceCommit": "43d8398f97da9c1eef1cb24bd1e8080c77b4876a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant modernization",
+  "summary": "Replaced `org.eclipse.swt.SWT.FILL` with `org.eclipse.swt.layout.GridData.FILL` for clarity and specificity in layout data, as both constants represent the same integer value.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-24T02:40:45.195292224Z",
+  "ruleFingerprint": "sha256:b4576ae44922ab881f4bc55eec6cbb4f5e2dfcfe66b1f611f5b64d319aad873b",
+  "behaviorFingerprint": "sha256:6d62b2bcae225e9c60ddd35132c847cf4a12c73327535c6df5735511756425cb",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-24T02:40:48.311240408Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

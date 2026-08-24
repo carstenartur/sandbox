@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5fa4996322aa747ad9db532b3e99d5d8ed9a5a721b4fa0cd385121a7e6f8b082",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.util.SWTUtil.getStandardDisplay()\n\u003d\u003e\norg.eclipse.ui.PlatformUI.getWorkbench().getDisplay()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.jdt.internal.ui.util.SWTUtil;\nimport org.eclipse.ui.PlatformUI;\n\npublic class MyClass {\n    public void foo() {\n        Display display \u003d SWTUtil.getStandardDisplay();\n        System.out.println(display);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.ui.PlatformUI;\n\npublic class MyClass {\n    public void foo() {\n        Display display \u003d PlatformUI.getWorkbench().getDisplay();\n        System.out.println(display);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.swt.widgets.Display;\n\npublic class MyClass {\n    public void foo() {\n        Display display \u003d Display.getDefault();\n        System.out.println(display);\n    }\n}",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "b81ec585479c214582dd8cd7711c3898154fa280",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Replacement",
+  "summary": "Replace internal SWTUtil.getStandardDisplay() with PlatformUI.getWorkbench().getDisplay().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-24T02:40:45.182417878Z",
+  "ruleFingerprint": "sha256:f7d688aa0e0db8943f043e16ca9960193caf4c7bac22cfa1e1b8315e1c2e1a57",
+  "behaviorFingerprint": "sha256:9245060e34b62f2fc085c763ee0222e877229ff58e41506a5322caef272d1aa9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-24T02:40:48.302646362Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

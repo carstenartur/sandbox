@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a3f1654eb8e5cef6e2dd4e0b25d5478274c6797f18d784a02e5a72c19b294a3b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($s !\u003d null \u0026\u0026 $s.length() \u003e 0) :: instanceof($s, \"java.lang.String\") \u0026\u0026 isNonNull($s)\n\u003d\u003e\n($s.length() \u003e 0)\n;;",
+  "beforeExample": "import java.util.Objects;\nclass StringMatcher {\n    StringMatcher(String p, boolean b1, boolean b2) {}\n}\n\npublic class Example {\n    private StringMatcher createStringMatcher(String filterText) {\n        filterText \u003d Objects.requireNonNull(filterText).trim(); // Assume filterText is non-null before trim()\n        if (filterText !\u003d null \u0026\u0026 filterText.length() \u003e 0) {\n            return new StringMatcher(\"*\" + filterText + \"*\", true, false);\n        }\n        return null;\n    }\n}",
+  "afterExample": "import java.util.Objects;\nclass StringMatcher {\n    StringMatcher(String p, boolean b1, boolean b2) {}\n}\n\npublic class Example {\n    private StringMatcher createStringMatcher(String filterText) {\n        filterText \u003d Objects.requireNonNull(filterText).trim(); // Assume filterText is non-null before trim()\n        if (filterText.length() \u003e 0) {\n            return new StringMatcher(\"*\" + filterText + \"*\", true, false);\n        }\n        return null;\n    }\n}",
+  "negativeExample": "class StringMatcher {\n    StringMatcher(String p, boolean b1, boolean b2) {}\n}\n\npublic class Example {\n    // This case should NOT be matched because potentiallyNullString could be null\n    // and the rule\u0027s isNonNull guard would prevent it.\n    private StringMatcher someMethod(String potentiallyNullString) {\n        if (potentiallyNullString !\u003d null \u0026\u0026 potentiallyNullString.length() \u003e 0) {\n            return new StringMatcher(\"*\" + potentiallyNullString + \"*\", true, false);\n        }\n        return null;\n    }\n}",
+  "targetHintFile": "codequality.sandbox-hint",
+  "sourceCommit": "f884995770b7c181a38d845cba4b75f5c4e69f7b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Quality",
+  "summary": "Remove redundant null check for String.length() when the string expression is guaranteed non-null.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-24T02:40:45.216436031Z",
+  "ruleFingerprint": "sha256:fcbb3ccbda6860bbbe1e4f025a3eaa6b764065d8d77ef7445ffaf1d537c29b09",
+  "behaviorFingerprint": "sha256:cea66a936ebb092e80bf294189ed465519e71959c4171c3a2b98dab5f73e7d95",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-08-24T02:40:48.330872292Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
