@@ -151,7 +151,8 @@ public class MethodReuseCleanUpTest {
 	@Test
 	void extractsTheLongestRepeatedSequenceAndReplacesAllOccurrences() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", //$NON-NLS-1$
+			"""
 			package test1;
 
 			public class Repeated {
@@ -205,7 +206,8 @@ public class MethodReuseCleanUpTest {
 	@Test
 	void honorsTheConfiguredMinimumSequenceLength() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", //$NON-NLS-1$
+			"""
 			package test1;
 
 			public class Repeated {
@@ -231,7 +233,8 @@ public class MethodReuseCleanUpTest {
 	@Test
 	void leavesNonRepeatedSequencesUnchanged() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		ICompilationUnit unit= pack.createCompilationUnit("Different.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Different.java", //$NON-NLS-1$
+			"""
 			package test1;
 
 			public class Different {
