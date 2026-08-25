@@ -29,20 +29,17 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 /*
  * Cleanup execution scenarios persist temporary profiles in the shared
  * workbench. Capture all deterministic Help images first and run the
  * profile-mutating verify... scenarios afterwards.
  */
-@TestMethodOrder(MethodOrderer.MethodName.class)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	private static final String CLEANUP_PREVIEW_PROJECT= "SandboxCleanupPreviewProject"; //$NON-NLS-1$
