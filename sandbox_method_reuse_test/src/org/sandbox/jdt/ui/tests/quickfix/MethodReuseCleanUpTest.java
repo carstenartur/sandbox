@@ -245,7 +245,7 @@ public class MethodReuseCleanUpTest {
 				}
 
 				public void second(String input) {
-					String text = input.strip();
+					String text = input.replace(' ', '_');
 					text = text.toUpperCase();
 					System.err.println(text);
 				}
