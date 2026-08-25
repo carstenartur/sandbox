@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 
@@ -126,7 +127,7 @@ public record MethodReuseMigrationPlan(SelectedCompilationUnitPlan selectedScope
 		return new CoreException(new Status(IStatus.ERROR, "sandbox_method_reuse", message)); //$NON-NLS-1$
 	}
 
-	private record ResolvedCandidate(MethodReuseCandidate candidate, MethodDeclaration duplicateMethod,
+	record ResolvedCandidate(MethodReuseCandidate candidate, MethodDeclaration duplicateMethod,
 			List<String> parameterNames) {
 	}
 }
