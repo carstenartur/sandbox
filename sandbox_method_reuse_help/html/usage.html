@@ -63,7 +63,7 @@ void second(String input) {
 
    <h2>Current boundary</h2>
    <ul>
-      <li>One cleanup pass extracts one best candidate and replaces all of its JDT-validated duplicates.</li>
+      <li>For each compilation unit, one cleanup pass extracts one best candidate and replaces all of its JDT-validated duplicates.</li>
       <li>Duplicates are currently searched inside one enclosing Java type and compilation unit, matching JDT's
           established duplicate-replacement contract.</li>
       <li>Independent remaining groups can be extracted by running Cleanup again.</li>

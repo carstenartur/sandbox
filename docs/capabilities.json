@@ -181,10 +181,10 @@
       "testModule": "sandbox_method_reuse_test",
       "scope": "local",
       "automaticSupport": "not-assessed",
-      "saveActionSupport": "not-assessed",
-      "safetyLevel": "experimental",
+      "saveActionSupport": "no",
+      "safetyLevel": "conservative",
       "status": "experimental",
-      "tests": { "total": 1, "enabled": 1, "disabled": 0 },
+      "tests": { "total": 5, "enabled": 5, "disabled": 0 },
       "delivery": { "product": true, "updateSite": true },
       "knownLimitations": []
     },

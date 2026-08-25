@@ -87,9 +87,10 @@ public final class RepeatedCodeSequenceExtractor {
 	 * Creates one deterministic extraction fix for the most valuable repeated
 	 * sequence in the current compilation unit.
 	 *
-	 * <p>One cleanup pass performs one extraction. JDT replaces every valid
-	 * occurrence of that sequence in the enclosing type; subsequent cleanup runs
-	 * can extract independent remaining groups without composing stale text edits.</p>
+	 * <p>For each compilation unit, one cleanup pass performs one extraction. JDT
+	 * replaces every valid occurrence of that sequence in the enclosing type;
+	 * subsequent cleanup runs can extract independent remaining groups without
+	 * composing stale text edits.</p>
 	 *
 	 * @param unit current compilation unit
 	 * @param root current binding-resolved AST
@@ -118,12 +119,9 @@ public final class RepeatedCodeSequenceExtractor {
 				if (isBetter(prepared, best)) {
 					best= prepared;
 				}
-				// Candidates in one group have the same coarse shape and length.
-				// The first JDT-valid representative is sufficient; JDT itself
-				// discovers every semantically valid duplicate occurrence.
-				if (prepared != null) {
-					break;
-				}
+				// A coarse group may still contain several semantically distinct
+				// sequences. Inspect every representative within the bounded budget;
+				// JDT determines each candidate's actual duplicate set.
 			}
 		}
 		return best == null ? null : best.toCleanUpFix();

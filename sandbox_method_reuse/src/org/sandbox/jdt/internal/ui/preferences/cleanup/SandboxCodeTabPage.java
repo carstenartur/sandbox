@@ -61,14 +61,9 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 						CleanUpMessages.CodeQualityTabPage_MinimumStatements_4,
 						CleanUpMessages.CodeQualityTabPage_MinimumStatements_5
 				});
-		if (isSaveAction()) {
-			extractRepeatedSequences.setChecked(false);
-			extractRepeatedSequences.setEnabled(false);
-		}
-		minimumStatements.setEnabled(!isSaveAction() && extractRepeatedSequences.getChecked());
+		minimumStatements.setEnabled(extractRepeatedSequences.getChecked());
 		extractRepeatedSequences.addObserver((source, argument) ->
-				minimumStatements.setEnabled(!isSaveAction()
-						&& extractRepeatedSequences.getChecked()));
+				minimumStatements.setEnabled(extractRepeatedSequences.getChecked()));
 		intent(codeQualityGroup);
 		final CheckboxPreference inlineSequences= createCheckboxPref(codeQualityGroup, numColumns,
 				CleanUpMessages.CodeQualityTabPage_CheckboxName_InlineSequences,

@@ -66,7 +66,7 @@ void second(String input) {
 ## Current boundary
 
 - Duplicate replacement follows JDT's established same-type, same-compilation-unit Extract Method contract.
-- One best independent extraction is performed per Cleanup run; JDT replaces all valid occurrences of that selected sequence.
+- One best independent extraction is performed per compilation unit and Cleanup run; JDT replaces all valid occurrences of that selected sequence.
 - Running Cleanup again can extract another independent repeated group.
 - Anonymous-class and cross-type common-method placement are not automatic.
 - Candidate length and validation attempts are bounded to keep interactive Cleanup responsive.

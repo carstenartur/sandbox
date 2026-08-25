@@ -36,7 +36,7 @@
    <h2>Known limitations</h2>
    <ul>
       <li>Duplicate replacement is currently scoped to one enclosing type and compilation unit.</li>
-      <li>One independent extraction is performed per Cleanup run to avoid composing edits calculated from stale source.</li>
+      <li>One independent extraction is performed per compilation unit and Cleanup run to avoid composing edits calculated from stale source.</li>
       <li>Anonymous-class extraction and cross-type common-method placement are not yet automatic.</li>
       <li>Sequence discovery considers up to twenty statements per candidate and a bounded number of JDT validation
           attempts per compilation unit to keep interactive Cleanup responsive.</li>

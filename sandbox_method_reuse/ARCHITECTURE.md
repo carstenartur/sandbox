@@ -69,7 +69,7 @@ The plugin must not copy `ExtractMethodAnalyzer`, `SnippetFinder`, parameter inf
 
 ## One extraction per pass
 
-Independent Extract Method changes are computed against a particular source snapshot. Composing several independently prepared changes can make later offsets and semantic assumptions stale. The cleanup therefore selects one best group per pass and lets JDT replace all duplicates of that group. Another Cleanup run may process a remaining independent group.
+Independent Extract Method changes are computed against a particular source snapshot. Composing several independently prepared changes can make later offsets and semantic assumptions stale. The cleanup therefore selects one best group per compilation unit and pass and lets JDT replace all duplicates of that group. Another Cleanup run may process a remaining independent group.
 
 ## Existing-method path
 
