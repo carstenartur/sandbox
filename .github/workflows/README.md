@@ -197,7 +197,6 @@ The workflow is designed to work with protected main branches:
    - Merge the PR for next version promptly
    - Update Eclipse Marketplace (reminder in workflow output)
    - Announce release to users
-
 **Troubleshooting**:
 
 | Issue | Cause | Solution |
@@ -542,7 +541,6 @@ See `.github/actions/cleanup-action/README.md` for detailed troubleshooting.
 - **Slow performance**: Use Docker caching or pre-built images
 
 ## Contributing
-
 Improvements welcome:
 - Optimize build time
 - Add more cleanup profiles
@@ -552,90 +550,58 @@ Improvements welcome:
 
 ## CI & Testing Workflows
 
-This section describes the continuous integration workflows that run tests, generate reports, and publish coverage data.
+The canonical product verification and the quality-evidence publication are deliberately separate:
 
-### Normal Build Workflow (`maven.yml`)
+- `maven.yml` provides the normal Maven/Tycho build signal for relevant pushes and pull requests. It does not publish the authoritative `/tests/` or `/coverage/` pages.
+- `test-report.yml` inventories test sources and guards against accidentally losing registered tests. It is not the public test-report publisher.
+- `coverage.yml` runs the complete quality-evidence path and is the sole publisher of the measured test and coverage pages described below.
 
-**Triggers**: On push/PR to main branch
+### Verified test and coverage metrics (`coverage.yml`)
 
-**Purpose**: Fast feedback and test result publishing
+**Triggers**:
+- relevant pull requests targeting `main`;
+- relevant pushes to `main`;
+- manual workflow dispatch;
+- daily schedule, skipped when no commit was made in the preceding 24 hours.
 
-**Build Command**: `mvn verify` (no jacoco, product, or repo profiles)
+**Verification command**:
 
-**What it does**:
-- Runs standard Maven/Tycho build
-- Executes all tests
-- Generates Surefire/JUnit HTML reports automatically (via maven-surefire-report-plugin)
-- Collects test reports from all test modules
-- Deploys test reports to GitHub Pages at `/tests`
+```bash
+xvfb-run --auto-servernum mvn \
+  --no-transfer-progress \
+  -e -V -T 1C --batch-mode \
+  -Dtycho.localArtifacts=ignore \
+  -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin \
+  clean verify
+```
 
-**What it does NOT do**:
-- Does NOT generate code coverage (jacoco profile not active)
-- Does NOT build Eclipse product or P2 repository (kept lean for speed)
+The workflow uses established report consumers rather than repository-specific XML parsers:
 
-**Update guarantee**: Test results are always current with the latest main branch commit
+- `mikepenz/action-junit-report@v6` reads all Surefire and Failsafe `TEST-*.xml` files and supplies the exact total, passed, failed, and skipped testcase counts;
+- `cicirello/jacoco-badge-generator@v2` reads the aggregate `sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv` and generates the instruction-coverage Shields endpoint;
+- Maven's `reports` profile produces the module HTML reports copied below `/tests/`.
 
-### Scheduled Coverage Build Workflow (`coverage.yml`)
+Pull-request and non-`main` branch runs execute and validate the complete generation path but never mutate GitHub Pages. A successful push to `main`, manual run on `main`, or applicable scheduled run publishes all of the following in one update:
 
-**Triggers**: 
-- Daily at midnight UTC (only if there were commits in the last 24 hours)
-- Manual workflow dispatch
+- `badges/tests.json`;
+- `badges/coverage.json`;
+- `quality-summary.json`, including the source commit and measured values;
+- `tests/index.html` and every discovered Maven module report;
+- the aggregate JaCoCo HTML report below `/coverage/`.
 
-**Purpose**: Full release build with comprehensive coverage metrics
+The evidence artifact name includes both `github.run_number` and `github.run_attempt`, so reruns cannot collide with an immutable artifact from an earlier attempt. Failed builds retain whatever JUnit and JaCoCo evidence is available but cannot replace the last successful public values.
 
-**Build Command**: `mvn -Pjacoco,product,repo verify`
+### Published reports
 
-**What it does**:
-- Runs full release build with all profiles
-- Generates JaCoCo code coverage reports
-- Builds Eclipse product and P2 repository
-- Deploys coverage reports to GitHub Pages at `/coverage`
-- Deploys test reports to GitHub Pages at `/tests` (as backup)
+- Test totals and module reports: <https://carstenartur.github.io/sandbox/tests/>
+- Aggregate JaCoCo report: <https://carstenartur.github.io/sandbox/coverage/>
+- Commit-bound machine-readable summary: <https://carstenartur.github.io/sandbox/quality-summary.json>
 
-**Update guarantee**: Coverage reports are updated daily when there are new commits, but may be up to 24 hours behind the latest commit
-
-### Why This Structure?
-
-**Performance**: Normal builds complete faster without heavy jacoco/product/repo profiles, providing quick feedback on PRs and commits
-
-**Separation of Concerns**: 
-- Test results = Always current (every commit)
-- Coverage metrics = Updated daily (comprehensive but not blocking fast feedback)
-
-**Resource Efficiency**: Full release builds with coverage are expensive; running them daily (instead of on every commit) reduces CI resource usage while still maintaining up-to-date coverage metrics
-
-### Report Details
-
-#### Coverage Reports
-The JaCoCo coverage reports show code coverage statistics for the entire codebase:
-- **Location**: `https://carstenartur.github.io/sandbox/coverage/`
-- **Content**: Line, branch, and method coverage for all modules
-- **Update Frequency**: Daily via scheduled build (only when there are commits in the last 24 hours) or manual trigger
-- **Build Profile**: Generated with full release build using `-Pjacoco,product,repo` profiles
-- **Local Generation**: Run `mvn -Pjacoco verify` to generate locally in `sandbox_coverage/target/site/jacoco-aggregate/`
-- **Note**: Coverage reports are NOT generated on normal push/PR builds to keep CI fast. They require the scheduled or manual coverage workflow.
-
-#### Test Results
-HTML test reports for all test modules, showing detailed test execution results:
-- **Location**: `https://carstenartur.github.io/sandbox/tests/`
-- **Content**: 
-  - Individual test module reports (e.g., `sandbox_encoding_quickfix_test`, `sandbox_functional_converter_test`)
-  - Test success/failure statistics
-  - Disabled tests (JUnit 5 `@Disabled` annotations)
-  - Detailed test execution information
-- **Update Frequency**: 
-  - **Primary**: Updated on every push to main branch (via normal CI build)
-  - **Secondary**: Also updated during scheduled coverage builds (includes full release build with all profiles)
-- **Build Profile**: 
-  - Normal builds (push/PR): No special profiles, fast build for quick feedback
-  - Scheduled builds: Uses `-Pjacoco,product,repo` profiles (full release build)
-- **Local Generation**: Run the full reactor build (`mvn verify`), and test reports will be automatically generated in each test module's `target/site/surefire-report.html` directory
-- **Structure**:
-  - Main index: Lists all test modules with links to their individual reports
-  - Module reports: Detailed test results for each module
+For the detailed evidence contract and local reproduction instructions, see [`docs/quality-metrics.md`](../../docs/quality-metrics.md).
 
 ## Related Documentation
 
+- [Published test and coverage metrics](../../docs/quality-metrics.md)
 - [Sandbox Cleanup Application](../../sandbox_cleanup_application/README.md)
 - [Custom Action README](./../actions/cleanup-action/README.md)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
