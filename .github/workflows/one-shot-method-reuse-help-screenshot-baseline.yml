@@ -1,0 +1,63 @@
+name: One-shot Method Reuse Help screenshot baseline update
+
+on:
+  push:
+    branches:
+      - feature/method-reuse-multifile-delegation
+    paths:
+      - '.github/workflows/one-shot-method-reuse-help-screenshot-baseline.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  update-baseline:
+    if: github.event.head_commit.message == 'Bootstrap Method Reuse screenshot baseline'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v7
+        with:
+          ref: feature/method-reuse-multifile-delegation
+          fetch-depth: 0
+
+      - name: Download inspected reproduced Method Reuse screenshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          artifact_dir='/tmp/reproduced'
+          image="$artifact_dir/sandbox_method_reuse_help/images/method-reuse-cleanup.png"
+          mkdir -p "$artifact_dir"
+          gh run download 32825971688 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name eclipse-help-screenshots-710 \
+            --dir "$artifact_dir"
+          test -f "$image"
+          printf '%s  %s\n' \
+            '91ff404d810bd2dcc920365bd2581b8e1fe992a2e94bf5d539ae5b89d3103bbc' \
+            "$image" | sha256sum --check --strict
+          cp -- "$image" sandbox_method_reuse_help/images/method-reuse-cleanup.png
+
+      - name: Commit exact baseline and remove bootstrap workflow
+        run: |
+          set -euo pipefail
+          workflow='.github/workflows/one-shot-method-reuse-help-screenshot-baseline.yml'
+          image='sandbox_method_reuse_help/images/method-reuse-cleanup.png'
+
+          git rm -- "$workflow"
+          git add -- "$image"
+
+          actual="$(git diff --cached --name-status | sort)"
+          expected="$(printf 'D\t%s\nM\t%s\n' "$workflow" "$image" | sort)"
+          printf '%s\n' "$actual"
+          test "$actual" = "$expected"
+          printf '%s  %s\n' \
+            '91ff404d810bd2dcc920365bd2581b8e1fe992a2e94bf5d539ae5b89d3103bbc' \
+            "$image" | sha256sum --check --strict
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update Method Reuse Help screenshot baseline'
+          git push origin HEAD:feature/method-reuse-multifile-delegation
