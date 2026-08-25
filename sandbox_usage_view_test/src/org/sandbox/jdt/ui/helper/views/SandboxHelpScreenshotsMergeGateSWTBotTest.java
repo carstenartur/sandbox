@@ -28,9 +28,13 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	private static final String CLEANUP_PREVIEW_PROJECT= "SandboxCleanupPreviewProject"; //$NON-NLS-1$
@@ -60,6 +64,7 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	}
 
 	@Test
+	@Order(5)
 	public void captureCleanupConfigurationTabs() throws IOException {
 		// Keep the original deterministic TriggerPattern setup, then overwrite the
 		// ordinary cleanup tabs with focused states in which their documented
@@ -69,26 +74,31 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	}
 
 	@Test
+	@Order(6)
 	public void captureCssCleanupPreferences() throws IOException {
 		screenshots.captureCssCleanupPreferences();
 	}
 
 	@Test
+	@Order(1)
 	public void captureRuleInferencePreferences() throws IOException {
 		screenshots.captureRuleInferencePreferences();
 	}
 
 	@Test
+	@Order(2)
 	public void captureRefactoringMiningWorkflow() throws Exception {
 		screenshots.captureRefactoringMiningWorkflow();
 	}
 
 	@Test
+	@Order(3)
 	public void captureNewHintRuleWizard() throws Exception {
 		screenshots.captureNewHintRuleWizard();
 	}
 
 	@Test
+	@Order(4)
 	public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
@@ -120,6 +130,7 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	}
 
 	@Test
+	@Order(7)
 	public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
