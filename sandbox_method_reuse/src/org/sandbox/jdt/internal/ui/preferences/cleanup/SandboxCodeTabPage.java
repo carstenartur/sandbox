@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
+ * Copyright (c) 2025, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -21,15 +21,14 @@ import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.PlatformUI;
+
+import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp;
 
 public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
-	/**
-	 * Constant array for boolean selection
-	 */
-	static final String[] FALSE_TRUE = {
+	static final String[] FALSE_TRUE= {
 			CleanUpOptions.FALSE,
 			CleanUpOptions.TRUE
 	};
@@ -47,12 +46,35 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	protected void doCreatePreferences(Composite composite, int numColumns) {
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,
 				"sandbox_method_reuse.cleanup_configuration"); //$NON-NLS-1$
-		Group codeQualityGroup= createGroup(numColumns, composite, CleanUpMessages.CodeQualityTabPage_GroupName_MethodReuse);
-		final CheckboxPreference method_reuse= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_MethodReuse, MYCleanUpConstants.METHOD_REUSE_CLEANUP, FALSE_TRUE);
+		Group codeQualityGroup= createGroup(numColumns, composite,
+				CleanUpMessages.CodeQualityTabPage_GroupName_MethodReuse);
+		final CheckboxPreference extractRepeatedSequences= createCheckboxPref(codeQualityGroup, numColumns,
+				CleanUpMessages.CodeQualityTabPage_CheckboxName_MethodReuse,
+				MYCleanUpConstants.METHOD_REUSE_CLEANUP, FALSE_TRUE);
 		intent(codeQualityGroup);
-		final CheckboxPreference inline_sequences= createCheckboxPref(codeQualityGroup, numColumns, CleanUpMessages.CodeQualityTabPage_CheckboxName_InlineSequences, MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, FALSE_TRUE);
+		final ComboPreference minimumStatements= createComboPref(codeQualityGroup, numColumns,
+				CleanUpMessages.CodeQualityTabPage_Label_MinimumStatements,
+				MethodReuseCleanUpOptions.MINIMUM_STATEMENTS,
+				new String[] { "3", "4", "5" }, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				new String[] {
+						CleanUpMessages.CodeQualityTabPage_MinimumStatements_3,
+						CleanUpMessages.CodeQualityTabPage_MinimumStatements_4,
+						CleanUpMessages.CodeQualityTabPage_MinimumStatements_5
+				});
+		if (isSaveAction()) {
+			extractRepeatedSequences.setChecked(false);
+			extractRepeatedSequences.setEnabled(false);
+		}
+		minimumStatements.setEnabled(!isSaveAction() && extractRepeatedSequences.getChecked());
+		extractRepeatedSequences.addObserver((source, argument) ->
+				minimumStatements.setEnabled(!isSaveAction()
+						&& extractRepeatedSequences.getChecked()));
 		intent(codeQualityGroup);
-		registerPreference(method_reuse);
-		registerPreference(inline_sequences);
+		final CheckboxPreference inlineSequences= createCheckboxPref(codeQualityGroup, numColumns,
+				CleanUpMessages.CodeQualityTabPage_CheckboxName_InlineSequences,
+				MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, FALSE_TRUE);
+		intent(codeQualityGroup);
+		registerPreference(extractRepeatedSequences);
+		registerPreference(inlineSequences);
 	}
 }

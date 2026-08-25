@@ -28,12 +28,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
-/** Tests for local inline-sequence and coordinated method-reuse cleanup paths. */
+/** Tests for extracting repeated sequences and reusing existing methods. */
 public class MethodReuseCleanUpTest {
 
 	@RegisterExtension
@@ -139,92 +140,127 @@ public class MethodReuseCleanUpTest {
 
 	@ParameterizedTest
 	@EnumSource(MethodReuseScenarios.class)
-	public void testMethodReuse(MethodReuseScenarios test) throws CoreException {
+	public void testExistingMethodReuse(MethodReuseScenarios test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
 		context.enable(MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES);
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		context.assertRefactoringResultAsExpected(
+				new ICompilationUnit[] { unit }, new String[] { test.expected }, null);
 	}
 
 	@Test
-	void delegatesExactDuplicateImplementationFromAutomaticallyExpandedScope() throws CoreException {
+	void extractsTheLongestRepeatedSequenceAndReplacesAllOccurrences() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		pack.createCompilationUnit("CanonicalNames.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", """ //$NON-NLS-1$
 			package test1;
 
-			public final class CanonicalNames {
-				private CanonicalNames() {
+			public class Repeated {
+				public void first(String value) {
+					String text = value.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
 				}
 
-				public static String normalize(String value) {
-					return value.trim();
-				}
-			}
-			""", false, null);
-		ICompilationUnit duplicate= pack.createCompilationUnit("Names.java", """ //$NON-NLS-1$
-			package test1;
-
-			public final class Names {
-				private Names() {
+				public void second(String input) {
+					String text = input.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
 				}
 
-				public static String clean(String input) {
-					return input.trim();
+				public void third(String source) {
+					String text = source.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
 				}
 			}
 			""", false, null);
 		context.enable(MYCleanUpConstants.METHOD_REUSE_CLEANUP);
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { duplicate }, new String[] { """
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(
+				new ICompilationUnit[] { unit }, new String[] { """
 			package test1;
 
-			public final class Names {
-				private Names() {
+			public class Repeated {
+				public void first(String value) {
+					extractedSequence(value);
 				}
 
-				public static String clean(String input) {
-					return CanonicalNames.normalize(input);
+				private void extractedSequence(String value) {
+					String text = value.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
+				}
+
+				public void second(String input) {
+					extractedSequence(input);
+				}
+
+				public void third(String source) {
+					extractedSequence(source);
 				}
 			}
 			""" }, null);
 	}
 
 	@Test
-	void rejectsStateCapturingImplementations() throws CoreException {
+	void honorsTheConfiguredMinimumSequenceLength() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
-		pack.createCompilationUnit("CanonicalNames.java", """ //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Repeated.java", """ //$NON-NLS-1$
 			package test1;
 
-			public final class CanonicalNames {
-				private static final String SUFFIX = "!";
+			public class Repeated {
+				public void first(String value) {
+					String text = value.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
+				}
 
-				public static String normalize(String value) {
-					return value.trim() + SUFFIX;
+				public void second(String input) {
+					String text = input.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
 				}
 			}
 			""", false, null);
-		ICompilationUnit duplicate= pack.createCompilationUnit("Names.java", """ //$NON-NLS-1$
+		context.enable(MYCleanUpConstants.METHOD_REUSE_CLEANUP);
+		context.set(MethodReuseCleanUpOptions.MINIMUM_STATEMENTS, "4"); //$NON-NLS-1$
+
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
+	}
+
+	@Test
+	void leavesNonRepeatedSequencesUnchanged() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("Different.java", """ //$NON-NLS-1$
 			package test1;
 
-			public final class Names {
-				private static final String SUFFIX = "!";
+			public class Different {
+				public void first(String value) {
+					String text = value.trim();
+					text = text.toLowerCase();
+					System.out.println(text);
+				}
 
-				public static String clean(String input) {
-					return input.trim() + SUFFIX;
+				public void second(String input) {
+					String text = input.strip();
+					text = text.toUpperCase();
+					System.err.println(text);
 				}
 			}
 			""", false, null);
 		context.enable(MYCleanUpConstants.METHOD_REUSE_CLEANUP);
 
-		context.assertRefactoringHasNoChange(new ICompilationUnit[] { duplicate });
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { unit });
 	}
 
 	@Test
-	void previewShowsTheActualDelegationShape() {
+	void previewShowsExtractionRatherThanWholeMethodDelegation() {
 		MethodReuseCleanUpCore cleanup= new MethodReuseCleanUpCore(Map.of(
 				MYCleanUpConstants.METHOD_REUSE_CLEANUP, CleanUpOptions.TRUE,
+				MethodReuseCleanUpOptions.MINIMUM_STATEMENTS, "3", //$NON-NLS-1$
 				MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, CleanUpOptions.FALSE));
 
-		assertTrue(cleanup.getPreview().contains("return CanonicalNames.normalize(input);")); //$NON-NLS-1$
+		assertTrue(cleanup.getPreview().contains("private void extractedSequence(String value)")); //$NON-NLS-1$
+		assertTrue(cleanup.getPreview().contains("extractedSequence(input);")); //$NON-NLS-1$
 	}
 }

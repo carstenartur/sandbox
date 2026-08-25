@@ -13,39 +13,19 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
-import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
+/** UI integration for Method Reuse cleanup options. */
+public class MethodReuseCleanUp extends AbstractCleanUpCoreWrapper<MethodReuseCleanUpCore> {
 
-/** UI wrapper for the coordinated method-reuse cleanup. */
-public class MethodReuseCleanUp extends AbstractCleanUpCoreWrapper<MethodReuseCleanUpCore>
-		implements IMultiFileCleanUpScopeProvider {
 	public MethodReuseCleanUp(final Map<String, String> options) {
 		super(options, new MethodReuseCleanUpCore());
 	}
 
 	public MethodReuseCleanUp() {
 		this(Collections.emptyMap());
-	}
-
-	@Override
-	public Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project,
-			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
-		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);
-	}
-
-	/** Returns immutable coordinated-preview metadata to the patched cleanup host. */
-	public Collection<Map<String, Object>> getCoordinatedCleanUpPreview(IJavaProject project)
-			throws CoreException {
-		return cleanUpCore.getCoordinatedCleanUpPreview(project);
 	}
 }

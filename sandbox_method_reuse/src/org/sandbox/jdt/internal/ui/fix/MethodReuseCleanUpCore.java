@@ -15,47 +15,50 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REUSE_CLEANUP;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES;
+import static org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpOptions.MINIMUM_STATEMENTS;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 
-import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
+import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
-import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
-import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
-import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
-import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
-import org.sandbox.jdt.cleanup.multifile.SourceRootPolicy;
 import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpFixCore;
-import org.sandbox.jdt.internal.corext.fix.multifile.MethodReuseMigrationPlan;
-import org.sandbox.jdt.internal.corext.fix.multifile.MethodReuseMultiFilePlanner;
+import org.sandbox.jdt.internal.corext.fix.helper.RepeatedCodeSequenceExtractor;
 
-/** Cleanup that delegates exact duplicate static method implementations. */
-public class MethodReuseCleanUpCore extends AbstractPlannedMultiFileCleanUp<MethodReuseMigrationPlan> {
+/** Cleanup for extracting repeated sequences or reusing an existing method. */
+public class MethodReuseCleanUpCore extends AbstractCleanUp {
+
+	private Map<String, String> optionsMap;
 
 	public MethodReuseCleanUpCore(final Map<String, String> options) {
 		super(options);
+		optionsMap= options;
 	}
 
 	public MethodReuseCleanUpCore() {
+	}
+
+	@Override
+	public void setOptions(CleanUpOptions options) {
+		super.setOptions(options);
+		if (options instanceof MapCleanUpOptions mapOptions) {
+			optionsMap= mapOptions.getMap();
+		}
 	}
 
 	@Override
@@ -68,71 +71,43 @@ public class MethodReuseCleanUpCore extends AbstractPlannedMultiFileCleanUp<Meth
 	}
 
 	@Override
-	protected MultiFileCleanUpPlanResult<MethodReuseMigrationPlan> createPlan(IJavaProject project,
-			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
-		if (!requireAST()) {
-			return MultiFileCleanUpPlanResult.noPlan();
-		}
-		if (monitor != null && monitor.isCanceled()) {
-			throw new OperationCanceledException();
-		}
-		if (isEnabled(METHOD_REUSE_CLEANUP)) {
-			return MethodReuseMultiFilePlanner.create(project, compilationUnits, monitor);
-		}
-		return MultiFileCleanUpPlanResult.success(new MethodReuseMigrationPlan(
-				SelectedCompilationUnitPlan.of(project, compilationUnits), List.of()));
-	}
-
-	@Override
-	protected ICleanUpFix createFixForPlan(MethodReuseMigrationPlan plan, CleanUpContext context)
-			throws CoreException {
-		if (!plan.contains(context.getCompilationUnit()) || context.getAST() == null || !requireAST()) {
+	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
+		CompilationUnit compilationUnit= context.getAST();
+		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {
 			return null;
 		}
-		CompilationUnit compilationUnit= context.getAST();
-		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
-		Set<ASTNode> nodesProcessed= new HashSet<>();
 
 		if (isEnabled(METHOD_REUSE_CLEANUP)) {
-			plan.addOperationsFor(context.getCompilationUnit(), compilationUnit, operations, nodesProcessed);
+			ICleanUpFix extraction= RepeatedCodeSequenceExtractor.createFix(
+					context.getCompilationUnit(), compilationUnit, getMinimumStatements());
+			if (extraction != null) {
+				return extraction;
+			}
 		}
-		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
-			MethodReuseCleanUpFixCore.INLINE_SEQUENCES.findOperations(compilationUnit, operations, nodesProcessed);
+
+		if (!isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
+			return null;
 		}
+		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
+		Set<ASTNode> nodesProcessed= new HashSet<>();
+		MethodReuseCleanUpFixCore.INLINE_SEQUENCES.findOperations(
+				compilationUnit, operations, nodesProcessed);
 		if (operations.isEmpty()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore("Method Reuse Cleanup", compilationUnit, //$NON-NLS-1$
-				operations.toArray(new CompilationUnitRewriteOperation[0]));
-	}
-
-	@Override
-	protected Collection<ICompilationUnit> discoverAdditionalCompilationUnits(IJavaProject project,
-			Collection<ICompilationUnit> currentScope, IProgressMonitor monitor) throws CoreException {
-		if (!isEnabled(METHOD_REUSE_CLEANUP)) {
-			return List.of();
-		}
-		if (monitor != null && monitor.isCanceled()) {
-			throw new OperationCanceledException();
-		}
-		Set<String> currentHandles= currentScope.stream()
-				.filter(java.util.Objects::nonNull)
-				.map(ICompilationUnit::getPrimary)
-				.map(ICompilationUnit::getHandleIdentifier)
-				.collect(Collectors.toSet());
-		return JavaProjectCompilationUnits.collect(project, currentScope, SourceRootPolicy.COMPLETE_PROJECT).stream()
-				.filter(unit -> !currentHandles.contains(unit.getPrimary().getHandleIdentifier()))
-				.toList();
+		return new CompilationUnitRewriteOperationsFixCore("Method Reuse Cleanup", //$NON-NLS-1$
+				compilationUnit, operations.toArray(new CompilationUnitRewriteOperation[0]));
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
 		List<String> result= new ArrayList<>();
 		if (isEnabled(METHOD_REUSE_CLEANUP)) {
-			result.add("Replace exact duplicate static method implementations with calls to an existing method"); //$NON-NLS-1$
+			result.add("Extract repeated sequences of at least " + getMinimumStatements() //$NON-NLS-1$
+					+ " statements and replace every JDT-validated duplicate with a call"); //$NON-NLS-1$
 		}
 		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {
-			result.add("Replace inline code sequences with method calls"); //$NON-NLS-1$
+			result.add("Replace inline code sequences with calls to an existing method"); //$NON-NLS-1$
 		}
 		return result.toArray(new String[0]);
 	}
@@ -142,28 +117,29 @@ public class MethodReuseCleanUpCore extends AbstractPlannedMultiFileCleanUp<Meth
 		StringBuilder preview= new StringBuilder();
 		if (isEnabled(METHOD_REUSE_CLEANUP)) {
 			preview.append("""
-				final class CanonicalNames {
-				    static String normalize(String value) {
-				        return value.trim();
-				    }
+				void first(String value) {
+				    extractedSequence(value);
 				}
-				final class Names {
-				    static String clean(String input) {
-				        return CanonicalNames.normalize(input);
-				    }
+				private void extractedSequence(String value) {
+				    String text = value.trim();
+				    text = text.toLowerCase();
+				    System.out.println(text);
+				}
+				void second(String input) {
+				    extractedSequence(input);
 				}
 				"""); //$NON-NLS-1$
 		} else {
 			preview.append("""
-				final class CanonicalNames {
-				    static String normalize(String value) {
-				        return value.trim();
-				    }
+				void first(String value) {
+				    String text = value.trim();
+				    text = text.toLowerCase();
+				    System.out.println(text);
 				}
-				final class Names {
-				    static String clean(String input) {
-				        return input.trim();
-				    }
+				void second(String input) {
+				    String text = input.trim();
+				    text = text.toLowerCase();
+				    System.out.println(text);
 				}
 				"""); //$NON-NLS-1$
 		}
@@ -183,5 +159,17 @@ public class MethodReuseCleanUpCore extends AbstractPlannedMultiFileCleanUp<Meth
 				"""); //$NON-NLS-1$
 		}
 		return preview.toString();
+	}
+
+	private int getMinimumStatements() {
+		String configured= optionsMap == null ? null : optionsMap.get(MINIMUM_STATEMENTS);
+		if (configured != null) {
+			try {
+				return RepeatedCodeSequenceExtractor.normalizeMinimum(Integer.parseInt(configured));
+			} catch (NumberFormatException exception) {
+				// Fall through to the documented default.
+			}
+		}
+		return RepeatedCodeSequenceExtractor.DEFAULT_MINIMUM_STATEMENTS;
 	}
 }

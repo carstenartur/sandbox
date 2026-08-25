@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
+ * Copyright (c) 2025, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -15,6 +15,8 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
+
+import org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsInitializer {
@@ -22,6 +24,8 @@ public class SaveActionCleanUpOptionsInitializer implements ICleanUpOptionsIniti
 	@Override
 	public void setDefaultOptions(CleanUpOptions options) {
 		options.setOption(MYCleanUpConstants.METHOD_REUSE_CLEANUP, CleanUpOptions.FALSE);
+		options.setOption(MethodReuseCleanUpOptions.MINIMUM_STATEMENTS,
+				MethodReuseCleanUpOptions.DEFAULT_MINIMUM_STATEMENTS);
 		options.setOption(MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES, CleanUpOptions.FALSE);
 	}
 }

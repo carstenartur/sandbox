@@ -1,260 +1,106 @@
-# Method Reusability Finder - Architecture
+# Method Reuse architecture
 
-> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#method_reuse) | [TODO](TODO.md)
+> **Navigation**: [Main README](../README.md) | [Plugin README](README.md) | [TODO](TODO.md)
 
-## Overview
+## Purpose
 
-The Method Reusability Finder is an Eclipse JDT cleanup plugin that analyzes selected methods to identify potentially reusable code patterns across the codebase. This helps developers discover duplicate or similar code that could be refactored to improve code quality and maintainability.
+Method Reuse has two explicit transformation paths:
 
-## Design Goals
+- **Repeated-sequence extraction** creates a private shared method from repeated contiguous statements.
+- **Existing-method reuse** replaces an inline sequence with a call to a compatible method that already exists.
 
-1. **Code Duplication Detection**: Identify similar code patterns using both token-based and AST-based analysis
-2. **Intelligent Matching**: Recognize code similarity even when variable names differ
-3. **Eclipse Integration**: Seamlessly integrate as a cleanup action in Eclipse JDT
-4. **Performance**: Efficient analysis that scales to large codebases
-5. **Portability**: Easy integration into Eclipse JDT core (following sandbox package structure)
+The general option is not a whole-method delegation detector and does not maintain a second Extract Method implementation.
 
-## Architecture
+## Repeated-sequence pipeline
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                 MethodReuseCleanUp                      │
-│              (UI Integration Layer)                      │
-│  - Wrapper for MethodReuseCleanUpCore                   │
-│  - Extends AbstractCleanUpCoreWrapper                   │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-                      ↓
-┌─────────────────────────────────────────────────────────┐
-│              MethodReuseCleanUpCore                      │
-│                (Core Cleanup Logic)                      │
-│  - find() - Identifies reusable methods                 │
-│  - rewrite() - Applies transformations                  │
-│  - Coordinates helper classes                           │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-                      │ delegates to
-                      ↓
-        ┌─────────────────────────────────┐
-        │       Helper Classes             │
-        │    (Analysis Services)           │
-        └─────────────────────────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        │                           │
-        ↓                           ↓
-┌──────────────────┐      ┌──────────────────┐
-│ MethodReuseFinder│      │MethodSignature   │
-│                  │      │   Analyzer       │
-│ - findSimilar()  │      │                  │
-│ - compare()      │      │ - analyze()      │
-│ - similarity()   │      │ - compare()      │
-└────────┬─────────┘      └──────────────────┘
-         │
-         ↓
-┌──────────────────┐
-│ CodePattern      │
-│   Matcher        │
-│                  │
-│ - matchAST()     │
-│ - tokenize()     │
-│ - normalize()    │
-└──────────────────┘
+```text
+Cleanup profile and minimum length
+              ↓
+cheap contiguous-statement candidate discovery
+              ↓
+coarse shape grouping and deterministic ranking
+              ↓
+JDT SnippetFinder duplicate pre-check
+              ↓
+JDT ExtractMethodRefactoring
+  - initial semantic conditions
+  - parameters / output / return value
+  - control flow and exceptions
+  - destination and naming checks
+  - valid duplicate occurrence set
+              ↓
+one CompilationUnitChange returned as ICleanUpFix
 ```
 
-## Core Components
+### `MethodReuseCleanUpCore`
 
-### 1. MethodReuseCleanUp (UI Integration)
+The ordinary Cleanup core reads the two boolean modes and the string-valued minimum-length option. For repeated-sequence mode it asks `RepeatedCodeSequenceExtractor` for one prepared fix. When no extractable candidate exists and existing-method mode is also enabled, it falls back to the existing local sequence-to-method-call implementation.
 
-**Location**: `org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp`
+This mode intentionally uses an ordinary single-compilation-unit Cleanup. JDT's duplicate replacement is scoped to the enclosing type in that compilation unit, so project-wide scope expansion and a custom multi-file transaction are neither necessary nor truthful for the current feature.
 
-**Responsibilities**:
-- UI wrapper for the core cleanup logic
-- Extends `AbstractCleanUpCoreWrapper<MethodReuseCleanUpCore>`
-- Handles Eclipse cleanup framework integration
+### `RepeatedCodeSequenceExtractor`
 
-**Usage**: Registered in `plugin.xml` as an Eclipse cleanup extension point
+This class owns only candidate enumeration and deterministic choice. It enumerates contiguous direct statement windows in method blocks, groups candidates by enclosing type, statement count, and statement node kinds, and validates promising candidates with JDT.
 
-### 2. MethodReuseCleanUpCore (Core Logic)
+The coarse key is not a semantic equivalence proof. It exists only to avoid invoking the relatively expensive refactoring for clearly unrelated windows.
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.MethodReuseCleanUpCore`
+Candidate value is ranked by:
 
-**Responsibilities**:
-- Implements the core cleanup algorithm
-- Coordinates helper classes for analysis
-- Manages AST traversal and method detection
-- Creates refactoring proposals
+```text
+statement count × JDT-valid duplicate count
+```
 
-**Key Methods**:
-- `find()` - Scans AST for method declarations to analyze
-- `rewrite()` - Creates markers/warnings for similar methods found
-- `process()` - Orchestrates the analysis workflow
+Ties prefer the longer sequence, then more duplicates, then the earlier source offset.
 
-### 3. MethodReuseFinder (Similarity Analysis)
+### JDT authority
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodReuseFinder`
+`ExtractMethodRefactoring` is the sole authority for the generated method and replacements. The cleanup calls:
 
-**Responsibilities**:
-- Searches the project for similar methods
-- Computes similarity scores between methods
-- Uses both AST-based and token-based comparison
+- `checkInitialConditions`;
+- `setMethodName`;
+- `setVisibility(PRIVATE)`;
+- `setReplaceDuplicates(true)`;
+- `checkFinalConditions`;
+- `createChange`.
 
-**Analysis Techniques**:
-- **Token-based similarity**: Compares normalized token sequences
-- **AST-based similarity**: Compares abstract syntax tree structures
-- **Variable name normalization**: Ignores variable name differences
-- **Control flow analysis**: Matches similar control structures
+This preserves JDT's handling of bindings, arguments, return values, static context, checked exceptions, branch behavior, duplicate local-variable mappings, inherited conflicts, imports, formatting, and text edits.
 
-**Key Methods**:
-- `findSimilarMethods()` - Searches project for similar code
-- `computeSimilarity()` - Calculates similarity percentage
-- `isReusable()` - Determines if method is a good refactoring candidate
+The plugin must not copy `ExtractMethodAnalyzer`, `SnippetFinder`, parameter inference, or method-generation logic into Sandbox.
 
-### 4. MethodSignatureAnalyzer (Signature Analysis)
+## One extraction per pass
 
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodSignatureAnalyzer`
+Independent Extract Method changes are computed against a particular source snapshot. Composing several independently prepared changes can make later offsets and semantic assumptions stale. The cleanup therefore selects one best group per pass and lets JDT replace all duplicates of that group. Another Cleanup run may process a remaining independent group.
 
-**Responsibilities**:
-- Analyzes method signatures
-- Compares parameter types and return types
-- Identifies compatible method signatures
+## Existing-method path
 
-**Key Methods**:
-- `analyzeSignature()` - Extracts signature information
-- `areCompatible()` - Determines if signatures are compatible
-- `suggestRefactoring()` - Proposes signature harmonization
-
-### 5. CodePatternMatcher (Pattern Matching)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.CodePatternMatcher`
-
-**Responsibilities**:
-- AST-based pattern matching
-- Normalizes code structures for comparison
-- Identifies common code patterns
-
-**Key Methods**:
-- `matchPattern()` - Matches AST patterns
-- `normalizeAST()` - Normalizes AST for comparison
-- `extractPattern()` - Extracts reusable patterns
-
-### 6. InlineCodeSequenceFinder (Inline Detection)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.InlineCodeSequenceFinder`
-
-**Responsibilities**:
-- Searches method bodies for inline code sequences
-- Finds code that matches a target method's body
-- Identifies refactoring opportunities within methods
-
-**Key Methods**:
-- `findInlineSequences()` - Searches for matching inline code
-- `searchInMethod()` - Examines individual methods for matches
-- `InlineSequenceMatch` - Result class with match details
-
-### 7. CodeSequenceMatcher (Sequence Matching)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.CodeSequenceMatcher`
-
-**Responsibilities**:
-- AST subtree matching with variable normalization
-- Recognizes structurally equivalent code with different variable names
-- Creates variable mappings between target and candidate code
-
-**Key Methods**:
-- `matchSequence()` - Matches statement sequences
-- `matchStatement()` - Matches individual statements
-- `VariableMappingMatcher` - Custom ASTMatcher for variable tracking
-
-### 8. VariableMapping (Variable Tracking)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.VariableMapping`
-
-**Responsibilities**:
-- Tracks variable name mappings
-- Ensures consistent bidirectional mappings
-- Validates mapping consistency
-
-**Key Methods**:
-- `addMapping()` - Adds or verifies a variable mapping
-- `getCandidateName()` - Looks up mapped name
-- `isValid()` - Checks if mapping is valid
-
-### 9. MethodCallReplacer (Code Generation)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.MethodCallReplacer`
-
-**Responsibilities**:
-- Generates method invocation replacement code
-- Creates argument lists based on variable mapping
-- Applies AST rewrites to replace code sequences
-
-**Key Methods**:
-- `createMethodCall()` - Creates a method invocation node
-- `replaceWithMethodCall()` - Applies the replacement
-- `canCreateMethodCall()` - Validates replacement feasibility
-
-### 10. SideEffectAnalyzer (Safety Analysis)
-
-**Location**: `org.sandbox.jdt.internal.corext.fix.helper.SideEffectAnalyzer`
-
-**Responsibilities**:
-- Analyzes semantic safety of replacements
-- Detects field modifications and side effects
-- Checks for complex control flow
-
-**Key Methods**:
-- `isSafeToReplace()` - Determines if replacement is safe
-- `hasFieldModifications()` - Checks for field modifications
-- `hasUnsafeMethodCalls()` - Checks for potentially unsafe calls
+`MethodReuseCleanUpFixCore.INLINE_SEQUENCES` and its helper classes remain the separate local path for matching an inline sequence against a method that already exists. It does not participate in repeated-sequence extraction and does not create a method.
 
 ## Configuration
 
-Cleanup options are defined in `MYCleanUpConstants`:
-- `METHOD_REUSE_CLEANUP` - Enable/disable the cleanup
-- `METHOD_REUSE_INLINE_SEQUENCES` - Enable inline code sequence detection
+- `MYCleanUpConstants.METHOD_REUSE_CLEANUP`: enable repeated-sequence extraction.
+- `MethodReuseCleanUpOptions.MINIMUM_STATEMENTS`: minimum contiguous statement count; UI values 3, 4, and 5; default 3.
+- `MYCleanUpConstants.METHOD_REUSE_INLINE_SEQUENCES`: enable reuse of an existing method.
 
-## Integration Points
+Both transformation modes are disabled in save-action defaults. Structural extraction requires an explicit Cleanup run and preview.
 
-### Eclipse Extension Points
-- `org.eclipse.jdt.ui.cleanUps` - Registers the cleanup
+## Safety and performance boundaries
 
-### Dependencies
-- `org.eclipse.jdt.core` - JDT core APIs
-- `org.eclipse.jdt.ui` - JDT UI integration
-- `org.eclipse.jdt.core.manipulation` - AST manipulation
-- `sandbox_common` - Shared utilities
+- binding-resolved JDT validation is mandatory;
+- same enclosing type and compilation unit for duplicate replacement;
+- anonymous classes are not selected by the current discovery layer;
+- candidate sequence length is bounded;
+- JDT validation attempts are bounded per compilation unit;
+- JDT errors reject the candidate without fallback rewriting;
+- a non-`CompilationUnitChange` result is treated as an error;
+- no AST nodes or prepared plans are retained across Cleanup runs.
 
-## Future Enhancements
+## Tests
 
-1. **Machine Learning**: Use ML models to improve similarity detection
-2. **Refactoring Automation**: Automatically extract common code into shared methods
-3. **Cross-project Analysis**: Search for similar methods across multiple projects
-4. **Performance Optimization**: Cache analysis results, incremental analysis
-5. **Visual Diff**: Show side-by-side comparison of similar methods
+The module tests prove:
 
-## Implementation Status
-
-The inline code sequence detection feature is now fully implemented and integrated:
-
-### Completed Features
-- **Inline Code Sequence Detection**: Identifies code sequences in method bodies that match the body of existing methods and can be replaced with method calls
-- **Variable Mapping**: Normalizes variable names to recognize structurally equivalent code with different naming
-- **Expression Mapping**: Supports matching complex expressions (like method calls) as method arguments
-- **Return Statement Handling**: Matches return statements with variable declarations for seamless refactoring
-- **AST Rewriting**: Properly replaces matched code sequences with appropriate method invocations
-- **Test Coverage**: Three comprehensive test scenarios covering simple, expression-based, and multi-statement cases
-
-### Implementation Highlights
-1. **MethodReuseCleanUpFixCore**: Enum-based operation management following JUnitCleanUpFixCore pattern
-2. **Enhanced CodeSequenceMatcher**: Special handling for return statement vs variable declaration matching
-3. **Expression-Aware Variable Mapping**: Stores both simple name mappings and complex expression mappings
-4. **Smart Method Call Generation**: Uses expression mappings to create proper argument lists
-
-### Pending Work
-- Basic method similarity detection across different methods (future enhancement)
-- AST-based pattern matching for finding similar code patterns
-- Integration with Eclipse cleanup framework
-- Performance optimizations and caching
-
-See TODO.md for detailed pending features and improvements.
+- a repeated three-statement sequence is extracted and all occurrences are replaced;
+- variable names are mapped through JDT's duplicate machinery;
+- a configured threshold of four rejects a three-statement group;
+- unrelated sequences remain unchanged;
+- existing-method reuse remains active independently;
+- the UI preview describes extraction rather than obsolete whole-method delegation.

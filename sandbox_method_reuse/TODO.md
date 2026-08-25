@@ -1,130 +1,52 @@
-# Method Reusability Finder - TODO
+# Method Reuse roadmap
 
-> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#method_reuse) | [Architecture](ARCHITECTURE.md)
+> **Navigation**: [Main README](../README.md) | [Plugin README](README.md) | [Architecture](ARCHITECTURE.md)
 
-## Pending Implementation
+## Implemented
 
-### Core Features
-- [ ] Implement basic method similarity detection in `MethodReuseFinder`
-- [ ] Implement AST-based pattern matching in `CodePatternMatcher`
-- [ ] Implement method signature comparison in `MethodSignatureAnalyzer`
-- [x] Implement inline code sequence detection (InlineCodeSequenceFinder)
-- [x] Implement variable mapping and normalization (CodeSequenceMatcher, VariableMapping)
-- [x] Implement method call replacement generation (MethodCallReplacer)
-- [x] Implement side effect analysis (SideEffectAnalyzer)
-- [x] Wire inline sequence detection into createFix() method
-- [x] Create MethodReuseCleanUpFixCore enum for operation management
-- [x] Integrate with MethodReuseCleanUpCore
-- [ ] Add similarity threshold configuration
-- [ ] Create marker/warning system for detected duplicates
+- [x] Replace an inline sequence with a call to an already existing method.
+- [x] Map local variables and compatible expressions for the existing-method path.
+- [x] Discover repeated contiguous statement sequences above a configurable minimum length.
+- [x] Delegate semantic validation, method extraction, parameter/output inference, and duplicate replacement to Eclipse JDT Extract Method.
+- [x] Replace all JDT-valid duplicates of the selected sequence.
+- [x] Keep the structural extraction mode out of save actions.
+- [x] Test the minimum-length boundary and non-repeated negative cases.
 
-### Inline Sequence Detection - Completed
-- [x] Complete integration in MethodReuseCleanUpCore.createFix()
-- [x] Create CompilationUnitRewriteOperation for applying transformations
-- [x] Add support for return statement replacement (matching return with variable declarations)
-- [x] Support for complex expression mappings (method calls as arguments)
-- [x] Enabled and passing test cases
+## Near-term hardening
 
-### Inline Sequence Detection - Remaining Work
-- [ ] Handle edge cases (nested sequences, overlapping matches)
-- [ ] Implement confidence scoring for matches
-- [ ] Add configuration for minimum sequence length
-- [ ] Support for extracting new methods from inline sequences
+- [ ] Add active tests for return-value extraction, checked exceptions, static contexts, and legal branch handling.
+- [ ] Add negative tests for candidates rejected by JDT because of multiple outputs or invalid control flow.
+- [ ] Prove byte-exact Undo for the extracted-method change in the cleanup test harness.
+- [ ] Add deterministic performance fixtures for large methods and many coarse candidates.
+- [ ] Add an SWTBot Cleanup preview scenario that shows the extracted method and every replaced occurrence.
+- [ ] Regenerate the canonical Method Reuse configuration screenshot after the threshold control lands.
+- [ ] Measure source duplication before and after on a checked-in representative corpus.
 
-### Algorithm Improvements
-- [ ] Add token-based similarity calculation
-- [ ] Implement variable name normalization
-- [ ] Add control flow graph comparison
-- [ ] Handle method overloading in analysis
-- [ ] Support lambda expressions and method references
+## Candidate selection
 
-### User Interface
-- [ ] Add preference page for similarity threshold
-- [ ] Add quick fix suggestions for found duplicates
-- [ ] Create visual diff view for similar methods
-- [ ] Add "ignore" annotations for false positives
-- [ ] Implement batch analysis mode
+- [ ] Evaluate whether statement count × duplicate count is the best default value function.
+- [ ] Consider an optional estimated removed-line threshold in addition to statement count.
+- [ ] Record bounded-analysis diagnostics in the UI when candidate or validation limits are reached.
+- [ ] Avoid selecting low-value boilerplate even when it technically meets the minimum length.
 
-### Testing
-- [x] Add test cases for inline sequence detection
-  - [x] Simple inline sequence with different variable names
-  - [x] Inline with method call expressions
-  - [x] Multiple variable mapping
-- [ ] Enable and verify inline sequence tests
-- [ ] Add negative test cases (side effects, unsafe patterns)
-- [ ] Add comprehensive test cases for method similarity
-- [ ] Test with various Java versions (11, 17, 21)
-- [ ] Performance testing with large codebases
-- [ ] Test false positive rate
-- [ ] Add test cases for edge cases
+## Scope expansion
 
-### Performance
-- [ ] Implement caching mechanism for analysis results
-- [ ] Add incremental analysis support
-- [ ] Optimize AST traversal
-- [ ] Add parallel analysis for multi-module projects
-- [ ] Profile and optimize hot paths
+The current extraction deliberately follows JDT's same-type, same-compilation-unit duplicate-replacement contract.
 
-### Documentation
-- [ ] Add JavaDoc to all public methods
-- [ ] Create user guide with examples
-- [ ] Document configuration options
-- [ ] Add troubleshooting guide
-- [ ] Create video tutorial
+- [ ] Investigate common-method placement across sibling types only through a dedicated, previewable LTK refactoring.
+- [ ] Define visibility, destination type, API compatibility, dependency direction, and naming policy before any cross-type automatic rewrite.
+- [ ] Reuse shared planned multi-file infrastructure only when a real cross-file extraction contract exists; do not reintroduce a custom Extract Method implementation.
+- [ ] Keep cross-project extraction report-only until editable-scope closure and build dependency rules are proven.
 
-## Known Issues
+## Existing-method path
 
-None yet - this is a new implementation
+- [ ] Strengthen side-effect and overload-resolution tests.
+- [ ] Reject overlapping matches deterministically.
+- [ ] Improve diagnostics explaining why an apparent match was not replaceable.
+- [ ] Share more safety checks with JDT refactoring primitives where possible.
 
-## Future Enhancements
+## Documentation and upstream readiness
 
-### Short-term (next release)
-- Basic method similarity detection
-- Simple warning markers
-- Integration with Eclipse cleanup UI
-
-### Medium-term
-- Advanced AST pattern matching
-- Configurable similarity thresholds
-- Quick fix refactoring proposals
-- Cross-file analysis
-
-### Long-term
-- Machine learning-based similarity detection
-- Automatic code extraction and refactoring
-- Cross-project analysis
-- IDE-independent library version
-
-## Integration with Eclipse JDT
-
-When ready for upstream contribution:
-1. Replace `org.sandbox` with `org.eclipse` in package names
-2. Move constants from `MYCleanUpConstants` to Eclipse's `CleanUpConstants`
-3. Update plugin.xml to reference Eclipse packages
-4. Add to Eclipse JDT cleanup UI
-5. Submit contribution to eclipse-jdt/eclipse.jdt.ui repository
-
-## Notes
-
-- This plugin is designed to be easily portable to Eclipse JDT
-- Follow Eclipse coding conventions throughout
-- Maintain high test coverage (aim for >80%)
-- Keep performance in mind - analysis should be fast
-- Consider false positive rate in algorithm design
-
-## TriggerPattern DSL Integration
-
-### Status: ❌ Not expressible in DSL
-
-The method reuse cleanup requires complex semantic code matching that cannot be
-expressed in the `.sandbox-hint` DSL:
-
-- **Code sequence matching**: Finding duplicate code sequences across methods
-- **Semantic equivalence**: Verifying two code blocks produce identical results
-- **Variable mapping**: Matching variables across different scopes
-- **Side effect analysis**: Ensuring safe substitution with method calls
-- **Method signature analysis**: Matching return types, parameter types, visibility
-
-### Required DSL Extensions (for future work)
-- [ ] Code block pattern matching
-- [ ] Semantic equivalence guards
+- [ ] Keep README, installed Help, UI labels, and preview text aligned with executable behavior.
+- [ ] Document known JDT Extract Method limitations encountered in real corpora.
+- [ ] Prepare an upstream-oriented design only after the behavior and UI are proven on representative Eclipse sources.
