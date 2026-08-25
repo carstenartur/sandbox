@@ -119,6 +119,17 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 		}
 	}
 
+    @Test
+    public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
+        IUndoManager undoManager = RefactoringCore.getUndoManager();
+        undoManager.flush();
+        try {
+            screenshots.verifyRealMethodReuseCleanupPreviewApplyAndUndo();
+        } finally {
+            undoManager.flush();
+        }
+    }
+
 	private static String activePreviewTree() {
 		try {
 			SWTWorkbenchBot workbench= new SWTWorkbenchBot();
