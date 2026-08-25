@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleImportCleanupSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">RuleImportCleanupSupport.java</span></div><h1>RuleImportCleanupSupport.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEST_NAME;
+
+import java.util.EnumSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
+
+/** Coordinates removal of the shared {@code org.junit.Rule} import. */
+public final class RuleImportCleanupSupport {
+
+<span class="nc" id="L36">	private RuleImportCleanupSupport() {</span>
+<span class="nc" id="L37">		throw new UnsupportedOperationException(&quot;Utility class&quot;); //$NON-NLS-1$</span>
+	}
+
+	/**
+	 * Adds one final import edit when every {@code @Rule} field in this compilation
+	 * unit is selected and eligibility-proven for a dedicated or generic rule
+	 * rewrite. Other rule kinds remain fail-closed and retain their import.
+	 */
+	public static void addIfSafe(CompilationUnit root, EnumSet&lt;JUnitCleanUpFixCore&gt; fixes,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations) {
+<span class="pc bpc" id="L47" title="3 of 8 branches missed.">		if (root == null || fixes == null || operations == null || operations.isEmpty()) {</span>
+<span class="fc" id="L48">			return;</span>
+		}
+<span class="fc" id="L50">		boolean[] sawRule= { false };</span>
+<span class="fc" id="L51">		boolean[] allSelectedAndEligible= { true };</span>
+<span class="fc" id="L52">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(FieldDeclaration field) {
+<span class="fc bfc" id="L55" title="All 2 branches covered.">				if (!hasRuleAnnotation(field)) {</span>
+<span class="fc" id="L56">					return true;</span>
+				}
+<span class="fc" id="L58">				sawRule[0]= true;</span>
+<span class="fc" id="L59">				allSelectedAndEligible[0]&amp;= isSelectedAndEligible(field, fixes);</span>
+<span class="fc" id="L60">				return allSelectedAndEligible[0];</span>
+			}
+		});
+<span class="fc bfc" id="L63" title="All 4 branches covered.">		if (sawRule[0] &amp;&amp; allSelectedAndEligible[0]) {</span>
+<span class="fc" id="L64">			operations.add(new RemoveRuleImportOperation());</span>
+		}
+<span class="fc" id="L66">	}</span>
+
+	private static boolean isSelectedAndEligible(FieldDeclaration field,
+			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
+<span class="fc" id="L70">		ITypeBinding binding= field.getType().resolveBinding();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		String qualifiedType= binding == null ? null : binding.getErasure().getQualifiedName();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)) {</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">			return fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">					&amp;&amp; RuleTemporayFolderJUnitPlugin.assess(field).eligible();</span>
+		}
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (ORG_JUNIT_RULES_TEST_NAME.equals(qualifiedType)) {</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			return fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">					&amp;&amp; TestNameRefactorer.assess(field).eligible();</span>
+		}
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		return fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">				&amp;&amp; RuleExternalResourceJUnitPlugin.isEligibleExternalResourceType(binding);</span>
+	}
+
+	private static boolean hasRuleAnnotation(FieldDeclaration field) {
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L87">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L89">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L93">		return false;</span>
+	}
+
+	private static final class RemoveRuleImportOperation
+			extends CompilationUnitRewriteOperationWithSourceRange {
+
+		@Override
+		public void rewriteASTInternal(CompilationUnitRewrite cuRewrite,
+				LinkedProposalModelCore linkedModel) {
+<span class="fc" id="L102">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L103">			imports.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc" id="L104">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

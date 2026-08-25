@@ -1,0 +1,713 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitBestEffortSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitBestEffortSupport.java</span></div><h1>JUnitBestEffortSupport.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXPECTED_EXCEPTION;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_TEMPORARY_FOLDER;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MemberValuePair;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.TextElement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+import org.eclipse.text.edits.TextEditGroup;
+
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleExpectedExceptionJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RuleTemporayFolderJUnitPlugin;
+import org.sandbox.jdt.internal.corext.fix.helper.RunWithMigrationEligibility;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
+
+/**
+ * Explicit support for a deliberately non-atomic JUnit migration mode.
+ *
+ * &lt;p&gt;The normal cleanup remains fail closed. When best-effort mode is selected,
+ * independently safe rewrites may proceed while every known unsupported
+ * construct is represented by deterministic diagnostics and a compilable
+ * {@code @todo} method scaffold in the affected source type. The scaffold is a
+ * marker, not a guessed implementation.&lt;/p&gt;
+ */
+public final class JUnitBestEffortSupport {
+
+	private static final String TEST_NAME= &quot;org.junit.rules.TestName&quot;; //$NON-NLS-1$
+	private static final String TIMEOUT= &quot;org.junit.rules.Timeout&quot;; //$NON-NLS-1$
+	private static final String ERROR_COLLECTOR= &quot;org.junit.rules.ErrorCollector&quot;; //$NON-NLS-1$
+	private static final String MARKER_PREFIX= &quot;Sandbox JUnit migration gap &quot;; //$NON-NLS-1$
+
+	/** One unresolved construct and the exact source type where it must be completed. */
+	public record Gap(String ownerCompilationUnitHandle, String targetTypeBindingKey,
+			String targetTypeName, int targetTypeStart, String candidateId, String reasonCode,
+			String explanation, String remediation) {
+
+		/** Validates and normalizes a best-effort gap. */
+<span class="fc" id="L101">		public Gap {</span>
+<span class="fc" id="L102">			ownerCompilationUnitHandle= Objects.requireNonNull(ownerCompilationUnitHandle);</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">			targetTypeBindingKey= targetTypeBindingKey == null ? &quot;&quot; : targetTypeBindingKey; //$NON-NLS-1$</span>
+<span class="fc" id="L104">			targetTypeName= Objects.requireNonNull(targetTypeName);</span>
+<span class="fc" id="L105">			candidateId= Objects.requireNonNull(candidateId);</span>
+<span class="fc" id="L106">			reasonCode= Objects.requireNonNull(reasonCode);</span>
+<span class="fc" id="L107">			explanation= Objects.requireNonNull(explanation);</span>
+<span class="fc" id="L108">			remediation= Objects.requireNonNull(remediation);</span>
+<span class="fc" id="L109">		}</span>
+
+		String markerText() {
+<span class="fc" id="L112">			return MARKER_PREFIX + candidateId + &quot; (&quot; + reasonCode + &quot;): &quot; + explanation //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L113">					+ &quot; Manual completion: &quot; + remediation; //$NON-NLS-1$</span>
+		}
+	}
+
+	/** Deterministic analysis retained between project planning and per-file fixes. */
+	public record Analysis(List&lt;Gap&gt; gaps, boolean disableCoordinatedExternalResource) {
+
+		/** Copies and orders all gaps. */
+<span class="fc" id="L121">		public Analysis {</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">			gaps= gaps == null ? List.of() : gaps.stream()</span>
+<span class="fc" id="L123">					.sorted(Comparator.comparing(Gap::ownerCompilationUnitHandle)</span>
+<span class="fc" id="L124">							.thenComparing(Gap::targetTypeName)</span>
+<span class="fc" id="L125">							.thenComparing(Gap::candidateId)</span>
+<span class="fc" id="L126">							.thenComparing(Gap::reasonCode))</span>
+<span class="fc" id="L127">					.toList();</span>
+<span class="fc" id="L128">		}</span>
+
+		/** Returns an empty analysis for strict mode. */
+		public static Analysis empty() {
+<span class="fc" id="L132">			return new Analysis(List.of(), false);</span>
+		}
+
+		/** Returns gaps belonging to one primary compilation unit. */
+		public List&lt;Gap&gt; gapsFor(ICompilationUnit unit) {
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">			if (unit == null) {</span>
+<span class="nc" id="L138">				return List.of();</span>
+			}
+<span class="fc" id="L140">			String handle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="fc" id="L141">			return gaps.stream().filter(gap -&gt; handle.equals(gap.ownerCompilationUnitHandle())).toList();</span>
+		}
+
+		/** Wraps ordinary planner evidence with explicit manual-completion evidence. */
+		public String toJson(String plannerDiagnosticsJson) {
+<span class="fc" id="L146">			StringBuilder json= new StringBuilder(512);</span>
+<span class="fc" id="L147">			json.append('{')</span>
+<span class="fc" id="L148">					.append(&quot;\&quot;bestEffort\&quot;:true,&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">					.append(&quot;\&quot;manualCompletionRequired\&quot;:&quot;).append(!gaps.isEmpty()).append(',') //$NON-NLS-1$</span>
+<span class="fc" id="L150">					.append(&quot;\&quot;coordinatedExternalResourceDeferred\&quot;:&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L151">					.append(disableCoordinatedExternalResource).append(',')</span>
+<span class="fc" id="L152">					.append(&quot;\&quot;planner\&quot;:&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L153" title="1 of 4 branches missed.">			if (plannerDiagnosticsJson == null || plannerDiagnosticsJson.isBlank()) {</span>
+<span class="fc" id="L154">				json.append(&quot;null&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L155">			} else {</span>
+<span class="fc" id="L156">				json.append(plannerDiagnosticsJson);</span>
+			}
+<span class="fc" id="L158">			json.append(&quot;,\&quot;gaps\&quot;:[&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">			for (int index= 0; index &lt; gaps.size(); index++) {</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">				if (index &gt; 0) {</span>
+<span class="nc" id="L161">					json.append(',');</span>
+				}
+<span class="fc" id="L163">				Gap gap= gaps.get(index);</span>
+<span class="fc" id="L164">				json.append('{')</span>
+<span class="fc" id="L165">						.append(&quot;\&quot;unitId\&quot;:\&quot;&quot;).append(jsonEscape(opaqueId(gap.ownerCompilationUnitHandle()))) //$NON-NLS-1$</span>
+<span class="fc" id="L166">						.append(&quot;\&quot;,\&quot;type\&quot;:\&quot;&quot;).append(jsonEscape(gap.targetTypeName())) //$NON-NLS-1$</span>
+<span class="fc" id="L167">						.append(&quot;\&quot;,\&quot;candidateId\&quot;:\&quot;&quot;).append(jsonEscape(gap.candidateId())) //$NON-NLS-1$</span>
+<span class="fc" id="L168">						.append(&quot;\&quot;,\&quot;reasonCode\&quot;:\&quot;&quot;).append(jsonEscape(gap.reasonCode())) //$NON-NLS-1$</span>
+<span class="fc" id="L169">						.append(&quot;\&quot;,\&quot;explanation\&quot;:\&quot;&quot;).append(jsonEscape(gap.explanation())) //$NON-NLS-1$</span>
+<span class="fc" id="L170">						.append(&quot;\&quot;,\&quot;remediation\&quot;:\&quot;&quot;).append(jsonEscape(gap.remediation())) //$NON-NLS-1$</span>
+<span class="fc" id="L171">						.append(&quot;\&quot;}&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L173">			return json.append(&quot;]}&quot;).toString(); //$NON-NLS-1$</span>
+		}
+	}
+
+	private record SourceType(String unitHandle, String bindingKey, String name, int start,
+			TypeDeclaration declaration, ITypeBinding binding) {
+	}
+
+	private static final class ResourceUsage {
+		private final ITypeBinding binding;
+<span class="fc" id="L183">		private final List&lt;SourceType&gt; owners= new ArrayList&lt;&gt;();</span>
+		private boolean instanceRule;
+		private boolean classRule;
+
+<span class="fc" id="L187">		ResourceUsage(ITypeBinding binding) {</span>
+<span class="fc" id="L188">			this.binding= binding;</span>
+<span class="fc" id="L189">		}</span>
+	}
+
+	private JUnitBestEffortSupport() {
+	}
+
+	/**
+	 * Returns rewrites that do not change test discovery, lifecycle, runners or
+	 * extension contracts and may therefore proceed beside a quarantined gap.
+	 */
+	public static EnumSet&lt;JUnitCleanUpFixCore&gt; independentlySafeFixes(
+			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
+<span class="fc" id="L201">		EnumSet&lt;JUnitCleanUpFixCore&gt; result= fixes.clone();</span>
+<span class="fc" id="L202">		result.retainAll(EnumSet.of(</span>
+<span class="fc" id="L203">				JUnitCleanUpFixCore.ASSERT,</span>
+<span class="fc" id="L204">				JUnitCleanUpFixCore.ASSERT_OPTIMIZATION,</span>
+<span class="fc" id="L205">				JUnitCleanUpFixCore.ASSUME,</span>
+<span class="fc" id="L206">				JUnitCleanUpFixCore.ASSUME_OPTIMIZATION));</span>
+<span class="fc" id="L207">		return result;</span>
+	}
+
+	/** Analyzes all enabled difficult JUnit 4 constructs before cleanup planning. */
+	public static Analysis analyze(IJavaProject project, ICompilationUnit[] units,
+			EnumSet&lt;JUnitCleanUpFixCore&gt; fixes, IProgressMonitor monitor) {
+<span class="fc" id="L213">		Objects.requireNonNull(project);</span>
+<span class="fc" id="L214">		Objects.requireNonNull(units);</span>
+<span class="fc" id="L215">		Objects.requireNonNull(fixes);</span>
+<span class="pc bpc" id="L216" title="2 of 4 branches missed.">		if (units.length == 0 || fixes.isEmpty()) {</span>
+<span class="nc" id="L217">			return Analysis.empty();</span>
+		}
+<span class="fc" id="L219">		Map&lt;String, CompilationUnit&gt; roots= parse(project, units, monitor);</span>
+<span class="fc" id="L220">		Map&lt;String, SourceType&gt; sourceTypesByKey= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L221">		Map&lt;String, Gap&gt; gaps= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L222">		Map&lt;String, ResourceUsage&gt; usages= new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
+<span class="fc" id="L225">			String handle= entry.getKey();</span>
+<span class="fc" id="L226">			entry.getValue().accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L229">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc" id="L230">					String key= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">					SourceType type= new SourceType(handle, key == null ? &quot;&quot; : key, //$NON-NLS-1$</span>
+<span class="fc" id="L232">							sourceTypeName(node), node.getStartPosition(), node, binding);</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">					if (key != null) {</span>
+<span class="fc" id="L234">						sourceTypesByKey.put(key, type);</span>
+					}
+<span class="fc" id="L236">					boolean parameterizedRunner=</span>
+<span class="fc" id="L237">							ParameterizedMigrationEligibility.hasParameterizedRunner(node);</span>
+<span class="fc bfc" id="L238" title="All 4 branches covered.">					if (parameterizedRunner &amp;&amp; fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)) {</span>
+<span class="fc" id="L239">						ParameterizedMigrationEligibility.Assessment assessment=</span>
+<span class="fc" id="L240">								ParameterizedMigrationEligibility.assess(node);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L242">							addGap(gaps, type, &quot;parameterized:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L243">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L244">									remediationFor(assessment.reasonCode()));</span>
+						}
+<span class="pc bpc" id="L246" title="1 of 4 branches missed.">					} else if (parameterizedRunner &amp;&amp; requiresParameterizedClosure(fixes)) {</span>
+<span class="fc" id="L247">						String reasonCode= &quot;PARAMETERIZED_COMPONENT_NOT_SELECTED&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L248">						addGap(gaps, type, &quot;parameterized:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L249">								reasonCode,</span>
+<span class="fc" id="L250">								&quot;A selected rewrite would change JUnit discovery, lifecycle or Rule semantics while the JUnit 4 Parameterized runner remains.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L251">								remediationFor(reasonCode));</span>
+					}
+<span class="fc bfc" id="L253" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RUNWITH)) {</span>
+<span class="fc" id="L254">						String runner= runnerType(node);</span>
+<span class="pc bpc" id="L255" title="1 of 4 branches missed.">						if (runner != null &amp;&amp; !runner.isBlank()</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">								&amp;&amp; !parameterizedRunner</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">								&amp;&amp; !RunWithMigrationEligibility.canMigrate(node, runner)) {</span>
+<span class="fc" id="L258">							addGap(gaps, type, &quot;runner:&quot; + type.name(), //$NON-NLS-1$</span>
+<span class="fc" id="L259">									&quot;CUSTOM_JUNIT4_RUNNER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L260">									&quot;The JUnit 4 runner &quot; + runner //$NON-NLS-1$</span>
+											+ &quot; has no generally equivalent automatic Jupiter rewrite.&quot;, //$NON-NLS-1$
+<span class="fc" id="L262">									&quot;Port the runner behavior to one or more Jupiter extensions, or retain the Vintage engine for this test type.&quot;); //$NON-NLS-1$</span>
+						}
+					}
+<span class="fc" id="L265">					return true;</span>
+				}
+			});
+		}
+
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
+<span class="fc" id="L271">			String handle= entry.getKey();</span>
+<span class="fc" id="L272">			entry.getValue().accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(FieldDeclaration field) {
+<span class="fc" id="L275">					TypeDeclaration ownerDeclaration= enclosingType(field);</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">					if (ownerDeclaration == null) {</span>
+<span class="nc" id="L277">						return true;</span>
+					}
+<span class="fc" id="L279">					SourceType owner= sourceType(handle, ownerDeclaration);</span>
+<span class="fc" id="L280">					ITypeBinding fieldType= field.getType().resolveBinding();</span>
+<span class="fc" id="L281">					String qualifiedType= qualifiedName(fieldType);</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">							&amp;&amp; ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)) {</span>
+<span class="fc" id="L284">						RuleTemporayFolderJUnitPlugin.Assessment assessment=</span>
+<span class="fc" id="L285">								RuleTemporayFolderJUnitPlugin.assess(field);</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L287">							addGap(gaps, owner, fieldCandidate(&quot;temporary-folder&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L288">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L289">									remediationFor(assessment.reasonCode()));</span>
+						}
+					}
+<span class="fc bfc" id="L292" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">							&amp;&amp; TEST_NAME.equals(qualifiedType)) {</span>
+<span class="fc" id="L294">						TestNameRefactorer.Assessment assessment= TestNameRefactorer.assess(field);</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L296">							addGap(gaps, owner, fieldCandidate(&quot;test-name&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L297">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L298">									remediationFor(assessment.reasonCode()));</span>
+						}
+					}
+<span class="fc bfc" id="L301" title="All 2 branches covered.">					if (fixes.contains(JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION)</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">							&amp;&amp; ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(qualifiedType)) {</span>
+<span class="fc" id="L303">						RuleExpectedExceptionJUnitPlugin.Assessment assessment=</span>
+<span class="fc" id="L304">								RuleExpectedExceptionJUnitPlugin.assess(field);</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">						if (!assessment.eligible()) {</span>
+<span class="fc" id="L306">							addGap(gaps, owner, fieldCandidate(&quot;expected-exception&quot;, field), //$NON-NLS-1$</span>
+<span class="fc" id="L307">									assessment.reasonCode(), assessment.explanation(),</span>
+<span class="fc" id="L308">									remediationFor(assessment.reasonCode()));</span>
+						}
+					}
+
+<span class="fc" id="L312">					RuleKind ruleKind= ruleKind(field);</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">					if (ruleKind != RuleKind.NONE) {</span>
+<span class="fc" id="L314">						ITypeBinding resource= resourceTypeBinding(field);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">						if (extendsExternalResource(resource)) {</span>
+<span class="fc" id="L316">							String resourceKey= JUnitMigrationPlan.typeKey(resource);</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">							String usageKey= resourceKey == null ? qualifiedName(resource) : resourceKey;</span>
+<span class="pc bpc" id="L318" title="2 of 4 branches missed.">							if (usageKey != null &amp;&amp; !usageKey.isBlank()) {</span>
+<span class="fc" id="L319">								ResourceUsage usage= usages.computeIfAbsent(usageKey,</span>
+<span class="fc" id="L320">										ignored -&gt; new ResourceUsage(resource));</span>
+<span class="fc" id="L321">								usage.owners.add(owner);</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">								usage.instanceRule|= ruleKind == RuleKind.INSTANCE;</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">								usage.classRule|= ruleKind == RuleKind.CLASS;</span>
+							}
+<span class="pc bpc" id="L325" title="2 of 4 branches missed.">						} else if (rulesEnabled(fixes) &amp;&amp; !isKnownRuleType(qualifiedType)) {</span>
+<span class="nc" id="L326">							addGap(gaps, owner, fieldCandidate(&quot;rule&quot;, field), //$NON-NLS-1$</span>
+<span class="nc" id="L327">									&quot;UNSUPPORTED_JUNIT4_RULE&quot;, //$NON-NLS-1$</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">									&quot;The rule type &quot; + (qualifiedType == null ? &quot;&lt;unresolved&gt;&quot; : qualifiedType) //$NON-NLS-1$ //$NON-NLS-2$</span>
+											+ &quot; has no proven automatic Jupiter equivalent.&quot;, //$NON-NLS-1$
+<span class="nc" id="L330">									&quot;Implement the rule contract as a Jupiter extension, register it explicitly, and then remove the JUnit 4 rule field.&quot;); //$NON-NLS-1$</span>
+						}
+					}
+<span class="fc" id="L333">					return true;</span>
+				}
+			});
+		}
+
+<span class="fc" id="L338">		boolean mixedLifecycle= false;</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">		for (Map.Entry&lt;String, ResourceUsage&gt; entry : usages.entrySet()) {</span>
+<span class="fc" id="L340">			ResourceUsage usage= entry.getValue();</span>
+<span class="fc bfc" id="L341" title="All 4 branches covered.">			if (!usage.instanceRule || !usage.classRule) {</span>
+<span class="fc" id="L342">				continue;</span>
+			}
+<span class="fc" id="L344">			mixedLifecycle= true;</span>
+<span class="fc" id="L345">			SourceType target= sourceTypesByKey.get(entry.getKey());</span>
+<span class="pc bpc" id="L346" title="3 of 4 branches missed.">			if (target == null &amp;&amp; !usage.owners.isEmpty()) {</span>
+<span class="nc" id="L347">				target= usage.owners.get(0);</span>
+			}
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">			if (target != null) {</span>
+<span class="fc" id="L350">				String resourceName= qualifiedName(usage.binding);</span>
+<span class="fc" id="L351">				addGap(gaps, target, &quot;external-resource:&quot; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">						+ (resourceName == null ? target.name() : resourceName),</span>
+<span class="fc" id="L353">						&quot;MIXED_RULE_LIFECYCLE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L354">						&quot;The same ExternalResource fixture is used by both @Rule and @ClassRule, so one Jupiter callback lifecycle cannot preserve both contracts.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L355">						&quot;Split the fixture into separate instance and class extensions, migrate each callback lifecycle, and update the corresponding fields.&quot;); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L358">		return new Analysis(new ArrayList&lt;&gt;(gaps.values()), mixedLifecycle);</span>
+	}
+
+	/** Adds one idempotent marker operation for the supplied compilation-unit gaps. */
+	public static void addMarkerOperation(CompilationUnit root, List&lt;Gap&gt; gaps,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations) {
+<span class="pc bpc" id="L364" title="3 of 6 branches missed.">		if (root == null || gaps == null || gaps.isEmpty()) {</span>
+<span class="nc" id="L365">			return;</span>
+		}
+<span class="fc" id="L367">		Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; resolved= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L368">		List&lt;TypeDeclaration&gt; types= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L369">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L372">				types.add(node);</span>
+<span class="fc" id="L373">				return true;</span>
+			}
+		});
+<span class="fc bfc" id="L376" title="All 2 branches covered.">		for (Gap gap : gaps) {</span>
+<span class="fc" id="L377">			TypeDeclaration target= types.stream().filter(type -&gt; matches(type, gap)).findFirst().orElse(null);</span>
+<span class="pc bpc" id="L378" title="3 of 4 branches missed.">			if (target == null &amp;&amp; !types.isEmpty()) {</span>
+<span class="nc" id="L379">				target= types.get(0);</span>
+			}
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">			if (target != null) {</span>
+<span class="fc" id="L382">				resolved.computeIfAbsent(target, ignored -&gt; new ArrayList&lt;&gt;()).add(gap);</span>
+			}
+		}
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">		if (!resolved.isEmpty()) {</span>
+<span class="fc" id="L386">			operations.add(new GapMarkerOperation(resolved));</span>
+		}
+<span class="fc" id="L388">	}</span>
+
+<span class="fc" id="L390">	private enum RuleKind {</span>
+<span class="fc" id="L391">		NONE,</span>
+<span class="fc" id="L392">		INSTANCE,</span>
+<span class="fc" id="L393">		CLASS</span>
+	}
+
+	private static final class GapMarkerOperation extends CompilationUnitRewriteOperationWithSourceRange {
+		private final Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; gapsByType;
+
+<span class="fc" id="L399">		GapMarkerOperation(Map&lt;TypeDeclaration, List&lt;Gap&gt;&gt; gapsByType) {</span>
+<span class="fc" id="L400">			this.gapsByType= gapsByType;</span>
+<span class="fc" id="L401">		}</span>
+
+		@Override
+		public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+<span class="fc" id="L405">			TextEditGroup group= createTextEditGroup(</span>
+<span class="fc" id="L406">					&quot;Mark incomplete best-effort JUnit migrations&quot;, cuRewrite); //$NON-NLS-1$</span>
+<span class="fc" id="L407">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L408">			AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">			for (Map.Entry&lt;TypeDeclaration, List&lt;Gap&gt;&gt; entry : gapsByType.entrySet()) {</span>
+<span class="fc" id="L410">				TypeDeclaration type= entry.getKey();</span>
+<span class="fc" id="L411">				Set&lt;String&gt; methodNames= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">				for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc" id="L413">					methodNames.add(method.getName().getIdentifier());</span>
+				}
+<span class="fc" id="L415">				ListRewrite body= rewrite.getListRewrite(type, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">				for (Gap gap : entry.getValue()) {</span>
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">					if (hasMarker(type, gap)) {</span>
+<span class="nc" id="L418">						continue;</span>
+					}
+<span class="fc" id="L420">					MethodDeclaration marker= markerMethod(ast, gap, methodNames);</span>
+<span class="fc" id="L421">					methodNames.add(marker.getName().getIdentifier());</span>
+<span class="fc" id="L422">					body.insertLast(marker, group);</span>
+				}
+			}
+<span class="fc" id="L425">		}</span>
+	}
+
+	private static MethodDeclaration markerMethod(AST ast, Gap gap, Set&lt;String&gt; existingNames) {
+<span class="fc" id="L429">		MethodDeclaration method= ast.newMethodDeclaration();</span>
+<span class="fc" id="L430">		String baseName= markerMethodName(gap.reasonCode());</span>
+<span class="fc" id="L431">		String name= baseName;</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">		for (int suffix= 2; existingNames.contains(name); suffix++) {</span>
+<span class="nc" id="L433">			name= baseName + suffix;</span>
+		}
+<span class="fc" id="L435">		method.setName(ast.newSimpleName(name));</span>
+<span class="fc" id="L436">		method.setReturnType2(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.VOID));</span>
+<span class="fc" id="L437">		method.modifiers().add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+<span class="fc" id="L438">		method.modifiers().add(ast.newModifier(org.eclipse.jdt.core.dom.Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
+
+<span class="fc" id="L440">		Javadoc javadoc= ast.newJavadoc();</span>
+<span class="fc" id="L441">		TagElement todo= ast.newTagElement();</span>
+<span class="fc" id="L442">		todo.setTagName(&quot;@todo&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L443">		TextElement text= ast.newTextElement();</span>
+<span class="fc" id="L444">		text.setText(javadocText(gap.markerText()));</span>
+<span class="fc" id="L445">		todo.fragments().add(text);</span>
+<span class="fc" id="L446">		javadoc.tags().add(todo);</span>
+<span class="fc" id="L447">		method.setJavadoc(javadoc);</span>
+
+<span class="fc" id="L449">		ClassInstanceCreation exception= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L450">		exception.setType(ast.newSimpleType(ast.newSimpleName(&quot;UnsupportedOperationException&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L451">		StringLiteral message= ast.newStringLiteral();</span>
+<span class="fc" id="L452">		message.setLiteralValue(&quot;Manual JUnit migration required: &quot; + gap.reasonCode()); //$NON-NLS-1$</span>
+<span class="fc" id="L453">		exception.arguments().add(message);</span>
+<span class="fc" id="L454">		ThrowStatement throwStatement= ast.newThrowStatement();</span>
+<span class="fc" id="L455">		throwStatement.setExpression(exception);</span>
+<span class="fc" id="L456">		org.eclipse.jdt.core.dom.Block body= ast.newBlock();</span>
+<span class="fc" id="L457">		body.statements().add(throwStatement);</span>
+<span class="fc" id="L458">		method.setBody(body);</span>
+<span class="fc" id="L459">		return method;</span>
+	}
+
+	private static boolean hasMarker(TypeDeclaration type, Gap gap) {
+<span class="fc" id="L463">		String marker= MARKER_PREFIX + gap.candidateId();</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc" id="L465">			Javadoc javadoc= method.getJavadoc();</span>
+<span class="pc bpc" id="L466" title="3 of 4 branches missed.">			if (javadoc != null &amp;&amp; javadoc.toString().contains(marker)) {</span>
+<span class="nc" id="L467">				return true;</span>
+			}
+		}
+<span class="fc" id="L470">		return false;</span>
+	}
+
+	private static String markerMethodName(String reasonCode) {
+<span class="fc" id="L474">		StringBuilder name= new StringBuilder(&quot;sandboxJUnitMigrationTodo&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L475" title="All 2 branches covered.">		for (String part : reasonCode.toLowerCase(Locale.ROOT).split(&quot;[^a-z0-9]+&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L476" title="1 of 2 branches missed.">			if (!part.isEmpty()) {</span>
+<span class="fc" id="L477">				name.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));</span>
+			}
+		}
+<span class="pc bpc" id="L480" title="1 of 2 branches missed.">		if (name.length() &gt; 100) {</span>
+<span class="nc" id="L481">			name.setLength(88);</span>
+<span class="nc" id="L482">			name.append(Integer.toUnsignedString(reasonCode.hashCode(), 16));</span>
+		}
+<span class="fc" id="L484">		return name.toString();</span>
+	}
+
+	private static boolean matches(TypeDeclaration type, Gap gap) {
+<span class="fc" id="L488">		String key= JUnitMigrationPlan.typeKey(type.resolveBinding());</span>
+<span class="pc bpc" id="L489" title="2 of 4 branches missed.">		if (!gap.targetTypeBindingKey().isBlank() &amp;&amp; gap.targetTypeBindingKey().equals(key)) {</span>
+<span class="fc" id="L490">			return true;</span>
+		}
+<span class="nc bnc" id="L492" title="All 2 branches missed.">		return gap.targetTypeStart() == type.getStartPosition()</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">				&amp;&amp; gap.targetTypeName().equals(sourceTypeName(type));</span>
+	}
+
+	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, ICompilationUnit[] units,
+			IProgressMonitor monitor) {
+<span class="fc" id="L498">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L499">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L500">		parser.setProject(project);</span>
+<span class="fc" id="L501">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L502">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L503">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L504">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L505">		parser.createASTs(units, new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L508">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L509">			}</span>
+<span class="fc" id="L510">		}, monitor);</span>
+<span class="fc" id="L511">		return roots;</span>
+	}
+
+	private static SourceType sourceType(String handle, TypeDeclaration type) {
+<span class="fc" id="L515">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="fc" id="L516">		String key= JUnitMigrationPlan.typeKey(binding);</span>
+<span class="pc bpc" id="L517" title="1 of 2 branches missed.">		return new SourceType(handle, key == null ? &quot;&quot; : key, sourceTypeName(type), //$NON-NLS-1$</span>
+<span class="fc" id="L518">				type.getStartPosition(), type, binding);</span>
+	}
+
+	private static TypeDeclaration enclosingType(ASTNode node) {
+<span class="pc bpc" id="L522" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
+<span class="pc bpc" id="L523" title="1 of 2 branches missed.">			if (current instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L524">				return type;</span>
+			}
+		}
+<span class="nc" id="L527">		return null;</span>
+	}
+
+	private static String fieldCandidate(String kind, FieldDeclaration field) {
+<span class="pc bpc" id="L531" title="1 of 2 branches missed.">		if (field.fragments().size() == 1</span>
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
+<span class="fc" id="L533">			return kind + ':' + fragment.getName().getIdentifier();</span>
+		}
+<span class="nc" id="L535">		return kind + &quot;:field@&quot; + field.getStartPosition(); //$NON-NLS-1$</span>
+	}
+
+	private static void addGap(Map&lt;String, Gap&gt; gaps, SourceType type, String candidateId,
+			String reasonCode, String explanation, String remediation) {
+<span class="fc" id="L540">		Gap gap= new Gap(type.unitHandle(), type.bindingKey(), type.name(), type.start(), candidateId,</span>
+<span class="fc" id="L541">				reasonCode, explanation, remediation);</span>
+<span class="fc" id="L542">		gaps.putIfAbsent(type.unitHandle() + '|' + candidateId + '|' + reasonCode, gap);</span>
+<span class="fc" id="L543">	}</span>
+
+	private static RuleKind ruleKind(FieldDeclaration field) {
+<span class="fc bfc" id="L546" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">			if (!(modifier instanceof Annotation annotation)) {</span>
+				continue;
+			}
+<span class="fc" id="L550">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="fc" id="L551">			String name= qualifiedName(binding);</span>
+<span class="fc bfc" id="L552" title="All 2 branches covered.">			if (ORG_JUNIT_RULE.equals(name)) {</span>
+<span class="fc" id="L553">				return RuleKind.INSTANCE;</span>
+			}
+<span class="fc bfc" id="L555" title="All 2 branches covered.">			if (ORG_JUNIT_CLASS_RULE.equals(name)) {</span>
+<span class="fc" id="L556">				return RuleKind.CLASS;</span>
+			}
+		}
+<span class="fc" id="L559">		return RuleKind.NONE;</span>
+	}
+
+	private static ITypeBinding resourceTypeBinding(FieldDeclaration field) {
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">		if (field.fragments().size() == 1</span>
+<span class="pc bpc" id="L564" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">			if (fragment.getInitializer() instanceof ClassInstanceCreation creation) {</span>
+<span class="fc" id="L566">				ITypeBinding created= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L567" title="1 of 2 branches missed.">				if (created != null) {</span>
+<span class="fc" id="L568">					return created;</span>
+				}
+			}
+<span class="fc" id="L571">			IVariableBinding variable= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L572" title="1 of 2 branches missed.">			if (variable != null) {</span>
+<span class="fc" id="L573">				return variable.getType();</span>
+			}
+		}
+<span class="nc" id="L576">		return field.getType().resolveBinding();</span>
+	}
+
+	private static boolean extendsExternalResource(ITypeBinding binding) {
+<span class="fc bfc" id="L580" title="All 2 branches covered.">		for (ITypeBinding current= binding; current != null; current= current.getSuperclass()) {</span>
+<span class="fc bfc" id="L581" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedName(current))) {</span>
+<span class="fc" id="L582">				return true;</span>
+			}
+		}
+<span class="fc" id="L585">		return false;</span>
+	}
+
+	private static String runnerType(TypeDeclaration type) {
+<span class="fc bfc" id="L589" title="All 2 branches covered.">		for (Object modifier : type.modifiers()) {</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">			if (!(modifier instanceof Annotation annotation)) {</span>
+				continue;
+			}
+<span class="fc" id="L593">			ITypeBinding annotationType= annotation.resolveTypeBinding();</span>
+<span class="fc bfc" id="L594" title="All 2 branches covered.">			if (!ORG_JUNIT_RUNWITH.equals(qualifiedName(annotationType))) {</span>
+<span class="fc" id="L595">				continue;</span>
+			}
+<span class="fc" id="L597">			org.eclipse.jdt.core.dom.Expression value= annotationValue(annotation);</span>
+<span class="pc bpc" id="L598" title="1 of 2 branches missed.">			if (value instanceof TypeLiteral literal) {</span>
+<span class="fc" id="L599">				return qualifiedName(literal.getType().resolveBinding());</span>
+			}
+<span class="nc" id="L601">			return &quot;&lt;unresolved&gt;&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L603">		return null;</span>
+	}
+
+	private static org.eclipse.jdt.core.dom.Expression annotationValue(Annotation annotation) {
+<span class="pc bpc" id="L607" title="1 of 2 branches missed.">		if (annotation instanceof SingleMemberAnnotation single) {</span>
+<span class="fc" id="L608">			return single.getValue();</span>
+		}
+<span class="nc bnc" id="L610" title="All 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
+<span class="nc bnc" id="L611" title="All 2 branches missed.">			for (Object value : normal.values()) {</span>
+<span class="nc bnc" id="L612" title="All 2 branches missed.">				if (value instanceof MemberValuePair pair</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">						&amp;&amp; &quot;value&quot;.equals(pair.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="nc" id="L614">					return pair.getValue();</span>
+				}
+			}
+		}
+<span class="nc" id="L618">		return null;</span>
+	}
+
+
+	private static boolean requiresParameterizedClosure(EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
+<span class="fc" id="L623">		EnumSet&lt;JUnitCleanUpFixCore&gt; structural= fixes.clone();</span>
+<span class="fc" id="L624">		structural.removeAll(independentlySafeFixes(fixes));</span>
+<span class="pc bpc" id="L625" title="1 of 2 branches missed.">		return !structural.isEmpty();</span>
+	}
+
+	private static boolean rulesEnabled(EnumSet&lt;JUnitCleanUpFixCore&gt; fixes) {
+<span class="pc bfc" id="L629" title="All 2 branches covered.">		return fixes.contains(JUnitCleanUpFixCore.RULETEMPORARYFOLDER)</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULETESTNAME)</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXTERNALRESOURCE)</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULETIMEOUT)</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">				|| fixes.contains(JUnitCleanUpFixCore.RULEEXPECTEDEXCEPTION)</span>
+<span class="pc bpc" id="L634" title="1 of 2 branches missed.">				|| fixes.contains(JUnitCleanUpFixCore.RULEERRORCOLLECTOR);</span>
+	}
+
+	private static boolean isKnownRuleType(String qualifiedType) {
+<span class="pc bpc" id="L638" title="1 of 2 branches missed.">		return ORG_JUNIT_RULES_TEMPORARY_FOLDER.equals(qualifiedType)</span>
+<span class="fc bfc" id="L639" title="All 2 branches covered.">				|| TEST_NAME.equals(qualifiedType)</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">				|| ORG_JUNIT_RULES_EXPECTED_EXCEPTION.equals(qualifiedType)</span>
+<span class="fc bfc" id="L641" title="All 2 branches covered.">				|| TIMEOUT.equals(qualifiedType)</span>
+<span class="pc bpc" id="L642" title="1 of 2 branches missed.">				|| ERROR_COLLECTOR.equals(qualifiedType)</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">				|| ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(qualifiedType);</span>
+	}
+
+	private static String sourceTypeName(TypeDeclaration type) {
+<span class="fc" id="L647">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="fc" id="L648">		String qualified= qualifiedName(binding);</span>
+<span class="pc bpc" id="L649" title="2 of 4 branches missed.">		return qualified == null || qualified.isBlank() ? type.getName().getIdentifier() : qualified;</span>
+	}
+
+	private static String qualifiedName(ITypeBinding binding) {
+<span class="pc bpc" id="L653" title="1 of 2 branches missed.">		return binding == null ? null : binding.getErasure().getQualifiedName();</span>
+	}
+
+	private static String remediationFor(String reasonCode) {
+<span class="fc bfc" id="L657" title="All 2 branches covered.">		if (&quot;PARAMETERIZED_COMPONENT_NOT_SELECTED&quot;.equals(reasonCode)) { //$NON-NLS-1$</span>
+<span class="fc" id="L658">			return &quot;Enable the Parameterized migration for the same source component, or leave its JUnit 4 test, lifecycle and Rule annotations unchanged until that coordinated migration can run.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L660" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;PARAMETERIZED_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L661">			return &quot;Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L663" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;TEMPORARY_FOLDER_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L664">			return &quot;Introduce @TempDir Path and translate the remaining custom folder semantics to java.nio.file.Files calls before removing TemporaryFolder.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L666" title="All 2 branches covered.">		if (reasonCode.startsWith(&quot;TEST_NAME_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L667">			return &quot;Inject TestInfo in @BeforeEach and replace every remaining rule use with the intended method-name or display-name contract.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L669" title="1 of 2 branches missed.">		if (reasonCode.startsWith(&quot;EXPECTED_EXCEPTION_&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L670">			return &quot;Wrap only the throwing statements in assertThrows(), then express message, cause and matcher checks with explicit Jupiter assertions.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L672">		return &quot;Complete this construct manually using the Jupiter extension and assertion APIs described by the reason code.&quot;; //$NON-NLS-1$</span>
+	}
+
+	private static String javadocText(String value) {
+<span class="fc" id="L676">		return value.replace(&quot;*/&quot;, &quot;* /&quot;).replace('\r', ' ').replace('\n', ' '); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static String opaqueId(String value) {
+		try {
+<span class="fc" id="L681">			byte[] digest= MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L682">					.digest(value.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L683">			return HexFormat.of().formatHex(digest, 0, 8);</span>
+<span class="nc" id="L684">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L685">			throw new IllegalStateException(e);</span>
+		}
+	}
+
+	private static String jsonEscape(String value) {
+<span class="fc" id="L690">		StringBuilder escaped= new StringBuilder(value.length() + 16);</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
+<span class="fc" id="L692">			char character= value.charAt(index);</span>
+<span class="pc bpc" id="L693" title="7 of 8 branches missed.">			switch (character) {</span>
+<span class="nc" id="L694">			case '&quot;' -&gt; escaped.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L695">			case '\\' -&gt; escaped.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L696">			case '\b' -&gt; escaped.append(&quot;\\b&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L697">			case '\f' -&gt; escaped.append(&quot;\\f&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L698">			case '\n' -&gt; escaped.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L699">			case '\r' -&gt; escaped.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L700">			case '\t' -&gt; escaped.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+			default -&gt; {
+<span class="pc bpc" id="L702" title="1 of 2 branches missed.">				if (character &lt; 0x20) {</span>
+<span class="nc" id="L703">					escaped.append(String.format(Locale.ROOT, &quot;\\u%04x&quot;, Integer.valueOf(character))); //$NON-NLS-1$</span>
+<span class="nc" id="L704">				} else {</span>
+<span class="fc" id="L705">					escaped.append(character);</span>
+				}
+			}
+			}
+		}
+<span class="fc" id="L710">		return escaped.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

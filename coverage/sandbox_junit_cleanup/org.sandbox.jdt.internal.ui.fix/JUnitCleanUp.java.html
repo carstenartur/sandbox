@@ -25,23 +25,44 @@ import org.eclipse.jdt.core.IJavaProject;
 
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 
 /** Cleanup wrapper for JUnit migration. */
-public class JUnitCleanUp extends AbstractCleanUpCoreWrapper&lt;JUnitCleanUpCore&gt;
-		implements IMultiFileCleanUpScopeProvider {
+public class JUnitCleanUp extends AbstractCleanUpCoreWrapper&lt;ReportingJUnitCleanUpCore&gt;
+		implements IMultiFileCleanUpScopeProvider, IMultiFileCleanUpDiagnosticsProvider {
 	public JUnitCleanUp(final Map&lt;String, String&gt; options) {
-<span class="fc" id="L34">		super(options, new JUnitCleanUpCore());</span>
-<span class="fc" id="L35">	}</span>
+<span class="fc" id="L35">		super(options, new ReportingJUnitCleanUpCore());</span>
+<span class="fc" id="L36">	}</span>
 
 	public JUnitCleanUp() {
-<span class="fc" id="L38">		this(Collections.emptyMap());</span>
-<span class="fc" id="L39">	}</span>
+<span class="fc" id="L39">		this(Collections.emptyMap());</span>
+<span class="fc" id="L40">	}</span>
 
 	@Override
 	public Collection&lt;ICompilationUnit&gt; expandCleanUpScope(IJavaProject project,
 			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
-<span class="nc" id="L44">		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);</span>
+<span class="nc" id="L45">		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);</span>
+	}
+
+	/**
+	 * Optional dependency-free contract discovered reflectively by the patched
+	 * JDT Cleanup host. Coordinated JUnit migrations must expose the candidate
+	 * metadata held by the planned cleanup core so declarations and consumers are
+	 * represented by one atomic preview selection unit.
+	 *
+	 * @param project current Java project
+	 * @return immutable coordinated-candidate metadata
+	 * @throws CoreException if the planned preview metadata is inconsistent
+	 */
+	public Collection&lt;Map&lt;String, Object&gt;&gt; getCoordinatedCleanUpPreview(IJavaProject project)
+			throws CoreException {
+<span class="fc" id="L60">		return cleanUpCore.getCoordinatedCleanUpPreview(project);</span>
+	}
+
+	@Override
+	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
+<span class="nc" id="L65">		return cleanUpCore.getLastPlanningDiagnosticsJson(project);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LineDelimiterPreserver.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.cleanup.multifile.api</a> &gt; <span class="el_source">LineDelimiterPreserver.java</span></div><h1>LineDelimiterPreserver.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.cleanup.multifile.api;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Objects;
+
+/** Restores a rewritten text file's original line delimiter without changing its encoding. */
+public final class LineDelimiterPreserver {
+
+<span class="fc" id="L27">	private static final byte[] UTF_8_BOM= { (byte) 0xef, (byte) 0xbb, (byte) 0xbf };</span>
+<span class="fc" id="L28">	private static final byte[] UTF_16_BE_BOM= { (byte) 0xfe, (byte) 0xff };</span>
+<span class="fc" id="L29">	private static final byte[] UTF_16_LE_BOM= { (byte) 0xff, (byte) 0xfe };</span>
+<span class="fc" id="L30">	private static final byte[] UTF_32_BE_BOM= { 0, 0, (byte) 0xfe, (byte) 0xff };</span>
+<span class="fc" id="L31">	private static final byte[] UTF_32_LE_BOM= { (byte) 0xff, (byte) 0xfe, 0, 0 };</span>
+
+<span class="fc" id="L33">	private enum LineDelimiter {</span>
+<span class="fc" id="L34">		LF(&quot;\n&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L35">		CRLF(&quot;\r\n&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L36">		CR(&quot;\r&quot;); //$NON-NLS-1$</span>
+
+		private final String text;
+
+<span class="fc" id="L40">		LineDelimiter(String text) {</span>
+<span class="fc" id="L41">			this.text= text;</span>
+<span class="fc" id="L42">		}</span>
+
+		private static LineDelimiter detect(String content) {
+<span class="fc" id="L45">			boolean foundLf= false;</span>
+<span class="fc" id="L46">			boolean foundCrLf= false;</span>
+<span class="fc" id="L47">			boolean foundCr= false;</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">			for (int index= 0; index &lt; content.length(); index++) {</span>
+<span class="fc" id="L49">				char current= content.charAt(index);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">				if (current == '\r') {</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">					if (index + 1 &lt; content.length() &amp;&amp; content.charAt(index + 1) == '\n') {</span>
+<span class="fc" id="L52">						foundCrLf= true;</span>
+<span class="fc" id="L53">						index++;</span>
+					} else {
+<span class="nc" id="L55">						foundCr= true;</span>
+					}
+<span class="fc bfc" id="L57" title="All 2 branches covered.">				} else if (current == '\n') {</span>
+<span class="fc" id="L58">					foundLf= true;</span>
+				}
+			}
+<span class="pc bpc" id="L61" title="2 of 6 branches missed.">			int styleCount= (foundLf ? 1 : 0) + (foundCrLf ? 1 : 0) + (foundCr ? 1 : 0);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">			if (styleCount != 1) {</span>
+<span class="fc" id="L63">				return null;</span>
+			}
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (foundCrLf) {</span>
+<span class="fc" id="L66">				return CRLF;</span>
+			}
+<span class="nc bnc" id="L68" title="All 2 branches missed.">			return foundLf ? LF : CR;</span>
+		}
+	}
+
+	private record Encoding(Charset charset, byte[] byteOrderMark) {
+<span class="fc" id="L73">		private Encoding {</span>
+<span class="fc" id="L74">			byteOrderMark= byteOrderMark.clone();</span>
+<span class="fc" id="L75">		}</span>
+
+		@Override
+		public byte[] byteOrderMark() {
+<span class="fc" id="L79">			return byteOrderMark.clone();</span>
+		}
+	}
+
+	private LineDelimiterPreserver() {
+	}
+
+	/**
+	 * Returns rewritten bytes with the original file's single line-delimiter style,
+	 * declared character set and byte-order mark. Files without one unambiguous
+	 * original delimiter are returned unchanged.
+	 *
+	 * @param original original file bytes
+	 * @param rewritten bytes produced by the rewrite
+	 * @param declaredCharset Eclipse file character set
+	 * @return rewritten bytes with original text representation preserved
+	 * @throws IOException if either byte sequence cannot be decoded or encoded safely
+	 */
+	public static byte[] preserve(byte[] original, byte[] rewritten, String declaredCharset) throws IOException {
+<span class="fc" id="L98">		Objects.requireNonNull(original, &quot;original&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L99">		Objects.requireNonNull(rewritten, &quot;rewritten&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L100">		Objects.requireNonNull(declaredCharset, &quot;declaredCharset&quot;); //$NON-NLS-1$</span>
+
+		Charset declared;
+		try {
+<span class="fc" id="L104">			declared= Charset.forName(declaredCharset);</span>
+<span class="nc" id="L105">		} catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L106">			throw new IOException(&quot;Unsupported source character set: &quot; + declaredCharset, e); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		}</span>
+<span class="fc" id="L108">		Encoding encoding= encodingOf(original, declared);</span>
+<span class="fc" id="L109">		String originalText= decode(original, encoding, &quot;original&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L110">		LineDelimiter delimiter= LineDelimiter.detect(originalText);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">		if (delimiter == null) {</span>
+<span class="fc" id="L112">			return rewritten;</span>
+		}
+
+<span class="fc" id="L115">		String rewrittenText= decode(rewritten, encoding, &quot;rewritten&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L116">		String normalized= normalize(rewrittenText, delimiter.text);</span>
+<span class="fc" id="L117">		byte[] encoded= encode(normalized, encoding);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		return Arrays.equals(encoded, rewritten) ? rewritten : encoded;</span>
+	}
+
+	private static Encoding encodingOf(byte[] content, Charset declared) throws IOException {
+<span class="fc" id="L122">		Bom bom= Bom.detect(content);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">		if (bom != null) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (!compatible(declared, bom.charset())) {</span>
+<span class="fc" id="L125">				throw new IOException(&quot;Source byte-order mark &quot; + bom.charset().name() //$NON-NLS-1$</span>
+<span class="fc" id="L126">						+ &quot; conflicts with declared character set &quot; + declared.name()); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L128">			return new Encoding(bom.charset(), bom.bytes());</span>
+		}
+<span class="fc" id="L130">		String name= declared.name().toUpperCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (&quot;UTF-16&quot;.equals(name)) { //$NON-NLS-1$</span>
+<span class="nc" id="L132">			return new Encoding(StandardCharsets.UTF_16BE, new byte[0]);</span>
+		}
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (&quot;UTF-32&quot;.equals(name)) { //$NON-NLS-1$</span>
+<span class="nc" id="L135">			return new Encoding(Charset.forName(&quot;UTF-32BE&quot;), new byte[0]); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L137">		return new Encoding(declared, new byte[0]);</span>
+	}
+
+	private static boolean compatible(Charset declared, Charset encoded) {
+<span class="fc" id="L141">		String declaredName= declared.name().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L142">		String encodedName= encoded.name().toUpperCase(Locale.ROOT);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		return declaredName.equals(encodedName)</span>
+<span class="pc bpc" id="L144" title="1 of 4 branches missed.">				|| &quot;UTF-16&quot;.equals(declaredName) &amp;&amp; encodedName.startsWith(&quot;UTF-16&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L145" title="3 of 4 branches missed.">				|| &quot;UTF-32&quot;.equals(declaredName) &amp;&amp; encodedName.startsWith(&quot;UTF-32&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static String decode(byte[] content, Encoding encoding, String label) throws IOException {
+<span class="fc" id="L149">		int offset= bomOffset(content, encoding);</span>
+		try {
+<span class="fc" id="L151">			return encoding.charset().newDecoder()</span>
+<span class="fc" id="L152">					.onMalformedInput(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L153">					.onUnmappableCharacter(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L154">					.decode(ByteBuffer.wrap(content, offset, content.length - offset))</span>
+<span class="fc" id="L155">					.toString();</span>
+<span class="fc" id="L156">		} catch (CharacterCodingException e) {</span>
+<span class="fc" id="L157">			throw new IOException(&quot;Cannot decode &quot; + label + &quot; source as &quot; + encoding.charset().name(), e); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+	}
+
+	private static int bomOffset(byte[] content, Encoding encoding) throws IOException {
+<span class="fc" id="L162">		Bom actual= Bom.detect(content);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		if (actual == null) {</span>
+<span class="fc" id="L164">			return 0;</span>
+		}
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (!actual.charset().equals(encoding.charset())) {</span>
+<span class="nc" id="L167">			throw new IOException(&quot;Rewritten source changed byte-order mark from &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L168">					+ encoding.charset().name() + &quot; to &quot; + actual.charset().name()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L170">		return actual.bytes().length;</span>
+	}
+
+	private static byte[] encode(String content, Encoding encoding) throws IOException {
+		try {
+<span class="fc" id="L175">			ByteBuffer bytes= encoding.charset().newEncoder()</span>
+<span class="fc" id="L176">					.onMalformedInput(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L177">					.onUnmappableCharacter(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L178">					.encode(CharBuffer.wrap(content));</span>
+<span class="fc" id="L179">			byte[] bom= encoding.byteOrderMark();</span>
+<span class="fc" id="L180">			int encodedLength= bytes.remaining();</span>
+<span class="fc" id="L181">			byte[] result= new byte[bom.length + encodedLength];</span>
+<span class="fc" id="L182">			System.arraycopy(bom, 0, result, 0, bom.length);</span>
+<span class="fc" id="L183">			bytes.get(result, bom.length, encodedLength);</span>
+<span class="fc" id="L184">			return result;</span>
+<span class="nc" id="L185">		} catch (CharacterCodingException e) {</span>
+<span class="nc" id="L186">			throw new IOException(&quot;Cannot encode rewritten source as &quot; + encoding.charset().name(), e); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static String normalize(String content, String delimiter) {
+<span class="fc" id="L191">		StringBuilder normalized= new StringBuilder(content.length() + 64);</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		for (int index= 0; index &lt; content.length(); index++) {</span>
+<span class="fc" id="L193">			char current= content.charAt(index);</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (current == '\r') {</span>
+<span class="nc bnc" id="L195" title="All 4 branches missed.">				if (index + 1 &lt; content.length() &amp;&amp; content.charAt(index + 1) == '\n') {</span>
+<span class="nc" id="L196">					index++;</span>
+				}
+<span class="nc" id="L198">				normalized.append(delimiter);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">			} else if (current == '\n') {</span>
+<span class="fc" id="L200">				normalized.append(delimiter);</span>
+			} else {
+<span class="fc" id="L202">				normalized.append(current);</span>
+			}
+		}
+<span class="fc" id="L205">		return normalized.toString();</span>
+	}
+
+	private record Bom(Charset charset, byte[] bytes) {
+<span class="fc" id="L209">		private Bom {</span>
+<span class="fc" id="L210">			bytes= bytes.clone();</span>
+<span class="fc" id="L211">		}</span>
+
+		@Override
+		public byte[] bytes() {
+<span class="fc" id="L215">			return bytes.clone();</span>
+		}
+
+		private static Bom detect(byte[] content) {
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">			if (startsWith(content, UTF_32_BE_BOM)) {</span>
+<span class="nc" id="L220">				return new Bom(Charset.forName(&quot;UTF-32BE&quot;), UTF_32_BE_BOM); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">			if (startsWith(content, UTF_32_LE_BOM)) {</span>
+<span class="nc" id="L223">				return new Bom(Charset.forName(&quot;UTF-32LE&quot;), UTF_32_LE_BOM); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L225" title="All 2 branches covered.">			if (startsWith(content, UTF_8_BOM)) {</span>
+<span class="fc" id="L226">				return new Bom(StandardCharsets.UTF_8, UTF_8_BOM);</span>
+			}
+<span class="fc bfc" id="L228" title="All 2 branches covered.">			if (startsWith(content, UTF_16_BE_BOM)) {</span>
+<span class="fc" id="L229">				return new Bom(StandardCharsets.UTF_16BE, UTF_16_BE_BOM);</span>
+			}
+<span class="fc bfc" id="L231" title="All 2 branches covered.">			if (startsWith(content, UTF_16_LE_BOM)) {</span>
+<span class="fc" id="L232">				return new Bom(StandardCharsets.UTF_16LE, UTF_16_LE_BOM);</span>
+			}
+<span class="fc" id="L234">			return null;</span>
+		}
+	}
+
+	private static boolean startsWith(byte[] content, byte[] prefix) {
+<span class="fc bfc" id="L239" title="All 2 branches covered.">		if (content.length &lt; prefix.length) {</span>
+<span class="fc" id="L240">			return false;</span>
+		}
+<span class="fc bfc" id="L242" title="All 2 branches covered.">		for (int index= 0; index &lt; prefix.length; index++) {</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			if (content[index] != prefix[index]) {</span>
+<span class="fc" id="L244">				return false;</span>
+			}
+		}
+<span class="fc" id="L247">		return true;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

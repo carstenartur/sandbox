@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EclipseBundleClasspath.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">EclipseBundleClasspath.java</span></div><h1>EclipseBundleClasspath.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.ui.tests.quickfix.rules;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.junit.JUnitCore;
+import org.osgi.framework.Bundle;
+
+/**
+ * Adds bundles from the running Eclipse target platform to a temporary Java
+ * project's classpath.
+ * &lt;p&gt;
+ * Workbench, SWTBot and cleanup tests should use the real target-platform API
+ * whenever binding identity or inherited signatures are part of the behavior
+ * under test. Source stubs with the same qualified names are not equivalent:
+ * they can hide missing dependencies and do not prove the binding contract used
+ * by real JDT Core or JDT UI projects.
+ * &lt;/p&gt;
+ * &lt;p&gt;
+ * Eclipse packages the JUnit libraries behind JDT classpath containers rather
+ * than one OSGi bundle per library package. The well-known JUnit package
+ * identifiers below therefore resolve through the official JDT containers so
+ * fixtures see the same nested libraries as ordinary Eclipse Java projects.
+ * &lt;/p&gt;
+ */
+public final class EclipseBundleClasspath {
+
+<span class="nc" id="L49">	private static final Map&lt;String, IPath&gt; JUNIT_LIBRARY_CONTAINERS= Map.of(</span>
+<span class="nc" id="L50">			&quot;org.junit&quot;, JUnitCore.JUNIT4_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="nc" id="L51">			&quot;org.junit.jupiter.api&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="nc" id="L52">			&quot;org.apiguardian.api&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="nc" id="L53">			&quot;org.opentest4j&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="nc" id="L54">			&quot;org.junit.platform.commons&quot;, JUnitCore.JUNIT5_CONTAINER_PATH); //$NON-NLS-1$</span>
+
+	private EclipseBundleClasspath() {
+	}
+
+	/**
+	 * Adds all named bundles and their installed fragments. Well-known JUnit
+	 * library package identifiers use the corresponding Eclipse JUnit container.
+	 *
+	 * @param javaProject the temporary Java project
+	 * @param bundleSymbolicNames exact bundle symbolic names or supported JUnit
+	 *                            library package identifiers
+	 * @throws CoreException if a dependency cannot be resolved or added
+	 */
+	public static void addBundles(IJavaProject javaProject, String... bundleSymbolicNames) throws CoreException {
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		for (String bundleSymbolicName : bundleSymbolicNames) {</span>
+<span class="nc" id="L70">			IPath junitContainer= JUNIT_LIBRARY_CONTAINERS.get(bundleSymbolicName);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">			if (junitContainer != null) {</span>
+<span class="nc" id="L72">				addToClasspath(javaProject, JavaCore.newContainerEntry(junitContainer));</span>
+<span class="nc" id="L73">			} else {</span>
+<span class="nc" id="L74">				addBundle(javaProject, bundleSymbolicName);</span>
+			}
+		}
+<span class="nc" id="L77">	}</span>
+
+	/**
+	 * Adds one bundle and its installed fragments.
+	 *
+	 * @param javaProject the temporary Java project
+	 * @param bundleSymbolicName the exact bundle symbolic name
+	 * @throws CoreException if the bundle cannot be resolved or added
+	 */
+	public static void addBundle(IJavaProject javaProject, String bundleSymbolicName) throws CoreException {
+<span class="nc" id="L87">		Bundle bundle= Platform.getBundle(bundleSymbolicName);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		if (bundle == null) {</span>
+<span class="nc" id="L89">			throw new CoreException(Status.error(&quot;Bundle not found: &quot; + bundleSymbolicName)); //$NON-NLS-1$</span>
+		}
+
+<span class="nc" id="L92">		addBundleFile(javaProject, bundle, bundleSymbolicName);</span>
+<span class="nc" id="L93">		Bundle[] fragments= Platform.getFragments(bundle);</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (fragments != null) {</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">			for (Bundle fragment : fragments) {</span>
+<span class="nc" id="L96">				addBundleFile(javaProject, fragment, fragment.getSymbolicName());</span>
+			}
+		}
+<span class="nc" id="L99">	}</span>
+
+	private static void addBundleFile(IJavaProject javaProject, Bundle bundle, String displayName)
+			throws CoreException {
+		File bundleFile;
+		try {
+<span class="nc" id="L105">			bundleFile= FileLocator.getBundleFile(bundle);</span>
+<span class="nc" id="L106">		} catch (IOException exception) {</span>
+<span class="nc" id="L107">			throw new CoreException(Status.error(&quot;Cannot locate bundle file: &quot; + displayName, exception)); //$NON-NLS-1$</span>
+		}
+<span class="nc bnc" id="L109" title="All 4 branches missed.">		if (bundleFile == null || !bundleFile.exists()) {</span>
+<span class="nc" id="L110">			throw new CoreException(Status.error(&quot;Bundle file does not exist: &quot; + displayName)); //$NON-NLS-1$</span>
+		}
+
+<span class="nc" id="L113">		File classpathFile= bundleFile;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		if (bundleFile.isDirectory()) {</span>
+<span class="nc" id="L115">			File binDirectory= new File(bundleFile, &quot;bin&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">			if (binDirectory.isDirectory()) {</span>
+<span class="nc" id="L117">				classpathFile= binDirectory;</span>
+			}
+		}
+<span class="nc" id="L120">		IPath path= Path.fromOSString(classpathFile.getAbsolutePath());</span>
+<span class="nc" id="L121">		addToClasspath(javaProject, JavaCore.newLibraryEntry(path, null, null));</span>
+<span class="nc" id="L122">	}</span>
+
+	private static void addToClasspath(IJavaProject javaProject, IClasspathEntry entry)
+			throws JavaModelException {
+<span class="nc" id="L126">		IClasspathEntry[] current= javaProject.getRawClasspath();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		for (IClasspathEntry existing : current) {</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">			if (existing.equals(entry)) {</span>
+<span class="nc" id="L129">				return;</span>
+			}
+		}
+
+<span class="nc" id="L133">		IClasspathEntry[] updated= new IClasspathEntry[current.length + 1];</span>
+<span class="nc" id="L134">		System.arraycopy(current, 0, updated, 0, current.length);</span>
+<span class="nc" id="L135">		updated[current.length]= entry;</span>
+<span class="nc" id="L136">		javaProject.setRawClasspath(updated, null);</span>
+<span class="nc" id="L137">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

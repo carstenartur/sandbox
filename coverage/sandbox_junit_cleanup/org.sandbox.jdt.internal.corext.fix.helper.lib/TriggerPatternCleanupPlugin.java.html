@@ -157,7 +157,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
             Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations,
             ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder) {
 <span class="fc" id="L159">        JunitHolder holder = createHolder(match);</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (holder != null) {</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (holder != null) {</span>
 <span class="fc" id="L161">            dataHolder.put(dataHolder.size(), holder);</span>
 <span class="fc" id="L162">            operations.add(fixcore.rewrite(dataHolder));</span>
         }

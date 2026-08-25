@@ -15,6 +15,14 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
 
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+
+import org.sandbox.jdt.internal.corext.fix.JUnitCleanUpFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.lib.InheritedLifecycleMethodRefactorer;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.TriggerPatternCleanupPlugin;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -58,18 +66,27 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
  */
 @CleanupPattern(value = &quot;@After&quot;, kind = PatternKind.ANNOTATION, qualifiedType = ORG_JUNIT_AFTER, cleanupId = &quot;cleanup.junit.after&quot;, description = &quot;Migrate @After to @AfterEach&quot;, displayName = &quot;JUnit 4 @After → JUnit 5 @AfterEach&quot;)
 @RewriteRule(replaceWith = &quot;@AfterEach&quot;, targetQualifiedType = ORG_JUNIT_JUPITER_API_AFTER_EACH)
-<span class="fc" id="L61">public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+<span class="fc" id="L69">public class AfterJUnitPlugin extends TriggerPatternCleanupPlugin {</span>
+
+	@Override
+	public void find(JUnitCleanUpFixCore fixcore, CompilationUnit compilationUnit,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
+<span class="fc" id="L74">		super.find(fixcore, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L75">		InheritedLifecycleMethodRefactorer.addInheritedLifecycleOverrides(compilationUnit,</span>
+<span class="fc" id="L76">				operations, nodesprocessed, Set.of(ORG_JUNIT_AFTER, ORG_JUNIT_JUPITER_API_AFTER_EACH),</span>
+<span class="fc" id="L77">				ORG_JUNIT_JUPITER_API_AFTER_EACH);</span>
+<span class="fc" id="L78">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L66">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L83">			return &quot;&quot;&quot;</span>
 					@AfterEach
 					public void tearDown() {
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L72">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L89">		return &quot;&quot;&quot;</span>
 				@After
 				public void tearDown() {
 				}
@@ -78,7 +95,7 @@ import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L81">		return &quot;After&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L98">		return &quot;After&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

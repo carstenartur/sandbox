@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
+ * https://www.eclipse.org/legal/epl-2.0/.
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -55,12 +55,19 @@ public final class ContainerLocalRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerLocalRewritePlan plan) throws CoreException {
-<span class="fc" id="L58">		ResolvedPlan resolved= resolve(unit, root, plan);</span>
-<span class="fc" id="L59">		return new CompilationUnitRewriteOperationsFixCore(</span>
-<span class="fc" id="L60">				DESCRIPTION,</span>
-<span class="fc" id="L61">				root,</span>
-<span class="fc" id="L62">				new CompilationUnitRewriteOperationWithSourceRange[] {</span>
-<span class="fc" id="L63">						new RewriteOperation(resolved) });</span>
+<span class="fc" id="L58">		return new CompilationUnitRewriteOperationsFixCore(</span>
+<span class="fc" id="L59">				DESCRIPTION,</span>
+<span class="fc" id="L60">				root,</span>
+<span class="fc" id="L61">				new CompilationUnitRewriteOperationWithSourceRange[] {</span>
+<span class="fc" id="L62">						operation(unit, root, plan) });</span>
+	}
+
+	/** Package-visible operation factory used by the aggregate container cleanup. */
+	static CompilationUnitRewriteOperationWithSourceRange operation(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerLocalRewritePlan plan) throws CoreException {
+<span class="fc" id="L70">		return new RewriteOperation(resolve(unit, root, plan));</span>
 	}
 
 	/** Package-visible semantic resolution used by the cleanup adapter. */
@@ -68,9 +75,9 @@ public final class ContainerLocalRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerLocalRewritePlan plan) throws CoreException {
-<span class="fc" id="L71">		ContainerLocalArgumentTransferVerifier.verify(unit, root, plan);</span>
-<span class="fc" id="L72">		ContainerLocalRewritePlanVerifier.verifyEncounterIterations(unit, root, plan);</span>
-<span class="fc" id="L73">		return ContainerLocalRewriteResolver.resolve(unit, root, plan);</span>
+<span class="fc" id="L78">		ContainerLocalArgumentTransferVerifier.verify(unit, root, plan);</span>
+<span class="fc" id="L79">		ContainerLocalRewritePlanVerifier.verifyEncounterIterations(unit, root, plan);</span>
+<span class="fc" id="L80">		return ContainerLocalRewriteResolver.resolve(unit, root, plan);</span>
 	}
 
 	private static final class RewriteOperation
@@ -78,57 +85,57 @@ public final class ContainerLocalRewriteFix {
 
 		private final ResolvedPlan resolved;
 
-<span class="fc" id="L81">		RewriteOperation(ResolvedPlan resolved) {</span>
-<span class="fc" id="L82">			this.resolved= Objects.requireNonNull(resolved, &quot;resolved&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L83">		}</span>
+<span class="fc" id="L88">		RewriteOperation(ResolvedPlan resolved) {</span>
+<span class="fc" id="L89">			this.resolved= Objects.requireNonNull(resolved, &quot;resolved&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L90">		}</span>
 
 		@Override
 		public void rewriteASTInternal(
 				CompilationUnitRewrite cuRewrite,
 				LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="fc" id="L89">			AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L90">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L91">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L92">			TextEditGroup group= createTextEditGroup(DESCRIPTION, cuRewrite);</span>
+<span class="fc" id="L96">			AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L97">			ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L98">			ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L99">			TextEditGroup group= createTextEditGroup(DESCRIPTION, cuRewrite);</span>
 
-<span class="fc" id="L94">			Type componentType= resolved.arrayType().getElementType();</span>
-<span class="fc" id="L95">			String listName= imports.addImport(resolved.plan().targetInterfaceType());</span>
-<span class="fc" id="L96">			SimpleType listRawType= ast.newSimpleType(ast.newName(listName));</span>
-<span class="fc" id="L97">			ParameterizedType listType= ast.newParameterizedType(listRawType);</span>
-<span class="fc" id="L98">			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));</span>
-<span class="fc" id="L99">			rewrite.replace(resolved.declaration().getType(), listType, group);</span>
+<span class="fc" id="L101">			Type componentType= resolved.arrayType().getElementType();</span>
+<span class="fc" id="L102">			String listName= imports.addImport(resolved.plan().targetInterfaceType());</span>
+<span class="fc" id="L103">			SimpleType listRawType= ast.newSimpleType(ast.newName(listName));</span>
+<span class="fc" id="L104">			ParameterizedType listType= ast.newParameterizedType(listRawType);</span>
+<span class="fc" id="L105">			listType.typeArguments().add(ASTNode.copySubtree(ast, componentType));</span>
+<span class="fc" id="L106">			rewrite.replace(resolved.declaration().getType(), listType, group);</span>
 
-<span class="fc" id="L101">			String implementationName=</span>
-<span class="fc" id="L102">					imports.addImport(resolved.plan().targetImplementationType());</span>
-<span class="fc" id="L103">			org.eclipse.jdt.core.dom.ClassInstanceCreation creation=</span>
-<span class="fc" id="L104">					ast.newClassInstanceCreation();</span>
-<span class="fc" id="L105">			ParameterizedType implementationType= ast.newParameterizedType(</span>
-<span class="fc" id="L106">					ast.newSimpleType(ast.newName(implementationName)));</span>
-<span class="fc" id="L107">			creation.setType(implementationType);</span>
-<span class="fc" id="L108">			rewrite.replace(resolved.initializer(), creation, group);</span>
+<span class="fc" id="L108">			String implementationName=</span>
+<span class="fc" id="L109">					imports.addImport(resolved.plan().targetImplementationType());</span>
+<span class="fc" id="L110">			org.eclipse.jdt.core.dom.ClassInstanceCreation creation=</span>
+<span class="fc" id="L111">					ast.newClassInstanceCreation();</span>
+<span class="fc" id="L112">			ParameterizedType implementationType= ast.newParameterizedType(</span>
+<span class="fc" id="L113">					ast.newSimpleType(ast.newName(implementationName)));</span>
+<span class="fc" id="L114">			creation.setType(implementationType);</span>
+<span class="fc" id="L115">			rewrite.replace(resolved.initializer(), creation, group);</span>
 
-<span class="fc bfc" id="L110" title="All 2 branches covered.">			for (AppendPair pair : resolved.appendPairs()) {</span>
-<span class="fc" id="L111">				rewrite.remove(pair.growthStatement(), group);</span>
-<span class="fc" id="L112">				MethodInvocation add= ast.newMethodInvocation();</span>
-<span class="fc" id="L113">				add.setExpression((Expression) ASTNode.copySubtree(</span>
-<span class="fc" id="L114">						ast, pair.arrayAccess().getArray()));</span>
-<span class="fc" id="L115">				add.setName(ast.newSimpleName(&quot;add&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L116">				add.arguments().add(ASTNode.copySubtree(ast, pair.value()));</span>
-<span class="fc" id="L117">				rewrite.replace(pair.appendAssignment(), add, group);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">			for (AppendPair pair : resolved.appendPairs()) {</span>
+<span class="fc" id="L118">				rewrite.remove(pair.growthStatement(), group);</span>
+<span class="fc" id="L119">				MethodInvocation add= ast.newMethodInvocation();</span>
+<span class="fc" id="L120">				add.setExpression((Expression) ASTNode.copySubtree(</span>
+<span class="fc" id="L121">						ast, pair.arrayAccess().getArray()));</span>
+<span class="fc" id="L122">				add.setName(ast.newSimpleName(&quot;add&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L123">				add.arguments().add(ASTNode.copySubtree(ast, pair.value()));</span>
+<span class="fc" id="L124">				rewrite.replace(pair.appendAssignment(), add, group);</span>
 			}
 
-<span class="fc bfc" id="L120" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
-<span class="fc" id="L121">				MethodInvocation size= ast.newMethodInvocation();</span>
-<span class="fc" id="L122">				size.setExpression((Expression) ASTNode.copySubtree(</span>
-<span class="fc" id="L123">						ast, length.arrayExpression()));</span>
-<span class="fc" id="L124">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L125">				rewrite.replace(length.expression(), size, group);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">			for (ResolvedLength length : resolved.lengths()) {</span>
+<span class="fc" id="L128">				MethodInvocation size= ast.newMethodInvocation();</span>
+<span class="fc" id="L129">				size.setExpression((Expression) ASTNode.copySubtree(</span>
+<span class="fc" id="L130">						ast, length.arrayExpression()));</span>
+<span class="fc" id="L131">				size.setName(ast.newSimpleName(&quot;size&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L132">				rewrite.replace(length.expression(), size, group);</span>
 			}
-<span class="fc" id="L127">		}</span>
+<span class="fc" id="L134">		}</span>
 
 		@Override
 		public String getAdditionalInfo() {
-<span class="nc" id="L131">			return DESCRIPTION;</span>
+<span class="nc" id="L138">			return DESCRIPTION;</span>
 		}
 	}
 }

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalResourceCompatibilityRefactorer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">ExternalResourceCompatibilityRefactorer.java</span></div><h1>ExternalResourceCompatibilityRefactorer.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_AFTER;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_AFTER_ALL;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_AFTER_EACH;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_BEFORE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_BEFORE_ALL;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.METHOD_BEFORE_EACH;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+
+import org.eclipse.text.edits.TextEditGroup;
+
+/**
+ * Adds Jupiter callback bridges while retaining the JUnit 4
+ * {@code ExternalResource} contract.
+ *
+ * &lt;p&gt;This staged form is required when a shared fixture has both migrated
+ * Jupiter consumers and a strict-mode consumer that must stay on JUnit 4. The
+ * callbacks delegate to the original virtual {@code before()}/{@code after()}
+ * methods, so source subclasses keep their established override and explicit
+ * {@code super} semantics.&lt;/p&gt;
+ */
+public final class ExternalResourceCompatibilityRefactorer {
+
+	private record CallbackConfig(String beforeInterface, String afterInterface,
+			String beforeMethod, String afterMethod) {
+	}
+
+<span class="nc" id="L63">	private ExternalResourceCompatibilityRefactorer() {</span>
+<span class="nc" id="L64">		throw new UnsupportedOperationException(&quot;Utility class&quot;); //$NON-NLS-1$</span>
+	}
+
+	/** Adds compatibility callbacks to a direct {@code ExternalResource} subclass. */
+	public static void addJupiterCallbacks(TypeDeclaration node, boolean classRule,
+			ASTRewrite rewrite, AST ast, TextEditGroup group, ImportRewrite imports) {
+<span class="pc bpc" id="L70" title="2 of 4 branches missed.">		if (node == null || !ExternalResourceRefactorer.isDirectlyExtendingExternalResource(node.resolveBinding())) {</span>
+<span class="nc" id="L71">			return;</span>
+		}
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		CallbackConfig config= classRule</span>
+<span class="nc" id="L74">				? new CallbackConfig(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_ALL_CALLBACK,</span>
+<span class="nc" id="L75">						ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_ALL_CALLBACK,</span>
+<span class="nc" id="L76">						METHOD_BEFORE_ALL, METHOD_AFTER_ALL)</span>
+<span class="fc" id="L77">				: new CallbackConfig(ORG_JUNIT_JUPITER_API_EXTENSION_BEFORE_EACH_CALLBACK,</span>
+<span class="fc" id="L78">						ORG_JUNIT_JUPITER_API_EXTENSION_AFTER_EACH_CALLBACK,</span>
+<span class="fc" id="L79">						METHOD_BEFORE_EACH, METHOD_AFTER_EACH);</span>
+
+<span class="fc" id="L81">		addInterfaceIfMissing(node, config.beforeInterface(), rewrite, ast, group, imports);</span>
+<span class="fc" id="L82">		addInterfaceIfMissing(node, config.afterInterface(), rewrite, ast, group, imports);</span>
+
+<span class="fc" id="L84">		ListRewrite members= rewrite.getListRewrite(node, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (!declaresCallback(node, config.beforeMethod())) {</span>
+<span class="fc" id="L86">			members.insertLast(createBeforeBridge(ast, config.beforeMethod(), imports), group);</span>
+		}
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (!declaresCallback(node, config.afterMethod())) {</span>
+<span class="fc" id="L89">			members.insertLast(createAfterBridge(ast, config.afterMethod(), imports), group);</span>
+		}
+<span class="fc" id="L91">	}</span>
+
+	private static void addInterfaceIfMissing(TypeDeclaration node, String qualifiedName,
+			ASTRewrite rewrite, AST ast, TextEditGroup group, ImportRewrite imports) {
+<span class="fc" id="L95">		ITypeBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			for (ITypeBinding interfaceBinding : binding.getInterfaces()) {</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">				if (qualifiedName.equals(interfaceBinding.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L99">					return;</span>
+				}
+			}
+		}
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		for (Object interfaceObject : node.superInterfaceTypes()) {</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">			if (interfaceObject instanceof Type interfaceType) {</span>
+<span class="nc" id="L105">				ITypeBinding interfaceBinding= interfaceType.resolveBinding();</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">				if (interfaceBinding != null</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">						&amp;&amp; qualifiedName.equals(interfaceBinding.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L108">					return;</span>
+				}
+			}
+		}
+<span class="fc" id="L112">		String interfaceName= imports.addImport(qualifiedName);</span>
+<span class="fc" id="L113">		rewrite.getListRewrite(node, TypeDeclaration.SUPER_INTERFACE_TYPES_PROPERTY)</span>
+<span class="fc" id="L114">				.insertLast(ast.newSimpleType(ast.newName(interfaceName)), group);</span>
+<span class="fc" id="L115">	}</span>
+
+	private static boolean declaresCallback(TypeDeclaration node, String methodName) {
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
+<span class="pc bpc" id="L119" title="3 of 4 branches missed.">			if (!methodName.equals(method.getName().getIdentifier()) || method.parameters().size() != 1</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">					|| !(method.parameters().get(0) instanceof SingleVariableDeclaration parameter)) {</span>
+				continue;
+			}
+<span class="nc" id="L123">			ITypeBinding parameterType= parameter.getType().resolveBinding();</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">			if (parameterType != null &amp;&amp; ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">					.equals(parameterType.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L126">				return true;</span>
+			}
+<span class="nc" id="L128">			String sourceType= parameter.getType().toString();</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">			if (&quot;ExtensionContext&quot;.equals(sourceType) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">					|| ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT.equals(sourceType)) {</span>
+<span class="nc" id="L131">				return true;</span>
+			}
+		}
+<span class="fc" id="L134">		return false;</span>
+	}
+
+	private static MethodDeclaration createBeforeBridge(AST ast, String methodName, ImportRewrite imports) {
+<span class="fc" id="L138">		MethodDeclaration method= createCallbackMethod(ast, methodName, imports);</span>
+<span class="fc" id="L139">		method.thrownExceptionTypes().add(ast.newSimpleType(ast.newSimpleName(&quot;Exception&quot;))); //$NON-NLS-1$</span>
+
+<span class="fc" id="L141">		TryStatement guardedCall= ast.newTryStatement();</span>
+<span class="fc" id="L142">		Block body= ast.newBlock();</span>
+<span class="fc" id="L143">		body.statements().add(invokeLifecycle(ast, METHOD_BEFORE));</span>
+<span class="fc" id="L144">		guardedCall.setBody(body);</span>
+<span class="fc" id="L145">		guardedCall.catchClauses().add(rethrow(ast, &quot;Exception&quot;, &quot;exception&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L146">		guardedCall.catchClauses().add(rethrow(ast, &quot;Error&quot;, &quot;error&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L147">		guardedCall.catchClauses().add(wrapUnexpectedThrowable(ast));</span>
+
+<span class="fc" id="L149">		Block callbackBody= ast.newBlock();</span>
+<span class="fc" id="L150">		callbackBody.statements().add(guardedCall);</span>
+<span class="fc" id="L151">		method.setBody(callbackBody);</span>
+<span class="fc" id="L152">		return method;</span>
+	}
+
+	private static MethodDeclaration createAfterBridge(AST ast, String methodName, ImportRewrite imports) {
+<span class="fc" id="L156">		MethodDeclaration method= createCallbackMethod(ast, methodName, imports);</span>
+<span class="fc" id="L157">		Block body= ast.newBlock();</span>
+<span class="fc" id="L158">		body.statements().add(invokeLifecycle(ast, METHOD_AFTER));</span>
+<span class="fc" id="L159">		method.setBody(body);</span>
+<span class="fc" id="L160">		return method;</span>
+	}
+
+	private static MethodDeclaration createCallbackMethod(AST ast, String methodName, ImportRewrite imports) {
+<span class="fc" id="L164">		MethodDeclaration method= ast.newMethodDeclaration();</span>
+<span class="fc" id="L165">		MarkerAnnotation override= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L166">		override.setTypeName(ast.newSimpleName(&quot;Override&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L167">		method.modifiers().add(override);</span>
+<span class="fc" id="L168">		method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));</span>
+<span class="fc" id="L169">		method.setName(ast.newSimpleName(methodName));</span>
+<span class="fc" id="L170">		method.setReturnType2(ast.newPrimitiveType(PrimitiveType.VOID));</span>
+
+<span class="fc" id="L172">		SingleVariableDeclaration context= ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L173">		String contextType= imports.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_EXTENSION_CONTEXT);</span>
+<span class="fc" id="L174">		context.setType(ast.newSimpleType(ast.newName(contextType)));</span>
+<span class="fc" id="L175">		context.setName(ast.newSimpleName(&quot;context&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L176">		method.parameters().add(context);</span>
+<span class="fc" id="L177">		return method;</span>
+	}
+
+	private static ExpressionStatement invokeLifecycle(AST ast, String methodName) {
+<span class="fc" id="L181">		MethodInvocation invocation= ast.newMethodInvocation();</span>
+<span class="fc" id="L182">		invocation.setName(ast.newSimpleName(methodName));</span>
+<span class="fc" id="L183">		return ast.newExpressionStatement(invocation);</span>
+	}
+
+	private static CatchClause rethrow(AST ast, String typeName, String variableName) {
+<span class="fc" id="L187">		CatchClause clause= ast.newCatchClause();</span>
+<span class="fc" id="L188">		SingleVariableDeclaration exception= ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L189">		exception.setType(ast.newSimpleType(ast.newSimpleName(typeName)));</span>
+<span class="fc" id="L190">		exception.setName(ast.newSimpleName(variableName));</span>
+<span class="fc" id="L191">		clause.setException(exception);</span>
+<span class="fc" id="L192">		ThrowStatement rethrow= ast.newThrowStatement();</span>
+<span class="fc" id="L193">		rethrow.setExpression(ast.newSimpleName(variableName));</span>
+<span class="fc" id="L194">		Block body= ast.newBlock();</span>
+<span class="fc" id="L195">		body.statements().add(rethrow);</span>
+<span class="fc" id="L196">		clause.setBody(body);</span>
+<span class="fc" id="L197">		return clause;</span>
+	}
+
+	private static CatchClause wrapUnexpectedThrowable(AST ast) {
+<span class="fc" id="L201">		CatchClause clause= ast.newCatchClause();</span>
+<span class="fc" id="L202">		SingleVariableDeclaration throwable= ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L203">		throwable.setType(ast.newSimpleType(ast.newSimpleName(&quot;Throwable&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L204">		throwable.setName(ast.newSimpleName(&quot;throwable&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L205">		clause.setException(throwable);</span>
+
+<span class="fc" id="L207">		ClassInstanceCreation wrapper= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L208">		wrapper.setType(ast.newSimpleType(ast.newSimpleName(&quot;RuntimeException&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L209">		wrapper.arguments().add(ast.newSimpleName(&quot;throwable&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L210">		ThrowStatement throwWrapper= ast.newThrowStatement();</span>
+<span class="fc" id="L211">		throwWrapper.setExpression(wrapper);</span>
+<span class="fc" id="L212">		Block body= ast.newBlock();</span>
+<span class="fc" id="L213">		body.statements().add(throwWrapper);</span>
+<span class="fc" id="L214">		clause.setBody(body);</span>
+<span class="fc" id="L215">		return clause;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

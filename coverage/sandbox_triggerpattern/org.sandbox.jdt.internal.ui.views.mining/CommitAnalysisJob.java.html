@@ -92,110 +92,114 @@ public class CommitAnalysisJob extends Job {
 <span class="nc" id="L92">				entry.setStatus(AnalysisStatus.PENDING);</span>
 <span class="nc" id="L93">				return Status.CANCEL_STATUS;</span>
 			}
-<span class="fc" id="L95">			String message = e.getMessage();</span>
-<span class="pc bpc" id="L96" title="2 of 4 branches missed.">			entry.setFailureMessage(message == null || message.isBlank()</span>
-<span class="nc" id="L97">					? e.getClass().getSimpleName()</span>
-<span class="fc" id="L98">					: message);</span>
-<span class="fc" id="L99">			return Status.error(&quot;Commit analysis failed&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L95">			entry.setFailureMessage(safeFailureMessage(e));</span>
+<span class="fc" id="L96">			return Status.error(&quot;Commit analysis failed&quot;, e); //$NON-NLS-1$</span>
 		} finally {
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">			if (onComplete != null) {</span>
-<span class="fc" id="L102">				onComplete.run();</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			if (onComplete != null) {</span>
+<span class="fc" id="L99">				onComplete.run();</span>
 			}
 		}
+	}
+
+	static String safeFailureMessage(Exception failure) {
+<span class="fc" id="L105">		String type = failure.getClass().getSimpleName();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		return type.isBlank()</span>
+<span class="fc" id="L107">				? &quot;Commit analysis failed&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L108">				: &quot;Commit analysis failed (&quot; + type + ')'; //$NON-NLS-1$</span>
 	}
 
 	private void analyzeWithAi(AiRuleInferenceEngine engine, List&lt;FileDiff&gt; diffs,
 			IProgressMonitor monitor) {
-<span class="nc" id="L109">		List&lt;CommitEvaluation&gt; evaluations = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L113">		List&lt;CommitEvaluation&gt; evaluations = new ArrayList&lt;&gt;();</span>
 
-<span class="nc bnc" id="L111" title="All 2 branches missed.">		for (FileDiff diff : diffs) {</span>
-<span class="nc bnc" id="L112" title="All 2 branches missed.">			if (isCancelled(monitor)) {</span>
-<span class="nc" id="L113">				entry.setStatus(AnalysisStatus.PENDING);</span>
-<span class="nc" id="L114">				return;</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		for (FileDiff diff : diffs) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">			if (isCancelled(monitor)) {</span>
+<span class="nc" id="L117">				entry.setStatus(AnalysisStatus.PENDING);</span>
+<span class="nc" id="L118">				return;</span>
 			}
-<span class="nc" id="L116">			String unifiedDiff = buildUnifiedDiff(diff);</span>
-<span class="nc" id="L117">			engine.inferRuleFromDiff(unifiedDiff)</span>
-<span class="nc bnc" id="L118" title="All 4 branches missed.">					.filter(e -&gt; e.dslRule() != null &amp;&amp; !e.dslRule().isBlank())</span>
-<span class="nc" id="L119">					.ifPresent(evaluations::add);</span>
-<span class="nc bnc" id="L120" title="All 2 branches missed.">			if (isCancelled(monitor)) {</span>
-<span class="nc" id="L121">				entry.setStatus(AnalysisStatus.PENDING);</span>
-<span class="nc" id="L122">				return;</span>
+<span class="nc" id="L120">			String unifiedDiff = buildUnifiedDiff(diff);</span>
+<span class="nc" id="L121">			engine.inferRuleFromDiff(unifiedDiff)</span>
+<span class="nc bnc" id="L122" title="All 4 branches missed.">					.filter(e -&gt; e.dslRule() != null &amp;&amp; !e.dslRule().isBlank())</span>
+<span class="nc" id="L123">					.ifPresent(evaluations::add);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">			if (isCancelled(monitor)) {</span>
+<span class="nc" id="L125">				entry.setStatus(AnalysisStatus.PENDING);</span>
+<span class="nc" id="L126">				return;</span>
 			}
 		}
 
-<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (evaluations.isEmpty()) {</span>
-<span class="nc" id="L127">			entry.setStatus(AnalysisStatus.NO_RULES);</span>
-<span class="nc" id="L128">		} else {</span>
-<span class="nc" id="L129">			entry.setEvaluations(evaluations);</span>
-<span class="nc" id="L130">			entry.setStatus(AnalysisStatus.DONE);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">		if (evaluations.isEmpty()) {</span>
+<span class="nc" id="L131">			entry.setStatus(AnalysisStatus.NO_RULES);</span>
+<span class="nc" id="L132">		} else {</span>
+<span class="nc" id="L133">			entry.setEvaluations(evaluations);</span>
+<span class="nc" id="L134">			entry.setStatus(AnalysisStatus.DONE);</span>
 		}
-<span class="nc" id="L132">	}</span>
+<span class="nc" id="L136">	}</span>
 
 	private static boolean isCancelled(IProgressMonitor monitor) {
-<span class="pc bpc" id="L135" title="1 of 4 branches missed.">		return monitor.isCanceled() || Thread.currentThread().isInterrupted();</span>
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">		return monitor.isCanceled() || Thread.currentThread().isInterrupted();</span>
 	}
 
 	public static String buildUnifiedDiff(FileDiff diff) {
-<span class="nc" id="L139">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L140">		sb.append(&quot;--- a/&quot;).append(diff.filePath()).append('\n'); //$NON-NLS-1$</span>
-<span class="nc" id="L141">		sb.append(&quot;+++ b/&quot;).append(diff.filePath()).append('\n'); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">		for (DiffHunk hunk : diff.hunks()) {</span>
-<span class="nc" id="L143">			String[] beforeLines = hunk.beforeText().split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
-<span class="nc" id="L144">			String[] afterLines = hunk.afterText().split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="nc" id="L143">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L144">		sb.append(&quot;--- a/&quot;).append(diff.filePath()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc" id="L145">		sb.append(&quot;+++ b/&quot;).append(diff.filePath()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		for (DiffHunk hunk : diff.hunks()) {</span>
+<span class="nc" id="L147">			String[] beforeLines = hunk.beforeText().split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
+<span class="nc" id="L148">			String[] afterLines = hunk.afterText().split(&quot;\n&quot;, -1); //$NON-NLS-1$</span>
 
-<span class="nc" id="L146">			sb.append(&quot;@@ -&quot;).append(hunk.beforeStartLine()) //$NON-NLS-1$</span>
-<span class="nc" id="L147">					.append(',').append(beforeLines.length)</span>
-<span class="nc" id="L148">					.append(&quot; +&quot;).append(hunk.afterStartLine()) //$NON-NLS-1$</span>
-<span class="nc" id="L149">					.append(',').append(afterLines.length)</span>
-<span class="nc" id="L150">					.append(&quot; @@\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L150">			sb.append(&quot;@@ -&quot;).append(hunk.beforeStartLine()) //$NON-NLS-1$</span>
+<span class="nc" id="L151">					.append(',').append(beforeLines.length)</span>
+<span class="nc" id="L152">					.append(&quot; +&quot;).append(hunk.afterStartLine()) //$NON-NLS-1$</span>
+<span class="nc" id="L153">					.append(',').append(afterLines.length)</span>
+<span class="nc" id="L154">					.append(&quot; @@\n&quot;); //$NON-NLS-1$</span>
 
-<span class="nc bnc" id="L152" title="All 2 branches missed.">			for (String markedLine : buildHunkLines(beforeLines, afterLines)) {</span>
-<span class="nc" id="L153">				sb.append(markedLine).append('\n');</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">			for (String markedLine : buildHunkLines(beforeLines, afterLines)) {</span>
+<span class="nc" id="L157">				sb.append(markedLine).append('\n');</span>
 			}
 		}
-<span class="nc" id="L156">		return sb.toString();</span>
+<span class="nc" id="L160">		return sb.toString();</span>
 	}
 
 	public static List&lt;String&gt; buildHunkLines(String[] beforeLines, String[] afterLines) {
-<span class="nc" id="L160">		int n = beforeLines.length;</span>
-<span class="nc" id="L161">		int m = afterLines.length;</span>
+<span class="nc" id="L164">		int n = beforeLines.length;</span>
+<span class="nc" id="L165">		int m = afterLines.length;</span>
 
-<span class="nc" id="L163">		int[][] dp = new int[n + 1][m + 1];</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">		for (int i = n - 1; i &gt;= 0; i--) {</span>
-<span class="nc bnc" id="L165" title="All 2 branches missed.">			for (int j = m - 1; j &gt;= 0; j--) {</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">				if (beforeLines[i].equals(afterLines[j])) {</span>
-<span class="nc" id="L167">					dp[i][j] = dp[i + 1][j + 1] + 1;</span>
-<span class="nc" id="L168">				} else {</span>
-<span class="nc" id="L169">					dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);</span>
+<span class="nc" id="L167">		int[][] dp = new int[n + 1][m + 1];</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">		for (int i = n - 1; i &gt;= 0; i--) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">			for (int j = m - 1; j &gt;= 0; j--) {</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">				if (beforeLines[i].equals(afterLines[j])) {</span>
+<span class="nc" id="L171">					dp[i][j] = dp[i + 1][j + 1] + 1;</span>
+<span class="nc" id="L172">				} else {</span>
+<span class="nc" id="L173">					dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);</span>
 				}
 			}
 		}
 
-<span class="nc" id="L174">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L175">		int i = 0;</span>
-<span class="nc" id="L176">		int j = 0;</span>
-<span class="nc bnc" id="L177" title="All 4 branches missed.">		while (i &lt; n &amp;&amp; j &lt; m) {</span>
-<span class="nc bnc" id="L178" title="All 2 branches missed.">			if (beforeLines[i].equals(afterLines[j])) {</span>
-<span class="nc" id="L179">				result.add(&quot; &quot; + beforeLines[i]); //$NON-NLS-1$</span>
-<span class="nc" id="L180">				i++;</span>
-<span class="nc" id="L181">				j++;</span>
-<span class="nc bnc" id="L182" title="All 2 branches missed.">			} else if (dp[i + 1][j] &gt;= dp[i][j + 1]) {</span>
-<span class="nc" id="L183">				result.add(&quot;-&quot; + beforeLines[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L178">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L179">		int i = 0;</span>
+<span class="nc" id="L180">		int j = 0;</span>
+<span class="nc bnc" id="L181" title="All 4 branches missed.">		while (i &lt; n &amp;&amp; j &lt; m) {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">			if (beforeLines[i].equals(afterLines[j])) {</span>
+<span class="nc" id="L183">				result.add(&quot; &quot; + beforeLines[i]); //$NON-NLS-1$</span>
 <span class="nc" id="L184">				i++;</span>
-<span class="nc" id="L185">			} else {</span>
-<span class="nc" id="L186">				result.add(&quot;+&quot; + afterLines[j]); //$NON-NLS-1$</span>
-<span class="nc" id="L187">				j++;</span>
+<span class="nc" id="L185">				j++;</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">			} else if (dp[i + 1][j] &gt;= dp[i][j + 1]) {</span>
+<span class="nc" id="L187">				result.add(&quot;-&quot; + beforeLines[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L188">				i++;</span>
+<span class="nc" id="L189">			} else {</span>
+<span class="nc" id="L190">				result.add(&quot;+&quot; + afterLines[j]); //$NON-NLS-1$</span>
+<span class="nc" id="L191">				j++;</span>
 			}
 		}
-<span class="nc bnc" id="L190" title="All 2 branches missed.">		while (i &lt; n) {</span>
-<span class="nc" id="L191">			result.add(&quot;-&quot; + beforeLines[i]); //$NON-NLS-1$</span>
-<span class="nc" id="L192">			i++;</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">		while (i &lt; n) {</span>
+<span class="nc" id="L195">			result.add(&quot;-&quot; + beforeLines[i]); //$NON-NLS-1$</span>
+<span class="nc" id="L196">			i++;</span>
 		}
-<span class="nc bnc" id="L194" title="All 2 branches missed.">		while (j &lt; m) {</span>
-<span class="nc" id="L195">			result.add(&quot;+&quot; + afterLines[j]); //$NON-NLS-1$</span>
-<span class="nc" id="L196">			j++;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">		while (j &lt; m) {</span>
+<span class="nc" id="L199">			result.add(&quot;+&quot; + afterLines[j]); //$NON-NLS-1$</span>
+<span class="nc" id="L200">			j++;</span>
 		}
-<span class="nc" id="L198">		return result;</span>
+<span class="nc" id="L202">		return result;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -43,21 +43,27 @@ import org.sandbox.jdt.internal.ui.fix.JFaceCleanUp;
 <span class="nc" id="L43">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
 <span class="nc" id="L44">				&quot;sandbox_jface_cleanup.cleanup_configuration&quot;); //$NON-NLS-1$</span>
 <span class="nc" id="L45">		Group java1d8Group= createGroup(numColumns, composite, CleanUpMessages.JavaFeatureTabPage_GroupName_Java1d8);</span>
-<span class="nc" id="L46">		final CheckboxPreference monitorPref = createCheckboxPref(java1d8Group, numColumns,</span>
-<span class="nc" id="L47">			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_MONITOR,</span>
-<span class="nc" id="L48">			MYCleanUpConstants.JFACE_CLEANUP_MONITOR, FALSE_TRUE);</span>
+<span class="nc" id="L46">		final CheckboxPreference jfaceCleanupPref= createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L47">				CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP, MYCleanUpConstants.JFACE_CLEANUP,</span>
+<span class="nc" id="L48">				FALSE_TRUE);</span>
 <span class="nc" id="L49">		intent(java1d8Group);</span>
-<span class="nc" id="L50">		final CheckboxPreference viewerSorterPref = createCheckboxPref(java1d8Group, numColumns,</span>
-<span class="nc" id="L51">			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_VIEWER_SORTER,</span>
-<span class="nc" id="L52">			MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER, FALSE_TRUE);</span>
+<span class="nc" id="L50">		final CheckboxPreference monitorPref = createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L51">			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_MONITOR,</span>
+<span class="nc" id="L52">			MYCleanUpConstants.JFACE_CLEANUP_MONITOR, FALSE_TRUE);</span>
 <span class="nc" id="L53">		intent(java1d8Group);</span>
-<span class="nc" id="L54">		final CheckboxPreference imageDpiPref = createCheckboxPref(java1d8Group, numColumns,</span>
-<span class="nc" id="L55">			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_IMAGE_DPI,</span>
-<span class="nc" id="L56">			MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI, FALSE_TRUE);</span>
+<span class="nc" id="L54">		final CheckboxPreference viewerSorterPref = createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L55">			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_VIEWER_SORTER,</span>
+<span class="nc" id="L56">			MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER, FALSE_TRUE);</span>
 <span class="nc" id="L57">		intent(java1d8Group);</span>
-<span class="nc" id="L58">		registerPreference(monitorPref);</span>
-<span class="nc" id="L59">		registerPreference(viewerSorterPref);</span>
-<span class="nc" id="L60">		registerPreference(imageDpiPref);</span>
-<span class="nc" id="L61">	}</span>
+<span class="nc" id="L58">		final CheckboxPreference imageDpiPref = createCheckboxPref(java1d8Group, numColumns,</span>
+<span class="nc" id="L59">			CleanUpMessages.JavaFeatureTabPage_CheckboxName_JFACE_CLEANUP_IMAGE_DPI,</span>
+<span class="nc" id="L60">			MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI, FALSE_TRUE);</span>
+<span class="nc" id="L61">		intent(java1d8Group);</span>
+<span class="nc" id="L62">		registerSlavePreference(jfaceCleanupPref, new CheckboxPreference[] { monitorPref, viewerSorterPref, imageDpiPref });</span>
+<span class="nc" id="L63">		registerPreference(jfaceCleanupPref);</span>
+<span class="nc" id="L64">		registerPreference(monitorPref);</span>
+<span class="nc" id="L65">		registerPreference(viewerSorterPref);</span>
+<span class="nc" id="L66">		registerPreference(imageDpiPref);</span>
+<span class="nc" id="L67">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

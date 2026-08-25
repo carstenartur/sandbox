@@ -106,8 +106,8 @@ public final class JUnit3SuiteModel {
 	 *         {@code public static TestSuite suite()}
 	 */
 	public static boolean isSuiteBuilder(MethodDeclaration method) {
-<span class="pc bpc" id="L109" title="2 of 6 branches missed.">		if (method == null || method.isConstructor() || !method.parameters().isEmpty()</span>
-<span class="pc bpc" id="L110" title="1 of 4 branches missed.">				|| !Modifier.isPublic(method.getModifiers()) || !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L109" title="1 of 6 branches missed.">		if (method == null || method.isConstructor() || !method.parameters().isEmpty()</span>
+<span class="fc bfc" id="L110" title="All 4 branches covered.">				|| !Modifier.isPublic(method.getModifiers()) || !Modifier.isStatic(method.getModifiers())</span>
 <span class="pc bpc" id="L111" title="1 of 2 branches missed.">				|| !&quot;suite&quot;.equals(method.getName().getIdentifier())) { //$NON-NLS-1$</span>
 <span class="fc" id="L112">			return false;</span>
 		}

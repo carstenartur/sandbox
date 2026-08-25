@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HeadlessProjectWideCodeCleanupApplication.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">HeadlessProjectWideCodeCleanupApplication.java</span></div><h1>HeadlessProjectWideCodeCleanupApplication.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import org.eclipse.swt.widgets.Display;
+
+import org.eclipse.equinox.app.IApplication;
+import org.eclipse.equinox.app.IApplicationContext;
+
+/**
+ * Runs the project-wide cleanup with an SWT display owned by the application
+ * thread and disposes that display before the dedicated headless process
+ * returns to Equinox.
+ *
+ * &lt;p&gt;The wrapper deliberately does not obtain a potentially foreign display
+ * with {@code Display.getDefault()} after the delegate returns and does not use
+ * a cross-thread {@code disposeDisplay()} helper. Both patterns can block in
+ * {@code syncExec} when the owning SWT thread has no event loop.&lt;/p&gt;
+ */
+<span class="nc" id="L28">public final class HeadlessProjectWideCodeCleanupApplication implements IApplication {</span>
+
+<span class="nc" id="L30">	private final ProjectWideCodeCleanupApplication delegate= new ProjectWideCodeCleanupApplication();</span>
+
+	@Override
+	public Object start(IApplicationContext context) {
+<span class="nc" id="L34">		Display current= Display.getCurrent();</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">		if (current != null) {</span>
+<span class="nc" id="L36">			return delegate.start(context);</span>
+		}
+
+<span class="nc" id="L39">		Display display= new Display();</span>
+		try {
+<span class="nc" id="L41">			return delegate.start(context);</span>
+		} finally {
+<span class="nc bnc" id="L43" title="All 2 branches missed.">			if (!display.isDisposed()) {</span>
+<span class="nc" id="L44">				display.dispose();</span>
+			}
+		}
+	}
+
+	@Override
+	public void stop() {
+<span class="nc" id="L51">		delegate.stop();</span>
+<span class="nc" id="L52">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

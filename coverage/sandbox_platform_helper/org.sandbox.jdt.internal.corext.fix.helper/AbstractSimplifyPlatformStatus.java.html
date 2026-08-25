@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractSimplifyPlatformStatus.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_platform_helper</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">AbstractSimplifyPlatformStatus.java</span></div><h1>AbstractSimplifyPlatformStatus.java</h1><pre class="source lang-java linenums">/*******************************************************************************
- * Copyright (c) 2021 Carsten Hammer.
+ * Copyright (c) 2021, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *
@@ -13,20 +13,36 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NullLiteral;
-import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
@@ -39,140 +55,254 @@ import org.sandbox.jdt.internal.corext.fix.SimplifyPlatformStatusFixCore;
 import org.sandbox.jdt.internal.corext.util.ImportUtils;
 
 /**
- * @param &lt;T&gt; Type found in Visitor
+ * Shared implementation for semantics-preserving simplification of
+ * {@link Status} constructor calls.
+ *
+ * &lt;p&gt;A factory is preferred when the explicit identity is a side-effect-free
+ * value that is provably equal to the identity inferred for the calling class,
+ * and the factory return type fits the surrounding source context. Otherwise
+ * only a compile-time {@link IStatus#OK} code is removed and every explicit
+ * constructor value is retained.&lt;/p&gt;
  */
-public abstract class AbstractSimplifyPlatformStatus&lt;T extends ASTNode&gt; {
-	String methodName;
-	String expectedStatusLiteral;
+public abstract class AbstractSimplifyPlatformStatus {
 
-<span class="fc" id="L48">	public AbstractSimplifyPlatformStatus(String methodName, String expectedStatusLiteral) {</span>
-<span class="fc" id="L49">		this.methodName= methodName;</span>
-<span class="fc" id="L50">		this.expectedStatusLiteral= expectedStatusLiteral;</span>
-<span class="fc" id="L51">	}</span>
+	private static final String BUNDLE_SYMBOLIC_NAME= &quot;Bundle-SymbolicName&quot;; //$NON-NLS-1$
+	private static final String FRAGMENT_HOST= &quot;Fragment-Host&quot;; //$NON-NLS-1$
+	private static final String INFO_FACTORY_METHOD= &quot;info&quot;; //$NON-NLS-1$
 
-	/**
-	 * Adds an import to the class. This method should be used for every class
-	 * reference added to the generated code.
-	 *
-	 * @param typeName  a fully qualified name of a type
-	 * @param cuRewrite CompilationUnitRewrite
-	 * @param ast       AST
-	 * @return simple name of a class if the import was added and fully qualified
-	 *         name if there was a conflict
-	 */
+	private final int expectedSeverity;
+	private final String factoryMethodName;
+
+	protected AbstractSimplifyPlatformStatus(int expectedSeverity) {
+<span class="fc" id="L77">		this(expectedSeverity, null);</span>
+<span class="fc" id="L78">	}</span>
+
+<span class="fc" id="L80">	protected AbstractSimplifyPlatformStatus(int expectedSeverity, String factoryMethodName) {</span>
+<span class="fc" id="L81">		this.expectedSeverity= expectedSeverity;</span>
+<span class="fc" id="L82">		this.factoryMethodName= factoryMethodName;</span>
+<span class="fc" id="L83">	}</span>
+
+	/** Adds an import and returns a usable name for a generated type reference. */
 	protected static Name addImport(String typeName, final CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L64">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
+<span class="fc" id="L87">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
+	}
+
+	/** Returns the compile-time integer value of an expression, or {@code null}. */
+	protected static Integer constantIntValue(Expression expression) {
+<span class="fc" id="L92">		Object value= expression.resolveConstantExpressionValue();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		return value instanceof Integer integer ? integer : null;</span>
+	}
+
+	/** Tests an expression by compile-time value instead of source spelling. */
+	protected static boolean hasConstantIntValue(Expression expression, int expected) {
+<span class="fc" id="L98">		Integer value= constantIntValue(expression);</span>
+<span class="fc bfc" id="L99" title="All 4 branches covered.">		return value != null &amp;&amp; value.intValue() == expected;</span>
 	}
 
 	public abstract String getPreview(boolean afterRefactoring);
 
+	/** Finds exact {@link Status} constructors whose code is provably OK. */
 	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) throws CoreException {
-<span class="nc" id="L71">		find(fixcore, compilationUnit, operations, nodesprocessed, false);</span>
-<span class="nc" id="L72">	}</span>
-
-	public void find(SimplifyPlatformStatusFixCore fixcore, CompilationUnit compilationUnit,
-			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesprocessed,
-			boolean preservePluginId) throws CoreException {
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesProcessed)
+			throws CoreException {
 		try {
-<span class="fc" id="L78">			ReferenceHolder&lt;ASTNode, Object&gt; dataholder= ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L79">			HelperVisitorFactory.forClassInstanceCreation(Status.class)</span>
-<span class="fc" id="L80">				.in(compilationUnit)</span>
-<span class="fc" id="L81">				.excluding(nodesprocessed)</span>
-<span class="fc" id="L82">				.processEach(dataholder, (visited, holder) -&gt; {</span>
-<span class="pc bpc" id="L83" title="1 of 4 branches missed.">					if (nodesprocessed.contains(visited) || (visited.arguments().size() != 5)) {</span>
-<span class="fc" id="L84">						return false;</span>
+<span class="fc" id="L109">			String bundleId= runtimeBundleSymbolicName(compilationUnit);</span>
+<span class="fc" id="L110">			ReferenceHolder&lt;ASTNode, Object&gt; holder= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L111">			HelperVisitorFactory.forClassInstanceCreation(Status.class)</span>
+<span class="fc" id="L112">				.in(compilationUnit)</span>
+<span class="fc" id="L113">				.excluding(nodesProcessed)</span>
+<span class="fc" id="L114">				.processEach(holder, (visited, data) -&gt; {</span>
+<span class="fc bfc" id="L115" title="All 4 branches covered.">					if (nodesProcessed.contains(visited) || visited.arguments().size() != 5) {</span>
+<span class="fc" id="L116">						return false;</span>
 					}
-					/**
-					 * Expected pattern: new Status(severity, pluginId, IStatus.OK, message, throwable)
-					 * Where:
-					 *   - severity is IStatus.INFO, IStatus.WARNING, or IStatus.ERROR
-					 *   - pluginId is a String
-					 *   - code is IStatus.OK (mandatory for this transformation)
-					 *   - message is a String
-					 *   - throwable is a Throwable or null
-					 *
-					 * Transforms to: Status.info(message, throwable) / Status.warning(message, throwable) / Status.error(message, throwable)
-					 */
-<span class="fc" id="L97">					List&lt;Expression&gt; arguments= visited.arguments();</span>
-					
-					// Safely check if argument at index 2 (code) is IStatus.OK
-<span class="fc" id="L100">					Expression codeArg= arguments.get(2);</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">					if (!(codeArg instanceof QualifiedName)) {</span>
-<span class="nc" id="L102">						return false;</span>
+
+<span class="fc" id="L119">					ITypeBinding typeBinding= visited.resolveTypeBinding();</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">					if (typeBinding == null</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">							|| !Status.class.getName().equals(typeBinding.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L122">						return false;</span>
 					}
-<span class="fc" id="L104">					QualifiedName codeQualifiedName= (QualifiedName) codeArg;</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">					if (!&quot;IStatus.OK&quot;.equals(codeQualifiedName.toString())) { //$NON-NLS-1$</span>
-<span class="nc" id="L106">						return false;</span>
+
+<span class="fc" id="L125">					List&lt;Expression&gt; arguments= visited.arguments();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">					if (!hasConstantIntValue(arguments.get(0), expectedSeverity)</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">							|| !hasConstantIntValue(arguments.get(2), IStatus.OK)) {</span>
+<span class="fc" id="L128">						return false;</span>
 					}
-					
-					// Safely check if argument at index 0 (severity) matches expected status literal
-<span class="fc" id="L110">					Expression severityArg= arguments.get(0);</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">					if (!(severityArg instanceof QualifiedName)) {</span>
-<span class="nc" id="L112">						return false;</span>
-					}
-<span class="fc" id="L114">					QualifiedName severityQualifiedName= (QualifiedName) severityArg;</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">					if (expectedStatusLiteral.equals(severityQualifiedName.toString())) {</span>
-<span class="fc" id="L116">						operations.add(fixcore.rewrite(visited, holder, preservePluginId));</span>
-<span class="fc" id="L117">						nodesprocessed.add(visited);</span>
-<span class="fc" id="L118">						return false;</span>
-					}
-<span class="fc" id="L120">					return true;</span>
+
+<span class="fc" id="L131">					Integer factoryArgumentCount= factoryArgumentCount(visited, arguments, bundleId);</span>
+<span class="fc" id="L132">					operations.add(fixcore.rewrite(visited, data, factoryArgumentCount));</span>
+<span class="fc" id="L133">					nodesProcessed.add(visited);</span>
+<span class="fc" id="L134">					return false;</span>
 				});
-<span class="pc" id="L122">		} catch (Exception e) {</span>
-<span class="nc" id="L123">			throw new CoreException(Status.error(&quot;Problem in find&quot;, e)); //$NON-NLS-1$</span>
+<span class="pc" id="L136">		} catch (Exception exception) {</span>
+<span class="nc" id="L137">			throw new CoreException(Status.error(&quot;Problem while finding Status simplifications&quot;, exception)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L125">	}</span>
+<span class="fc" id="L139">	}</span>
 
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="nc" id="L129">		rewrite(upp, visited, cuRewrite, group, holder, false);</span>
-<span class="nc" id="L130">	}</span>
-
-	public void rewrite(SimplifyPlatformStatusFixCore upp, final ClassInstanceCreation visited,
-			final CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; holder,
-			boolean preservePluginId) {
-<span class="fc" id="L135">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L136">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L137">		ImportRemover remover= cuRewrite.getImportRemover();</span>
-
-		/**
-		 * Create call to Status.warning(), Status.error(), or Status.info()
-		 */
-		// Add imports in alphabetical order to match expected test output
-		// IStatus comes before Status alphabetically
-<span class="fc" id="L144">		addImport(&quot;org.eclipse.core.runtime.IStatus&quot;, cuRewrite, ast);</span>
-		
-<span class="fc" id="L146">		MethodInvocation staticCall= ast.newMethodInvocation();</span>
-<span class="fc" id="L147">		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);</span>
-<span class="fc" id="L148">		staticCall.setExpression(statusName);</span>
-<span class="fc" id="L149">		staticCall.setName(ast.newSimpleName(methodName));</span>
-		
-<span class="fc" id="L151">		List&lt;ASTNode&gt; arguments= visited.arguments();</span>
-<span class="fc" id="L152">		List&lt;ASTNode&gt; staticCallArguments= staticCall.arguments();</span>
-		
-		// Note: preservePluginId parameter is not used for Status factory methods
-		// because the Eclipse Platform Status.error(), Status.warning(), and Status.info()
-		// methods only accept (message, exception) parameters, not plugin ID.
-		
-		// Add message argument (always at position 3 for 5-argument constructor)
-<span class="fc" id="L159">		int messagePosition= 3;</span>
-<span class="fc" id="L160">		staticCallArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
-<span class="fc" id="L161">				ASTNodes.getUnparenthesedExpression(arguments.get(messagePosition))));</span>
-		
-		// Add throwable argument if present (at position 4) and not null
-<span class="fc" id="L164">		ASTNode throwableArg= arguments.get(4);</span>
-		// Add the exception parameter if it's not a null literal
-		// The code argument (position 2) was already validated as IStatus.OK in the find() method
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (!(throwableArg instanceof NullLiteral)) {</span>
-<span class="fc" id="L168">			staticCallArguments.add(ASTNodes.createMoveTarget(rewrite, ASTNodes.getUnparenthesedExpression(throwableArg)));</span>
+	private Integer factoryArgumentCount(ClassInstanceCreation visited, List&lt;Expression&gt; arguments,
+			String bundleId) {
+<span class="pc bpc" id="L143" title="1 of 4 branches missed.">		if (factoryMethodName == null || bundleId == null</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">				|| !hasEquivalentIdentity(arguments.get(1), visited, bundleId)) {</span>
+<span class="fc" id="L145">			return null;</span>
 		}
-		
-<span class="fc" id="L171">		ASTNodes.replaceButKeepComment(rewrite, visited, staticCall, group);</span>
-<span class="fc" id="L172">		remover.registerRemovedNode(visited);</span>
-		// Note: Do NOT call remover.applyRemoves(importRewrite) here
-		// ImportRewrite automatically manages import removal/addition throughout the transformation.
-		// The Status import is explicitly added via addImport() above, and IStatus is preserved from the variable declaration.
-<span class="fc" id="L176">	}</span>
+<span class="fc" id="L147">		boolean nullThrowable= ASTNodes.getUnparenthesedExpression(arguments.get(4)) instanceof NullLiteral;</span>
+<span class="fc bfc" id="L148" title="All 4 branches covered.">		if (nullThrowable &amp;&amp; hasCompatibleFactory(visited, 1)) {</span>
+<span class="fc" id="L149">			return Integer.valueOf(1);</span>
+		}
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		return hasCompatibleFactory(visited, 2) ? Integer.valueOf(2) : null;</span>
+	}
+
+	private boolean hasCompatibleFactory(ClassInstanceCreation visited, int argumentCount) {
+<span class="fc bfc" id="L155" title="All 4 branches covered.">		if (argumentCount == 2 &amp;&amp; INFO_FACTORY_METHOD.equals(factoryMethodName)) {</span>
+<span class="fc" id="L156">			return false;</span>
+		}
+<span class="fc" id="L158">		ITypeBinding statusType= visited.resolveTypeBinding();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (statusType == null) {</span>
+<span class="nc" id="L160">			return false;</span>
+		}
+<span class="fc" id="L162">		ITypeBinding targetType= targetType(visited);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">		for (IMethodBinding method : statusType.getErasure().getDeclaredMethods()) {</span>
+<span class="fc" id="L164">			ITypeBinding[] parameters= method.getParameterTypes();</span>
+<span class="pc bpc" id="L165" title="1 of 4 branches missed.">			if (!factoryMethodName.equals(method.getName()) || !Modifier.isStatic(method.getModifiers())</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">					|| parameters.length != argumentCount</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">					|| !String.class.getName().equals(parameters[0].getErasure().getQualifiedName())</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">					|| argumentCount == 2</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">							&amp;&amp; !Throwable.class.getName().equals(parameters[1].getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L170">				continue;</span>
+			}
+<span class="fc" id="L172">			ITypeBinding returnType= method.getReturnType();</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">			if (Status.class.getName().equals(returnType.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L174" title="1 of 4 branches missed.">					|| targetType != null &amp;&amp; returnType.isAssignmentCompatible(targetType)</span>
+<span class="pc bpc" id="L175" title="3 of 4 branches missed.">					|| targetType == null &amp;&amp; isExpressionStatement(visited)) {</span>
+<span class="fc" id="L176">				return true;</span>
+			}
+		}
+<span class="fc" id="L179">		return false;</span>
+	}
+
+	private static ITypeBinding targetType(Expression expression) {
+<span class="fc" id="L183">		ASTNode current= expression;</span>
+<span class="fc" id="L184">		ASTNode parent= current.getParent();</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		while (parent instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L186">			current= parent;</span>
+<span class="nc" id="L187">			parent= parent.getParent();</span>
+		}
+<span class="pc bpc" id="L189" title="2 of 4 branches missed.">		if (parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getInitializer() == current) {</span>
+<span class="fc" id="L190">			IVariableBinding variableBinding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">			if (variableBinding != null) {</span>
+<span class="fc" id="L192">				return variableBinding.getType();</span>
+			}
+		}
+<span class="nc" id="L195">		return ASTNodes.getTargetType((Expression) current);</span>
+	}
+
+	private static boolean hasEquivalentIdentity(Expression identity, ClassInstanceCreation visited,
+			String bundleId) {
+<span class="fc" id="L200">		Expression expression= ASTNodes.getUnparenthesedExpression(identity);</span>
+<span class="fc" id="L201">		Object constantValue= expression.resolveConstantExpressionValue();</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">		if (constantValue instanceof String stringValue) {</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">			return bundleId != null &amp;&amp; bundleId.equals(stringValue);</span>
+		}
+<span class="fc bfc" id="L205" title="All 2 branches covered.">		if (!(expression instanceof TypeLiteral typeLiteral)) {</span>
+<span class="fc" id="L206">			return false;</span>
+		}
+<span class="fc" id="L208">		ITypeBinding explicitType= typeLiteral.getType().resolveBinding();</span>
+<span class="fc" id="L209">		ITypeBinding callerType= enclosingTypeBinding(visited);</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">		return explicitType != null &amp;&amp; callerType != null</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">				&amp;&amp; explicitType.getErasure().isEqualTo(callerType.getErasure());</span>
+	}
+
+	private static ITypeBinding enclosingTypeBinding(ASTNode node) {
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">			if (current instanceof AnonymousClassDeclaration anonymousClass) {</span>
+<span class="nc" id="L217">				return anonymousClass.resolveBinding();</span>
+			}
+<span class="fc bfc" id="L219" title="All 2 branches covered.">			if (current instanceof AbstractTypeDeclaration typeDeclaration) {</span>
+<span class="fc" id="L220">				return typeDeclaration.resolveBinding();</span>
+			}
+		}
+<span class="nc" id="L223">		return null;</span>
+	}
+
+	private static boolean isExpressionStatement(Expression expression) {
+<span class="nc" id="L227">		ASTNode parent= expression.getParent();</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">		while (parent instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L229">			parent= parent.getParent();</span>
+		}
+<span class="nc" id="L231">		return parent instanceof ExpressionStatement;</span>
+	}
+
+	private static String runtimeBundleSymbolicName(CompilationUnit compilationUnit) {
+<span class="fc" id="L235">		IJavaElement javaElement= compilationUnit.getJavaElement();</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">		if (javaElement == null) {</span>
+<span class="nc" id="L237">			return null;</span>
+		}
+<span class="fc" id="L239">		IFile manifestFile= javaElement.getJavaProject().getProject().getFile(&quot;META-INF/MANIFEST.MF&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		if (!manifestFile.isAccessible()) {</span>
+<span class="fc" id="L241">			return null;</span>
+		}
+<span class="fc" id="L243">		try (InputStream contents= manifestFile.getContents()) {</span>
+<span class="fc" id="L244">			Attributes attributes= new Manifest(contents).getMainAttributes();</span>
+<span class="fc" id="L245">			String fragmentHost= attributes.getValue(FRAGMENT_HOST);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">			String runtimeIdentity= fragmentHost != null ? fragmentHost : attributes.getValue(BUNDLE_SYMBOLIC_NAME);</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			if (runtimeIdentity == null) {</span>
+<span class="nc" id="L248">				return null;</span>
+			}
+<span class="fc" id="L250">			int directiveStart= runtimeIdentity.indexOf(';');</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">			return (directiveStart &lt; 0 ? runtimeIdentity : runtimeIdentity.substring(0, directiveStart)).trim();</span>
+<span class="nc" id="L252">		} catch (CoreException | IOException exception) {</span>
+<span class="nc" id="L253">			return null;</span>
+		}
+	}
+
+	/** Removes only the redundant OK code and retains every other argument. */
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
+<span class="fc" id="L261">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L262">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L263">		ImportRemover remover= cuRewrite.getImportRemover();</span>
+
+<span class="fc" id="L265">		ClassInstanceCreation simplifiedStatus= ast.newClassInstanceCreation();</span>
+<span class="fc" id="L266">		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);</span>
+<span class="fc" id="L267">		simplifiedStatus.setType(ast.newSimpleType(statusName));</span>
+
+<span class="fc" id="L269">		List&lt;Expression&gt; originalArguments= visited.arguments();</span>
+<span class="fc" id="L270">		List&lt;Expression&gt; simplifiedArguments= simplifiedStatus.arguments();</span>
+<span class="fc" id="L271">		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L272">				ASTNodes.getUnparenthesedExpression(originalArguments.get(0))));</span>
+<span class="fc" id="L273">		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L274">				ASTNodes.getUnparenthesedExpression(originalArguments.get(1))));</span>
+<span class="fc" id="L275">		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L276">				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));</span>
+<span class="fc" id="L277">		simplifiedArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L278">				ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));</span>
+
+<span class="fc" id="L280">		ASTNodes.replaceButKeepComment(rewrite, visited, simplifiedStatus, group);</span>
+<span class="fc" id="L281">		remover.registerRemovedNode(visited);</span>
+<span class="fc" id="L282">	}</span>
+
+	/** Uses a factory after identity and target-type equivalence have been proven. */
+	public void rewrite(SimplifyPlatformStatusFixCore cleanup, final ClassInstanceCreation visited,
+			final CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder&lt;ASTNode, Object&gt; holder, int factoryArgumentCount) {
+<span class="fc" id="L288">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L289">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L290">		ImportRemover remover= cuRewrite.getImportRemover();</span>
+
+<span class="fc" id="L292">		MethodInvocation factoryCall= ast.newMethodInvocation();</span>
+<span class="fc" id="L293">		factoryCall.setExpression(addImport(Status.class.getName(), cuRewrite, ast));</span>
+<span class="fc" id="L294">		factoryCall.setName(ast.newSimpleName(factoryMethodName));</span>
+<span class="fc" id="L295">		List&lt;Expression&gt; originalArguments= visited.arguments();</span>
+<span class="fc" id="L296">		List&lt;Expression&gt; factoryArguments= factoryCall.arguments();</span>
+<span class="fc" id="L297">		factoryArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L298">				ASTNodes.getUnparenthesedExpression(originalArguments.get(3))));</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">		if (factoryArgumentCount == 2) {</span>
+<span class="fc" id="L300">			factoryArguments.add(ASTNodes.createMoveTarget(rewrite,</span>
+<span class="fc" id="L301">					ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));</span>
+		}
+
+<span class="fc" id="L304">		ASTNodes.replaceButKeepComment(rewrite, visited, factoryCall, group);</span>
+<span class="fc" id="L305">		remover.registerRemovedNode(visited);</span>
+<span class="fc" id="L306">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

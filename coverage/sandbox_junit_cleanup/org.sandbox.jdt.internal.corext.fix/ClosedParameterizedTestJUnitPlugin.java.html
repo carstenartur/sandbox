@@ -12,6 +12,8 @@ package org.sandbox.jdt.internal.corext.fix;
 
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
 
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
@@ -19,6 +21,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedTestJUnitPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.JunitHolder;
 import org.sandbox.jdt.triggerpattern.api.CleanupPattern;
 import org.sandbox.jdt.triggerpattern.api.Match;
+import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 /**
@@ -29,17 +32,26 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 		cleanupId = &quot;cleanup.junit.parameterized&quot;,
 		description = &quot;Migrate @RunWith(Parameterized.class) to @ParameterizedTest&quot;,
 		displayName = &quot;JUnit 4 @RunWith(Parameterized) → JUnit 5 @ParameterizedTest&quot;)
-<span class="fc" id="L32">final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlugin {</span>
+<span class="fc" id="L35">final class ClosedParameterizedTestJUnitPlugin extends ParameterizedTestJUnitPlugin {</span>
+
+	@Override
+	protected List&lt;Pattern&gt; getPatterns() {
+<span class="fc" id="L39">		return List.of(</span>
+<span class="fc" id="L40">				new Pattern(&quot;@RunWith($runner)&quot;, PatternKind.ANNOTATION, null, null, //$NON-NLS-1$</span>
+<span class="fc" id="L41">						ORG_JUNIT_RUNWITH, null, null),</span>
+<span class="fc" id="L42">				new Pattern(&quot;@RunWith(value = $runner)&quot;, PatternKind.ANNOTATION, null, null, //$NON-NLS-1$</span>
+<span class="fc" id="L43">						ORG_JUNIT_RUNWITH, null, null));</span>
+	}
 
 	@Override
 	protected JunitHolder createHolder(Match match) {
-<span class="fc" id="L36">		JunitHolder holder= super.createHolder(match);</span>
-<span class="pc bpc" id="L37" title="2 of 4 branches missed.">		if (holder == null || !(holder.getAdditionalInfo() instanceof TypeDeclaration type)) {</span>
-<span class="nc" id="L38">			return holder;</span>
+<span class="fc" id="L48">		JunitHolder holder= super.createHolder(match);</span>
+<span class="pc bpc" id="L49" title="2 of 4 branches missed.">		if (holder == null || !(holder.getAdditionalInfo() instanceof TypeDeclaration type)) {</span>
+<span class="nc" id="L50">			return holder;</span>
 		}
-<span class="fc bfc" id="L40" title="All 2 branches covered.">		return ParameterizedMigrationEligibility.assess(type).eligible()</span>
-<span class="fc" id="L41">				? holder</span>
-<span class="fc" id="L42">				: null;</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		return ParameterizedMigrationEligibility.assess(type).eligible()</span>
+<span class="fc" id="L53">				? holder</span>
+<span class="nc" id="L54">				: null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

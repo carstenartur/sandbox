@@ -1,0 +1,652 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JdtUiInheritedTestsRunnerMigration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">JdtUiInheritedTestsRunnerMigration.java</span></div><h1>JdtUiInheritedTestsRunnerMigration.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_TEST;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RUNWITH;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_TEST;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.stream.Collectors;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.text.edits.TextEditGroup;
+
+/**
+ * Migrates the custom JUnit 4 runner used by the Eclipse JDT UI refactoring
+ * tests to ordinary Jupiter discovery without reintroducing inherited tests.
+ *
+ * &lt;p&gt;The JUnit 4 contract consists of three exact source types:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code org.eclipse.jdt.ui.tests.IgnoreInheritedTests};&lt;/li&gt;
+ *   &lt;li&gt;{@code org.eclipse.jdt.ui.tests.InheritedTestsFilter};&lt;/li&gt;
+ *   &lt;li&gt;{@code org.eclipse.jdt.ui.tests.CustomBaseRunner}.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;The runner filters a subclass so that only test methods declared directly
+ * by that subclass remain. A direct {@code @Disabled} replacement is not
+ * equivalent because disabled tests are still discovered and counted. The
+ * source-only migration materializes one unannotated delegating override for
+ * each otherwise inherited test method. Jupiter removes overridden superclass
+ * methods before evaluating test annotations, so those methods disappear from
+ * the discovered test tree while direct Java calls retain their former
+ * behavior.&lt;/p&gt;
+ *
+ * &lt;p&gt;This adapter intentionally recognizes the complete current JDT UI source
+ * contract and fails closed when the runner, filter, marker, or inherited test
+ * shape differs. A future project-resource migration may instead generate a
+ * globally registered JUnit Platform {@code PostDiscoveryFilter}; ordinary
+ * cleanup fixes cannot create its ServiceLoader resource atomically.&lt;/p&gt;
+ */
+public final class JdtUiInheritedTestsRunnerMigration {
+
+	static final String CUSTOM_BASE_RUNNER= &quot;org.eclipse.jdt.ui.tests.CustomBaseRunner&quot;; //$NON-NLS-1$
+	static final String IGNORE_INHERITED_TESTS= &quot;org.eclipse.jdt.ui.tests.IgnoreInheritedTests&quot;; //$NON-NLS-1$
+	static final String INHERITED_TESTS_FILTER= &quot;org.eclipse.jdt.ui.tests.InheritedTestsFilter&quot;; //$NON-NLS-1$
+
+	private static final String BLOCK_JUNIT4_CLASS_RUNNER= &quot;org.junit.runners.BlockJUnit4ClassRunner&quot;; //$NON-NLS-1$
+	private static final String DESCRIPTION_TYPE= &quot;org.junit.runner.Description&quot;; //$NON-NLS-1$
+	private static final String FILTER_TYPE= &quot;org.junit.runner.manipulation.Filter&quot;; //$NON-NLS-1$
+	private static final String INHERITED_META_ANNOTATION= &quot;java.lang.annotation.Inherited&quot;; //$NON-NLS-1$
+	private static final String RETENTION_META_ANNOTATION= &quot;java.lang.annotation.Retention&quot;; //$NON-NLS-1$
+	private static final String RETENTION_POLICY= &quot;java.lang.annotation.RetentionPolicy&quot;; //$NON-NLS-1$
+	private static final String TARGET_META_ANNOTATION= &quot;java.lang.annotation.Target&quot;; //$NON-NLS-1$
+	private static final String ELEMENT_TYPE= &quot;java.lang.annotation.ElementType&quot;; //$NON-NLS-1$
+
+	/**
+	 * One entry per Java project. Values deliberately contain no project or Java
+	 * model references so the weak project keys can be reclaimed with the
+	 * workspace project.
+	 */
+<span class="fc" id="L118">	private static final Map&lt;IJavaProject, ContractCacheEntry&gt; CONTRACT_CACHE= new WeakHashMap&lt;&gt;();</span>
+
+	/** One inherited method that must be shadowed in the migrated subclass. */
+	public record SuppressedMethod(String name, List&lt;String&gt; thrownExceptionTypes) {
+
+<span class="fc" id="L123">		public SuppressedMethod {</span>
+<span class="fc" id="L124">			Objects.requireNonNull(name);</span>
+<span class="fc" id="L125">			thrownExceptionTypes= List.copyOf(thrownExceptionTypes);</span>
+<span class="fc" id="L126">		}</span>
+	}
+
+	/** Local, rewrite-ready plan for one annotated JDT UI test subclass. */
+	public record Plan(TypeDeclaration type, Annotation markerAnnotation,
+			List&lt;SuppressedMethod&gt; suppressedMethods) {
+
+<span class="fc" id="L133">		public Plan {</span>
+<span class="fc" id="L134">			Objects.requireNonNull(type);</span>
+<span class="fc" id="L135">			Objects.requireNonNull(markerAnnotation);</span>
+<span class="fc" id="L136">			suppressedMethods= List.copyOf(suppressedMethods);</span>
+<span class="fc" id="L137">		}</span>
+	}
+
+	/** Fail-closed assessment used by both runner diagnostics and rewriting. */
+	public record Assessment(boolean eligible, String reasonCode, String explanation, Plan plan) {
+
+		static Assessment accepted(Plan plan) {
+<span class="fc" id="L144">			return new Assessment(true, &quot;SUPPORTED_JDT_UI_INHERITED_TEST_FILTER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L145">					&quot;The JDT UI runner only removes inherited tests and can be materialized as unannotated overrides.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L146">					plan);</span>
+		}
+
+		static Assessment rejected(String reasonCode, String explanation) {
+<span class="fc" id="L150">			return new Assessment(false, reasonCode, explanation, null);</span>
+		}
+	}
+
+	private record Variable(String name, ITypeBinding type) {
+	}
+
+	private record MethodCollection(List&lt;SuppressedMethod&gt; methods, String rejection) {
+<span class="fc" id="L158">		MethodCollection {</span>
+<span class="fc" id="L159">			methods= List.copyOf(methods);</span>
+<span class="fc" id="L160">		}</span>
+	}
+
+	private record ContractSourceState(String runnerBindingKey, String runnerHandle, String runnerSource,
+			String filterHandle, String filterSource) {
+	}
+
+	private record ContractSnapshot(IJavaProject project, ContractSourceState sourceState) {
+	}
+
+	private record ContractCacheEntry(ContractSourceState sourceState, String rejection) {
+	}
+
+<span class="nc" id="L173">	private JdtUiInheritedTestsRunnerMigration() {</span>
+<span class="nc" id="L174">		throw new UnsupportedOperationException(&quot;Utility class&quot;); //$NON-NLS-1$</span>
+	}
+
+	/** Returns whether the exact JDT UI runner contract can be migrated safely. */
+	public static Assessment assess(Annotation runWith, String runnerQualifiedName) {
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		ASTNode parent= runWith == null ? null : runWith.getParent();</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">		TypeDeclaration type= parent != null</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">				&amp;&amp; parent.getNodeType() == ASTNode.TYPE_DECLARATION</span>
+<span class="fc" id="L182">						? (TypeDeclaration) parent</span>
+<span class="fc" id="L183">						: null;</span>
+<span class="fc" id="L184">		return assess(type, runnerQualifiedName);</span>
+	}
+
+	/** Returns whether the exact JDT UI runner contract can be migrated safely. */
+	public static Assessment assess(TypeDeclaration type, String runnerQualifiedName) {
+<span class="fc bfc" id="L189" title="All 4 branches covered.">		if (type == null || !CUSTOM_BASE_RUNNER.equals(runnerQualifiedName)) {</span>
+<span class="fc" id="L190">			return Assessment.rejected(&quot;NOT_JDT_UI_INHERITED_TEST_RUNNER&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L191">					&quot;The runner is not the supported JDT UI inherited-test runner.&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L194">		SingleMemberAnnotation runWith= runWithAnnotation(type);</span>
+<span class="pc bpc" id="L195" title="2 of 4 branches missed.">		if (runWith == null || !(runWith.getValue() instanceof TypeLiteral literal)) {</span>
+<span class="nc" id="L196">			return Assessment.rejected(&quot;MALFORMED_JDT_UI_RUNNER_ANNOTATION&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L197">					&quot;The JDT UI runner annotation is not a binding-resolved @RunWith type literal.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L199">		ITypeBinding runnerBinding= erasure(literal.getType().resolveBinding());</span>
+<span class="pc bpc" id="L200" title="2 of 4 branches missed.">		if (runnerBinding == null || !CUSTOM_BASE_RUNNER.equals(runnerBinding.getQualifiedName())) {</span>
+<span class="nc" id="L201">			return Assessment.rejected(&quot;UNRESOLVED_JDT_UI_RUNNER&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L202">					&quot;The JDT UI custom runner binding could not be resolved exactly.&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L205">		Annotation marker= declaredAnnotation(type, IGNORE_INHERITED_TESTS);</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">		if (marker == null) {</span>
+<span class="nc" id="L207">			return Assessment.rejected(&quot;MISSING_IGNORE_INHERITED_TESTS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L208">					&quot;The test subclass does not declare the JDT UI inherited-test marker.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L210">		ITypeBinding markerBinding= erasure(marker.resolveTypeBinding());</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		if (!isRuntimeTypeMarker(markerBinding)) {</span>
+<span class="nc" id="L212">			return Assessment.rejected(&quot;INVALID_IGNORE_INHERITED_TESTS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L213">					&quot;The marker must remain a binding-resolved @Inherited, @Retention(RUNTIME), @Target(TYPE) annotation.&quot;); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L216">		String runnerRejection= verifyRunnerAndFilterContractCached(runnerBinding);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">		if (runnerRejection != null) {</span>
+<span class="fc" id="L218">			return Assessment.rejected(&quot;JDT_UI_RUNNER_CONTRACT_CHANGED&quot;, runnerRejection); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L221">		ITypeBinding testType= erasure(type.resolveBinding());</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">		if (testType == null) {</span>
+<span class="nc" id="L223">			return Assessment.rejected(&quot;UNRESOLVED_JDT_UI_TEST_TYPE&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L224">					&quot;The annotated test subclass binding could not be resolved.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L226" title="2 of 4 branches missed.">		if (Modifier.isAbstract(testType.getModifiers()) || !hasDirectTestMethod(testType)) {</span>
+<span class="nc" id="L227">			return Assessment.rejected(&quot;NO_DIRECT_JDT_UI_TEST&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L228">					&quot;The JDT UI runner adapter requires a concrete subclass with at least one directly declared test.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L230">		MethodCollection collected= collectSuppressedMethods(testType);</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		if (collected.rejection() != null) {</span>
+<span class="nc" id="L232">			return Assessment.rejected(&quot;UNSUPPORTED_INHERITED_TEST_METHOD&quot;, collected.rejection()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L234">		return Assessment.accepted(new Plan(type, marker, collected.methods()));</span>
+	}
+
+	/** Applies the local source-only migration prepared by {@link #assess}. */
+	public static void rewrite(TextEditGroup group, ASTRewrite rewrite, AST ast,
+			ImportRewrite imports, Annotation runWith, Plan plan) {
+<span class="fc" id="L240">		ListRewrite modifiers= rewrite.getListRewrite(plan.type(), TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L241">		modifiers.remove(runWith, group);</span>
+<span class="fc" id="L242">		modifiers.remove(plan.markerAnnotation(), group);</span>
+
+<span class="fc" id="L244">		ListRewrite body= rewrite.getListRewrite(plan.type(), TypeDeclaration.BODY_DECLARATIONS_PROPERTY);</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">		for (SuppressedMethod suppressed : plan.suppressedMethods()) {</span>
+<span class="fc" id="L246">			MethodDeclaration method= ast.newMethodDeclaration();</span>
+<span class="fc" id="L247">			method.setName(ast.newSimpleName(suppressed.name()));</span>
+<span class="fc" id="L248">			method.setReturnType2(ast.newPrimitiveType(org.eclipse.jdt.core.dom.PrimitiveType.VOID));</span>
+
+<span class="fc" id="L250">			Annotation override= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L251">			override.setTypeName(ast.newSimpleName(&quot;Override&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L252">			method.modifiers().add(override);</span>
+<span class="fc" id="L253">			method.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PUBLIC_KEYWORD));</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">			for (String thrownType : suppressed.thrownExceptionTypes()) {</span>
+<span class="fc" id="L255">				method.thrownExceptionTypes().add(ast.newSimpleType(ast.newName(imports.addImport(thrownType))));</span>
+			}
+
+<span class="fc" id="L258">			SuperMethodInvocation invocation= ast.newSuperMethodInvocation();</span>
+<span class="fc" id="L259">			invocation.setName(ast.newSimpleName(suppressed.name()));</span>
+<span class="fc" id="L260">			Block methodBody= ast.newBlock();</span>
+<span class="fc" id="L261">			methodBody.statements().add(ast.newExpressionStatement(invocation));</span>
+<span class="fc" id="L262">			method.setBody(methodBody);</span>
+<span class="fc" id="L263">			body.insertLast(method, group);</span>
+		}
+
+<span class="fc" id="L266">		imports.removeImport(ORG_JUNIT_RUNWITH);</span>
+<span class="fc" id="L267">		imports.removeImport(CUSTOM_BASE_RUNNER);</span>
+<span class="fc" id="L268">		imports.removeImport(IGNORE_INHERITED_TESTS);</span>
+<span class="fc" id="L269">	}</span>
+
+	/**
+	 * Reuses the project-wide runner/filter contract result while still rebuilding
+	 * the subclass-specific rewrite plan from the current AST. Exact source text
+	 * is part of the cache state, including unsaved working-copy contents, so any
+	 * change to either support type forces a fresh fail-closed verification.
+	 */
+	private static String verifyRunnerAndFilterContractCached(ITypeBinding runnerBinding) {
+<span class="fc" id="L278">		ContractSnapshot before= contractSnapshot(runnerBinding);</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">		if (before == null) {</span>
+<span class="nc" id="L280">			return verifyRunnerAndFilterContract(runnerBinding);</span>
+		}
+<span class="fc" id="L282">		synchronized (CONTRACT_CACHE) {</span>
+<span class="fc" id="L283">			ContractCacheEntry cached= CONTRACT_CACHE.get(before.project());</span>
+<span class="fc bfc" id="L284" title="All 4 branches covered.">			if (cached != null &amp;&amp; cached.sourceState().equals(before.sourceState())) {</span>
+<span class="fc" id="L285">				return cached.rejection();</span>
+			}
+		}
+
+<span class="fc" id="L289">		String rejection= verifyRunnerAndFilterContract(runnerBinding);</span>
+<span class="fc" id="L290">		ContractSnapshot after= contractSnapshot(runnerBinding);</span>
+<span class="pc bpc" id="L291" title="2 of 4 branches missed.">		if (after != null &amp;&amp; before.project().equals(after.project())</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">				&amp;&amp; before.sourceState().equals(after.sourceState())) {</span>
+<span class="fc" id="L293">			synchronized (CONTRACT_CACHE) {</span>
+<span class="fc" id="L294">				CONTRACT_CACHE.put(before.project(), new ContractCacheEntry(before.sourceState(), rejection));</span>
+			}
+		}
+<span class="fc" id="L297">		return rejection;</span>
+	}
+
+	private static ContractSnapshot contractSnapshot(ITypeBinding runnerBinding) {
+<span class="fc" id="L301">		ITypeBinding erasedRunner= erasure(runnerBinding);</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">		IJavaElement runnerElement= erasedRunner == null ? null : erasedRunner.getJavaElement();</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (!(runnerElement instanceof IType runnerType)) {</span>
+<span class="nc" id="L304">			return null;</span>
+		}
+<span class="fc" id="L306">		ICompilationUnit runnerUnit= runnerType.getCompilationUnit();</span>
+<span class="fc" id="L307">		IJavaProject project= runnerType.getJavaProject();</span>
+<span class="pc bpc" id="L308" title="2 of 4 branches missed.">		if (runnerUnit == null || project == null) {</span>
+<span class="nc" id="L309">			return null;</span>
+		}
+		try {
+<span class="fc" id="L312">			IType filterType= project.findType(INHERITED_TESTS_FILTER);</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">			ICompilationUnit filterUnit= filterType == null ? null : filterType.getCompilationUnit();</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">			if (filterUnit == null) {</span>
+<span class="nc" id="L315">				return null;</span>
+			}
+<span class="fc" id="L317">			String runnerSource= runnerUnit.getSource();</span>
+<span class="fc" id="L318">			String filterSource= filterUnit.getSource();</span>
+<span class="pc bpc" id="L319" title="2 of 4 branches missed.">			if (runnerSource == null || filterSource == null) {</span>
+<span class="nc" id="L320">				return null;</span>
+			}
+<span class="fc" id="L322">			ContractSourceState state= new ContractSourceState(</span>
+<span class="fc" id="L323">					Objects.toString(erasedRunner.getKey(), &quot;&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L324">					runnerUnit.getPrimary().getHandleIdentifier(), runnerSource,</span>
+<span class="fc" id="L325">					filterUnit.getPrimary().getHandleIdentifier(), filterSource);</span>
+<span class="fc" id="L326">			return new ContractSnapshot(project, state);</span>
+<span class="nc" id="L327">		} catch (JavaModelException exception) {</span>
+<span class="nc" id="L328">			return null;</span>
+		}
+	}
+
+	private static String verifyRunnerAndFilterContract(ITypeBinding runnerBinding) {
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		if (!hasDirectSuperclass(runnerBinding, BLOCK_JUNIT4_CLASS_RUNNER)) {</span>
+<span class="nc" id="L334">			return &quot;CustomBaseRunner no longer directly extends BlockJUnit4ClassRunner.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L336">		TypeDeclaration runner= sourceDeclaration(runnerBinding);</span>
+<span class="pc bpc" id="L337" title="3 of 6 branches missed.">		if (runner == null || runner.getFields().length != 0 || runner.getTypes().length != 0) {</span>
+<span class="nc" id="L338">			return &quot;CustomBaseRunner must be editable source without fields or nested types.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L340">		MethodDeclaration[] methods= runner.getMethods();</span>
+<span class="pc bpc" id="L341" title="2 of 4 branches missed.">		if (methods.length != 1 || !methods[0].isConstructor()) {</span>
+<span class="nc" id="L342">			return &quot;CustomBaseRunner must contain only its constructor.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L344">		MethodDeclaration constructor= methods[0];</span>
+<span class="fc" id="L345">		Block body= constructor.getBody();</span>
+<span class="pc bpc" id="L346" title="2 of 4 branches missed.">		if (body == null || body.statements().size() != 2</span>
+<span class="pc bpc" id="L347" title="1 of 2 branches missed.">				|| !(body.statements().get(0) instanceof SuperConstructorInvocation)</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">				|| !(body.statements().get(1) instanceof TryStatement tryStatement)) {</span>
+<span class="nc" id="L349">			return &quot;CustomBaseRunner constructor no longer has the supported super-plus-filter shape.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L351" title="2 of 4 branches missed.">		if (tryStatement.getFinally() != null || !tryStatement.resources().isEmpty()</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">				|| tryStatement.getBody().statements().size() != 1</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">				|| !(tryStatement.getBody().statements().get(0) instanceof ExpressionStatement expressionStatement)</span>
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">				|| !(expressionStatement.getExpression() instanceof MethodInvocation filterCall)</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">				|| !&quot;filter&quot;.equals(filterCall.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">				|| filterCall.arguments().size() != 1</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">				|| !(filterCall.arguments().get(0) instanceof ClassInstanceCreation creation)) {</span>
+<span class="nc" id="L358">			return &quot;CustomBaseRunner no longer installs exactly one source filter.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L360">		ITypeBinding filterBinding= erasure(creation.resolveTypeBinding());</span>
+<span class="pc bpc" id="L361" title="2 of 4 branches missed.">		if (filterBinding == null || !INHERITED_TESTS_FILTER.equals(filterBinding.getQualifiedName())) {</span>
+<span class="nc" id="L362">			return &quot;CustomBaseRunner no longer installs InheritedTestsFilter.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L364" title="All 2 branches covered.">		for (Object catchObject : tryStatement.catchClauses()) {</span>
+<span class="fc" id="L365">			CatchClause catchClause= (CatchClause) catchObject;</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">			if (catchClause.getBody().statements().size() != 1</span>
+<span class="pc bpc" id="L367" title="1 of 2 branches missed.">					|| !(catchClause.getBody().statements().get(0) instanceof ThrowStatement)) {</span>
+<span class="nc" id="L368">				return &quot;CustomBaseRunner catch handling contains additional behavior.&quot;; //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L371">		return verifyFilterContract(filterBinding);</span>
+	}
+
+	private static String verifyFilterContract(ITypeBinding filterBinding) {
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">		if (!hasDirectSuperclass(filterBinding, FILTER_TYPE)) {</span>
+<span class="nc" id="L376">			return &quot;InheritedTestsFilter no longer directly extends JUnit 4 Filter.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L378">		TypeDeclaration filter= sourceDeclaration(filterBinding);</span>
+<span class="pc bpc" id="L379" title="3 of 6 branches missed.">		if (filter == null || filter.getFields().length != 0 || filter.getTypes().length != 0) {</span>
+<span class="nc" id="L380">			return &quot;InheritedTestsFilter must be editable source without fields or nested types.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L382">		MethodDeclaration shouldRun= null;</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">		for (MethodDeclaration method : filter.getMethods()) {</span>
+<span class="pc bpc" id="L384" title="1 of 4 branches missed.">			if (!method.isConstructor() &amp;&amp; &quot;shouldRun&quot;.equals(method.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L385">				shouldRun= method;</span>
+			}
+		}
+<span class="pc bpc" id="L388" title="3 of 6 branches missed.">		if (shouldRun == null || shouldRun.parameters().size() != 1 || shouldRun.getBody() == null) {</span>
+<span class="nc" id="L389">			return &quot;InheritedTestsFilter.shouldRun(Description) is missing.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L391">		IMethodBinding shouldRunBinding= shouldRun.resolveBinding();</span>
+<span class="pc bpc" id="L392" title="2 of 4 branches missed.">		if (shouldRunBinding == null || shouldRunBinding.getParameterTypes().length != 1</span>
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">				|| !DESCRIPTION_TYPE.equals(erasureName(shouldRunBinding.getParameterTypes()[0]))) {</span>
+<span class="nc" id="L394">			return &quot;InheritedTestsFilter.shouldRun no longer accepts JUnit Description.&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L397">		List&lt;?&gt; statements= shouldRun.getBody().statements();</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">		if (statements.size() != 4</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">				|| !(statements.get(0) instanceof VariableDeclarationStatement classDeclaration)</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">				|| !(statements.get(1) instanceof VariableDeclarationStatement methodDeclaration)</span>
+<span class="pc bpc" id="L401" title="1 of 2 branches missed.">				|| !(statements.get(2) instanceof IfStatement ifStatement)</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">				|| !(statements.get(3) instanceof ReturnStatement finalReturn)</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">				|| !isBooleanLiteral(finalReturn.getExpression(), true)) {</span>
+<span class="fc" id="L404">			return &quot;InheritedTestsFilter.shouldRun no longer has the supported four-statement contract.&quot;; //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L407">		Variable classVariable= variableInitializedBy(classDeclaration, &quot;getTestClass&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L408">		Variable methodVariable= variableInitializedBy(methodDeclaration, &quot;getMethodName&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L409" title="2 of 4 branches missed.">		if (classVariable == null || methodVariable == null</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">				|| !&quot;java.lang.Class&quot;.equals(erasureName(classVariable.type())) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L411" title="1 of 2 branches missed.">				|| !&quot;java.lang.String&quot;.equals(erasureName(methodVariable.type()))) { //$NON-NLS-1$</span>
+<span class="nc" id="L412">			return &quot;InheritedTestsFilter no longer derives class and method name from Description.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L414" title="1 of 2 branches missed.">		if (!isMarkerCondition(ifStatement.getExpression(), classVariable.name())</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">				|| ifStatement.getElseStatement() != null</span>
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">				|| !(ifStatement.getThenStatement() instanceof Block thenBlock)</span>
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">				|| thenBlock.statements().size() != 1</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">				|| !(thenBlock.statements().get(0) instanceof TryStatement tryStatement)</span>
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">				|| !isDeclaredMethodReturn(tryStatement, classVariable.name(), methodVariable.name())) {</span>
+<span class="nc" id="L420">			return &quot;InheritedTestsFilter no longer excludes methods not declared by the annotated subclass.&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L422">		return null;</span>
+	}
+
+	private static Variable variableInitializedBy(VariableDeclarationStatement declaration, String methodName) {
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">		if (declaration.fragments().size() != 1</span>
+<span class="pc bpc" id="L427" title="1 of 2 branches missed.">				|| !(declaration.fragments().get(0) instanceof VariableDeclarationFragment fragment)</span>
+<span class="pc bpc" id="L428" title="1 of 2 branches missed.">				|| !(fragment.getInitializer() instanceof MethodInvocation invocation)</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">				|| !methodName.equals(invocation.getName().getIdentifier())) {</span>
+<span class="nc" id="L430">			return null;</span>
+		}
+<span class="fc" id="L432">		return new Variable(fragment.getName().getIdentifier(), declaration.getType().resolveBinding());</span>
+	}
+
+	private static boolean isMarkerCondition(Expression expression, String classVariable) {
+<span class="pc bpc" id="L436" title="1 of 2 branches missed.">		if (!(expression instanceof MethodInvocation invocation)</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">				|| !&quot;isAnnotationPresent&quot;.equals(invocation.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">				|| !(invocation.getExpression() instanceof SimpleName receiver)</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">				|| !classVariable.equals(receiver.getIdentifier())</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">				|| invocation.arguments().size() != 1</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">				|| !(invocation.arguments().get(0) instanceof TypeLiteral markerLiteral)) {</span>
+<span class="nc" id="L442">			return false;</span>
+		}
+<span class="fc" id="L444">		return IGNORE_INHERITED_TESTS.equals(erasureName(markerLiteral.getType().resolveBinding()));</span>
+	}
+
+	private static boolean isDeclaredMethodReturn(TryStatement tryStatement, String classVariable,
+			String methodVariable) {
+<span class="pc bpc" id="L449" title="2 of 4 branches missed.">		if (tryStatement.getFinally() != null || !tryStatement.resources().isEmpty()</span>
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">				|| tryStatement.getBody().statements().size() != 1</span>
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">				|| !(tryStatement.getBody().statements().get(0) instanceof ReturnStatement returnStatement)</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">				|| !(returnStatement.getExpression() instanceof InfixExpression comparison)</span>
+<span class="pc bpc" id="L453" title="1 of 2 branches missed.">				|| comparison.getOperator() != InfixExpression.Operator.NOT_EQUALS</span>
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">				|| !(comparison.getLeftOperand() instanceof MethodInvocation getDeclaredMethod)</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">				|| !(comparison.getRightOperand() instanceof NullLiteral)</span>
+<span class="pc bpc" id="L456" title="1 of 2 branches missed.">				|| !&quot;getDeclaredMethod&quot;.equals(getDeclaredMethod.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">				|| !(getDeclaredMethod.getExpression() instanceof SimpleName receiver)</span>
+<span class="pc bpc" id="L458" title="1 of 2 branches missed.">				|| !classVariable.equals(receiver.getIdentifier())</span>
+<span class="pc bpc" id="L459" title="1 of 2 branches missed.">				|| getDeclaredMethod.arguments().size() != 1</span>
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">				|| !(getDeclaredMethod.arguments().get(0) instanceof SimpleName methodName)</span>
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">				|| !methodVariable.equals(methodName.getIdentifier())</span>
+<span class="pc bpc" id="L462" title="1 of 2 branches missed.">				|| tryStatement.catchClauses().isEmpty()) {</span>
+<span class="nc" id="L463">			return false;</span>
+		}
+<span class="fc bfc" id="L465" title="All 2 branches covered.">		for (Object catchObject : tryStatement.catchClauses()) {</span>
+<span class="fc" id="L466">			CatchClause catchClause= (CatchClause) catchObject;</span>
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">			if (catchClause.getBody().statements().size() != 1</span>
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">					|| !(catchClause.getBody().statements().get(0) instanceof ReturnStatement catchReturn)</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">					|| !isBooleanLiteral(catchReturn.getExpression(), false)) {</span>
+<span class="nc" id="L470">				return false;</span>
+			}
+		}
+<span class="fc" id="L473">		return true;</span>
+	}
+
+	private static boolean isBooleanLiteral(Expression expression, boolean expected) {
+<span class="pc bpc" id="L477" title="1 of 4 branches missed.">		return expression instanceof BooleanLiteral literal &amp;&amp; literal.booleanValue() == expected;</span>
+	}
+
+	private static MethodCollection collectSuppressedMethods(ITypeBinding type) {
+<span class="fc" id="L481">		Set&lt;String&gt; shadowedSignatures= Arrays.stream(type.getDeclaredMethods())</span>
+<span class="fc" id="L482">				.map(JdtUiInheritedTestsRunnerMigration::signature)</span>
+<span class="fc" id="L483">				.collect(Collectors.toCollection(LinkedHashSet::new));</span>
+<span class="fc" id="L484">		List&lt;SuppressedMethod&gt; methods= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L485" title="All 2 branches covered.">		for (ITypeBinding superType= erasure(type.getSuperclass()); superType != null;</span>
+<span class="fc" id="L486">				superType= erasure(superType.getSuperclass())) {</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">			for (IMethodBinding method : superType.getDeclaredMethods()) {</span>
+<span class="fc" id="L488">				IMethodBinding declaration= method.getMethodDeclaration();</span>
+<span class="fc bfc" id="L489" title="All 4 branches covered.">				if (!shadowedSignatures.add(signature(declaration)) || !isTestMethod(declaration)) {</span>
+<span class="fc" id="L490">					continue;</span>
+				}
+<span class="fc" id="L492">				int modifiers= declaration.getModifiers();</span>
+<span class="pc bpc" id="L493" title="2 of 4 branches missed.">				if (!Modifier.isPublic(modifiers) || Modifier.isStatic(modifiers)</span>
+<span class="pc bpc" id="L494" title="2 of 4 branches missed.">						|| Modifier.isFinal(modifiers) || Modifier.isAbstract(modifiers)</span>
+<span class="pc bpc" id="L495" title="2 of 4 branches missed.">						|| Modifier.isSynchronized(modifiers) || Modifier.isStrictfp(modifiers)</span>
+<span class="pc bpc" id="L496" title="2 of 4 branches missed.">						|| Modifier.isNative(modifiers) || declaration.isSynthetic()</span>
+<span class="pc bpc" id="L497" title="1 of 2 branches missed.">						|| declaration.getParameterTypes().length != 0</span>
+<span class="pc bpc" id="L498" title="1 of 2 branches missed.">						|| declaration.getTypeParameters().length != 0</span>
+<span class="pc bpc" id="L499" title="1 of 2 branches missed.">						|| !&quot;void&quot;.equals(declaration.getReturnType().getName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L500">					return new MethodCollection(List.of(),</span>
+<span class="nc" id="L501">							&quot;Inherited test &quot; + declaration.getDeclaringClass().getQualifiedName() + '#' //$NON-NLS-1$</span>
+<span class="nc" id="L502">									+ declaration.getName()</span>
+									+ &quot; cannot be hidden by a semantics-preserving public delegating override.&quot;); //$NON-NLS-1$
+				}
+<span class="fc" id="L505">				List&lt;String&gt; thrownTypes= Arrays.stream(declaration.getExceptionTypes())</span>
+<span class="fc" id="L506">						.map(JdtUiInheritedTestsRunnerMigration::erasureName)</span>
+<span class="pc bpc" id="L507" title="2 of 4 branches missed.">						.filter(name -&gt; name != null &amp;&amp; !name.isBlank())</span>
+<span class="fc" id="L508">						.toList();</span>
+<span class="fc" id="L509">				methods.add(new SuppressedMethod(declaration.getName(), thrownTypes));</span>
+			}
+		}
+<span class="fc" id="L512">		return new MethodCollection(methods, null);</span>
+	}
+
+	private static boolean isTestMethod(IMethodBinding method) {
+<span class="fc bfc" id="L516" title="All 2 branches covered.">		for (IAnnotationBinding annotation : method.getAnnotations()) {</span>
+<span class="fc" id="L517">			String name= erasureName(annotation.getAnnotationType());</span>
+<span class="pc bpc" id="L518" title="1 of 4 branches missed.">			if (ORG_JUNIT_TEST.equals(name) || ORG_JUNIT_JUPITER_TEST.equals(name)) {</span>
+<span class="fc" id="L519">				return true;</span>
+			}
+		}
+<span class="fc" id="L522">		return false;</span>
+	}
+
+	private static String signature(IMethodBinding method) {
+<span class="fc" id="L526">		return method.getName() + Arrays.stream(method.getParameterTypes())</span>
+<span class="fc" id="L527">				.map(JdtUiInheritedTestsRunnerMigration::erasureName)</span>
+<span class="fc" id="L528">				.collect(Collectors.joining(&quot;,&quot;, &quot;(&quot;, &quot;)&quot;)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+	}
+
+	private static SingleMemberAnnotation runWithAnnotation(TypeDeclaration type) {
+<span class="pc bpc" id="L532" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">			if (modifier instanceof SingleMemberAnnotation annotation</span>
+<span class="pc bpc" id="L534" title="1 of 2 branches missed.">					&amp;&amp; ORG_JUNIT_RUNWITH.equals(annotationName(annotation))) {</span>
+<span class="fc" id="L535">				return annotation;</span>
+			}
+		}
+<span class="nc" id="L538">		return null;</span>
+	}
+
+	private static Annotation declaredAnnotation(TypeDeclaration type, String qualifiedName) {
+<span class="pc bpc" id="L542" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
+<span class="pc bpc" id="L543" title="2 of 4 branches missed.">			if (modifier instanceof Annotation annotation &amp;&amp; qualifiedName.equals(annotationName(annotation))) {</span>
+<span class="fc" id="L544">				return annotation;</span>
+			}
+		}
+<span class="nc" id="L547">		return null;</span>
+	}
+
+	private static String annotationName(Annotation annotation) {
+<span class="fc" id="L551">		ITypeBinding binding= erasure(annotation.resolveTypeBinding());</span>
+<span class="pc bpc" id="L552" title="1 of 2 branches missed.">		return binding == null ? annotation.getTypeName().getFullyQualifiedName() : binding.getQualifiedName();</span>
+	}
+
+	private static boolean isRuntimeTypeMarker(ITypeBinding type) {
+<span class="pc bpc" id="L556" title="1 of 2 branches missed.">		return type != null</span>
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">				&amp;&amp; hasAnnotation(type, INHERITED_META_ANNOTATION)</span>
+<span class="pc bpc" id="L558" title="1 of 2 branches missed.">				&amp;&amp; hasEnumAnnotationValue(type, RETENTION_META_ANNOTATION, RETENTION_POLICY, &quot;RUNTIME&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L559" title="1 of 2 branches missed.">				&amp;&amp; hasEnumAnnotationValue(type, TARGET_META_ANNOTATION, ELEMENT_TYPE, &quot;TYPE&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static boolean hasAnnotation(ITypeBinding type, String qualifiedName) {
+<span class="pc bpc" id="L563" title="1 of 2 branches missed.">		for (IAnnotationBinding annotation : type.getAnnotations()) {</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">			if (qualifiedName.equals(erasureName(annotation.getAnnotationType()))) {</span>
+<span class="fc" id="L565">				return true;</span>
+			}
+		}
+<span class="nc" id="L568">		return false;</span>
+	}
+
+	private static boolean hasEnumAnnotationValue(ITypeBinding type, String annotationType,
+			String enumType, String constantName) {
+<span class="pc bpc" id="L573" title="1 of 2 branches missed.">		for (IAnnotationBinding annotation : type.getAnnotations()) {</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">			if (!annotationType.equals(erasureName(annotation.getAnnotationType()))) {</span>
+<span class="fc" id="L575">				continue;</span>
+			}
+<span class="pc bpc" id="L577" title="1 of 2 branches missed.">			for (IMemberValuePairBinding pair : annotation.getDeclaredMemberValuePairs()) {</span>
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">				if (&quot;value&quot;.equals(pair.getName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L579" title="1 of 2 branches missed.">						&amp;&amp; containsEnumConstant(pair.getValue(), enumType, constantName)) {</span>
+<span class="fc" id="L580">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L584">		return false;</span>
+	}
+
+	private static boolean containsEnumConstant(Object value, String enumType, String constantName) {
+<span class="fc bfc" id="L588" title="All 2 branches covered.">		if (value instanceof Object[] values) {</span>
+<span class="fc" id="L589">			return Arrays.stream(values).anyMatch(candidate -&gt; containsEnumConstant(candidate, enumType, constantName));</span>
+		}
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">		return value instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L592" title="1 of 2 branches missed.">				&amp;&amp; variable.isEnumConstant()</span>
+<span class="pc bpc" id="L593" title="1 of 2 branches missed.">				&amp;&amp; constantName.equals(variable.getName())</span>
+<span class="pc bpc" id="L594" title="1 of 2 branches missed.">				&amp;&amp; enumType.equals(erasureName(variable.getDeclaringClass()));</span>
+	}
+
+	private static boolean hasDirectTestMethod(ITypeBinding type) {
+<span class="fc" id="L598">		return Arrays.stream(type.getDeclaredMethods())</span>
+<span class="fc" id="L599">				.map(IMethodBinding::getMethodDeclaration)</span>
+<span class="fc" id="L600">				.anyMatch(JdtUiInheritedTestsRunnerMigration::isTestMethod);</span>
+	}
+
+	private static boolean hasDirectSuperclass(ITypeBinding type, String qualifiedName) {
+<span class="fc" id="L604">		ITypeBinding superclass= erasure(type.getSuperclass());</span>
+<span class="pc bpc" id="L605" title="2 of 4 branches missed.">		return superclass != null &amp;&amp; qualifiedName.equals(superclass.getQualifiedName());</span>
+	}
+
+	private static TypeDeclaration sourceDeclaration(ITypeBinding binding) {
+<span class="fc" id="L609">		ITypeBinding erased= erasure(binding);</span>
+<span class="pc bpc" id="L610" title="1 of 2 branches missed.">		IJavaElement element= erased == null ? null : erased.getJavaElement();</span>
+<span class="pc bpc" id="L611" title="1 of 2 branches missed.">		if (!(element instanceof IType sourceType)) {</span>
+<span class="nc" id="L612">			return null;</span>
+		}
+<span class="fc" id="L614">		ICompilationUnit unit= sourceType.getCompilationUnit();</span>
+<span class="pc bpc" id="L615" title="1 of 2 branches missed.">		if (unit == null) {</span>
+<span class="nc" id="L616">			return null;</span>
+		}
+<span class="fc" id="L618">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L619">		parser.setProject(unit.getJavaProject());</span>
+<span class="fc" id="L620">		parser.setSource(unit);</span>
+<span class="fc" id="L621">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L622">		parser.setBindingsRecovery(false);</span>
+<span class="fc" id="L623">		parser.setStatementsRecovery(false);</span>
+<span class="fc" id="L624">		CompilationUnit root= (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L625">		String expectedKey= erased.getKey();</span>
+<span class="fc" id="L626">		String expectedName= erased.getQualifiedName();</span>
+<span class="fc" id="L627">		TypeDeclaration[] result= new TypeDeclaration[1];</span>
+<span class="fc" id="L628">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L631">				ITypeBinding candidate= erasure(node.resolveBinding());</span>
+<span class="pc bpc" id="L632" title="2 of 4 branches missed.">				if (candidate != null &amp;&amp; (expectedKey.equals(candidate.getKey())</span>
+<span class="nc bnc" id="L633" title="All 2 branches missed.">						|| expectedName.equals(candidate.getQualifiedName()))) {</span>
+<span class="fc" id="L634">					result[0]= node;</span>
+<span class="fc" id="L635">					return false;</span>
+				}
+<span class="nc bnc" id="L637" title="All 2 branches missed.">				return result[0] == null;</span>
+			}
+		});
+<span class="fc" id="L640">		return result[0];</span>
+	}
+
+	private static ITypeBinding erasure(ITypeBinding binding) {
+<span class="fc bfc" id="L644" title="All 2 branches covered.">		return binding == null ? null : binding.getErasure();</span>
+	}
+
+	private static String erasureName(ITypeBinding binding) {
+<span class="fc" id="L648">		ITypeBinding erased= erasure(binding);</span>
+<span class="pc bpc" id="L649" title="1 of 2 branches missed.">		return erased == null ? null : erased.getQualifiedName();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.preferences;
 
 import java.io.IOException;
+import java.util.function.BooleanSupplier;
 
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.equinox.security.storage.StorageException;
@@ -38,6 +39,11 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 /** Preference page for the LLM settings actually consumed by rule inference. */
 public class LlmPreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
 
+	@FunctionalInterface
+	interface CredentialPersistence {
+		void persist() throws StorageException, IOException, BackingStoreException;
+	}
+
 	public static final String PLUGIN_ID = &quot;sandbox_triggerpattern&quot;; //$NON-NLS-1$
 	private static final String PREFIX = &quot;org.sandbox.jdt.triggerpattern.llm.&quot;; //$NON-NLS-1$
 
@@ -57,106 +63,117 @@ public class LlmPreferencePage extends FieldEditorPreferencePage implements IWor
 	@Deprecated
 	public static final String PREF_WIZARD_DEFAULT_FOLDER = WIZARD_PREFIX + &quot;defaultHintFolder&quot;; //$NON-NLS-1$
 
-<span class="nc" id="L60">	private static final String[][] PROVIDER_ENTRIES = {</span>
-<span class="nc" id="L61">			{ &quot;Gemini&quot;, &quot;GEMINI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L62">			{ &quot;OpenAI&quot;, &quot;OPENAI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L63">			{ &quot;DeepSeek&quot;, &quot;DEEPSEEK&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L64">			{ &quot;Qwen&quot;, &quot;QWEN&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L65">			{ &quot;Llama&quot;, &quot;LLAMA&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L66">			{ &quot;Mistral&quot;, &quot;MISTRAL&quot; } //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L67">	};</span>
+<span class="fc" id="L66">	private static final String[][] PROVIDER_ENTRIES = {</span>
+<span class="fc" id="L67">			{ &quot;Gemini&quot;, &quot;GEMINI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L68">			{ &quot;OpenAI&quot;, &quot;OPENAI&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L69">			{ &quot;DeepSeek&quot;, &quot;DEEPSEEK&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L70">			{ &quot;Qwen&quot;, &quot;QWEN&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L71">			{ &quot;Llama&quot;, &quot;LLAMA&quot; }, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L72">			{ &quot;Mistral&quot;, &quot;MISTRAL&quot; } //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L73">	};</span>
 
 	private Text apiKeyText;
 	private ComboFieldEditor providerField;
 	private String selectedProvider;
 
 	public LlmPreferencePage() {
-<span class="nc" id="L74">		super(GRID);</span>
-<span class="nc" id="L75">		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));</span>
-<span class="nc" id="L76">		setDescription(&quot;Configure the provider used for AI-assisted rule inference.\n&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L80">		super(GRID);</span>
+<span class="nc" id="L81">		setPreferenceStore(new ScopedPreferenceStore(InstanceScope.INSTANCE, PLUGIN_ID));</span>
+<span class="nc" id="L82">		setDescription(&quot;Configure the provider used for AI-assisted rule inference.\n&quot; //$NON-NLS-1$</span>
 				+ &quot;API keys are encrypted in Eclipse Secure Storage and bound to the selected provider. &quot; //$NON-NLS-1$
 				+ &quot;Leave the key empty to use the provider-specific environment variable; leave Model name empty to use the provider default.&quot;); //$NON-NLS-1$
-<span class="nc" id="L79">	}</span>
+<span class="nc" id="L85">	}</span>
 
 	@Override
 	public void createFieldEditors() {
-<span class="nc" id="L83">		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),</span>
-<span class="nc" id="L84">				&quot;sandbox_triggerpattern.preferences&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L89">		PlatformUI.getWorkbench().getHelpSystem().setHelp(getFieldEditorParent(),</span>
+<span class="nc" id="L90">				&quot;sandbox_triggerpattern.preferences&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L86">		selectedProvider = getPreferenceStore().getString(PREF_PROVIDER);</span>
-<span class="nc" id="L87">		providerField = new ComboFieldEditor(</span>
-<span class="nc" id="L88">				PREF_PROVIDER,</span>
-<span class="nc" id="L89">				&quot;&amp;Provider:&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L90">				PROVIDER_ENTRIES,</span>
-<span class="nc" id="L91">				getFieldEditorParent());</span>
-<span class="nc" id="L92">		addField(providerField);</span>
+<span class="nc" id="L92">		selectedProvider = getPreferenceStore().getString(PREF_PROVIDER);</span>
+<span class="nc" id="L93">		providerField = new ComboFieldEditor(</span>
+<span class="nc" id="L94">				PREF_PROVIDER,</span>
+<span class="nc" id="L95">				&quot;&amp;Provider:&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L96">				PROVIDER_ENTRIES,</span>
+<span class="nc" id="L97">				getFieldEditorParent());</span>
+<span class="nc" id="L98">		addField(providerField);</span>
 
-<span class="nc" id="L94">		createSecureApiKeyField(getFieldEditorParent());</span>
+<span class="nc" id="L100">		createSecureApiKeyField(getFieldEditorParent());</span>
 
-<span class="nc" id="L96">		addField(new StringFieldEditor(</span>
-<span class="nc" id="L97">				PREF_MODEL_NAME,</span>
-<span class="nc" id="L98">				&quot;&amp;Model name (optional):&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L99">				getFieldEditorParent()));</span>
+<span class="nc" id="L102">		addField(new StringFieldEditor(</span>
+<span class="nc" id="L103">				PREF_MODEL_NAME,</span>
+<span class="nc" id="L104">				&quot;&amp;Model name (optional):&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L105">				getFieldEditorParent()));</span>
 
-<span class="nc" id="L101">		addField(new BooleanFieldEditor(</span>
-<span class="nc" id="L102">				PREF_WIZARD_AUTO_AI,</span>
-<span class="nc" id="L103">				&quot;Automatically generate rule with AI when opening wizard from selection&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L104">				getFieldEditorParent()));</span>
-<span class="nc" id="L105">	}</span>
+<span class="nc" id="L107">		addField(new BooleanFieldEditor(</span>
+<span class="nc" id="L108">				PREF_WIZARD_AUTO_AI,</span>
+<span class="nc" id="L109">				&quot;Automatically generate rule with AI when opening wizard from selection&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L110">				getFieldEditorParent()));</span>
+<span class="nc" id="L111">	}</span>
 
 	private void createSecureApiKeyField(Composite parent) {
-<span class="nc" id="L108">		Label label = new Label(parent, SWT.NONE);</span>
-<span class="nc" id="L109">		label.setText(&quot;&amp;API Key (Secure Storage):&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L114">		Label label = new Label(parent, SWT.NONE);</span>
+<span class="nc" id="L115">		label.setText(&quot;&amp;API Key (Secure Storage):&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L111">		apiKeyText = new Text(parent, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);</span>
-<span class="nc" id="L112">		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
-<span class="nc" id="L113">		apiKeyText.setText(LlmSecureCredentials.loadApiKey(selectedProvider));</span>
+<span class="nc" id="L117">		apiKeyText = new Text(parent, SWT.BORDER | SWT.SINGLE | SWT.PASSWORD);</span>
+<span class="nc" id="L118">		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L119">		apiKeyText.setText(LlmSecureCredentials.loadApiKey(selectedProvider));</span>
 
-<span class="nc" id="L115">		Label explanation = new Label(parent, SWT.WRAP);</span>
-<span class="nc" id="L116">		explanation.setText(&quot;Stored encrypted by Eclipse Equinox Secure Storage for the selected provider; environment-variable fallback remains available.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L117">		GridData explanationData = new GridData(SWT.FILL, SWT.CENTER, true, false);</span>
-<span class="nc" id="L118">		explanationData.horizontalSpan = 2;</span>
-<span class="nc" id="L119">		explanation.setLayoutData(explanationData);</span>
-<span class="nc" id="L120">	}</span>
+<span class="nc" id="L121">		Label explanation = new Label(parent, SWT.WRAP);</span>
+<span class="nc" id="L122">		explanation.setText(&quot;Stored encrypted by Eclipse Equinox Secure Storage for the selected provider; environment-variable fallback remains available.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L123">		GridData explanationData = new GridData(SWT.FILL, SWT.CENTER, true, false);</span>
+<span class="nc" id="L124">		explanationData.horizontalSpan = 2;</span>
+<span class="nc" id="L125">		explanation.setLayoutData(explanationData);</span>
+<span class="nc" id="L126">	}</span>
 
 	@Override
 	public void propertyChange(PropertyChangeEvent event) {
-<span class="nc bnc" id="L124" title="All 4 branches missed.">		if (event.getSource() == providerField &amp;&amp; FieldEditor.VALUE.equals(event.getProperty())) {</span>
-<span class="nc" id="L125">			selectedProvider = String.valueOf(event.getNewValue());</span>
-<span class="nc bnc" id="L126" title="All 4 branches missed.">			if (apiKeyText != null &amp;&amp; !apiKeyText.isDisposed()) {</span>
-<span class="nc" id="L127">				apiKeyText.setText(LlmSecureCredentials.loadApiKey(selectedProvider));</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">		if (event.getSource() == providerField &amp;&amp; FieldEditor.VALUE.equals(event.getProperty())) {</span>
+<span class="nc" id="L131">			selectedProvider = String.valueOf(event.getNewValue());</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">			if (apiKeyText != null &amp;&amp; !apiKeyText.isDisposed()) {</span>
+<span class="nc" id="L133">				apiKeyText.setText(LlmSecureCredentials.loadApiKey(selectedProvider));</span>
 			}
 		}
-<span class="nc" id="L130">		super.propertyChange(event);</span>
-<span class="nc" id="L131">	}</span>
+<span class="nc" id="L136">		super.propertyChange(event);</span>
+<span class="nc" id="L137">	}</span>
 
 	@Override
 	public boolean performOk() {
 		try {
-<span class="nc" id="L136">			LlmSecureCredentials.storeApiKey(selectedProvider,</span>
-<span class="nc bnc" id="L137" title="All 2 branches missed.">					apiKeyText != null ? apiKeyText.getText() : &quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L138">		} catch (StorageException | IOException | BackingStoreException e) {</span>
-<span class="nc" id="L139">			setErrorMessage(&quot;Could not save the API key in Eclipse Secure Storage: &quot; + e.getMessage()); //$NON-NLS-1$</span>
-<span class="nc" id="L140">			return false;</span>
+<span class="nc" id="L142">			boolean result = persistAfterPreferenceAcceptance(</span>
+<span class="nc" id="L143">					super::performOk,</span>
+<span class="nc" id="L144">					() -&gt; LlmSecureCredentials.storeApiKey(selectedProvider,</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">							apiKeyText != null ? apiKeyText.getText() : &quot;&quot;)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">			if (result) {</span>
+<span class="nc" id="L147">				EclipseLlmService.reset();</span>
+			}
+<span class="nc" id="L149">			return result;</span>
+<span class="nc" id="L150">		} catch (StorageException | IOException | BackingStoreException e) {</span>
+<span class="nc" id="L151">			setErrorMessage(&quot;Could not save the API key in Eclipse Secure Storage: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="nc" id="L152">			return false;</span>
 		}
-<span class="nc" id="L142">		boolean result = super.performOk();</span>
-<span class="nc bnc" id="L143" title="All 2 branches missed.">		if (result) {</span>
-<span class="nc" id="L144">			EclipseLlmService.reset();</span>
+	}
+
+	static boolean persistAfterPreferenceAcceptance(BooleanSupplier persistPreferences,
+			CredentialPersistence persistCredential)
+			throws StorageException, IOException, BackingStoreException {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">		if (!persistPreferences.getAsBoolean()) {</span>
+<span class="fc" id="L160">			return false;</span>
 		}
-<span class="nc" id="L146">		return result;</span>
+<span class="fc" id="L162">		persistCredential.persist();</span>
+<span class="fc" id="L163">		return true;</span>
 	}
 
 	@Override
 	protected void performDefaults() {
-<span class="nc" id="L151">		super.performDefaults();</span>
-<span class="nc bnc" id="L152" title="All 4 branches missed.">		if (apiKeyText != null &amp;&amp; !apiKeyText.isDisposed()) {</span>
-<span class="nc" id="L153">			apiKeyText.setText(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L168">		super.performDefaults();</span>
+<span class="nc bnc" id="L169" title="All 4 branches missed.">		if (apiKeyText != null &amp;&amp; !apiKeyText.isDisposed()) {</span>
+<span class="nc" id="L170">			apiKeyText.setText(&quot;&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L155">	}</span>
+<span class="nc" id="L172">	}</span>
 
 	@Override
 	public void init(IWorkbench workbench) {
 		// Defaults are set by LlmPreferenceInitializer.
-<span class="nc" id="L160">	}</span>
+<span class="nc" id="L177">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

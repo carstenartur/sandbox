@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit3LegacyShape.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper.lib</a> &gt; <span class="el_source">JUnit3LegacyShape.java</span></div><h1>JUnit3LegacyShape.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper.lib;
+
+import java.util.List;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+/**
+ * Fail-closed recognition of common JUnit 3 compatibility members that become
+ * redundant after an ordinary Jupiter migration.
+ *
+ * &lt;p&gt;The accepted shapes deliberately have no user-visible construction state or
+ * custom control flow: a constructor may only delegate its optional test name
+ * to {@code TestCase}, a self suite may only select its declaring class, and a
+ * lifecycle super call may only invoke the empty {@code TestCase} hook from the
+ * matching lifecycle method.&lt;/p&gt;
+ */
+public final class JUnit3LegacyShape {
+
+	/** Fully qualified JUnit 3 base type. */
+	public static final String JUNIT3_TEST_CASE= &quot;junit.framework.TestCase&quot;; //$NON-NLS-1$
+
+	private static final String JAVA_LANG_STRING= &quot;java.lang.String&quot;; //$NON-NLS-1$
+
+	private JUnit3LegacyShape() {
+	}
+
+	/** Returns whether the type directly extends {@code junit.framework.TestCase}. */
+	public static boolean directlyExtendsTestCase(TypeDeclaration type) {
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">		if (type == null || type.getSuperclassType() == null) {</span>
+<span class="fc" id="L57">			return false;</span>
+		}
+<span class="fc" id="L59">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">		ITypeBinding superclass= binding == null ? null : binding.getSuperclass();</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">		if (superclass != null &amp;&amp; !superclass.isRecovered()) {</span>
+<span class="fc" id="L62">			return JUNIT3_TEST_CASE.equals(superclass.getErasure().getQualifiedName());</span>
+		}
+<span class="nc" id="L64">		return isWrittenType(type.getSuperclassType(), JUNIT3_TEST_CASE);</span>
+	}
+
+	/**
+	 * Returns whether an explicit constructor can be removed without changing any
+	 * user-defined construction behavior.
+	 */
+	public static boolean isRemovableConstructor(MethodDeclaration method) {
+<span class="pc bpc" id="L72" title="3 of 6 branches missed.">		if (method == null || !method.isConstructor() || hasAnnotation(method)</span>
+<span class="pc bpc" id="L73" title="2 of 4 branches missed.">				|| !method.typeParameters().isEmpty() || !method.thrownExceptionTypes().isEmpty()</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">				|| method.getReceiverType() != null) {</span>
+<span class="nc" id="L75">			return false;</span>
+		}
+<span class="fc" id="L77">		Block body= method.getBody();</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L79">			return false;</span>
+		}
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L82">		List&lt;Statement&gt; statements= body.statements();</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (method.parameters().isEmpty()) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			return statements.isEmpty()</span>
+<span class="nc bnc" id="L85" title="All 4 branches missed.">					|| statements.size() == 1 &amp;&amp; statements.get(0) instanceof SuperConstructorInvocation invocation</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">							&amp;&amp; invocation.arguments().isEmpty() &amp;&amp; invocation.typeArguments().isEmpty();</span>
+		}
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">		if (method.parameters().size() != 1 || statements.size() != 1</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				|| !(method.parameters().get(0) instanceof SingleVariableDeclaration parameter)</span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">				|| parameter.isVarargs() || !isString(parameter.getType())</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				|| !(statements.get(0) instanceof SuperConstructorInvocation invocation)</span>
+<span class="pc bpc" id="L92" title="2 of 4 branches missed.">				|| !invocation.typeArguments().isEmpty() || invocation.arguments().size() != 1) {</span>
+<span class="fc" id="L93">			return false;</span>
+		}
+<span class="fc" id="L95">		Expression argument= (Expression) invocation.arguments().get(0);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		return argument instanceof SimpleName name</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				&amp;&amp; parameter.getName().getIdentifier().equals(name.getIdentifier());</span>
+	}
+
+	/**
+	 * Returns whether {@code suite()} is the ordinary redundant JUnit 3 wrapper
+	 * {@code new TestSuite(ThisType.class)}.
+	 */
+	public static boolean isSelfSuite(MethodDeclaration method, TypeDeclaration owner) {
+<span class="pc bpc" id="L105" title="2 of 4 branches missed.">		if (method == null || owner == null) {</span>
+<span class="nc" id="L106">			return false;</span>
+		}
+<span class="fc" id="L108">		JUnit3SuiteModel.Result model= JUnit3SuiteModel.analyze(method);</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">		if (!model.supported() || model.selectedTypes().size() != 1) {</span>
+<span class="nc" id="L110">			return false;</span>
+		}
+<span class="fc" id="L112">		String selected= model.selectedTypes().get(0);</span>
+<span class="fc" id="L113">		ITypeBinding binding= owner.resolveBinding();</span>
+<span class="pc bpc" id="L114" title="2 of 4 branches missed.">		String qualifiedName= binding == null || binding.isRecovered() ? null : binding.getQualifiedName();</span>
+<span class="fc" id="L115">		String ownerSimpleName= owner.getName().getIdentifier();</span>
+<span class="pc bpc" id="L116" title="2 of 6 branches missed.">		return ownerSimpleName.equals(selected) || qualifiedName != null &amp;&amp; qualifiedName.equals(selected)</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				|| ownerSimpleName.equals(simpleName(selected));</span>
+	}
+
+	/**
+	 * Returns whether a type is a pure suite aggregator, optionally retaining a
+	 * harmless direct {@code TestCase} superclass, delegating constructors and one
+	 * static initialization block. The block is migrated to one
+	 * {@code @BeforeSuite} method by the suite cleanup.
+	 */
+	public static boolean isPureSuiteAggregator(TypeDeclaration owner, MethodDeclaration suite) {
+<span class="pc bpc" id="L127" title="3 of 6 branches missed.">		if (owner == null || suite == null || !(owner.getParent() instanceof CompilationUnit root)</span>
+<span class="pc bpc" id="L128" title="3 of 6 branches missed.">				|| root.types().size() != 1 || owner.isInterface() || owner.getFields().length != 0</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">				|| owner.getTypes().length != 0 || !JUnit3SuiteModel.analyze(suite).supported()</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">				|| !hasSupportedSuiteInitializer(owner)) {</span>
+<span class="fc" id="L131">			return false;</span>
+		}
+<span class="pc bpc" id="L133" title="1 of 4 branches missed.">		if (owner.getSuperclassType() != null &amp;&amp; !directlyExtendsTestCase(owner)) {</span>
+<span class="nc" id="L134">			return false;</span>
+		}
+<span class="fc bfc" id="L136" title="All 2 branches covered.">		for (MethodDeclaration method : owner.getMethods()) {</span>
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">			if (method != suite &amp;&amp; !isRemovableConstructor(method)) {</span>
+<span class="nc" id="L138">				return false;</span>
+			}
+		}
+<span class="fc" id="L141">		return true;</span>
+	}
+
+	/**
+	 * Returns the single static initializer of a pure suite aggregator, or
+	 * {@code null} when none exists or the initializer shape is unsupported.
+	 */
+	public static Initializer suiteInitializer(TypeDeclaration owner) {
+<span class="fc" id="L149">		List&lt;Initializer&gt; initializers= initializers(owner);</span>
+<span class="pc bpc" id="L150" title="1 of 4 branches missed.">		if (initializers.size() != 1 || !Modifier.isStatic(initializers.get(0).getModifiers())) {</span>
+<span class="fc" id="L151">			return null;</span>
+		}
+<span class="fc" id="L153">		return initializers.get(0);</span>
+	}
+
+	/**
+	 * Returns whether an invocation is a redundant direct call to the matching
+	 * {@code TestCase.setUp()} or {@code TestCase.tearDown()} hook.
+	 */
+	public static boolean isRedundantLifecycleSuperCall(SuperMethodInvocation invocation) {
+<span class="pc bpc" id="L161" title="3 of 6 branches missed.">		if (invocation == null || !invocation.arguments().isEmpty() || !invocation.typeArguments().isEmpty()</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				|| !(invocation.getParent() instanceof ExpressionStatement)) {</span>
+<span class="nc" id="L163">			return false;</span>
+		}
+<span class="fc" id="L165">		String name= invocation.getName().getIdentifier();</span>
+<span class="pc bpc" id="L166" title="3 of 4 branches missed.">		if (!(&quot;setUp&quot;.equals(name) || &quot;tearDown&quot;.equals(name))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L167">			return false;</span>
+		}
+<span class="fc" id="L169">		MethodDeclaration enclosing= enclosingMethod(invocation);</span>
+<span class="pc bpc" id="L170" title="2 of 4 branches missed.">		if (enclosing == null || !name.equals(enclosing.getName().getIdentifier())) {</span>
+<span class="nc" id="L171">			return false;</span>
+		}
+<span class="fc" id="L173">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">		ITypeBinding declaring= binding == null ? null : binding.getDeclaringClass();</span>
+<span class="pc bpc" id="L175" title="2 of 4 branches missed.">		return declaring != null &amp;&amp; JUNIT3_TEST_CASE.equals(declaring.getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean hasSupportedSuiteInitializer(TypeDeclaration owner) {
+<span class="fc" id="L179">		List&lt;Initializer&gt; initializers= initializers(owner);</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">		return initializers.size() &lt;= 1</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				&amp;&amp; initializers.stream().allMatch(initializer -&gt; Modifier.isStatic(initializer.getModifiers()));</span>
+	}
+
+	private static List&lt;Initializer&gt; initializers(TypeDeclaration owner) {
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">		if (owner == null) {</span>
+<span class="nc" id="L186">			return List.of();</span>
+		}
+<span class="fc" id="L188">		return owner.bodyDeclarations().stream()</span>
+<span class="fc" id="L189">				.filter(Initializer.class::isInstance)</span>
+<span class="fc" id="L190">				.map(Initializer.class::cast)</span>
+<span class="fc" id="L191">				.toList();</span>
+	}
+
+	private static MethodDeclaration enclosingMethod(ASTNode node) {
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L197">				return method;</span>
+			}
+		}
+<span class="nc" id="L200">		return null;</span>
+	}
+
+	private static boolean hasAnnotation(MethodDeclaration method) {
+<span class="fc" id="L204">		return method.modifiers().stream().anyMatch(Annotation.class::isInstance);</span>
+	}
+
+	private static boolean isString(Type type) {
+<span class="fc" id="L208">		ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L209" title="2 of 4 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered()</span>
+<span class="fc" id="L210">				? JAVA_LANG_STRING.equals(binding.getErasure().getQualifiedName())</span>
+<span class="nc" id="L211">				: isWrittenType(type, JAVA_LANG_STRING);</span>
+	}
+
+	private static boolean isWrittenType(Type type, String qualifiedName) {
+<span class="nc" id="L215">		String written= type.toString();</span>
+<span class="nc bnc" id="L216" title="All 4 branches missed.">		return qualifiedName.equals(written) || simpleName(qualifiedName).equals(written);</span>
+	}
+
+	private static String simpleName(String qualifiedName) {
+<span class="fc" id="L220">		int separator= qualifiedName.lastIndexOf('.');</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

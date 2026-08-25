@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.corext.fix;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -34,20 +35,31 @@ import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin;
 import org.sandbox.jdt.internal.corext.fix.helper.ViewerSorterPlugin.SorterHolder;
 import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 
-<span class="fc" id="L37">public enum JfaceCleanUpFixCore {</span>
+<span class="fc" id="L38">public enum JfaceCleanUpFixCore {</span>
 
-<span class="fc" id="L39">	MONITOR(new JFacePlugin()),</span>
-<span class="fc" id="L40">	VIEWER_SORTER(new ViewerSorterPlugin()),</span>
-<span class="fc" id="L41">	IMAGE_DPI(new ImageDataProviderPlugin());</span>
+<span class="fc" id="L40">	MONITOR(new JFacePlugin(), () -&gt; MultiFixMessages.JFaceCleanUp_step_monitor),</span>
+<span class="fc" id="L41">	VIEWER_SORTER(new ViewerSorterPlugin(), () -&gt; MultiFixMessages.JFaceCleanUp_step_viewerSorter),</span>
+<span class="fc" id="L42">	IMAGE_DPI(new ImageDataProviderPlugin(), () -&gt; MultiFixMessages.JFaceCleanUp_step_imageDataProvider);</span>
 
 	AbstractTool&lt;?&gt; jfacefound;
+	private final Supplier&lt;String&gt; stepDescription;
 
-<span class="fc" id="L45">	JfaceCleanUpFixCore(AbstractTool&lt;?&gt; xmlsimplify) {</span>
-<span class="fc" id="L46">		this.jfacefound= xmlsimplify;</span>
-<span class="fc" id="L47">	}</span>
+<span class="fc" id="L47">	JfaceCleanUpFixCore(AbstractTool&lt;?&gt; xmlsimplify, Supplier&lt;String&gt; stepDescription) {</span>
+<span class="fc" id="L48">		this.jfacefound= xmlsimplify;</span>
+<span class="fc" id="L49">		this.stepDescription= stepDescription;</span>
+<span class="fc" id="L50">	}</span>
 
 	public String getPreview(boolean i) {
-<span class="nc" id="L50">		return jfacefound.getPreview(i);</span>
+<span class="nc" id="L53">		return jfacefound.getPreview(i);</span>
+	}
+
+	public String getStepDescription() {
+<span class="fc" id="L57">		return stepDescription.get();</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L62">		return stepDescription.get();</span>
 	}
 
 	/**
@@ -64,57 +76,57 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
 	public void findOperations(final CompilationUnit compilationUnit,
 			final Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, final Set&lt;ASTNode&gt; nodesprocessed,
 			boolean createForOnlyIfVarUsed) {
-<span class="fc" id="L67">		jfacefound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);</span>
-<span class="fc" id="L68">	}</span>
+<span class="fc" id="L79">		jfacefound.find(this, compilationUnit, operations, nodesprocessed, createForOnlyIfVarUsed);</span>
+<span class="fc" id="L80">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public &lt;T&gt; CompilationUnitRewriteOperationWithSourceRange rewrite(final ReferenceHolder&lt;Integer, T&gt; hit) {
-<span class="fc" id="L72">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
+<span class="fc" id="L84">		return new CompilationUnitRewriteOperationWithSourceRange() {</span>
 			@Override
 			public void rewriteASTInternal(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel)
 					throws CoreException {
-<span class="fc" id="L76">				TextEditGroup group= createTextEditGroup(MultiFixMessages.JFaceCleanUp_description, cuRewrite);</span>
+<span class="fc" id="L88">				TextEditGroup group= createTextEditGroup(JfaceCleanUpFixCore.this.getStepDescription(), cuRewrite);</span>
 				TightSourceRangeComputer rangeComputer;
-<span class="fc" id="L78">				ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
-<span class="nc" id="L80">					rangeComputer= (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
-<span class="nc" id="L81">				} else {</span>
-<span class="fc" id="L82">					rangeComputer= new TightSourceRangeComputer();</span>
+<span class="fc" id="L90">				ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				if (rewrite.getExtendedSourceRangeComputer() instanceof TightSourceRangeComputer) {</span>
+<span class="nc" id="L92">					rangeComputer= (TightSourceRangeComputer) rewrite.getExtendedSourceRangeComputer();</span>
+<span class="nc" id="L93">				} else {</span>
+<span class="fc" id="L94">					rangeComputer= new TightSourceRangeComputer();</span>
 				}
 	
 				// Use instanceof pattern matching to handle different holder types
-<span class="pc bpc" id="L86" title="1 of 4 branches missed.">				if (!hit.isEmpty() &amp;&amp; hit.values().stream().findFirst().orElse(null) instanceof MonitorHolder monitorHolder) {</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">				if (!hit.isEmpty() &amp;&amp; hit.values().stream().findFirst().orElse(null) instanceof MonitorHolder monitorHolder) {</span>
 					// For standalone SubProgressMonitor, use the ClassInstanceCreation node instead of minv
-<span class="fc bfc" id="L88" title="All 2 branches covered.">					if (monitorHolder.minv != null) {</span>
-<span class="fc" id="L89">						rangeComputer.addTightSourceNode(monitorHolder.minv);</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">					} else if (!monitorHolder.standaloneSubProgressMonitors.isEmpty()) {</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">					if (monitorHolder.minv != null) {</span>
+<span class="fc" id="L101">						rangeComputer.addTightSourceNode(monitorHolder.minv);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">					} else if (!monitorHolder.standaloneSubProgressMonitors.isEmpty()) {</span>
 						// Use the first standalone SubProgressMonitor creation
-<span class="fc" id="L92">						rangeComputer.addTightSourceNode(monitorHolder.standaloneSubProgressMonitors.iterator().next());</span>
-<span class="fc bfc" id="L93" title="All 2 branches covered.">					} else if (!monitorHolder.subProgressMonitorOnSubMonitor.isEmpty()) {</span>
+<span class="fc" id="L104">						rangeComputer.addTightSourceNode(monitorHolder.standaloneSubProgressMonitors.iterator().next());</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">					} else if (!monitorHolder.subProgressMonitorOnSubMonitor.isEmpty()) {</span>
 						// Use the first SubProgressMonitor on SubMonitor variable
-<span class="fc" id="L95">						rangeComputer.addTightSourceNode(monitorHolder.subProgressMonitorOnSubMonitor.iterator().next());</span>
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">					} else if (!monitorHolder.setofcic.isEmpty()) {</span>
+<span class="fc" id="L107">						rangeComputer.addTightSourceNode(monitorHolder.subProgressMonitorOnSubMonitor.iterator().next());</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">					} else if (!monitorHolder.setofcic.isEmpty()) {</span>
 						// Use the first SubProgressMonitor creation for other cases
-<span class="nc" id="L98">						rangeComputer.addTightSourceNode(monitorHolder.setofcic.iterator().next());</span>
+<span class="nc" id="L110">						rangeComputer.addTightSourceNode(monitorHolder.setofcic.iterator().next());</span>
 					}
-<span class="fc" id="L100">					rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
-<span class="fc" id="L101">					((AbstractTool&lt;ReferenceHolder&lt;Integer, MonitorHolder&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder&lt;Integer, MonitorHolder&gt;) hit, cuRewrite, group);</span>
-<span class="pc bpc" id="L102" title="1 of 4 branches missed.">				} else if (!hit.isEmpty() &amp;&amp; hit.values().stream().findFirst().orElse(null) instanceof SorterHolder) {</span>
+<span class="fc" id="L112">					rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L113">					((AbstractTool&lt;ReferenceHolder&lt;Integer, MonitorHolder&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder&lt;Integer, MonitorHolder&gt;) hit, cuRewrite, group);</span>
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">				} else if (!hit.isEmpty() &amp;&amp; hit.values().stream().findFirst().orElse(null) instanceof SorterHolder) {</span>
 					// For SorterHolder, we don't have a single source node, so skip rangeComputer setup
-<span class="fc" id="L104">					((AbstractTool&lt;ReferenceHolder&lt;Integer, SorterHolder&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder&lt;Integer, SorterHolder&gt;) hit, cuRewrite, group);</span>
-<span class="pc bpc" id="L105" title="2 of 4 branches missed.">				} else if (!hit.isEmpty() &amp;&amp; hit.values().stream().findFirst().orElse(null) instanceof ImageDataHolder imageDataHolder) {</span>
+<span class="fc" id="L116">					((AbstractTool&lt;ReferenceHolder&lt;Integer, SorterHolder&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder&lt;Integer, SorterHolder&gt;) hit, cuRewrite, group);</span>
+<span class="pc bpc" id="L117" title="2 of 4 branches missed.">				} else if (!hit.isEmpty() &amp;&amp; hit.values().stream().findFirst().orElse(null) instanceof ImageDataHolder imageDataHolder) {</span>
 					// For ImageDataHolder, use the imageCreation node
-<span class="pc bpc" id="L107" title="1 of 2 branches missed.">					if (imageDataHolder.imageCreation != null) {</span>
-<span class="fc" id="L108">						rangeComputer.addTightSourceNode(imageDataHolder.imageCreation);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">					if (imageDataHolder.imageCreation != null) {</span>
+<span class="fc" id="L120">						rangeComputer.addTightSourceNode(imageDataHolder.imageCreation);</span>
 					}
-<span class="fc" id="L110">					rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
-<span class="fc" id="L111">					((AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataHolder&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder&lt;Integer, ImageDataHolder&gt;) hit, cuRewrite, group);</span>
-<span class="fc" id="L112">				} else {</span>
+<span class="fc" id="L122">					rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="fc" id="L123">					((AbstractTool&lt;ReferenceHolder&lt;Integer, ImageDataHolder&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, (ReferenceHolder&lt;Integer, ImageDataHolder&gt;) hit, cuRewrite, group);</span>
+<span class="fc" id="L124">				} else {</span>
 					// Fallback for unknown types - just call rewrite without specific range computer setup
-<span class="nc" id="L114">					rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
-<span class="nc" id="L115">					((AbstractTool&lt;ReferenceHolder&lt;Integer, T&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);</span>
+<span class="nc" id="L126">					rewrite.setTargetSourceRangeComputer(rangeComputer);</span>
+<span class="nc" id="L127">					((AbstractTool&lt;ReferenceHolder&lt;Integer, T&gt;&gt;) jfacefound).rewrite(JfaceCleanUpFixCore.this, hit, cuRewrite, group);</span>
 				}
-<span class="fc" id="L117">			}</span>
+<span class="fc" id="L129">			}</span>
 		};
 	}
 }

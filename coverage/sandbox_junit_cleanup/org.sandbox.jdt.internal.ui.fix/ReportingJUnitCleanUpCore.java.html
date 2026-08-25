@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReportingJUnitCleanUpCore.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">ReportingJUnitCleanUpCore.java</span></div><h1>ReportingJUnitCleanUpCore.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Analysis;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
+
+/** JUnit cleanup core that retains privacy-preserving planning evidence. */
+public final class ReportingJUnitCleanUpCore extends JUnitCleanUpCore {
+
+<span class="pc" id="L30">	private final Map&lt;IJavaProject, String&gt; diagnosticsByProject= new HashMap&lt;&gt;();</span>
+
+	/** Creates a reporting cleanup core without initial options. */
+<span class="fc" id="L33">	public ReportingJUnitCleanUpCore() {</span>
+<span class="fc" id="L34">	}</span>
+
+	/** Creates a reporting cleanup core with the supplied cleanup options. */
+	public ReportingJUnitCleanUpCore(Map&lt;String, String&gt; options) {
+<span class="nc" id="L38">		super(options);</span>
+<span class="nc" id="L39">	}</span>
+
+	@Override
+	protected MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; createPlan(IJavaProject project,
+			ICompilationUnit[] compilationUnits, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L44">		diagnosticsByProject.remove(project);</span>
+<span class="fc" id="L45">		MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; result= super.createPlan(project, compilationUnits, monitor);</span>
+<span class="fc" id="L46">		String plannerJson= result.diagnostics().toJson();</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">		if (isEnabled(JUnitMigrationOptions.BEST_EFFORT)) {</span>
+<span class="fc" id="L48">			Analysis analysis= getMigrationAnalysis(project);</span>
+<span class="fc" id="L49">			diagnosticsByProject.put(project, analysis.toJson(plannerJson));</span>
+<span class="fc" id="L50">		} else {</span>
+<span class="fc" id="L51">			diagnosticsByProject.put(project, plannerJson);</span>
+		}
+<span class="fc" id="L53">		return result;</span>
+	}
+
+	/** Returns the most recent structured diagnostics for a project. */
+	public String getLastPlanningDiagnosticsJson(IJavaProject project) {
+<span class="nc" id="L58">		return diagnosticsByProject.getOrDefault(project, &quot;&quot;); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

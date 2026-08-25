@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitLifecycleScopeDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitLifecycleScopeDetector.java</span></div><h1>JUnitLifecycleScopeDetector.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.ITypeHierarchy;
+import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+/** Finds the complete source hierarchy coupled by JUnit lifecycle dispatch. */
+public final class JUnitLifecycleScopeDetector {
+
+	private JUnitLifecycleScopeDetector() {
+	}
+
+	/**
+	 * Finds the highest lifecycle-declaring source type visible from the selection
+	 * and every source subtype. Both JUnit 4 and Jupiter annotation names may be
+	 * supplied, so an earlier migration cannot erase the edge used by a later pass.
+	 */
+	public static JUnitScopeCandidateDetector.SearchSeeds findSearchSeeds(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, Set&lt;String&gt; lifecycleAnnotations,
+			IProgressMonitor monitor) {
+<span class="pc bpc" id="L54" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()</span>
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">				|| lifecycleAnnotations == null || lifecycleAnnotations.isEmpty()) {</span>
+<span class="nc" id="L56">			return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+		}
+<span class="fc" id="L58">		checkCanceled(monitor);</span>
+<span class="fc" id="L59">		Set&lt;ICompilationUnit&gt; units= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">		for (ICompilationUnit unit : currentScope) {</span>
+<span class="pc bpc" id="L61" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L62">				units.add(unit.getPrimary());</span>
+			}
+		}
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (units.isEmpty()) {</span>
+<span class="nc" id="L66">			return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+		}
+
+<span class="fc" id="L69">		Set&lt;String&gt; acceptedAnnotations= Set.copyOf(lifecycleAnnotations);</span>
+<span class="fc" id="L70">		boolean[] candidateFound= { false };</span>
+<span class="fc" id="L71">		boolean[] complete= { true };</span>
+<span class="fc" id="L72">		Set&lt;ICompilationUnit&gt; directUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L73">		Set&lt;String&gt; processedRoots= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L74">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L75">		parser.setProject(project);</span>
+<span class="fc" id="L76">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L77">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L78">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L79">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L80">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L83">				ast.accept(new ASTVisitor() {</span>
+					@Override
+					public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L86">						ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc" id="L87">						ITypeBinding rootBinding= lifecycleRoot(binding, acceptedAnnotations);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">						if (rootBinding == null) {</span>
+<span class="nc bnc" id="L89" title="All 4 branches missed.">							if (binding == null &amp;&amp; hasSyntacticLifecycle(node, acceptedAnnotations)) {</span>
+<span class="nc" id="L90">								candidateFound[0]= true;</span>
+<span class="nc" id="L91">								complete[0]= false;</span>
+							}
+<span class="nc" id="L93">							return true;</span>
+						}
+<span class="fc" id="L95">						candidateFound[0]= true;</span>
+<span class="fc" id="L96">						var rootElement= rootBinding.getErasure().getJavaElement();</span>
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">						if (!(rootElement instanceof IType rootType) || rootType.getCompilationUnit() == null) {</span>
+<span class="nc" id="L98">							complete[0]= false;</span>
+<span class="nc" id="L99">							return false;</span>
+						}
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">						if (!processedRoots.add(rootType.getHandleIdentifier())) {</span>
+<span class="nc" id="L102">							return false;</span>
+						}
+						try {
+<span class="fc" id="L105">							ITypeHierarchy hierarchy= newTypeHierarchy(rootType, monitor);</span>
+<span class="fc" id="L106">							complete[0]&amp;= addType(rootType, directUnits);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">							for (IType subtype : hierarchy.getAllSubtypes(rootType)) {</span>
+<span class="fc" id="L108">								ICompilationUnit subtypeUnit= subtype.getCompilationUnit();</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">								if (subtypeUnit == null || !subtypeUnit.exists()) {</span>
+<span class="nc" id="L110">									complete[0]= false;</span>
+<span class="nc" id="L111">								} else {</span>
+<span class="fc" id="L112">									complete[0]&amp;= addType(subtype, directUnits);</span>
+								}
+							}
+<span class="pc" id="L115">						} catch (JavaModelException e) {</span>
+<span class="nc" id="L116">							complete[0]= false;</span>
+						}
+<span class="fc" id="L118">						return false;</span>
+					}
+				});
+<span class="fc" id="L121">			}</span>
+<span class="fc" id="L122">		}, monitor);</span>
+<span class="fc" id="L123">		checkCanceled(monitor);</span>
+<span class="fc" id="L124">		return new JUnitScopeCandidateDetector.SearchSeeds(candidateFound[0], complete[0],</span>
+<span class="fc" id="L125">				List.of(), new ArrayList&lt;&gt;(directUnits));</span>
+	}
+
+	static ITypeHierarchy newTypeHierarchy(IType rootType, IProgressMonitor monitor)
+			throws JavaModelException {
+<span class="fc" id="L130">		return rootType.newTypeHierarchy(monitor);</span>
+	}
+
+	private static ITypeBinding lifecycleRoot(ITypeBinding binding, Set&lt;String&gt; annotations) {
+<span class="fc" id="L134">		ITypeBinding result= null;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		for (ITypeBinding current= binding; current != null; current= current.getSuperclass()) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			if (declaresLifecycle(current, annotations)) {</span>
+<span class="fc" id="L137">				result= current;</span>
+			}
+		}
+<span class="fc" id="L140">		return result;</span>
+	}
+
+	private static boolean declaresLifecycle(ITypeBinding type, Set&lt;String&gt; annotations) {
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		for (IMethodBinding method : type.getDeclaredMethods()) {</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">			for (IAnnotationBinding annotation : method.getAnnotations()) {</span>
+<span class="fc" id="L146">				ITypeBinding annotationType= annotation.getAnnotationType();</span>
+<span class="pc bpc" id="L147" title="1 of 4 branches missed.">				if (annotationType != null &amp;&amp; annotations.contains(annotationType.getQualifiedName())) {</span>
+<span class="fc" id="L148">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L152">		return false;</span>
+	}
+
+	private static boolean hasSyntacticLifecycle(TypeDeclaration type, Set&lt;String&gt; annotations) {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">			for (Object modifier : method.modifiers()) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">				if (!(modifier instanceof Annotation annotation)) {</span>
+					continue;
+				}
+<span class="nc" id="L161">				String sourceName= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">				for (String qualifiedName : annotations) {</span>
+<span class="nc" id="L163">					String simpleName= qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);</span>
+<span class="nc bnc" id="L164" title="All 4 branches missed.">					if (qualifiedName.equals(sourceName) || simpleName.equals(sourceName)) {</span>
+<span class="nc" id="L165">						return true;</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L170">		return false;</span>
+	}
+
+	private static boolean addType(IType type, Set&lt;ICompilationUnit&gt; units) {
+<span class="pc bpc" id="L174" title="2 of 4 branches missed.">		if (type == null || !type.exists()) {</span>
+<span class="nc" id="L175">			return false;</span>
+		}
+<span class="fc" id="L177">		ICompilationUnit unit= type.getCompilationUnit();</span>
+<span class="pc bpc" id="L178" title="2 of 4 branches missed.">		if (unit == null || !unit.exists()) {</span>
+<span class="nc" id="L179">			return false;</span>
+		}
+<span class="fc" id="L181">		units.add(unit.getPrimary());</span>
+<span class="fc" id="L182">		return true;</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L186" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L187">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L189">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

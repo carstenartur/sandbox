@@ -61,7 +61,8 @@ import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
 public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		List&lt;ExternalResourceRuleMigration&gt; externalResourceRules,
 		List&lt;JUnit3HierarchyMigration&gt; junit3Hierarchies,
-		JUnitTestTypeInventory testTypeInventory) {
+		JUnitTestTypeInventory testTypeInventory,
+		Set&lt;String&gt; junit4CompatibleExternalResourceTypes) {
 
 	private static final String JUNIT3_HINT_RESOURCE=
 			&quot;org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint&quot;; //$NON-NLS-1$
@@ -69,264 +70,298 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	private static final String FACT_TEST_ORDER= &quot;testOrder&quot;; //$NON-NLS-1$
 	private static final String FACT_REMOVE_OVERRIDE= &quot;removeOverride&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L72">	public JUnitMigrationPlan {</span>
-<span class="fc" id="L73">		Objects.requireNonNull(selectedScope);</span>
-<span class="fc" id="L74">		externalResourceRules= List.copyOf(externalResourceRules);</span>
-<span class="fc" id="L75">		junit3Hierarchies= List.copyOf(junit3Hierarchies);</span>
-<span class="fc" id="L76">		testTypeInventory= Objects.requireNonNull(testTypeInventory);</span>
-<span class="fc" id="L77">	}</span>
+<span class="fc" id="L73">	public JUnitMigrationPlan {</span>
+<span class="fc" id="L74">		Objects.requireNonNull(selectedScope);</span>
+<span class="fc" id="L75">		externalResourceRules= List.copyOf(externalResourceRules);</span>
+<span class="fc" id="L76">		junit3Hierarchies= List.copyOf(junit3Hierarchies);</span>
+<span class="fc" id="L77">		testTypeInventory= Objects.requireNonNull(testTypeInventory);</span>
+<span class="fc" id="L78">		junit4CompatibleExternalResourceTypes= Set.copyOf(junit4CompatibleExternalResourceTypes);</span>
+<span class="fc" id="L79">	}</span>
+
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List&lt;ExternalResourceRuleMigration&gt; externalResourceRules,
+			List&lt;JUnit3HierarchyMigration&gt; junit3Hierarchies,
+			JUnitTestTypeInventory testTypeInventory) {
+<span class="fc" id="L85">		this(selectedScope, externalResourceRules, junit3Hierarchies, testTypeInventory, Set.of());</span>
+<span class="fc" id="L86">	}</span>
 
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			List&lt;ExternalResourceRuleMigration&gt; externalResourceRules) {
-<span class="nc" id="L81">		this(selectedScope, externalResourceRules, List.of(), new JUnitTestTypeInventory(List.of()));</span>
-<span class="nc" id="L82">	}</span>
+<span class="nc" id="L90">		this(selectedScope, externalResourceRules, List.of(), new JUnitTestTypeInventory(List.of()));</span>
+<span class="nc" id="L91">	}</span>
 
 	public boolean contains(ICompilationUnit unit) {
-<span class="fc" id="L85">		return selectedScope.contains(unit);</span>
+<span class="fc" id="L94">		return selectedScope.contains(unit);</span>
 	}
 
 	public boolean hasCoordinatedChanges() {
-<span class="nc bnc" id="L89" title="All 4 branches missed.">		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty();</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty();</span>
+	}
+
+	/**
+	 * Retains the JUnit 4 {@code ExternalResource} contract for every fixture used
+	 * by a strict-mode compilation unit that cannot be migrated atomically.
+	 */
+	public JUnitMigrationPlan withJUnit4CompatibilityForBlockedRuleUnits(Set&lt;String&gt; blockedRuleUnitHandles) {
+<span class="pc bpc" id="L106" title="2 of 4 branches missed.">		if (blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">				|| externalResourceRules.isEmpty()) {</span>
+<span class="fc" id="L108">			return this;</span>
+		}
+<span class="fc" id="L110">		Set&lt;String&gt; compatibleTypes= externalResourceRules.stream()</span>
+<span class="fc" id="L111">				.filter(migration -&gt; blockedRuleUnitHandles.contains(migration.ruleCompilationUnitHandle()))</span>
+<span class="fc" id="L112">				.map(ExternalResourceRuleMigration::resourceTypeBindingKey)</span>
+<span class="fc" id="L113">				.collect(Collectors.toCollection(LinkedHashSet::new));</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		if (compatibleTypes.isEmpty()) {</span>
+<span class="nc" id="L115">			return this;</span>
+		}
+<span class="fc" id="L117">		compatibleTypes.addAll(junit4CompatibleExternalResourceTypes);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		if (compatibleTypes.equals(junit4CompatibleExternalResourceTypes)) {</span>
+<span class="nc" id="L119">			return this;</span>
+		}
+<span class="fc" id="L121">		return new JUnitMigrationPlan(selectedScope, externalResourceRules, junit3Hierarchies,</span>
+<span class="fc" id="L122">				testTypeInventory, compatibleTypes);</span>
 	}
 
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesProcessed)
 			throws CoreException {
-<span class="fc" id="L95">		String unitHandle= unit.getPrimary().getHandleIdentifier();</span>
-<span class="fc" id="L96">		addExternalResourceOperations(unit, unitHandle, root, operations, nodesProcessed);</span>
-<span class="fc" id="L97">		addJUnit3HierarchyOperations(unit, unitHandle, root, operations, nodesProcessed);</span>
-<span class="fc" id="L98">	}</span>
+<span class="fc" id="L128">		String unitHandle= unit.getPrimary().getHandleIdentifier();</span>
+<span class="fc" id="L129">		addExternalResourceOperations(unit, unitHandle, root, operations, nodesProcessed);</span>
+<span class="fc" id="L130">		addJUnit3HierarchyOperations(unit, unitHandle, root, operations, nodesProcessed);</span>
+<span class="fc" id="L131">	}</span>
 
 	private void addExternalResourceOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesProcessed)
 			throws CoreException {
-<span class="fc" id="L103">		List&lt;ExternalResourceRuleMigration&gt; fieldMigrations= externalResourceRules.stream()</span>
-<span class="fc" id="L104">				.filter(migration -&gt; unitHandle.equals(migration.ruleCompilationUnitHandle())).toList();</span>
-<span class="fc" id="L105">		List&lt;ExternalResourceRuleMigration&gt; typeMigrations= externalResourceRules.stream()</span>
-<span class="fc" id="L106">				.filter(migration -&gt; unitHandle.equals(migration.resourceCompilationUnitHandle())).toList();</span>
-<span class="fc bfc" id="L107" title="All 4 branches covered.">		if (fieldMigrations.isEmpty() &amp;&amp; typeMigrations.isEmpty()) {</span>
-<span class="fc" id="L108">			return;</span>
+<span class="fc" id="L136">		List&lt;ExternalResourceRuleMigration&gt; fieldMigrations= externalResourceRules.stream()</span>
+<span class="fc" id="L137">				.filter(migration -&gt; unitHandle.equals(migration.ruleCompilationUnitHandle())).toList();</span>
+<span class="fc" id="L138">		List&lt;ExternalResourceRuleMigration&gt; typeMigrations= externalResourceRules.stream()</span>
+<span class="fc" id="L139">				.filter(migration -&gt; unitHandle.equals(migration.resourceCompilationUnitHandle())).toList();</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">		if (fieldMigrations.isEmpty() &amp;&amp; typeMigrations.isEmpty()) {</span>
+<span class="fc" id="L141">			return;</span>
 		}
 
-<span class="fc" id="L111">		Set&lt;String&gt; expectedFieldKeys= fieldMigrations.stream().map(ExternalResourceRuleMigration::fieldBindingKey)</span>
-<span class="fc" id="L112">				.collect(Collectors.toSet());</span>
-<span class="fc" id="L113">		Set&lt;String&gt; expectedTypeKeys= typeMigrations.stream().map(ExternalResourceRuleMigration::resourceTypeBindingKey)</span>
-<span class="fc" id="L114">				.collect(Collectors.toSet());</span>
-<span class="fc" id="L115">		JUnitMultiFileRewriteOperation.ResolvedEdits resolved= resolveExternalResources(root, fieldMigrations,</span>
-<span class="fc" id="L116">				typeMigrations, expectedFieldKeys, expectedTypeKeys);</span>
-<span class="pc bpc" id="L117" title="2 of 4 branches missed.">		if (!resolved.fieldKeys().equals(expectedFieldKeys) || !resolved.typeKeys().equals(expectedTypeKeys)) {</span>
-<span class="nc" id="L118">			throw staleExternalResourcePlan(unit, expectedFieldKeys, expectedTypeKeys, resolved);</span>
+<span class="fc" id="L144">		Set&lt;String&gt; expectedFieldKeys= fieldMigrations.stream().map(ExternalResourceRuleMigration::fieldBindingKey)</span>
+<span class="fc" id="L145">				.collect(Collectors.toSet());</span>
+<span class="fc" id="L146">		Set&lt;String&gt; expectedTypeKeys= typeMigrations.stream().map(ExternalResourceRuleMigration::resourceTypeBindingKey)</span>
+<span class="fc" id="L147">				.collect(Collectors.toSet());</span>
+<span class="fc" id="L148">		JUnitMultiFileRewriteOperation.ResolvedEdits resolved= resolveExternalResources(root, fieldMigrations,</span>
+<span class="fc" id="L149">				typeMigrations, expectedFieldKeys, expectedTypeKeys,</span>
+<span class="fc" id="L150">				junit4CompatibleExternalResourceTypes);</span>
+<span class="pc bpc" id="L151" title="2 of 4 branches missed.">		if (!resolved.fieldKeys().equals(expectedFieldKeys) || !resolved.typeKeys().equals(expectedTypeKeys)) {</span>
+<span class="nc" id="L152">			throw staleExternalResourcePlan(unit, expectedFieldKeys, expectedTypeKeys, resolved);</span>
 		}
-<span class="fc" id="L120">		nodesProcessed.addAll(resolved.fields().keySet());</span>
-<span class="fc" id="L121">		nodesProcessed.addAll(resolved.resourceTypes().keySet());</span>
-<span class="fc" id="L122">		operations.add(new JUnitMultiFileRewriteOperation(resolved));</span>
-<span class="fc" id="L123">	}</span>
+<span class="fc" id="L154">		nodesProcessed.addAll(resolved.fields().keySet());</span>
+<span class="fc" id="L155">		nodesProcessed.addAll(resolved.resourceTypes().keySet());</span>
+<span class="fc" id="L156">		operations.add(new JUnitMultiFileRewriteOperation(resolved));</span>
+<span class="fc" id="L157">	}</span>
 
 	private void addJUnit3HierarchyOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; nodesProcessed)
 			throws CoreException {
-<span class="fc" id="L128">		List&lt;TypeMigration&gt; plannedTypes= junit3Hierarchies.stream()</span>
-<span class="fc" id="L129">				.flatMap(hierarchy -&gt; hierarchy.types().stream())</span>
-<span class="fc" id="L130">				.filter(type -&gt; unitHandle.equals(type.compilationUnitHandle()))</span>
-<span class="fc" id="L131">				.toList();</span>
-<span class="fc bfc" id="L132" title="All 2 branches covered.">		if (plannedTypes.isEmpty()) {</span>
-<span class="fc" id="L133">			return;</span>
+<span class="fc" id="L162">		List&lt;TypeMigration&gt; plannedTypes= junit3Hierarchies.stream()</span>
+<span class="fc" id="L163">				.flatMap(hierarchy -&gt; hierarchy.types().stream())</span>
+<span class="fc" id="L164">				.filter(type -&gt; unitHandle.equals(type.compilationUnitHandle()))</span>
+<span class="fc" id="L165">				.toList();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		if (plannedTypes.isEmpty()) {</span>
+<span class="fc" id="L167">			return;</span>
 		}
 
-<span class="fc" id="L136">		Map&lt;String, TypeMigration&gt; expectedTypes= plannedTypes.stream()</span>
-<span class="fc" id="L137">				.collect(Collectors.toMap(TypeMigration::typeBindingKey, type -&gt; type));</span>
-<span class="fc" id="L138">		Set&lt;String&gt; expectedMethodKeys= plannedTypes.stream().flatMap(type -&gt; type.methods().stream())</span>
-<span class="fc" id="L139">				.map(MethodMigration::methodBindingKey).collect(Collectors.toCollection(LinkedHashSet::new));</span>
-<span class="fc" id="L140">		Map&lt;NodeKey, InvocationMigration&gt; expectedInvocations= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L141" title="All 2 branches covered.">		for (TypeMigration type : plannedTypes) {</span>
-<span class="fc bfc" id="L142" title="All 2 branches covered.">			for (InvocationMigration invocation : type.invocations()) {</span>
-<span class="fc" id="L143">				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),</span>
-<span class="fc" id="L144">						invocation.sourceLength());</span>
-<span class="fc" id="L145">				expectedInvocations.put(key, invocation);</span>
+<span class="fc" id="L170">		Map&lt;String, TypeMigration&gt; expectedTypes= plannedTypes.stream()</span>
+<span class="fc" id="L171">				.collect(Collectors.toMap(TypeMigration::typeBindingKey, type -&gt; type));</span>
+<span class="fc" id="L172">		Set&lt;String&gt; expectedMethodKeys= plannedTypes.stream().flatMap(type -&gt; type.methods().stream())</span>
+<span class="fc" id="L173">				.map(MethodMigration::methodBindingKey).collect(Collectors.toCollection(LinkedHashSet::new));</span>
+<span class="fc" id="L174">		Map&lt;NodeKey, InvocationMigration&gt; expectedInvocations= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		for (TypeMigration type : plannedTypes) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">			for (InvocationMigration invocation : type.invocations()) {</span>
+<span class="fc" id="L177">				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),</span>
+<span class="fc" id="L178">						invocation.sourceLength());</span>
+<span class="fc" id="L179">				expectedInvocations.put(key, invocation);</span>
 			}
 		}
 
-<span class="fc" id="L149">		Map&lt;String, TypeDeclaration&gt; resolvedTypes= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L150">		Map&lt;String, MethodDeclaration&gt; resolvedMethods= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L151">		Map&lt;NodeKey, MethodInvocation&gt; resolvedInvocations= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L152">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L183">		Map&lt;String, TypeDeclaration&gt; resolvedTypes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L184">		Map&lt;String, MethodDeclaration&gt; resolvedMethods= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L185">		Map&lt;NodeKey, MethodInvocation&gt; resolvedInvocations= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L186">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L155">				String key= typeKey(node.resolveBinding());</span>
-<span class="pc bpc" id="L156" title="2 of 4 branches missed.">				if (key != null &amp;&amp; expectedTypes.containsKey(key)) {</span>
-<span class="fc" id="L157">					resolvedTypes.put(key, node);</span>
+<span class="fc" id="L189">				String key= typeKey(node.resolveBinding());</span>
+<span class="pc bpc" id="L190" title="2 of 4 branches missed.">				if (key != null &amp;&amp; expectedTypes.containsKey(key)) {</span>
+<span class="fc" id="L191">					resolvedTypes.put(key, node);</span>
 				}
-<span class="fc" id="L159">				return true;</span>
+<span class="fc" id="L193">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(MethodDeclaration node) {
-<span class="fc" id="L164">				IMethodBinding binding= node.resolveBinding();</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				String key= binding == null ? null : binding.getMethodDeclaration().getKey();</span>
-<span class="pc bpc" id="L166" title="1 of 4 branches missed.">				if (key != null &amp;&amp; expectedMethodKeys.contains(key)) {</span>
-<span class="fc" id="L167">					resolvedMethods.put(key, node);</span>
+<span class="fc" id="L198">				IMethodBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				String key= binding == null ? null : binding.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L200" title="1 of 4 branches missed.">				if (key != null &amp;&amp; expectedMethodKeys.contains(key)) {</span>
+<span class="fc" id="L201">					resolvedMethods.put(key, node);</span>
 				}
-<span class="fc" id="L169">				return true;</span>
+<span class="fc" id="L203">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(MethodInvocation node) {
-<span class="fc" id="L174">				NodeKey key= NodeKey.from(node);</span>
-<span class="pc bpc" id="L175" title="2 of 4 branches missed.">				if (key != null &amp;&amp; expectedInvocations.containsKey(key)) {</span>
-<span class="fc" id="L176">					resolvedInvocations.put(key, node);</span>
+<span class="fc" id="L208">				NodeKey key= NodeKey.from(node);</span>
+<span class="pc bpc" id="L209" title="2 of 4 branches missed.">				if (key != null &amp;&amp; expectedInvocations.containsKey(key)) {</span>
+<span class="fc" id="L210">					resolvedInvocations.put(key, node);</span>
 				}
-<span class="fc" id="L178">				return true;</span>
+<span class="fc" id="L212">				return true;</span>
 			}
 		});
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (!resolvedTypes.keySet().equals(expectedTypes.keySet())</span>
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				|| !resolvedMethods.keySet().equals(expectedMethodKeys)</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				|| !resolvedInvocations.keySet().equals(expectedInvocations.keySet())) {</span>
-<span class="nc" id="L184">			throw staleJUnit3Plan(unit, expectedTypes.keySet(), expectedMethodKeys, expectedInvocations.keySet(),</span>
-<span class="nc" id="L185">					resolvedTypes.keySet(), resolvedMethods.keySet(), resolvedInvocations.keySet());</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">		if (!resolvedTypes.keySet().equals(expectedTypes.keySet())</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">				|| !resolvedMethods.keySet().equals(expectedMethodKeys)</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">				|| !resolvedInvocations.keySet().equals(expectedInvocations.keySet())) {</span>
+<span class="nc" id="L218">			throw staleJUnit3Plan(unit, expectedTypes.keySet(), expectedMethodKeys, expectedInvocations.keySet(),</span>
+<span class="nc" id="L219">					resolvedTypes.keySet(), resolvedMethods.keySet(), resolvedInvocations.keySet());</span>
 		}
 
-<span class="fc" id="L188">		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder(&quot;junit3-hierarchy&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L189">		Set&lt;NodeKey&gt; expectedHintTargets= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L190" title="All 2 branches covered.">		for (TypeMigration planned : plannedTypes) {</span>
-<span class="fc" id="L191">			NodeKey typeKey= NodeKey.type(planned.typeBindingKey());</span>
-<span class="fc" id="L192">			plan.add(typeKey, ROLE_HIERARCHY_TYPE)</span>
-<span class="fc" id="L193">					.putBoolean(typeKey, FACT_REMOVE_TEST_CASE_SUPERCLASS,</span>
-<span class="fc" id="L194">							planned.removeTestCaseSuperclass());</span>
-<span class="fc bfc" id="L195" title="All 2 branches covered.">			if (planned.removeTestCaseSuperclass()) {</span>
-<span class="fc" id="L196">				expectedHintTargets.add(typeKey);</span>
+<span class="fc" id="L222">		SemanticRewritePlan.Builder plan= SemanticRewritePlan.builder(&quot;junit3-hierarchy&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L223">		Set&lt;NodeKey&gt; expectedHintTargets= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">		for (TypeMigration planned : plannedTypes) {</span>
+<span class="fc" id="L225">			NodeKey typeKey= NodeKey.type(planned.typeBindingKey());</span>
+<span class="fc" id="L226">			plan.add(typeKey, ROLE_HIERARCHY_TYPE)</span>
+<span class="fc" id="L227">					.putBoolean(typeKey, FACT_REMOVE_TEST_CASE_SUPERCLASS,</span>
+<span class="fc" id="L228">							planned.removeTestCaseSuperclass());</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">			if (planned.removeTestCaseSuperclass()) {</span>
+<span class="fc" id="L230">				expectedHintTargets.add(typeKey);</span>
 			}
-<span class="fc bfc" id="L198" title="All 2 branches covered.">			for (MethodMigration method : planned.methods()) {</span>
-<span class="fc" id="L199">				NodeKey key= NodeKey.method(method.methodBindingKey());</span>
-<span class="fc" id="L200">				plan.add(key, methodRole(method.kind()));</span>
-<span class="fc bfc" id="L201" title="All 2 branches covered.">				if (method.kind() == MethodKind.TEST) {</span>
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">					if (method.executionOrder() &lt;= 0) {</span>
-<span class="nc" id="L203">						throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L204">								&quot;The planned JUnit 3 test order is missing for &quot; + method.methodBindingKey())); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">			for (MethodMigration method : planned.methods()) {</span>
+<span class="fc" id="L233">				NodeKey key= NodeKey.method(method.methodBindingKey());</span>
+<span class="fc" id="L234">				plan.add(key, methodRole(method.kind()));</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">				if (method.kind() == MethodKind.TEST) {</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">					if (method.executionOrder() &lt;= 0) {</span>
+<span class="nc" id="L237">						throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L238">								&quot;The planned JUnit 3 test order is missing for &quot; + method.methodBindingKey())); //$NON-NLS-1$</span>
 					}
-<span class="fc" id="L206">					plan.putInteger(key, FACT_TEST_ORDER, method.executionOrder());</span>
-<span class="fc" id="L207">				} else {</span>
-<span class="fc" id="L208">					plan.putBoolean(key, FACT_REMOVE_OVERRIDE, method.removeOverride());</span>
+<span class="fc" id="L240">					plan.putInteger(key, FACT_TEST_ORDER, method.executionOrder());</span>
+<span class="fc" id="L241">				} else {</span>
+<span class="fc" id="L242">					plan.putBoolean(key, FACT_REMOVE_OVERRIDE, method.removeOverride());</span>
 				}
-<span class="fc" id="L210">				expectedHintTargets.add(key);</span>
+<span class="fc" id="L244">				expectedHintTargets.add(key);</span>
 			}
-<span class="fc bfc" id="L212" title="All 2 branches covered.">			for (InvocationMigration invocation : planned.invocations()) {</span>
-<span class="fc" id="L213">				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),</span>
-<span class="fc" id="L214">						invocation.sourceLength());</span>
-<span class="pc bpc" id="L215" title="1 of 2 branches missed.">				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST</span>
-<span class="pc" id="L216">						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);</span>
-<span class="fc" id="L217">				expectedHintTargets.add(key);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">			for (InvocationMigration invocation : planned.invocations()) {</span>
+<span class="fc" id="L247">				NodeKey key= NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),</span>
+<span class="fc" id="L248">						invocation.sourceLength());</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">				plan.add(key, invocation.kind() == InvocationKind.MESSAGE_FIRST</span>
+<span class="pc" id="L250">						? ROLE_ASSERTION_MESSAGE_FIRST : ROLE_ASSERTION_QUALIFY);</span>
+<span class="fc" id="L251">				expectedHintTargets.add(key);</span>
 			}
-<span class="fc" id="L219">			nodesProcessed.add(resolvedTypes.get(planned.typeBindingKey()));</span>
-<span class="fc" id="L220">			planned.methods().stream().map(MethodMigration::methodBindingKey)</span>
-<span class="fc" id="L221">					.map(resolvedMethods::get).forEach(nodesProcessed::add);</span>
-<span class="fc" id="L222">			planned.invocations().stream()</span>
-<span class="fc" id="L223">					.map(invocation -&gt; NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),</span>
-<span class="fc" id="L224">							invocation.sourceLength()))</span>
-<span class="fc" id="L225">					.map(resolvedInvocations::get).forEach(nodesProcessed::add);</span>
+<span class="fc" id="L253">			nodesProcessed.add(resolvedTypes.get(planned.typeBindingKey()));</span>
+<span class="fc" id="L254">			planned.methods().stream().map(MethodMigration::methodBindingKey)</span>
+<span class="fc" id="L255">					.map(resolvedMethods::get).forEach(nodesProcessed::add);</span>
+<span class="fc" id="L256">			planned.invocations().stream()</span>
+<span class="fc" id="L257">					.map(invocation -&gt; NodeKey.invocation(invocation.methodBindingKey(), invocation.sourceStart(),</span>
+<span class="fc" id="L258">							invocation.sourceLength()))</span>
+<span class="fc" id="L259">					.map(resolvedInvocations::get).forEach(nodesProcessed::add);</span>
 		}
 
-<span class="fc" id="L228">		Set&lt;NodeKey&gt; covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),</span>
-<span class="fc" id="L229">				plan.build(), unit.getJavaProject().getOptions(true), operations, nodesProcessed);</span>
-<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		if (!covered.equals(expectedHintTargets)) {</span>
-<span class="nc" id="L231">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L232">					&quot;The plan-aware JUnit hint program covered &quot; + covered + &quot; but expected &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L233">							+ expectedHintTargets));</span>
+<span class="fc" id="L262">		Set&lt;NodeKey&gt; covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, loadJUnit3HintProgram(),</span>
+<span class="fc" id="L263">				plan.build(), unit.getJavaProject().getOptions(true), operations, nodesProcessed);</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">		if (!covered.equals(expectedHintTargets)) {</span>
+<span class="nc" id="L265">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L266">					&quot;The plan-aware JUnit hint program covered &quot; + covered + &quot; but expected &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L267">							+ expectedHintTargets));</span>
 		}
-<span class="fc" id="L235">	}</span>
+<span class="fc" id="L269">	}</span>
 
 	private static String methodRole(MethodKind kind) {
-<span class="pc bpc" id="L238" title="1 of 3 branches missed.">		return switch (kind) {</span>
-<span class="fc" id="L239">		case TEST -&gt; ROLE_TEST_METHOD;</span>
-<span class="fc" id="L240">		case BEFORE_EACH -&gt; ROLE_BEFORE_EACH;</span>
-<span class="nc" id="L241">		case AFTER_EACH -&gt; ROLE_AFTER_EACH;</span>
+<span class="pc bpc" id="L272" title="1 of 3 branches missed.">		return switch (kind) {</span>
+<span class="fc" id="L273">		case TEST -&gt; ROLE_TEST_METHOD;</span>
+<span class="fc" id="L274">		case BEFORE_EACH -&gt; ROLE_BEFORE_EACH;</span>
+<span class="nc" id="L275">		case AFTER_EACH -&gt; ROLE_AFTER_EACH;</span>
 		};
 	}
 
 	private static String loadJUnit3HintProgram() throws CoreException {
-<span class="fc" id="L246">		try (InputStream stream= JUnitMigrationPlan.class.getClassLoader().getResourceAsStream(JUNIT3_HINT_RESOURCE)) {</span>
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			if (stream == null) {</span>
-<span class="nc" id="L248">				throw new IOException(&quot;Missing resource &quot; + JUNIT3_HINT_RESOURCE); //$NON-NLS-1$</span>
+<span class="fc" id="L280">		try (InputStream stream= JUnitMigrationPlan.class.getClassLoader().getResourceAsStream(JUNIT3_HINT_RESOURCE)) {</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">			if (stream == null) {</span>
+<span class="nc" id="L282">				throw new IOException(&quot;Missing resource &quot; + JUNIT3_HINT_RESOURCE); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L250">			return new String(stream.readAllBytes(), StandardCharsets.UTF_8);</span>
-<span class="nc" id="L251">		} catch (IOException e) {</span>
-<span class="nc" id="L252">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L253">					&quot;Cannot load plan-aware JUnit 3 hint program&quot;, e)); //$NON-NLS-1$</span>
+<span class="fc" id="L284">			return new String(stream.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc" id="L285">		} catch (IOException e) {</span>
+<span class="nc" id="L286">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L287">					&quot;Cannot load plan-aware JUnit 3 hint program&quot;, e)); //$NON-NLS-1$</span>
 		}
 	}
 
 	private static JUnitMultiFileRewriteOperation.ResolvedEdits resolveExternalResources(CompilationUnit root,
 			List&lt;ExternalResourceRuleMigration&gt; fieldMigrations,
 			List&lt;ExternalResourceRuleMigration&gt; typeMigrations, Set&lt;String&gt; expectedFieldKeys,
-			Set&lt;String&gt; expectedTypeKeys) {
-<span class="fc" id="L261">		JUnitMultiFileRewriteOperation.ResolvedEdits.Builder builder= JUnitMultiFileRewriteOperation.ResolvedEdits.builder(root);</span>
-<span class="fc" id="L262">		root.accept(new ASTVisitor() {</span>
+			Set&lt;String&gt; expectedTypeKeys, Set&lt;String&gt; junit4CompatibleResourceTypes) {
+<span class="fc" id="L295">		JUnitMultiFileRewriteOperation.ResolvedEdits.Builder builder= JUnitMultiFileRewriteOperation.ResolvedEdits.builder(root);</span>
+<span class="fc" id="L296">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(FieldDeclaration node) {
-<span class="fc bfc" id="L265" title="All 2 branches covered.">				for (Object fragmentObject : node.fragments()) {</span>
-<span class="fc" id="L266">					VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObject;</span>
-<span class="fc" id="L267">					IVariableBinding binding= fragment.resolveBinding();</span>
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">					String key= binding == null ? null : binding.getVariableDeclaration().getKey();</span>
-<span class="pc bpc" id="L269" title="1 of 4 branches missed.">					if (key != null &amp;&amp; expectedFieldKeys.contains(key)) {</span>
-<span class="fc" id="L270">						ExternalResourceRuleMigration migration= fieldMigrations.stream()</span>
-<span class="fc" id="L271">								.filter(candidate -&gt; key.equals(candidate.fieldBindingKey())).findFirst().orElseThrow();</span>
-<span class="fc" id="L272">						builder.addField(node, key, migration.classRule(), findRuleAnnotation(node, migration.classRule()));</span>
+<span class="fc bfc" id="L299" title="All 2 branches covered.">				for (Object fragmentObject : node.fragments()) {</span>
+<span class="fc" id="L300">					VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObject;</span>
+<span class="fc" id="L301">					IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">					String key= binding == null ? null : binding.getVariableDeclaration().getKey();</span>
+<span class="pc bpc" id="L303" title="1 of 4 branches missed.">					if (key != null &amp;&amp; expectedFieldKeys.contains(key)) {</span>
+<span class="fc" id="L304">						ExternalResourceRuleMigration migration= fieldMigrations.stream()</span>
+<span class="fc" id="L305">								.filter(candidate -&gt; key.equals(candidate.fieldBindingKey())).findFirst().orElseThrow();</span>
+<span class="fc" id="L306">						builder.addField(node, key, migration.classRule(), findRuleAnnotation(node, migration.classRule()));</span>
 					}
 				}
-<span class="fc" id="L275">				return true;</span>
+<span class="fc" id="L309">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(TypeDeclaration node) {
-<span class="fc" id="L280">				ITypeBinding binding= node.resolveBinding();</span>
-<span class="fc" id="L281">				String key= typeKey(binding);</span>
-<span class="pc bpc" id="L282" title="1 of 4 branches missed.">				if (key != null &amp;&amp; expectedTypeKeys.contains(key)) {</span>
-<span class="fc" id="L283">					ExternalResourceRuleMigration migration= typeMigrations.stream()</span>
-<span class="fc" id="L284">							.filter(candidate -&gt; key.equals(candidate.resourceTypeBindingKey())).findFirst().orElseThrow();</span>
-<span class="fc" id="L285">					builder.addResourceType(node, key, migration.classRule());</span>
+<span class="fc" id="L314">				ITypeBinding binding= node.resolveBinding();</span>
+<span class="fc" id="L315">				String key= typeKey(binding);</span>
+<span class="pc bpc" id="L316" title="1 of 4 branches missed.">				if (key != null &amp;&amp; expectedTypeKeys.contains(key)) {</span>
+<span class="fc" id="L317">					ExternalResourceRuleMigration migration= typeMigrations.stream()</span>
+<span class="fc" id="L318">							.filter(candidate -&gt; key.equals(candidate.resourceTypeBindingKey())).findFirst().orElseThrow();</span>
+<span class="fc" id="L319">					builder.addResourceType(node, key, migration.classRule(),</span>
+<span class="fc" id="L320">							junit4CompatibleResourceTypes.contains(key));</span>
 				}
-<span class="fc" id="L287">				return true;</span>
+<span class="fc" id="L322">				return true;</span>
 			}
 		});
-<span class="fc" id="L290">		return builder.build();</span>
+<span class="fc" id="L325">		return builder.build();</span>
 	}
 
 	private static Annotation findRuleAnnotation(FieldDeclaration field, boolean classRule) {
-<span class="fc bfc" id="L294" title="All 2 branches covered.">		String expected= classRule ? &quot;org.junit.ClassRule&quot; : &quot;org.junit.Rule&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L295" title="1 of 2 branches missed.">		for (Object modifier : field.modifiers()) {</span>
-<span class="pc bpc" id="L296" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L297">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L298" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; expected.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L299">					return annotation;</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">		String expected= classRule ? &quot;org.junit.ClassRule&quot; : &quot;org.junit.Rule&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">		for (Object modifier : field.modifiers()) {</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L332">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L333" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; expected.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L334">					return annotation;</span>
 				}
 			}
 		}
-<span class="nc" id="L303">		return null;</span>
+<span class="nc" id="L338">		return null;</span>
 	}
 
 	static String typeKey(ITypeBinding binding) {
-<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (binding == null) {</span>
-<span class="nc" id="L308">			return null;</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">		if (binding == null) {</span>
+<span class="nc" id="L343">			return null;</span>
 		}
-<span class="fc" id="L310">		ITypeBinding declaration= binding.getErasure().getTypeDeclaration();</span>
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">		return declaration == null ? null : declaration.getKey();</span>
+<span class="fc" id="L345">		ITypeBinding declaration= binding.getErasure().getTypeDeclaration();</span>
+<span class="pc bpc" id="L346" title="1 of 2 branches missed.">		return declaration == null ? null : declaration.getKey();</span>
 	}
 
 	private static CoreException staleExternalResourcePlan(ICompilationUnit unit, Set&lt;String&gt; expectedFieldKeys,
 			Set&lt;String&gt; expectedTypeKeys, JUnitMultiFileRewriteOperation.ResolvedEdits resolved) {
-<span class="nc" id="L316">		String message= &quot;The coordinated JUnit migration plan is stale for &quot; + unit.getElementName() //$NON-NLS-1$</span>
-<span class="nc" id="L317">				+ &quot;. Expected fields &quot; + expectedFieldKeys + &quot; and types &quot; + expectedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L318">				+ &quot;, but resolved fields &quot; + resolved.fieldKeys() + &quot; and types &quot; + resolved.typeKeys(); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L319">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, message)); //$NON-NLS-1$</span>
+<span class="nc" id="L351">		String message= &quot;The coordinated JUnit migration plan is stale for &quot; + unit.getElementName() //$NON-NLS-1$</span>
+<span class="nc" id="L352">				+ &quot;. Expected fields &quot; + expectedFieldKeys + &quot; and types &quot; + expectedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L353">				+ &quot;, but resolved fields &quot; + resolved.fieldKeys() + &quot; and types &quot; + resolved.typeKeys(); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L354">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, message)); //$NON-NLS-1$</span>
 	}
 
 	private static CoreException staleJUnit3Plan(ICompilationUnit unit, Set&lt;String&gt; expectedTypeKeys,
 			Set&lt;String&gt; expectedMethodKeys, Set&lt;NodeKey&gt; expectedInvocationKeys, Set&lt;String&gt; resolvedTypeKeys,
 			Set&lt;String&gt; resolvedMethodKeys, Set&lt;NodeKey&gt; resolvedInvocationKeys) {
-<span class="nc" id="L325">		String message= &quot;The coordinated JUnit 3 hierarchy plan is stale for &quot; + unit.getElementName() //$NON-NLS-1$</span>
-<span class="nc" id="L326">				+ &quot;. Expected types &quot; + expectedTypeKeys + &quot;, methods &quot; + expectedMethodKeys //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L327">				+ &quot; and invocations &quot; + expectedInvocationKeys + &quot;, but resolved types &quot; + resolvedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L328">				+ &quot;, methods &quot; + resolvedMethodKeys + &quot; and invocations &quot; + resolvedInvocationKeys; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L329">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, message)); //$NON-NLS-1$</span>
+<span class="nc" id="L360">		String message= &quot;The coordinated JUnit 3 hierarchy plan is stale for &quot; + unit.getElementName() //$NON-NLS-1$</span>
+<span class="nc" id="L361">				+ &quot;. Expected types &quot; + expectedTypeKeys + &quot;, methods &quot; + expectedMethodKeys //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L362">				+ &quot; and invocations &quot; + expectedInvocationKeys + &quot;, but resolved types &quot; + resolvedTypeKeys //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L363">				+ &quot;, methods &quot; + resolvedMethodKeys + &quot; and invocations &quot; + resolvedInvocationKeys; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L364">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, message)); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit4MigrationPresets.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix</a> &gt; <span class="el_source">JUnit4MigrationPresets.java</span></div><h1>JUnit4MigrationPresets.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix;
+
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+
+/**
+ * Complete, deterministic option sets used by the JUnit 4 migration presets.
+ * &lt;p&gt;
+ * Every non-custom preset contains an explicit value for every managed option.
+ * Applying a preset therefore cannot retain hidden values from a previously
+ * selected preset or from a manually configured profile.
+ */
+public final class JUnit4MigrationPresets {
+
+	/** Presets in the same order in which they are displayed by the cleanup UI. */
+<span class="fc" id="L34">	public enum Preset {</span>
+<span class="fc" id="L35">		CUSTOM,</span>
+<span class="fc" id="L36">		ALL_SUPPORTED_STRICT,</span>
+<span class="fc" id="L37">		ANNOTATIONS_ONLY,</span>
+<span class="fc" id="L38">		LIFECYCLE_ONLY,</span>
+<span class="fc" id="L39">		ASSERTIONS_AND_ASSUMPTIONS_ONLY,</span>
+<span class="fc" id="L40">		RULES_ONLY</span>
+	}
+
+<span class="fc" id="L43">	private static final List&lt;Preset&gt; SELECTION_ORDER= List.of(</span>
+<span class="fc" id="L44">			Preset.CUSTOM,</span>
+<span class="fc" id="L45">			Preset.ALL_SUPPORTED_STRICT,</span>
+<span class="fc" id="L46">			Preset.ANNOTATIONS_ONLY,</span>
+<span class="fc" id="L47">			Preset.LIFECYCLE_ONLY,</span>
+<span class="fc" id="L48">			Preset.ASSERTIONS_AND_ASSUMPTIONS_ONLY,</span>
+<span class="fc" id="L49">			Preset.RULES_ONLY);</span>
+
+<span class="fc" id="L51">	private static final List&lt;String&gt; MANAGED_OPTIONS= List.of(</span>
+<span class="fc" id="L52">			JUnitMigrationOptions.BEST_EFFORT,</span>
+<span class="fc" id="L53">			JUnitMigrationOptions.JUNIT6_COMPATIBILITY,</span>
+<span class="fc" id="L54">			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,</span>
+<span class="fc" id="L55">			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION,</span>
+<span class="fc" id="L56">			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME,</span>
+<span class="fc" id="L57">			MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION,</span>
+<span class="fc" id="L58">			MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE,</span>
+<span class="fc" id="L59">			MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,</span>
+<span class="fc" id="L60">			MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT,</span>
+<span class="fc" id="L61">			MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED,</span>
+<span class="fc" id="L62">			MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,</span>
+<span class="fc" id="L63">			MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,</span>
+<span class="fc" id="L64">			MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS,</span>
+<span class="fc" id="L65">			MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS,</span>
+<span class="fc" id="L66">			MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER,</span>
+<span class="fc" id="L67">			MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME,</span>
+<span class="fc" id="L68">			MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE,</span>
+<span class="fc" id="L69">			MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE,</span>
+<span class="fc" id="L70">			MYCleanUpConstants.JUNIT_CLEANUP_4_RUNWITH,</span>
+<span class="fc" id="L71">			MYCleanUpConstants.JUNIT_CLEANUP_4_SUITE,</span>
+<span class="fc" id="L72">			MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED,</span>
+<span class="fc" id="L73">			MYCleanUpConstants.JUNIT_CLEANUP_4_CATEGORY,</span>
+<span class="fc" id="L74">			MYCleanUpConstants.JUNIT_CLEANUP_4_FIX_METHOD_ORDER,</span>
+<span class="fc" id="L75">			MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT,</span>
+<span class="fc" id="L76">			MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION,</span>
+<span class="fc" id="L77">			MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR,</span>
+<span class="fc" id="L78">			MYCleanUpConstants.JUNIT_CLEANUP_4_LOST_TESTS,</span>
+<span class="fc" id="L79">			MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);</span>
+
+<span class="fc" id="L81">	private static final Map&lt;Preset, Map&lt;String, Boolean&gt;&gt; SELECTIONS= createSelections();</span>
+
+	private JUnit4MigrationPresets() {
+	}
+
+	/**
+	 * Returns the preset represented by a cleanup UI combo-box index.
+	 *
+	 * @param selectionIndex zero-based combo-box selection
+	 * @return corresponding preset
+	 * @throws IllegalArgumentException if the index does not identify a preset
+	 */
+	public static Preset fromSelectionIndex(int selectionIndex) {
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">		if (selectionIndex &lt; 0 || selectionIndex &gt;= SELECTION_ORDER.size()) {</span>
+<span class="fc" id="L95">			throw new IllegalArgumentException(&quot;Unknown JUnit 4 migration preset index: &quot; + selectionIndex); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L97">		return SELECTION_ORDER.get(selectionIndex);</span>
+	}
+
+	/**
+	 * Returns every cleanup option controlled by a non-custom preset.
+	 *
+	 * @return immutable option list
+	 */
+	public static List&lt;String&gt; managedOptions() {
+<span class="fc" id="L106">		return MANAGED_OPTIONS;</span>
+	}
+
+	/**
+	 * Returns the complete immutable selection for a preset. The custom preset
+	 * intentionally returns an empty map because selecting it must not overwrite
+	 * manually configured values.
+	 *
+	 * @param preset preset to resolve
+	 * @return option-to-enabled mapping
+	 */
+	public static Map&lt;String, Boolean&gt; selectionFor(Preset preset) {
+<span class="fc" id="L118">		return SELECTIONS.get(Objects.requireNonNull(preset));</span>
+	}
+
+	private static Map&lt;Preset, Map&lt;String, Boolean&gt;&gt; createSelections() {
+<span class="fc" id="L122">		EnumMap&lt;Preset, Map&lt;String, Boolean&gt;&gt; selections= new EnumMap&lt;&gt;(Preset.class);</span>
+<span class="fc" id="L123">		selections.put(Preset.CUSTOM, Map.of());</span>
+<span class="fc" id="L124">		selections.put(Preset.ALL_SUPPORTED_STRICT, completeSelection(allSupportedTransformations()));</span>
+<span class="fc" id="L125">		selections.put(Preset.ANNOTATIONS_ONLY, completeSelection(Set.of(</span>
+<span class="fc" id="L126">				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST,</span>
+<span class="fc" id="L127">				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_TIMEOUT,</span>
+<span class="fc" id="L128">				MYCleanUpConstants.JUNIT_CLEANUP_4_TEST_EXPECTED,</span>
+<span class="fc" id="L129">				MYCleanUpConstants.JUNIT_CLEANUP_4_IGNORE,</span>
+<span class="fc" id="L130">				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,</span>
+<span class="fc" id="L131">				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,</span>
+<span class="fc" id="L132">				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS,</span>
+<span class="fc" id="L133">				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS)));</span>
+<span class="fc" id="L134">		selections.put(Preset.LIFECYCLE_ONLY, completeSelection(Set.of(</span>
+<span class="fc" id="L135">				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORE,</span>
+<span class="fc" id="L136">				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTER,</span>
+<span class="fc" id="L137">				MYCleanUpConstants.JUNIT_CLEANUP_4_BEFORECLASS,</span>
+<span class="fc" id="L138">				MYCleanUpConstants.JUNIT_CLEANUP_4_AFTERCLASS)));</span>
+<span class="fc" id="L139">		selections.put(Preset.ASSERTIONS_AND_ASSUMPTIONS_ONLY, completeSelection(Set.of(</span>
+<span class="fc" id="L140">				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT,</span>
+<span class="fc" id="L141">				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT_OPTIMIZATION,</span>
+<span class="fc" id="L142">				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME,</span>
+<span class="fc" id="L143">				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSUME_OPTIMIZATION)));</span>
+<span class="fc" id="L144">		selections.put(Preset.RULES_ONLY, completeSelection(Set.of(</span>
+<span class="fc" id="L145">				MYCleanUpConstants.JUNIT_CLEANUP_4_RULETEMPORARYFOLDER,</span>
+<span class="fc" id="L146">				MYCleanUpConstants.JUNIT_CLEANUP_4_RULETESTNAME,</span>
+<span class="fc" id="L147">				MYCleanUpConstants.JUNIT_CLEANUP_4_EXTERNALRESOURCE,</span>
+<span class="fc" id="L148">				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE,</span>
+<span class="fc" id="L149">				MYCleanUpConstants.JUNIT_CLEANUP_4_RULETIMEOUT,</span>
+<span class="fc" id="L150">				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXPECTEDEXCEPTION,</span>
+<span class="fc" id="L151">				MYCleanUpConstants.JUNIT_CLEANUP_4_RULEERRORCOLLECTOR)));</span>
+<span class="fc" id="L152">		return Collections.unmodifiableMap(selections);</span>
+	}
+
+	private static Set&lt;String&gt; allSupportedTransformations() {
+<span class="fc" id="L156">		LinkedHashSet&lt;String&gt; enabled= new LinkedHashSet&lt;&gt;(MANAGED_OPTIONS);</span>
+<span class="fc" id="L157">		enabled.remove(JUnitMigrationOptions.BEST_EFFORT);</span>
+<span class="fc" id="L158">		return Collections.unmodifiableSet(enabled);</span>
+	}
+
+	private static Map&lt;String, Boolean&gt; completeSelection(Set&lt;String&gt; enabledOptions) {
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">		if (!MANAGED_OPTIONS.containsAll(enabledOptions)) {</span>
+<span class="nc" id="L163">			throw new IllegalArgumentException(&quot;Preset contains an unmanaged JUnit 4 option&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L165">		LinkedHashMap&lt;String, Boolean&gt; selection= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">		for (String option : MANAGED_OPTIONS) {</span>
+<span class="fc" id="L167">			selection.put(option, Boolean.valueOf(enabledOptions.contains(option)));</span>
+		}
+<span class="fc" id="L169">		return Collections.unmodifiableMap(selection);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

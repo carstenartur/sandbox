@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.views.mining;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +56,7 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
  *
  * @since 1.2.6
  */
-<span class="nc" id="L58">public class RefactoringMiningView extends ViewPart {</span>
+<span class="nc" id="L59">public class RefactoringMiningView extends ViewPart {</span>
 
 	public static final String VIEW_ID = &quot;org.sandbox.jdt.views.refactoringMining&quot;; //$NON-NLS-1$
 
@@ -66,229 +67,242 @@ import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 	private CommitAnalysisScheduler scheduler;
 
 	private GitHistoryProvider gitProvider;
-<span class="nc" id="L69">	private int maxCommits = DEFAULT_MAX_COMMITS;</span>
-<span class="nc" id="L70">	private String activeRepositoryName = &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L70">	private int maxCommits = DEFAULT_MAX_COMMITS;</span>
+<span class="nc" id="L71">	private String activeRepositoryName = &quot;&quot;; //$NON-NLS-1$</span>
 
 	@Override
 	public void createPartControl(Composite parent) {
-<span class="nc" id="L74">		parent.setLayout(new GridLayout(1, false));</span>
-<span class="nc" id="L75">		gitProvider = createGitProvider();</span>
+<span class="nc" id="L75">		parent.setLayout(new GridLayout(1, false));</span>
+<span class="nc" id="L76">		gitProvider = createGitProvider();</span>
 
-<span class="nc" id="L77">		SashForm sash = new SashForm(parent, SWT.VERTICAL);</span>
-<span class="nc" id="L78">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
-<span class="nc" id="L79">		createCommitTable(sash);</span>
-<span class="nc" id="L80">		detailPanel = new InferredRuleDetailPanel(sash);</span>
-<span class="nc" id="L81">		sash.setWeights(60, 40);</span>
-<span class="nc" id="L82">		createToolbar();</span>
-<span class="nc" id="L83">	}</span>
+<span class="nc" id="L78">		SashForm sash = new SashForm(parent, SWT.VERTICAL);</span>
+<span class="nc" id="L79">		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="nc" id="L80">		createCommitTable(sash);</span>
+<span class="nc" id="L81">		detailPanel = new InferredRuleDetailPanel(sash);</span>
+<span class="nc" id="L82">		sash.setWeights(60, 40);</span>
+<span class="nc" id="L83">		createToolbar();</span>
+<span class="nc" id="L84">	}</span>
 
 	@Override
 	public void setFocus() {
-<span class="nc bnc" id="L87" title="All 4 branches missed.">		if (commitTable != null &amp;&amp; !commitTable.getTable().isDisposed()) {</span>
-<span class="nc" id="L88">			commitTable.getTable().setFocus();</span>
+<span class="nc bnc" id="L88" title="All 4 branches missed.">		if (commitTable != null &amp;&amp; !commitTable.getTable().isDisposed()) {</span>
+<span class="nc" id="L89">			commitTable.getTable().setFocus();</span>
 		}
-<span class="nc" id="L90">	}</span>
+<span class="nc" id="L91">	}</span>
 
 	@Override
 	public void dispose() {
-<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (scheduler != null) {</span>
-<span class="nc" id="L95">			scheduler.cancelAnalysis();</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">		if (scheduler != null) {</span>
+<span class="nc" id="L96">			scheduler.cancelAnalysis();</span>
 		}
-<span class="nc" id="L97">		super.dispose();</span>
-<span class="nc" id="L98">	}</span>
+<span class="nc" id="L98">		super.dispose();</span>
+<span class="nc" id="L99">	}</span>
 
 	private void createCommitTable(Composite parent) {
-<span class="nc" id="L101">		commitTable = new TableViewer(parent, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);</span>
-<span class="nc" id="L102">		Table table = commitTable.getTable();</span>
-<span class="nc" id="L103">		table.setHeaderVisible(true);</span>
-<span class="nc" id="L104">		table.setLinesVisible(true);</span>
+<span class="nc" id="L102">		commitTable = new TableViewer(parent, SWT.FULL_SELECTION | SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="nc" id="L103">		Table table = commitTable.getTable();</span>
+<span class="nc" id="L104">		table.setHeaderVisible(true);</span>
+<span class="nc" id="L105">		table.setLinesVisible(true);</span>
 
-<span class="nc" id="L106">		createColumn(&quot;Commit&quot;, 80); //$NON-NLS-1$</span>
-<span class="nc" id="L107">		createColumn(&quot;Message&quot;, 300); //$NON-NLS-1$</span>
-<span class="nc" id="L108">		createColumn(&quot;Files&quot;, 50); //$NON-NLS-1$</span>
-<span class="nc" id="L109">		createColumn(&quot;AI Status&quot;, 80); //$NON-NLS-1$</span>
+<span class="nc" id="L107">		createColumn(&quot;Commit&quot;, 80); //$NON-NLS-1$</span>
+<span class="nc" id="L108">		createColumn(&quot;Message&quot;, 300); //$NON-NLS-1$</span>
+<span class="nc" id="L109">		createColumn(&quot;Files&quot;, 50); //$NON-NLS-1$</span>
+<span class="nc" id="L110">		createColumn(&quot;AI Status&quot;, 80); //$NON-NLS-1$</span>
 
-<span class="nc" id="L111">		commitTable.setContentProvider(ArrayContentProvider.getInstance());</span>
-<span class="nc" id="L112">		commitTable.setLabelProvider(new CommitTableLabelProvider());</span>
-<span class="nc" id="L113">		commitTable.addSelectionChangedListener(new ISelectionChangedListener() {</span>
+<span class="nc" id="L112">		commitTable.setContentProvider(ArrayContentProvider.getInstance());</span>
+<span class="nc" id="L113">		commitTable.setLabelProvider(new CommitTableLabelProvider());</span>
+<span class="nc" id="L114">		commitTable.addSelectionChangedListener(new ISelectionChangedListener() {</span>
 			@Override
 			public void selectionChanged(SelectionChangedEvent event) {
-<span class="nc" id="L116">				IStructuredSelection sel = (IStructuredSelection) event.getSelection();</span>
-<span class="nc bnc" id="L117" title="All 2 branches missed.">				if (sel.isEmpty()) {</span>
-<span class="nc" id="L118">					detailPanel.showRules(null);</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">				} else if (sel.getFirstElement() instanceof CommitTableEntry entry) {</span>
-<span class="nc" id="L120">					detailPanel.showRules(entry);</span>
+<span class="nc" id="L117">				IStructuredSelection sel = (IStructuredSelection) event.getSelection();</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">				if (sel.isEmpty()) {</span>
+<span class="nc" id="L119">					detailPanel.showRules(null);</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">				} else if (sel.getFirstElement() instanceof CommitTableEntry entry) {</span>
+<span class="nc" id="L121">					detailPanel.showRules(entry);</span>
 				}
-<span class="nc" id="L122">			}</span>
+<span class="nc" id="L123">			}</span>
 		});
-<span class="nc" id="L124">	}</span>
+<span class="nc" id="L125">	}</span>
 
 	private void createColumn(String title, int width) {
-<span class="nc" id="L127">		TableViewerColumn col = new TableViewerColumn(commitTable, SWT.NONE);</span>
-<span class="nc" id="L128">		col.getColumn().setText(title);</span>
-<span class="nc" id="L129">		col.getColumn().setWidth(width);</span>
-<span class="nc" id="L130">		col.getColumn().setResizable(true);</span>
-<span class="nc" id="L131">	}</span>
+<span class="nc" id="L128">		TableViewerColumn col = new TableViewerColumn(commitTable, SWT.NONE);</span>
+<span class="nc" id="L129">		col.getColumn().setText(title);</span>
+<span class="nc" id="L130">		col.getColumn().setWidth(width);</span>
+<span class="nc" id="L131">		col.getColumn().setResizable(true);</span>
+<span class="nc" id="L132">	}</span>
 
 	private void createToolbar() {
-<span class="nc" id="L134">		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();</span>
+<span class="nc" id="L135">		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();</span>
 
-<span class="nc" id="L136">		Action analyzeAction = new Action(&quot;Analyze Project...&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L137">		Action analyzeAction = new Action(&quot;Analyze Project...&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L139">				chooseAndAnalyzeProject();</span>
-<span class="nc" id="L140">			}</span>
+<span class="nc" id="L140">				chooseAndAnalyzeProject();</span>
+<span class="nc" id="L141">			}</span>
 		};
-<span class="nc" id="L142">		analyzeAction.setToolTipText(&quot;Analyze Project...&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L143">		mgr.add(analyzeAction);</span>
+<span class="nc" id="L143">		analyzeAction.setToolTipText(&quot;Analyze Project...&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L144">		mgr.add(analyzeAction);</span>
 
-<span class="nc" id="L145">		Action stopAction = new Action(&quot;Stop Analysis&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L146">		Action stopAction = new Action(&quot;Stop Analysis&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc bnc" id="L148" title="All 2 branches missed.">				if (scheduler != null) {</span>
-<span class="nc" id="L149">					scheduler.cancelAnalysis();</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">				if (scheduler != null) {</span>
+<span class="nc" id="L150">					scheduler.cancelAnalysis();</span>
 				}
-<span class="nc" id="L151">			}</span>
+<span class="nc" id="L152">			}</span>
 		};
-<span class="nc" id="L153">		stopAction.setToolTipText(&quot;Stop Analysis&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L154">		mgr.add(stopAction);</span>
+<span class="nc" id="L154">		stopAction.setToolTipText(&quot;Stop Analysis&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L155">		mgr.add(stopAction);</span>
 
-<span class="nc" id="L156">		mgr.add(new Separator());</span>
+<span class="nc" id="L157">		mgr.add(new Separator());</span>
 
-<span class="nc" id="L158">		Action exportAction = new Action(&quot;Export selected as .sandbox-hint&quot;) { //$NON-NLS-1$</span>
+<span class="nc" id="L159">		Action exportAction = new Action(&quot;Export selected as .sandbox-hint&quot;) { //$NON-NLS-1$</span>
 			@Override
 			public void run() {
-<span class="nc" id="L161">				exportAsHintFile();</span>
-<span class="nc" id="L162">			}</span>
+<span class="nc" id="L162">				exportAsHintFile();</span>
+<span class="nc" id="L163">			}</span>
 		};
-<span class="nc" id="L164">		exportAction.setToolTipText(&quot;Export selected as .sandbox-hint&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L165">		mgr.add(exportAction);</span>
-<span class="nc" id="L166">		mgr.update(true);</span>
-<span class="nc" id="L167">	}</span>
+<span class="nc" id="L165">		exportAction.setToolTipText(&quot;Export selected as .sandbox-hint&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L166">		mgr.add(exportAction);</span>
+<span class="nc" id="L167">		mgr.update(true);</span>
+<span class="nc" id="L168">	}</span>
 
 	private void chooseAndAnalyzeProject() {
-<span class="nc" id="L170">		List&lt;IProject&gt; projects = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {</span>
-<span class="nc bnc" id="L172" title="All 4 branches missed.">			if (project.isOpen() &amp;&amp; project.getLocation() != null) {</span>
-<span class="nc" id="L173">				projects.add(project);</span>
+<span class="nc" id="L171">		List&lt;IProject&gt; projects = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">			if (!project.isOpen() || project.getLocation() == null) {</span>
+<span class="nc" id="L174">				continue;</span>
+			}
+<span class="nc" id="L176">			Path location = project.getLocation().toFile().toPath();</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">			if (isGitBackedLocation(location)) {</span>
+<span class="nc" id="L178">				projects.add(project);</span>
 			}
 		}
-<span class="nc bnc" id="L176" title="All 2 branches missed.">		if (projects.isEmpty()) {</span>
-<span class="nc" id="L177">			setContentDescription(&quot;No open workspace project is available for analysis&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L178">			return;</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">		if (projects.isEmpty()) {</span>
+<span class="nc" id="L182">			setContentDescription(&quot;No open Git-backed workspace project is available for analysis&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L183">			return;</span>
 		}
 
-<span class="nc" id="L181">		ElementListSelectionDialog dialog = new ElementListSelectionDialog(getSite().getShell(), new LabelProvider() {</span>
+<span class="nc" id="L186">		ElementListSelectionDialog dialog = new ElementListSelectionDialog(getSite().getShell(), new LabelProvider() {</span>
 			@Override
 			public String getText(Object element) {
-<span class="nc bnc" id="L184" title="All 2 branches missed.">				return element instanceof IProject project ? project.getName() : super.getText(element);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">				return element instanceof IProject project ? project.getName() : super.getText(element);</span>
 			}
 		});
-<span class="nc" id="L187">		dialog.setTitle(&quot;Select project for Refactoring Mining&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L188">		dialog.setMessage(&quot;Choose the Git-backed workspace project to analyze:&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L189">		dialog.setMultipleSelection(false);</span>
-<span class="nc" id="L190">		dialog.setElements(projects.toArray());</span>
-<span class="nc bnc" id="L191" title="All 4 branches missed.">		if (dialog.open() != Window.OK || !(dialog.getFirstResult() instanceof IProject project)) {</span>
-<span class="nc" id="L192">			return;</span>
+<span class="nc" id="L192">		dialog.setTitle(&quot;Select project for Refactoring Mining&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L193">		dialog.setMessage(&quot;Choose the Git-backed workspace project to analyze:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L194">		dialog.setMultipleSelection(false);</span>
+<span class="nc" id="L195">		dialog.setElements(projects.toArray());</span>
+<span class="nc bnc" id="L196" title="All 4 branches missed.">		if (dialog.open() != Window.OK || !(dialog.getFirstResult() instanceof IProject project)) {</span>
+<span class="nc" id="L197">			return;</span>
 		}
 
-<span class="nc" id="L195">		activeRepositoryName = project.getName();</span>
-<span class="nc" id="L196">		setContentDescription(&quot;Repository: &quot; + activeRepositoryName); //$NON-NLS-1$</span>
-<span class="nc" id="L197">		analyzeRepository(project.getLocation().toFile().toPath());</span>
-<span class="nc" id="L198">	}</span>
+<span class="nc" id="L200">		activeRepositoryName = project.getName();</span>
+<span class="nc" id="L201">		setContentDescription(&quot;Repository: &quot; + activeRepositoryName); //$NON-NLS-1$</span>
+<span class="nc" id="L202">		analyzeRepository(project.getLocation().toFile().toPath());</span>
+<span class="nc" id="L203">	}</span>
 
 	void analyzeRepository(Path repositoryPath) {
-<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (scheduler != null) {</span>
-<span class="nc" id="L202">			scheduler.cancelAnalysis();</span>
-<span class="nc" id="L203">			scheduler = null;</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">		if (scheduler != null) {</span>
+<span class="nc" id="L207">			scheduler.cancelAnalysis();</span>
+<span class="nc" id="L208">			scheduler = null;</span>
 		}
-<span class="nc bnc" id="L205" title="All 2 branches missed.">		if (activeRepositoryName.isBlank()) {</span>
-<span class="nc" id="L206">			Path fileName = repositoryPath.getFileName();</span>
-<span class="nc bnc" id="L207" title="All 2 branches missed.">			activeRepositoryName = fileName != null ? fileName.toString() : repositoryPath.toString();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">		if (activeRepositoryName.isBlank()) {</span>
+<span class="nc" id="L211">			Path fileName = repositoryPath.getFileName();</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">			activeRepositoryName = fileName != null ? fileName.toString() : repositoryPath.toString();</span>
 		}
 
 		try {
-<span class="nc" id="L211">			List&lt;CommitInfo&gt; commits = gitProvider.getHistory(repositoryPath, maxCommits);</span>
-<span class="nc" id="L212">			List&lt;CommitTableEntry&gt; entries = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L213" title="All 2 branches missed.">			for (CommitInfo commit : commits) {</span>
-<span class="nc" id="L214">				entries.add(new CommitTableEntry(commit));</span>
+<span class="nc" id="L216">			List&lt;CommitInfo&gt; commits = gitProvider.getHistory(repositoryPath, maxCommits);</span>
+<span class="nc" id="L217">			List&lt;CommitTableEntry&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">			for (CommitInfo commit : commits) {</span>
+<span class="nc" id="L219">				entries.add(new CommitTableEntry(commit));</span>
 			}
 
-<span class="nc" id="L217">			commitTable.setInput(entries.toArray(CommitTableEntry[]::new));</span>
-<span class="nc" id="L218">			detailPanel.showRules(null);</span>
+<span class="nc" id="L222">			commitTable.setInput(entries.toArray(CommitTableEntry[]::new));</span>
+<span class="nc" id="L223">			detailPanel.showRules(null);</span>
 
-<span class="nc" id="L220">			EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
-<span class="nc bnc" id="L221" title="All 2 branches missed.">			if (!llmService.isAvailable()) {</span>
-<span class="nc" id="L222">				setContentDescription(&quot;Repository: &quot; + activeRepositoryName //$NON-NLS-1$</span>
-<span class="nc" id="L223">						+ &quot; — history loaded; LLM inference unavailable. &quot; + llmService.configurationHint()); //$NON-NLS-1$</span>
-<span class="nc" id="L224">				return;</span>
+<span class="nc" id="L225">			EclipseLlmService llmService = EclipseLlmService.getInstance();</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			if (!llmService.isAvailable()) {</span>
+<span class="nc" id="L227">				setContentDescription(&quot;Repository: &quot; + activeRepositoryName //$NON-NLS-1$</span>
+<span class="nc" id="L228">						+ &quot; — history loaded; LLM inference unavailable. &quot; + llmService.configurationHint()); //$NON-NLS-1$</span>
+<span class="nc" id="L229">				return;</span>
 			}
 
-<span class="nc" id="L227">			scheduler = new CommitAnalysisScheduler(gitProvider, repositoryPath, commitTable,</span>
-<span class="nc" id="L228">					this::updateProgressDescription);</span>
-<span class="nc" id="L229">			scheduler.startAnalysis(entries);</span>
-<span class="nc" id="L230">		} catch (Exception e) {</span>
-<span class="nc" id="L231">			setContentDescription(&quot;Repository: &quot; + activeRepositoryName + &quot; — error: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L232">			scheduler = new CommitAnalysisScheduler(gitProvider, repositoryPath, commitTable,</span>
+<span class="nc" id="L233">					this::updateProgressDescription);</span>
+<span class="nc" id="L234">			scheduler.startAnalysis(entries);</span>
+<span class="nc" id="L235">		} catch (Exception e) {</span>
+<span class="nc" id="L236">			setContentDescription(&quot;Repository: &quot; + activeRepositoryName + &quot; — error: &quot; + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L233">	}</span>
+<span class="nc" id="L238">	}</span>
 
 	private void updateProgressDescription(CommitAnalysisScheduler.Progress progress) {
-<span class="nc" id="L236">		String prefix = &quot;Repository: &quot; + activeRepositoryName + &quot; — &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L237" title="All 4 branches missed.">		if (progress.cancelled() &amp;&amp; !progress.running()) {</span>
-<span class="nc" id="L238">			setContentDescription(prefix + &quot;cancelled after &quot; + progress.completed() + &quot;/&quot; + progress.total()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L239" title="All 2 branches missed.">		} else if (progress.running()) {</span>
-<span class="nc" id="L240">			setContentDescription(prefix + &quot;analyzed &quot; + progress.completed() + &quot;/&quot; + progress.total() //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L241">					+ &quot; — active &quot; + progress.active() + &quot; — queued &quot; + progress.queued()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L242" title="All 2 branches missed.">		} else if (progress.total() == 0) {</span>
-<span class="nc" id="L243">			setContentDescription(prefix + &quot;no commits to analyze&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L244">		} else {</span>
+<span class="nc" id="L241">		String prefix = &quot;Repository: &quot; + activeRepositoryName + &quot; — &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L242" title="All 4 branches missed.">		if (progress.cancelled() &amp;&amp; !progress.running()) {</span>
+<span class="nc" id="L243">			setContentDescription(prefix + &quot;cancelled after &quot; + progress.completed() + &quot;/&quot; + progress.total()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">		} else if (progress.running()) {</span>
 <span class="nc" id="L245">			setContentDescription(prefix + &quot;analyzed &quot; + progress.completed() + &quot;/&quot; + progress.total() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L246">					+ &quot; — active &quot; + progress.active() + &quot; — queued &quot; + progress.queued()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">		} else if (progress.total() == 0) {</span>
+<span class="nc" id="L248">			setContentDescription(prefix + &quot;no commits to analyze&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L249">		} else {</span>
+<span class="nc" id="L250">			setContentDescription(prefix + &quot;analyzed &quot; + progress.completed() + &quot;/&quot; + progress.total() //$NON-NLS-1$ //$NON-NLS-2$</span>
 					+ &quot; — finished&quot;); //$NON-NLS-1$
 		}
-<span class="nc" id="L248">	}</span>
+<span class="nc" id="L253">	}</span>
 
 	private void exportAsHintFile() {
-<span class="nc" id="L251">		List&lt;String&gt; selectedDslRules = detailPanel.getSelectedDslRules();</span>
-<span class="nc bnc" id="L252" title="All 2 branches missed.">		if (selectedDslRules.isEmpty()) {</span>
-<span class="nc" id="L253">			setContentDescription(&quot;Repository: &quot; + activeRepositoryName //$NON-NLS-1$</span>
+<span class="nc" id="L256">		List&lt;String&gt; selectedDslRules = detailPanel.getSelectedDslRules();</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		if (selectedDslRules.isEmpty()) {</span>
+<span class="nc" id="L258">			setContentDescription(&quot;Repository: &quot; + activeRepositoryName //$NON-NLS-1$</span>
 					+ &quot; — select a commit and check the rules to export&quot;); //$NON-NLS-1$
-<span class="nc" id="L255">			return;</span>
+<span class="nc" id="L260">			return;</span>
 		}
 
-<span class="nc" id="L258">		FileDialog dialog = new FileDialog(getSite().getShell(), SWT.SAVE);</span>
-<span class="nc" id="L259">		dialog.setFilterExtensions(new String[] { &quot;*.sandbox-hint&quot; }); //$NON-NLS-1$</span>
-<span class="nc" id="L260">		dialog.setFilterNames(new String[] { &quot;Sandbox Hint Files (*.sandbox-hint)&quot; }); //$NON-NLS-1$</span>
-<span class="nc" id="L261">		dialog.setFileName(&quot;inferred.sandbox-hint&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L263">		FileDialog dialog = new FileDialog(getSite().getShell(), SWT.SAVE);</span>
+<span class="nc" id="L264">		dialog.setFilterExtensions(new String[] { &quot;*.sandbox-hint&quot; }); //$NON-NLS-1$</span>
+<span class="nc" id="L265">		dialog.setFilterNames(new String[] { &quot;Sandbox Hint Files (*.sandbox-hint)&quot; }); //$NON-NLS-1$</span>
+<span class="nc" id="L266">		dialog.setFileName(&quot;inferred.sandbox-hint&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L263">		String path = dialog.open();</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">		if (path != null) {</span>
-<span class="nc" id="L265">			String content = buildHintFileContent(selectedDslRules);</span>
+<span class="nc" id="L268">		String path = dialog.open();</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">		if (path != null) {</span>
+<span class="nc" id="L270">			String content = buildHintFileContent(selectedDslRules);</span>
 			try {
-<span class="nc" id="L267">				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);</span>
-<span class="nc" id="L268">			} catch (java.io.IOException e) {</span>
-<span class="nc" id="L269">				setContentDescription(&quot;Repository: &quot; + activeRepositoryName + &quot; — export failed: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L270">						+ e.getMessage());</span>
+<span class="nc" id="L272">				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);</span>
+<span class="nc" id="L273">			} catch (java.io.IOException e) {</span>
+<span class="nc" id="L274">				setContentDescription(&quot;Repository: &quot; + activeRepositoryName + &quot; — export failed: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L275">						+ e.getMessage());</span>
 			}
 		}
-<span class="nc" id="L273">	}</span>
+<span class="nc" id="L278">	}</span>
 
 	private static String buildHintFileContent(List&lt;String&gt; dslRules) {
-<span class="nc" id="L276">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L277">		sb.append(&quot;&lt;!id: ai-inferred-rules&gt;\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L278">		sb.append(&quot;&lt;!description: Rules inferred by AI from code changes&gt;\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L279">		sb.append(&quot;&lt;!severity: info&gt;\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L280">		sb.append(&quot;&lt;!tags: ai-inferred, mining&gt;\n\n&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L281" title="All 2 branches missed.">		for (String rule : dslRules) {</span>
-<span class="nc" id="L282">			sb.append(rule).append(&quot;\n;;\n\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L281">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L282">		sb.append(&quot;&lt;!id: ai-inferred-rules&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L283">		sb.append(&quot;&lt;!description: Rules inferred by AI from code changes&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L284">		sb.append(&quot;&lt;!severity: info&gt;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L285">		sb.append(&quot;&lt;!tags: ai-inferred, mining&gt;\n\n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">		for (String rule : dslRules) {</span>
+<span class="nc" id="L287">			sb.append(rule).append(&quot;\n;;\n\n&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L284">		return sb.toString();</span>
+<span class="nc" id="L289">		return sb.toString();</span>
+	}
+
+	static boolean isGitBackedLocation(Path location) {
+<span class="fc bfc" id="L293" title="All 2 branches covered.">		for (Path current = location; current != null; current = current.getParent()) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">			if (Files.exists(current.resolve(&quot;.git&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L295">				return true;</span>
+			}
+		}
+<span class="fc" id="L298">		return false;</span>
 	}
 
 	private static GitHistoryProvider createGitProvider() {
 		try {
-<span class="nc" id="L289">			return new JGitHistoryProvider();</span>
-<span class="nc" id="L290">		} catch (Exception e) {</span>
-<span class="nc" id="L291">			return new CommandLineGitProvider();</span>
+<span class="nc" id="L303">			return new JGitHistoryProvider();</span>
+<span class="nc" id="L304">		} catch (Exception e) {</span>
+<span class="nc" id="L305">			return new CommandLineGitProvider();</span>
 		}
 	}
 }

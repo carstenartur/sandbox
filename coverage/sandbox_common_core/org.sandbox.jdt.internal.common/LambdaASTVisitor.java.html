@@ -55,10 +55,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(AnnotationTypeDeclaration node) {
-<span class="nc bnc" id="L58" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.AnnotationTypeDeclaration)) {</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.AnnotationTypeDeclaration)) {</span>
 <span class="nc" id="L59">			return this.helperVisitor.testPredicate(VisitorEnum.AnnotationTypeDeclaration, node);</span>
 		}
-<span class="nc" id="L61">		return true;</span>
+<span class="fc" id="L61">		return true;</span>
 	}
 
 	@Override
@@ -503,10 +503,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(Initializer node) {
-<span class="nc bnc" id="L506" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.Initializer)) {</span>
+<span class="pc bpc" id="L506" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.Initializer)) {</span>
 <span class="nc" id="L507">			return this.helperVisitor.testPredicate(VisitorEnum.Initializer, node);</span>
 		}
-<span class="nc" id="L509">		return true;</span>
+<span class="fc" id="L509">		return true;</span>
 	}
 
 	@Override
@@ -985,10 +985,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(SuperConstructorInvocation node) {
-<span class="nc bnc" id="L988" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperConstructorInvocation)) {</span>
+<span class="pc bpc" id="L988" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.SuperConstructorInvocation)) {</span>
 <span class="nc" id="L989">			return this.helperVisitor.testPredicate(VisitorEnum.SuperConstructorInvocation, node);</span>
 		}
-<span class="nc" id="L991">		return true;</span>
+<span class="fc" id="L991">		return true;</span>
 	}
 
 	@Override
@@ -1240,10 +1240,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(AnnotationTypeDeclaration node) {
-<span class="nc bnc" id="L1243" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeDeclaration)) {</span>
+<span class="pc bpc" id="L1243" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.AnnotationTypeDeclaration)) {</span>
 <span class="nc" id="L1244">			this.helperVisitor.acceptConsumer(VisitorEnum.AnnotationTypeDeclaration, node);</span>
 		}
-<span class="nc" id="L1246">	}</span>
+<span class="fc" id="L1246">	}</span>
 
 	@Override
 	public void endVisit(AnnotationTypeMemberDeclaration node) {
@@ -1499,10 +1499,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(Initializer node) {
-<span class="nc bnc" id="L1502" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Initializer)) {</span>
+<span class="pc bpc" id="L1502" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.Initializer)) {</span>
 <span class="nc" id="L1503">			this.helperVisitor.acceptConsumer(VisitorEnum.Initializer, node);</span>
 		}
-<span class="nc" id="L1505">	}</span>
+<span class="fc" id="L1505">	}</span>
 
 	@Override
 	public void endVisit(InstanceofExpression node) {
@@ -1822,10 +1822,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(SuperConstructorInvocation node) {
-<span class="nc bnc" id="L1825" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperConstructorInvocation)) {</span>
+<span class="pc bpc" id="L1825" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.SuperConstructorInvocation)) {</span>
 <span class="nc" id="L1826">			this.helperVisitor.acceptConsumer(VisitorEnum.SuperConstructorInvocation, node);</span>
 		}
-<span class="nc" id="L1828">	}</span>
+<span class="fc" id="L1828">	}</span>
 
 	@Override
 	public void endVisit(SuperFieldAccess node) {

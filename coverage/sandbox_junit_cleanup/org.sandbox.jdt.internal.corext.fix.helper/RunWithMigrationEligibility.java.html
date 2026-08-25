@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RunWithMigrationEligibility.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">RunWithMigrationEligibility.java</span></div><h1>RunWithMigrationEligibility.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.*;
+
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+/**
+ * Fail-closed assessment shared by strict and best-effort runner analysis.
+ *
+ * &lt;p&gt;The assessment mirrors the source shapes the existing runner rewriters can
+ * actually transform. A runner name alone is never sufficient for complex
+ * Enclosed, Theories, Categories, or Parameterized migrations.&lt;/p&gt;
+ */
+public final class RunWithMigrationEligibility {
+
+<span class="nc" id="L35">	private RunWithMigrationEligibility() {</span>
+<span class="nc" id="L36">		throw new UnsupportedOperationException(&quot;Utility class&quot;); //$NON-NLS-1$</span>
+	}
+
+	/** Returns whether this exact runner and source shape can be migrated. */
+	public static boolean canMigrate(TypeDeclaration type, String qualifiedRunnerName) {
+<span class="pc bpc" id="L41" title="3 of 6 branches missed.">		if (type == null || qualifiedRunnerName == null || qualifiedRunnerName.isBlank()) {</span>
+<span class="nc" id="L42">			return false;</span>
+		}
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (ORG_JUNIT_RUNNERS_PARAMETERIZED.equals(qualifiedRunnerName)) {</span>
+<span class="nc" id="L45">			return ParameterizedMigrationEligibility.assess(type).eligible();</span>
+		}
+
+<span class="fc" id="L48">		Annotation runWith= runWithAnnotation(type);</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		if (!(runWith instanceof SingleMemberAnnotation single)</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">				|| !(single.getValue() instanceof TypeLiteral literal)) {</span>
+<span class="nc" id="L51">			return false;</span>
+		}
+<span class="fc" id="L53">		ITypeBinding runnerBinding= literal.getType().resolveBinding();</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">		if (runnerBinding == null</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				|| !qualifiedRunnerName.equals(runnerBinding.getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L56">			return false;</span>
+		}
+
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (ORG_JUNIT_SUITE.equals(qualifiedRunnerName)</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">				|| ORG_MOCKITO_JUNIT_MOCKITO_JUNIT_RUNNER.equals(qualifiedRunnerName)</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">				|| ORG_MOCKITO_RUNNERS_MOCKITO_JUNIT_RUNNER.equals(qualifiedRunnerName)</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">				|| ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_RUNNER.equals(qualifiedRunnerName)</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">				|| ORG_SPRINGFRAMEWORK_TEST_CONTEXT_JUNIT4_SPRING_JUNIT4_CLASS_RUNNER.equals(qualifiedRunnerName)) {</span>
+<span class="fc" id="L64">			return true;</span>
+		}
+<span class="fc bfc" id="L66" title="All 2 branches covered.">		if (JdtUiInheritedTestsRunnerMigration.assess(type, qualifiedRunnerName).eligible()) {</span>
+<span class="fc" id="L67">			return true;</span>
+		}
+
+<span class="fc bfc" id="L70" title="All 2 branches covered.">		if (ORG_JUNIT_EXPERIMENTAL_RUNNERS_ENCLOSED.equals(qualifiedRunnerName)) {</span>
+<span class="fc" id="L71">			return hasMigratableNestedType(type);</span>
+		}
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORIES.equals(qualifiedRunnerName)) {</span>
+<span class="fc" id="L74">			return hasClosedTheoriesShape(type);</span>
+		}
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (ORG_JUNIT_EXPERIMENTAL_CATEGORIES_CATEGORIES.equals(qualifiedRunnerName)) {</span>
+<span class="fc" id="L77">			return hasSuiteClasses(type);</span>
+		}
+<span class="fc" id="L79">		return false;</span>
+	}
+
+	private static Annotation runWithAnnotation(TypeDeclaration type) {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">					&amp;&amp; isAnnotation(annotation, ORG_JUNIT_RUNWITH, &quot;RunWith&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L86">				return annotation;</span>
+			}
+		}
+<span class="nc" id="L89">		return null;</span>
+	}
+
+	private static boolean hasMigratableNestedType(TypeDeclaration type) {
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		for (TypeDeclaration nested : type.getTypes()) {</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">			if (Modifier.isStatic(nested.getModifiers()) &amp;&amp; hasTestMethod(nested)) {</span>
+<span class="fc" id="L95">				return true;</span>
+			}
+		}
+<span class="nc" id="L98">		return false;</span>
+	}
+
+	private static boolean hasTestMethod(TypeDeclaration type) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">			for (Object modifier : method.modifiers()) {</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">				if (modifier instanceof Annotation annotation</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">						&amp;&amp; (isAnnotation(annotation, ORG_JUNIT_TEST, &quot;Test&quot;) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">								|| isAnnotation(annotation, ORG_JUNIT_JUPITER_TEST, &quot;Test&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L107">					return true;</span>
+				}
+			}
+		}
+<span class="nc" id="L111">		return false;</span>
+	}
+
+	private static boolean hasClosedTheoriesShape(TypeDeclaration type) {
+<span class="fc" id="L115">		int dataPointFields= 0;</span>
+<span class="fc" id="L116">		int theoryMethods= 0;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">		for (FieldDeclaration field : type.getFields()) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">			for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation</span>
+<span class="fc" id="L120">						&amp;&amp; isAnnotation(annotation, ORG_JUNIT_EXPERIMENTAL_THEORIES_DATAPOINTS,</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">								&quot;DataPoints&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L122">					dataPointFields++;</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">					if (field.fragments().size() != 1</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">							|| !(field.fragments().get(0) instanceof VariableDeclarationFragment fragment)</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">							|| !(fragment.getInitializer() instanceof ArrayInitializer)) {</span>
+<span class="nc" id="L126">						return false;</span>
+					}
+				}
+			}
+		}
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">			for (Object modifier : method.modifiers()) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation</span>
+<span class="fc" id="L134">						&amp;&amp; isAnnotation(annotation, ORG_JUNIT_EXPERIMENTAL_THEORIES_THEORY,</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">								&quot;Theory&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L136">					theoryMethods++;</span>
+				}
+			}
+		}
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">		return dataPointFields == 1 &amp;&amp; theoryMethods == 1;</span>
+	}
+
+	private static boolean hasSuiteClasses(TypeDeclaration type) {
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		for (Object modifier : type.modifiers()) {</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">			if (modifier instanceof SingleMemberAnnotation annotation</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">					&amp;&amp; isAnnotation(annotation, ORG_JUNIT_SUITE_SUITECLASSES, &quot;SuiteClasses&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L147">				return true;</span>
+			}
+		}
+<span class="nc" id="L150">		return false;</span>
+	}
+
+	private static boolean isAnnotation(Annotation annotation, String qualifiedName, String simpleName) {
+<span class="fc" id="L154">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L156">			return qualifiedName.equals(binding.getQualifiedName());</span>
+		}
+<span class="nc" id="L158">		String sourceName= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L159" title="All 4 branches missed.">		return simpleName.equals(sourceName) || qualifiedName.equals(sourceName)</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">				|| sourceName.endsWith('.' + simpleName);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
