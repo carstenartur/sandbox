@@ -11,15 +11,15 @@
 - [x] Replace all JDT-valid duplicates of the selected sequence.
 - [x] Keep the structural extraction mode out of save actions.
 - [x] Test the minimum-length boundary and non-repeated negative cases.
+- [x] Prove byte-exact Undo for the extracted-method change through the real Cleanup/LTK workflow.
+- [x] Add an SWTBot Cleanup preview scenario that shows the extracted method and every replaced occurrence.
+- [x] Regenerate the canonical Method Reuse configuration screenshot with the threshold control enabled.
 
 ## Near-term hardening
 
 - [ ] Add active tests for return-value extraction, checked exceptions, static contexts, and legal branch handling.
 - [ ] Add negative tests for candidates rejected by JDT because of multiple outputs or invalid control flow.
-- [ ] Prove byte-exact Undo for the extracted-method change in the cleanup test harness.
 - [ ] Add deterministic performance fixtures for large methods and many coarse candidates.
-- [ ] Add an SWTBot Cleanup preview scenario that shows the extracted method and every replaced occurrence.
-- [ ] Regenerate the canonical Method Reuse configuration screenshot after the threshold control lands.
 - [ ] Measure source duplication before and after on a checked-in representative corpus.
 
 ## Candidate selection
