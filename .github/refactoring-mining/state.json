@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "abdfb2229e341c94ea40604cade7628452e6ef65",
-      "lastProcessedDate": "2026-08-24T02:40:44.063586965Z",
-      "totalProcessed": 4583,
+      "lastProcessedCommit": "670f5746ad1360443642b3002818b6406a7a369d",
+      "lastProcessedDate": "2026-08-25T02:39:34.164586803Z",
+      "totalProcessed": 4655,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3071,6 +3071,15 @@
           "deferredAt": "2026-08-24T02:36:23.425244171Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "4db882a354cc2434c1f22f9f6d664a1ea86ce1d3",
+          "message": "Fixed bug 21417:  [type hierarchy] Multi-select packages and show in Type Hierarchy",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-25T02:34:41.772877791Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3224,16 +3233,16 @@
         "Typo Fix": 2,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
-        "API Replacement": 3,
-        "API Modernization": 40,
+        "API Replacement": 4,
+        "API Modernization": 43,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
         "Generics": 1,
         "API Constant Update": 1,
-        "Null Safety": 5,
+        "Null Safety": 6,
         "Boolean Simplification": 1,
-        "Constant Replacement": 3,
+        "Constant Replacement": 4,
         "API Simplification": 4,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
@@ -3302,7 +3311,10 @@
         "Array Type Modernization": 1,
         "SWT API usage": 1,
         "Constant modernization": 1,
-        "SWT Modernization": 1
+        "SWT Modernization": 1,
+        "Logical Condition Simplification": 1,
+        "Constructor Argument Addition": 1,
+        "Argument Removal": 1
       },
       "exhaustedCategories": []
     },
@@ -3343,5 +3355,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27354
+  "globalTotalProcessed": 27426
 }
