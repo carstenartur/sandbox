@@ -9,23 +9,48 @@
 </head>
 <body>
    <h1>Method Reuse: reference</h1>
-   <h2>Applicability contract</h2>
-   <p>Candidates must be available in the configured search scope and must match the required inputs, output, visibility, and static/instance context.</p>
 
-   <h2>Safety model</h2>
-   <p>A textual similarity is not sufficient: unsupported side effects, exception differences, evaluation ordering, or access constraints reject the candidate.</p>
+   <h2>Coordinated duplicate-method mode</h2>
+   <p>The cleanup expands the selected source scope through the shared multi-file cleanup host, creates one immutable
+      project plan, and emits one local edit per affected compilation unit. Plans retain Java-model handles, binding
+      keys, source identities, method signatures, and semantic fingerprints; they do not retain AST nodes.</p>
+   <p>Immediately before an edit is produced, the duplicate method and canonical target are resolved again from fresh
+      source ASTs. A missing unit, changed binding, changed signature or fingerprint, inaccessible target, or incomplete
+      source scope invalidates the candidate instead of producing a partial change.</p>
+
+   <h2>Current applicability contract</h2>
+   <ul>
+      <li>Both methods are source methods in different compilation units of the same package and source root.</li>
+      <li>Both are static, binding-resolved, non-generic, non-varargs methods with matching parameter and return types.</li>
+      <li>Each body consists of one non-void return expression; target parameters map positionally to duplicate parameters.</li>
+      <li>Every non-parameter name resolves to the same method, type, or package binding in both expressions.</li>
+      <li>The canonical method is accessible and its declaring type has no static field or explicit static initializer.</li>
+      <li>The implementation contains no body comment, captured field, assignment, increment, object/array creation,
+          lambda, method reference, recursion, switch expression, <code>this</code>, or <code>super</code> access.</li>
+   </ul>
+
+   <h2>Local inline-sequence mode</h2>
+   <p>The second checkbox retains the existing same-compilation-unit sequence matcher. It identifies an existing method
+      and a contiguous expression or statement sequence whose mapped arguments preserve evaluation order and observable
+      behavior, then replaces only that local sequence.</p>
+
+   <h2>Impact and host behavior</h2>
+   <p>The coordinated mode has project-closed impact. It requires explicit Cleanup preview and is not eligible for save
+      actions. The preview, Apply, and Undo operations are one standard LTK transaction across all affected files. The
+      local inline mode remains independently selectable.</p>
 
    <h2>Known limitations</h2>
    <ul>
-      <li>Complex semantic equivalence and cross-workspace discovery are outside the current deterministic scope.</li>
-      <li>Very large search scopes can increase analysis cost.</li>
-      <li>Candidates should be reviewed for readability and API intent, not only mechanical equivalence.</li>
+      <li>Multi-statement methods, instance receivers, local-variable normalization, cross-package delegation, generic
+          methods, and call-site replacement are intentionally outside the first coordinated slice.</li>
+      <li>Semantic equivalence beyond the accepted AST and binding identity is not inferred.</li>
+      <li>Very large projects can be rejected by the shared planning budget rather than analysed incompletely.</li>
+      <li>Reuse candidates should still be reviewed for API ownership and readability.</li>
    </ul>
 
    <h2>Support information</h2>
-   <p>The Help content is shipped with the same feature version as the runtime
-      plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
+   <p>The Help content is shipped with the same feature version as the runtime plug-in. When reporting a problem,
+      include the Sandbox feature version, Eclipse version, Java version, the smallest reproducing source, and whether
       bindings were available.</p>
 
    <p><a href="index.html">Back to overview</a></p>
