@@ -104,3 +104,5 @@ The module tests prove:
 - unrelated sequences remain unchanged;
 - existing-method reuse remains active independently;
 - the UI preview describes extraction rather than obsolete whole-method delegation.
+
+The documented local Help generator and the read-only CI merge gate both use explicit JUnit ordering. Screenshot-producing scenarios run first, and Cleanup scenarios that persist temporary profile state run last, preventing Method Reuse state from changing unrelated canonical Help images.
