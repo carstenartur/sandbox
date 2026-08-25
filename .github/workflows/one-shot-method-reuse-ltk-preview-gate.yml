@@ -12,14 +12,14 @@ permissions:
 
 jobs:
   add-preview-gate:
-    if: github.event.head_commit.message == 'Repair real Method Reuse LTK preview gate'
+    if: github.event.head_commit.message == 'Import real Method Reuse LTK Java gate'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source branch
         uses: actions/checkout@v7
         with:
           ref: feature/method-reuse-multifile-delegation
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Add real Source Clean Up preview Apply and Undo coverage
         run: |
@@ -52,21 +52,8 @@ jobs:
               lines[annotation_index:annotation_index] = block.splitlines(keepends=True)
               path.write_text(''.join(lines), encoding='utf-8')
 
-          def add_verified_scenario(path_text: str) -> None:
-              path, lines = read_lines(path_text)
-              needle = 'captureRealCleanupPreviewAndVerifyIndependentSelection'
-              index = unique_line(lines, needle, path)
-              line = lines[index]
-              if line.rstrip().endswith(chr(92)):
-                  raise SystemExit(f'{path}: scenario line already continues')
-              indent = line[:len(line) - len(line.lstrip())]
-              lines[index] = line.rstrip('\n') + ' ' + chr(92) + '\n'
-              lines.insert(index + 1, indent + 'verifyRealMethodReuseCleanupPreviewApplyAndUndo\n')
-              path.write_text(''.join(lines), encoding='utf-8')
-
           screenshots = 'sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java'
           merge_gate = 'sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsMergeGateSWTBotTest.java'
-          verifier = '.github/workflows/eclipse-help-screenshots.yml'
 
           insert_before_line(
               screenshots,
@@ -191,27 +178,25 @@ jobs:
               }
 
           ''')
-
-          add_verified_scenario(verifier)
           PY
 
-      - name: Commit bounded preview gate and remove bootstrap workflow
+      - name: Commit bounded Java preview gate and remove bootstrap workflow
         run: |
           set -euo pipefail
           bootstrap='.github/workflows/one-shot-method-reuse-ltk-preview-gate.yml'
           screenshots='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java'
           merge_gate='sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsMergeGateSWTBotTest.java'
-          verifier='.github/workflows/eclipse-help-screenshots.yml'
 
           git rm -- "$bootstrap"
-          git add -- "$screenshots" "$merge_gate" "$verifier"
+          git add -- "$screenshots" "$merge_gate"
 
           actual="$(git diff --cached --name-status | sort)"
-          expected="$(printf 'D\t%s\nM\t%s\nM\t%s\nM\t%s\n' \
-            "$bootstrap" "$verifier" "$merge_gate" "$screenshots" | sort)"
+          expected="$(printf 'D\t%s\nM\t%s\nM\t%s\n' \
+            "$bootstrap" "$merge_gate" "$screenshots" | sort)"
           printf '%s\n' "$actual"
           test "$actual" = "$expected"
 
+          git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
           changed_text_lines="$(git diff --numstat origin/main -- \
             ':!**/*.png' | awk '$1 ~ /^[0-9]+$/ && $2 ~ /^[0-9]+$/ { total += $1 + $2 } END { print total + 0 }')"
           printf 'Changed text lines against main: %s\n' "$changed_text_lines"
@@ -219,10 +204,9 @@ jobs:
 
           grep -Fq 'verifyRealMethodReuseCleanupPreviewApplyAndUndo' "$screenshots"
           grep -Fq 'verifyRealMethodReuseCleanupPreviewApplyAndUndo' "$merge_gate"
-          grep -Fq 'verifyRealMethodReuseCleanupPreviewApplyAndUndo' "$verifier"
           git diff --cached --check
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Add real Method Reuse LTK preview gate'
+          git commit -m 'Add real Method Reuse LTK Java gate'
           git push origin HEAD:feature/method-reuse-multifile-delegation
