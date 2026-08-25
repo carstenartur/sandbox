@@ -85,13 +85,15 @@ The installed Eclipse Help contains the same contract and examples.
 
 ## Testing
 
-Tests are in `sandbox_method_reuse_test` and cover:
+Focused transformation tests are in `sandbox_method_reuse_test` and cover:
 
 - extraction of one repeated sequence and replacement of all JDT-valid occurrences;
 - configurable minimum sequence length;
 - non-repeated negative cases;
 - the existing-method reuse mode;
 - truthful Cleanup preview text.
+
+The read-only Eclipse Help merge gate in `sandbox_usage_view_test` additionally drives the real **Source → Clean Up...** workflow, verifies the genuine LTK diff, applies the extraction, and proves byte-exact Undo.
 
 Run the module through the normal Maven/Tycho reactor, for example:
 
