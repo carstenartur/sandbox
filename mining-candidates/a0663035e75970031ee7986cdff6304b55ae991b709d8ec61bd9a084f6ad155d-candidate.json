@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The public type BreadcrumbItemDropDown must be defined in its own file",
-    "verifiedAt": "2026-08-24T02:40:48.251290726Z",
+    "verifiedAt": "2026-08-25T02:39:38.123588958Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9dcfe8d0f26f772497dd9ce9f703cb19aa11ca5fd1e33cbfc50de6d1321160d3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.IJavaHelpContextIds.JAVA_EDITOR_PREFERENCE_PAGE\n\u003d\u003e\norg.eclipse.jdt.internal.ui.IJavaHelpContextIds.TYPING_PREFERENCE_PAGE\n;;",
+  "beforeExample": "package test;\n\n// Assume org.eclipse.jdt.internal.ui.IJavaHelpContextIds exists on classpath\n// with both constants.\npublic class TestClass {\n    public static class IJavaHelpContextIds {\n        public static final String JAVA_EDITOR_PREFERENCE_PAGE \u003d \"old_id\";\n        public static final String TYPING_PREFERENCE_PAGE \u003d \"new_id\";\n    }\n\n    public String getHelpId() {\n        return IJavaHelpContextIds.JAVA_EDITOR_PREFERENCE_PAGE;\n    }\n}",
+  "afterExample": "package test;\n\n// Assume org.eclipse.jdt.internal.ui.IJavaHelpContextIds exists on classpath\n// with both constants.\npublic class TestClass {\n    public static class IJavaHelpContextIds {\n        public static final String JAVA_EDITOR_PREFERENCE_PAGE \u003d \"old_id\";\n        public static final String TYPING_PREFERENCE_PAGE \u003d \"new_id\";\n    }\n\n    public String getHelpId() {\n        return IJavaHelpContextIds.TYPING_PREFERENCE_PAGE;\n    }\n}",
+  "negativeExample": "package test;\n\n// Assume org.eclipse.jdt.internal.ui.IJavaHelpContextIds exists on classpath\n// with both constants.\npublic class TestClass {\n    public static class IJavaHelpContextIds {\n        public static final String JAVA_EDITOR_PREFERENCE_PAGE \u003d \"old_id\";\n        public static final String JAVADOC_PROBLEMS_PREFERENCE_PAGE \u003d \"other_id\";\n    }\n\n    public String getHelpId() {\n        // This should not be changed as it\u0027s a different constant\n        return IJavaHelpContextIds.JAVADOC_PROBLEMS_PREFERENCE_PAGE;\n    }\n}",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "2cef7e2564e923c2e17b7d98b7d081907b491b0e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Replacement",
+  "summary": "Replaced the usage of `IJavaHelpContextIds.JAVA_EDITOR_PREFERENCE_PAGE` with `IJavaHelpContextIds.TYPING_PREFERENCE_PAGE`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-25T02:39:34.842236238Z",
+  "ruleFingerprint": "sha256:441c2e11a3a5add7e0d3a88a02e39a2da3e5598da86fba4b8eb02122dc56aea2",
+  "behaviorFingerprint": "sha256:aa632320056562c0445576977be807096bfa5668fe583ace57ef5b8c5719a84f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-08-25T02:39:38.294225667Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

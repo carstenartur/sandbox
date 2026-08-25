@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b587c9e9c4119e5bb1bf6071ac6ca07f7b4366a8f91388e2f8b56e4e8714bb5a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$lv.getParent() :: instanceof($lv, \"org.eclipse.jdt.core.ILocalVariable\")\n\u003d\u003e\n$lv.getDeclaringMember()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.ILocalVariable;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class Example {\n    public void method(ILocalVariable lv) throws JavaModelException {\n        IJavaElement parent \u003d lv.getParent();\n        System.out.println(parent.getElementName());\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.ILocalVariable;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class Example {\n    public void method(ILocalVariable lv) throws JavaModelException {\n        IJavaElement parent \u003d lv.getDeclaringMember();\n        System.out.println(parent.getElementName());\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.ILocalVariable;\n\npublic class Example {\n    public void anotherMethod(IMember member) {\n        // Should not be transformed as \u0027member\u0027 is not ILocalVariable\n        member.getParent();\n    }\n\n    public void checkJavaElementParent(IJavaElement element) {\n        // Should not be transformed unless \u0027element\u0027 is specifically ILocalVariable\n        element.getParent();\n    }\n}",
+  "targetHintFile": "eclipse-jdt-api.sandbox-hint",
+  "sourceCommit": "a1f93bdc9701b15bd957f2dac9abb9a3d70a75ff",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-25T02:39:34.821122256Z",
+  "ruleFingerprint": "sha256:3778a8bb071bccc891206c374b95ab593ea1f5413e3f9672b310532cdb1f0f9c",
+  "behaviorFingerprint": "sha256:c606e1f7d817e325ac3349dad22f086d42936f7d02d30e46f69fb0112dea6f8a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-08-25T02:39:38.271103347Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

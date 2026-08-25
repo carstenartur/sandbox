@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "91108351daf217a02b676ecc0a197fe5d453b6b18202cfc4a025c6e59df26c19",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-null-check-for-specific-method-argument\u003e\n\u003c!description: Adds a null check for an argument before calling ActionUtil.isOnBuildPath to prevent NullPointerException when the argument is potentially null. This is a common pattern for methods that do not handle null arguments gracefully.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: null-safety, npe\u003e\n\norg.eclipse.jdt.internal.ui.util.ActionUtil.isOnBuildPath($input) :: isNullable($input)\n\u003d\u003e $input !\u003d null \u0026\u0026 org.eclipse.jdt.internal.ui.util.ActionUtil.isOnBuildPath($input)\n;;",
+  "beforeExample": "package com.example;\n\n// Minimal mock for org.eclipse.jdt.core.IJavaElement\ninterface IJavaElement {\n    String getElementName(); \n}\n\n// Minimal mock for org.eclipse.jdt.internal.ui.util.ActionUtil\nclass ActionUtil {\n    public static boolean isOnBuildPath(IJavaElement element) {\n        // Simulate behavior that would throw NPE if element is null\n        return element.getElementName() !\u003d null; \n    }\n}\n\npublic class TestClass {\n    public void processElement(IJavaElement input) {\n        // This line is problematic if \u0027input\u0027 is null and ActionUtil.isOnBuildPath\n        // does not handle nulls (which it implicitly doesn\u0027t in the original code)\n        if (ActionUtil.isOnBuildPath(input)) {\n            System.out.println(\"Input is on build path.\");\n        }\n    }\n\n    public static void main(String[] args) {\n        TestClass tc \u003d new TestClass();\n        // This call is intended to trigger an NPE before the fix\n        tc.processElement(null);\n    }\n}",
+  "afterExample": "package com.example;\n\ninterface IJavaElement {\n    String getElementName();\n}\n\nclass ActionUtil {\n    public static boolean isOnBuildPath(IJavaElement element) {\n        // Now handles null gracefully\n        if (element \u003d\u003d null) {\n            return false;\n        }\n        return element.getElementName() !\u003d null;\n    }\n}\n\npublic class TestClass {\n    public void processElement(IJavaElement input) {\n        // Fixed line with null check added\n        if (input !\u003d null \u0026\u0026 ActionUtil.isOnBuildPath(input)) {\n            System.out.println(\"Input is on build path.\");\n        }\n    }\n\n    public static void main(String[] args) {\n        TestClass tc \u003d new TestClass();\n        tc.processElement(null); // No NPE after fix\n    }\n}",
+  "negativeExample": "package com.example;\n\ninterface IJavaElement {\n    String getElementName();\n}\n\nclass ActionUtil {\n    public static boolean isOnBuildPath(IJavaElement element) {\n        if (element \u003d\u003d null) {\n            return false;\n        }\n        return element.getElementName() !\u003d null;\n    }\n}\n\npublic class NegativeTestClass {\n    // Mock implementation for IJavaElement\n    static class MockIJavaElement implements IJavaElement {\n        private String name;\n        public MockIJavaElement(String name) { this.name \u003d name; }\n        @Override\n        public String getElementName() {\n            return name;\n        }\n    }\n\n    // Rule should not apply here, as \u0027input\u0027 is already checked before the method call\n    public void processElementPreChecked(IJavaElement input) {\n        if (input !\u003d null) { \n            if (ActionUtil.isOnBuildPath(input)) {\n                System.out.println(\"Input is on build path.\");\n            }\n        }\n    }\n\n    // Rule should ideally not apply here, as \u0027nonNullInput\u0027 is clearly non-null.\n    // The \u0027isNullable($input)\u0027 guard should prevent it if static analysis is available.\n    // If bindings are unavailable, it might conservatively apply, which is still safe.\n    public void processElementNonNull() {\n        IJavaElement nonNullInput \u003d new MockIJavaElement(\"test\"); \n        if (ActionUtil.isOnBuildPath(nonNullInput)) {\n            System.out.println(\"Non-null input is on build path.\");\n        }\n    }\n}",
+  "targetHintFile": "nullability.sandbox-hint",
+  "sourceCommit": "c39b372acc3dcf575087536d44b621551c953a26",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-25T02:39:34.832563459Z",
+  "ruleFingerprint": "sha256:24bc26a6c8475737ce5b2a9cbb508415a240970a3e883990584cfe2fcb5244ba",
+  "behaviorFingerprint": "sha256:ac72dcca3161137290eecc77317208b004c6f06839edfbdf87df79698b0afe8c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-25T02:39:38.280544049Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

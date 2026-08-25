@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e3c1943f1cb12af9c7f310db498e8962145bc19498dc0e3642ca4f3da01c0728",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$inputVar \u003d\u003d org.eclipse.jdt.core.IJavaElement.TYPE \u0026\u0026 $elementA.getElementName().equals($elementB.getElementName())\n\u003d\u003e\n$inputVar \u003d\u003d org.eclipse.jdt.core.IJavaElement.TYPE\n;;",
+  "beforeExample": "package test;\n\n// Mock minimal interface to avoid complex Eclipse dependencies in example.\n// In a real scenario, org.eclipse.jdt.core.IJavaElement would be on the classpath.\ninterface IJavaElement {\n    int TYPE \u003d 1; // Simulate IJavaElement.TYPE\n    String getElementName();\n    int getElementType();\n}\n\nclass MyJavaElement implements IJavaElement {\n    private String name;\n    private int type;\n\n    public MyJavaElement(String name, int type) { this.name \u003d name; this.type \u003d type; }\n    @Override public String getElementName() { return name; }\n    @Override public int getElementType() { return type; }\n}\n\npublic class MyChecker {\n    public boolean checkCondition(MyJavaElement inputElement, MyJavaElement typeElement) {\n        int inputType \u003d inputElement.getElementType();\n        if (inputType \u003d\u003d IJavaElement.TYPE \u0026\u0026 inputElement.getElementName().equals(typeElement.getElementName())) {\n            return true;\n        }\n        return false;\n    }\n}",
+  "afterExample": "package test;\n\ninterface IJavaElement {\n    int TYPE \u003d 1;\n    String getElementName();\n    int getElementType();\n}\n\nclass MyJavaElement implements IJavaElement {\n    private String name;\n    private int type;\n\n    public MyJavaElement(String name, int type) { this.name \u003d name; this.type \u003d type; }\n    @Override public String getElementName() { return name; }\n    @Override public int getElementType() { return type; }\n}\n\npublic class MyChecker {\n    public boolean checkCondition(MyJavaElement inputElement, MyJavaElement typeElement) {\n        int inputType \u003d inputElement.getElementType();\n        if (inputType \u003d\u003d IJavaElement.TYPE) {\n            return true;\n        }\n        return false;\n    }\n}",
+  "negativeExample": "package test;\n\ninterface IJavaElement {\n    int TYPE \u003d 1;\n    String getElementName();\n    int getElementType();\n}\n\nclass MyJavaElement implements IJavaElement {\n    private String name;\n    private int type;\n\n    public MyJavaElement(String name, int type) { this.name \u003d name; this.type \u003d type; }\n    @Override public String getElementName() { return name; }\n    @Override public int getElementType() { return type; }\n}\n\npublic class MyChecker {\n    public boolean checkOtherCondition(MyJavaElement inputElement, MyJavaElement typeElement) {\n        int inputType \u003d inputElement.getElementType();\n        // Different method call in the second part of the condition\n        if (inputType \u003d\u003d IJavaElement.TYPE \u0026\u0026 inputElement.getElementName().contains(typeElement.getElementName())) {\n            return true;\n        }\n        return false;\n    }\n\n    public boolean checkAnotherCondition(MyJavaElement inputElement, MyJavaElement typeElement) {\n        int inputType \u003d inputElement.getElementType();\n        // Different constant value in the first part of the condition\n        if (inputType \u003d\u003d 2 \u0026\u0026 inputElement.getElementName().equals(typeElement.getElementName())) {\n            return true;\n        }\n        return false;\n    }\n}",
+  "targetHintFile": "bugfixes.sandbox-hint",
+  "sourceCommit": "8767fe27fbf619397496db8aefa0f25083cdac89",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Logical Condition Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-25T02:39:34.851487983Z",
+  "ruleFingerprint": "sha256:ba1bfcd1a226c25dee6b74870a840f77d66f5d08615f982ea78f94c3755a5f7a",
+  "behaviorFingerprint": "sha256:0e15e2aa2e12b9f2e0f93238ea825150420eb5b0e23ae57979acf74f3d744b8c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 20: The public type MyChecker must be defined in its own file",
+    "verifiedAt": "2026-08-25T02:39:38.309046706Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
