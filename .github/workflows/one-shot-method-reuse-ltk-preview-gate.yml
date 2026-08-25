@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   add-preview-gate:
-    if: github.event.head_commit.message == 'Bootstrap real Method Reuse LTK preview gate'
+    if: github.event.head_commit.message == 'Repair real Method Reuse LTK preview gate'
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source branch
@@ -27,45 +27,60 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          def replace_once(path_text: str, old: str, new: str) -> None:
+          def read_lines(path_text: str) -> tuple[Path, list[str]]:
               path = Path(path_text)
-              content = path.read_text(encoding='utf-8')
-              count = content.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected one replacement anchor, found {count}')
-              path.write_text(content.replace(old, new), encoding='utf-8')
+              return path, path.read_text(encoding='utf-8').splitlines(keepends=True)
+
+          def unique_line(lines: list[str], needle: str, path: Path) -> int:
+              matches = [index for index, line in enumerate(lines) if needle in line]
+              if len(matches) != 1:
+                  raise SystemExit(f'{path}: expected one line containing {needle!r}, found {len(matches)}')
+              return matches[0]
+
+          def insert_before_line(path_text: str, needle: str, block: str) -> None:
+              path, lines = read_lines(path_text)
+              index = unique_line(lines, needle, path)
+              lines[index:index] = block.splitlines(keepends=True)
+              path.write_text(''.join(lines), encoding='utf-8')
+
+          def insert_before_test(path_text: str, signature: str, block: str) -> None:
+              path, lines = read_lines(path_text)
+              method_index = unique_line(lines, signature, path)
+              annotation_index = method_index - 1
+              if annotation_index < 0 or lines[annotation_index].strip() != '@Test':
+                  raise SystemExit(f'{path}: {signature!r} is not immediately preceded by @Test')
+              lines[annotation_index:annotation_index] = block.splitlines(keepends=True)
+              path.write_text(''.join(lines), encoding='utf-8')
+
+          def add_verified_scenario(path_text: str) -> None:
+              path, lines = read_lines(path_text)
+              needle = 'captureRealCleanupPreviewAndVerifyIndependentSelection'
+              index = unique_line(lines, needle, path)
+              line = lines[index]
+              if line.rstrip().endswith(chr(92)):
+                  raise SystemExit(f'{path}: scenario line already continues')
+              indent = line[:len(line) - len(line.lstrip())]
+              lines[index] = line.rstrip('\n') + ' ' + chr(92) + '\n'
+              lines.insert(index + 1, indent + 'verifyRealMethodReuseCleanupPreviewApplyAndUndo\n')
+              path.write_text(''.join(lines), encoding='utf-8')
 
           screenshots = 'sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsSWTBotTest.java'
           merge_gate = 'sandbox_usage_view_test/src/org/sandbox/jdt/ui/helper/views/SandboxHelpScreenshotsMergeGateSWTBotTest.java'
-          workflow = '.github/workflows/eclipse-help-screenshots.yml'
+          verifier = '.github/workflows/eclipse-help-screenshots.yml'
 
-          replace_once(
+          insert_before_line(
               screenshots,
-              '''    private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =
-                      "Modernize Image creation for DPI/zoom (ImageDataProvider)";
-              private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
-          ''',
-              '''    private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =
-                      "Modernize Image creation for DPI/zoom (ImageDataProvider)";
-              private static final String METHOD_REUSE_MASTER_LABEL =
+              'private static final String INT_TO_ENUM_MASTER_LABEL',
+          '''    private static final String METHOD_REUSE_MASTER_LABEL =
                       "Extract repeated code sequences into a shared method";
               private static final String METHOD_REUSE_INLINE_LABEL =
                       "Replace inline code sequences with calls to an existing method";
-              private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
           ''')
 
-          replace_once(
+          insert_before_test(
               screenshots,
-              '''        assertTrue(sorterBefore.equals(readFile(sorterFile)), "Undo must keep SorterOnly.java unchanged");
-              }
-
-              @Test
-              public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
-          ''',
-              '''        assertTrue(sorterBefore.equals(readFile(sorterFile)), "Undo must keep SorterOnly.java unchanged");
-              }
-
-              @Test
+              'public void coordinatedIntToEnumPreviewIsAtomic()',
+          '''    @Test
               public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
                   System.out.println("[help-screenshots] Starting real Method Reuse Cleanup preview");
                   configureMethodReuseCleanupProfile();
@@ -113,15 +128,12 @@ jobs:
                           "Undo must restore the Method Reuse fixture byte-for-byte");
               }
 
-              @Test
-              public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
           ''')
 
-          replace_once(
+          insert_before_line(
               screenshots,
-              '''    private static void configureJFaceCleanupProfile() {
-          ''',
-              '''    private static void configureMethodReuseCleanupProfile() {
+              'private static void configureJFaceCleanupProfile()',
+          '''    private static void configureMethodReuseCleanupProfile() {
                   openPreferences();
                   SWTBotShell preferences = bot.shell("Preferences").activate();
                   selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
@@ -139,14 +151,12 @@ jobs:
                   clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
               }
 
-              private static void configureJFaceCleanupProfile() {
           ''')
 
-          replace_once(
+          insert_before_line(
               screenshots,
-              '''        createUnit(sourceRoot, "demo.coordinated", "StateOwner.java",
-          ''',
-              '''        createUnit(sourceRoot, "demo.methodreuse", "RepeatedSequence.java",
+              'createUnit(sourceRoot, "demo.coordinated", "StateOwner.java"',
+          '''        createUnit(sourceRoot, "demo.methodreuse", "RepeatedSequence.java",
                           """
                                   package demo.methodreuse;
 
@@ -164,14 +174,12 @@ jobs:
                                       }
                                   }
                                   """);
-                  createUnit(sourceRoot, "demo.coordinated", "StateOwner.java",
           ''')
 
-          replace_once(
+          insert_before_line(
               merge_gate,
-              '''    private static String activePreviewTree() {
-          ''',
-              '''    @Test
+              'private static String activePreviewTree()',
+          '''    @Test
               public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
                   IUndoManager undoManager = RefactoringCore.getUndoManager();
                   undoManager.flush();
@@ -182,20 +190,9 @@ jobs:
                   }
               }
 
-              private static String activePreviewTree() {
           ''')
 
-          replace_once(
-              workflow,
-              '''          for scenario in \\
-                      captureCleanupConfigurationTabs \\
-                      captureRealCleanupPreviewAndVerifyIndependentSelection
-          ''',
-              '''          for scenario in \\
-                      captureCleanupConfigurationTabs \\
-                      captureRealCleanupPreviewAndVerifyIndependentSelection \\
-                      verifyRealMethodReuseCleanupPreviewApplyAndUndo
-          ''')
+          add_verified_scenario(verifier)
           PY
 
       - name: Commit bounded preview gate and remove bootstrap workflow
@@ -220,7 +217,11 @@ jobs:
           printf 'Changed text lines against main: %s\n' "$changed_text_lines"
           test "$changed_text_lines" -lt 2000
 
+          grep -Fq 'verifyRealMethodReuseCleanupPreviewApplyAndUndo' "$screenshots"
+          grep -Fq 'verifyRealMethodReuseCleanupPreviewApplyAndUndo' "$merge_gate"
+          grep -Fq 'verifyRealMethodReuseCleanupPreviewApplyAndUndo' "$verifier"
           git diff --cached --check
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Add real Method Reuse LTK preview gate'
