@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "9320acb38d8ddfea50961ecdb32f82c33ee8808c",
+  "generatedAt": "2026-08-25T03:59:27Z",
+  "tests": {
+    "total": 3520,
+    "passed": 3511,
+    "skipped": 9,
+    "failed": 0
+  },
+  "coverage": {
+    "metric": "INSTRUCTION",
+    "percent": 0.6292612853713251
+  }
+}
