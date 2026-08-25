@@ -1,4 +1,4 @@
-# Publish authoritative test totals, skipped-test totals and aggregate JaCoCo coverage.
+# Publish measured JUnit and JaCoCo metrics without repository-specific parsers.
 name: Verified test and coverage metrics
 
 on:
@@ -21,7 +21,6 @@ on:
       - 'README.md'
       - 'COVERAGE_DEPLOYMENT.md'
       - 'docs/quality-metrics.md'
-      - 'sandbox_quality_metrics/**'
       - '.github/workflows/coverage.yml'
   schedule:
     - cron: '0 0 * * *'
@@ -35,46 +34,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality-tool-tests:
-    name: Quality metric generator tests
-    runs-on: ubuntu-24.04
-    env:
-      MAVEN_OPTS: -Djava.awt.headless=true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: temurin
-          cache: maven
-
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
-
-      - name: Run the Maven/JUnit metric-generator tests
-        run: >-
-          mvn
-          --no-transfer-progress
-          -V
-          --batch-mode
-          --file sandbox_quality_metrics/pom.xml
-          clean verify
-
   coverage:
     name: Build and verify/publish metrics
-    needs: quality-tool-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     permissions:
       contents: write
+      checks: write
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
-      QUALITY_SITE: /tmp/sandbox-quality-site
+      QUALITY_SITE: target/quality-site
 
     steps:
       - name: Checkout
@@ -160,19 +129,23 @@ jobs:
           -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
           clean verify
 
-      - name: Package the verified metric generator
-        if: steps.gate.outputs.run == 'true'
-        run: >-
-          mvn
-          --no-transfer-progress
-          -V
-          --batch-mode
-          --file sandbox_quality_metrics/pom.xml
-          -DskipTests
-          package
+      - name: Collect JUnit results
+        id: junit
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: mikepenz/action-junit-report@v6
+        with:
+          report_paths: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: Verified quality test results
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          detailed_summary: true
+          include_passed: false
 
-      - name: Stage reports and generate badges
-        if: steps.gate.outputs.run == 'true'
+      - name: Stage generated HTML reports
+        if: success() && steps.gate.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -180,7 +153,8 @@ jobs:
           mkdir -p "$QUALITY_SITE/coverage" "$QUALITY_SITE/tests"
 
           coverage_dir='sandbox_coverage/target/site/jacoco-aggregate'
-          test -s "$coverage_dir/jacoco.xml"
+          test -s "$coverage_dir/jacoco.csv"
+          test -s "$coverage_dir/index.html"
           cp -a "$coverage_dir/." "$QUALITY_SITE/coverage/"
 
           while IFS= read -r -d '' report; do
@@ -192,12 +166,122 @@ jobs:
             cp -a "$site_dir/." "$QUALITY_SITE/tests/$module/"
           done < <(find . -type f -path '*/target/site/surefire-report.html' -print0)
 
-          java \
-            -cp sandbox_quality_metrics/target/classes \
-            org.sandbox.build.quality.QualityBadgeGenerator \
-            --root . \
-            --output "$QUALITY_SITE" \
-            --commit "$GITHUB_SHA"
+      - name: Generate JaCoCo coverage endpoint
+        id: jacoco
+        if: success() && steps.gate.outputs.run == 'true'
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
+          badges-directory: target/quality-site/badges
+          generate-coverage-badge: false
+          generate-coverage-endpoint: true
+          coverage-endpoint-filename: coverage.json
+          generate-branches-badge: false
+
+      - name: Generate test endpoint and report index
+        if: success() && steps.gate.outputs.run == 'true'
+        shell: bash
+        env:
+          TOTAL: ${{ steps.junit.outputs.total }}
+          PASSED: ${{ steps.junit.outputs.passed }}
+          SKIPPED: ${{ steps.junit.outputs.skipped }}
+          FAILED: ${{ steps.junit.outputs.failed }}
+          COVERAGE: ${{ steps.jacoco.outputs.coverage }}
+        run: |
+          set -euo pipefail
+          for value in "$TOTAL" "$PASSED" "$SKIPPED" "$FAILED"; do
+            [[ "$value" =~ ^[0-9]+$ ]] || {
+              echo "Invalid JUnit action output: $value" >&2
+              exit 1
+            }
+          done
+          [[ "$COVERAGE" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
+            echo "Invalid JaCoCo action output: $COVERAGE" >&2
+            exit 1
+          }
+
+          color=brightgreen
+          if (( FAILED > 0 )); then
+            color=red
+          fi
+
+          mkdir -p "$QUALITY_SITE/badges" "$QUALITY_SITE/tests"
+          jq -n \
+            --arg message "$TOTAL tests, $SKIPPED skipped" \
+            --arg color "$color" \
+            '{schemaVersion: 1, label: "tests", message: $message, color: $color}' \
+            > "$QUALITY_SITE/badges/tests.json"
+
+          generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          jq -n \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg generatedAt "$generated_at" \
+            --argjson total "$TOTAL" \
+            --argjson passed "$PASSED" \
+            --argjson skipped "$SKIPPED" \
+            --argjson failed "$FAILED" \
+            --argjson coverage "$COVERAGE" \
+            '{
+              schemaVersion: 1,
+              sourceCommit: $sourceCommit,
+              generatedAt: $generatedAt,
+              tests: {
+                total: $total,
+                passed: $passed,
+                skipped: $skipped,
+                failed: $failed
+              },
+              coverage: {
+                metric: "INSTRUCTION",
+                percent: $coverage
+              }
+            }' > "$QUALITY_SITE/quality-summary.json"
+
+          cat > "$QUALITY_SITE/tests/index.html" <<EOF
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Sandbox verified test results</title>
+            <style>
+              body { font: 16px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2rem auto; padding: 0 1rem; }
+              table { border-collapse: collapse; margin: 1rem 0 1.5rem; }
+              th, td { border: 1px solid #bbb; padding: .45rem .7rem; text-align: right; }
+              th:first-child, td:first-child { text-align: left; }
+              code { overflow-wrap: anywhere; }
+            </style>
+          </head>
+          <body>
+            <h1>Sandbox verified test results</h1>
+            <p>Source commit: <code>$GITHUB_SHA</code></p>
+            <table>
+              <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Total</td><td>$TOTAL</td></tr>
+                <tr><td>Passed</td><td>$PASSED</td></tr>
+                <tr><td>Skipped</td><td>$SKIPPED</td></tr>
+                <tr><td>Failed</td><td>$FAILED</td></tr>
+                <tr><td>Instruction coverage</td><td>$COVERAGE%</td></tr>
+              </tbody>
+            </table>
+            <p><a href="../coverage/">Aggregate JaCoCo report</a> · <a href="../quality-summary.json">Machine-readable summary</a></p>
+            <h2>Module reports</h2>
+            <ul>
+          EOF
+
+          while IFS= read -r -d '' report; do
+            relative="${report#"$QUALITY_SITE/tests/"}"
+            module="${relative%/surefire-report.html}"
+            printf '      <li><a href="%s">%s</a></li>\n' "$relative" "$module" \
+              >> "$QUALITY_SITE/tests/index.html"
+          done < <(find "$QUALITY_SITE/tests" -type f -name surefire-report.html -print0 | sort -z)
+
+          cat >> "$QUALITY_SITE/tests/index.html" <<'EOF'
+            </ul>
+          </body>
+          </html>
+          EOF
 
           test -s "$QUALITY_SITE/badges/tests.json"
           test -s "$QUALITY_SITE/badges/coverage.json"
@@ -210,9 +294,8 @@ jobs:
         with:
           name: verified-quality-${{ github.run_number }}-${{ github.run_attempt }}
           path: |
-            /tmp/sandbox-quality-site/badges/*.json
-            /tmp/sandbox-quality-site/quality-summary.json
-            /tmp/sandbox-quality-site/tests/index.html
+            target/quality-site/**
+            sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
@@ -224,7 +307,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: /tmp/sandbox-quality-site
+          publish_dir: target/quality-site
           keep_files: true
           user_name: 'github-actions[bot]'
           user_email: '41898282+github-actions[bot]@users.noreply.github.com'
@@ -236,7 +319,7 @@ jobs:
           {
             echo '## Verified quality evidence'
             echo
-            echo '[Test totals and skipped tests](https://carstenartur.github.io/sandbox/tests/)'
+            echo '[Test totals and module reports](https://carstenartur.github.io/sandbox/tests/)'
             echo
             echo '[Aggregate JaCoCo coverage](https://carstenartur.github.io/sandbox/coverage/)'
             echo
@@ -249,7 +332,7 @@ jobs:
           {
             echo '## Verified quality evidence'
             echo
-            echo 'This branch run verifies the complete generation path but does not update the public GitHub Pages reports.'
+            echo 'This branch run verifies the generation path but does not update the public GitHub Pages reports.'
             echo
             echo "[Workflow run and retained evidence](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -1,34 +1,29 @@
 # Verified test and coverage publication
 
-Sandbox publishes measured test and coverage values from the authoritative Maven verification. The README badges are Shields endpoint badges backed by JSON generated from JUnit XML and the aggregate JaCoCo XML report; they are not workflow-status badges or manually maintained percentages.
+Sandbox publishes measured test and coverage values from the complete Maven verification. The implementation deliberately delegates report interpretation to established GitHub Actions rather than maintaining repository-specific parsers:
 
-The canonical description of the evidence contract, validation rules, build isolation, publication layout, and provenance is maintained in [`docs/quality-metrics.md`](docs/quality-metrics.md).
+- `mikepenz/action-junit-report@v6` supplies JUnit totals from Surefire and Failsafe reports;
+- `cicirello/jacoco-badge-generator@v2` generates the instruction-coverage endpoint from JaCoCo CSV.
+
+The detailed contract is documented in [`docs/quality-metrics.md`](docs/quality-metrics.md).
 
 ## Published resources
 
-A successful verification of `main` updates these GitHub Pages resources in one publication:
+A successful `main` run updates these GitHub Pages resources in one publication:
 
-- `badges/tests.json` — exact registered test total and skipped count;
+- `badges/tests.json` — test total and skipped count;
 - `badges/coverage.json` — aggregate instruction coverage;
-- `quality-summary.json` — source commit, timestamp, test outcomes, and raw coverage counters;
-- `tests/` — readable totals and links to generated module reports;
-- `coverage/` — the aggregate JaCoCo HTML report.
+- `quality-summary.json` — source commit, timestamp, JUnit totals, and coverage percentage;
+- `tests/` — readable totals and generated module reports;
+- `coverage/` — aggregate JaCoCo HTML report.
 
-The public entry points are:
+Public entry points:
 
 - <https://carstenartur.github.io/sandbox/tests/>
 - <https://carstenartur.github.io/sandbox/coverage/>
 - <https://carstenartur.github.io/sandbox/quality-summary.json>
 
-## Local verification
-
-Run the quality-generator regression tests without resolving the Eclipse target platform:
-
-```bash
-mvn --file sandbox_quality_metrics/pom.xml clean verify
-```
-
-Generate the complete evidence locally with the same principal profiles used by the publication workflow:
+## Local evidence generation
 
 ```bash
 xvfb-run --auto-servernum mvn \
@@ -37,10 +32,11 @@ xvfb-run --auto-servernum mvn \
   clean verify
 ```
 
-The aggregate coverage source is then available at:
+The aggregate coverage inputs are then available at:
 
 ```text
+sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
 sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
 ```
 
-Publication is handled by [`.github/workflows/coverage.yml`](.github/workflows/coverage.yml). It retains unrelated GitHub Pages content, publishes only after a successful `main` verification, and preserves available XML evidence as a workflow artifact when a build fails.
+Publication is handled by [`.github/workflows/coverage.yml`](.github/workflows/coverage.yml). Pull requests validate the full generation path but do not mutate GitHub Pages. Failed runs retain available JUnit and JaCoCo evidence as workflow artifacts.
