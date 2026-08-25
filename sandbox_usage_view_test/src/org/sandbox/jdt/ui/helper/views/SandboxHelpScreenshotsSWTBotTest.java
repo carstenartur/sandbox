@@ -69,7 +69,10 @@ import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * Generates the screenshots embedded in the independently installable Eclipse
@@ -92,6 +95,12 @@ import org.junit.jupiter.api.Test;
  *     -Phelp-screenshots clean verify
  * </pre>
  */
+/*
+ * Cleanup execution scenarios persist profiles in the shared workbench.
+ * Keep the documented local generator in the same deterministic order as
+ * the read-only CI merge gate and run profile-mutating scenarios last.
+ */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SandboxHelpScreenshotsSWTBotTest {
 
     private record CleanupTab(String label, String helpBundle, String fileName) {
@@ -199,6 +208,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(5)
     public void captureCleanupConfigurationTabs() throws IOException {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
@@ -226,6 +236,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(4)
     public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
         System.out.println("[help-screenshots] Starting real Cleanup file-selection preview");
         configureJFaceCleanupProfile();
@@ -346,6 +357,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(8)
     public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
         System.out.println("[help-screenshots] Starting real Method Reuse Cleanup preview");
         configureMethodReuseCleanupProfile();
@@ -394,6 +406,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(7)
     public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
         System.out.println("[help-screenshots] Starting coordinated Int-to-Enum Cleanup preview");
         configureIntToEnumCleanupProfile();
@@ -479,6 +492,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(6)
     public void captureCssCleanupPreferences() throws IOException {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
@@ -489,6 +503,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(1)
     public void captureRuleInferencePreferences() throws IOException {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
@@ -499,6 +514,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(2)
     public void captureRefactoringMiningWorkflow() throws Exception {
         SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, REFACTORING_MINING_VIEW);
@@ -532,6 +548,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(3)
     public void captureNewHintRuleWizard() throws Exception {
         SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, PROJECT_EXPLORER_VIEW);
