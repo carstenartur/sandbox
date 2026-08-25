@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cb21df596176d8ca74b7f2c49e812616eb1e54291108d93bb33c2676639ae91a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "((org.eclipse.jdt.core.IMember) $element).getNameRange() :: instanceof($element, \"org.eclipse.jdt.core.ISourceReference\")\n\u003d\u003e\n$element.getNameRange()\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.ISourceRange;\nimport org.eclipse.jdt.core.ISourceReference;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyClass {\n    public ISourceRange getRange(ISourceReference element) throws JavaModelException {\n        if (element instanceof IMember) {\n            return ((IMember) element).getNameRange();\n        }\n        return null;\n    }\n}\n\n// Minimal dummy interfaces for compilation, reflecting the modernized JDT Core API\npackage org.eclipse.jdt.core;\npublic interface IJavaElement {}\npublic interface ISourceRange {}\npublic interface ISourceReference {\n    ISourceRange getNameRange() throws JavaModelException;\n}\npublic interface IMember extends ISourceReference, IJavaElement {}\npublic class JavaModelException extends Exception {}",
+  "afterExample": "import org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.ISourceRange;\nimport org.eclipse.jdt.core.ISourceReference;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyClass {\n    public ISourceRange getRange(ISourceReference element) throws JavaModelException {\n        if (element instanceof IMember) {\n            return element.getNameRange();\n        }\n        return null;\n    }\n}\n\n// Minimal dummy interfaces for compilation, reflecting the modernized JDT Core API\npackage org.eclipse.jdt.core;\npublic interface IJavaElement {}\npublic interface ISourceRange {}\npublic interface ISourceReference {\n    ISourceRange getNameRange() throws JavaModelException;\n}\npublic interface IMember extends ISourceReference, IJavaElement {}\npublic class JavaModelException extends Exception {}",
+  "negativeExample": "import org.eclipse.jdt.core.IMember;\nimport org.eclipse.jdt.core.ISourceRange;\nimport org.eclipse.jdt.core.ISourceReference;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class MyClass {\n    public ISourceRange getRange(ISourceReference element) throws JavaModelException {\n        // This method someOtherMethod() is not on ISourceReference, so the cast is not redundant.\n        // Rule should NOT apply here.\n        if (element instanceof IMember) {\n            return ((IMember) element).someOtherMethod();\n        }\n        return null;\n    }\n}\n\n// Minimal dummy interfaces for compilation\npackage org.eclipse.jdt.core;\npublic interface IJavaElement {}\npublic interface ISourceRange {}\npublic interface ISourceReference {\n    ISourceRange getNameRange() throws JavaModelException;\n}\npublic interface IMember extends ISourceReference, IJavaElement {\n    String someOtherMethod(); // This method is only on IMember, not ISourceReference\n}\npublic class JavaModelException extends Exception {}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "a210c8471f5adefb831d6e0ea60a229511e6a8f5",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace direct cast to IMember before calling getNameRange() with direct call on ISourceReference.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-25T02:39:34.792482371Z",
+  "ruleFingerprint": "sha256:eb0154798f19ccd000caf2ab3e4f530c809c86d42c6949beb26a2907e66e32e5",
+  "behaviorFingerprint": "sha256:87dbdda393aedf5ffd5240ef342a18a1474b4dd9008747ff9aa858c69eb93f1f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-08-25T02:39:38.255333126Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

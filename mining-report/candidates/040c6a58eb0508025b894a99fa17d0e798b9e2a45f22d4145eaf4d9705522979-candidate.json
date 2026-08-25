@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "040c6a58eb0508025b894a99fa17d0e798b9e2a45f22d4145eaf4d9705522979",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.resources.ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation($path)\n\u003d\u003e\norg.eclipse.core.resources.ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(org.eclipse.core.filesystem.URIUtil.toURI($path.makeAbsolute()))\n;;",
+  "beforeExample": "import org.eclipse.core.resources.IFile;\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\npublic class Example0 {\n    public void method(IPath fExternalPath) {\n        IFile[] files \u003d ResourcesPlugin.getWorkspace().getRoot().findFilesForLocation(fExternalPath);\n        System.out.println(files.length);\n    }\n}",
+  "afterExample": "import org.eclipse.core.resources.IFile;\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\nimport org.eclipse.core.filesystem.URIUtil; \n\npublic class Example0After {\n    public void method(IPath fExternalPath) {\n        IFile[] files \u003d ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(URIUtil.toURI(fExternalPath.makeAbsolute()));\n        System.out.println(files.length);\n    }\n}",
+  "negativeExample": "import org.eclipse.core.resources.IFile;\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.Path;\nimport org.eclipse.core.filesystem.URIUtil;\nimport java.net.URI;\n\npublic class Example0Negative {\n    public void method(URI uri) {\n        IFile[] files \u003d ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(uri); // Already uses URI version\n        System.out.println(files.length);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "0094963c562ed10d31734d210e4aaef75dcbb074",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace deprecated findFilesForLocation with findFilesForLocationURI using URIUtil.toURI for IPath conversion.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-25T02:39:34.875492056Z",
+  "ruleFingerprint": "sha256:cdc988c3035a41f102713bce044621b28b17969d7442dcdd5db0aa5a11dc7bb7",
+  "behaviorFingerprint": "sha256:3bbf774e8f0efb773621dbad479a2f91c4465539381a4cf7484d38e6eb95b4f6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Example0 must be defined in its own file",
+    "verifiedAt": "2026-08-25T02:39:38.369750063Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
